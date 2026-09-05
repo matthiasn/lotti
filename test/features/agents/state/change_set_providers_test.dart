@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/project_proposal_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
@@ -271,6 +272,74 @@ void main() {
         expect(result.pending.map((step) => step.id), contains('pr-older'));
       },
     );
+  });
+
+  group('projectProposalServiceProvider', () {
+    ProviderContainer build({
+      MockJournalRepository? journal,
+      MockJournalDb? journalDb,
+    }) {
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(journalDb ?? MockJournalDb()),
+          journalRepositoryProvider.overrideWithValue(
+            journal ?? MockJournalRepository(),
+          ),
+          projectRepositoryProvider.overrideWithValue(MockProjectRepository()),
+          projectChangeSetConfirmationServiceProvider.overrideWithValue(
+            MockChangeSetConfirmationService(),
+          ),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('wires the project confirmation service and repository', () {
+      final container = build();
+
+      final service = container.read(projectProposalServiceProvider);
+
+      expect(service, isA<ProjectProposalService>());
+      expect(
+        service.confirmation,
+        same(container.read(projectChangeSetConfirmationServiceProvider)),
+      );
+      expect(
+        service.projectRepository,
+        same(container.read(projectRepositoryProvider)),
+      );
+      expect(
+        container.read(projectProposalServiceProvider),
+        same(service),
+        reason: 'kept alive, so undo memos survive page rebuilds',
+      );
+    });
+
+    for (final gone in [true, false]) {
+      test(
+        'removes a task through the journal and reports '
+        '${gone ? 'success once the tombstone reads back' : 'failure while the task still reads'}',
+        () async {
+          final journal = MockJournalRepository();
+          final journalDb = MockJournalDb();
+          when(
+            () => journal.deleteJournalEntity('task-1'),
+          ).thenAnswer((_) async => true);
+          when(
+            () => journalDb.journalEntityById('task-1'),
+          ).thenAnswer((_) async => gone ? null : makeTestTask(id: 'task-1'));
+          final container = build(journal: journal, journalDb: journalDb);
+
+          final service = container.read(projectProposalServiceProvider);
+
+          expect(await service.taskRemover('task-1'), gone);
+          verify(() => journal.deleteJournalEntity('task-1')).called(1);
+          verify(() => journalDb.journalEntityById('task-1')).called(1);
+        },
+      );
+    }
   });
 
   group('projectRecommendationServiceProvider', () {

@@ -24,13 +24,14 @@ void main() {
   final now = DateTime(2026, 9, 5, 12);
   final runCreatedAt = now.subtract(const Duration(hours: 2));
   late MockProjectRecommendationService service;
-  late MockChangeSetConfirmationService confirmation;
+  late MockProjectProposalService proposalService;
   late int pendingReads;
 
   setUpAll(registerAllFallbackValues);
   setUp(() {
     service = MockProjectRecommendationService();
-    confirmation = MockChangeSetConfirmationService();
+    proposalService = MockProjectProposalService();
+    when(() => proposalService.canUndo(any(), any())).thenReturn(true);
     pendingReads = 0;
   });
 
@@ -79,6 +80,7 @@ void main() {
     List<AgentDomainEntity> sets = const [],
     bool enabled = true,
     ValueChanged<String>? onOpenTask,
+    ValueChanged<String>? onTaskCreated,
     double width = 390,
     bool withoutSnapshot = false,
     bool legacyRun = false,
@@ -88,6 +90,7 @@ void main() {
         projectId: projectId,
         enabled: enabled,
         onOpenTask: onOpenTask,
+        onTaskCreated: onTaskCreated,
       ),
     ),
     mediaQueryData: MediaQueryData(size: Size(width, 900)),
@@ -107,9 +110,7 @@ void main() {
         return sets;
       }),
       projectRecommendationServiceProvider.overrideWithValue(service),
-      projectChangeSetConfirmationServiceProvider.overrideWithValue(
-        confirmation,
-      ),
+      projectProposalServiceProvider.overrideWithValue(proposalService),
       projectDetailNowProvider.overrideWithValue(() => now),
     ],
   );
@@ -256,6 +257,33 @@ void main() {
     expect(calls, 2);
     expect(find.text('Added'), findsOneWidget);
     expect(find.text('Retry'), findsNothing);
+  });
+
+  testWidgets('reports a created task to the host, but never a failed one', (
+    tester,
+  ) async {
+    final created = <String>[];
+    var calls = 0;
+    when(() => service.createTask('s1')).thenAnswer((_) async {
+      calls++;
+      return ToolExecutionResult(
+        success: calls > 1,
+        output: calls > 1 ? '' : 'Recommendation is no longer active',
+        mutatedEntityId: calls > 1 ? 'task-1' : null,
+      );
+    });
+    await pumpSubject(
+      tester,
+      subject(items: steps.sublist(0, 1), onTaskCreated: created.add),
+    );
+
+    await tester.tap(find.text('Add task'));
+    await settle(tester);
+    expect(created, isEmpty);
+
+    await tester.tap(find.text('Retry'));
+    await settle(tester);
+    expect(created, ['task-1']);
   });
 
   testWidgets(
@@ -521,7 +549,7 @@ void main() {
     'proposals apply or reject through the confirmation service and keep '
     'their tag',
     (tester) async {
-      when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+      when(() => proposalService.confirm(any(), any())).thenAnswer(
         (_) async => const ToolExecutionResult(success: true, output: ''),
       );
       await pumpSubject(tester, subject(items: const [], sets: [proposals]));
@@ -530,7 +558,7 @@ void main() {
       await tester.tap(find.byTooltip('Confirm'));
       await settle(tester);
 
-      verify(() => confirmation.confirmItem(proposals, 0)).called(1);
+      verify(() => proposalService.confirm(proposals, 0)).called(1);
       expect(find.text('Confirmed'), findsOneWidget);
       expect(find.text('Create task: Pack fish'), findsOneWidget);
       expect(find.byTooltip('Confirm'), findsNothing);
@@ -542,20 +570,108 @@ void main() {
       expect(find.text('0 pending'), findsNothing);
 
       when(
-        () => confirmation.rejectItem(any(), any()),
+        () => proposalService.reject(any(), any()),
       ).thenAnswer((_) async => true);
       await pumpSubject(tester, subject(items: const [], sets: [proposals]));
       await tester.tap(find.byTooltip('Reject'));
       await settle(tester);
-      verify(() => confirmation.rejectItem(proposals, 0)).called(1);
+      verify(() => proposalService.reject(proposals, 0)).called(1);
       expect(find.text('Dismissed'), findsOneWidget);
     },
   );
 
+  testWidgets('a decided proposal offers Undo for eight seconds', (
+    tester,
+  ) async {
+    when(() => proposalService.confirm(any(), any())).thenAnswer(
+      (_) async => const ToolExecutionResult(success: true, output: ''),
+    );
+    when(() => proposalService.undo(any(), any())).thenAnswer(
+      (_) async => true,
+    );
+    await pumpSubject(tester, subject(items: const [], sets: [proposals]));
+
+    await tester.tap(find.byTooltip('Confirm'));
+    await settle(tester);
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+    final readsBefore = pendingReads;
+
+    await tester.tap(find.text('Undo'));
+    await settle(tester);
+    verify(() => proposalService.undo(any(), 0)).called(1);
+    expect(find.text('Confirmed'), findsNothing);
+    expect(
+      find.byTooltip('Confirm'),
+      findsOneWidget,
+      reason: 'The proposal is pending again.',
+    );
+    expect(pendingReads, greaterThan(readsBefore));
+
+    // The window closes on its own.
+    await tester.tap(find.byTooltip('Confirm'));
+    await settle(tester);
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.pump(ProjectRecommendationsPanel.undoWindow);
+    await tester.pump();
+    expect(find.text('Undo'), findsNothing);
+    expect(find.text('Confirmed'), findsOneWidget);
+  });
+
+  testWidgets('a refused or unavailable proposal Undo keeps the tag', (
+    tester,
+  ) async {
+    when(() => proposalService.confirm(any(), any())).thenAnswer(
+      (_) async => const ToolExecutionResult(success: true, output: ''),
+    );
+    when(() => proposalService.undo(any(), any())).thenAnswer(
+      (_) async => false,
+    );
+    await pumpSubject(tester, subject(items: const [], sets: [proposals]));
+    await tester.tap(find.byTooltip('Confirm'));
+    await settle(tester);
+
+    await tester.tap(find.text('Undo'));
+    await settle(tester);
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+    expect(find.text(updateError), findsOneWidget);
+
+    when(() => proposalService.canUndo(any(), any())).thenReturn(false);
+    await pumpSubject(tester, subject(items: const [], sets: [proposals]));
+    await tester.tap(find.byTooltip('Confirm'));
+    await settle(tester);
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(
+      find.text('Undo'),
+      findsNothing,
+      reason: 'The service cannot put this one back.',
+    );
+  });
+
+  testWidgets('a proposal Undo that throws is reported, not swallowed', (
+    tester,
+  ) async {
+    when(() => proposalService.confirm(any(), any())).thenAnswer(
+      (_) async => const ToolExecutionResult(success: true, output: ''),
+    );
+    when(
+      () => proposalService.undo(any(), any()),
+    ).thenThrow(StateError('offline'));
+    await pumpSubject(tester, subject(items: const [], sets: [proposals]));
+    await tester.tap(find.byTooltip('Confirm'));
+    await settle(tester);
+
+    await tester.tap(find.text('Undo'));
+    await settle(tester);
+    expect(find.text('Confirmed'), findsOneWidget);
+    expect(find.text(updateError), findsOneWidget);
+  });
+
   testWidgets('a failed proposal decision keeps the rail and reports it', (
     tester,
   ) async {
-    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+    when(() => proposalService.confirm(any(), any())).thenAnswer(
       (_) async => const ToolExecutionResult(success: false, output: 'no'),
     );
     await pumpSubject(tester, subject(items: const [], sets: [proposals]));
@@ -604,7 +720,7 @@ void main() {
     );
     await tester.tap(find.byTooltip('Confirm'));
     await tester.pump();
-    verifyNever(() => confirmation.confirmItem(any(), any()));
+    verifyNever(() => proposalService.confirm(any(), any()));
   });
 
   testWidgets('bulk work disables the other rows until it finishes', (
@@ -741,7 +857,7 @@ void main() {
   ) async {
     when(() => service.createTask('s1')).thenThrow(StateError('offline'));
     when(
-      () => confirmation.confirmItem(any(), any()),
+      () => proposalService.confirm(any(), any()),
     ).thenThrow(StateError('offline'));
     await pumpSubject(
       tester,

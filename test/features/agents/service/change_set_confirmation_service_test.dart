@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/service/change_set_confirmation_service.da
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1214,6 +1215,253 @@ void main() {
           expect(updatedChangeSet.status, ChangeSetStatus.resolved);
           expect(updatedChangeSet.resolvedAt, isNotNull);
         });
+      });
+    });
+
+    group('reopenItem', () {
+      ChangeSetEntity decidedSet() => makeChangeSetWith(
+        items: [
+          const ChangeItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 120},
+            humanSummary: 'Set estimate to 2 hours',
+            status: ChangeItemStatus.confirmed,
+          ),
+          const ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'New Title'},
+            humanSummary: 'Set title to "New Title"',
+            status: ChangeItemStatus.rejected,
+          ),
+        ],
+      );
+
+      ChangeDecisionEntity decisionFor(
+        ChangeSetEntity changeSet,
+        int itemIndex, {
+        required ChangeDecisionVerdict verdict,
+        DecisionActor actor = DecisionActor.user,
+        String id = 'decision-1',
+        DateTime? createdAt,
+      }) =>
+          AgentDomainEntity.changeDecision(
+                id: id,
+                agentId: changeSet.agentId,
+                changeSetId: changeSet.id,
+                itemIndex: itemIndex,
+                toolName: changeSet.items[itemIndex].toolName,
+                verdict: verdict,
+                actor: actor,
+                taskId: changeSet.taskId,
+                createdAt: createdAt ?? DateTime(2026, 9, 5, 9),
+                vectorClock: const VectorClock({}),
+              )
+              as ChangeDecisionEntity;
+
+      void stubDecisions(List<AgentDomainEntity> decisions) {
+        when(
+          () => mockRepository.getEntitiesByAgentId(
+            any(),
+            type: any(named: 'type'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => decisions);
+      }
+
+      test(
+        'rewrites the standing decision as deferred and reopens the item',
+        () async {
+          final changeSet = decidedSet();
+          // Newest first, as the repository returns them: a stale retry row,
+          // an agent retraction and another item's decision must all lose to
+          // the newest user decision for this item.
+          stubDecisions([
+            decisionFor(
+              changeSet,
+              1,
+              verdict: ChangeDecisionVerdict.rejected,
+              id: 'other-item',
+            ),
+            decisionFor(
+              changeSet,
+              0,
+              verdict: ChangeDecisionVerdict.retracted,
+              actor: DecisionActor.agent,
+              id: 'agent-row',
+            ),
+            decisionFor(
+              changeSet,
+              0,
+              verdict: ChangeDecisionVerdict.confirmed,
+              id: 'standing',
+            ),
+            decisionFor(
+              changeSet,
+              0,
+              verdict: ChangeDecisionVerdict.rejected,
+              id: 'older',
+              createdAt: DateTime(2026, 9, 4),
+            ),
+          ]);
+
+          await withClock(testClock, () async {
+            expect(await service.reopenItem(changeSet, 0), isTrue);
+
+            verifyNever(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            );
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(captured, hasLength(2));
+
+            final decision = captured[0] as ChangeDecisionEntity;
+            expect(decision.id, 'standing', reason: 'rewritten in place');
+            expect(decision.verdict, ChangeDecisionVerdict.deferred);
+            expect(decision.createdAt, testClock.now(), reason: 'LWW wins');
+
+            final reopened = captured[1] as ChangeSetEntity;
+            expect(reopened.items[0].status, ChangeItemStatus.pending);
+            expect(reopened.items[1].status, ChangeItemStatus.rejected);
+            expect(reopened.status, ChangeSetStatus.partiallyResolved);
+            expect(reopened.resolvedAt, isNull);
+          });
+        },
+      );
+
+      test('records a fresh deferred decision when none is stored', () async {
+        final changeSet = decidedSet();
+        stubDecisions(const []);
+
+        await withClock(testClock, () async {
+          expect(await service.reopenItem(changeSet, 1), isTrue);
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(captured, hasLength(2));
+          final decision = captured[0] as ChangeDecisionEntity;
+          expect(decision.verdict, ChangeDecisionVerdict.deferred);
+          expect(decision.actor, DecisionActor.user);
+          expect(decision.itemIndex, 1);
+          expect(decision.args, {'title': 'New Title'});
+          final reopened = captured[1] as ChangeSetEntity;
+          expect(reopened.items[1].status, ChangeItemStatus.pending);
+        });
+      });
+
+      test('runs the revert only once the record is pending again', () async {
+        final changeSet = decidedSet();
+        stubDecisions([
+          decisionFor(changeSet, 0, verdict: ChangeDecisionVerdict.confirmed),
+        ]);
+        var upsertsBeforeRevert = -1;
+        var reverts = 0;
+
+        final result = await service.reopenItem(
+          changeSet,
+          0,
+          revert: () async {
+            reverts++;
+            upsertsBeforeRevert = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured.length;
+            return true;
+          },
+        );
+
+        expect(result, isTrue);
+        expect(reverts, 1);
+        expect(
+          upsertsBeforeRevert,
+          2,
+          reason: 'decision and item were written before the revert ran',
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+
+      for (final (label, revert) in [
+        ('refuses', () async => false),
+        ('throws', () async => throw StateError('offline')),
+      ]) {
+        test('puts the record back when the revert $label', () async {
+          final changeSet = decidedSet();
+          stubDecisions([
+            decisionFor(changeSet, 0, verdict: ChangeDecisionVerdict.confirmed),
+          ]);
+
+          await withClock(testClock, () async {
+            expect(
+              await service.reopenItem(changeSet, 0, revert: revert),
+              isFalse,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(captured, hasLength(4));
+          final restoredDecision = captured[2] as ChangeDecisionEntity;
+          expect(restoredDecision.id, 'decision-1');
+          expect(restoredDecision.verdict, ChangeDecisionVerdict.confirmed);
+          final restoredSet = captured[3] as ChangeSetEntity;
+          expect(restoredSet.items[0].status, ChangeItemStatus.confirmed);
+        });
+      }
+
+      test('a refused revert on a rejection restores the rejection', () async {
+        final changeSet = decidedSet();
+        stubDecisions(const []);
+
+        expect(
+          await service.reopenItem(changeSet, 1, revert: () async => false),
+          isFalse,
+        );
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final fresh = captured[0] as ChangeDecisionEntity;
+        final restored = captured[2] as ChangeDecisionEntity;
+        expect(restored.id, fresh.id, reason: 'the fresh record is reused');
+        expect(restored.verdict, ChangeDecisionVerdict.rejected);
+        expect(
+          (captured[3] as ChangeSetEntity).items[1].status,
+          ChangeItemStatus.rejected,
+        );
+      });
+
+      test('refuses a pending or retracted item and a bad index', () async {
+        final changeSet = makeChangeSetWith(
+          items: [
+            const ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'A'},
+              humanSummary: 'Pending',
+            ),
+            const ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'B'},
+              humanSummary: 'Retracted',
+              status: ChangeItemStatus.retracted,
+            ),
+          ],
+        );
+        var reverts = 0;
+
+        for (final index in [0, 1, 2, -1]) {
+          expect(
+            await service.reopenItem(
+              changeSet,
+              index,
+              revert: () async {
+                reverts++;
+                return true;
+              },
+            ),
+            isFalse,
+          );
+        }
+        expect(reverts, 0);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
       });
     });
 

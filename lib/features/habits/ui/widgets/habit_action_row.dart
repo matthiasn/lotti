@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/celebration/celebration_
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_action_background.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -341,15 +342,17 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
                 DismissDirection.startToEnd: 0.4,
                 DismissDirection.endToStart: 0.4,
               },
-              background: _SwipeActionBackground(
+              background: DesignSystemSwipeActionBackground(
                 alignment: Alignment.centerLeft,
                 color: habitCompletionColor(HabitCompletionType.success),
+                foregroundColor: tokens.colors.text.highEmphasis,
                 icon: LottiIcons.confirmCircled,
                 label: messages.completeHabitSuccessButton,
               ),
-              secondaryBackground: _SwipeActionBackground(
+              secondaryBackground: DesignSystemSwipeActionBackground(
                 alignment: Alignment.centerRight,
                 color: habitCompletionColor(HabitCompletionType.fail),
+                foregroundColor: tokens.colors.text.highEmphasis,
                 icon: LottiIcons.closeCircled,
                 label: messages.completeHabitFailButton,
               ),
@@ -689,45 +692,3 @@ class _CompleteButton extends StatelessWidget {
 /// The coloured reveal behind a row while it is being swiped — an outcome
 /// colour with a leading/trailing icon and label so the gesture's effect is
 /// legible before the user commits to it.
-class _SwipeActionBackground extends StatelessWidget {
-  const _SwipeActionBackground({
-    required this.alignment,
-    required this.color,
-    required this.icon,
-    required this.label,
-  });
-
-  final Alignment alignment;
-  final Color color;
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final onColor = tokens.colors.text.highEmphasis;
-    return ColoredBox(
-      color: color,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
-        child: Align(
-          alignment: alignment,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: onColor, size: tokens.spacing.step6),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                label,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: onColor,
-                  fontWeight: tokens.typography.weight.semiBold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

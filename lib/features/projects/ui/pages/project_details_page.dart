@@ -24,7 +24,6 @@ import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
-import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -169,11 +168,14 @@ class ProjectDetailsPage extends ConsumerWidget {
               agentIdentity: identity,
               agentActionsBuilder: identity == null
                   ? null
-                  : ({required enabled}) => ProjectRecommendationsPanel(
-                      projectId: projectId,
-                      enabled: enabled,
-                      onOpenTask: (taskId) => beamToNamed('/tasks/$taskId'),
-                    ),
+                  : ({required enabled, required focusTask}) =>
+                        ProjectRecommendationsPanel(
+                          projectId: projectId,
+                          enabled: enabled,
+                          onOpenTask: focusTask,
+                          onTaskCreated: (taskId) =>
+                              focusTask(taskId, scroll: false),
+                        ),
               hasProjectAgent: identity != null || agentAsync.isLoading,
               isRefreshingReport: isRefreshingReport,
               isSaving: detailState.isSaving,
@@ -183,16 +185,9 @@ class ProjectDetailsPage extends ConsumerWidget {
               taskListOptions: ref.watch(
                 projectTaskListOptionsProvider(projectId),
               ),
-              onTaskListOptionsChanged: (options) =>
-                  showProjectTaskListOptionsSheet(
-                    context: context,
-                    options: options,
-                    onChanged: ref
-                        .read(
-                          projectTaskListOptionsProvider(projectId).notifier,
-                        )
-                        .update,
-                  ),
+              onTaskListOptionsChanged: ref
+                  .read(projectTaskListOptionsProvider(projectId).notifier)
+                  .update,
             ),
           ),
         );

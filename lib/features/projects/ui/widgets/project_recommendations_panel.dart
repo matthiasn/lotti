@@ -37,6 +37,7 @@ class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
     required this.projectId,
     this.enabled = true,
     this.onOpenTask,
+    this.onTaskCreated,
     super.key,
   });
 
@@ -52,8 +53,13 @@ class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
   /// own; the bands stay mounted so no decision state is lost.
   final bool enabled;
 
-  /// Opens the task an added step created.
+  /// Called with the task id when the "Added → title" link is tapped; the
+  /// page brings that task into view in the list below.
   final ValueChanged<String>? onOpenTask;
+
+  /// Called with the task id right after a step created it, so the page can
+  /// mark the new row in the list without moving the band.
+  final ValueChanged<String>? onTaskCreated;
 
   @override
   ConsumerState<ProjectRecommendationsPanel> createState() =>
@@ -162,7 +168,10 @@ class _ProjectRecommendationsPanelState
         _optimistic[step.id] = taskId == null
             ? ProjectNextStepRowState.done
             : ProjectNextStepRowState.added;
-        if (taskId != null) _createdTasks[step.id] = taskId;
+        if (taskId != null) {
+          _createdTasks[step.id] = taskId;
+          widget.onTaskCreated?.call(taskId);
+        }
         _armUndo(step.id);
         if (result.errorMessage case final warning?) {
           context.showToast(
@@ -281,10 +290,10 @@ class _ProjectRecommendationsPanelState
     setState(() => _busyProposals.add(key));
     var succeeded = false;
     try {
-      final service = ref.read(projectChangeSetConfirmationServiceProvider);
+      final service = ref.read(projectProposalServiceProvider);
       succeeded = confirm
-          ? (await service.confirmItem(set, index)).success
-          : await service.rejectItem(set, index);
+          ? (await service.confirm(set, index)).success
+          : await service.reject(set, index);
     } catch (error, stackTrace) {
       _log('Failed to apply a project proposal', error, stackTrace);
     }
@@ -299,10 +308,50 @@ class _ProjectRecommendationsPanelState
               : ChangeItemStatus.rejected,
         );
         _decidedProposals[key] = (set.copyWith(items: items), index);
+        _armUndo(key);
       }
     });
     // Only the proposal read moves; the agent's update stream is left alone
     // so the report, health and footer never reload for a row decision.
+    ref.invalidate(projectPendingChangeSetsProvider(widget.projectId));
+    if (!succeeded) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectRecommendationUpdateError,
+      );
+    }
+  }
+
+  /// A decided proposal offers Undo for the same window as an added step,
+  /// and only while the service can still put its effect back.
+  bool _canUndoProposal(ChangeSetEntity set, int index) {
+    if (!widget.enabled) return false;
+    final key = _proposalKey(set, index);
+    if (!(_undoDeadlines[key]?.isAfter(_now) ?? false)) return false;
+    return ref.read(projectProposalServiceProvider).canUndo(set, index);
+  }
+
+  Future<void> _undoProposal(ChangeSetEntity set, int index) async {
+    final key = _proposalKey(set, index);
+    if (_busyProposals.contains(key)) return;
+    setState(() => _busyProposals.add(key));
+    var succeeded = false;
+    try {
+      succeeded = await ref
+          .read(projectProposalServiceProvider)
+          .undo(set, index);
+    } catch (error, stackTrace) {
+      _log('Failed to undo a project proposal', error, stackTrace);
+    }
+    if (!mounted) return;
+    setState(() {
+      _busyProposals.remove(key);
+      if (succeeded) {
+        _decidedProposals.remove(key);
+        _undoTimers.remove(key)?.cancel();
+        _undoDeadlines.remove(key);
+      }
+    });
     ref.invalidate(projectPendingChangeSetsProvider(widget.projectId));
     if (!succeeded) {
       context.showToast(
@@ -393,6 +442,8 @@ class _ProjectRecommendationsPanelState
                               _decideProposal(set, index, confirm: true),
                           onReject: () =>
                               _decideProposal(set, index, confirm: false),
+                          canUndo: _canUndoProposal(set, index),
+                          onUndo: () => _undoProposal(set, index),
                         ),
                       ),
                   ],

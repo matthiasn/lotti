@@ -5,11 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/popovers/design_system_popover_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_task_groups.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
+import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -284,6 +286,7 @@ void main() {
     Widget wrapSliver(
       Widget sliver, {
       double width = 400,
+      double? screenWidth,
       double textScale = 1,
     }) {
       return makeTestableWidget2(
@@ -299,7 +302,7 @@ void main() {
           ),
         ),
         mediaQueryData: MediaQueryData(
-          size: Size(width, 900),
+          size: Size(screenWidth ?? width, 900),
           textScaler: TextScaler.linear(textScale),
         ),
       );
@@ -498,9 +501,51 @@ void main() {
       expect(find.textContaining('2026'), findsNothing);
     });
 
-    testWidgets('the sort-and-group control reports the current options', (
+    testWidgets('folds report through onOptionsChanged and read back', (
       tester,
     ) async {
+      final reported = <ProjectTaskListOptions>[];
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: record,
+            now: now,
+            onOptionsChanged: reported.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Done'));
+      await tester.pump();
+      expect(reported.single.collapsedGroups, isEmpty);
+      expect(
+        find.text('Ship it'),
+        findsNothing,
+        reason: 'The host owns the fold; nothing moves until it re-renders.',
+      );
+
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: record,
+            now: now,
+            options: reported.single,
+            onOptionsChanged: reported.add,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Ship it'), findsOneWidget);
+
+      await tester.tap(find.text('September 2026'));
+      await tester.pump();
+      expect(reported.last.collapsedGroups, {
+        const ProjectTaskMonthKey(2026, 9).id,
+      });
+    });
+
+    testWidgets('the control opens the sheet on a phone', (tester) async {
       const options = ProjectTaskListOptions(
         groupBy: ProjectTaskGroupBy.status,
         sortBy: ProjectTaskSortBy.title,
@@ -519,7 +564,13 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byTooltip('Sort and group'));
-      expect(reported, options);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectTaskListOptionsSheetContent), findsOneWidget);
+      expect(find.byType(DesignSystemPopoverSurface), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('project-tasks-group-none')));
+      await tester.pump();
+      expect(reported, options.copyWith(groupBy: ProjectTaskGroupBy.none));
 
       await tester.pumpWidget(
         wrapSliver(ProjectTasksSliverPanel(record: record, now: now)),
@@ -530,6 +581,233 @@ void main() {
         findsNothing,
         reason: 'A read-only showcase wires no control.',
       );
+    });
+
+    testWidgets('the control opens a popover on a desktop-wide screen', (
+      tester,
+    ) async {
+      ProjectTaskListOptions? reported;
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: record,
+            now: now,
+            onOptionsChanged: (value) => reported = value,
+          ),
+          width: 900,
+          screenWidth: 1200,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Sort and group'));
+      await tester.pump();
+      expect(find.byType(DesignSystemPopoverSurface), findsOneWidget);
+      expect(find.byType(ProjectTaskListOptionsSheetContent), findsOneWidget);
+
+      final titleRow = find.byKey(const ValueKey('project-tasks-sort-title'));
+      await tester.ensureVisible(titleRow);
+      await tester.pump();
+      await tester.tap(titleRow);
+      await tester.pump();
+      expect(reported?.sortBy, ProjectTaskSortBy.title);
+      expect(
+        find.byType(DesignSystemPopoverSurface),
+        findsOneWidget,
+        reason: 'A pick applies at once and leaves the popover open.',
+      );
+
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
+      expect(find.byType(DesignSystemPopoverSurface), findsNothing);
+    });
+
+    testWidgets(
+      'group headers pin while their rows scroll and push each other',
+      (
+        tester,
+      ) async {
+        final many = makeTestProjectRecord(
+          highlightedTaskSummaries: [
+            for (var i = 0; i < 12; i++)
+              summary('s$i', 'September task $i', createdAt: DateTime(2026, 9)),
+            for (var i = 0; i < 12; i++)
+              summary('a$i', 'August task $i', createdAt: DateTime(2026, 8)),
+          ],
+        );
+        await tester.pumpWidget(
+          wrapSliver(ProjectTasksSliverPanel(record: many, now: now)),
+        );
+        await tester.pump();
+        final viewportTop = tester.getRect(find.byType(CustomScrollView)).top;
+        expect(
+          tester.getRect(find.text('September 2026')).top,
+          greaterThan(viewportTop),
+        );
+
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+        await tester.pump();
+        expect(
+          tester.getRect(find.text('September 2026')).top,
+          closeTo(viewportTop + 14, 6),
+          reason: 'The header of the group being scrolled stays pinned.',
+        );
+        expect(
+          find.text('Project Tasks'),
+          findsNothing,
+          reason: 'The card header scrolls away.',
+        );
+
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+        await tester.pump();
+        expect(
+          tester.getRect(find.text('August 2026')).top,
+          closeTo(viewportTop + 14, 6),
+          reason: 'The next group header takes the pinned slot.',
+        );
+        expect(
+          find.text('September 2026'),
+          findsNothing,
+          reason: 'Pushed out.',
+        );
+      },
+    );
+
+    testWidgets('a highlighted row paints the wash without a pointer', (
+      tester,
+    ) async {
+      final one = summary('h', 'Hot row', createdAt: DateTime(2026, 9));
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: makeTestProjectRecord(highlightedTaskSummaries: [one]),
+            now: now,
+            focus: const ProjectTaskFocus(
+              taskId: 'h',
+              request: 1,
+              scroll: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final wash = find.byKey(const ValueKey('task-summary-row-background-h'));
+      expect(wash, findsOneWidget);
+
+      await tester.pump(ProjectTasksSliverPanel.highlightDuration);
+      expect(wash, findsNothing, reason: 'The highlight fades on its own.');
+    });
+
+    testWidgets('focus scrolls a deep row into view, unfolding its group', (
+      tester,
+    ) async {
+      final many = makeTestProjectRecord(
+        highlightedTaskSummaries: [
+          for (var i = 0; i < 40; i++)
+            summary('s$i', 'September task $i', createdAt: DateTime(2026, 9)),
+          summary('done', 'Shipped', createdAt: DateTime(2026, 8), done: true),
+        ],
+      );
+      final reported = <ProjectTaskListOptions>[];
+      Widget subject({
+        ProjectTaskFocus? focus,
+        ProjectTaskListOptions? options,
+      }) => wrapSliver(
+        ProjectTasksSliverPanel(
+          record: many,
+          now: now,
+          focus: focus,
+          options: options ?? ProjectTaskListOptions.defaults,
+          onOptionsChanged: reported.add,
+        ),
+      );
+      await tester.pumpWidget(subject());
+      await tester.pump();
+      expect(find.text('September task 39'), findsNothing, reason: 'lazy');
+
+      await tester.pumpWidget(
+        subject(focus: const ProjectTaskFocus(taskId: 's39', request: 1)),
+      );
+      for (var i = 0; i < ProjectTasksSliverPanel.maxScrollAttempts; i++) {
+        await tester.pump();
+      }
+      await tester.pump(MotionDurations.medium2);
+      final viewport = tester.getRect(find.byType(CustomScrollView));
+      final row = tester.getRect(find.text('September task 39'));
+      expect(row.top, greaterThanOrEqualTo(viewport.top));
+      expect(row.bottom, lessThanOrEqualTo(viewport.bottom));
+      expect(
+        find.byKey(const ValueKey('task-summary-row-background-s39')),
+        findsOneWidget,
+      );
+      expect(reported, isEmpty, reason: 'September was never folded.');
+
+      // A task in the folded Done group: the fold opens through the host.
+      await tester.pumpWidget(
+        subject(focus: const ProjectTaskFocus(taskId: 'done', request: 2)),
+      );
+      await tester.pump();
+      expect(reported.single.isCollapsed('done'), isFalse);
+      await tester.pumpWidget(
+        subject(
+          focus: const ProjectTaskFocus(taskId: 'done', request: 2),
+          options: reported.single,
+        ),
+      );
+      for (var i = 0; i < ProjectTasksSliverPanel.maxScrollAttempts; i++) {
+        await tester.pump();
+      }
+      await tester.pump(MotionDurations.medium2);
+      final shipped = tester.getRect(find.text('Shipped'));
+      expect(shipped.top, greaterThanOrEqualTo(viewport.top));
+      expect(shipped.bottom, lessThanOrEqualTo(viewport.bottom));
+    });
+
+    testWidgets('focus on an ungrouped list steps through the viewport', (
+      tester,
+    ) async {
+      final many = makeTestProjectRecord(
+        highlightedTaskSummaries: [
+          for (var i = 0; i < 40; i++)
+            summary('t$i', 'Task $i', createdAt: DateTime(2026, 9)),
+        ],
+      );
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: many,
+            now: now,
+            options: const ProjectTaskListOptions(
+              groupBy: ProjectTaskGroupBy.none,
+              sortBy: ProjectTaskSortBy.title,
+            ),
+            focus: const ProjectTaskFocus(taskId: 't9', request: 1),
+          ),
+        ),
+      );
+      for (var i = 0; i < ProjectTasksSliverPanel.maxScrollAttempts; i++) {
+        await tester.pump();
+      }
+      await tester.pump(MotionDurations.medium2);
+      final viewport = tester.getRect(find.byType(CustomScrollView));
+      final row = tester.getRect(find.text('Task 9'));
+      expect(row.top, greaterThanOrEqualTo(viewport.top));
+      expect(row.bottom, lessThanOrEqualTo(viewport.bottom));
+    });
+
+    test('ProjectTaskFocus compares by task, request and mode', () {
+      const a = ProjectTaskFocus(taskId: 't', request: 1);
+      expect(a, const ProjectTaskFocus(taskId: 't', request: 1));
+      expect(
+        a.hashCode,
+        const ProjectTaskFocus(taskId: 't', request: 1).hashCode,
+      );
+      expect(a, isNot(const ProjectTaskFocus(taskId: 't', request: 2)));
+      expect(
+        a,
+        isNot(const ProjectTaskFocus(taskId: 't', request: 1, scroll: false)),
+      );
+      expect(a, isNot(const ProjectTaskFocus(taskId: 'u', request: 1)));
     });
 
     testWidgets('Add task is labelled when wide and a glyph when compact', (

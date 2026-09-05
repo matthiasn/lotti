@@ -337,12 +337,34 @@ editor. The AI surface appears above the task list. `ProjectRecommendationsPanel
 renders two bands inside the card: the newest run's **recommended next steps**
 (`ProjectNextStepRow`, one per step) and the agent's **proposed changes**
 (`ProjectProposalRow`, reusing Task Details' `RowActions` rail). A step offers
-**Add task** and **Dismiss** as labelled controls; a decided step keeps its
-place with an *Added* (linking to the task), *Done* or *Dismissed* tag and an
-Undo — eight seconds for an addition, as long as the run is current for a
-dismissal. A failed creation keeps the row with Retry and the failure copy.
-Phones show three rows before "Show N more"; more than one open step adds
-**Add all as tasks** and **Dismiss all**.
+**Add task** and **Dismiss** as labelled controls, and on touch the same two
+by swipe — right adds, left dismisses, each named on the band the row reveals
+(`DesignSystemSwipeActionBackground`), and the row snaps back rather than
+leaving. A decided step keeps its place with an *Added* (its link focuses the
+task in the list below), *Done* or *Dismissed* tag and an Undo — eight
+seconds for an addition, as long as the run is current for a dismissal. A
+failed creation keeps the row with Retry and the failure copy. Phones show
+three rows before "Show N more"; more than one open step adds **Add all as
+tasks** and **Dismiss all**.
+
+Proposals go through `ProjectProposalService` (`projectProposalServiceProvider`,
+kept alive for the session): `confirm` and `reject` delegate to the change
+set confirmation service, and `confirm` remembers what the tool changed — the
+task a `create_task` created, the status an `update_project_status` replaced.
+A decided proposal keeps its *Confirmed* or *Dismissed* tag and, for the same
+eight seconds, an Undo while `canUndo` holds (always for a rejection; for a
+confirmation only while this session holds the memo). `undo` hands
+`ChangeSetConfirmationService.reopenItem` a revert closure: the record goes
+first — the item's newest user decision is rewritten in place as `deferred`
+(dated now, so it wins last-writer-wins and stops counting as feedback) and
+the item returns to `pending` — and only then does the revert remove the
+created task or restore the previous status and drop its history entry. The
+status restore is guarded: it happens only while the project still sits in
+the proposal's target status and the newest history entry is the status the
+memo remembers replacing; a status that moved on since is left alone. A
+refused or thrown revert makes `reopenItem` put the record back (verdict and
+item status) and return `false`, so the effect and the record always agree;
+the memo stays for another try.
 
 The band never invalidates the agent's update stream. The service notifies
 after each write, `projectNextStepsProvider` re-reads, and the row changes
@@ -425,8 +447,9 @@ a task from "This week" to "Overdue". Within a group the sort key applies — ac
 (the same `compareTasksByActionability` the record provider uses for its
 rollups), created, due date, estimate, priority, recently updated or title —
 and every comparison breaks ties on title then id, so the result never depends
-on input order. Empty groups are omitted. Collapse state is keyed by the
-group's stable id and lives in the panel's state for the session.
+on input order. Empty groups are omitted. Which groups are folded is part of
+the options too (`collapsedGroups`, keyed by the group's stable id, `done`
+folded by default), so a fold is a change the host persists like any other.
 
 The choice is remembered per project by `ProjectTaskListOptionsController`
 (`projectTaskListOptionsProvider(projectId)`) under one `SettingsDb` key per
@@ -434,19 +457,43 @@ project, JSON-encoded and tolerant of unknown values; like the tasks-list
 density preference it loads once, holds state in memory and never lets an
 in-flight load clobber a fresh edit. Both database calls are fire-and-forget,
 so a failing read or write is logged under `LogDomain.settings` and swallowed:
-the read keeps the defaults, the write keeps the in-memory choice. The detail page watches it and opens the
-"Sort and group" sheet (`project_task_list_options_sheet.dart`), whose rows
-apply on tap through the controller. Read-only showcases pass no callback and
-show no control.
+the read keeps the defaults, the write keeps the in-memory choice. The detail
+page watches it and hands the panel the controller's `update` as its single
+`onOptionsChanged`: every pick in the "Sort and group" control and every fold
+flows through it. The panel decides how the control opens — on a screen at
+`kDesktopBreakpoint` or wider as a `DesignSystemPopoverAnchor` beside the sort
+button, otherwise as the shared single-page sheet
+(`project_task_list_options_sheet.dart`); both host the same
+`ProjectTaskListOptionsSheetContent`, whose rows apply on tap and leave the
+surface open for the next pick. Read-only showcases pass no callback, show no
+control, and keep folds in the panel's own state.
+
+Group headers are `SliverPinnedHeader`s inside a `MultiSliver` with
+`pushPinnedChildren` (the `sliver_tools` package): a group's header stays at
+the top of the viewport while its rows scroll past and is pushed out by the
+next group's header. The header paints the card surface opaquely so rows
+scroll beneath it. `DecoratedSliver` and `SliverMainAxisGroup` around the
+groups are unchanged, and folding a group only removes its list sliver, which
+`MultiSliver` handles without the geometry assertion the plain pinned
+persistent header used to trip.
+
+A `ProjectTaskFocus` (task id, request number, `scroll`) asks the panel to
+light one row up — the hover wash, held for `highlightDuration` — and, with
+`scroll` on, to bring it into view. The detail content owns the current focus
+and exposes `focusTask` to the agent band builder: the band's "Added → title"
+link calls it with scroll, a fresh creation calls it without, so the new task
+is marked where it is without pulling the page away from the band. Scrolling
+first unfolds the task's group through `onOptionsChanged`, then, because the
+list is lazy, jumps to the group's header (always built) and looks for the
+row on the following frames, stepping one viewport further each time until it
+exists or `maxScrollAttempts` run out; the row is then eased into view with
+`Scrollable.ensureVisible`.
 
 The header survives what used to break it: the title truncates before
 anything overflows, and in its compact form — below 480 pt of header width (a
 phone, or a desktop pane narrowed past what the full header needs) or at a
-text scale of 1.2× and above — the
-total estimate is dropped in favour of the per-group estimates and Add task
-turns into the glyph-only icon action. Group headers are ordinary rows rather than
-pinned slivers, the same trade-off the agents listing made to avoid the sliver
-geometry assertion when groups change.
+text scale of 1.2× and above — the total estimate is dropped in favour of the
+per-group estimates and Add task turns into the glyph-only icon action.
 
 # When the project agent actually wakes
 

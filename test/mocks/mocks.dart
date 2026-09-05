@@ -41,6 +41,7 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
+import 'package:lotti/features/agents/service/project_proposal_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
@@ -1369,6 +1370,9 @@ class MockTemplateEvolutionWorkflow extends Mock
 
 class MockChangeSetConfirmationService extends Mock
     implements ChangeSetConfirmationService {}
+
+class MockProjectProposalService extends Mock
+    implements ProjectProposalService {}
 
 class MockFeedbackExtractionService extends Mock
     implements FeedbackExtractionService {}

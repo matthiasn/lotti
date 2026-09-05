@@ -54,6 +54,10 @@ class DesignSystemContextMenu extends StatelessWidget {
     super.key,
   });
 
+  /// The width every menu surface takes unless a caller asks otherwise;
+  /// shared with `DesignSystemPopoverAnchor` so popovers and menus line up.
+  static const double defaultWidth = _kMenuWidth;
+
   final List<DesignSystemContextMenuItem> items;
   final DesignSystemContextMenuSize size;
   final double width;

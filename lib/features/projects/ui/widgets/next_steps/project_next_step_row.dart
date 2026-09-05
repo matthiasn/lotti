@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_action_background.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -128,7 +129,7 @@ class ProjectNextStepRow extends StatelessWidget {
           )
         : null;
 
-    return DecoratedBox(
+    final card = DecoratedBox(
       decoration: BoxDecoration(
         color: _decided ? ai.subtleWash : ai.row,
         borderRadius: BorderRadius.circular(tokens.radii.s),
@@ -170,6 +171,51 @@ class ProjectNextStepRow extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+
+    // On touch a pending row also decides by swipe — right to add the task,
+    // left to dismiss — with the action named on the band it reveals. The
+    // row snaps back rather than leaving: it stays in place with its tag.
+    final swipeable =
+        enabled &&
+        state == ProjectNextStepRowState.pending &&
+        (onAddTask != null || onDismiss != null);
+    if (!swipeable) return card;
+    final messages = context.messages;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      child: Dismissible(
+        key: ValueKey('project-next-step-swipe-${step.id}'),
+        direction: onAddTask == null
+            ? DismissDirection.endToStart
+            : onDismiss == null
+            ? DismissDirection.startToEnd
+            : DismissDirection.horizontal,
+        dismissThresholds: const {
+          DismissDirection.startToEnd: 0.4,
+          DismissDirection.endToStart: 0.4,
+        },
+        background: DesignSystemSwipeActionBackground(
+          alignment: Alignment.centerLeft,
+          color: ai.accentSoft,
+          foregroundColor: ai.accent,
+          icon: LottiIcons.add,
+          label: messages.projectActionAddTask,
+        ),
+        secondaryBackground: DesignSystemSwipeActionBackground(
+          alignment: Alignment.centerRight,
+          color: ai.subtleWashStrong,
+          foregroundColor: ai.metaText,
+          icon: LottiIcons.close,
+          label: messages.projectNextStepDismiss,
+        ),
+        confirmDismiss: (direction) async {
+          (direction == DismissDirection.startToEnd ? onAddTask : onDismiss)
+              ?.call();
+          return false;
+        },
+        child: card,
       ),
     );
   }

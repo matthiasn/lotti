@@ -155,6 +155,27 @@ ordinary outer row padding. The hover ink is painted by an inner Material and
 then clipped by the menu outline, so the final action reaches the rounded bottom
 edge instead of leaving an unhighlighted strip above the border.
 
+`DesignSystemPopoverAnchor` (`components/popovers/`) is the same anchored
+overlay — `MenuAnchor` beneath a caller-built trigger, dismissed by an outside
+tap or the trigger — but hosts a widget instead of menu rows, on
+`DesignSystemPopoverSurface`: the context menu's `background.level01` fill,
+`radii.s` corners and `DsShadows.floatingSurface`, at the menu's default width
+unless widened. It is how a desktop control opens in place what a phone opens
+as a sheet; the project task list's "Sort and group" panel is the adopter. The
+content decides when it is done — nothing inside closes the popover — so a
+picker that applies on tap stays open for the next pick. A scrollable inside
+it must not claim the page's primary scroll controller.
+
+`DesignSystemSwipeActionBackground` (`components/lists/`) is the band a
+`Dismissible` reveals behind a row while it is dragged: a fill with the
+action's glyph and name at the edge the row moves away from, so a swipe always
+says what letting go will do. Callers pass fill and ink together, chosen once
+per surface — the habit row drags over its completion colours with
+high-emphasis text, a project next step over the AI card's accent wash with
+the accent ink. The pattern it serves never removes the row: `confirmDismiss`
+fires the action and returns `false`, and the row snaps back to show its
+new state.
+
 `DesignSystemFloatingActionButton` is circular and icon-only by default and
 takes its `semanticLabel` for assistive technology. Passing a `label` extends
 it into a worded pill: same height, same token background and radius, growing

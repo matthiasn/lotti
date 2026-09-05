@@ -1,37 +1,81 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/popovers/design_system_popover_anchor.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_task_groups.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
+import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:sliver_tools/sliver_tools.dart';
+
+/// Asks the task list to focus [taskId]: scroll to it and light it up, or
+/// with `scroll: false` only light it up where it is.
+typedef ProjectTaskFocusRequest = void Function(String taskId, {bool scroll});
+
+/// A request to bring one task's row into view and light it up.
+///
+/// Each request carries a fresh [request] number so asking for the same task
+/// twice scrolls twice. With [scroll] off the row is only highlighted where
+/// it is — the way a task just created from a next step is marked without
+/// pulling the page away from the band that created it.
+@immutable
+class ProjectTaskFocus {
+  const ProjectTaskFocus({
+    required this.taskId,
+    required this.request,
+    this.scroll = true,
+  });
+
+  final String taskId;
+  final int request;
+  final bool scroll;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ProjectTaskFocus &&
+      other.taskId == taskId &&
+      other.request == request &&
+      other.scroll == scroll;
+
+  @override
+  int get hashCode => Object.hash(taskId, request, scroll);
+}
 
 /// The project's task list as a sliver: a header with the count, the total
-/// estimate and the actions, then the tasks in collapsible groups.
+/// estimate and the actions, then the tasks in collapsible groups whose
+/// headers stay pinned while their group scrolls past.
 ///
-/// Grouping and order come from [options] (creation month, newest first, by
-/// default); [onOptionsChanged] wires the header's "Sort and group" control
-/// and is omitted by read-only showcases. Finished tasks fold into one
-/// trailing group that starts collapsed. Due-window groups re-evaluate at
-/// local midnight while the panel stays mounted. The header survives a narrow pane, a phone
-/// and large text: the title truncates before anything overflows, and in the
-/// compact form (below [compactWidth], or at large text) the total estimate is
-/// dropped and Add task turns icon-only.
+/// Grouping, order and which groups are folded come from [options] (creation
+/// month, newest first, Done folded, by default); [onOptionsChanged] receives
+/// every change — a pick in the "Sort and group" control, a group folded or
+/// unfolded — and is omitted by read-only showcases, which then show no
+/// control and keep folds to themselves. The control opens as a popover on a
+/// desktop-wide screen and as the shared sheet elsewhere. Finished tasks fold
+/// into one trailing group. Due-window groups re-evaluate at local midnight
+/// while the panel stays mounted. [focus] scrolls to and highlights one task
+/// on request. The header survives a narrow pane, a phone and large text:
+/// the title truncates before anything overflows, and in the compact form
+/// (below [compactWidth], or at large text) the total estimate is dropped and
+/// Add task turns icon-only.
 class ProjectTasksSliverPanel extends StatefulWidget {
   const ProjectTasksSliverPanel({
     required this.record,
     required this.now,
     this.options = ProjectTaskListOptions.defaults,
     this.onOptionsChanged,
+    this.focus,
     this.onTaskTap,
     this.onAddTask,
     this.isAddTaskEnabled = true,
@@ -50,12 +94,20 @@ class ProjectTasksSliverPanel extends StatefulWidget {
   /// From this text scale on the header takes its compact form at any width.
   static const double largeTextScale = 1.2;
 
+  /// How long a focused row stays lit.
+  static const Duration highlightDuration = Duration(seconds: 3);
+
+  /// How many frames a scroll request keeps looking for a row that the lazy
+  /// list has not built yet, stepping a viewport further each time.
+  static const int maxScrollAttempts = 12;
+
   final ProjectRecord record;
 
   /// Reference time for the due-window groups.
   final DateTime now;
   final ProjectTaskListOptions options;
   final ValueChanged<ProjectTaskListOptions>? onOptionsChanged;
+  final ProjectTaskFocus? focus;
   final ValueChanged<TaskSummary>? onTaskTap;
   final VoidCallback? onAddTask;
   final bool isAddTaskEnabled;
@@ -67,8 +119,15 @@ class ProjectTasksSliverPanel extends StatefulWidget {
 }
 
 class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
-  /// Group ids the user folded; the trailing Done group starts folded.
-  final _collapsed = <String>{const ProjectTaskDoneKey().id};
+  /// Folds made while the host offers no [ProjectTasksSliverPanel.onOptionsChanged]
+  /// live here; otherwise the host's options are the only truth.
+  ProjectTaskListOptions? _localOptions;
+
+  ProjectTaskListOptions get _options => _localOptions ?? widget.options;
+
+  String? _highlightedTaskId;
+  Timer? _highlightTimer;
+  int _scrollAttempts = 0;
 
   /// The reference time for due windows: the host's [ProjectTasksSliverPanel.now]
   /// until local midnight passes while the panel stays mounted, then the
@@ -81,6 +140,7 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
   void initState() {
     super.initState();
     _armDayTimer();
+    if (widget.focus case final focus?) _focus(focus);
   }
 
   @override
@@ -91,12 +151,103 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
         oldWidget.options.groupBy != widget.options.groupBy) {
       _armDayTimer();
     }
+    if (oldWidget.options != widget.options) _localOptions = null;
+    if (widget.focus case final focus? when focus != oldWidget.focus) {
+      _focus(focus);
+    }
   }
 
   @override
   void dispose() {
     _dayTimer?.cancel();
+    _highlightTimer?.cancel();
     super.dispose();
+  }
+
+  List<ProjectTaskGroup> _groups() => groupProjectTasks(
+    widget.record.highlightedTaskSummaries,
+    options: _options,
+    now: _now,
+  );
+
+  void _focus(ProjectTaskFocus focus) {
+    _highlightTimer?.cancel();
+    _highlightedTaskId = focus.taskId;
+    _highlightTimer = Timer(ProjectTasksSliverPanel.highlightDuration, () {
+      if (!mounted) return;
+      setState(() => _highlightedTaskId = null);
+    });
+    if (!focus.scroll) return;
+    final group = _groups().firstWhereOrNull(
+      (ProjectTaskGroup group) => group.tasks.any(
+        (TaskSummary summary) => summary.task.meta.id == focus.taskId,
+      ),
+    );
+    if (group == null) return;
+    if (_options.isCollapsed(group.key.id)) {
+      _setOptions(_options.toggleCollapsed(group.key.id));
+    }
+    _scrollAttempts = 0;
+    _scrollToRow(focus.taskId, group.key.id);
+  }
+
+  /// Brings the row for [taskId] into view once the lazy list has built it.
+  ///
+  /// Group headers are always built, so the first attempt jumps to the
+  /// group's header, which builds the rows after it; each later attempt steps
+  /// one viewport further until the row exists or the attempts run out.
+  void _scrollToRow(String taskId, String groupId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final row = _findContext(ValueKey('project-task-row-$taskId'));
+      if (row != null) {
+        Scrollable.ensureVisible(
+          row,
+          alignment: 0.2,
+          duration: MotionDurations.medium2,
+          curve: MotionCurves.standard,
+        );
+        return;
+      }
+      if (_scrollAttempts++ >= ProjectTasksSliverPanel.maxScrollAttempts) {
+        return;
+      }
+      if (_scrollAttempts == 1) {
+        final header = _findContext(ValueKey('project-task-group-$groupId'));
+        if (header != null) Scrollable.ensureVisible(header);
+      } else if (Scrollable.maybeOf(context)?.position case final position?) {
+        position.jumpTo(
+          (position.pixels + position.viewportDimension).clamp(
+            position.minScrollExtent,
+            position.maxScrollExtent,
+          ),
+        );
+      }
+      _scrollToRow(taskId, groupId);
+    });
+  }
+
+  BuildContext? _findContext(Key key) {
+    BuildContext? found;
+    void visit(Element element) {
+      if (found != null) return;
+      if (element.widget.key == key) {
+        found = element;
+        return;
+      }
+      element.visitChildElements(visit);
+    }
+
+    context.visitChildElements(visit);
+    return found;
+  }
+
+  void _setOptions(ProjectTaskListOptions next) {
+    if (widget.onOptionsChanged case final apply?) {
+      apply(next);
+    } else {
+      setState(() => _localOptions = next);
+    }
   }
 
   /// Only due windows depend on the date, so only that grouping keeps a
@@ -116,21 +267,14 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
     );
   }
 
-  void _toggle(ProjectTaskGroup group) {
-    setState(() {
-      if (!_collapsed.remove(group.key.id)) _collapsed.add(group.key.id);
-    });
-  }
+  void _toggle(ProjectTaskGroup group) =>
+      _setOptions(_options.toggleCollapsed(group.key.id));
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final border = ShowcasePalette.border(context);
-    final groups = groupProjectTasks(
-      widget.record.highlightedTaskSummaries,
-      options: widget.options,
-      now: _now,
-    );
+    final groups = _groups();
 
     Widget divider() => Divider(
       height: BorderWidths.hairline,
@@ -156,9 +300,8 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
               ),
               child: _ProjectTasksPanelHeader(
                 record: widget.record,
-                onOptions: widget.onOptionsChanged == null
-                    ? null
-                    : () => widget.onOptionsChanged!(widget.options),
+                options: _options,
+                onOptionsChanged: widget.onOptionsChanged,
                 onAddTask: widget.onAddTask,
                 isAddTaskEnabled: widget.isAddTaskEnabled,
                 isAddingTask: widget.isAddingTask,
@@ -166,58 +309,69 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
             ),
           ),
           SliverToBoxAdapter(child: divider()),
-          for (final (groupIndex, group) in groups.indexed) ...[
-            if (group.hasHeader)
-              SliverToBoxAdapter(
-                child: _ProjectTaskGroupHeader(
-                  key: ValueKey('project-task-group-${group.key.id}'),
-                  group: group,
-                  expanded: !_collapsed.contains(group.key.id),
-                  onToggle: () => _toggle(group),
-                ),
-              )
-            else if (group.tasks.isNotEmpty)
-              SliverToBoxAdapter(child: SizedBox(height: tokens.spacing.step2)),
-            if (!_collapsed.contains(group.key.id))
-              SliverList.builder(
-                itemCount: group.tasks.length,
-                // Rows carry the task id so a row's element (and its hover
-                // state) follows the task when a sort or grouping change
-                // reorders the group, instead of staying with the index.
-                findChildIndexCallback: (key) {
-                  final index = group.tasks.indexWhere(
-                    (summary) => projectTaskRowKey(summary) == key,
-                  );
-                  return index < 0 ? null : index;
-                },
-                itemBuilder: (context, index) {
-                  final summary = group.tasks[index];
-                  final last = index == group.tasks.length - 1;
-                  return Column(
-                    key: projectTaskRowKey(summary),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TaskSummaryRow(
-                        summary: summary,
-                        topInset: tokens.spacing.step2,
-                        bottomInset: last ? 0 : tokens.spacing.step2,
-                        onTap: widget.onTaskTap,
-                      ),
-                      if (!last) ...[
-                        SizedBox(height: tokens.spacing.step2),
-                        divider(),
-                        SizedBox(height: tokens.spacing.step2),
-                      ] else if (groupIndex < groups.length - 1) ...[
-                        SizedBox(height: tokens.spacing.step2),
-                        divider(),
-                      ],
-                    ],
-                  );
-                },
-              )
-            else if (groupIndex < groups.length - 1)
-              SliverToBoxAdapter(child: divider()),
-          ],
+          for (final (groupIndex, group) in groups.indexed)
+            MultiSliver(
+              // A group's header stays pinned while its rows scroll past and
+              // is pushed out by the next group's header.
+              pushPinnedChildren: true,
+              children: [
+                if (group.hasHeader)
+                  SliverPinnedHeader(
+                    child: _ProjectTaskGroupHeader(
+                      key: ValueKey('project-task-group-${group.key.id}'),
+                      group: group,
+                      expanded: !_options.isCollapsed(group.key.id),
+                      onToggle: () => _toggle(group),
+                    ),
+                  )
+                else if (group.tasks.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: tokens.spacing.step2),
+                  ),
+                if (!_options.isCollapsed(group.key.id))
+                  SliverList.builder(
+                    itemCount: group.tasks.length,
+                    // Rows carry the task id so a row's element (and its
+                    // hover state) follows the task when a sort or grouping
+                    // change reorders the group, instead of staying with the
+                    // index.
+                    findChildIndexCallback: (key) {
+                      final index = group.tasks.indexWhere(
+                        (summary) => projectTaskRowKey(summary) == key,
+                      );
+                      return index < 0 ? null : index;
+                    },
+                    itemBuilder: (context, index) {
+                      final summary = group.tasks[index];
+                      final last = index == group.tasks.length - 1;
+                      return Column(
+                        key: projectTaskRowKey(summary),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TaskSummaryRow(
+                            summary: summary,
+                            topInset: tokens.spacing.step2,
+                            bottomInset: last ? 0 : tokens.spacing.step2,
+                            highlighted:
+                                summary.task.meta.id == _highlightedTaskId,
+                            onTap: widget.onTaskTap,
+                          ),
+                          if (!last) ...[
+                            SizedBox(height: tokens.spacing.step2),
+                            divider(),
+                            SizedBox(height: tokens.spacing.step2),
+                          ] else if (groupIndex < groups.length - 1) ...[
+                            SizedBox(height: tokens.spacing.step2),
+                            divider(),
+                          ],
+                        ],
+                      );
+                    },
+                  )
+                else if (groupIndex < groups.length - 1)
+                  SliverToBoxAdapter(child: divider()),
+              ],
+            ),
         ],
       ),
     );
@@ -227,14 +381,16 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
 class _ProjectTasksPanelHeader extends StatelessWidget {
   const _ProjectTasksPanelHeader({
     required this.record,
-    this.onOptions,
+    required this.options,
+    this.onOptionsChanged,
     this.onAddTask,
     this.isAddTaskEnabled = true,
     this.isAddingTask = false,
   });
 
   final ProjectRecord record;
-  final VoidCallback? onOptions;
+  final ProjectTaskListOptions options;
+  final ValueChanged<ProjectTaskListOptions>? onOptionsChanged;
   final VoidCallback? onAddTask;
   final bool isAddTaskEnabled;
   final bool isAddingTask;
@@ -302,12 +458,31 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
               ),
             ],
             const Spacer(),
-            if (onOptions != null)
-              DesignSystemIconAction(
-                icon: LottiIcons.sort,
-                tooltip: messages.projectTasksSortAndGroup,
-                onPressed: onOptions,
-              ),
+            if (onOptionsChanged case final onChanged?)
+              if (MediaQuery.sizeOf(context).width >= kDesktopBreakpoint)
+                DesignSystemPopoverAnchor(
+                  semanticsLabel: messages.projectTasksSortAndGroup,
+                  builder: (context, {required toggle, required isOpen}) =>
+                      DesignSystemIconAction(
+                        icon: LottiIcons.sort,
+                        tooltip: messages.projectTasksSortAndGroup,
+                        onPressed: toggle,
+                      ),
+                  child: ProjectTaskListOptionsSheetContent(
+                    options: options,
+                    onChanged: onChanged,
+                  ),
+                )
+              else
+                DesignSystemIconAction(
+                  icon: LottiIcons.sort,
+                  tooltip: messages.projectTasksSortAndGroup,
+                  onPressed: () => showProjectTaskListOptionsSheet(
+                    context: context,
+                    options: options,
+                    onChanged: onChanged,
+                  ),
+                ),
             if (onAddTask != null) ...[
               SizedBox(width: tokens.spacing.step2),
               if (compact)
@@ -389,6 +564,8 @@ class _ProjectTaskGroupHeader extends StatelessWidget {
           onTap: onToggle,
           child: Container(
             decoration: BoxDecoration(
+              // Opaque: the header stays pinned while rows scroll beneath it.
+              color: ShowcasePalette.surface(context),
               border: Border(
                 bottom: BorderSide(color: ShowcasePalette.border(context)),
               ),
@@ -445,11 +622,15 @@ Key projectTaskRowKey(TaskSummary summary) =>
     ValueKey('project-task-row-${summary.task.meta.id}');
 
 /// A row displaying a single task's title, estimated duration, and status.
+///
+/// [highlighted] paints the hover wash without a pointer, for the row the
+/// list was just asked to bring into view.
 class TaskSummaryRow extends StatelessWidget {
   const TaskSummaryRow({
     required this.summary,
     this.topInset = 0,
     this.bottomInset = 0,
+    this.highlighted = false,
     this.onTap,
     super.key,
   });
@@ -457,6 +638,7 @@ class TaskSummaryRow extends StatelessWidget {
   final TaskSummary summary;
   final double topInset;
   final double bottomInset;
+  final bool highlighted;
   final ValueChanged<TaskSummary>? onTap;
 
   @override
@@ -465,6 +647,7 @@ class TaskSummaryRow extends StatelessWidget {
       summary: summary,
       topInset: topInset,
       bottomInset: bottomInset,
+      highlighted: highlighted,
       onTap: onTap,
     );
   }
@@ -475,12 +658,14 @@ class _TaskSummaryRowSurface extends StatefulWidget {
     required this.summary,
     required this.topInset,
     required this.bottomInset,
+    required this.highlighted,
     this.onTap,
   });
 
   final TaskSummary summary;
   final double topInset;
   final double bottomInset;
+  final bool highlighted;
   final ValueChanged<TaskSummary>? onTap;
 
   @override
@@ -495,7 +680,7 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
     final oneLiner = widget.summary.oneLiner;
 
     final tokens = context.designTokens;
-    final backgroundColor = _hovered
+    final backgroundColor = _hovered || widget.highlighted
         ? ShowcasePalette.hoverFill(context)
         : null;
 

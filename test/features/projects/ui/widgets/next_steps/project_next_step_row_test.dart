@@ -54,6 +54,87 @@ void main() {
     expect(find.text('Creating task…'), findsNothing);
   });
 
+  testWidgets('a pending step decides by swipe and stays in place', (
+    tester,
+  ) async {
+    var added = 0;
+    var dismissed = 0;
+    await tester.pumpWidget(
+      subject(
+        ProjectNextStepRow(
+          step: step,
+          state: ProjectNextStepRowState.pending,
+          onAddTask: () => added++,
+          onDismiss: () => dismissed++,
+        ),
+      ),
+    );
+    final swipe = find.byKey(const ValueKey('project-next-step-swipe-step-1'));
+    expect(swipe, findsOneWidget);
+
+    await tester.drag(swipe, const Offset(400, 0));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(added, 1);
+    expect(dismissed, 0);
+    expect(find.text(title), findsOneWidget, reason: 'snaps back');
+
+    await tester.drag(swipe, const Offset(-400, 0));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(dismissed, 1);
+    expect(added, 1);
+    expect(find.text(title), findsOneWidget);
+  });
+
+  testWidgets('only a pending, enabled step with an action swipes', (
+    tester,
+  ) async {
+    Widget row({
+      ProjectNextStepRowState state = ProjectNextStepRowState.pending,
+      bool enabled = true,
+      VoidCallback? onAddTask,
+      VoidCallback? onDismiss,
+    }) => subject(
+      ProjectNextStepRow(
+        step: step,
+        state: state,
+        enabled: enabled,
+        onAddTask: onAddTask,
+        onDismiss: onDismiss,
+      ),
+    );
+    void noop() {}
+
+    await tester.pumpWidget(row(state: ProjectNextStepRowState.added));
+    expect(find.byType(Dismissible), findsNothing);
+
+    await tester.pumpWidget(row(enabled: false, onAddTask: noop));
+    expect(find.byType(Dismissible), findsNothing);
+
+    await tester.pumpWidget(row());
+    expect(find.byType(Dismissible), findsNothing, reason: 'no action wired');
+
+    await tester.pumpWidget(row(onDismiss: noop));
+    expect(
+      tester.widget<Dismissible>(find.byType(Dismissible)).direction,
+      DismissDirection.endToStart,
+      reason: 'only Dismiss is wired',
+    );
+
+    await tester.pumpWidget(row(onAddTask: noop));
+    expect(
+      tester.widget<Dismissible>(find.byType(Dismissible)).direction,
+      DismissDirection.startToEnd,
+    );
+
+    await tester.pumpWidget(row(onAddTask: noop, onDismiss: noop));
+    expect(
+      tester.widget<Dismissible>(find.byType(Dismissible)).direction,
+      DismissDirection.horizontal,
+    );
+  });
+
   testWidgets('a disabled row keeps its controls visible but inert', (
     tester,
   ) async {
