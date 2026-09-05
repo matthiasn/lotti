@@ -97,7 +97,7 @@ that model.
 - `EvolutionSessionEntity`, `EvolutionSessionRecapEntity`, `EvolutionNoteEntity`
 - `SoulDocumentEntity`, `SoulDocumentVersionEntity`, `SoulDocumentHeadEntity`
 - `ChangeSetEntity`, `ChangeDecisionEntity`
-- `ProjectRecommendationEntity`
+- `ProjectRecommendationEntity`, `ProjectRecommendationRunEntity`
 - `AttentionRequestEntity`, `AttentionClaimDispositionEntity`,
   `AttentionAwardEntity`
 - `StandingAgreementEntity`

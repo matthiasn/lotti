@@ -37,6 +37,9 @@ void main() {
     mockRepository = MockAgentRepository();
     recommendations = MockProjectRecommendationService();
     when(
+      () => recommendations.currentRecommendations(any(), any()),
+    ).thenAnswer((_) async => []);
+    when(
       () => recommendations.migratePendingBatches(any(), any()),
     ).thenAnswer((_) async {});
   });
@@ -234,33 +237,12 @@ void main() {
           updatedAt: DateTime(2024, 3, 16, 9),
           priority: 'MEDIUM',
         );
-        final resolved = makeTestProjectRecommendation(
-          id: 'pr-resolved',
-          agentId: agent.agentId,
-          title: 'Resolved recommendation',
-          status: ProjectRecommendationStatus.resolved,
-        );
-        final otherProject = makeTestProjectRecommendation(
-          id: 'pr-other-project',
-          agentId: agent.agentId,
-          projectId: 'project-999',
-          title: 'Other project recommendation',
-        );
-
         when(
-          () => mockRepository.getEntitiesByAgentId(
+          () => recommendations.currentRecommendations(
             agent.agentId,
-            type: AgentEntityTypes.projectRecommendation,
+            'project-001',
           ),
-        ).thenAnswer(
-          (_) async => [
-            olderActive,
-            secondInBatch,
-            firstInBatch,
-            resolved,
-            otherProject,
-          ],
-        );
+        ).thenAnswer((_) async => [olderActive, secondInBatch, firstInBatch]);
 
         final container = createProjectAgentContainer(
           projectId: 'project-001',
@@ -298,6 +280,12 @@ void main() {
         when(
           () => mockRepository.getLatestReport(any(), any()),
         ).thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getEntitiesByAgentId(
+            any(),
+            type: AgentEntityTypes.projectRecommendationRun,
+          ),
+        ).thenAnswer((_) async => []);
         when(() => sync.upsertEntity(any())).thenAnswer((call) async {
           row = call.positionalArguments.first as ProjectRecommendationEntity;
         });

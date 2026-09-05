@@ -109,7 +109,8 @@ parallel tool calls in a single turn rather than one per turn.
 
 The `update_project_status` and `create_task` tools queue changes for user review.
 `recommend_next_steps` supplies the complete current list of suggestions for this
-run. It replaces previous next steps when the run succeeds, including clearing
+run. A later call replaces earlier calls in the same run. It replaces previous
+next steps when the run succeeds, including clearing
 old steps when none are recommended. Users confirm, dismiss, or create a task
 from each suggestion individually. Include only steps that remain relevant.''';
 

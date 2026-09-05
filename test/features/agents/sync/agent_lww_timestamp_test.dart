@@ -260,6 +260,18 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _created,
   ),
   (
+    label: 'projectRecommendationRun',
+    entity: AgentDomainEntity.projectRecommendationRun(
+      id: 'run-1',
+      agentId: 'agent-1',
+      projectId: 'project-1',
+      recommendationIds: ['step-1'],
+      createdAt: _created,
+      vectorClock: null,
+    ),
+    expected: _created,
+  ),
+  (
     label: 'projectRecommendation',
     entity: makeTestProjectRecommendation(
       createdAt: _created,
@@ -415,7 +427,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 39);
+      expect(_cases.length, 40);
     });
   });
 }

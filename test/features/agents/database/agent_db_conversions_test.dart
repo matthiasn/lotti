@@ -1183,6 +1183,33 @@ void main() {
     );
   });
 
+  test('recommendation runs retain empty membership and sync timestamps', () {
+    final entity = AgentDomainEntity.projectRecommendationRun(
+      id: 'run-1',
+      agentId: agentId,
+      projectId: 'project-1',
+      recommendationIds: [],
+      createdAt: createdAt,
+      deletedAt: updatedAt,
+      vectorClock: const VectorClock({'host': 1}),
+    );
+    final companion = AgentDbConversions.toEntityCompanion(entity);
+    expect(companion.type, const Value('projectRecommendationRun'));
+    expect(companion.createdAt, Value(createdAt));
+    expect(companion.updatedAt, Value(createdAt));
+    expect(companion.deletedAt, Value(updatedAt));
+    final row = AgentEntity(
+      id: 'run-1',
+      agentId: agentId,
+      type: 'projectRecommendationRun',
+      createdAt: createdAt,
+      updatedAt: createdAt,
+      serialized: companion.serialized.value,
+      schemaVersion: 1,
+    );
+    expect(AgentDbConversions.fromEntityRow(row), entity);
+  });
+
   group('AgentDbConversions — projectRecommendation entity roundtrip', () {
     test('fromEntityRow roundtrips projectRecommendation variant', () {
       final entity = AgentDomainEntity.projectRecommendation(
@@ -1190,6 +1217,7 @@ void main() {
         agentId: agentId,
         projectId: 'project-001',
         title: 'Archive the project',
+        sourceRunId: 'source-run',
         position: 1,
         status: ProjectRecommendationStatus.dismissed,
         createdAt: createdAt,
@@ -1217,6 +1245,7 @@ void main() {
       expect(result, isA<ProjectRecommendationEntity>());
       final recommendation = result as ProjectRecommendationEntity;
       expect(recommendation.projectId, 'project-001');
+      expect(recommendation.sourceRunId, 'source-run');
       expect(recommendation.title, 'Archive the project');
       expect(recommendation.status, ProjectRecommendationStatus.dismissed);
       expect(recommendation.priority, 'LOW');

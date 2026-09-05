@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -98,26 +99,24 @@ class ProjectRecommendationService {
   }
 
   /// Replaces suggestions in the caller's successful-run transaction, including
-  /// an empty result. Other pending tools and already decided rows are retained.
+  /// an empty result. The final tool payload wins within a run. Start ordering
+  /// rejects late older completions; other tools and decided rows are retained.
   Future<void> replaceForRun({
     required String agentId,
     required String projectId,
     required String runKey,
+    required DateTime runStartedAt,
     required List<Map<String, dynamic>> deferredItems,
   }) async {
     await _syncService.runInTransaction(() async {
-      await _replace(
+      final accepted = await _replace(
         agentId: agentId,
         projectId: projectId,
         sourceId: runKey,
-        rawSteps: [
-          for (final item in deferredItems)
-            if (item['toolName'] == ProjectAgentToolNames.recommendNextSteps &&
-                item['args'] is Map &&
-                (item['args'] as Map)['steps'] is List)
-              ...(item['args'] as Map)['steps'] as List,
-        ],
+        createdAt: runStartedAt,
+        rawSteps: _latestSteps(deferredItems),
       );
+      if (!accepted) return;
       await _retractPendingBatches(agentId, projectId);
     });
   }
@@ -169,18 +168,14 @@ class ProjectRecommendationService {
           agentId: agentId,
           projectId: projectId,
           sourceId: latest.runKey,
+          createdAt: latest.createdAt,
           rawSteps: batchIsStale
               ? []
-              : [
-                  for (final set in sets.reversed)
-                    if (set.runKey == latest.runKey)
-                      for (final item in set.items)
-                        if (item.toolName ==
-                                ProjectAgentToolNames.recommendNextSteps &&
-                            item.status == ChangeItemStatus.pending &&
-                            item.args['steps'] is List)
-                          ...item.args['steps'] as List,
-                ],
+              : _latestSteps([
+                  for (final item in latest.items)
+                    if (item.status == ChangeItemStatus.pending)
+                      {'toolName': item.toolName, 'args': item.args},
+                ]),
         );
       }
       await _retractPendingBatches(agentId, projectId);
@@ -189,13 +184,29 @@ class ProjectRecommendationService {
     if (changed) _notifyRecommendationUpdate(agentId, projectId);
   }
 
-  Future<void> _replace({
+  Future<bool> _replace({
     required String agentId,
     required String projectId,
     required String sourceId,
     required List<dynamic> rawSteps,
+    required DateTime createdAt,
   }) async {
-    final now = clock.now();
+    final runs = await _runs(agentId, projectId);
+    final runId = _uuid.v5(
+      Namespace.url.value,
+      '$agentId/$projectId/$sourceId',
+    );
+    // Completion time cannot let a timed-out executor replace a newer wake.
+    // Equal start times use the same stable ordering as synced snapshots.
+    if (runs.any((run) => run.id == runId)) return false;
+    if (runs.isNotEmpty) {
+      final latest = runs.first;
+      final order = createdAt.compareTo(latest.createdAt);
+      if (order < 0 || (order == 0 && runId.compareTo(latest.id) < 0)) {
+        return false;
+      }
+    }
+    final now = createdAt;
     final existing = await _syncService.repository.getEntitiesByAgentId(
       agentId,
       type: AgentEntityTypes.projectRecommendation,
@@ -220,6 +231,7 @@ class ProjectRecommendationService {
           rationale: step.rationale,
           priority: step.priority,
           position: entry.$1,
+          sourceRunId: runId,
           status: ProjectRecommendationStatus.active,
           createdAt: now,
           updatedAt: now,
@@ -227,20 +239,89 @@ class ProjectRecommendationService {
         ),
       );
     }
-    for (final row in existing.whereType<ProjectRecommendationEntity>()) {
-      if (row.projectId == projectId &&
-          row.status == ProjectRecommendationStatus.active &&
-          !ids.contains(row.id)) {
+    await _syncService.upsertEntity(
+      AgentDomainEntity.projectRecommendationRun(
+        id: runId,
+        agentId: agentId,
+        projectId: projectId,
+        recommendationIds: ids.toList(),
+        createdAt: now,
+        vectorClock: const VectorClock({}),
+      ),
+    );
+    await currentRecommendations(agentId, projectId);
+    return true;
+  }
+
+  List<dynamic> _latestSteps(List<Map<String, dynamic>> items) {
+    final args = items
+        .where(
+          (item) =>
+              item['toolName'] == ProjectAgentToolNames.recommendNextSteps,
+        )
+        .lastOrNull?['args'];
+    final steps = args is Map ? args['steps'] : null;
+    return steps is List ? steps : const [];
+  }
+
+  Future<List<ProjectRecommendationRunEntity>> _runs(
+    String agentId,
+    String projectId,
+  ) async {
+    final entities = await _syncService.repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.projectRecommendationRun,
+    );
+    return entities
+        .whereType<ProjectRecommendationRunEntity>()
+        .where((run) => run.projectId == projectId && run.deletedAt == null)
+        .toList()
+      ..sort((a, b) {
+        final order = b.createdAt.compareTo(a.createdAt);
+        return order == 0 ? b.id.compareTo(a.id) : order;
+      });
+  }
+
+  /// Selects one immutable run after sync, including an empty winning run.
+  /// Unknown run rows stay hidden until their snapshot arrives: retracting them
+  /// early could destroy the eventual winner when sync delivers rows first.
+  Future<List<ProjectRecommendationEntity>> currentRecommendations(
+    String agentId,
+    String projectId,
+  ) => _syncService.runInTransaction(() async {
+    final runs = await _runs(agentId, projectId);
+    final entities = await _syncService.repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.projectRecommendation,
+    );
+    final active = entities.whereType<ProjectRecommendationEntity>().where(
+      (row) =>
+          row.projectId == projectId &&
+          row.deletedAt == null &&
+          row.status == ProjectRecommendationStatus.active,
+    );
+    if (runs.isEmpty) {
+      return active.where((row) => row.sourceRunId == null).toList();
+    }
+    final winner = runs.first;
+    final knownRuns = runs.map((run) => run.id).toSet();
+    final current = <ProjectRecommendationEntity>[];
+    for (final row in active) {
+      if (winner.recommendationIds.contains(row.id)) {
+        current.add(row);
+      } else if (row.sourceRunId == null ||
+          knownRuns.contains(row.sourceRunId)) {
         await _syncService.upsertEntity(
           row.copyWith(
             status: ProjectRecommendationStatus.superseded,
-            supersededAt: now,
-            updatedAt: now,
+            supersededAt: clock.now(),
+            updatedAt: clock.now(),
           ),
         );
       }
     }
-  }
+    return current;
+  });
 
   Future<void> _retractPendingBatches(String agentId, String projectId) async {
     final sets = await _syncService.repository.getPendingChangeSets(
@@ -258,12 +339,16 @@ class ProjectRecommendationService {
         return item.copyWith(status: ChangeItemStatus.retracted);
       }).toList();
       if (!changed) continue;
+      final status = ChangeItem.deriveSetStatus(items);
       await _syncService.upsertEntity(
         set.copyWith(
           items: items,
-          status: items.any((item) => item.status == ChangeItemStatus.pending)
-              ? ChangeSetStatus.partiallyResolved
-              : ChangeSetStatus.resolved,
+          status: status,
+          resolvedAt: ChangeItem.deriveResolvedAt(
+            newStatus: status,
+            existingResolvedAt: set.resolvedAt,
+            now: clock.now(),
+          ),
         ),
       );
     }
@@ -280,7 +365,8 @@ class ProjectRecommendationService {
       final row = await _syncService.repository.getEntity(recommendationId);
       if (row is! ProjectRecommendationEntity ||
           row.deletedAt != null ||
-          row.status != ProjectRecommendationStatus.active) {
+          row.status != ProjectRecommendationStatus.active ||
+          !await _isCurrent(row)) {
         return;
       }
       claimed = row;
@@ -305,6 +391,14 @@ class ProjectRecommendationService {
         if (row.rationale != null) 'description': row.rationale,
         if (row.priority != null) 'priority': row.priority,
       }, row.projectId);
+      if (result.success) {
+        await _syncService.runInTransaction(
+          () => _recordDecision(
+            row,
+            ChangeDecisionVerdict.confirmed,
+          ),
+        );
+      }
       if (!result.success && !result.nonRetryable) {
         await _restoreAfterFailedCreation(row);
       }
@@ -330,7 +424,8 @@ class ProjectRecommendationService {
           AgentReportScopes.current,
         );
         final superseded =
-            report != null && report.createdAt.isAfter(row.createdAt);
+            !await _isCurrent(row) ||
+            (report != null && report.createdAt.isAfter(row.createdAt));
         await _syncService.upsertEntity(
           current.copyWith(
             status: superseded
@@ -367,7 +462,8 @@ class ProjectRecommendationService {
     final recommendation = entity?.mapOrNull(projectRecommendation: (e) => e);
     if (recommendation == null ||
         recommendation.deletedAt != null ||
-        recommendation.status != ProjectRecommendationStatus.active) {
+        recommendation.status != ProjectRecommendationStatus.active ||
+        !await _isCurrent(recommendation)) {
       return false;
     }
 
@@ -385,6 +481,12 @@ class ProjectRecommendationService {
       ),
     );
 
+    await _recordDecision(
+      recommendation,
+      status == ProjectRecommendationStatus.resolved
+          ? ChangeDecisionVerdict.confirmed
+          : ChangeDecisionVerdict.rejected,
+    );
     _domainLogger?.log(
       LogDomain.agentWorkflow,
       'Marked project recommendation '
@@ -397,6 +499,69 @@ class ProjectRecommendationService {
     );
     return true;
   });
+
+  Future<bool> _isCurrent(ProjectRecommendationEntity row) async {
+    final runs = await _runs(row.agentId, row.projectId);
+    return runs.isEmpty
+        ? row.sourceRunId == null
+        : runs.first.recommendationIds.contains(row.id);
+  }
+
+  Future<void> _recordDecision(
+    ProjectRecommendationEntity row,
+    ChangeDecisionVerdict verdict,
+  ) async {
+    final setId = _uuid.v5(Namespace.url.value, '${row.id}/decision-source');
+    final decisionId = _uuid.v5(Namespace.url.value, '${row.id}/decision');
+    final args = <String, dynamic>{
+      'steps': [
+        {
+          'title': row.title,
+          if (row.rationale != null) 'rationale': row.rationale,
+          if (row.priority != null) 'priority': row.priority,
+        },
+      ],
+    };
+    final now = clock.now();
+    await _syncService.upsertEntity(
+      AgentDomainEntity.changeSet(
+        id: setId,
+        agentId: row.agentId,
+        taskId: row.projectId,
+        threadId: row.sourceRunId ?? row.id,
+        runKey: row.sourceRunId ?? row.id,
+        status: ChangeSetStatus.resolved,
+        items: [
+          ChangeItem(
+            toolName: ProjectAgentToolNames.recommendNextSteps,
+            args: args,
+            humanSummary: row.title,
+            status: verdict == ChangeDecisionVerdict.confirmed
+                ? ChangeItemStatus.confirmed
+                : ChangeItemStatus.rejected,
+          ),
+        ],
+        createdAt: row.createdAt,
+        resolvedAt: now,
+        vectorClock: const VectorClock({}),
+      ),
+    );
+    await _syncService.upsertEntity(
+      AgentDomainEntity.changeDecision(
+        id: decisionId,
+        agentId: row.agentId,
+        changeSetId: setId,
+        itemIndex: 0,
+        toolName: ProjectAgentToolNames.recommendNextSteps,
+        verdict: verdict,
+        taskId: row.projectId,
+        humanSummary: row.title,
+        args: args,
+        createdAt: now,
+        vectorClock: const VectorClock({}),
+      ),
+    );
+  }
 
   void _notifyRecommendationUpdate(String agentId, String projectId) {
     _notifications?.notifyUiOnly({agentId, projectId, agentNotification});

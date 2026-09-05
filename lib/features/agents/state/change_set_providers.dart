@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -178,34 +177,19 @@ projectRecommendationsProvider = FutureProvider.autoDispose
 
       ref.watch(agentUpdateStreamProvider(identity.agentId));
 
-      final repo = ref.watch(agentRepositoryProvider);
-      await ref
-          .read(projectRecommendationServiceProvider)
-          .migratePendingBatches(
-            identity.agentId,
-            projectId,
-          );
-      final entities = await repo.getEntitiesByAgentId(
+      final service = ref.read(projectRecommendationServiceProvider);
+      await service.migratePendingBatches(identity.agentId, projectId);
+      final recommendations = await service.currentRecommendations(
         identity.agentId,
-        type: AgentEntityTypes.projectRecommendation,
+        projectId,
       );
-
-      final recommendations =
-          entities
-              .whereType<ProjectRecommendationEntity>()
-              .where(
-                (recommendation) =>
-                    recommendation.projectId == projectId &&
-                    recommendation.status == ProjectRecommendationStatus.active,
-              )
-              .toList()
-            ..sort((a, b) {
-              final updatedAtOrder = b.updatedAt.compareTo(a.updatedAt);
-              if (updatedAtOrder != 0) {
-                return updatedAtOrder;
-              }
-              return a.position.compareTo(b.position);
-            });
+      recommendations.sort((a, b) {
+        final updatedAtOrder = b.updatedAt.compareTo(a.updatedAt);
+        if (updatedAtOrder != 0) {
+          return updatedAtOrder;
+        }
+        return a.position.compareTo(b.position);
+      });
 
       return recommendations;
     });

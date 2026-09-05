@@ -464,6 +464,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           agentId: agentId,
           projectId: projectId,
           runKey: runKey,
+          runStartedAt: now,
           deferredItems: deferredItems,
         );
         final mutations = deferredItems

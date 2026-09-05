@@ -200,6 +200,12 @@ void main() {
     when(
       () => mockAgentRepository.getEntitiesByAgentId(
         any(),
+        type: AgentEntityTypes.projectRecommendationRun,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockAgentRepository.getEntitiesByAgentId(
+        any(),
         type: AgentEntityTypes.projectRecommendation,
       ),
     ).thenAnswer((_) async => []);

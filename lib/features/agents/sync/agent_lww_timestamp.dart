@@ -42,6 +42,7 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     evolutionNote: (e) => e.createdAt,
     changeSet: (e) => e.createdAt,
     changeDecision: (e) => e.createdAt,
+    projectRecommendationRun: (e) => e.createdAt,
     projectRecommendation: (e) => e.updatedAt,
     wakeTokenUsage: (e) => e.createdAt,
     soulDocument: (e) => e.updatedAt,

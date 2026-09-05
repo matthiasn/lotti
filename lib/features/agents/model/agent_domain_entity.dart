@@ -754,6 +754,19 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = ChangeDecisionEntity;
 
+  /// Immutable membership of a complete project recommendation run, including
+  /// empty runs. Replicas select the latest createdAt (wake start), then id,
+  /// after sync, regardless of execution completion or delivery order.
+  const factory AgentDomainEntity.projectRecommendationRun({
+    required String id,
+    required String agentId,
+    required String projectId,
+    required List<String> recommendationIds,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = ProjectRecommendationRunEntity;
+
   /// A project next-step suggestion with an individual user-decision lifecycle.
   const factory AgentDomainEntity.projectRecommendation({
     required String id,
@@ -765,6 +778,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
+    String? sourceRunId,
     String? sourceChangeSetId,
     String? sourceDecisionId,
     String? rationale,
