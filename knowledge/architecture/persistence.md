@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-09-05T14:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T19:28:47Z }
 stale_after: 2027-03-05
 sources:
   - id: sync-db
@@ -39,7 +39,11 @@ sources:
   - id: db-common
     resource: ../../lib/database/common.dart
     title: openDbConnection, pragmas, backups
-    last_modified: 2026-06-05
+    last_modified: 2026-09-05
+  - id: slow-query-logging
+    resource: ../../lib/database/slow_query_logging.dart
+    title: Executor and transaction timing diagnostics
+    last_modified: 2026-09-05
   - id: journal-db
     resource: ../../lib/database/database.dart
     title: JournalDb
@@ -171,7 +175,7 @@ flowchart TD
   | `journal_mode` | `WAL` | Concurrent readers during writes |
   | `busy_timeout` | `5000` | Wait rather than fail on contention |
   | `synchronous` | `NORMAL` | WAL-appropriate durability/speed trade |
-  | `wal_autocheckpoint` | `200` pages | Lowered from SQLite's 1000. Slow-query capture caught a 9-minute stall on a `sync_sequence_log` read whose p95 is under 60 ms — a checkpoint pause, not a bad plan. Shorter WAL means smaller, more frequent checkpoints and a narrower starvation window. |
+  | `wal_autocheckpoint` | `200` pages | Lowered from SQLite's 1000, targeting smaller, more frequent checkpoints. Executor timing alone does not establish that checkpoints caused historical stalls. |
 
 - **`PRAGMA foreign_keys = ON` is connection-local**, so `JournalDb` re-applies
   it in `beforeOpen` on every connection, not once at migration time.
@@ -205,6 +209,55 @@ The background factory's setup callbacks expose SQLite setup or isolate startup,
 not a per-call native timing hook. Exact queue/native attribution would need a
 worker-side executor measurement with a correlation identifier transported
 through the isolate protocol. The current metadata makes no such attribution.
+
+## Transaction overlap
+
+When logging is enabled as `beginTransaction` runs, the interceptor assigns a
+local transaction ID and records its parent ID for nested transactions.
+`transaction.open` times the first `ensureOpen` await, which includes acquiring
+the executor's transaction turn. `transaction.commit` and
+`transaction.rollback` time their respective executor awaits. They use
+`scope=executorAwait`, just like queries.
+
+The separate `operation=transaction`, `scope=transactionLifetime` record covers
+the opening acknowledgement through the ending acknowledgement. Its statement
+is the outcome (`COMMIT`, `ROLLBACK`, or `ROLLBACK_FAILED`), not another SQL
+execution. It includes application work between queries and the end await;
+it is not exact lock-hold time. Do not add these spans to statement duration
+totals. All transaction records use the same reporting thresholds and duplicate
+super-slow records to both files.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Created: beginTransaction while logging enabled
+  Created --> Opening: first ensureOpen
+  Opening --> Active: opening acknowledged
+  Opening --> [*]: opening fails
+  Active --> Active: statements or failed commit
+  Active --> [*]: successful commit or completed rollback attempt
+```
+
+`TRANSACTION` rows attach the owning `id`, optional `parent`, and
+`activeAtStart` IDs to operations. Active means the opening acknowledgement
+has arrived and the end has not; the transaction's own ID can appear in its
+active list. These IDs belong to one interceptor instance, so correlate them
+within that database connection and timing window, not across app sessions.
+Overlap is evidence of concurrent transaction lifetime, not proof that it
+blocked a query: read pools may bypass that executor. Transactions still
+opening are excluded from the active list.
+
+A failed commit retains its observation for Drift's subsequent rollback;
+rollback completion releases it even if rollback throws. Reporter failures are
+contained so diagnostics cannot turn an acknowledged BEGIN or COMMIT into an
+application failure, or replace the original database exception.
+
+Visibility is deliberately incomplete: transactions created before the gate
+is enabled are not tracked, and unfinished transactions have no lifetime
+record. Disabling logging suppresses output but completed transactions still
+release their observations. The optional first-call stack setting captures
+each transaction's initiating stack, reused for its opening and lifetime;
+ordinary SQL retains one capture per unique statement. Stack rows are emitted
+only in the super-slow file and retain application frames.
 
 The threshold deliberately does not catch N+1 chains: each individual link sits
 under the bar. Counting round-trips in tests catches those chains;
@@ -527,9 +580,9 @@ snapshot just written is always among the three, even if the device clock
 has moved backwards since the previous one, and a failed snapshot never costs
 an existing one.
 That helper is a **legacy per-database fallback**, not a supported profile
-backup. It copies only the main SQLite file, has no store identity, manifest,
-checksum, media coverage, encryption, coordinated quiescence, or restore path.
-A raw copy is not safe while WAL-backed writers are active.
+backup. It has no store identity, manifest, checksum, media coverage,
+encryption, coordinated quiescence, or restore path. The corruption fallback's
+raw copy is not safe while WAL-backed writers are active.
 
 The implementation-consumable profile inventory now lives in
 `ProfileBackupCatalog`. It includes authoritative databases, media and sync

@@ -258,11 +258,10 @@ Future<void> backupBeforeMigration(
 /// read-pool isolates) inherits these settings.
 ///
 /// `wal_autocheckpoint` is lowered from SQLite's default of 1000 pages to
-/// 200 pages (~800 KB at the default 4 KB page size). A shorter WAL means
-/// smaller, more frequent checkpoints and a narrower window in which a
-/// checkpoint can starve a reader — slow-query capture observed a 9-minute
-/// stall on a `sync_sequence_log` read whose p95 is <60 ms, consistent
-/// with a WAL checkpoint pause rather than a bad plan.
+/// 200 pages (~800 KB at the default 4 KB page size), targeting smaller,
+/// more frequent checkpoints. Slow-query executor timings do not isolate
+/// checkpoint work from queueing, transport, or application suspension;
+/// they cannot establish the cause of historical multi-minute stalls.
 void _setupDatabase(Database database) {
   database
     ..execute('PRAGMA journal_mode = WAL;')
