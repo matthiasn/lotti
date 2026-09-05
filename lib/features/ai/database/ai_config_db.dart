@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -33,7 +34,7 @@ class AiConfigDb extends _$AiConfigDb {
   Future<int> saveConfig(AiConfig config) async {
     final existingConfig = await configById(config.id).getSingleOrNull();
 
-    final now = DateTime.now();
+    final now = clock.now();
 
     final dbEntity = AiConfigDbEntity(
       id: config.id,

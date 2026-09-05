@@ -35,7 +35,7 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
     DateTime? now,
   }) async {
-    final timestamp = now ?? DateTime.now();
+    final timestamp = now ?? clock.now();
     return transaction(() async {
       Future<bool> tryUpdateExisting() async {
         final updated =
@@ -104,7 +104,7 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     required int counter,
     DateTime? now,
   }) async {
-    final timestamp = now ?? DateTime.now();
+    final timestamp = now ?? clock.now();
     return transaction(() async {
       final inserted = await into(syncSequenceLog).insert(
         SyncSequenceLogCompanion(
@@ -159,7 +159,7 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     required int counter,
     DateTime? now,
   }) async {
-    final timestamp = now ?? DateTime.now();
+    final timestamp = now ?? clock.now();
     await transaction(() async {
       final existing = await getEntryByHostAndCounter(hostId, counter);
       if (existing == null) {
@@ -253,7 +253,7 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
               .write(
                 SyncSequenceLogCompanion(
                   status: Value(status.index),
-                  updatedAt: Value(DateTime.now()),
+                  updatedAt: Value(clock.now()),
                 ),
               );
       if (updated > 0) {
@@ -366,7 +366,7 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
     required Map<String, int> payloadCounters,
     DateTime? now,
   }) async {
-    final timestamp = now ?? DateTime.now();
+    final timestamp = now ?? clock.now();
     return transaction(() async {
       final rows =
           await (select(syncSequenceLog)..where(

@@ -65,7 +65,7 @@ mixin _JournalDbEntityOps
           name: 'JournalDb',
           message: 'Conflicting vector clocks: $status',
         );
-        final now = DateTime.now();
+        final now = clock.now();
         await addConflict(
           Conflict(
             id: updated.meta.id,
@@ -92,7 +92,7 @@ mixin _JournalDbEntityOps
     JournalUpdateSkipReason? skipReason;
     var rowsWritten = 0;
     final dbEntity = toDbEntity(updated).copyWith(
-      updatedAt: DateTime.now(),
+      updatedAt: clock.now(),
     );
 
     final existingDbEntity = await entityById(dbEntity.id);

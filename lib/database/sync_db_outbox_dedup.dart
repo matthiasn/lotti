@@ -133,7 +133,7 @@ mixin _SyncDbOutboxDedup on _$SyncDatabase {
           OutboxCompanion(
             message: Value(newMessage),
             subject: Value(newSubject),
-            updatedAt: Value(DateTime.now()),
+            updatedAt: Value(clock.now()),
             payloadSize: payloadSize != null
                 ? Value(payloadSize)
                 : const Value.absent(),

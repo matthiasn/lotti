@@ -52,7 +52,7 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     Duration? requestedMinAge,
     DateTime? now,
   }) {
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     final cutoff = effectiveNow.subtract(minAge);
     final effectiveRequestedMinAge = requestedMinAge ?? minAge;
     final requestedCutoff = effectiveNow.subtract(effectiveRequestedMinAge);
@@ -94,7 +94,7 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   ) async {
     if (entries.isEmpty) return;
 
-    final now = DateTime.now();
+    final now = clock.now();
     // Drift's default `dateTime()` column encodes values as Unix seconds
     // (see the `store_date_time_values_as_text` guide). Anything written
     // via raw `customStatement` bindings must match that encoding, or
@@ -225,7 +225,7 @@ mixin _SyncDbBackfill on _$SyncDatabase {
   ) async {
     if (entries.isEmpty) return;
 
-    final now = DateTime.now();
+    final now = clock.now();
     await batch((b) {
       for (final entry in entries) {
         b.update(
@@ -290,7 +290,7 @@ mixin _SyncDbBackfill on _$SyncDatabase {
     DateTime? now,
     int offset = 0,
   }) async {
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     final minAgeCutoff = effectiveNow.subtract(minAge);
     final effectiveRequestedMinAge = requestedMinAge ?? minAge;
     final requestedCutoff = effectiveNow.subtract(effectiveRequestedMinAge);

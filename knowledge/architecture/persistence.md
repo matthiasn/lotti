@@ -5,13 +5,13 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T12:00:00Z }
-stale_after: 2027-01-11
+generated: { by: claude-code/fable-5.1, at: 2026-09-05T14:00:00Z }
+stale_after: 2027-03-05
 sources:
   - id: sync-db
     resource: ../../lib/database/sync_db.dart
     title: SyncDatabase
-    last_modified: 2026-07-27
+    last_modified: 2026-09-05
   - id: agent-db
     resource: ../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
@@ -43,7 +43,7 @@ sources:
   - id: journal-db
     resource: ../../lib/database/database.dart
     title: JournalDb
-    last_modified: 2026-07-22
+    last_modified: 2026-09-05
   - id: journal-migration
     resource: ../../lib/database/database_migration.dart
     title: JournalDb migration strategy
@@ -379,8 +379,15 @@ so affected screenshots do not disappear from existing journal entries.
 `createDbBackup(fileName)` copies a database to
 `backup/db.<yyyy-MM-dd_HH-mm-ss-S>.sqlite`. It runs automatically before a
 `JournalDb` migration and on demand from *Settings → Advanced → Maintenance*.
-Timestamps come from `package:clock`'s `clock.now()`, so tests can drive them
-with `withClock`.
+Its timestamp comes from `package:clock`'s `clock.now()`, and so does every
+other instant the database layer stamps itself — the `updated_at` on a journal
+upsert, conflict rows, outbox enqueue stamps, leases and retries, sync
+watermarks, editor drafts and settings — so tests drive all of them with
+`withClock`. The one SQL-side
+default, the outbox `created_at`/`updated_at` pair, is Drift's
+`currentDateAndTime`, which SQLite evaluates on each insert; a
+`Constant(DateTime.now())` default would bake the app-launch instant into the
+`CREATE TABLE` statement instead.
 
 That helper is a **legacy per-database fallback**, not a supported profile
 backup. It copies only the main SQLite file, has no store identity, manifest,

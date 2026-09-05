@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';

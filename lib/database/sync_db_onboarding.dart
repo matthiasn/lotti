@@ -117,7 +117,7 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
   Future<List<OnboardingSyncRoundItem>> activeInboundOnboardingSyncRounds({
     DateTime? now,
   }) {
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     return (select(onboardingSyncRounds)
           ..where(
             (t) =>
@@ -136,7 +136,7 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
     required String recipientHostId,
     DateTime? now,
   }) {
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? clock.now();
     return (select(onboardingSyncRounds)..where(
           (t) =>
               t.direction.equals('outbound') &
@@ -179,7 +179,7 @@ mixin _SyncDbOnboarding on _$SyncDatabase, _SyncDbSequenceWatermarks {
   }) async {
     final uniqueCounters = counters.toSet().toList()..sort();
     if (uniqueCounters.isEmpty) return;
-    final timestamp = now ?? DateTime.now();
+    final timestamp = now ?? clock.now();
     final timestampSeconds = timestamp.millisecondsSinceEpoch ~/ 1000;
 
     await transaction(() async {

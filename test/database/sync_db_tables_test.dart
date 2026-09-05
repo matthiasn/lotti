@@ -122,6 +122,33 @@ void main() {
       },
     );
 
+    test('outbox timestamp defaults are evaluated per insert', () async {
+      // `Constant(DateTime.now())` bakes the instant the table object was
+      // built into CREATE TABLE as a literal, so a row inserted without
+      // timestamps would carry the app-launch time. `currentDateAndTime`
+      // renders as a strftime expression SQLite evaluates on every insert.
+      final rows = await database
+          .customSelect(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'outbox'",
+          )
+          .get();
+      final ddl = rows.single.read<String>('sql');
+
+      expect(
+        ddl,
+        isNot(
+          matches(
+            RegExp(r'(created_at|updated_at) INTEGER NOT NULL DEFAULT \d'),
+          ),
+        ),
+      );
+      expect(
+        RegExp(r"strftime\('%s', CURRENT_TIMESTAMP\)").allMatches(ddl),
+        hasLength(2),
+      );
+    });
+
     test('can insert and retrieve a QueueMarkers row', () async {
       const roomId = '!marker-room:example.org';
 
