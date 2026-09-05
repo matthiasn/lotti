@@ -55,7 +55,7 @@ void main() {
     const stored = ProjectTaskListOptions(
       groupBy: ProjectTaskGroupBy.status,
       sortBy: ProjectTaskSortBy.title,
-      showDone: true,
+      keepDoneInGroups: true,
     );
     when(
       () => mocks.settingsDb.itemByKey(key),
@@ -86,7 +86,7 @@ void main() {
   test('update applies at once and persists as JSON', () async {
     const chosen = ProjectTaskListOptions(
       groupBy: ProjectTaskGroupBy.dueWindow,
-      showDone: true,
+      keepDoneInGroups: true,
     );
 
     container

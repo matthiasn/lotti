@@ -4618,6 +4618,7 @@
   "projectsUnavailableCategory": "Otillgänglig kategori",
   "projectTargetDateLabel": "Måldatum",
   "projectTaskProgressNone": "Inga uppgifter",
+  "projectTasksDoneInGroups": "Behåll klara uppgifter i sina grupper",
   "projectTasksDueLater": "Senare",
   "projectTasksDueNone": "Utan förfallodatum",
   "projectTasksDueOverdue": "Försenade",
@@ -4637,7 +4638,6 @@
     }
   },
   "projectTasksGroupDone": "Klar",
-  "projectTasksShowDone": "Visa klara uppgifter",
   "projectTasksSortActionability": "Angelägenhet",
   "projectTasksSortAndGroup": "Sortera och gruppera",
   "projectTasksSortBy": "Sortera efter",

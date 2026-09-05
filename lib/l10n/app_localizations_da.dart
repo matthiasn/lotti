@@ -10582,6 +10582,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectTaskProgressNone => 'Ingen opgaver';
 
   @override
+  String get projectTasksDoneInGroups =>
+      'Behold færdige opgaver i deres grupper';
+
+  @override
   String get projectTasksDueLater => 'Senere';
 
   @override
@@ -10624,9 +10628,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get projectTasksGroupDone => 'Færdig';
-
-  @override
-  String get projectTasksShowDone => 'Vis færdige opgaver';
 
   @override
   String get projectTasksSortActionability => 'Handlingsbehov';

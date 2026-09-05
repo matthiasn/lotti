@@ -116,9 +116,10 @@ class _ProjectTaskListOptionsSheetContentState
             ),
             child: DesignSystemFilterToggleRow(
               key: const ValueKey('project-tasks-show-done'),
-              label: messages.projectTasksShowDone,
-              value: _options.showDone,
-              onChanged: (value) => _apply(_options.copyWith(showDone: value)),
+              label: messages.projectTasksDoneInGroups,
+              value: _options.keepDoneInGroups,
+              onChanged: (value) =>
+                  _apply(_options.copyWith(keepDoneInGroups: value)),
             ),
           ),
         ],

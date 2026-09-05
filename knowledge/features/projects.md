@@ -405,7 +405,7 @@ or presents the project's own modification time as report freshness.
 `ProjectTasksSliverPanel` no longer renders one flat list. The pure model in
 `ui/model/project_task_groups.dart` turns the record's task summaries into
 `ProjectTaskGroup`s according to a `ProjectTaskListOptions` (grouping, sort
-key, whether done tasks stay in their groups):
+key, whether finished tasks stay in their groups):
 
 | Group by | Order of groups | Header |
 |---|---|---|
@@ -415,9 +415,13 @@ key, whether done tasks stay in their groups):
 | due window | overdue, this week, later, no due date | the window |
 | none | one header-less group | — |
 
-With `showDone` off (the default) done tasks leave their groups for one
-trailing `ProjectTaskDoneKey` group, which starts collapsed; with it on they
-sort among their peers. Within a group the sort key applies — actionability
+With `keepDoneInGroups` off (the default) finished tasks — done or rejected,
+the two terminal statuses — leave their groups for one trailing
+`ProjectTaskDoneKey` group, which starts collapsed; with it on they sort among
+their peers. Only the due-window grouping depends on the date, so the panel
+keeps a timer for local midnight while that grouping is active and re-reads
+the clock when it fires, rather than waiting for an unrelated rebuild to move
+a task from "This week" to "Overdue". Within a group the sort key applies — actionability
 (the same `compareTasksByActionability` the record provider uses for its
 rollups), created, due date, estimate, priority, recently updated or title —
 and every comparison breaks ties on title then id, so the result never depends

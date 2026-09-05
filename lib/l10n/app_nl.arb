@@ -4617,6 +4617,7 @@
   "projectsUnavailableCategory": "Niet-beschikbare categorie",
   "projectTargetDateLabel": "Streefdatum",
   "projectTaskProgressNone": "Geen taken",
+  "projectTasksDoneInGroups": "Afgeronde taken in hun groepen laten",
   "projectTasksDueLater": "Later",
   "projectTasksDueNone": "Geen deadline",
   "projectTasksDueOverdue": "Te laat",
@@ -4636,7 +4637,6 @@
     }
   },
   "projectTasksGroupDone": "Klaar",
-  "projectTasksShowDone": "Afgeronde taken tonen",
   "projectTasksSortActionability": "Urgentie",
   "projectTasksSortAndGroup": "Sorteren en groeperen",
   "projectTasksSortBy": "Sorteren op",

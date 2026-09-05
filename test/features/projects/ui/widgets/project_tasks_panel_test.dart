@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -409,7 +410,7 @@ void main() {
             now: now,
             options: const ProjectTaskListOptions(
               groupBy: ProjectTaskGroupBy.none,
-              showDone: true,
+              keepDoneInGroups: true,
             ),
           ),
         ),
@@ -539,6 +540,45 @@ void main() {
       await tester.pump();
       expect(find.byTooltip('Add task'), findsNothing);
       expect(find.text('Add task'), findsNothing);
+    });
+
+    testWidgets('due-window groups move on at local midnight', (
+      tester,
+    ) async {
+      final task = makeTestTask(
+        id: 'due',
+        title: 'Feed the penguins',
+        createdAt: DateTime(2026, 9),
+      );
+      final dueToday = makeTestTaskSummary(
+        task: task.copyWith(
+          data: task.data.copyWith(due: DateTime(2026, 9, 5, 8)),
+        ),
+      );
+      final beforeMidnight = DateTime(2026, 9, 5, 23, 59);
+      await withClock(Clock.fixed(DateTime(2026, 9, 6, 0, 1)), () async {
+        await tester.pumpWidget(
+          wrapSliver(
+            ProjectTasksSliverPanel(
+              record: makeTestProjectRecord(
+                highlightedTaskSummaries: [dueToday],
+              ),
+              now: beforeMidnight,
+              options: const ProjectTaskListOptions(
+                groupBy: ProjectTaskGroupBy.dueWindow,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.text('This week'), findsOneWidget);
+        expect(find.text('Overdue'), findsNothing);
+
+        await tester.pump(const Duration(minutes: 1, seconds: 2));
+
+        expect(find.text('Overdue'), findsOneWidget);
+        expect(find.text('This week'), findsNothing);
+      });
     });
 
     testWidgets('forwards row taps to onTaskTap with the tapped summary', (

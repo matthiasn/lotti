@@ -4618,6 +4618,7 @@
   "projectsUnavailableCategory": "Utilgængelig kategori",
   "projectTargetDateLabel": "Måldato",
   "projectTaskProgressNone": "Ingen opgaver",
+  "projectTasksDoneInGroups": "Behold færdige opgaver i deres grupper",
   "projectTasksDueLater": "Senere",
   "projectTasksDueNone": "Ingen forfaldsdato",
   "projectTasksDueOverdue": "Overskredet",
@@ -4637,7 +4638,6 @@
     }
   },
   "projectTasksGroupDone": "Færdig",
-  "projectTasksShowDone": "Vis færdige opgaver",
   "projectTasksSortActionability": "Handlingsbehov",
   "projectTasksSortAndGroup": "Sortér og gruppér",
   "projectTasksSortBy": "Sortér efter",

@@ -10648,6 +10648,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get projectTaskProgressNone => 'Keine Aufgaben';
 
   @override
+  String get projectTasksDoneInGroups =>
+      'Erledigte Aufgaben in ihren Gruppen lassen';
+
+  @override
   String get projectTasksDueLater => 'Später';
 
   @override
@@ -10690,9 +10694,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get projectTasksGroupDone => 'Erledigt';
-
-  @override
-  String get projectTasksShowDone => 'Erledigte Aufgaben anzeigen';
 
   @override
   String get projectTasksSortActionability => 'Handlungsbedarf';

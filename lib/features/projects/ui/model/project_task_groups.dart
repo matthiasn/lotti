@@ -108,8 +108,8 @@ final class ProjectTaskAllKey extends ProjectTaskGroupKey {
   int get hashCode => id.hashCode;
 }
 
-/// The trailing group done tasks fold into while they are hidden from their
-/// own groups.
+/// The trailing group finished tasks fold into while they are kept out of
+/// their own groups.
 @immutable
 final class ProjectTaskDoneKey extends ProjectTaskGroupKey {
   const ProjectTaskDoneKey();
@@ -230,16 +230,21 @@ ProjectDueWindow projectDueWindow(DateTime? due, DateTime now) {
   return ProjectDueWindow.later;
 }
 
-bool _isDone(TaskSummary summary) => summary.task.data.status is TaskDone;
+/// Done and rejected are both terminal for the task subsystem, so both fold.
+bool _isClosed(TaskSummary summary) => switch (summary.task.data.status) {
+  TaskDone() || TaskRejected() => true,
+  _ => false,
+};
 
 /// Groups and orders a project's tasks the way [options] asks, relative to
 /// [now] for due windows.
 ///
 /// Groups come back in display order — newest month first, statuses by
 /// actionability, priorities highest first, due windows overdue first — and
-/// empty groups are omitted. With `showDone` off, done tasks leave their
-/// groups for one trailing [ProjectTaskDoneKey] group; with it on they sort
-/// among their peers. Grouping by nothing yields a single header-less group.
+/// empty groups are omitted. With `keepDoneInGroups` off, finished tasks —
+/// done or rejected — leave their groups for one trailing [ProjectTaskDoneKey]
+/// group; with it on they sort among their peers. Grouping by nothing yields a
+/// single header-less group.
 List<ProjectTaskGroup> groupProjectTasks(
   List<TaskSummary> summaries, {
   required ProjectTaskListOptions options,
@@ -248,7 +253,7 @@ List<ProjectTaskGroup> groupProjectTasks(
   final grouped = <ProjectTaskGroupKey, List<TaskSummary>>{};
   final done = <TaskSummary>[];
   for (final summary in summaries) {
-    if (!options.showDone && _isDone(summary)) {
+    if (!options.keepDoneInGroups && _isClosed(summary)) {
       done.add(summary);
       continue;
     }

@@ -10535,6 +10535,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectTaskProgressNone => 'No tasks';
 
   @override
+  String get projectTasksDoneInGroups => 'Keep done tasks in their groups';
+
+  @override
   String get projectTasksDueLater => 'Later';
 
   @override
@@ -10577,9 +10580,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectTasksGroupDone => 'Done';
-
-  @override
-  String get projectTasksShowDone => 'Show done tasks';
 
   @override
   String get projectTasksSortActionability => 'Actionability';

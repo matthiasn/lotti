@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
@@ -17,8 +20,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 ///
 /// Grouping and order come from [options] (creation month, newest first, by
 /// default); [onOptionsChanged] wires the header's "Sort and group" control
-/// and is omitted by read-only showcases. Done tasks fold into one trailing
-/// group that starts collapsed. The header survives a narrow pane, a phone
+/// and is omitted by read-only showcases. Finished tasks fold into one
+/// trailing group that starts collapsed. Due-window groups re-evaluate at
+/// local midnight while the panel stays mounted. The header survives a narrow pane, a phone
 /// and large text: the title truncates before anything overflows, and in the
 /// compact form (below [compactWidth], or at large text) the total estimate is
 /// dropped and Add task turns icon-only.
@@ -61,6 +65,52 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
   /// Group ids the user folded; the trailing Done group starts folded.
   final _collapsed = <String>{const ProjectTaskDoneKey().id};
 
+  /// The reference time for due windows: the host's [ProjectTasksSliverPanel.now]
+  /// until local midnight passes while the panel stays mounted, then the
+  /// clock's, so a task due yesterday moves to Overdue without waiting for an
+  /// unrelated rebuild.
+  late DateTime _now = widget.now;
+  Timer? _dayTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _armDayTimer();
+  }
+
+  @override
+  void didUpdateWidget(ProjectTasksSliverPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.now != widget.now) _now = widget.now;
+    if (oldWidget.now != widget.now ||
+        oldWidget.options.groupBy != widget.options.groupBy) {
+      _armDayTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _dayTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Only due windows depend on the date, so only that grouping keeps a
+  /// timer; it re-arms itself for the following midnight after firing.
+  void _armDayTimer() {
+    _dayTimer?.cancel();
+    _dayTimer = null;
+    if (widget.options.groupBy != ProjectTaskGroupBy.dueWindow) return;
+    final nextMidnight = DateTime(_now.year, _now.month, _now.day + 1);
+    _dayTimer = Timer(
+      nextMidnight.difference(_now) + const Duration(seconds: 1),
+      () {
+        if (!mounted) return;
+        setState(() => _now = clock.now());
+        _armDayTimer();
+      },
+    );
+  }
+
   void _toggle(ProjectTaskGroup group) {
     setState(() {
       if (!_collapsed.remove(group.key.id)) _collapsed.add(group.key.id);
@@ -74,10 +124,14 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
     final groups = groupProjectTasks(
       widget.record.highlightedTaskSummaries,
       options: widget.options,
-      now: widget.now,
+      now: _now,
     );
 
-    Widget divider() => Divider(height: 1, thickness: 1, color: border);
+    Widget divider() => Divider(
+      height: BorderWidths.hairline,
+      thickness: BorderWidths.hairline,
+      color: border,
+    );
 
     return DecoratedSliver(
       decoration: BoxDecoration(

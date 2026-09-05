@@ -17863,6 +17863,12 @@ abstract class AppLocalizations {
   /// **'No tasks'**
   String get projectTaskProgressNone;
 
+  /// No description provided for @projectTasksDoneInGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep done tasks in their groups'**
+  String get projectTasksDoneInGroups;
+
   /// No description provided for @projectTasksDueLater.
   ///
   /// In en, this message translates to:
@@ -17934,12 +17940,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get projectTasksGroupDone;
-
-  /// No description provided for @projectTasksShowDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Show done tasks'**
-  String get projectTasksShowDone;
 
   /// No description provided for @projectTasksSortActionability.
   ///

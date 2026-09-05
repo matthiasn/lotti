@@ -4144,6 +4144,7 @@
   "projectsUnavailableCategory": "Categorie indisponibilă",
   "projectTargetDateLabel": "Data țintă",
   "projectTaskProgressNone": "Nicio sarcină",
+  "projectTasksDoneInGroups": "Păstrați sarcinile finalizate în grupurile lor",
   "projectTasksDueLater": "Mai târziu",
   "projectTasksDueNone": "Fără scadență",
   "projectTasksDueOverdue": "Restante",
@@ -4163,7 +4164,6 @@
     }
   },
   "projectTasksGroupDone": "Finalizat",
-  "projectTasksShowDone": "Afișați sarcinile finalizate",
   "projectTasksSortActionability": "Urgență",
   "projectTasksSortAndGroup": "Sortare și grupare",
   "projectTasksSortBy": "Sortare după",

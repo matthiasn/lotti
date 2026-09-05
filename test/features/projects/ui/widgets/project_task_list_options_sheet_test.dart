@@ -35,7 +35,7 @@ void main() {
         const ProjectTaskListOptions(
           groupBy: ProjectTaskGroupBy.priority,
           sortBy: ProjectTaskSortBy.dueDate,
-          showDone: true,
+          keepDoneInGroups: true,
         ),
         (_) {},
       ),
@@ -47,7 +47,7 @@ void main() {
     expect(find.text('Recently updated'), findsOneWidget);
     expect(selected(tester, 'Creation month'), isFalse);
     expect(selected(tester, 'Due date'), isTrue);
-    expect(find.text('Show done tasks'), findsOneWidget);
+    expect(find.text('Keep done tasks in their groups'), findsOneWidget);
     // "Priority" appears once per section; the group-by one is selected.
     final priorityRows = tester
         .widgetList<DesignSystemSelectionRow>(
@@ -74,7 +74,7 @@ void main() {
 
     await pick('Status');
     await pick('Title');
-    await pick('Show done tasks');
+    await pick('Keep done tasks in their groups');
     await pick('Title');
 
     expect(applied, [
@@ -86,7 +86,7 @@ void main() {
       const ProjectTaskListOptions(
         groupBy: ProjectTaskGroupBy.status,
         sortBy: ProjectTaskSortBy.title,
-        showDone: true,
+        keepDoneInGroups: true,
       ),
     ]);
     expect(selected(tester, 'Status'), isTrue);

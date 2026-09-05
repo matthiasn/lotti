@@ -8,7 +8,7 @@ void main() {
       const options = ProjectTaskListOptions.defaults;
       expect(options.groupBy, ProjectTaskGroupBy.creationMonth);
       expect(options.sortBy, ProjectTaskSortBy.actionability);
-      expect(options.showDone, isFalse);
+      expect(options.keepDoneInGroups, isFalse);
     },
   );
 
@@ -16,14 +16,14 @@ void main() {
     const options = ProjectTaskListOptions(
       groupBy: ProjectTaskGroupBy.dueWindow,
       sortBy: ProjectTaskSortBy.title,
-      showDone: true,
+      keepDoneInGroups: true,
     );
 
     final restored = ProjectTaskListOptions.fromJson(options.toJson());
 
     expect(restored, options);
     expect(restored.hashCode, options.hashCode);
-    expect(restored, isNot(options.copyWith(showDone: false)));
+    expect(restored, isNot(options.copyWith(keepDoneInGroups: false)));
     expect(
       options.copyWith(groupBy: ProjectTaskGroupBy.none).groupBy,
       ProjectTaskGroupBy.none,
@@ -34,12 +34,12 @@ void main() {
     final restored = ProjectTaskListOptions.fromJson(const {
       'groupBy': 'byMoonPhase',
       'sortBy': 'priority',
-      'showDone': 'yes',
+      'keepDoneInGroups': 'yes',
     });
 
     expect(restored.groupBy, ProjectTaskGroupBy.creationMonth);
     expect(restored.sortBy, ProjectTaskSortBy.priority);
-    expect(restored.showDone, isFalse);
+    expect(restored.keepDoneInGroups, isFalse);
     expect(
       ProjectTaskListOptions.fromJson(const <String, dynamic>{}),
       ProjectTaskListOptions.defaults,
@@ -49,7 +49,7 @@ void main() {
   test('describes itself for logs', () {
     expect(
       ProjectTaskListOptions.defaults.toString(),
-      'ProjectTaskListOptions(creationMonth, actionability, showDone: false)',
+      'ProjectTaskListOptions(creationMonth, actionability, keepDoneInGroups: false)',
     );
   });
 }

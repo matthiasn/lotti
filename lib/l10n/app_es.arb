@@ -4144,6 +4144,7 @@
   "projectsUnavailableCategory": "Categoría no disponible",
   "projectTargetDateLabel": "Fecha objetivo",
   "projectTaskProgressNone": "No hay tareas",
+  "projectTasksDoneInGroups": "Mantener las tareas hechas en sus grupos",
   "projectTasksDueLater": "Más adelante",
   "projectTasksDueNone": "Sin fecha",
   "projectTasksDueOverdue": "Vencidas",
@@ -4163,7 +4164,6 @@
     }
   },
   "projectTasksGroupDone": "Hecho",
-  "projectTasksShowDone": "Mostrar tareas hechas",
   "projectTasksSortActionability": "Urgencia",
   "projectTasksSortAndGroup": "Ordenar y agrupar",
   "projectTasksSortBy": "Ordenar por",

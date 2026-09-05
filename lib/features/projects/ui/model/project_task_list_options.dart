@@ -22,7 +22,7 @@ class ProjectTaskListOptions {
   const ProjectTaskListOptions({
     this.groupBy = ProjectTaskGroupBy.creationMonth,
     this.sortBy = ProjectTaskSortBy.actionability,
-    this.showDone = false,
+    this.keepDoneInGroups = false,
   });
 
   /// Tolerant of unknown or missing values: a preference written by a newer
@@ -37,7 +37,7 @@ class ProjectTaskListOptions {
         defaults.groupBy,
       ),
       sortBy: pick(ProjectTaskSortBy.values, json['sortBy'], defaults.sortBy),
-      showDone: json['showDone'] == true,
+      keepDoneInGroups: json['keepDoneInGroups'] == true,
     );
   }
 
@@ -46,24 +46,24 @@ class ProjectTaskListOptions {
   final ProjectTaskGroupBy groupBy;
   final ProjectTaskSortBy sortBy;
 
-  /// `true` keeps done tasks inside their groups; `false` folds them into
-  /// one trailing group.
-  final bool showDone;
+  /// `true` keeps finished tasks (done or rejected) inside their groups;
+  /// `false` folds them into one collapsed trailing group so open work leads.
+  final bool keepDoneInGroups;
 
   ProjectTaskListOptions copyWith({
     ProjectTaskGroupBy? groupBy,
     ProjectTaskSortBy? sortBy,
-    bool? showDone,
+    bool? keepDoneInGroups,
   }) => ProjectTaskListOptions(
     groupBy: groupBy ?? this.groupBy,
     sortBy: sortBy ?? this.sortBy,
-    showDone: showDone ?? this.showDone,
+    keepDoneInGroups: keepDoneInGroups ?? this.keepDoneInGroups,
   );
 
   Map<String, dynamic> toJson() => {
     'groupBy': groupBy.name,
     'sortBy': sortBy.name,
-    'showDone': showDone,
+    'keepDoneInGroups': keepDoneInGroups,
   };
 
   @override
@@ -71,13 +71,13 @@ class ProjectTaskListOptions {
       other is ProjectTaskListOptions &&
       other.groupBy == groupBy &&
       other.sortBy == sortBy &&
-      other.showDone == showDone;
+      other.keepDoneInGroups == keepDoneInGroups;
 
   @override
-  int get hashCode => Object.hash(groupBy, sortBy, showDone);
+  int get hashCode => Object.hash(groupBy, sortBy, keepDoneInGroups);
 
   @override
   String toString() =>
       'ProjectTaskListOptions(${groupBy.name}, ${sortBy.name}, '
-      'showDone: $showDone)';
+      'keepDoneInGroups: $keepDoneInGroups)';
 }

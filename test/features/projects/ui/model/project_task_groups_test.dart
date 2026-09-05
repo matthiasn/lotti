@@ -27,6 +27,7 @@ void main() {
       reason: 'later',
     ),
     'done' => TaskStatus.done(id: 's', createdAt: at, utcOffset: 0),
+    'rejected' => TaskStatus.rejected(id: 's', createdAt: at, utcOffset: 0),
     _ => throw ArgumentError(kind),
   };
 
@@ -98,7 +99,28 @@ void main() {
       expect(groups.every((g) => g.hasHeader), isTrue);
     });
 
-    test('showDone keeps done tasks in their groups', () {
+    test('rejected tasks fold with done ones, in every grouping', () {
+      for (final groupBy in ProjectTaskGroupBy.values) {
+        final groups = groupProjectTasks(
+          [
+            summary('a', 'Open'),
+            summary('b', 'Rejected', state: 'rejected'),
+            summary('c', 'Done', state: 'done'),
+          ],
+          options: ProjectTaskListOptions(groupBy: groupBy),
+          now: now,
+        );
+        expect(groups.last.key, const ProjectTaskDoneKey(), reason: '$groupBy');
+        expect(titles(groups.last), ['Done', 'Rejected'], reason: '$groupBy');
+        expect(
+          groups.sublist(0, groups.length - 1).expand(titles),
+          ['Open'],
+          reason: '$groupBy',
+        );
+      }
+    });
+
+    test('keepDoneInGroups keeps done tasks in their groups', () {
       final groups = groupProjectTasks(
         [
           summary('a', 'Open', createdAt: DateTime(2026, 8, 3)),
@@ -109,7 +131,7 @@ void main() {
             state: 'done',
           ),
         ],
-        options: const ProjectTaskListOptions(showDone: true),
+        options: const ProjectTaskListOptions(keepDoneInGroups: true),
         now: now,
       );
 
@@ -330,6 +352,7 @@ void main() {
       'blocked',
       'onHold',
       'done',
+      'rejected',
     ]);
     final anyTask = glados.any.combine3(
       glados.any.int,
@@ -350,7 +373,7 @@ void main() {
       glados.any.choose(ProjectTaskSortBy.values),
       glados.any.bool,
       (ProjectTaskGroupBy g, ProjectTaskSortBy s, bool d) =>
-          ProjectTaskListOptions(groupBy: g, sortBy: s, showDone: d),
+          ProjectTaskListOptions(groupBy: g, sortBy: s, keepDoneInGroups: d),
     );
 
     /// The generator may repeat an id; the list a project holds never does.
@@ -385,18 +408,15 @@ void main() {
               lessThanOrEqualTo(0),
             );
           }
+          bool closed(TaskSummary s) =>
+              s.task.data.status is TaskDone ||
+              s.task.data.status is TaskRejected;
           if (group.key is ProjectTaskDoneKey) {
-            expect(options.showDone, isFalse);
-            expect(
-              group.tasks.every((s) => s.task.data.status is TaskDone),
-              isTrue,
-            );
+            expect(options.keepDoneInGroups, isFalse);
+            expect(group.tasks.every(closed), isTrue);
             expect(group, same(groups.last));
-          } else if (!options.showDone) {
-            expect(
-              group.tasks.any((s) => s.task.data.status is TaskDone),
-              isFalse,
-            );
+          } else if (!options.keepDoneInGroups) {
+            expect(group.tasks.any(closed), isFalse);
           }
         }
         expect(groups.where((g) => g.tasks.isEmpty), isEmpty);

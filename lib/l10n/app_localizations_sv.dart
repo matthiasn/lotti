@@ -10594,6 +10594,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectTaskProgressNone => 'Inga uppgifter';
 
   @override
+  String get projectTasksDoneInGroups =>
+      'Behåll klara uppgifter i sina grupper';
+
+  @override
   String get projectTasksDueLater => 'Senare';
 
   @override
@@ -10636,9 +10640,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get projectTasksGroupDone => 'Klar';
-
-  @override
-  String get projectTasksShowDone => 'Visa klara uppgifter';
 
   @override
   String get projectTasksSortActionability => 'Angelägenhet';

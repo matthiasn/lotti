@@ -6072,6 +6072,7 @@
   "projectsUnavailableCategory": "Unavailable category",
   "projectTargetDateLabel": "Target Date",
   "projectTaskProgressNone": "No tasks",
+  "projectTasksDoneInGroups": "Keep done tasks in their groups",
   "projectTasksDueLater": "Later",
   "projectTasksDueNone": "No due date",
   "projectTasksDueOverdue": "Overdue",
@@ -6091,7 +6092,6 @@
     }
   },
   "projectTasksGroupDone": "Done",
-  "projectTasksShowDone": "Show done tasks",
   "projectTasksSortActionability": "Actionability",
   "projectTasksSortAndGroup": "Sort and group",
   "projectTasksSortBy": "Sort by",

@@ -4151,6 +4151,7 @@
   "projectsUnavailableCategory": "Nedostupná kategorie",
   "projectTargetDateLabel": "Cílové datum",
   "projectTaskProgressNone": "Žádné úkoly",
+  "projectTasksDoneInGroups": "Nechat hotové úkoly v jejich skupinách",
   "projectTasksDueLater": "Později",
   "projectTasksDueNone": "Bez termínu",
   "projectTasksDueOverdue": "Po termínu",
@@ -4170,7 +4171,6 @@
     }
   },
   "projectTasksGroupDone": "Hotovo",
-  "projectTasksShowDone": "Zobrazit hotové úkoly",
   "projectTasksSortActionability": "Naléhavost",
   "projectTasksSortAndGroup": "Řadit a seskupit",
   "projectTasksSortBy": "Řadit podle",

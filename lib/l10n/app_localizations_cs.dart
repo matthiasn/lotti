@@ -10725,6 +10725,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectTaskProgressNone => 'Žádné úkoly';
 
   @override
+  String get projectTasksDoneInGroups =>
+      'Nechat hotové úkoly v jejich skupinách';
+
+  @override
   String get projectTasksDueLater => 'Později';
 
   @override
@@ -10768,9 +10772,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectTasksGroupDone => 'Hotovo';
-
-  @override
-  String get projectTasksShowDone => 'Zobrazit hotové úkoly';
 
   @override
   String get projectTasksSortActionability => 'Naléhavost';

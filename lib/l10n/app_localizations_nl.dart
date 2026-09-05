@@ -10601,6 +10601,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectTaskProgressNone => 'Geen taken';
 
   @override
+  String get projectTasksDoneInGroups => 'Afgeronde taken in hun groepen laten';
+
+  @override
   String get projectTasksDueLater => 'Later';
 
   @override
@@ -10643,9 +10646,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get projectTasksGroupDone => 'Klaar';
-
-  @override
-  String get projectTasksShowDone => 'Afgeronde taken tonen';
 
   @override
   String get projectTasksSortActionability => 'Urgentie';

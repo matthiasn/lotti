@@ -10785,6 +10785,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectTaskProgressNone => 'Nicio sarcină';
 
   @override
+  String get projectTasksDoneInGroups =>
+      'Păstrați sarcinile finalizate în grupurile lor';
+
+  @override
   String get projectTasksDueLater => 'Mai târziu';
 
   @override
@@ -10828,9 +10832,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectTasksGroupDone => 'Finalizat';
-
-  @override
-  String get projectTasksShowDone => 'Afișați sarcinile finalizate';
 
   @override
   String get projectTasksSortActionability => 'Urgență';
