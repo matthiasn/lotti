@@ -19,6 +19,9 @@ class LoggingService {
   final _dateFmt = DateFormat('yyyy-MM-dd');
   static const Duration _fileFlushInterval = Duration(milliseconds: 500);
   static const int _fileFlushLineThreshold = 40;
+  // Includes pending lines and payloads queued behind an active disk write.
+  // Error records bypass this routine-telemetry limit to retain diagnostics.
+  static const int _maxQueuedFileCharacters = 1024 * 1024;
   static const String _generalLogStem = 'lotti';
   static const String _syncLogStem = 'sync';
 
@@ -33,6 +36,8 @@ class LoggingService {
   final Map<String, List<String>> _pendingFileLinesByStem =
       <String, List<String>>{};
   final Map<String, Timer> _fileFlushTimers = <String, Timer>{};
+  final _queuedFileCharacters = <String, int>{};
+  final _droppedFileLines = <String, int>{};
 
   /// Seam for scheduling the buffered-flush timer. Defaults to the real
   /// [Timer] constructor; tests override it so the 500 ms flush path can be
@@ -165,7 +170,20 @@ class LoggingService {
     final pendingLines = _pendingFileLinesByStem.putIfAbsent(
       fileStem,
       () => <String>[],
-    )..add(line);
+    );
+    final queuedCharacters = _queuedFileCharacters[fileStem] ?? 0;
+    final lineCharacters = line.length + 1;
+    if (!forceFlush &&
+        queuedCharacters + lineCharacters > _maxQueuedFileCharacters) {
+      _droppedFileLines.update(
+        fileStem,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+    } else {
+      pendingLines.add(line);
+      _queuedFileCharacters[fileStem] = queuedCharacters + lineCharacters;
+    }
     final shouldFlushNow =
         forceFlush || pendingLines.length >= _fileFlushLineThreshold;
 
@@ -205,12 +223,23 @@ class LoggingService {
     bool forceFlush = false,
   }) async {
     final pendingLines = _pendingFileLinesByStem[fileStem];
-    if (pendingLines == null || pendingLines.isEmpty) {
+    final dropped = _droppedFileLines.remove(fileStem) ?? 0;
+    if ((pendingLines == null || pendingLines.isEmpty) && dropped == 0) {
       return;
     }
 
-    final lines = List<String>.from(pendingLines);
-    pendingLines.clear();
+    final lines = List<String>.of(pendingLines ?? const <String>[]);
+    final queuedCharacters = lines.fold<int>(
+      0,
+      (count, line) => count + line.length + 1,
+    );
+    pendingLines?.clear();
+    if (dropped > 0) {
+      lines.add(
+        '${DateTime.now().toIso8601String()} [WARN] logging: '
+        'routine buffer capacity exceeded dropped=$dropped',
+      );
+    }
 
     final currentDrain = _fileDrains[fileStem] ?? Future<void>.value();
     final nextDrain = currentDrain.then((_) async {
@@ -228,6 +257,14 @@ class LoggingService {
         );
       } catch (_) {
         // Swallow file-sink errors so logging never interferes with app flows.
+      } finally {
+        final remaining =
+            (_queuedFileCharacters[fileStem] ?? 0) - queuedCharacters;
+        if (remaining == 0) {
+          _queuedFileCharacters.remove(fileStem);
+        } else {
+          _queuedFileCharacters[fileStem] = remaining;
+        }
       }
     });
     _fileDrains[fileStem] = nextDrain;

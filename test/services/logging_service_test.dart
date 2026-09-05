@@ -765,6 +765,67 @@ void main() {
     File? findSyncLog() => _findLogFile(bufferedTempDocs, prefix: 'sync-');
 
     test(
+      'bounds queued routine payloads and retains errors under pressure',
+      () async {
+        final payload = 'x' * 10000;
+        for (var i = 0; i < 200; i++) {
+          bufferedLogging.captureFileLine('bounded', 'record-$i $payload');
+        }
+        bufferedLogging.captureFileLine(
+          'bounded',
+          'important failure',
+          forceFlush: true,
+        );
+        await bufferedLogging.flush();
+        final lines = _findLogFile(
+          bufferedTempDocs,
+          prefix: 'bounded-',
+        )!.readAsLinesSync();
+        final records = lines
+            .where((line) => line.startsWith('record-'))
+            .toList();
+        expect(records.length, greaterThanOrEqualTo(40));
+        expect(records.length, lessThan(200));
+        expect(records.first, 'record-0 $payload');
+        expect(lines, contains('important failure'));
+        expect(lines, contains(contains('dropped=${200 - records.length}')));
+
+        // Pressure has drained; future routine records must be admitted again.
+        bufferedLogging.captureFileLine('bounded', 'after drain');
+        await bufferedLogging.flush();
+        expect(
+          _findLogFile(
+            bufferedTempDocs,
+            prefix: 'bounded-',
+          )!.readAsLinesSync().last,
+          'after drain',
+        );
+      },
+    );
+
+    test(
+      'oversized routine line reports loss but oversized error survives',
+      () async {
+        final payload = 'x' * (2 * 1024 * 1024);
+        bufferedLogging.captureFileLine('oversized', payload);
+        await bufferedLogging.flush();
+        final file = _findLogFile(bufferedTempDocs, prefix: 'oversized-')!;
+        expect(file.lengthSync(), lessThan(1000));
+        expect(file.readAsLinesSync(), hasLength(1));
+        expect(file.readAsStringSync(), contains('dropped=1'));
+        expect(file.readAsStringSync(), isNot(contains(payload)));
+
+        bufferedLogging.captureFileLine('oversized', payload, forceFlush: true);
+        await bufferedLogging.flush();
+        expect(
+          file.readAsLinesSync().last == payload,
+          isTrue,
+          reason: 'the complete oversized error must survive the routine limit',
+        );
+      },
+    );
+
+    test(
       'single buffered line is flushed when the 500 ms flush timer fires',
       () async {
         // A lone, non-force info event neither hits the line threshold nor

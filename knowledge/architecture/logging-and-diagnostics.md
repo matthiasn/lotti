@@ -65,13 +65,15 @@ there is no separate registry to keep in step.
 flowchart TD
   Log["DomainLogger.log(domain, ...)"] --> Enabled{"domain flag enabled?"}
   Enabled -->|no| Drop["dropped"]
-  Enabled -->|non-sync| General["general app log for the day"]
+  Enabled -->|yes| RoutineRoute{"domain routes to the sync file?"}
+  RoutineRoute -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
+  RoutineRoute -->|no| General["general app log for the day"]
+  RoutineRoute -->|no| DomainLog["&lt;domain&gt;-YYYY-MM-DD.log"]
   Err["DomainLogger.error(...)"] --> General2["general app log + error-YYYY-MM-DD.log<br/>full text, force-flushed"]
   Err --> Safe["error-safe-YYYY-MM-DD.log<br/>no raw error, no stack trace<br/>message kept verbatim"]
-  Enabled -->|yes| PerDomain
   Err --> PerDomain{"domain routes to the sync file?"}
-  PerDomain -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
-  PerDomain -->|no| DomainLog["&lt;domain&gt;-YYYY-MM-DD.log"]
+  PerDomain -->|yes| SyncLog
+  PerDomain -->|no| DomainLog
 ```
 
 **An error reaches two to four files**, depending on its domain: the general log,
@@ -134,8 +136,11 @@ startup, so a toggle takes effect immediately rather than at next launch.
 `LoggingService` owns the shared file sink for general, sync, per-domain and
 safe-error files. Routine lines are buffered per file stem and flushed on a
 **500 ms** timer or after **40 lines**. Domain logging no longer creates a
-synchronous, force-flushed disk write for every event. Error lines bypass the
-timer and request a durable flush; per-file drains serialize appends and
+synchronous, force-flushed disk write for every event. Queued routine payloads
+are capped at 1,048,576 UTF-16 code units per file, including batches waiting
+behind active disk I/O. Excess routine records are omitted with a counted
+summary, and the budget is released after each write completes or fails.
+Error records bypass this limit and the timer and request a durable flush; per-file drains serialize appends and
 `LoggingService.flush()` waits for every destination during orderly shutdown.
 
 Files are named `<stem>-<yyyy-MM-dd>.log`, using the date at write time. In the
