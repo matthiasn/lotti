@@ -88,7 +88,7 @@ class _ProjectRecommendationsPanelState
     }
     if (!mounted) return;
     ref
-      ..invalidate(projectRecommendationsProvider(widget.projectId))
+      ..invalidate(projectNextStepsProvider(widget.projectId))
       ..invalidate(projectPendingChangeSetsProvider(widget.projectId));
     setState(() => _busy = false);
     if (failed) {
@@ -103,10 +103,10 @@ class _ProjectRecommendationsPanelState
   Widget build(BuildContext context) {
     final recommendations =
         ref
-            .watch(
-              projectRecommendationsProvider(widget.projectId),
-            )
-            .value ??
+            .watch(projectNextStepsProvider(widget.projectId))
+            .value
+            ?.pending
+            .toList() ??
         const <ProjectRecommendationEntity>[];
     final sets =
         ref

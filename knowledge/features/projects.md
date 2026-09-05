@@ -321,7 +321,7 @@ overlapping edits, task creation, or deletion.
 flowchart LR
   Report["Latest project-agent report"] --> Metrics["projectHealthMetricsFromReport"]
   Metrics --> HealthProv["projectHealthMetricsProvider"]
-  Recos["projectRecommendationsProvider"] --> UI
+  Recos["projectNextStepsProvider"] --> UI
   HealthProv --> UI["Unified project-agent summary card"]
 ```
 

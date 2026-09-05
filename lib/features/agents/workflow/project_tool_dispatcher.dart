@@ -323,20 +323,6 @@ class ProjectToolDispatcher {
   }
 
   @visibleForTesting
-  static TaskPriority? parseTaskPriority(Object? rawPriority) {
-    if (rawPriority == null) return TaskPriority.p2Medium;
-    if (rawPriority is! String) return null;
-
-    return switch (rawPriority.trim().toUpperCase()) {
-      'CRITICAL' || 'P0' => TaskPriority.p0Urgent,
-      'HIGH' || 'P1' => TaskPriority.p1High,
-      'MEDIUM' || 'P2' => TaskPriority.p2Medium,
-      'LOW' || 'P3' => TaskPriority.p3Low,
-      _ => null,
-    };
-  }
-
-  @visibleForTesting
   static ProjectStatus? parseProjectStatus(
     String rawStatus, {
     required String? reason,

@@ -37,8 +37,8 @@ void main() {
     mockRepository = MockAgentRepository();
     recommendations = MockProjectRecommendationService();
     when(
-      () => recommendations.currentRecommendations(any(), any()),
-    ).thenAnswer((_) async => []);
+      () => recommendations.currentRunSnapshot(any(), any()),
+    ).thenAnswer((_) async => const ProjectNextStepsSnapshot.empty());
     when(
       () => recommendations.migratePendingBatches(any(), any()),
     ).thenAnswer((_) async {});
@@ -160,18 +160,18 @@ void main() {
     });
   });
 
-  group('projectRecommendationsProvider', () {
-    test('returns empty list when no project agent exists', () async {
+  group('projectNextStepsProvider', () {
+    test('returns an empty snapshot when no project agent exists', () async {
       final container = createProjectAgentContainer(
         projectId: 'project-001',
-        listenTo: projectRecommendationsProvider('project-001'),
+        listenTo: projectNextStepsProvider('project-001'),
       );
 
       final result = await container.read(
-        projectRecommendationsProvider('project-001').future,
+        projectNextStepsProvider('project-001').future,
       );
 
-      expect(result, isEmpty);
+      expect(result.isEmpty, isTrue);
       verifyNever(
         () => mockRepository.getEntitiesByAgentId(
           any(),
@@ -182,19 +182,19 @@ void main() {
     });
 
     test(
-      'returns empty list when project agent is not an identity entity',
+      'returns an empty snapshot when project agent is not an identity entity',
       () async {
         final container = createProjectAgentContainer(
           projectId: 'project-001',
           agent: makeTestState(),
-          listenTo: projectRecommendationsProvider('project-001'),
+          listenTo: projectNextStepsProvider('project-001'),
         );
 
         final result = await container.read(
-          projectRecommendationsProvider('project-001').future,
+          projectNextStepsProvider('project-001').future,
         );
 
-        expect(result, isEmpty);
+        expect(result.isEmpty, isTrue);
         verifyNever(
           () => mockRepository.getEntitiesByAgentId(
             any(),
@@ -206,7 +206,7 @@ void main() {
     );
 
     test(
-      'returns active project recommendations ordered for display',
+      'passes the newest run snapshot through for display',
       () async {
         final agent = makeTestIdentity();
         final updateController = StreamController<Set<String>>.broadcast();
@@ -238,27 +238,35 @@ void main() {
           priority: 'MEDIUM',
         );
         when(
-          () => recommendations.currentRecommendations(
+          () => recommendations.currentRunSnapshot(
             agent.agentId,
             'project-001',
           ),
-        ).thenAnswer((_) async => [olderActive, secondInBatch, firstInBatch]);
+        ).thenAnswer(
+          (_) async => ProjectNextStepsSnapshot(
+            steps: [firstInBatch, secondInBatch, olderActive],
+            runCreatedAt: DateTime(2024, 3, 16, 9),
+          ),
+        );
 
         final container = createProjectAgentContainer(
           projectId: 'project-001',
           agent: agent,
           updateController: updateController,
-          listenTo: projectRecommendationsProvider('project-001'),
+          listenTo: projectNextStepsProvider('project-001'),
         );
 
         final result = await container.read(
-          projectRecommendationsProvider('project-001').future,
+          projectNextStepsProvider('project-001').future,
         );
 
-        expect(result, hasLength(3));
-        expect(result[0].id, 'pr-first');
-        expect(result[1].id, 'pr-second');
-        expect(result[2].id, 'pr-older');
+        expect(
+          result.steps.map((step) => step.id),
+          ['pr-first', 'pr-second', 'pr-older'],
+          reason: 'The service owns the order; the provider passes it through.',
+        );
+        expect(result.runCreatedAt, DateTime(2024, 3, 16, 9));
+        expect(result.pending.map((step) => step.id), contains('pr-older'));
       },
     );
   });
@@ -338,6 +346,30 @@ void main() {
 
       expect(service, isA<ProjectRecommendationService>());
     });
+
+    test(
+      'undoing a created task soft-deletes it through the journal',
+      () async {
+        final journal = MockJournalRepository();
+        when(
+          () => journal.deleteJournalEntity('task-1'),
+        ).thenAnswer((_) async => true);
+        final container = ProviderContainer(
+          overrides: [
+            agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+            maybeUpdateNotificationsProvider.overrideWith((ref) => null),
+            journalRepositoryProvider.overrideWithValue(journal),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final service = container.read(projectRecommendationServiceProvider);
+
+        expect(await service.taskRemover!('task-1'), isTrue);
+        verify(() => journal.deleteJournalEntity('task-1')).called(1);
+      },
+    );
   });
 
   group('selfTargetedPendingChangeSetsProvider', () {
