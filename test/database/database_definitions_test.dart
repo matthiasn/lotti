@@ -592,6 +592,47 @@ void main() {
 
     group('insertLabel error handling -', () {
       test(
+        'background SQLite extended FK errors remain sync-tolerant',
+        () async {
+          final remoteDb = JournalDb(
+            overriddenFilename: 'remote-labels.sqlite',
+            readPool: 0,
+            documentsDirectoryProvider: () async => testDirectory,
+            tempDirectoryProvider: () async => testDirectory,
+          );
+          try {
+            final entry = buildJournalEntry(
+              id: 'remote-fk-entry',
+              timestamp: DateTime(2024, 12, 2, 9),
+              text: 'Synthetic sync entry',
+            );
+            await remoteDb.upsertJournalDbEntity(toDbEntity(entry));
+            DevLogger.clear();
+            await remoteDb.insertLabel(entry.meta.id, 'not-yet-synced');
+            expect(
+              await remoteDb.labeledForJournal(entry.meta.id).get(),
+              isEmpty,
+            );
+            expect(
+              DevLogger.capturedLogs.any(
+                (message) => message.contains('insertLabel failed'),
+              ),
+              isTrue,
+            );
+            // A remote SQL error must still propagate rather than being treated
+            // as an out-of-order label definition.
+            await remoteDb.customStatement('DROP TABLE labeled');
+            await expectLater(
+              remoteDb.insertLabel(entry.meta.id, 'not-yet-synced'),
+              throwsA(anything),
+            );
+          } finally {
+            await remoteDb.close();
+          }
+        },
+      );
+
+      test(
         'missing label definition (FK violation) is tolerated and logged',
         () async {
           final base = DateTime(2024, 12, 2, 9);

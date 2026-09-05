@@ -1302,6 +1302,63 @@ void main() {
       },
     );
 
+    test('defers an own reserved counter until its payload is bound', () async {
+      const request = SyncBackfillRequest(
+        entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 3)],
+        requesterId: requesterId,
+      );
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 3,
+        logItem: _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.reserved,
+        ),
+      );
+      await handler.handleBackfillRequest(request);
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      verifyNever(
+        () => mockSequenceService.markOwnCounterUnresolvable(
+          hostId: any(named: 'hostId'),
+          counter: any(named: 'counter'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
+
+      // A later successful binding must be answerable immediately. Deferring
+      // the reservation must not start the successful-response cooldown.
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 3,
+        logItem: _createLogItem(aliceHostId, 3, entryId: 'reserved-payload'),
+      );
+      when(
+        () => mockJournalDb.journalEntityById('reserved-payload'),
+      ).thenAnswer(
+        (_) async => _createJournalEntry(
+          'reserved-payload',
+          vectorClock: const VectorClock({aliceHostId: 3}),
+        ),
+      );
+      await handler.handleBackfillRequest(request);
+      verify(
+        () => mockOutboxService.enqueueMessage(
+          any(
+            that: isA<SyncJournalEntity>().having(
+              (message) => message.id,
+              'id',
+              'reserved-payload',
+            ),
+          ),
+        ),
+      ).called(1);
+    });
+
     test('sends unresolvable when own counter not in sequence log', () async {
       // Request for Alice's counter (our own) - we can't find it
       // Only we can answer for our own counters, so send unresolvable

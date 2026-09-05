@@ -114,6 +114,10 @@ Startup reconciliation retries `burnPending` rows by enqueueing the durable
 deliberately does **not** terminalize plain `reserved` rows: a crash may have
 left a real local payload behind before outbox logging ran, and burning it would
 destroy recoverable data.
+Backfill replies preserve the same distinction: an own-host `reserved` row is
+deferred without sending an unresolvable marker or starting a successful-reply
+cooldown. Once its payload binding succeeds, the next request can send it.
+
 
 Local persistence records the exact `(host, counter, entry, payload type)`
 binding immediately after its data commit. The outbox records it again as a
