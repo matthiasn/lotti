@@ -178,7 +178,9 @@ void main() {
   /// Builds the service and waits for the constructor's fire-and-forget
   /// `initialize` to finish, so channel assertions are not racing it.
   Future<NotificationService> buildService() async {
-    final service = NotificationService();
+    final service = NotificationService(
+      timezoneLookup: () async => tz.local.name,
+    );
     await service.initialized;
     return service;
   }
@@ -869,6 +871,30 @@ void main() {
         );
       });
     }
+
+    test('uses the device lookup independently of the process zone', () async {
+      _usePlatform(TargetPlatform.iOS);
+      final service = NotificationService(
+        timezoneLookup: () async => 'Asia/Tokyo',
+      );
+      await service.initialized;
+      await withClock(
+        Clock.fixed(DateTime.utc(2024)),
+        () => service.scheduleNotification(
+          title: 'Meditate',
+          body: 'Daily meditation',
+          notifyAt: DateTime(2024, 3, 15, 7, 45),
+          notificationId: 42,
+          showOnMobile: true,
+          showOnDesktop: false,
+        ),
+      );
+      final args = channel.argsOf('zonedSchedule');
+      final scheduled = DateTime.parse(
+        args['scheduledDateTimeISO8601']! as String,
+      );
+      expect(scheduled.toUtc(), DateTime.utc(2024, 3, 14, 22, 45));
+    });
 
     for (final date in [
       DateTime(2024, 3, 31, 7, 45),

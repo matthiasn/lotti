@@ -118,10 +118,17 @@ class NotificationLocationResolver {
 }
 
 class NotificationService {
-  NotificationService({AppLocalizations Function()? messages})
-    : _messages = messages ?? deviceMessages {
+  NotificationService({
+    AppLocalizations Function()? messages,
+    Future<String> Function()? timezoneLookup,
+  }) : _messages = messages ?? deviceMessages,
+       _timezoneLookup = timezoneLookup ?? getLocalTimezone {
     initialized = _initializePlugin();
   }
+
+  /// Resolves the device IANA zone; injectable to exercise DST independently
+  /// of the host timezone.
+  final Future<String> Function() _timezoneLookup;
 
   int badgeCount = 0;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -511,7 +518,7 @@ class NotificationService {
     );
 
     if (alertAtTime != null) {
-      final location = _resolveLocation(await getLocalTimezone());
+      final location = _resolveLocation(await _timezoneLookup());
       final now = TZDateTime.from(clock.now(), location);
       // Construct a calendar date: adding 24 hours can skip or repeat a day
       // when daylight saving time changes.
@@ -565,7 +572,7 @@ class NotificationService {
 
     await _requestPermissions();
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
-    final location = _resolveLocation(await getLocalTimezone());
+    final location = _resolveLocation(await _timezoneLookup());
 
     final scheduledDate = TZDateTime(
       location,
@@ -608,7 +615,7 @@ class NotificationService {
 
     await _requestPermissions();
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
-    final location = _resolveLocation(await getLocalTimezone());
+    final location = _resolveLocation(await _timezoneLookup());
     final scheduledDate = TZDateTime.from(notifyAt, location);
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
