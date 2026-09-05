@@ -31,6 +31,15 @@ void main() {
     expect((window.count, window.average, window.worst), (0, 0, 0));
     window.add(16);
     expect((window.count, window.average, window.worst), (1, 16, 16));
-    expect(() => PlazaFrameWindow(capacity: 0), throwsArgumentError);
+    for (final capacity in [0, -1]) {
+      expect(
+        () => PlazaFrameWindow(capacity: capacity),
+        throwsA(
+          isA<ArgumentError>()
+              .having((error) => error.name, 'name', 'capacity')
+              .having((error) => error.invalidValue, 'invalidValue', capacity),
+        ),
+      );
+    }
   });
 }

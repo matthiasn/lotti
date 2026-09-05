@@ -117,7 +117,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   static final bool _traceMode = Platform.environment['PLAZA_TRACE'] == '1';
 
   /// The harness owns the frame pacing: the scene view does not tick on
-  /// its own, a ticker here paints at most [_frameRate] frames a second
+  /// its own; the pacer paints at most [_frameRate] frames a second
   /// (the benchmark and the tour paint on every vsync). Every painted
   /// frame runs [_onTick] first.
   PlazaFrameRate _frameRate = PlazaFrameRate.fromEnvironment(
@@ -128,10 +128,10 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   Duration? _lastPaint;
   final ValueNotifier<int> _frame = ValueNotifier(0);
 
-  /// Movement keeps the display's rate on `auto` for this long after it
-  /// stops, so a coast to a halt is smooth.
+  /// Movement and input keep the display's rate on `auto` for this long,
+  /// so a coast to a halt and direct widget interaction stay smooth.
   static const _movingHold = 0.6;
-  double _movingUntil = 0;
+  double _movingUntil = _movingHold;
 
   /// Frames the engine produced since the stats were last published,
   /// counted from engine frame timings: the number that shows whether
@@ -216,7 +216,10 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       onFrame: _onPace,
       cap: () => _mode.scripted
           ? null
-          : _frameRate.capFor(moving: _moving || _elapsed < _movingUntil),
+          : _frameRate.capFor(
+              moving: _moving || _elapsed < _movingUntil,
+              activeSurface: _lod.stats.live > 0,
+            ),
     );
     if (WidgetsBinding.instance.lifecycleState == null ||
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
@@ -259,6 +262,12 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     _lastPaint = elapsed;
     _onTick(elapsed, dt);
     _frame.value++;
+  }
+
+  /// Cancels the idle wait and lets interaction settle at display cadence.
+  void _wakeForInput() {
+    _movingUntil = _elapsed + _movingHold;
+    _pacer?.requestFrame();
   }
 
   @override
@@ -348,7 +357,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void _flyTo(CameraPose pose, String label, {bool push = true}) {
     if (push) _back.add(_camera.pose);
     _camera.flyTo(pose);
-    _pacer?.requestFrame();
+    _wakeForInput();
     _showToast(label);
   }
 
@@ -443,7 +452,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
           ? KeyEventResult.handled
           : KeyEventResult.ignored;
     }
-    _pacer?.requestFrame();
+    _wakeForInput();
     final key = event.logicalKey;
     if (key == LogicalKeyboardKey.slash) {
       setState(() => _searchOpen = true);
@@ -472,14 +481,14 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   void _onPointerDown(PointerDownEvent event) {
     if (_mode.scripted) return;
     _pointer.down(event, _elapsed);
-    _pacer?.requestFrame();
+    _wakeForInput();
   }
 
   void _onPointerMove(PointerMoveEvent event) {
     final delta = _pointer.move(event);
     if (delta != null) {
       _camera.addLookDelta(delta.dx, delta.dy);
-      _pacer?.requestFrame();
+      _wakeForInput();
     }
   }
 
@@ -691,7 +700,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
               frameRate: _frameRate,
               onFrameRateChanged: (rate) {
                 setState(() => _frameRate = rate);
-                _pacer?.requestFrame();
+                _wakeForInput();
               },
               showDebug: _showDebug,
               onShowDebugChanged: (show) => setState(() => _showDebug = show),

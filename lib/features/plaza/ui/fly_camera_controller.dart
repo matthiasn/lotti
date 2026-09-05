@@ -99,11 +99,13 @@ class FlyCameraController {
   /// flight, if any, is replaced.
   /// From one stop on the ground to another the flight follows the street
   /// network; a climb, a dive or a world without a street takes the direct
-  /// line. Both are swept over every solid on the way.
+  /// line. A heading change at the current position stays in place.
+  /// Both travel paths are swept over every solid on the way.
   Flight flyTo(CameraPose target) {
     final network = _network;
     final onGround = _pose.y <= groundCeiling && target.y <= groundCeiling;
-    final flight = network != null && onGround
+    final travels = _pose.distanceTo(target) > 0;
+    final flight = network != null && onGround && travels
         ? Flight.route(
             _pose,
             target,

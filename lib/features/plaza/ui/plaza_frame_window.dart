@@ -4,8 +4,11 @@ import 'dart:typed_data';
 /// A bounded frame-time window: insertion overwrites one sample instead of
 /// shifting a list. Aggregate stats are read only when the HUD is published.
 class PlazaFrameWindow {
-  PlazaFrameWindow({int capacity = 120}) : _samples = Float64List(capacity) {
+  PlazaFrameWindow({int capacity = 120}) : _samples = _allocate(capacity);
+
+  static Float64List _allocate(int capacity) {
     if (capacity < 1) throw ArgumentError.value(capacity, 'capacity');
+    return Float64List(capacity);
   }
 
   final Float64List _samples;

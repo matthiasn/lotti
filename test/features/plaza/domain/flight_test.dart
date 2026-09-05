@@ -41,6 +41,90 @@ void main() {
 
   double seconds(Flight f) => f.duration.inMicroseconds / 1e6;
 
+  test('turning speed is bounded across departures, corners and arrivals', () {
+    final flights = [
+      Flight.plan(a, const CameraPose(x: 50, y: 2.2, z: 0, yaw: 0)),
+      Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: -100, yaw: 0)),
+      Flight.plan(a, const CameraPose(x: 1, y: 2.2, z: 0, yaw: 3, pitch: -1)),
+      Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 0, yaw: 0, pitch: -1)),
+      Flight.plan(
+        const CameraPose(x: 0, y: 2.2, z: 0, yaw: 3.1),
+        const CameraPose(x: 1, y: 2.2, z: 0, yaw: -3.1),
+      ),
+      Flight.route(
+        a,
+        const CameraPose(x: 50, y: 2.2, z: 50, yaw: 2.5, pitch: -0.5),
+        via: const [(0.0, 0.0), (50.0, 0.0), (50.0, 50.0)],
+      ),
+    ];
+    for (final flight in flights) {
+      final steps = (seconds(flight) * 120).ceil();
+      final dt = seconds(flight) / steps;
+      var previous = flight.poseAt(0);
+      var maxYaw = 0.0;
+      var maxPitch = 0.0;
+      for (var step = 1; step <= steps; step++) {
+        final pose = flight.poseAt(step / steps);
+        final yaw = pose.yaw - previous.yaw;
+        final turn = math.atan2(math.sin(yaw), math.cos(yaw)).abs();
+        maxYaw = math.max(maxYaw, turn / dt);
+        maxPitch = math.max(maxPitch, (pose.pitch - previous.pitch).abs() / dt);
+        previous = pose;
+      }
+      expect(maxYaw, lessThanOrEqualTo(math.pi / 4 + 1e-5));
+      expect(maxPitch, lessThanOrEqualTo(math.pi / 6 + 1e-5));
+    }
+  });
+
+  test('turning in place takes time and still lands exactly', () {
+    final flight = Flight.plan(
+      a,
+      const CameraPose(x: 0, y: 2.2, z: 0, yaw: math.pi, pitch: -0.6),
+    );
+    expect(seconds(flight), greaterThanOrEqualTo(4));
+    final first = flight.advance(const Duration(seconds: 1));
+    expect(flight.done, isFalse);
+    expect((first.x, first.y, first.z), (a.x, a.y, a.z));
+    expect(first.yaw.abs(), lessThanOrEqualTo(math.pi / 4));
+    final last = flight.advance(const Duration(seconds: 30));
+    expect(flight.done, isTrue);
+    expect(math.cos(last.yaw), closeTo(-1, 1e-9));
+    expect(last.pitch, closeTo(-0.6, 1e-9));
+  });
+
+  test('a routed turn in place also respects rotation time', () {
+    final flight = Flight.route(
+      a,
+      const CameraPose(x: 0, y: 2.2, z: 0, yaw: math.pi, pitch: -0.6),
+      via: const [],
+    );
+    expect(seconds(flight), greaterThanOrEqualTo(4));
+    expect(flight.poseAt(0).yaw, 0);
+    expect(
+      flight.advance(const Duration(seconds: 1)).yaw.abs(),
+      lessThanOrEqualTo(math.pi / 4),
+    );
+    expect(flight.done, isFalse);
+    final last = flight.advance(const Duration(seconds: 30));
+    expect(math.cos(last.yaw), closeTo(-1, 1e-9));
+    expect(last.pitch, closeTo(-0.6, 1e-9));
+    expect(flight.done, isTrue);
+  });
+
+  test(
+    'an unchanged pose completes immediately without invalid coordinates',
+    () {
+      final flight = Flight.plan(a, a);
+      expect(flight.duration, Duration.zero);
+      expect(flight.done, isTrue);
+      final pose = flight.advance(Duration.zero);
+      expect(
+        (pose.x, pose.y, pose.z, pose.yaw, pose.pitch),
+        (a.x, a.y, a.z, a.yaw, a.pitch),
+      );
+    },
+  );
+
   test('a long flight ramps up, cruises at the direct speed, ramps down', () {
     final f = Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 1000, yaw: 0));
     expect(f.cruiseSpeed, Flight.directSpeed);
@@ -395,7 +479,14 @@ void main() {
       expect(f.length, closeTo(hop + 50 + 50 + hop, 1e-9));
       expect(f.cruiseSpeed, Flight.streetSpeed);
       expect(f.rampTime, Flight.rampSeconds);
-      expect(seconds(f), closeTo(f.length / 10 + 1.6, 1e-6));
+      // Departure, corner and arrival turns add time to the base profile.
+      expect(seconds(f), greaterThan(f.length / 10 + 1.6));
+      final midStreet = timeAt(f, 30);
+      final dt = 0.01 / seconds(f);
+      expect(
+        (f.distanceAt(midStreet + dt) - f.distanceAt(midStreet - dt)) / 0.02,
+        closeTo(Flight.streetSpeed, 1e-6),
+      );
       for (final (x, z) in via) {
         expect(visits(f, x, z), isTrue, reason: '$x, $z');
       }

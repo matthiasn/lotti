@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/plaza/ui/billboard_widget.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
@@ -11,8 +12,8 @@ import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 /// Which range a facade is drawn for.
 enum FacadeVariant {
-  /// Street range, captured: category bar, big title, cover art, state
-  /// chip, light bar. Nothing that cannot be read at 100 m.
+  /// Street range, captured: a photo-led poster with title and state chip.
+  /// The cover stays visible even on short ground-floor panels.
   sign,
 
   /// Shopfront range, live: everything, with working checkboxes and OPEN.
@@ -21,10 +22,10 @@ enum FacadeVariant {
 
 /// The signage on one building's street-facing wall.
 ///
-/// Laid out in world metres scaled by [pxPerMeter], so the type reads the
-/// same on a 5 m shop and a 15 m tower: the title is roughly a tenth of the
-/// wall's width tall, the interactive strip sits at the bottom where a 2.2 m
-/// walker looks, and the progress light bar runs along the base.
+/// The static sign uses the billboard poster layout with cover art behind
+/// its headline. After activation, the live layout uses world metres scaled
+/// by [pxPerMeter], with checklist controls near the bottom where a walker
+/// looks. The progress light bar is separate scene geometry.
 class FacadeWidget extends StatelessWidget {
   const FacadeWidget({
     required this.task,
@@ -57,22 +58,32 @@ class FacadeWidget extends StatelessWidget {
   /// Draws the teal focus ring (the faced building is the live one).
   final bool focused;
 
-  bool get _live => variant == FacadeVariant.live;
-
   @override
   Widget build(BuildContext context) {
+    if (variant == FacadeVariant.sign) {
+      return LayoutBuilder(
+        builder: (context, constraints) => BillboardWidget(
+          attention: attention,
+          widthMeters: widthMeters,
+          heightMeters: constraints.maxHeight / pxPerMeter,
+          pxPerMeter: pxPerMeter,
+          showNavigationHint: false,
+          onCoverChanged: onCoverChanged,
+        ),
+      );
+    }
     final t = ticks;
-    if (t == null) return _build(context, null);
+    if (t == null) return _buildLive(context, null);
     return ListenableBuilder(
       listenable: t,
-      builder: (context, _) => _build(context, t),
+      builder: (context, _) => _buildLive(context, t),
     );
   }
 
-  Widget _build(BuildContext context, ChecklistTicks? t) {
+  Widget _buildLive(BuildContext context, ChecklistTicks? t) {
     double m(double meters) => meters * pxPerMeter;
     final w = widthMeters;
-    var titleM = (0.1 * w).clamp(0.9, 2.0) * (_live ? 1 : 1.35);
+    var titleM = (0.1 * w).clamp(0.9, 2.0);
     // Never break a word in the middle of a wall: shrink the title until
     // its longest word fits the measure.
     final innerPx = (w - 2 * 0.08 * w) * pxPerMeter;
@@ -101,13 +112,11 @@ class FacadeWidget extends StatelessWidget {
     return Material(
       color: quiet
           ? const Color(0xFF0E0D16)
-          : _live
-          ? Color.lerp(
+          : Color.lerp(
               PlazaStyle.panel,
               PlazaStyle.lantern(attention.lantern),
               0.12,
-            )!
-          : PlazaStyle.panel,
+            )!,
       child: Container(
         foregroundDecoration: focused
             ? BoxDecoration(
@@ -120,37 +129,6 @@ class FacadeWidget extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // The category band belongs to the sign tier; a live wall
-                // has the state rim and the focus ring for its frame.
-                if (!_live)
-                  Container(
-                    height: m(0.4),
-                    color: quiet
-                        ? Color.lerp(
-                            PlazaStyle.categoryBright(task),
-                            const Color(0xFF07060B),
-                            0.6,
-                          )
-                        : PlazaStyle.categoryBright(task),
-                  ),
-                if (!_live)
-                  // Street range: the state is a marquee band at the top,
-                  // where the street cannot hide it, with its glyph.
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: m(chipM) * 0.4),
-                    color: chip.fill,
-                    child: Text(
-                      '${PlazaStyle.glyph(attention)}  ${chip.label}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: PlazaStyle.fontText,
-                        fontSize: m(chipM * 1.5),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: m(chipM) * 0.12,
-                        color: chip.ink,
-                      ),
-                    ),
-                  ),
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.all(pad),
@@ -179,7 +157,7 @@ class FacadeWidget extends StatelessWidget {
                                     box.maxHeight *
                                     (tight
                                         ? 0.5
-                                        : _live && items.isNotEmpty
+                                        : items.isNotEmpty
                                         ? 0.4
                                         : 0.6),
                               ),
@@ -193,8 +171,7 @@ class FacadeWidget extends StatelessWidget {
                                     // A live wall with a list keeps the
                                     // title to two lines; the list is what
                                     // you flew here to tick.
-                                    maxLines:
-                                        quiet || (_live && items.isNotEmpty)
+                                    maxLines: quiet || (items.isNotEmpty)
                                         ? 2
                                         : 3,
                                     overflow: TextOverflow.ellipsis,
@@ -212,9 +189,7 @@ class FacadeWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (_live &&
-                                attention.reason.isNotEmpty &&
-                                !tight) ...[
+                            if (attention.reason.isNotEmpty && !tight) ...[
                               SizedBox(height: gap),
                               // The wall you fly to says what the billboard
                               // said, as loudly: the reason leads, in the
@@ -238,12 +213,10 @@ class FacadeWidget extends StatelessWidget {
                               // third of a live wall: the checklist keeps
                               // its rows.
                               Flexible(
-                                flex: _live ? 5 : 10,
+                                flex: 5,
                                 child: ConstrainedBox(
                                   constraints: BoxConstraints(
-                                    maxHeight: _live
-                                        ? box.maxHeight * 0.26
-                                        : double.infinity,
+                                    maxHeight: box.maxHeight * 0.26,
                                   ),
                                   child: SizedBox(
                                     width: double.infinity,
@@ -259,7 +232,7 @@ class FacadeWidget extends StatelessWidget {
                                 ),
                               ),
                             ],
-                            if (_live && items.isNotEmpty && !tight) ...[
+                            if (items.isNotEmpty && !tight) ...[
                               SizedBox(height: gap),
                               // Only as many items as the wall has room for:
                               // a short building shows fewer, never overflows.
@@ -305,87 +278,85 @@ class FacadeWidget extends StatelessWidget {
                               ),
                             ],
                             const Spacer(),
-                            if (_live)
-                              // A firm band, never squeezed: the checklist
-                              // above yields, the chips keep their size.
-                              SizedBox(
-                                height: m(chipM) * 2.4,
-                                child: LayoutBuilder(
-                                  builder: (context, row) => FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.bottomLeft,
-                                    child: SizedBox(
-                                      width: row.maxWidth,
-                                      child: Row(
-                                        children: [
-                                          // Chips scale down together on a narrow
-                                          // wall rather than overflowing the row.
-                                          Flexible(
-                                            child: FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              alignment: Alignment.centerLeft,
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
+                            // A firm band, never squeezed: the checklist
+                            // above yields, the chips keep their size.
+                            SizedBox(
+                              height: m(chipM) * 2.4,
+                              child: LayoutBuilder(
+                                builder: (context, row) => FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.bottomLeft,
+                                  child: SizedBox(
+                                    width: row.maxWidth,
+                                    child: Row(
+                                      children: [
+                                        // Chips scale down together on a narrow
+                                        // wall rather than overflowing the row.
+                                        Flexible(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                PlazaChip(
+                                                  label:
+                                                      '${PlazaStyle.glyph(attention)} '
+                                                      '${chip.label}',
+                                                  fill: chip.fill,
+                                                  ink: chip.ink,
+                                                  fontPx: m(chipM),
+                                                ),
+                                                if (onOpen != null) ...[
+                                                  SizedBox(width: m(0.3)),
                                                   PlazaChip(
-                                                    label:
-                                                        '${PlazaStyle.glyph(attention)} '
-                                                        '${chip.label}',
-                                                    fill: chip.fill,
-                                                    ink: chip.ink,
-                                                    fontPx: m(chipM),
-                                                  ),
-                                                  if (onOpen != null) ...[
-                                                    SizedBox(width: m(0.3)),
-                                                    PlazaChip(
-                                                      label: 'DETAILS ›',
-                                                      fill: PlazaStyle.teal,
-                                                      ink: const Color(
-                                                        0xFF0D0D0D,
-                                                      ),
-                                                      fontPx: m(chipM),
-                                                      onTap: onOpen,
+                                                    label: 'DETAILS ›',
+                                                    fill: PlazaStyle.teal,
+                                                    ink: const Color(
+                                                      0xFF0D0D0D,
                                                     ),
-                                                  ],
+                                                    fontPx: m(chipM),
+                                                    onTap: onOpen,
+                                                  ),
                                                 ],
-                                              ),
+                                              ],
                                             ),
                                           ),
-                                          if (total > 0) ...[
-                                            SizedBox(width: m(0.3)),
-                                            Text(
-                                              '$done/$total',
+                                        ),
+                                        if (total > 0) ...[
+                                          SizedBox(width: m(0.3)),
+                                          Text(
+                                            '$done/$total',
+                                            style: TextStyle(
+                                              fontFamily: PlazaStyle.fontMono,
+                                              fontSize: m(metaM),
+                                              color: PlazaStyle.textDim,
+                                            ),
+                                          ),
+                                        ],
+                                        if (metaBits.isNotEmpty) ...[
+                                          SizedBox(width: m(0.4)),
+                                          Flexible(
+                                            child: Text(
+                                              metaBits.join('  ·  '),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
                                                 fontFamily: PlazaStyle.fontMono,
                                                 fontSize: m(metaM),
-                                                color: PlazaStyle.textDim,
+                                                color: quiet
+                                                    ? PlazaStyle.textDim
+                                                    : PlazaStyle.textMed,
                                               ),
                                             ),
-                                          ],
-                                          if (metaBits.isNotEmpty) ...[
-                                            SizedBox(width: m(0.4)),
-                                            Flexible(
-                                              child: Text(
-                                                metaBits.join('  ·  '),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontFamily:
-                                                      PlazaStyle.fontMono,
-                                                  fontSize: m(metaM),
-                                                  color: quiet
-                                                      ? PlazaStyle.textDim
-                                                      : PlazaStyle.textMed,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                          ),
                                         ],
-                                      ),
+                                      ],
                                     ),
                                   ),
                                 ),
                               ),
+                            ),
                           ],
                         );
                       },

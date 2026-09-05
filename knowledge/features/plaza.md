@@ -459,13 +459,24 @@ A `Flight` is planned once, as a chain of straight **legs** with one
   `streetSpeed` (10 m/s) so the facades and the billboards pass by. A
   flight is routed when both ends are no higher than
   `FlyCameraController.groundCeiling` (the street height plus a metre).
+  A target at the current position uses a direct turn, avoiding a trip out
+  to the street and back merely to change heading.
 - **The S-curve** (`_Profile`): speed ramps up over `rampSeconds` (1.6 s)
   on a smoothstep, holds the cruise, and ramps down the same way, so
   acceleration starts and ends at zero; a way shorter than one cruise-ramp
   (`cruise × ramp`) shrinks both ramps to `sqrt(length × ramp / cruise)`
-  and never reaches the cruise. Duration is `2 × ramp + (length − cruise ×
-  ramp) / cruise`. `distanceAt(t)` is the way covered, `cruiseSpeed` and
-  `rampTime` what was flown.
+  and never reaches the cruise. Base duration is `2 × ramp + (length −
+  cruise × ramp) / cruise`. `cruiseSpeed` and `rampTime` describe this base
+  profile; `distanceAt(t)` includes the extra time for turns.
+- **Turn timing** (`_TurnTiming`): a table samples the original plan at
+  120 Hz, capped at 4096 intervals. Each interval takes at least enough time
+  for its yaw change at 45°/s and pitch change at 30°/s. Only sections that
+  exceed these limits slow down; position still follows the exact lifted
+  path. Heading interpolates between the table's knots, keeping rotation
+  bounded between samples, including at street corners and the ±π seam.
+  A turn in place gets an eased timeline even with zero travel distance.
+  `duration` includes this added time. The table is built once per flight;
+  each frame locates its interval with a binary search.
 - **The lift of a leg**: `arc × profile(s)` over the leg's straight line,
   where `s` is the fraction of the leg and the profile is a smoothstep
   climb over the first `rampStart` of it, a cruise, and a smoothstep
@@ -530,10 +541,9 @@ fix is a climb that starts *under* a solid in the air and rises into it;
 no stop stands under a sign or the beam.
 
 Every flight pushes the departure pose onto a back stack in the harness;
-Backspace flies the reverse without pushing. While the camera flies
-(`FlyCameraController.flying`, landings included) the LOD manager makes
-no promotions, and the destination building of a facade flight is
-pre-promoted to the sign tier (`prepare`). `Tab` cycles the navigation
+Backspace flies the reverse without pushing. The destination building of a
+facade flight is pre-promoted to the sign tier (`prepare`); nearby signs
+also load under the [flight promotion budget](#facade-tiers-and-the-budget). `Tab` cycles the navigation
 beacons (everything but attention); when cycling toward older weeks a block
 or corner pose is turned round so the walk reads as walking, not reversing.
 
@@ -648,10 +658,10 @@ task data.
 
 ```mermaid
 flowchart TD
-  Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m and sign cap 80, one promotion per frame"| Sign["sign<br/>FacadeWidget sign variant<br/>initial capture and cover completion, manual input"]
+  Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m, sign cap 80, paced promotions"| Sign["sign<br/>FacadeWidget sign variant<br/>initial capture and cover completion, manual input"]
   Far -->|"tapped within live range, in front and in view, live budget available"| Live["live<br/>FacadeWidget live variant<br/>captured every 50 ms, automatic input"]
   Sign -->|"tapped within live range, in front and in view, live budget available"| Live
-  Live -->|"immediately when out of budget or range"| Sign
+  Live -->|"on flight start, or out of budget, range or view"| Sign
   Sign -->|"immediately"| Far
   Far -->|"prepare on flight start, the destination only"| Sign
 ```
@@ -665,8 +675,12 @@ up to it leaves its sign static. Live also needs the eye on the street side
 of the wall and the wall ahead of the camera. Leaving live range, turning
 away or activating another wall disarms the previous one; returning needs
 a new tap. A distant tap still flies to the building first.
-Promotions are rate-limited to one per frame and suspended while
-`flying` is set; demotions are immediate. `forceAllLive` (the
+Promotions are rate-limited to one per frame. During flight only static
+signs are created, at most one every 100 ms (`flightPromotionInterval`),
+within the same distance and surface caps. This starts cover loading before
+an approaching facade is reached without creating a frame-time burst.
+Starting a flight disarms the active wall; landing requires a new tap.
+Demotions are immediate. `forceAllLive` (the
 overlay's stress switch) makes every facade live and ignores the per-frame
 budget. The nearest live building is the **focused** one: its teal ring
 node is shown, and it is the wall whose checkboxes and details button
@@ -744,11 +758,15 @@ tour. No widget owns an animation controller: a billboard's glow, a
 ticker's scroll and the jumbotron's slides all read their cadence's clock,
 which advances only when a capture is requested.
 
-The **sign** facade variant is the category bar, a state marquee band with
-its glyph, the title (up to three lines, shrunk until its longest word fits
-the wall) and the cover art. The **live** variant adds the due and links
-line, as many open checklist items as the wall has room for, the state
-chip, a details button (opens the side panel) and the done count.
+The **sign** facade variant reuses `BillboardWidget` as a photo-led poster:
+cover art fills the panel, including short ground-floor signs, with its
+existing scrim behind the title, reason and compact state chip. It hides the
+billboard navigation hint because a nearby facade activates in place.
+Finished posters retain readable titles and use the subdued done chip and
+frame. The **live** variant uses its checklist layout with the due and links
+line, as many open checklist items as the wall has room for, a smaller cover
+band when space permits, the state chip, a details button (opens the side
+panel) and the done count.
 
 # Sprites
 
@@ -916,7 +934,10 @@ The builder creates:
   widget quads put their texture's left edge), so the lit part reads as
   progress along a scale.
 - **Texture density**: fifteen window tiles are 480 × 192 px and fifteen
-  shopfront strips are 1584 × 192 px (`_px` 48). These thirty RGBA8 textures
+  shopfront strips are 1584 × 192 px. Both painters keep their original
+  96-unit artwork coordinates and scale the entire canvas by one half, so
+  fine mullions, floor slabs, sign strokes and metre-sized shapes retain
+  their proportions. These thirty RGBA8 textures
   occupy approximately 30 MiB including a full mip chain, versus 121 MiB at
   twice the dimensions. This is a pixel-storage estimate, not a measurement
   of process peak memory. Ground grain, paving and pool textures are separate.
@@ -1092,8 +1113,13 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   interval instead of adding drift. Input cancels the wait and coalesces
   into one immediate frame. There is no repeating idle `Ticker` waking the
   engine on every skipped vsync. `auto` follows the display while moving
-  (flight, walk, held key, drag and 0.6 s afterwards) and caps rest at 30 Hz;
-  `60` and `30` are fixed caps. Tour and bench remain uncapped.
+  (flight, walk, held key or drag) and for 0.6 s after movement or input.
+  With a settled camera, an active live facade retains 30 Hz while purely
+  decorative animation uses 15 Hz. Startup gets the same brief display-rate
+  window so initial captures and promotions can settle promptly. Animation
+  phases still use elapsed time: the lower cadence changes smoothness, not
+  ticker speed or pulse duration. `60` and `30` are fixed caps; tour and bench
+  remain uncapped.
   Hidden/inactive lifecycle states cancel both timer and pending callback;
   resume excludes the hidden duration from the animation clock.
 - **Engine and painted rates are distinct.** The HUD reports harness paints

@@ -105,6 +105,49 @@ void main() {
   final eye = Vector3(0, 1.7, 0);
   final forward = Vector3(0, 0, 1);
 
+  testWidgets('flight prepares signs gradually without activating them', (
+    tester,
+  ) async {
+    final surfaces = <_TestSurface>[];
+    final ticks = ChecklistTicks();
+    addTearDown(ticks.dispose);
+    final lod = FacadeLodManager(
+      buildings: [
+        _building('first', 0, 40, facing: math.pi),
+        _building('next', 0, 60, facing: math.pi),
+        _building('later', 0, 80, facing: math.pi),
+      ],
+      config: FacadeLodConfig(promotionsPerFrame: 4),
+      ticks: ticks,
+      onOpen: (_) {},
+      surfaceBuilder: _surfaceBuilder(surfaces),
+    );
+    addTearDown(lod.dispose);
+    lod.update(eye, forward: forward, flying: true);
+    expect((lod.stats.sign, lod.stats.far, lod.stats.live), (1, 2, 0));
+    expect(surfaces.single.input, WidgetInput.manual);
+    surfaces.single.controller.landed = 1;
+    for (final seconds in [0.016, 0.05, 0.099]) {
+      lod.update(eye, forward: forward, seconds: seconds, flying: true);
+      expect(lod.stats.promotions, 1, reason: 'no flight-time loading burst');
+    }
+    lod.update(eye, forward: forward, seconds: 0.1, flying: true);
+    expect((lod.stats.sign, lod.stats.far, lod.stats.live), (2, 1, 0));
+    // Late image completion still refreshes a sign during travel.
+    final first = surfaces.first;
+    first.controller.landed = 1;
+    (first.child as FacadeWidget).onCoverChanged!();
+    lod.update(eye, forward: forward, seconds: 0.15, flying: true);
+    expect(first.controller.requests, 2);
+    expect(lod.stats.promotions, 2);
+    lod.update(eye, forward: forward, seconds: 0.2, flying: true);
+    expect((lod.stats.sign, lod.stats.far, lod.stats.live), (3, 0, 0));
+    lod.config.signCap = 1;
+    lod.update(eye, forward: forward, seconds: 0.21, flying: true);
+    expect((lod.stats.sign, lod.stats.far, lod.stats.live), (1, 2, 0));
+    expect(lod.stats.promotions, 3, reason: 'the surface cap still applies');
+  });
+
   testWidgets('nearby facades stay static until tapped and disarm on leaving', (
     tester,
   ) async {
@@ -265,21 +308,7 @@ void main() {
     });
 
     test('keeps ranking while a promotion is waiting', () {
-      // Within the sign distance but flying: the sign is wanted every
-      // frame and never granted, so the ranking is never settled.
-      final lod = _manager([_building('near', 0, 50)]);
-      for (var frame = 0; frame < 3; frame++) {
-        lod.update(
-          eye,
-          forward: forward,
-          seconds: frame * 0.016,
-          flying: true,
-        );
-      }
-      expect(lod.rankings, 3);
-      expect((lod.stats.sign, lod.stats.far), (0, 1));
-
-      // The same holds when the per-frame promotion budget is zero.
+      // A zero promotion budget must leave the wanted sign pending.
       final starved = _manager(
         [_building('near', 0, 50)],
         config: FacadeLodConfig(promotionsPerFrame: 0),

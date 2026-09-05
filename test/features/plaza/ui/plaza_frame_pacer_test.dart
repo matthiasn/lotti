@@ -1,6 +1,7 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/plaza_frame_pacer.dart';
 
 void main() {
@@ -22,6 +23,66 @@ void main() {
     expect(tester.binding.transientCallbackCount, 0);
     await tester.pump(const Duration(seconds: 1));
     expect(painted.length, 2);
+  });
+
+  test('ambient waits wake on input and preserve live facade cadence', () {
+    fakeAsync((async) {
+      final pending = <int, FrameCallback>{};
+      final painted = <Duration>[];
+      var id = 0;
+      var moving = false;
+      var activeSurface = false;
+      final pacer = PlazaFramePacer(
+        onFrame: painted.add,
+        nowMicros: () => async.elapsed.inMicroseconds,
+        cap: () => PlazaFrameRate.auto.capFor(
+          moving: moving,
+          activeSurface: activeSurface,
+        ),
+        schedule: (callback) {
+          pending[++id] = callback;
+          return id;
+        },
+        cancel: pending.remove,
+      )..start();
+      void frame() {
+        final callback = pending.values.single;
+        pending.clear();
+        callback(async.elapsed);
+      }
+
+      frame();
+      async.elapse(const Duration(milliseconds: 10));
+      expect(pending, isEmpty);
+      moving = true;
+      pacer.requestFrame();
+      expect(pending.length, 1, reason: 'input must cancel the idle wait');
+      frame();
+      async.elapse(const Duration(milliseconds: 16));
+      frame();
+      moving = false;
+      activeSurface = true;
+      async.elapse(const Duration(milliseconds: 16));
+      frame();
+      async.elapse(const Duration(microseconds: 17332));
+      expect(pending, isEmpty);
+      async.elapse(const Duration(microseconds: 1));
+      expect(pending.length, 1, reason: 'live facades retain a 30 Hz deadline');
+      activeSurface = false;
+      frame();
+      async.elapse(const Duration(microseconds: 66666));
+      expect(pending, isEmpty, reason: 'ambient animation waits for 15 Hz');
+      async.elapse(const Duration(microseconds: 1));
+      expect(pending.length, 1);
+      expect(painted.map((t) => t.inMicroseconds), [
+        0,
+        10000,
+        26000,
+        42000,
+        59333,
+      ]);
+      pacer.dispose();
+    });
   });
 
   test('idle waits without scheduling engine frames, input wakes once', () {

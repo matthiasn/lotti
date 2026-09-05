@@ -26,8 +26,7 @@ class FacadeLodConfig {
     this.forceAllLive = false,
   });
 
-  /// Hard cap on live (interactive) surfaces: the faced building and its
-  /// nearest neighbours.
+  /// Hard cap on live surfaces; normal interaction activates one wall.
   int liveCap;
 
   /// Hard cap on hosted sign surfaces.
@@ -71,7 +70,7 @@ class _Surface {
   FacadeTier tier = FacadeTier.far;
 }
 
-/// The budget and the suspension a ranking was made under; a change to any
+/// The budget and flight mode a ranking was made under; a change to any
 /// of them makes the ranking stale.
 typedef _Budget = ({
   int liveCap,
@@ -125,7 +124,7 @@ class FacadeLodManager {
   late final List<_Surface> _rankedSurfaces = List.of(_surfaces);
 
   /// What the last ranking was made for. It holds until the eye, the view
-  /// direction, the budget or the suspension changes, or until it left
+  /// direction, the budget or flight mode changes, or until it left
   /// work undone: a tier it changed (the hysteresis shifts) or a promotion
   /// it could not afford.
   final Vector3 _rankedEye = Vector3.zero();
@@ -203,6 +202,11 @@ class FacadeLodManager {
   /// How often a live wall is captured, seconds on the harness clock.
   static const liveInterval = 0.05;
 
+  /// During flight, start at most one new sign per interval. This gives
+  /// approaching facades time to decode without a burst of hosted widgets.
+  static const flightPromotionInterval = 0.1;
+  double _nextFlightPromotion = 0;
+
   /// Once per painted frame: assigns the tiers for [eye] unless the last
   /// ranking still holds (same eye, [forward], budget and [flying], and
   /// nothing left undone), then asks every live wall for a capture once
@@ -210,15 +214,18 @@ class FacadeLodManager {
   /// clock, and every sign for its one capture until it lands. [forward]
   /// is the camera's view direction: a wall behind the walker never takes
   /// a live slot, however near — standing 22 m from a landmark puts the
-  /// opposite row 3 m behind your back. While [flying] no surface is
-  /// created except the one pre-captured by [prepare].
+  /// opposite row 3 m behind your back. While [flying], static signs are
+  /// prepared at [flightPromotionInterval] intervals; live interaction waits
+  /// until the camera settles and the facade is tapped.
   void update(
     Vector3 eye, {
     Vector3? forward,
     double seconds = 0,
     bool flying = false,
   }) {
-    if (!_rankingHolds(eye, forward, flying)) _rank(eye, forward, flying);
+    if (!_rankingHolds(eye, forward, flying)) {
+      _rank(eye, forward, flying, seconds);
+    }
     // No culling here: the ranking already demoted every wall the camera
     // cannot see.
     _captures
@@ -237,7 +244,7 @@ class FacadeLodManager {
     return _rankedBudget == config._budget(flying);
   }
 
-  void _rank(Vector3 eye, Vector3? forward, bool flying) {
+  void _rank(Vector3 eye, Vector3? forward, bool flying, double seconds) {
     _rankings++;
     final n = buildings.length;
     for (final surface in _surfaces) {
@@ -250,10 +257,12 @@ class FacadeLodManager {
     var signLeft = config.forceAllLive ? 0 : config.signCap;
     // The stress switch wants the steady state, not a five-second ramp:
     // it ignores the per-frame promotion budget.
-    var promotionsLeft = flying
-        ? 0
-        : config.forceAllLive
+    var promotionsLeft = config.forceAllLive
         ? n
+        : flying
+        ? seconds >= _nextFlightPromotion
+              ? math.min(1, config.promotionsPerFrame)
+              : 0
         : config.promotionsPerFrame;
     PlazaBuilding? focused;
     var changed = false;
@@ -265,7 +274,8 @@ class FacadeLodManager {
       FacadeTier target;
       if (config.forceAllLive) {
         target = FacadeTier.live;
-      } else if (building == _activated &&
+      } else if (!flying &&
+          building == _activated &&
           liveLeft > 0 &&
           d < math.max(config.liveDistance, building.liveRange) &&
           _inView(building, eye, forward)) {
@@ -288,6 +298,7 @@ class FacadeLodManager {
         if (promotionsLeft > 0) {
           promotionsLeft--;
           _apply(surface, target);
+          if (flying) _nextFlightPromotion = seconds + flightPromotionInterval;
           changed = true;
         } else {
           waiting = true;

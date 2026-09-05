@@ -293,7 +293,9 @@ void main() {
       expect(camera.flying, isTrue);
       expect(camera.flight, same(flight));
       camera.update(flight.duration.inMicroseconds / 2e6);
-      expect(camera.pose.z, closeTo(10, 1e-6));
+      // The arrival turn takes extra time: halfway through the clock is
+      // past the spatial midpoint, still approaching the destination.
+      expect(camera.pose.z, inExclusiveRange(10, 20));
       expect(camera.flying, isTrue);
       camera.update(flight.duration.inMicroseconds / 2e6 + 0.01);
       expect(camera.flying, isFalse);
@@ -402,6 +404,35 @@ void main() {
         ..pose = _origin;
       expect(camera.flying, isFalse);
     });
+  });
+
+  test('a target at the current position turns without a street detour', () {
+    const start = CameraPose(x: -8, y: eyeHeight, z: 20, yaw: 0);
+    for (final yaw in [0.0, math.pi]) {
+      final camera = FlyCameraController(
+        pose: start,
+        network: StreetNetwork(const [(0, 0), (0, 200)]),
+      );
+      final flight = camera.flyTo(
+        CameraPose(x: start.x, y: start.y, z: start.z, yaw: yaw),
+      );
+      expect(flight.length, 0, reason: 'a heading change must stay in place');
+      camera.update(1);
+      expect(
+        (camera.pose.x, camera.pose.y, camera.pose.z),
+        (start.x, start.y, start.z),
+      );
+      if (yaw == 0) {
+        expect(flight.duration, Duration.zero);
+        expect(camera.flying, isFalse);
+      } else {
+        expect(camera.flying, isTrue);
+        expect(camera.pose.yaw.abs(), lessThanOrEqualTo(math.pi / 4));
+        camera.update(30);
+        expect(camera.flying, isFalse);
+        expect(math.cos(camera.pose.yaw), closeTo(-1, 1e-9));
+      }
+    }
   });
 
   group('over solids', () {
