@@ -234,11 +234,15 @@ histories. The journal strategy lives in `database_migration.dart` and
    every index in the schema.
 
 Every migration test starts from a schema that shipped, seeded through
-`test/database/schema_fixtures.dart` (`createJournalSchema(sqlite, N)`),
-never from a hand-written table. Versions that were introduced and
-superseded inside one pull request (26, 27, 31–36) never existed on a
-device, so a test for a step in that range starts from the last version
-that did (25 or 30) and lets the ladder run. The v18 test in
+`test/database/schema_fixtures.dart` (`createJournalSchema(sqlite, N)`).
+Versions that were introduced and superseded inside one pull request (26,
+27, 31–36) never existed on a device, so a test for a step in that range
+starts from the last version that did (25 or 30) and lets the ladder run.
+The one hand-written shape that remains is deliberate: the v28 tests in
+`labels_migration_test.dart` seed the real v25 schema, add the pre-cascade
+`label_definitions`/`labeled` tables by hand and stamp the database v27,
+because that pre-release shape is exactly what the v28 rebuild exists to
+repair and no shipped schema contains it. The v18 test in
 `test/database/database_test.dart` exercises the complete upgrade and
 verifies that its existing row survives with default priority.
 
