@@ -20,7 +20,7 @@ void main() {
     expect(PlazaFrameRate.auto.capFor(moving: pointer.dragging), isNull);
     expect(pointer.up(const PointerUpEvent(pointer: 1), 0.1), isNull);
     expect(pointer.dragging, isFalse);
-    expect(PlazaFrameRate.auto.capFor(moving: pointer.dragging), 30);
+    expect(PlazaFrameRate.auto.capFor(moving: pointer.dragging), 15);
   });
 
   test('a short tap is returned once; a long press is ignored', () {
