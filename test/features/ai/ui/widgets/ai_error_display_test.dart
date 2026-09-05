@@ -42,7 +42,7 @@ void main() {
       tester.view
         ..physicalSize = const Size(1200, 800)
         ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.reset);
 
       await tester.pumpWidget(widget);
       await tester.pump();
@@ -441,6 +441,7 @@ void main() {
       ) async {
         tester.view.physicalSize = const Size(1200, 800);
         tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
         var retried = false;
         final error = InferenceError(
           message: 'Temporary error',

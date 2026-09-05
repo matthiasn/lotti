@@ -142,6 +142,10 @@ void main() {
           );
 
       // Test with value = false (should trigger heavy impact)
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null);
+      });
       await tester.pumpWidget(
         makeTestableWidget(
           Material(

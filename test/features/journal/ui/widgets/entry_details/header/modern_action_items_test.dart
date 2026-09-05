@@ -111,7 +111,9 @@ void main() {
     // The production `ModernShareItem` calls `SharePlus.instance.share(...)`.
     fakeSharePlatform = _FakeSharePlatform();
     SharePlatform.instance = fakeSharePlatform;
+  });
 
+  setUp(() async {
     await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -123,11 +125,12 @@ void main() {
   });
 
   tearDownAll(() async {
-    await tearDownTestGetIt();
     if (documentsDirectory.existsSync()) {
       documentsDirectory.deleteSync(recursive: true);
     }
   });
+
+  tearDown(tearDownTestGetIt);
 
   JournalEntry buildTextEntry({
     String id = 'entry-1',
@@ -1581,7 +1584,7 @@ void main() {
     late MockJournalDb mockJournalDbSrc;
     late MockUpdateNotifications mockUpdateNotificationsSrc;
 
-    setUpAll(() {
+    setUp(() {
       mockEditorStateServiceSrc = MockEditorStateService();
       mockPersistenceLogicSrc = MockPersistenceLogic();
       mockJournalDbSrc = MockJournalDb();
@@ -1597,10 +1600,6 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogicSrc)
         ..registerSingleton<JournalDb>(mockJournalDbSrc)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotificationsSrc);
-    });
-
-    tearDownAll(() async {
-      await getIt.reset();
     });
 
     JournalAudio buildAudioEntrySrc({String id = 'audio-1'}) {
@@ -2436,7 +2435,7 @@ void main() {
   });
 
   group('ModernCopyEntryTextItem - ', () {
-    setUpAll(() async {
+    setUp(() async {
       getIt.allowReassignment = true;
       getIt
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
@@ -2445,8 +2444,10 @@ void main() {
         ..registerSingleton<EditorStateService>(EditorStateService());
     });
 
-    tearDownAll(() async {
-      await getIt.reset();
+    tearDown(() async {
+      await getIt<JournalDb>().close();
+      await getIt<EditorDb>().close();
+      await getIt<UpdateNotifications>().dispose();
     });
 
     testWidgets('Copy as text triggers copy', (tester) async {
