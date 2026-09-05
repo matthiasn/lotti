@@ -6675,14 +6675,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> orderedJournal(int limit, int offset) {
-    return customSelect(
-      'SELECT * FROM journal WHERE deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-      variables: [Variable<int>(limit), Variable<int>(offset)],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
   Selectable<JournalDbEntity> orderedJournalInterval(
     DateTime start,
     DateTime end,

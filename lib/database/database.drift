@@ -773,13 +773,6 @@ emptyJournalSelection:
 SELECT * FROM journal
   WHERE 1 = 0;
 
-orderedJournal:
-SELECT * FROM journal
-  WHERE deleted = false
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
 orderedJournalInterval:
 SELECT * FROM journal
   WHERE deleted = false
@@ -1126,7 +1119,6 @@ SELECT journal.* FROM linked_entries
   AND journal.deleted = false
   AND journal.private IN :privateStatuses
   ORDER BY journal.date_from DESC;
-
 
 deleteLink:
 DELETE FROM linked_entries

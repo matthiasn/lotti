@@ -554,9 +554,7 @@ void main() {
         final docDir = getIt<Directory>();
         await createPlaceholderDbFile(docDir);
 
-        final progress = await db!
-            .purgeDeleted(stepDelay: Duration.zero)
-            .toList();
+        final progress = await db!.purgeDeleted().toList();
         expect(progress, equals([1.0]));
 
         final backupDir = Directory('${docDir.path}/backup');
@@ -583,9 +581,7 @@ void main() {
           backupDir.deleteSync(recursive: true);
         }
 
-        final progress = await db!
-            .purgeDeleted(backup: false, stepDelay: Duration.zero)
-            .toList();
+        final progress = await db!.purgeDeleted(backup: false).toList();
         expect(progress, equals([1.0]));
         expect(backupDir.existsSync(), isFalse);
       });
@@ -596,9 +592,7 @@ void main() {
         await createPlaceholderDbFile(docDir);
         await seedDeletedDatabaseContent(db!, deletionTime);
 
-        await db!
-            .purgeDeleted(backup: false, stepDelay: Duration.zero)
-            .toList();
+        await db!.purgeDeleted(backup: false).toList();
 
         expect(await db!.select(db!.dashboardDefinitions).get(), isEmpty);
         expect(await db!.select(db!.measurableTypes).get(), isEmpty);
@@ -609,16 +603,43 @@ void main() {
         final deletionTime = DateTime(2024, 2, 2, 9);
         await seedDeletedDatabaseContent(db!, deletionTime);
 
-        final progress = await db!
-            .purgeDeleted(backup: false, stepDelay: Duration.zero)
-            .toList();
+        final progress = await db!.purgeDeleted(backup: false).toList();
         expect(progress, equals([0.33, 0.66, 1.0]));
       });
 
+      test(
+        'purges deleted entries and their files across chunk boundaries',
+        () async {
+          final docDir = getIt<Directory>();
+          final deletionTime = DateTime(2024, 2, 3, 10);
+          // More deleted rows than one chunk holds, so the rowid walk has
+          // to continue past its first page without skipping or repeating.
+          const total = 1203;
+          final paths = <String>[];
+          for (var i = 0; i < total; i++) {
+            final live = buildJournalEntry(
+              id: 'chunk-$i',
+              timestamp: deletionTime.add(Duration(seconds: i)),
+              text: 'deleted $i',
+            );
+            final entry = live.copyWith(
+              meta: live.meta.copyWith(deletedAt: deletionTime),
+            );
+            await db!.updateJournalEntity(entry);
+            paths.add(entityPath(entry, docDir));
+          }
+          expect(paths.where((p) => File(p).existsSync()), hasLength(total));
+
+          final progress = await db!.purgeDeleted(backup: false).toList();
+
+          expect(progress, equals([0.33, 0.66, 1.0]));
+          expect(await db!.select(db!.journal).get(), isEmpty);
+          expect(paths.where((p) => File(p).existsSync()), isEmpty);
+        },
+      );
+
       test('returns 1.0 immediately when nothing to purge', () async {
-        final progress = await db!
-            .purgeDeleted(backup: false, stepDelay: Duration.zero)
-            .toList();
+        final progress = await db!.purgeDeleted(backup: false).toList();
         expect(progress, equals([1.0]));
       });
     });

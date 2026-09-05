@@ -226,42 +226,63 @@ mixin _JournalDbEntityOps
     return null;
   }
 
+  /// How many soft-deleted rows [purgeDeletedFiles] reads per round trip.
+  /// Keyed on rowid so the walk never re-reads what it has already visited,
+  /// and never holds every deleted entity's JSON in memory at once.
+  static const int _purgeChunk = 500;
+
+  /// Deletes the files — media and JSON sidecars — of every soft-deleted
+  /// journal entity, in rowid chunks of [_purgeChunk].
   Future<void> purgeDeletedFiles() async {
-    final deletedEntries = await (select(
-      journal,
-    )..where((tbl) => tbl.deleted.equals(true))).get();
-
-    for (final entry in deletedEntries) {
-      try {
-        final journalEntity = JournalEntity.fromJson(
-          jsonDecode(entry.serialized) as Map<String, dynamic>,
-        );
-
-        await journalEntity.maybeMap(
-          journalImage: (JournalImage image) async {
-            final fullPath = getFullImagePath(image);
-            await _deleteFileIfExists(fullPath);
-            await _deleteFileIfExists('$fullPath.json');
-          },
-          journalAudio: (JournalAudio audio) async {
-            final fullPath = await AudioUtils.getFullAudioPath(audio);
-            await _deleteFileIfExists(fullPath);
-            await _deleteFileIfExists('$fullPath.json');
-          },
-          orElse: () async {
-            // For all other entry types, just delete the JSON file
-            final docDir = getDocumentsDirectory();
-            await _deleteFileIfExists(entityPath(journalEntity, docDir));
-          },
-        );
-      } catch (e) {
-        // Log error but continue with other files
-        getIt<DomainLogger>().error(
-          LogDomain.database,
-          e,
-          subDomain: 'purgeDeletedFiles',
-        );
+    var lastRowId = 0;
+    while (true) {
+      final rows = await customSelect(
+        'SELECT rowid AS rid, serialized FROM journal '
+        'WHERE deleted = 1 AND rowid > ? ORDER BY rowid LIMIT ?',
+        variables: [
+          Variable.withInt(lastRowId),
+          Variable.withInt(_purgeChunk),
+        ],
+        readsFrom: {journal},
+      ).get();
+      if (rows.isEmpty) return;
+      for (final row in rows) {
+        lastRowId = row.read<int>('rid');
+        await _deleteFilesOf(row.read<String>('serialized'));
       }
+    }
+  }
+
+  Future<void> _deleteFilesOf(String serialized) async {
+    try {
+      final journalEntity = JournalEntity.fromJson(
+        jsonDecode(serialized) as Map<String, dynamic>,
+      );
+
+      await journalEntity.maybeMap(
+        journalImage: (JournalImage image) async {
+          final fullPath = getFullImagePath(image);
+          await _deleteFileIfExists(fullPath);
+          await _deleteFileIfExists('$fullPath.json');
+        },
+        journalAudio: (JournalAudio audio) async {
+          final fullPath = await AudioUtils.getFullAudioPath(audio);
+          await _deleteFileIfExists(fullPath);
+          await _deleteFileIfExists('$fullPath.json');
+        },
+        orElse: () async {
+          // For all other entry types, just delete the JSON file
+          final docDir = getDocumentsDirectory();
+          await _deleteFileIfExists(entityPath(journalEntity, docDir));
+        },
+      );
+    } catch (e) {
+      // Log error but continue with other files
+      getIt<DomainLogger>().error(
+        LogDomain.database,
+        e,
+        subDomain: 'purgeDeletedFiles',
+      );
     }
   }
 
@@ -275,10 +296,23 @@ mixin _JournalDbEntityOps
     }
   }
 
-  Stream<double> purgeDeleted({
-    bool backup = true,
-    Duration stepDelay = const Duration(milliseconds: 50),
-  }) async* {
+  Future<int> _countDeleted(TableInfo<Table, Object?> table) async {
+    final row = await customSelect(
+      'SELECT COUNT(*) AS c FROM ${table.actualTableName} WHERE deleted = 1',
+      readsFrom: {table},
+    ).getSingle();
+    return row.read<int>('c');
+  }
+
+  /// Removes every soft-deleted dashboard, measurable and journal row, after
+  /// deleting the journal rows' files, reporting progress as it goes.
+  ///
+  /// Counts come from `COUNT(*)`, not from loading the rows, and the file
+  /// walk streams in rowid chunks, so the purge costs the same memory on a
+  /// journal with a hundred deleted entries and one with a hundred thousand.
+  /// Progress is emitted after each table; nothing sleeps to make it
+  /// visible.
+  Stream<double> purgeDeleted({bool backup = true}) async* {
     if (backup) {
       await createDbBackup(journalDbFileName);
     }
@@ -286,50 +320,29 @@ mixin _JournalDbEntityOps
     // First delete the actual files
     await purgeDeletedFiles();
 
-    // Get counts for each type
-    final dashboardCount =
-        await (select(dashboardDefinitions)
-              ..where((tbl) => tbl.deleted.equals(true)))
-            .get()
-            .then((list) => list.length);
+    final dashboardCount = await _countDeleted(dashboardDefinitions);
+    final measurableCount = await _countDeleted(measurableTypes);
+    final journalCount = await _countDeleted(journal);
 
-    final measurableCount =
-        await (select(measurableTypes)
-              ..where((tbl) => tbl.deleted.equals(true)))
-            .get()
-            .then((list) => list.length);
-
-    final journalCount =
-        await (select(journal)..where((tbl) => tbl.deleted.equals(true)))
-            .get()
-            .then((list) => list.length);
-
-    final totalItems = dashboardCount + measurableCount + journalCount;
-
-    if (totalItems == 0) {
+    if (dashboardCount + measurableCount + journalCount == 0) {
       yield 1.0; // Already empty
       return;
     }
 
-    // Purge dashboards
     if (dashboardCount > 0) {
       await (delete(
         dashboardDefinitions,
       )..where((tbl) => tbl.deleted.equals(true))).go();
     }
     yield 0.33; // 33% complete after dashboards
-    await Future<void>.delayed(stepDelay);
 
-    // Purge measurables
     if (measurableCount > 0) {
       await (delete(
         measurableTypes,
       )..where((tbl) => tbl.deleted.equals(true))).go();
     }
     yield 0.66; // 66% complete after measurables
-    await Future<void>.delayed(stepDelay);
 
-    // Purge journal entries
     if (journalCount > 0) {
       await (delete(journal)..where((tbl) => tbl.deleted.equals(true))).go();
     }
