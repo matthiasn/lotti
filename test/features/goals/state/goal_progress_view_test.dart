@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
@@ -16,6 +20,7 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/future_provider_probe.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -26,6 +31,140 @@ void main() {
   DateTime day(int offset) => GoalWindow.dayUtc(
     today.subtract(Duration(days: offset)),
   );
+
+  for (final fullyDispose in [false, true]) {
+    for (final span in [false, true]) {
+      for (final stage in ['health', 'signals', 'definitions', 'captures']) {
+        test(
+          'disposed progress stops after pending $stage (span: $span, fully disposed: $fullyDispose)',
+          () {
+            fakeAsync((async) {
+              final pending = Completer<GoalAgentHealth>();
+              final signals = Completer<List<JournalEntity>>();
+              final definition = Completer<HabitDefinition?>();
+              final captures =
+                  Completer<Map<String, GoalMeasurableCaptureDecision>>();
+              final db = MockJournalDb();
+              when(
+                () => db.getMeasurementsByType(
+                  type: any(named: 'type'),
+                  rangeStart: any(named: 'rangeStart'),
+                  rangeEnd: any(named: 'rangeEnd'),
+                ),
+              ).thenAnswer((_) async => []);
+              when(
+                () => db.getMeasurableDataTypeById('water'),
+              ).thenAnswer((_) async => null);
+              when(
+                () => db.getHabitCompletionsByHabitId(
+                  habitId: any(named: 'habitId'),
+                  rangeStart: any(named: 'rangeStart'),
+                  rangeEnd: any(named: 'rangeEnd'),
+                ),
+              ).thenAnswer((_) => signals.future);
+              when(
+                () => db.getHabitById('floss'),
+              ).thenAnswer((_) => definition.future);
+              final container = ProviderContainer(
+                overrides: [
+                  journalDbProvider.overrideWithValue(db),
+                  goalMeasurableCaptureDecisionsProvider(
+                    'goal-1',
+                  ).overrideWith((ref) => captures.future),
+                  goalAgentHealthProvider(
+                    'goal-1',
+                  ).overrideWith((ref) => pending.future),
+                ],
+              );
+              final provider = span
+                  ? goalAgentProgressViewForSpanProvider((
+                      agentId: 'goal-1',
+                      historyDays: 14,
+                    ))
+                  : goalAgentProgressViewProvider('goal-1');
+              final healthSubscription = container.listen(
+                goalAgentHealthProvider('goal-1'),
+                (_, _) {},
+              );
+              final capturesSubscription = container.listen(
+                goalMeasurableCaptureDecisionsProvider('goal-1'),
+                (_, _) {},
+              );
+              final probe = FutureProviderProbe(provider);
+              final subscription = container.listen(probe.provider, (_, _) {});
+              async.flushMicrotasks();
+              final health = (
+                trackStatus: null,
+                attainment: null,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                direction: null,
+                deficit: null,
+                buffer: null,
+                spec:
+                    AgentDomainEntity.goalSpecVersion(
+                          id: 'goal-1:spec-v1',
+                          agentId: 'goal-1',
+                          version: 1,
+                          status: GoalSpecVersionStatus.active,
+                          authoredBy: 'user',
+                          title: 'Floss',
+                          statement: 'Floss consistently',
+                          criteria: stage == 'captures'
+                              ? const GoalCriterion.measurable(
+                                  criterionId: 'water',
+                                  dataTypeId: 'water',
+                                  window: GoalWindow.rollingDays(count: 7),
+                                  aggregation: GoalAggregation.sum,
+                                  target: 2,
+                                )
+                              : const GoalCriterion.habit(
+                                  criterionId: 'floss',
+                                  habitId: 'floss',
+                                  window: GoalWindow.rollingDays(count: 7),
+                                  targetCount: 2,
+                                ),
+                          createdAt: DateTime(2026),
+                          vectorClock: null,
+                        )
+                        as GoalSpecVersionEntity,
+              );
+              if (stage != 'health') {
+                pending.complete(health);
+                async.flushMicrotasks();
+              }
+              if (stage == 'definitions') {
+                signals.complete([]);
+                async.flushMicrotasks();
+              }
+              subscription.close();
+              probe.results.clear();
+              container.invalidate(probe.provider);
+              if (fullyDispose) async.elapse(Duration.zero);
+              if (!pending.isCompleted) pending.complete(health);
+              if (!signals.isCompleted) signals.complete([]);
+              definition.complete(null);
+              captures.complete({});
+              async
+                ..flushMicrotasks()
+                ..elapse(Duration.zero);
+              expect(probe.errors, isEmpty);
+              expect(probe.results, [isNull]);
+              expect(
+                async.pendingTimers,
+                isEmpty,
+                reason:
+                    'a disposed projection must not arm a midnight callback',
+              );
+              capturesSubscription.close();
+              healthSubscription.close();
+              container.dispose();
+            }, initialTime: DateTime(2026, 9, 5, 12));
+          },
+        );
+      }
+    }
+  }
 
   test('without an evaluator figure, successesInWindow folds only the days '
       'inside the authored window — never the rendered history', () {

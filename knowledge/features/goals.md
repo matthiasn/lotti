@@ -1109,7 +1109,16 @@ flowchart TD
   completion service; category-time dimensions never trigger the suggestion
   because their days are observed by definition.
   The provider invalidates itself at the next local midnight so Today,
-  ages-out and window boundaries cannot remain stuck on yesterday. The data
+  ages-out and window boundaries cannot remain stuck on yesterday. Progress
+  projections and active-banner reads register disposal before their first
+  asynchronous read. Each computation stops before further provider access or
+  timer registration when invalidated, including the interval before Riverpod
+  replaces its ref. Existing deadline timers are cancelled on disposal.
+  Banners watch `activeGoalAgentsProvider.future` so the goal list and banner
+  share one identity query. Banner-only and per-agent refreshes retain that
+  identity result; global agent notifications invalidate it. App resume
+  explicitly refreshes the shared identities as well as banner deadlines.
+  The data
   dimensions render under a Signals heading whose footnote states the
   deterministic freshness contract (live within seconds, bounded to what is
   listed). A reliability tail is shown

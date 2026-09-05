@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -35,11 +36,13 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/future_provider_probe.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -1648,6 +1651,202 @@ void main() {
     expect(health.attainment, 0.9);
     expect(health.spec?.version, 2);
   });
+
+  test(
+    'banner and goal list share identities across banner-only refreshes',
+    () {
+      fakeAsync((async) {
+        when(
+          () => updateNotifications.updateStream,
+        ).thenAnswer((_) => syncStream.stream);
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        final agentsSub = container.listen(activeGoalAgentsProvider, (_, _) {});
+        final bannerSub = container.listen(activeGoalNudgesProvider, (_, _) {});
+        async.elapse(const Duration(milliseconds: 1));
+        expect(
+          container
+              .read(activeGoalAgentsProvider)
+              .requireValue
+              .map((a) => a.agentId),
+          ['goal-a'],
+        );
+        verify(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).called(1);
+        container.invalidate(activeGoalNudgesProvider);
+        async.elapse(Duration.zero);
+        syncStream.add({'goal-a'});
+        async.elapse(const Duration(milliseconds: 1));
+        verifyNever(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        );
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-b')]);
+        syncStream.add({agentNotification});
+        async.elapse(const Duration(milliseconds: 1));
+        verify(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).called(1);
+        expect(
+          container
+              .read(activeGoalAgentsProvider)
+              .requireValue
+              .map((a) => a.agentId),
+          ['goal-b'],
+        );
+        verify(() => repository.getEntity(goalSpecHeadId('goal-b'))).called(1);
+        bannerSub.close();
+        agentsSub.close();
+      }, initialTime: DateTime(2026, 9, 5, 12));
+    },
+  );
+
+  testWidgets('resume refreshes the shared identities used by banners', (
+    tester,
+  ) async {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+    final agentsSub = container.listen(activeGoalAgentsProvider, (_, _) {});
+    final bannerSub = container.listen(activeGoalNudgesProvider, (_, _) {});
+    addTearDown(agentsSub.close);
+    addTearDown(bannerSub.close);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    verify(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).called(1);
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity('goal-b')]);
+    tester.binding
+      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    verify(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).called(1);
+    expect(
+      container
+          .read(activeGoalAgentsProvider)
+          .requireValue
+          .map((a) => a.agentId),
+      ['goal-b'],
+    );
+    verify(() => repository.getEntity(goalSpecHeadId('goal-b'))).called(1);
+  });
+
+  for (final fullyDispose in [false, true]) {
+    for (final pendingStage in ['agents', 'head', 'version', 'nudges']) {
+      test(
+        'disposed goal banners stop after pending $pendingStage lookup (fully disposed: $fullyDispose)',
+        () {
+          fakeAsync((async) {
+            final agents = Completer<List<AgentIdentityEntity>>();
+            final head = Completer<AgentDomainEntity?>();
+            final version = Completer<AgentDomainEntity?>();
+            final nudges = Completer<List<AgentDomainEntity>>();
+            when(
+              () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+            ).thenAnswer((_) => agents.future);
+            when(
+              () => repository.getEntity(any()),
+            ).thenAnswer((_) => head.future);
+            when(
+              () => repository.getEntity('goal-a:spec-v1'),
+            ).thenAnswer((_) => version.future);
+            when(
+              () =>
+                  repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+            ).thenAnswer((_) => nudges.future);
+            final flag = container.listen(
+              configFlagProvider(enableUnifiedGoalsFlag),
+              (_, _) {},
+            );
+            final agentsSubscription = container.listen(
+              activeGoalAgentsProvider,
+              (_, _) {},
+            );
+            final probe = FutureProviderProbe(activeGoalNudgesProvider);
+            final sub = container.listen(probe.provider, (_, _) {});
+            async.elapse(const Duration(milliseconds: 1));
+            if (pendingStage != 'agents') {
+              agents.complete([goalIdentity('goal-a')]);
+              async.flushMicrotasks();
+            }
+            if (pendingStage == 'version' || pendingStage == 'nudges') {
+              head.complete(
+                AgentDomainEntity.goalSpecHead(
+                  id: goalSpecHeadId('goal-a'),
+                  agentId: 'goal-a',
+                  versionId: 'goal-a:spec-v1',
+                  updatedAt: DateTime(2026),
+                  vectorClock: null,
+                ),
+              );
+              async.flushMicrotasks();
+            }
+            if (pendingStage == 'nudges') {
+              version.complete(null);
+              async.flushMicrotasks();
+            }
+            sub.close();
+            probe.results.clear();
+            container.invalidate(probe.provider);
+            if (fullyDispose) async.elapse(Duration.zero);
+            if (!agents.isCompleted) agents.complete([goalIdentity('goal-a')]);
+            if (!head.isCompleted) head.complete(null);
+            if (!version.isCompleted) version.complete(null);
+            nudges.complete([
+              AgentDomainEntity.goalNudge(
+                id: 'pending-banner',
+                agentId: 'goal-a',
+                status: NudgeStatus.active,
+                brief: const NudgeBrief(
+                  headline: 'A reminder',
+                  tone: NudgeTone.nudge,
+                  animation: NudgeBannerAnimation.steady,
+                ),
+                briefDigest: 'digest',
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+                staleAt: clock.now().add(const Duration(hours: 1)),
+              ),
+            ]);
+            async
+              ..flushMicrotasks()
+              ..elapse(Duration.zero);
+            expect(probe.errors, isEmpty);
+            expect(probe.results, [isEmpty]);
+            expect(
+              async.pendingTimers,
+              isEmpty,
+              reason: 'a disposed banner must not leave a deadline callback',
+            );
+            if (pendingStage == 'agents') {
+              verifyNever(() => repository.getEntity(any()));
+            }
+            if (pendingStage == 'head' || pendingStage == 'version') {
+              verifyNever(
+                () => repository.getEntitiesByAgentId(
+                  'goal-a',
+                  type: 'goalNudge',
+                ),
+              );
+            }
+            agentsSubscription.close();
+            flag.close();
+          }, initialTime: DateTime(2026, 9, 5, 12));
+        },
+      );
+    }
+  }
 
   test('a rendered banner is re-evaluated at its staleness deadline, with '
       'no agent notification needed', () {
