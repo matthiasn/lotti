@@ -435,9 +435,15 @@ bool isReadableDatabaseFile(File file) {
 ///
 /// The damaged file is kept as `<name>.corrupt-<timestamp>` rather than
 /// deleted: it is the only copy of whatever the backup does not carry, and a
-/// user who asks for help later needs it. The `-wal` and `-shm` companions
-/// go, because SQLite would otherwise replay a write-ahead log belonging to
-/// the file that was just replaced.
+/// user who asks for help later needs it. Its `-wal` and `-shm` companions
+/// move with it under the same name — they must leave the live path, because
+/// SQLite would otherwise replay a write-ahead log belonging to the file that
+/// was just replaced, but the WAL of an unreadable file holds exactly the
+/// commits the snapshot is missing.
+///
+/// The snapshot is copied to a scratch path and only moved into place once
+/// that copy has succeeded, so a failure partway cannot leave the live path
+/// empty for the next open to fill with a fresh, blank database.
 ///
 /// Snapshots are tried newest first, so a backup that is itself damaged does
 /// not block recovery from an older one. Returns `null` when nothing was
@@ -455,15 +461,34 @@ Future<File?> restoreDatabaseFromBackup(File file) async {
       );
       continue;
     }
+    // Copy to a scratch path first: a copy that fails partway — a full disk,
+    // a snapshot that became unreadable since the probe — must not be able to
+    // leave the live path empty, because the open that follows would create a
+    // fresh database there and the corruption would never surface.
+    final staged = File('${file.path}.restore-tmp');
+    if (staged.existsSync()) await staged.delete();
+    try {
+      await snapshot.copy(staged.path);
+    } catch (_) {
+      if (staged.existsSync()) await staged.delete();
+      rethrow;
+    }
     final ts = DateFormat(_backupTimestampFormat).format(clock.now());
     if (file.existsSync()) {
       await file.rename('${file.path}.corrupt-$ts');
     }
+    // The companions move with the file they belong to rather than being
+    // deleted. They must leave the live path — SQLite would replay a WAL it
+    // finds beside the restored snapshot — but an unreadable main file's WAL
+    // holds exactly the commits the snapshot is missing, which is what makes
+    // the kept artifact worth keeping.
     for (final suffix in const ['-wal', '-shm']) {
       final companion = File('${file.path}$suffix');
-      if (companion.existsSync()) await companion.delete();
+      if (companion.existsSync()) {
+        await companion.rename('${file.path}.corrupt-$ts$suffix');
+      }
     }
-    await snapshot.copy(file.path);
+    await staged.rename(file.path);
     return snapshot;
   }
   return null;
@@ -503,6 +528,12 @@ Future<void> recoverDatabaseIfUnreadable(File file) async {
   }
 }
 
+/// How long `PRAGMA optimize` may run before [optimizeAndClose] gives up on
+/// it and closes anyway. Comfortably under both the disposer's per-operation
+/// deadline and the 5s `busy_timeout` these connections carry, so a statement
+/// stuck behind a lock cannot eat the budget the close needs.
+const optimizeBeforeCloseTimeout = Duration(seconds: 1);
+
 /// Runs `PRAGMA optimize` and closes [database].
 ///
 /// `ANALYZE` only ever runs inside a migration step here, so planner
@@ -513,18 +544,28 @@ Future<void> recoverDatabaseIfUnreadable(File file) async {
 /// gone stale, and does nothing at all on a connection that barely queried.
 /// Shutdown is where it costs nothing the user can feel.
 ///
-/// A failure is logged and swallowed: this runs on the way out, and nothing
-/// about it is worth failing a shutdown for.
-Future<void> optimizeAndClose(GeneratedDatabase database) async {
+/// A failure is logged and swallowed, and the statement is bounded by
+/// [timeout]: this runs on the way out, nothing about it is worth failing a
+/// shutdown for, and the close it precedes has a deadline of its own that a
+/// statement waiting on a busy lock must not be allowed to consume. The
+/// close runs whatever the optimize did.
+Future<void> optimizeAndClose(
+  GeneratedDatabase database, {
+  Duration timeout = optimizeBeforeCloseTimeout,
+}) async {
   try {
-    await database.customStatement('PRAGMA optimize');
+    await database.customStatement('PRAGMA optimize').timeout(timeout);
   } catch (e, stackTrace) {
     DevLogger.warning(
       name: 'Database',
       message: 'PRAGMA optimize failed before close: $e\n$stackTrace',
     );
+  } finally {
+    // Always, and in a finally: the whole point of closing on shutdown is
+    // that no native handle outlives the engine, and an optimize that hangs
+    // on a lock must not be able to take the close down with it.
+    await database.close();
   }
-  await database.close();
 }
 
 /// The result of an integrity check over one database file.

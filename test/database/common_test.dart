@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show GeneratedDatabase;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/common.dart';
@@ -39,6 +41,21 @@ Future<void> cleanupTestDirectoryWithGetIt(Directory testDir) async {
   }
   if (getIt.isRegistered<Directory>()) {
     getIt.unregister<Directory>();
+  }
+}
+
+/// A database whose `PRAGMA optimize` never completes, standing in for one
+/// waiting on a lock held elsewhere.
+class _HangingOptimizeDb extends Fake implements GeneratedDatabase {
+  bool closed = false;
+
+  @override
+  Future<void> customStatement(String statement, [List<Object?>? args]) =>
+      Completer<void>().future;
+
+  @override
+  Future<void> close() async {
+    closed = true;
   }
 }
 
@@ -855,11 +872,24 @@ void main() {
           .listSync()
           .whereType<File>()
           .map((f) => p.basename(f.path))
-          .where((name) => name.contains('.corrupt-'));
+          .where(
+            (name) =>
+                name.contains('.corrupt-') &&
+                !name.endsWith('-wal') &&
+                !name.endsWith('-shm'),
+          )
+          .toList();
       expect(kept, hasLength(1));
       // A WAL belonging to the replaced file would be replayed into the
-      // restored one.
+      // restored one, so it leaves the live path — with the corrupt file
+      // rather than into the bin, because it holds the commits the snapshot
+      // is missing.
       expect(File('${file.path}-wal').existsSync(), isFalse);
+      final corrupt = kept.single;
+      expect(
+        File(p.join(testDirectory.path, '$corrupt-wal')).readAsStringSync(),
+        'stale wal',
+      );
     });
 
     test(
@@ -882,6 +912,26 @@ void main() {
         expect(markerOf(file.path), 'older');
       },
     );
+
+    test('keeps the damaged database when the restore copy fails', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('not a database');
+      final backup = backupOf('db', '2026-09-05_11-00-00-000', 'backup');
+      // A scratch path that already exists as a *directory* makes the copy
+      // fail the way a full disk would, after the snapshot passed its probe.
+      Directory('${file.path}.restore-tmp').createSync();
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 12)),
+        () => recoverDatabaseIfUnreadable(file),
+      );
+
+      // Nothing may be left half-done: an empty live path would be filled
+      // with a fresh blank database by the open that follows, and the
+      // corruption would never surface.
+      expect(file.readAsStringSync(), 'not a database');
+      expect(backup.existsSync(), isTrue);
+    });
 
     test('leaves the file alone when there is no backup to restore', () async {
       final file = File(p.join(testDirectory.path, 'db.sqlite'))
@@ -912,6 +962,17 @@ void main() {
   });
 
   group('optimizeAndClose', () {
+    test('closes the database even when optimize never finishes', () async {
+      final db = _HangingOptimizeDb();
+
+      await optimizeAndClose(db, timeout: const Duration(milliseconds: 20));
+
+      // The disposer closes on shutdown precisely so no native handle
+      // outlives the engine; an optimize stuck on a lock must not take the
+      // close down with it.
+      expect(db.closed, isTrue);
+    });
+
     test('refreshes planner statistics and closes the database', () async {
       final directory = setupTestDirectory();
       addTearDown(() => directory.deleteSync(recursive: true));

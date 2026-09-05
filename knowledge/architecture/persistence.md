@@ -618,10 +618,15 @@ Those snapshots are also the recovery path. Every database opened through
 (`recoverDatabaseIfUnreadable`): opening the file and reading its schema
 cookie costs nothing that grows with the database, and a header SQLite can no
 longer read means every query after it would fail. When that happens the
-newest readable snapshot of the same store is copied over the file, its `-wal`
-and `-shm` companions are removed (they belong to the file just replaced), and
-the damaged file is kept as `<name>.corrupt-<timestamp>` because it holds
-whatever the snapshot does not. A damaged snapshot is skipped for an older
+newest readable snapshot of the same store is copied to a scratch path and
+only moved into place once that copy has succeeded — a copy that fails
+partway must not leave the live path empty, or the open that follows would
+create a blank database there and the corruption would never surface. The
+damaged file is kept as `<name>.corrupt-<timestamp>` because it holds
+whatever the snapshot does not, and its `-wal` and `-shm` companions move
+with it under the same name: they have to leave the live path, since SQLite
+would replay a WAL it finds beside the restored snapshot, but an unreadable
+file's WAL holds exactly the commits the snapshot is missing. A damaged snapshot is skipped for an older
 one, and a store with no snapshot is left exactly as it was, so the failure
 surfaces where it always did. Recovery is best effort: a failure inside it is
 logged and the normal open proceeds.
@@ -639,8 +644,12 @@ migration steps, so statistics would age with the data while the schema stands
 still, and the index comments in `database.drift` record how sensitive this
 schema's plans are to stale ones. `PRAGMA optimize` re-analyses only what
 SQLite believes has gone stale and does nothing on a connection that barely
-queried, so shutdown is where it costs the user nothing. A failure there is
-logged and the close proceeds.
+queried, so shutdown is where it costs the user nothing. The statement is
+bounded by its own one-second deadline and the close runs from a `finally`:
+these connections carry a 5s `busy_timeout`, and an optimize waiting on a
+lock must not consume the disposer's per-operation budget and leave a native
+handle open into engine teardown — the exact race the disposer exists to
+prevent. A failure there is logged and the close proceeds.
 
 `createDbBackup` is a **legacy per-database fallback**, not a supported profile
 backup. It has no store identity, manifest, checksum, media coverage,
