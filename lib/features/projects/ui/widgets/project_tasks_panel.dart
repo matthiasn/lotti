@@ -176,10 +176,20 @@ class _ProjectTasksSliverPanelState extends State<ProjectTasksSliverPanel> {
             if (!_collapsed.contains(group.key.id))
               SliverList.builder(
                 itemCount: group.tasks.length,
+                // Rows carry the task id so a row's element (and its hover
+                // state) follows the task when a sort or grouping change
+                // reorders the group, instead of staying with the index.
+                findChildIndexCallback: (key) {
+                  final index = group.tasks.indexWhere(
+                    (summary) => projectTaskRowKey(summary) == key,
+                  );
+                  return index < 0 ? null : index;
+                },
                 itemBuilder: (context, index) {
                   final summary = group.tasks[index];
                   final last = index == group.tasks.length - 1;
                   return Column(
+                    key: projectTaskRowKey(summary),
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TaskSummaryRow(
@@ -420,6 +430,10 @@ class _ProjectTaskGroupHeader extends StatelessWidget {
     );
   }
 }
+
+/// The key of the task list row that shows [summary], unique per task.
+Key projectTaskRowKey(TaskSummary summary) =>
+    ValueKey('project-task-row-${summary.task.meta.id}');
 
 /// A row displaying a single task's title, estimated duration, and status.
 class TaskSummaryRow extends StatelessWidget {

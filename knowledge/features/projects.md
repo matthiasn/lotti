@@ -432,7 +432,9 @@ The choice is remembered per project by `ProjectTaskListOptionsController`
 (`projectTaskListOptionsProvider(projectId)`) under one `SettingsDb` key per
 project, JSON-encoded and tolerant of unknown values; like the tasks-list
 density preference it loads once, holds state in memory and never lets an
-in-flight load clobber a fresh edit. The detail page watches it and opens the
+in-flight load clobber a fresh edit. Both database calls are fire-and-forget,
+so a failing read or write is logged under `LogDomain.settings` and swallowed:
+the read keeps the defaults, the write keeps the in-memory choice. The detail page watches it and opens the
 "Sort and group" sheet (`project_task_list_options_sheet.dart`), whose rows
 apply on tap through the controller. Read-only showcases pass no callback and
 show no control.

@@ -10729,7 +10729,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get projectTasksGroupDone => 'Concluído';
 
   @override
-  String get projectTasksSortActionability => 'Urgência';
+  String get projectTasksSortActionability => 'Precisa de atenção';
 
   @override
   String get projectTasksSortAndGroup => 'Ordenar e agrupar';
@@ -10741,7 +10741,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get projectTasksSortCreated => 'Criação';
 
   @override
-  String get projectTasksSortDueDate => 'Data de prazo';
+  String get projectTasksSortDueDate => 'Data de vencimento';
 
   @override
   String get projectTasksSortEstimate => 'Estimativa';

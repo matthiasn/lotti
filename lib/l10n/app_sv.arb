@@ -4625,7 +4625,7 @@
   "projectTasksDueThisWeek": "Denna vecka",
   "projectTasksGroupBy": "Gruppera efter",
   "projectTasksGroupByCreationMonth": "Skapandemånad",
-  "projectTasksGroupByDueWindow": "Förfallodatum",
+  "projectTasksGroupByDueWindow": "Förfalloperiod",
   "projectTasksGroupByNone": "Ingen",
   "projectTasksGroupByPriority": "Prioritet",
   "projectTasksGroupByStatus": "Status",
@@ -4638,7 +4638,7 @@
     }
   },
   "projectTasksGroupDone": "Klar",
-  "projectTasksSortActionability": "Angelägenhet",
+  "projectTasksSortActionability": "Behöver uppmärksamhet",
   "projectTasksSortAndGroup": "Sortera och gruppera",
   "projectTasksSortBy": "Sortera efter",
   "projectTasksSortCreated": "Skapad",

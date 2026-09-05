@@ -4621,7 +4621,7 @@
   "projectTasksDoneInGroups": "Behold færdige opgaver i deres grupper",
   "projectTasksDueLater": "Senere",
   "projectTasksDueNone": "Ingen forfaldsdato",
-  "projectTasksDueOverdue": "Overskredet",
+  "projectTasksDueOverdue": "Forfaldne",
   "projectTasksDueThisWeek": "Denne uge",
   "projectTasksGroupBy": "Gruppér efter",
   "projectTasksGroupByCreationMonth": "Oprettelsesmåned",

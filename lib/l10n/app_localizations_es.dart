@@ -10788,7 +10788,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get projectTasksGroupDone => 'Hecho';
 
   @override
-  String get projectTasksSortActionability => 'Urgencia';
+  String get projectTasksSortActionability => 'Requiere atención';
 
   @override
   String get projectTasksSortAndGroup => 'Ordenar y agrupar';

@@ -7,8 +7,11 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/projects/state/project_task_list_options_controller.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -16,6 +19,8 @@ void main() {
   final key = projectTaskListOptionsSettingsKey(projectId);
   late TestGetItMocks mocks;
   late ProviderContainer container;
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() async {
     mocks = await setUpTestGetIt();
@@ -42,6 +47,24 @@ void main() {
 
   ProjectTaskListOptions read() =>
       container.read(projectTaskListOptionsProvider(projectId));
+
+  /// Swaps a mock logger into getIt and returns it.
+  MockDomainLogger installMockLogger() {
+    final logger = MockDomainLogger();
+    when(
+      () => logger.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
+        message: any<String>(named: 'message'),
+      ),
+    ).thenReturn(null);
+    getIt
+      ..unregister<DomainLogger>()
+      ..registerSingleton<DomainLogger>(logger);
+    return logger;
+  }
 
   test('keys the preference by project', () {
     expect(key, 'PROJECT_TASK_LIST_OPTIONS_project-1');
@@ -122,6 +145,71 @@ void main() {
         ).toJson(),
       ),
     );
+    await awaitHydration();
+
+    expect(read(), chosen);
+  });
+
+  test(
+    'a settings read that fails leaves the defaults and is logged',
+    () async {
+      final logger = installMockLogger();
+      final failure = StateError('database closed');
+      when(() => mocks.settingsDb.itemByKey(key)).thenThrow(failure);
+
+      read();
+      await awaitHydration();
+
+      expect(read(), ProjectTaskListOptions.defaults);
+      verify(
+        () => logger.error(
+          LogDomain.settings,
+          failure,
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'projectTaskListOptions.load',
+        ),
+      ).called(1);
+    },
+  );
+
+  test('a failed write keeps the in-memory choice and is logged', () async {
+    final logger = installMockLogger();
+    final failure = StateError('disk full');
+    when(
+      () => mocks.settingsDb.saveSettingsItem(key, any<String>()),
+    ).thenAnswer((_) async => throw failure);
+    const chosen = ProjectTaskListOptions(sortBy: ProjectTaskSortBy.priority);
+
+    container
+        .read(projectTaskListOptionsProvider(projectId).notifier)
+        .update(chosen);
+    await awaitHydration();
+
+    expect(read(), chosen);
+    verify(
+      () => logger.error(
+        LogDomain.settings,
+        failure,
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'projectTaskListOptions.persist',
+      ),
+    ).called(1);
+  });
+
+  test('a failure without a registered logger is still contained', () async {
+    getIt.unregister<DomainLogger>();
+    when(
+      () => mocks.settingsDb.itemByKey(key),
+    ).thenAnswer((_) async => throw StateError('database closed'));
+    when(
+      () => mocks.settingsDb.saveSettingsItem(key, any<String>()),
+    ).thenThrow(StateError('disk full'));
+    const chosen = ProjectTaskListOptions(groupBy: ProjectTaskGroupBy.status);
+
+    read();
+    container
+        .read(projectTaskListOptionsProvider(projectId).notifier)
+        .update(chosen);
     await awaitHydration();
 
     expect(read(), chosen);

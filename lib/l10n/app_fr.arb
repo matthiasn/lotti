@@ -4164,7 +4164,7 @@
     }
   },
   "projectTasksGroupDone": "Fait",
-  "projectTasksSortActionability": "Urgence",
+  "projectTasksSortActionability": "Nécessite ton attention",
   "projectTasksSortAndGroup": "Trier et grouper",
   "projectTasksSortBy": "Trier par",
   "projectTasksSortCreated": "Création",

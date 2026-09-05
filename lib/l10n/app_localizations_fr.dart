@@ -10823,7 +10823,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectTasksGroupDone => 'Fait';
 
   @override
-  String get projectTasksSortActionability => 'Urgence';
+  String get projectTasksSortActionability => 'Nécessite ton attention';
 
   @override
   String get projectTasksSortAndGroup => 'Trier et grouper';

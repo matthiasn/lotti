@@ -348,6 +348,59 @@ void main() {
       highlightedTasksTotalDuration: const Duration(hours: 3, minutes: 40),
     );
 
+    testWidgets('a row keeps its element when a reorder moves its task', (
+      tester,
+    ) async {
+      final alpha = makeTestTaskSummary(
+        task: makeTestTask(
+          id: 'alpha',
+          title: 'Alpha',
+          createdAt: DateTime(2026, 9),
+        ),
+      );
+      final beta = makeTestTaskSummary(
+        task: makeTestTask(
+          id: 'beta',
+          title: 'Beta',
+          createdAt: DateTime(2026, 9, 2),
+        ),
+      );
+      final pair = makeTestProjectRecord(
+        highlightedTaskSummaries: [alpha, beta],
+      );
+
+      Future<void> pumpSorted(ProjectTaskSortBy sortBy) async {
+        await tester.pumpWidget(
+          wrapSliver(
+            ProjectTasksSliverPanel(
+              record: pair,
+              now: now,
+              options: ProjectTaskListOptions(
+                groupBy: ProjectTaskGroupBy.none,
+                sortBy: sortBy,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      double top(String title) => tester.getTopLeft(find.text(title)).dy;
+
+      await pumpSorted(ProjectTaskSortBy.title);
+      expect(top('Alpha'), lessThan(top('Beta')));
+      final betaRow = find.byKey(projectTaskRowKey(beta));
+      final betaElement = tester.element(betaRow);
+
+      await pumpSorted(ProjectTaskSortBy.created);
+      expect(top('Beta'), lessThan(top('Alpha')), reason: 'newest first');
+      expect(
+        tester.element(betaRow),
+        same(betaElement),
+        reason: 'the element follows the task, not the index',
+      );
+    });
+
     testWidgets('renders the header with count and total estimate', (
       tester,
     ) async {

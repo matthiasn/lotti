@@ -10616,7 +10616,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectTasksGroupByCreationMonth => 'Skapandemånad';
 
   @override
-  String get projectTasksGroupByDueWindow => 'Förfallodatum';
+  String get projectTasksGroupByDueWindow => 'Förfalloperiod';
 
   @override
   String get projectTasksGroupByNone => 'Ingen';
@@ -10642,7 +10642,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectTasksGroupDone => 'Klar';
 
   @override
-  String get projectTasksSortActionability => 'Angelägenhet';
+  String get projectTasksSortActionability => 'Behöver uppmärksamhet';
 
   @override
   String get projectTasksSortAndGroup => 'Sortera och gruppera';

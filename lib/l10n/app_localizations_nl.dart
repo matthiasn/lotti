@@ -10622,7 +10622,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectTasksGroupByCreationMonth => 'Aanmaakmaand';
 
   @override
-  String get projectTasksGroupByDueWindow => 'Deadline';
+  String get projectTasksGroupByDueWindow => 'Termijn';
 
   @override
   String get projectTasksGroupByNone => 'Geen';
@@ -10648,7 +10648,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectTasksGroupDone => 'Klaar';
 
   @override
-  String get projectTasksSortActionability => 'Urgentie';
+  String get projectTasksSortActionability => 'Aandacht nodig';
 
   @override
   String get projectTasksSortAndGroup => 'Sorteren en groeperen';
@@ -10660,7 +10660,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectTasksSortCreated => 'Aangemaakt';
 
   @override
-  String get projectTasksSortDueDate => 'Deadline';
+  String get projectTasksSortDueDate => 'Verloopdatum';
 
   @override
   String get projectTasksSortEstimate => 'Schatting';

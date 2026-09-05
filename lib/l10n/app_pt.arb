@@ -4637,11 +4637,11 @@
     }
   },
   "projectTasksGroupDone": "Concluído",
-  "projectTasksSortActionability": "Urgência",
+  "projectTasksSortActionability": "Precisa de atenção",
   "projectTasksSortAndGroup": "Ordenar e agrupar",
   "projectTasksSortBy": "Ordenar por",
   "projectTasksSortCreated": "Criação",
-  "projectTasksSortDueDate": "Data de prazo",
+  "projectTasksSortDueDate": "Data de vencimento",
   "projectTasksSortEstimate": "Estimativa",
   "projectTasksSortPriority": "Prioridade",
   "projectTasksSortRecentlyUpdated": "Atualização recente",

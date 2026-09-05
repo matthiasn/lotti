@@ -10834,7 +10834,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectTasksGroupDone => 'Finalizat';
 
   @override
-  String get projectTasksSortActionability => 'Urgență';
+  String get projectTasksSortActionability => 'Necesită atenție';
 
   @override
   String get projectTasksSortAndGroup => 'Sortare și grupare';

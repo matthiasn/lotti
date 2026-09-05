@@ -4171,7 +4171,7 @@
     }
   },
   "projectTasksGroupDone": "Hotovo",
-  "projectTasksSortActionability": "Naléhavost",
+  "projectTasksSortActionability": "Vyžaduje pozornost",
   "projectTasksSortAndGroup": "Řadit a seskupit",
   "projectTasksSortBy": "Řadit podle",
   "projectTasksSortCreated": "Vytvořeno",

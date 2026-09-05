@@ -10774,7 +10774,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectTasksGroupDone => 'Hotovo';
 
   @override
-  String get projectTasksSortActionability => 'Naléhavost';
+  String get projectTasksSortActionability => 'Vyžaduje pozornost';
 
   @override
   String get projectTasksSortAndGroup => 'Řadit a seskupit';

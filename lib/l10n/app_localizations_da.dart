@@ -10592,7 +10592,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectTasksDueNone => 'Ingen forfaldsdato';
 
   @override
-  String get projectTasksDueOverdue => 'Overskredet';
+  String get projectTasksDueOverdue => 'Forfaldne';
 
   @override
   String get projectTasksDueThisWeek => 'Denne uge';
