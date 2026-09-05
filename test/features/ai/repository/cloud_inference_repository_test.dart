@@ -3550,9 +3550,19 @@ void main() {
           ).captured;
           expect(captured, hasLength(1));
           final request = captured.first as http.MultipartRequest;
+          final biasFields = request.files
+              .where((file) => file.field == 'context_bias')
+              .toList();
+          expect(biasFields, hasLength(3));
           expect(
-            request.fields['context_bias'],
-            equals('macOS,Flutter,Dart'),
+            biasFields.map((field) => field.filename),
+            everyElement(isNull),
+          );
+          expect(
+            await Future.wait(
+              biasFields.map((field) => field.finalize().bytesToString()),
+            ),
+            ['macOS', 'Flutter', 'Dart'],
           );
         },
       );

@@ -89,7 +89,7 @@ void main() {
 
         final chunks = await chatRepository
             .transcribeChatAudio(
-              model: 'voxtral-mini-latest',
+              model: 'voxtral-small-latest',
               audioBase64: base64Encode([1, 2, 3]),
               baseUrl: 'https://api.mistral.ai/v1',
               apiKey: 'mistral-key',

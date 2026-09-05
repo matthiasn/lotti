@@ -933,7 +933,7 @@ void main() {
       },
     );
 
-    test('prefers Mistral chat audio over MLX Qwen when both exist', () async {
+    test('prefers Mistral transcription over MLX Qwen', () async {
       final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(
         _provider(
