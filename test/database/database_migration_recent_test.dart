@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../widget_test_utils.dart';
+import 'schema_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -49,54 +50,47 @@ void main() {
 
   test('v45 backfills and indexes Daily OS audio lookup identity', () async {
     final databaseFile = File(path.join(testDirectory.path, 'v45.db'));
-    sqlite3.open(databaseFile.path)
-      ..execute('''
-        CREATE TABLE journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          deleted BOOLEAN NOT NULL DEFAULT FALSE,
-          type TEXT NOT NULL,
-          subtype TEXT
-        )
-      ''')
-      ..execute(
-        'INSERT INTO journal VALUES (?, ?, 0, 0, 0, 60, FALSE, ?, NULL)',
-        [
-          'audio-owner-a',
-          _serializedDayAudio(
-            dayId: 'dayplan-2026-07-18',
-            sessionId: 'duplicate-session',
-          ),
-          'JournalAudio',
-        ],
-      )
-      ..execute(
-        'INSERT INTO journal VALUES (?, ?, 0, 0, 60, 120, FALSE, ?, NULL)',
-        [
-          'audio-owner-b',
-          _serializedDayAudio(
-            dayId: 'dayplan-2026-07-18',
-            sessionId: 'duplicate-session',
-          ),
-          'JournalAudio',
-        ],
-      )
-      ..execute(
-        'INSERT INTO journal VALUES (?, ?, 0, 0, 0, 60, FALSE, ?, NULL)',
-        ['ordinary-entry', '{"data":{}}', 'JournalEntry'],
-      )
-      ..execute('PRAGMA user_version = 44')
+    final sqlite = sqlite3.open(databaseFile.path);
+    createJournalSchema(sqlite, 44);
+    const insert =
+        'INSERT INTO journal (id, serialized, created_at, updated_at, '
+        'date_from, date_to, deleted, type, subtype) '
+        'VALUES (?, ?, 0, 0, ?, ?, FALSE, ?, NULL)';
+    sqlite
+      ..execute(insert, [
+        'audio-owner-a',
+        _serializedDayAudio(
+          dayId: 'dayplan-2026-07-18',
+          sessionId: 'duplicate-session',
+        ),
+        0,
+        60,
+        'JournalAudio',
+      ])
+      ..execute(insert, [
+        'audio-owner-b',
+        _serializedDayAudio(
+          dayId: 'dayplan-2026-07-18',
+          sessionId: 'duplicate-session',
+        ),
+        60,
+        120,
+        'JournalAudio',
+      ])
+      ..execute(insert, [
+        'ordinary-entry',
+        '{"data":{}}',
+        0,
+        60,
+        'JournalEntry',
+      ])
       ..close();
 
     final db = JournalDb(overriddenFilename: 'v45.db');
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 46);
+    expect(version.read<int>('user_version'), 47);
     final rows = await db
         .customSelect(
           'SELECT id, day_id, recording_session_id FROM journal ORDER BY id',

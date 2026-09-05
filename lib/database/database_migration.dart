@@ -441,7 +441,83 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
         }
 
         await _onUpgradeRecent(m, from);
+        await _reconcileIndexesWithSchema(m);
       },
     );
+  }
+
+  /// Brings the indexes of every Drift-managed table in line with the
+  /// declared schema: drops indexes the schema no longer declares, creates
+  /// declared ones that are missing.
+  ///
+  /// Runs at the end of every upgrade. `database.drift` is the single
+  /// statement of which indexes exist, so an index change is an edit there
+  /// plus a version bump — no hand-written `CREATE`/`DROP INDEX` in the
+  /// migration. It exists because the history did not work that way:
+  /// installs from before v25 still carried every single-column index the
+  /// original schema created and later versions stopped declaring but never
+  /// dropped, up to seventeen on `journal`, each paid for on every write.
+  ///
+  /// Only explicitly created indexes on managed tables are touched;
+  /// SQLite's own constraint indexes and any table Drift does not manage
+  /// (legacy tables left in place) are ignored. A declared index whose
+  /// table is absent — the case in minimal migration fixtures — is skipped.
+  Future<void> _reconcileIndexesWithSchema(Migrator m) async {
+    final managedTables = {
+      for (final table in allTables) table.actualTableName,
+    };
+    final declared = {
+      for (final index in allSchemaEntities.whereType<Index>())
+        index.entityName: index,
+    };
+    final existingRows = await customSelect(
+      "SELECT name, tbl_name FROM sqlite_master WHERE type = 'index' "
+      'AND sql IS NOT NULL',
+    ).get();
+    final existing = <String, String>{
+      for (final row in existingRows)
+        row.read<String>('name'): row.read<String>('tbl_name'),
+    };
+    final existingTables = {
+      for (final row in await customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table'",
+      ).get())
+        row.read<String>('name'),
+    };
+
+    for (final entry in existing.entries) {
+      final name = entry.key;
+      final table = entry.value;
+      if (!managedTables.contains(table) || declared.containsKey(name)) {
+        continue;
+      }
+      DevLogger.log(
+        name: 'JournalDb',
+        message: 'Dropping undeclared index $name on $table',
+      );
+      await customStatement('DROP INDEX IF EXISTS "$name"');
+    }
+
+    for (final index in declared.values) {
+      if (existing.containsKey(index.entityName)) continue;
+      final table = _indexedTable(index);
+      if (table == null || !existingTables.contains(table)) continue;
+      DevLogger.log(
+        name: 'JournalDb',
+        message: 'Creating declared index ${index.entityName} on $table',
+      );
+      await m.createIndex(index);
+    }
+  }
+
+  /// The table an index is declared on, read from its `CREATE INDEX`
+  /// statement; Drift's runtime [Index] does not carry the reference.
+  static String? _indexedTable(Index index) {
+    final statement = index.createStatementsByDialect[SqlDialect.sqlite];
+    if (statement == null) return null;
+    return RegExp(
+      r'\bON\s+"?([A-Za-z0-9_]+)"?\s*\(',
+      caseSensitive: false,
+    ).firstMatch(statement)?.group(1);
   }
 }

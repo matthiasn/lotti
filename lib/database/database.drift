@@ -173,6 +173,16 @@ WHERE type = 'Task'
   AND task = 1
   AND deleted = FALSE;
 
+-- Latest quantitative entry per subtype (health imports). Declared here so a
+-- fresh install and an upgraded one agree; `beforeOpen` also re-asserts it
+-- as a self-heal for a partially applied migration.
+CREATE INDEX idx_journal_quant_latest ON journal(
+  subtype COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC
+)
+WHERE type = 'QuantitativeEntry'
+  AND deleted = FALSE;
+
 -- Partial covering index for the Insights time-analysis query (v43 in
 -- migrations). Only `date_from < :end` can be a seek bound — the
 -- `date_to > :start` overlap check is inherently residual — so the scan
