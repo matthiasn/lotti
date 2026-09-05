@@ -508,7 +508,15 @@ class ProjectRecommendationService {
     final restored = await _syncService.runInTransaction(() async {
       final latest = await _syncService.repository.getEntity(row.id);
       final current = latest?.mapOrNull(projectRecommendation: (e) => e);
-      if (current == null || current.status != row.status) return false;
+      // Re-validated inside the transaction: a newer run can win while the
+      // task removal above is in flight, and a step that run replaced must
+      // not come back to life. Its task is already gone, which is what the
+      // undo asked for; the step itself stays out of the current snapshot.
+      if (current == null ||
+          current.status != row.status ||
+          !await _isCurrent(current)) {
+        return false;
+      }
       final now = clock.now();
       await _syncService.upsertEntity(
         current.copyWith(
@@ -534,13 +542,30 @@ class ProjectRecommendationService {
     return restored;
   }
 
-  /// Soft-deletes the single-item change set [_recordDecision] wrote, which
-  /// is what the feedback-extraction path joins decisions against.
+  /// Neutralises what [_recordDecision] wrote for [row]. The decision itself
+  /// is rewritten as *deferred*, dated [now] — feedback extraction reads the
+  /// verdict straight off the decision, so tombstoning only its source set
+  /// would leave the undone verdict training the template, and the fresh
+  /// timestamp lets the rewrite win last-writer-wins on other devices. The
+  /// single-item source set is tombstoned alongside; a later decision on the
+  /// same step revives both under their deterministic ids.
   Future<void> _withdrawDecision(
     ProjectRecommendationEntity row,
     DateTime now,
   ) async {
     final setId = _uuid.v5(Namespace.url.value, '${row.id}/decision-source');
+    final decisionId = _uuid.v5(Namespace.url.value, '${row.id}/decision');
+    final decision = await _syncService.repository.getEntity(decisionId);
+    if (decision case ChangeDecisionEntity(
+      verdict: != ChangeDecisionVerdict.deferred,
+    )) {
+      await _syncService.upsertEntity(
+        decision.copyWith(
+          verdict: ChangeDecisionVerdict.deferred,
+          createdAt: now,
+        ),
+      );
+    }
     final set = await _syncService.repository.getEntity(setId);
     if (set case ChangeSetEntity(deletedAt: null)) {
       await _syncService.upsertEntity(set.copyWith(deletedAt: now));

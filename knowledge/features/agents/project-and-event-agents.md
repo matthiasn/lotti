@@ -372,12 +372,19 @@ rows therefore keep their place until the next run replaces the list; only
 open rows of a known losing run are superseded by that read.
 
 A decision on a step of the current run can be undone. `restoreRecommendation`
-reopens a dismissed or added step, clears its timestamps and task link, and
-soft-deletes the single-item change set the decision wrote, so the withdrawn
-verdict no longer reaches feedback extraction. For an added step the created
-task is soft-deleted through the injected `taskRemover` *before* the step
-reopens; if that removal fails the step stays resolved, so a retry cannot
-leave the task orphaned. Steps replaced by a newer run cannot be restored.
+reopens a dismissed or added step and clears its timestamps and task link. The
+recorded decision is rewritten as *deferred*, dated at the undo so the rewrite
+wins last-writer-wins on other devices, and its single-item source change set
+is tombstoned; feedback extraction reads the verdict off the decision, so
+tombstoning the set alone would have left the undone verdict training the
+template. For an added step the created task is soft-deleted through the
+injected `taskRemover` *before* the step reopens, and the remover proves the
+deletion by reading the tombstone back rather than trusting the repository's
+return value; if the task still reads, the step stays resolved so a retry
+cannot leave it orphaned. The current-run check is repeated inside the restore
+transaction: a run that wins while the task is being removed leaves the
+replaced step out of the snapshot instead of bringing it back to life. Steps
+replaced by a newer run cannot be restored.
 
 ```mermaid
 stateDiagram-v2

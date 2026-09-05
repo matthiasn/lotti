@@ -163,8 +163,18 @@ final projectRecommendationServiceProvider =
             domainLogger: ref.read(domainLoggerProvider),
             taskAgentService: ref.read(taskAgentServiceProvider),
           ).dispatch(tool, args, projectId),
-          taskRemover: (taskId) =>
-              ref.read(journalRepositoryProvider).deleteJournalEntity(taskId),
+          // The repository delete logs and swallows a failed write, so its
+          // return value is not proof; the tombstone is. `journalEntityById`
+          // filters deleted rows, so a null read means the task is gone.
+          taskRemover: (taskId) async {
+            await ref
+                .read(journalRepositoryProvider)
+                .deleteJournalEntity(taskId);
+            final remaining = await ref
+                .read(journalDbProvider)
+                .journalEntityById(taskId);
+            return remaining == null;
+          },
         );
       },
     );

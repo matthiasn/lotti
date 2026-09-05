@@ -775,6 +775,18 @@ void main() {
           restoredAt,
           reason: 'An undone verdict must not train the template.',
         );
+        final decision = rows.values.whereType<ChangeDecisionEntity>().single;
+        expect(
+          decision.verdict,
+          ChangeDecisionVerdict.deferred,
+          reason: 'Feedback extraction reads the verdict off the decision.',
+        );
+        expect(
+          decision.createdAt,
+          restoredAt,
+          reason: 'A fresh timestamp lets the rewrite win last-writer-wins.',
+        );
+
         verify(
           () => mockNotifications.notifyUiOnly({
             'agent-1',
@@ -783,6 +795,14 @@ void main() {
           }),
         ).called(1);
         expect(active().map((step) => step.id), contains(id));
+
+        expect(await service.dismissRecommendation(id), isTrue);
+        expect(
+          rows.values.whereType<ChangeDecisionEntity>().single.verdict,
+          ChangeDecisionVerdict.rejected,
+          reason: 'Deciding again revives the deterministic decision.',
+        );
+        expect(decisionSourceFor('Review penguin launch').deletedAt, isNull);
       },
     );
 
@@ -825,6 +845,106 @@ void main() {
         },
       );
     }
+
+    test(
+      'restoreRecommendation gives up when a newer run wins while the task '
+      'is being removed',
+      () async {
+        final removed = <String>[];
+        service = ProjectRecommendationService(
+          syncService: mockSyncService,
+          notifications: mockNotifications,
+          taskDispatcher: (tool, args, projectId) async =>
+              const ToolExecutionResult(
+                success: true,
+                output: '',
+                mutatedEntityId: 'task-1',
+              ),
+          taskRemover: (taskId) async {
+            removed.add(taskId);
+            await publish('run-2', [
+              {
+                'toolName': 'recommend_next_steps',
+                'args': {
+                  'steps': [
+                    {'title': 'Inspect habitat'},
+                  ],
+                },
+              },
+            ]);
+            return true;
+          },
+        );
+        await publish('run-1', proposal);
+        final id = active().first.id;
+        expect((await service.createTask(id)).success, isTrue);
+
+        expect(await service.restoreRecommendation(id), isFalse);
+
+        expect(removed, ['task-1']);
+        final row = rows[id]! as ProjectRecommendationEntity;
+        expect(
+          row.status,
+          ProjectRecommendationStatus.resolved,
+          reason: 'A step the newer run replaced must not come back to life.',
+        );
+        expect(
+          (await service.currentRunSnapshot(
+            'agent-1',
+            'project-1',
+          )).steps.map((step) => step.title),
+          ['Inspect habitat'],
+        );
+      },
+    );
+
+    test(
+      'currentRunSnapshot orders legacy rows by position, then creation, '
+      'then id',
+      () async {
+        final base = now.subtract(const Duration(days: 1));
+        rows['legacy-b'] = makeTestProjectRecommendation(
+          id: 'legacy-b',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Same slot, same time, later id',
+          createdAt: base,
+        );
+        rows['legacy-a'] = makeTestProjectRecommendation(
+          id: 'legacy-a',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Same slot, same time, earlier id',
+          createdAt: base,
+        );
+        rows['legacy-later'] = makeTestProjectRecommendation(
+          id: 'legacy-later',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Same slot, newer batch',
+          createdAt: base.add(const Duration(hours: 1)),
+        );
+        rows['legacy-second'] = makeTestProjectRecommendation(
+          id: 'legacy-second',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Second slot',
+          position: 1,
+          createdAt: base,
+        );
+
+        final snapshot = await service.currentRunSnapshot(
+          'agent-1',
+          'project-1',
+        );
+
+        expect(
+          snapshot.steps.map((step) => step.id),
+          ['legacy-a', 'legacy-b', 'legacy-later', 'legacy-second'],
+        );
+        expect(snapshot.runCreatedAt, isNull);
+      },
+    );
 
     test(
       'restoreRecommendation throws without a task remover for an added step',

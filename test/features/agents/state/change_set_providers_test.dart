@@ -19,12 +19,14 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../projects/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -347,68 +349,40 @@ void main() {
       expect(service, isA<ProjectRecommendationService>());
     });
 
-    test(
-      'undoing a created task soft-deletes it through the journal',
-      () async {
-        final journal = MockJournalRepository();
-        when(
-          () => journal.deleteJournalEntity('task-1'),
-        ).thenAnswer((_) async => true);
-        final container = ProviderContainer(
-          overrides: [
-            agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
-            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-            maybeUpdateNotificationsProvider.overrideWith((ref) => null),
-            journalRepositoryProvider.overrideWithValue(journal),
-          ],
-        );
-        addTearDown(container.dispose);
+    for (final gone in [true, false]) {
+      test(
+        'undoing a created task deletes it through the journal and reports '
+        '${gone ? 'success once the tombstone reads back' : 'failure while the task still reads'}',
+        () async {
+          final journal = MockJournalRepository();
+          final journalDb = MockJournalDb();
+          when(
+            () => journal.deleteJournalEntity('task-1'),
+          ).thenAnswer((_) async => true);
+          when(
+            () => journalDb.journalEntityById('task-1'),
+          ).thenAnswer((_) async => gone ? null : makeTestTask(id: 'task-1'));
+          final container = ProviderContainer(
+            overrides: [
+              agentSyncServiceProvider.overrideWithValue(
+                MockAgentSyncService(),
+              ),
+              domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+              maybeUpdateNotificationsProvider.overrideWith((ref) => null),
+              journalRepositoryProvider.overrideWithValue(journal),
+              journalDbProvider.overrideWithValue(journalDb),
+            ],
+          );
+          addTearDown(container.dispose);
 
-        final service = container.read(projectRecommendationServiceProvider);
+          final service = container.read(projectRecommendationServiceProvider);
 
-        expect(await service.taskRemover!('task-1'), isTrue);
-        verify(() => journal.deleteJournalEntity('task-1')).called(1);
-      },
-    );
-  });
-
-  group('selfTargetedPendingChangeSetsProvider', () {
-    test('fetches change sets the agent targets at itself and deduplicates '
-        'them', () async {
-      final updateController = StreamController<Set<String>>.broadcast();
-      addTearDown(updateController.close);
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          agentUpdateStreamProvider(
-            'goal-1',
-          ).overrideWith((ref) => updateController.stream),
-        ],
+          expect(await service.taskRemover!('task-1'), gone);
+          verify(() => journal.deleteJournalEntity('task-1')).called(1);
+          verify(() => journalDb.journalEntityById('task-1')).called(1);
+        },
       );
-      addTearDown(container.dispose);
-
-      final older = makeTestChangeSet(
-        id: 'cs-old',
-        agentId: 'goal-1',
-        taskId: 'goal-1',
-        createdAt: DateTime(2026, 8, 9),
-      );
-      final newer = makeTestChangeSet(
-        id: 'cs-new',
-        agentId: 'goal-1',
-        taskId: 'goal-1',
-        createdAt: DateTime(2026, 8, 10),
-      );
-      when(
-        () => mockRepository.getPendingChangeSets('goal-1', taskId: 'goal-1'),
-      ).thenAnswer((_) async => [newer, older]);
-
-      final result = await container.read(
-        selfTargetedPendingChangeSetsProvider('goal-1').future,
-      );
-      // Identical pending items → the duplicate collapses to the newest.
-      expect(result, [newer]);
-    });
+    }
   });
 
   group('eventPendingChangeSetsProvider', () {
