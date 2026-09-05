@@ -214,8 +214,8 @@ void main() {
         ..once(controller)
         ..requestPending();
       controller.landed = 1;
-      captures.requestPending();
       captures
+        ..requestPending()
         ..invalidate(controller)
         ..requestPending();
       // The engine's first request may rasterize the OLD pending layer,

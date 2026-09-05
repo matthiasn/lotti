@@ -50,7 +50,6 @@ class PlazaStaticMeshes {
             material.runtimeType == UnlitMaterial &&
             material is UnlitMaterial &&
             material.isOpaque() &&
-            material.lodFade == 1 &&
             node.highlightColor == null &&
             primitive.geometry is UnskinnedGeometry &&
             primitive.geometry is! BillboardGeometry) {
@@ -59,7 +58,7 @@ class PlazaStaticMeshes {
               snapshot.customAttributes.isNotEmpty) {
             return;
           }
-          final transform = rootInverse * node.globalTransform;
+          final transform = rootInverse.multiplied(node.globalTransform);
           final at = transform.getTranslation();
           final uv = material.baseColorTextureTransform;
           final key = (
@@ -90,9 +89,7 @@ class PlazaStaticMeshes {
           originals.add(node);
         }
       }
-      for (final child in node.children) {
-        visit(child);
-      }
+      node.children.forEach(visit);
     }
 
     visit(root);

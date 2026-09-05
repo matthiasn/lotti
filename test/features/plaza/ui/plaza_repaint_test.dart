@@ -15,11 +15,15 @@ class _PaintProbe extends CustomPainter {
   bool shouldRepaint(_PaintProbe oldDelegate) => false;
 }
 
+class _FrameClock extends ChangeNotifier {
+  bool get listening => hasListeners;
+}
+
 void main() {
   testWidgets('frames paint the scene without rebuilding its hosted subtree', (
     tester,
   ) async {
-    final frames = ChangeNotifier();
+    final frames = _FrameClock();
     addTearDown(frames.dispose);
     var builds = 0;
     var paints = 0;
@@ -52,23 +56,23 @@ void main() {
     await tester.tap(find.byType(CustomPaint).last);
     expect(taps, 1);
     await tester.pumpWidget(const SizedBox());
-    expect(frames.hasListeners, isFalse);
+    expect(frames.listening, isFalse);
   });
 
   testWidgets('replacing the clock detaches the old listener', (tester) async {
-    final old = ChangeNotifier();
-    final next = ChangeNotifier();
+    final old = _FrameClock();
+    final next = _FrameClock();
     addTearDown(old.dispose);
     addTearDown(next.dispose);
     Widget host(Listenable clock) => makeTestableWidget2(
       PlazaRepaint(frames: clock, child: const SizedBox.expand()),
     );
     await tester.pumpWidget(host(old));
-    expect(old.hasListeners, isTrue);
+    expect(old.listening, isTrue);
     await tester.pumpWidget(host(next));
-    expect(old.hasListeners, isFalse);
-    expect(next.hasListeners, isTrue);
+    expect(old.listening, isFalse);
+    expect(next.listening, isTrue);
     await tester.pumpWidget(const SizedBox());
-    expect(next.hasListeners, isFalse);
+    expect(next.listening, isFalse);
   });
 }

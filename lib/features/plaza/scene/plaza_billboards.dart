@@ -186,7 +186,7 @@ extension _PlazaBillboardsBuilder on PlazaSceneController {
   /// [width] × [height] backing in the [frame] colour at [y], standing
   /// [front] out from the parent's centre, a glow [glowMargin] wider
   /// behind it at [glowAlpha], and the anchor the widget for anomaly
-  /// [rank] hangs on, appended to [skylineScreens].
+  /// [rank] hangs on, appended to the skyline screen bindings.
   void _towerScreen(
     Node parent, {
     required double width,

@@ -4,6 +4,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/ui/plaza_frame_pacer.dart';
 
 void main() {
+  testWidgets('default scheduler paints on vsync and cancels pending work', (
+    tester,
+  ) async {
+    final painted = <Duration>[];
+    final pacer = PlazaFramePacer(onFrame: painted.add, cap: () => null);
+    addTearDown(pacer.dispose);
+    pacer
+      ..start()
+      ..start();
+    expect(tester.binding.transientCallbackCount, 1);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(painted, [Duration.zero, const Duration(milliseconds: 16)]);
+    expect(tester.binding.transientCallbackCount, 1);
+    pacer.stop();
+    expect(tester.binding.transientCallbackCount, 0);
+    await tester.pump(const Duration(seconds: 1));
+    expect(painted.length, 2);
+  });
+
   test('idle waits without scheduling engine frames, input wakes once', () {
     fakeAsync((async) {
       final pending = <int, FrameCallback>{};
@@ -151,8 +171,9 @@ void main() {
       frame(10000);
       frame(10016);
       expect(painted.map((t) => t.inMilliseconds), [0, 16, 16, 32]);
-      pacer.dispose();
-      pacer.start();
+      pacer
+        ..dispose()
+        ..start();
       expect(pending, isEmpty);
     });
   });

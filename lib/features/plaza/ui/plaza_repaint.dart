@@ -11,23 +11,24 @@ class PlazaRepaint extends SingleChildRenderObjectWidget {
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _SceneRepaint(frames);
+      RenderPlazaRepaint(frames);
 
   @override
   void updateRenderObject(
     BuildContext context,
-    covariant _SceneRepaint renderObject,
+    covariant RenderPlazaRepaint renderObject,
   ) {
-    renderObject.frames = frames;
+    renderObject.updateFrames(frames);
   }
 }
 
-class _SceneRepaint extends RenderProxyBox {
-  _SceneRepaint(this._frames);
+/// A repaint boundary that follows a replaceable frame listenable.
+class RenderPlazaRepaint extends RenderProxyBox {
+  RenderPlazaRepaint(this._frames);
 
   Listenable _frames;
 
-  set frames(Listenable value) {
+  void updateFrames(Listenable value) {
     if (identical(value, _frames)) return;
     if (attached) _frames.removeListener(markNeedsPaint);
     _frames = value;
