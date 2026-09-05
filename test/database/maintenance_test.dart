@@ -504,11 +504,14 @@ void main() {
         await maintenance.recreateFts5();
 
         final newFtsDb = getIt<Fts5Db>();
-        final sampleMatches = await newFtsDb
-            .watchFullTextMatches('Bulk entry 519')
-            .first;
-
-        expect(sampleMatches, contains('bulk-519'));
+        // The first, the chunk boundary on both sides, and the last: a
+        // keyset walk that skipped or repeated a row would miss one of them.
+        for (final index in [0, 499, 500, 519]) {
+          final matches = await newFtsDb
+              .watchFullTextMatches('"Bulk entry $index"')
+              .first;
+          expect(matches, contains('bulk-$index'), reason: 'bulk-$index');
+        }
       });
 
       test('handles deletion errors gracefully and logs exception', () async {

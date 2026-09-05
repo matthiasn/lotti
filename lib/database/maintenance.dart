@@ -195,35 +195,37 @@ class Maintenance {
     final fts5Db = getIt<Fts5Db>();
 
     final entryCount = await _db.getJournalCount();
-    const pageSize = 500;
-    final pages = (entryCount / pageSize).ceil();
     var completed = 0;
     var lastReportedProgress = 0;
 
-    for (var page = 0; page <= pages; page++) {
-      final dbEntities = await _db
-          .orderedJournal(pageSize, page * pageSize)
+    // Walk the journal by rowid rather than OFFSET: an OFFSET page re-scans
+    // every row before it, which makes a full rebuild quadratic in the
+    // journal's size. The order does not matter to the index.
+    var lastRowId = 0;
+    while (true) {
+      final rows = await _db
+          .customSelect(
+            'SELECT rowid AS rid, * FROM journal '
+            'WHERE deleted = 0 AND rowid > ? ORDER BY rowid LIMIT ?',
+            variables: [
+              Variable.withInt(lastRowId),
+              Variable.withInt(_ftsRebuildChunk),
+            ],
+            readsFrom: {_db.journal},
+          )
           .get();
+      if (rows.isEmpty) break;
 
-      final entries = entityStreamMapper(dbEntities);
-
-      for (var i = 0; i < entries.length; i++) {
-        final entry = entries[i];
-        await fts5Db.insertText(entry);
+      for (final row in rows) {
+        lastRowId = row.read<int>('rid');
+        await fts5Db.insertText(fromDbEntity(_db.journal.map(row.data)));
         completed++;
 
-        // Calculate current progress percentage
-        final currentProgress = entryCount > 0 ? (completed / entryCount) : 0.0;
+        final currentProgress = entryCount > 0 ? completed / entryCount : 0.0;
         final currentPercentage = (currentProgress * 100).round();
-
-        // Only update if we've moved to a new percentage point
         if (currentPercentage > lastReportedProgress) {
           lastReportedProgress = currentPercentage;
           onProgress?.call(currentProgress);
-
-          // Add a small delay to make the progress visible
-          await Future<void>.delayed(const Duration(milliseconds: 10));
-
           getIt<DomainLogger>().log(
             LogDomain.database,
             'Progress: $currentPercentage%, $completed/$entryCount',
@@ -233,4 +235,7 @@ class Maintenance {
       }
     }
   }
+
+  /// Rows read per round trip while rebuilding the search index.
+  static const int _ftsRebuildChunk = 500;
 }

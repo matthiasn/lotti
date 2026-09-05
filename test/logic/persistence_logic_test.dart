@@ -814,7 +814,7 @@ void main() {
       expect(await getIt<JournalDb>().getWipCount(), 0);
 
       await getIt<JournalDb>()
-          .purgeDeleted(backup: false, stepDelay: Duration.zero)
+          .purgeDeleted(backup: false)
           .drain<void>();
     });
 
@@ -1132,7 +1132,7 @@ void main() {
       // Call purgeDeleted and collect all progress values
       final progressValues = <double>[];
       await getIt<JournalDb>()
-          .purgeDeleted(backup: false, stepDelay: Duration.zero)
+          .purgeDeleted(backup: false)
           .forEach(progressValues.add);
 
       // Verify the final progress is 1.0
