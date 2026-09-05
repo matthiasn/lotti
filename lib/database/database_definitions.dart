@@ -302,17 +302,44 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     });
   }
 
+  /// The `updatedAt` and `vectorClock` of the stored copy of [definition],
+  /// or null when no row exists. Reads by id with no `deleted`/`private`
+  /// filter — the same view the recency gate uses — so a caller whose write
+  /// was refused can build a copy that is genuinely newer than what is
+  /// stored.
+  Future<DefinitionStamp?> definitionStamp(EntityDefinition definition) async {
+    final table = definition.map<TableInfo<Table, Object?>>(
+      measurableDataType: (_) => measurableTypes,
+      habit: (_) => habitDefinitions,
+      dashboard: (_) => dashboardDefinitions,
+      categoryDefinition: (_) => categoryDefinitions,
+      labelDefinition: (_) => labelDefinitions,
+    );
+    final serialized = await _serializedById(table, definition.id);
+    if (serialized == null) return null;
+    return _stampOf(json.decode(serialized) as Map<String, dynamic>);
+  }
+
+  static DefinitionStamp _stampOf(Map<String, dynamic> stored) {
+    final updatedAt = stored['updatedAt'];
+    final vectorClock = stored['vectorClock'];
+    return (
+      updatedAt: updatedAt is String ? DateTime.tryParse(updatedAt) : null,
+      vectorClock: vectorClock is Map<String, dynamic>
+          ? VectorClock.fromJson(vectorClock)
+          : null,
+    );
+  }
+
   static bool _definitionIsOlder(
     EntityDefinition incoming, {
     required Map<String, dynamic> than,
   }) {
+    final stored = _stampOf(than);
     final incomingClock = incoming.vectorClock;
-    final existingClockJson = than['vectorClock'];
-    if (incomingClock != null && existingClockJson is Map<String, dynamic>) {
-      switch (VectorClock.compare(
-        VectorClock.fromJson(existingClockJson),
-        incomingClock,
-      )) {
+    final storedClock = stored.vectorClock;
+    if (incomingClock != null && storedClock != null) {
+      switch (VectorClock.compare(storedClock, incomingClock)) {
         case VclockStatus.a_gt_b:
           return true;
         case VclockStatus.b_gt_a:
@@ -322,9 +349,13 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
           break;
       }
     }
-    final existingUpdatedAt = than['updatedAt'];
-    if (existingUpdatedAt is! String) return false;
-    final stored = DateTime.tryParse(existingUpdatedAt);
-    return stored != null && incoming.updatedAt.isBefore(stored);
+    final storedUpdatedAt = stored.updatedAt;
+    return storedUpdatedAt != null &&
+        incoming.updatedAt.isBefore(storedUpdatedAt);
   }
 }
+
+/// What the recency gate compares: the stored document's `updatedAt` (null
+/// only for a document that has none, which no writer produces) and its
+/// `vectorClock`.
+typedef DefinitionStamp = ({DateTime? updatedAt, VectorClock? vectorClock});

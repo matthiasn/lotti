@@ -240,9 +240,12 @@ between the check and the write.
   concurrent clocks therefore end with one applied and one recorded in
   `conflicts`, never a silent overwrite. The JSON sidecar — the sync payload —
   is written **after** commit, so it never describes a row that rolled back and
-  the writer lock is never held across file I/O. The sync inbound handler wraps
-  the same call together with the entity's embedded links in an outer
-  transaction; the inner one nests.
+  the writer lock is never held across file I/O; sidecar writes for one entity
+  are published in commit order, so two accepted writes cannot leave the earlier
+  document on disk for the later row. The sync inbound handler wraps the same
+  call together with the entity's embedded links in an outer transaction; the
+  inner one nests. A sidecar write that fails after commit is not yet retried
+  durably — that repair is tracked separately.
 - **`JournalDb.upsertEntryLink`** runs its equality pre-read, the
   `(from_id, to_id, type)` duplicate check, the tombstone replacement and the
   upsert the same way, so a local link creation racing the same link arriving by
@@ -256,9 +259,13 @@ between the check and the write.
   sides carry a vector clock that orders them the clock decides; otherwise
   `updatedAt` does, an exact tie applies the incoming copy, and the stored row
   is read by id with no `deleted`/`private` filter so an older live copy cannot
-  resurrect a newer deletion. `PersistenceDefinitionOps` re-stamps a local edit
-  the gate rejected — a sync landed while the editor was open — and writes it
-  again, so a user's action always applies and wins on every peer.
+  resurrect a newer deletion. The gate returns 0 for a refused write, and both
+  callers honour it: the sync apply path neither reindexes nor announces a
+  refused definition, and `PersistenceDefinitionOps` rebuilds a refused local
+  edit from the stored stamp — a timestamp strictly above the stored one, the
+  stored vector clock carried over — and writes it again, so a user's action
+  applies and wins on every peer; an edit refused twice is reported as unsaved
+  and never announced or synced.
 
 # From write to UI
 

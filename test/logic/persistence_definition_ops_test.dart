@@ -6,6 +6,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_definition_ops.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -166,6 +167,9 @@ void main() {
         when(
           () => mocks.journalDb.upsertEntityDefinition(any()),
         ).thenAnswer((_) async => answers.removeAt(0));
+        when(
+          () => mocks.journalDb.definitionStamp(any()),
+        ).thenAnswer((_) async => null);
 
         final affected = await withClock(
           Clock.fixed(fixedNow),
@@ -201,12 +205,81 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'the retry is built from the stored stamp: above its timestamp even '
+      'when that runs ahead of our clock, and carrying its vector clock',
+      () async {
+        final storedAt = DateTime(2026, 9, 5, 14);
+        final fixedNow = DateTime(2026, 9, 5, 12);
+        final stale = categoryMindfulness.copyWith(
+          updatedAt: DateTime(2026, 9, 5, 10),
+          vectorClock: const VectorClock({'a': 1}),
+        );
+        final answers = <int>[0, 1];
+        when(
+          () => mocks.journalDb.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => answers.removeAt(0));
+        when(() => mocks.journalDb.definitionStamp(any())).thenAnswer(
+          (_) async => (
+            updatedAt: storedAt,
+            vectorClock: const VectorClock({'a': 2}),
+          ),
+        );
+
+        final affected = await withClock(
+          Clock.fixed(fixedNow),
+          () => ops.upsertEntityDefinitionImpl(stale),
+        );
+
+        expect(affected, 1);
+        final written = verify(
+          () => mocks.journalDb.upsertEntityDefinition(captureAny()),
+        ).captured.cast<EntityDefinition>().toList();
+        expect(written, hasLength(2));
+        expect(
+          written.last.updatedAt,
+          storedAt.add(const Duration(milliseconds: 1)),
+        );
+        expect(written.last.vectorClock?.vclock, {'a': 2});
+        final message =
+            verify(
+                  () => outboxService.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncEntityDefinition;
+        expect(message.entityDefinition, written.last);
+      },
+    );
+
+    test(
+      'an edit refused twice is reported as unsaved and is neither '
+      'announced, reindexed nor synced',
+      () async {
+        when(
+          () => mocks.journalDb.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 0);
+        when(() => mocks.journalDb.definitionStamp(any())).thenAnswer(
+          (_) async => (updatedAt: DateTime(2026, 9, 5, 14), vectorClock: null),
+        );
+
+        final affected = await ops.upsertEntityDefinitionImpl(
+          categoryMindfulness,
+        );
+
+        expect(affected, 0);
+        verifyNever(() => mocks.updateNotifications.notify(any()));
+        verifyNever(() => outboxService.enqueueMessage(any()));
+      },
+    );
+
     test('a stale dashboard edit is re-stamped the same way', () async {
       final fixedNow = DateTime(2026, 9, 5, 12);
       final answers = <int>[0, 1];
       when(
         () => mocks.journalDb.upsertDashboardDefinition(any()),
       ).thenAnswer((_) async => answers.removeAt(0));
+      when(
+        () => mocks.journalDb.definitionStamp(any()),
+      ).thenAnswer((_) async => null);
 
       final affected = await withClock(
         Clock.fixed(fixedNow),

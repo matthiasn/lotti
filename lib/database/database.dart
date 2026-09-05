@@ -243,7 +243,9 @@ WHERE EXISTS (
   }
 
   @override
-  Future<void> _persistEntityJson(JournalEntity updated) =>
+  @protected
+  @visibleForTesting
+  Future<void> persistEntityJson(JournalEntity updated) =>
       saveJournalEntityJson(
         updated,
         documentsDirectory: _documentsDirectory,

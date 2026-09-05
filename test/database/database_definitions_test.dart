@@ -435,6 +435,26 @@ void main() {
         );
       });
 
+      test(
+        'definitionStamp exposes the stored timestamp and clock, deleted '
+        'rows included, and null when nothing is stored',
+        () async {
+          expect(await db!.definitionStamp(categoryMindfulness), isNull);
+
+          await db!.upsertEntityDefinition(
+            categoryMindfulness.copyWith(
+              updatedAt: base,
+              deletedAt: base,
+              vectorClock: const VectorClock({'a': 2}),
+            ),
+          );
+
+          final stamp = await db!.definitionStamp(categoryMindfulness);
+          expect(stamp?.updatedAt, base);
+          expect(stamp?.vectorClock?.vclock, {'a': 2});
+        },
+      );
+
       test('the gate covers every definition table', () async {
         final older = base.subtract(const Duration(minutes: 1));
 
