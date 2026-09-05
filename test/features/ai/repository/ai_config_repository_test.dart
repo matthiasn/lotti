@@ -1057,6 +1057,65 @@ void main() {
     // stop the remaining ids being queued, since a hard delete leaves nothing
     // for the maintenance pass to replay.
     test(
+      'watched decode failures preserve the snapshot and recover on the next update',
+      () async {
+        final config = AiConfigInferenceProvider(
+          id: 'watched-provider',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Original',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        final row = AiConfigDbEntity(
+          id: config.id,
+          type: 'inferenceProvider',
+          name: config.name,
+          serialized: jsonEncode(config.toJson()),
+          createdAt: fixedDate,
+        );
+        final controller = StreamController<List<AiConfigDbEntity>>();
+        when(() => mockDb.getAllConfigs()).thenAnswer((_) async => [row]);
+        when(
+          () => mockDb.configFromEntity(row),
+        ).thenAnswer((_) async => config);
+        when(
+          () => mockDb.watchAllConfigs(),
+        ).thenAnswer((_) => controller.stream);
+        final first = Completer<void>();
+        final failed = Completer<Object>();
+        final recovered = Completer<void>();
+        final snapshots = <List<AiConfig>>[];
+        final subscription = repository
+            .watchConfigsByType(AiConfigType.inferenceProvider)
+            .listen((items) {
+              snapshots.add(items);
+              if (!first.isCompleted) first.complete();
+              if (items.single.name == 'Recovered') recovered.complete();
+            }, onError: failed.complete);
+        addTearDown(subscription.cancel);
+        await first.future;
+        final error = StateError('Credential store unavailable');
+        when(
+          () => mockDb.configFromEntity(row),
+        ).thenAnswer((_) async => throw error);
+        controller.add([row]);
+        expect(await failed.future, same(error));
+        expect(snapshots, hasLength(1));
+        expect(await repository.getConfigById(config.id), config);
+        when(
+          () => mockDb.configFromEntity(row),
+        ).thenAnswer((_) async => config.copyWith(name: 'Recovered'));
+        controller.add([row]);
+        await recovered.future;
+        expect(snapshots.last.single.name, 'Recovered');
+        expect((await repository.getConfigById(config.id))!.name, 'Recovered');
+        await subscription.cancel();
+        await controller.close();
+      },
+    );
+
+    test(
       'deleteInferenceProviderWithModels survives a failing outbox enqueue',
       () async {
         final provider = AiConfig.inferenceProvider(

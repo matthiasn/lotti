@@ -18,6 +18,7 @@ AiConfigInferenceProvider _$AiConfigInferenceProviderFromJson(
     _$InferenceProviderTypeEnumMap,
     json['inferenceProviderType'],
   ),
+  apiKeyStorageKey: json['apiKeyStorageKey'] as String?,
   updatedAt: json['updatedAt'] == null
       ? null
       : DateTime.parse(json['updatedAt'] as String),
@@ -38,6 +39,7 @@ Map<String, dynamic> _$AiConfigInferenceProviderToJson(
   'createdAt': instance.createdAt.toIso8601String(),
   'inferenceProviderType':
       _$InferenceProviderTypeEnumMap[instance.inferenceProviderType]!,
+  'apiKeyStorageKey': instance.apiKeyStorageKey,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'description': instance.description,
   'deletedAt': instance.deletedAt?.toIso8601String(),

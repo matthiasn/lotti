@@ -63,10 +63,16 @@ sealed class AiConfig with _$AiConfig {
   const factory AiConfig.inferenceProvider({
     required String id,
     required String baseUrl,
+
+    /// Credential is included in E2EE sync JSON, but stripped by the local
+    /// database writer before persistence.
     required String apiKey,
     required String name,
     required DateTime createdAt,
     required InferenceProviderType inferenceProviderType,
+
+    /// Local secure-storage reference. This identifier is harmless to sync.
+    String? apiKeyStorageKey,
     DateTime? updatedAt,
     String? description,
 
