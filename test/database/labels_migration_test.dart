@@ -13,6 +13,7 @@ import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
 import 'migration_test_helper.dart';
+import 'schema_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,27 +65,8 @@ void main() {
       final dbFile = File(path.join(testDirectory!.path, 'test_v26.db'));
       final sqlite = sqlite3.open(dbFile.path);
 
-      // First create basic schema at v25 (without label tables)
-      createJournalTable(sqlite, version: 25);
-
-      createLegacyTagEntitiesTable(sqlite);
-
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS category_definitions (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          deleted BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
-
-      createLinkedEntriesTableWithBuggyIndex(sqlite);
-
-      // Set schema version to 25
-      sqlite.execute('PRAGMA user_version = 25');
+      // The real v25 schema, as it shipped: no label tables yet.
+      createJournalSchema(sqlite, 25);
 
       // Close raw connection
       sqlite.close();

@@ -283,6 +283,24 @@ WHERE type = 'JournalAudio' AND deleted = FALSE
         }
       }();
     }
+    if (from < 47) {
+      await () async {
+        // v47 is the reconciliation release: the index reconcile that now
+        // ends every upgrade (see `_reconcileIndexesWithSchema`) needs an
+        // upgrade to run once on installs that predate v25. The only
+        // version-specific work is the `category_id` column that v20
+        // installs kept after v21 replaced it with `category`; its data was
+        // never read again (`category` is backfilled from the JSON in v43).
+        if (await _columnExists('journal', 'category_id')) {
+          DevLogger.log(
+            name: 'JournalDb',
+            message: 'Dropping the v20 journal.category_id column',
+          );
+          await customStatement('DROP INDEX IF EXISTS idx_journal_category_id');
+          await customStatement('ALTER TABLE journal DROP COLUMN category_id');
+        }
+      }();
+    }
   }
 }
 

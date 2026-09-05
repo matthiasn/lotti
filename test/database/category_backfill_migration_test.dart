@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -7,6 +6,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
+
+import 'schema_fixtures.dart';
 
 /// Migration tests for v43 — `journal.category` backfill.
 ///
@@ -58,38 +59,6 @@ void main() {
     }
   });
 
-  /// Minimal v42-style schema: just the columns the v43 backfill reads.
-  void createV42Schema(Database sqlite) {
-    sqlite.execute('''
-      CREATE TABLE IF NOT EXISTS journal (
-        id TEXT PRIMARY KEY,
-        serialized TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        date_from INTEGER NOT NULL,
-        date_to INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        subtype TEXT,
-        starred BOOLEAN DEFAULT FALSE,
-        private BOOLEAN DEFAULT FALSE,
-        deleted BOOLEAN DEFAULT FALSE,
-        task BOOLEAN DEFAULT FALSE,
-        task_status TEXT,
-        category TEXT NOT NULL DEFAULT '',
-        flag INTEGER DEFAULT 0,
-        schema_version INTEGER DEFAULT 0
-      )
-    ''');
-    sqlite.execute('''
-      CREATE TABLE IF NOT EXISTS config_flags (
-        name TEXT NOT NULL UNIQUE,
-        description TEXT NOT NULL UNIQUE,
-        status BOOLEAN NOT NULL DEFAULT FALSE,
-        PRIMARY KEY (name)
-      )
-    ''');
-  }
-
   void insertV42Entry(
     Database sqlite, {
     required String id,
@@ -115,7 +84,7 @@ void main() {
       () async {
         final dbFile = File(p.join(testDirectory!.path, 'test_v43.db'));
         final sqlite = sqlite3.open(dbFile.path);
-        createV42Schema(sqlite);
+        createJournalSchema(sqlite, 42);
         // Pre-migration column state, JSON truth in serialized:
         insertV42Entry(
           sqlite,
@@ -130,7 +99,6 @@ void main() {
           jsonCategoryId: 'cat-json-must-not-win',
         );
         insertV42Entry(sqlite, id: 'uncategorized', columnCategory: '');
-        sqlite.execute('PRAGMA user_version = 42');
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v43.db');
@@ -138,7 +106,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 46);
+        expect(db.schemaVersion, 47);
 
         final rows = await db
             .customSelect('SELECT id, category FROM journal ORDER BY id')

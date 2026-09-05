@@ -441,7 +441,139 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
         }
 
         await _onUpgradeRecent(m, from);
+        await _reconcileIndexesWithSchema(m);
       },
     );
   }
+
+  /// Brings the indexes of every Drift-managed table in line with the
+  /// declared schema: drops indexes the schema no longer declares, recreates
+  /// declared ones whose stored definition differs, creates declared ones
+  /// that are missing.
+  ///
+  /// Runs at the end of every upgrade. `database.drift` is the single
+  /// statement of which indexes exist and what they look like, so an index
+  /// change — new, gone, or reshaped under the same name — is an edit there
+  /// plus a version bump, with no hand-written `CREATE`/`DROP INDEX` in the
+  /// migration. It exists because the history did not work that way:
+  /// installs from before v25 still carried every single-column index the
+  /// original schema created and later versions stopped declaring but never
+  /// dropped, up to seventeen on `journal`, each paid for on every write.
+  ///
+  /// Definitions are compared through [normaliseIndexDefinition], which
+  /// removes only spelling that does not change an index (case, whitespace,
+  /// quoting, the default `COLLATE BINARY` and `ASC`), so a `.drift`
+  /// declaration and the raw statement a past migration used compare equal
+  /// and nothing is rebuilt for cosmetics.
+  ///
+  /// Only explicitly created indexes on managed tables are touched;
+  /// SQLite's own constraint indexes and any table Drift does not manage
+  /// (legacy tables left in place) are ignored. A declared index whose
+  /// table is absent — the case in minimal migration fixtures — is skipped.
+  Future<void> _reconcileIndexesWithSchema(Migrator m) async {
+    final managedTables = {
+      for (final table in allTables) table.actualTableName,
+    };
+    final declared = {
+      for (final index in allSchemaEntities.whereType<Index>())
+        index.entityName: index,
+    };
+    final existingRows = await customSelect(
+      "SELECT name, tbl_name, sql FROM sqlite_master WHERE type = 'index' "
+      'AND sql IS NOT NULL',
+    ).get();
+    final existing = <String, ({String table, String sql})>{
+      for (final row in existingRows)
+        row.read<String>('name'): (
+          table: row.read<String>('tbl_name'),
+          sql: row.read<String>('sql'),
+        ),
+    };
+    final existingTables = {
+      for (final row in await customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table'",
+      ).get())
+        row.read<String>('name'),
+    };
+
+    final toCreate = <Index>[];
+    for (final entry in existing.entries) {
+      final name = entry.key;
+      final table = entry.value.table;
+      if (!managedTables.contains(table)) continue;
+      final index = declared[name];
+      if (index == null) {
+        DevLogger.log(
+          name: 'JournalDb',
+          message: 'Dropping undeclared index $name on $table',
+        );
+        await customStatement('DROP INDEX IF EXISTS "$name"');
+        continue;
+      }
+      final declaredSql = _declaredStatement(index);
+      if (declaredSql != null &&
+          normaliseIndexDefinition(entry.value.sql) !=
+              normaliseIndexDefinition(declaredSql)) {
+        DevLogger.log(
+          name: 'JournalDb',
+          message: 'Recreating index $name on $table: definition changed',
+        );
+        await customStatement('DROP INDEX IF EXISTS "$name"');
+        toCreate.add(index);
+      }
+    }
+
+    for (final index in declared.values) {
+      if (existing.containsKey(index.entityName) && !toCreate.contains(index)) {
+        continue;
+      }
+      final table = _indexedTable(index);
+      if (table == null || !existingTables.contains(table)) continue;
+      if (!toCreate.contains(index)) {
+        DevLogger.log(
+          name: 'JournalDb',
+          message: 'Creating declared index ${index.entityName} on $table',
+        );
+      }
+      await m.createIndex(index);
+    }
+  }
+
+  static String? _declaredStatement(Index index) =>
+      index.createStatementsByDialect[SqlDialect.sqlite];
+
+  /// The table an index is declared on, read from its `CREATE INDEX`
+  /// statement; Drift's runtime [Index] does not carry the reference.
+  static String? _indexedTable(Index index) {
+    final statement = _declaredStatement(index);
+    if (statement == null) return null;
+    return RegExp(
+      r'\bON\s+"?([A-Za-z0-9_]+)"?\s*\(',
+      caseSensitive: false,
+    ).firstMatch(statement)?.group(1);
+  }
+}
+
+/// Reduces a `CREATE INDEX` statement to the spelling that determines what
+/// the index is, so two statements compare equal exactly when they would
+/// build the same index.
+///
+/// Removed: case, whitespace, double quotes, `IF NOT EXISTS`, spacing around
+/// parentheses, commas and `=`, and the defaults SQLite applies anyway —
+/// `COLLATE BINARY` and `ASC`. Kept: columns and their order, `DESC`,
+/// `UNIQUE`, expressions, and the partial `WHERE` clause.
+String normaliseIndexDefinition(String sql) {
+  return sql
+      .toLowerCase()
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .replaceAll(' if not exists', '')
+      .replaceAll('"', '')
+      .replaceAll(RegExp(r'\s*\(\s*'), '(')
+      .replaceAll(RegExp(r'\s*\)\s*'), ')')
+      .replaceAll(RegExp(r'\s*,\s*'), ',')
+      .replaceAll(' collate binary', '')
+      .replaceAll(RegExp(r' asc\b'), '')
+      .replaceAll(RegExp(r'\s*=\s*'), '=')
+      .replaceAll(RegExp(r';\s*$'), '')
+      .trim();
 }

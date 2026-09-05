@@ -9,6 +9,8 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
+import 'schema_fixtures.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -128,7 +130,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 46);
+        expect(db.schemaVersion, 47);
 
         // v41 swapped the expression-keyed shape for a column-keyed one.
         final sql = await indexSql(db, 'idx_journal_tasks_due_open');
@@ -280,8 +282,7 @@ void main() {
         p.join(testDirectory!.path, 'test_v44_task_priority_date.db'),
       );
       final sqlite = sqlite3.open(dbFile.path);
-      createV38Schema(sqlite);
-      sqlite.execute('PRAGMA user_version = 43');
+      createJournalSchema(sqlite, 43);
       sqlite.close();
 
       final db = JournalDb(
@@ -291,7 +292,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 46);
+      expect(db.schemaVersion, 47);
 
       final sql = await indexSql(db, 'idx_journal_tasks_priority_date');
       expect(sql, contains('task_priority_rank COLLATE BINARY ASC'));

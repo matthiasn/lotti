@@ -81,7 +81,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
-| `JournalDb` | `db.sqlite` | 46 | Journal entities, tasks, links, tags, config flags — the primary store |
+| `JournalDb` | `db.sqlite` | 47 | Journal entities, tasks, links, tags, config flags — the primary store |
 | `SyncDatabase` | `sync.sqlite` | 29 | Outbox, sequence log, host activity, inbound event queue, queue markers |
 | `AgentDatabase` | `agent.sqlite` | 19 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
@@ -237,6 +237,32 @@ Historical migration fixtures must describe the schema at their declared
 `user_version`, without future columns added merely to make current DDL pass.
 The v18 fixture in `test/database/database_test.dart` exercises the complete
 upgrade and verifies that its existing row survives with default priority.
+
+**The real historical schemas are committed.** `test/database/schemas/`
+holds `journal_v<N>.sql` for every journal version that ever shipped since
+v18: the DDL of `database.drift` at the last commit where N was current,
+extracted by `tool/db_schema/extract_journal_schema.dart` (Drift's own
+`schema dump` does not build with the drift_dev this repository can resolve).
+`test/database/journal_schema_history_test.dart` creates a database from each
+file, upgrades it, and diffs tables, columns and indexes against a fresh
+install — the check `SchemaVerifier` would run. Bumping `schemaVersion`
+means running the tool for the new version and committing the file; the test
+fails until you do. That test is what found the v24 drift below.
+
+**Indexes are reconciled from the declared schema on every upgrade.**
+`_reconcileIndexesWithSchema` ends `onUpgrade`: it drops explicit indexes on
+Drift-managed tables that `database.drift` no longer declares, recreates
+declared ones whose stored definition differs (compared through
+`normaliseIndexDefinition`, which discards only case, whitespace, quoting
+and the default `COLLATE BINARY`/`ASC`), and creates declared ones that are
+missing. An index change — new, gone, or reshaped under the same name — is
+therefore an edit to `database.drift` plus a version bump, never a
+hand-written `CREATE INDEX` in a migration step. It exists because installs from before v25 (October
+2025) still carried up to seventeen single-column indexes the original schema
+created and later versions stopped declaring but never dropped, and lacked
+the two date indexes a fresh install has; v47 is the release that ran it for
+them. Tables Drift does not manage — `tag_entities` and `tagged`, left in
+place when tags were removed — are not touched.
 
 The indexes matter: `idx_journal_tasks_due_open` is keyed on the denormalized
 `due_at` column added in v41, which replaced an expression index over
