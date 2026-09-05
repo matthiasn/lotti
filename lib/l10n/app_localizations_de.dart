@@ -8972,6 +8972,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get loggingDomainWhatsNew => 'Neuigkeiten';
 
   @override
+  String get maintenanceCheckIntegrity => 'Datenbank-Integrität prüfen';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Prüfen, ob die Datenbankdateien intakt sind';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Probleme gefunden in: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count Datenbanken sind intakt.',
+      one: 'Die Datenbank ist intakt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Agenten-Datenbank löschen';
 
   @override

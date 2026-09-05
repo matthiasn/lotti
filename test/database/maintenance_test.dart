@@ -432,6 +432,56 @@ void main() {
       });
     });
 
+    group('checkIntegrity', () {
+      test('reports every registered database as sound', () async {
+        final reports = await maintenance.checkIntegrity();
+
+        // Only journal and search are registered in this harness; a store
+        // that is absent is skipped rather than reported.
+        expect(
+          reports.map((report) => report.database),
+          ['journal', 'search'],
+        );
+        expect(
+          reports.every((report) => report.problems.isEmpty),
+          isTrue,
+          reason: reports.toString(),
+        );
+      });
+
+      test('names the database whose check fails, and keeps going', () async {
+        // The journal is checked *first*, so a sweep that stopped at the
+        // first failure would never reach the search store — which is what
+        // makes the second assertion worth making.
+        final failing = MockJournalDb();
+        when(() => failing.customSelect(any())).thenThrow(
+          StateError('quick_check unavailable'),
+        );
+        final real = getIt<JournalDb>();
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(failing);
+        addTearDown(() {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(real);
+        });
+
+        final reports = await maintenance.checkIntegrity();
+
+        expect(
+          reports.singleWhere((r) => r.database == 'journal').problems,
+          isNotEmpty,
+        );
+        expect(
+          reports.singleWhere((r) => r.database == 'search').problems,
+          isEmpty,
+          reason: 'the sweep must continue past a failing store',
+        );
+        expect(loggedExceptions, isNotEmpty);
+      });
+    });
+
     group('recreateFts5', () {
       test('deletes existing index file and reindexes all entries', () async {
         when(

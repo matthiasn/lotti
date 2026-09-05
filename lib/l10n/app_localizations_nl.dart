@@ -8935,6 +8935,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String get loggingDomainWhatsNew => 'Wat is er nieuw?';
 
   @override
+  String get maintenanceCheckIntegrity => 'Database-integriteit controleren';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Controleer of de databasebestanden in orde zijn';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Problemen gevonden in: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count databases zijn in orde.',
+      one: 'De database is in orde.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Database verwijderen';
 
   @override

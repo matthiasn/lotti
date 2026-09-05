@@ -61,6 +61,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
     with HoverDividerIndex<MaintenanceBody> {
   bool _isRepairingScreenshotPaths = false;
   bool _isRestoringSleep = false;
+  bool _isCheckingIntegrity = false;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +133,39 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
               await ref
                   .read(geminiSetupPromptServiceProvider.notifier)
                   .resetDismissal();
+            },
+          ),
+          (
+            title: context.messages.maintenanceCheckIntegrity,
+            subtitle: context.messages.maintenanceCheckIntegrityDescription,
+            icon: LottiIcons.shield,
+            onTap: () async {
+              if (_isCheckingIntegrity) return;
+              setState(() => _isCheckingIntegrity = true);
+              try {
+                final reports = await maintenance.checkIntegrity();
+                final damaged = reports
+                    .where((report) => report.problems.isNotEmpty)
+                    .map((report) => report.database)
+                    .toList(growable: false);
+                if (!context.mounted) return;
+                context.showToast(
+                  tone: damaged.isEmpty
+                      ? DesignSystemToastTone.success
+                      : DesignSystemToastTone.error,
+                  title: damaged.isEmpty
+                      ? context.messages.maintenanceCheckIntegrityOk(
+                          reports.length,
+                        )
+                      : context.messages.maintenanceCheckIntegrityFailed(
+                          damaged.join(', '),
+                        ),
+                );
+              } finally {
+                if (mounted) {
+                  setState(() => _isCheckingIntegrity = false);
+                }
+              }
             },
           ),
           (

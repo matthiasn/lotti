@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show GeneratedDatabase;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/common.dart';
@@ -39,6 +41,21 @@ Future<void> cleanupTestDirectoryWithGetIt(Directory testDir) async {
   }
   if (getIt.isRegistered<Directory>()) {
     getIt.unregister<Directory>();
+  }
+}
+
+/// A database whose `PRAGMA optimize` never completes, standing in for one
+/// waiting on a lock held elsewhere.
+class _HangingOptimizeDb extends Fake implements GeneratedDatabase {
+  bool closed = false;
+
+  @override
+  Future<void> customStatement(String statement, [List<Object?>? args]) =>
+      Completer<void>().future;
+
+  @override
+  Future<void> close() async {
+    closed = true;
   }
 }
 
@@ -780,6 +797,230 @@ void main() {
       final sourceSize = await sourceFile.length();
 
       expect(backupSize, equals(sourceSize));
+    });
+  });
+
+  group('recoverDatabaseIfUnreadable', () {
+    late Directory testDirectory;
+
+    setUp(() {
+      testDirectory = setupTestDirectory();
+      setupTestDirectoryWithGetIt(testDirectory);
+      DevLogger.capturedLogs.clear();
+    });
+
+    tearDown(() => cleanupTestDirectoryWithGetIt(testDirectory));
+
+    /// A real SQLite file holding one row, so a restore can be told apart
+    /// from an empty file by its contents.
+    void writeDatabase(String path, String marker) {
+      sqlite3.open(path)
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t (v) VALUES ('$marker')")
+        ..close();
+    }
+
+    String markerOf(String path) {
+      final db = sqlite3.open(path);
+      try {
+        return db.select('SELECT v FROM t').single['v'] as String;
+      } finally {
+        db.close();
+      }
+    }
+
+    File backupOf(String stem, String timestamp, String marker) {
+      final dir = Directory(p.join(testDirectory.path, _backupDirectoryName))
+        ..createSync(recursive: true);
+      final file = File(p.join(dir.path, '$stem.$timestamp.sqlite'));
+      writeDatabase(file.path, marker);
+      return file;
+    }
+
+    test('a readable database is left exactly as it is', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'));
+      writeDatabase(file.path, 'live');
+      backupOf('db', '2026-09-05_10-00-00-000', 'backup');
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(markerOf(file.path), 'live');
+      expect(
+        Directory(
+          testDirectory.path,
+        ).listSync().whereType<File>().map((f) => p.basename(f.path)),
+        ['db.sqlite'],
+        reason: 'nothing should have been moved aside',
+      );
+    });
+
+    test('a corrupt database is replaced by the newest backup', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('this is not a database');
+      File('${file.path}-wal').writeAsStringSync('stale wal');
+      File('${file.path}-shm').writeAsStringSync('stale shm');
+      backupOf('db', '2026-09-05_09-00-00-000', 'older');
+      backupOf('db', '2026-09-05_11-00-00-000', 'newest');
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 12)),
+        () => recoverDatabaseIfUnreadable(file),
+      );
+
+      expect(markerOf(file.path), 'newest');
+      // The damaged file is kept: it holds whatever the backup does not.
+      final kept = Directory(testDirectory.path)
+          .listSync()
+          .whereType<File>()
+          .map((f) => p.basename(f.path))
+          .where(
+            (name) =>
+                name.contains('.corrupt-') &&
+                !name.endsWith('-wal') &&
+                !name.endsWith('-shm'),
+          )
+          .toList();
+      expect(kept, hasLength(1));
+      // A WAL belonging to the replaced file would be replayed into the
+      // restored one, so it leaves the live path — with the corrupt file
+      // rather than into the bin, because it holds the commits the snapshot
+      // is missing.
+      final corrupt = kept.single;
+      for (final suffix in const ['-wal', '-shm']) {
+        expect(
+          File('${file.path}$suffix').existsSync(),
+          isFalse,
+          reason: suffix,
+        );
+        // Kept, not deleted: an unreadable file's WAL holds exactly the
+        // commits the snapshot is missing. The bytes are whatever SQLite
+        // last wrote there, so presence is what the assertion can state.
+        expect(
+          File(p.join(testDirectory.path, '$corrupt$suffix')).existsSync(),
+          isTrue,
+          reason: suffix,
+        );
+      }
+      expect(
+        File(p.join(testDirectory.path, '$corrupt-wal')).readAsStringSync(),
+        'stale wal',
+      );
+    });
+
+    test(
+      'falls back to an older backup when the newest is damaged too',
+      () async {
+        final file = File(p.join(testDirectory.path, 'db.sqlite'))
+          ..writeAsStringSync('not a database');
+        backupOf('db', '2026-09-05_09-00-00-000', 'older');
+        backupOf(
+          'db',
+          '2026-09-05_11-00-00-000',
+          'newest',
+        ).writeAsStringSync('also not a database');
+
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 12)),
+          () => recoverDatabaseIfUnreadable(file),
+        );
+
+        expect(markerOf(file.path), 'older');
+      },
+    );
+
+    test('keeps the damaged database when the restore copy fails', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('not a database');
+      final backup = backupOf('db', '2026-09-05_11-00-00-000', 'backup');
+      // A scratch path that already exists as a *directory* makes the copy
+      // fail the way a full disk would, after the snapshot passed its probe.
+      Directory('${file.path}.restore-tmp').createSync();
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 12)),
+        () => recoverDatabaseIfUnreadable(file),
+      );
+
+      // Nothing may be left half-done: an empty live path would be filled
+      // with a fresh blank database by the open that follows, and the
+      // corruption would never surface.
+      expect(file.readAsStringSync(), 'not a database');
+      expect(backup.existsSync(), isTrue);
+    });
+
+    test('leaves the file alone when there is no backup to restore', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('not a database');
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(file.readAsStringSync(), 'not a database');
+      expect(
+        DevLogger.capturedLogs.any((line) => line.contains('No usable backup')),
+        isTrue,
+        reason: DevLogger.capturedLogs.join('\n'),
+      );
+    });
+
+    test('a missing file is not a corruption verdict', () async {
+      final file = File(p.join(testDirectory.path, 'absent.sqlite'));
+      backupOf('absent', '2026-09-05_11-00-00-000', 'backup');
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(
+        file.existsSync(),
+        isFalse,
+        reason: 'a first launch must not be handed an old backup',
+      );
+    });
+  });
+
+  group('optimizeAndClose', () {
+    test('closes the database even when optimize never finishes', () async {
+      final db = _HangingOptimizeDb();
+
+      await optimizeAndClose(db, timeout: const Duration(milliseconds: 20));
+
+      // The disposer closes on shutdown precisely so no native handle
+      // outlives the engine; an optimize stuck on a lock must not take the
+      // close down with it.
+      expect(db.closed, isTrue);
+    });
+
+    test('refreshes planner statistics and closes the database', () async {
+      final directory = setupTestDirectory();
+      addTearDown(() => directory.deleteSync(recursive: true));
+      final db = AiConfigDb(
+        documentsDirectoryProvider: () async => directory,
+        tempDirectoryProvider: () async => directory,
+      );
+      // Give the planner something worth analysing, then a query that makes
+      // the stale-statistics estimate worth refreshing.
+      await db.customStatement(
+        'CREATE TABLE t (id INTEGER PRIMARY KEY, k TEXT)',
+      );
+      await db.customStatement('CREATE INDEX i ON t(k)');
+      for (var i = 0; i < 400; i++) {
+        await db.customStatement(
+          "INSERT INTO t (k) VALUES ('k' || ${i % 5})",
+        );
+      }
+      await db.customSelect("SELECT * FROM t WHERE k = 'k3'").get();
+
+      await optimizeAndClose(db);
+
+      final raw = sqlite3.open(p.join(directory.path, aiConfigDbFileName));
+      addTearDown(raw.close);
+      expect(
+        raw
+            .select(
+              "SELECT name FROM sqlite_master WHERE name = 'sqlite_stat1'",
+            )
+            .length,
+        1,
+        reason: 'PRAGMA optimize should have left statistics behind',
+      );
     });
   });
 }

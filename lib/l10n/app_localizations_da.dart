@@ -8918,6 +8918,29 @@ class AppLocalizationsDa extends AppLocalizations {
   String get loggingDomainWhatsNew => 'Hvad er nyt';
 
   @override
+  String get maintenanceCheckIntegrity => 'Tjek databasens integritet';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Kontrollér, at databasefilerne er intakte';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Problemer fundet i: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count databaser er intakte.',
+      one: 'Databasen er intakt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Slet agentdatabase';
 
   @override

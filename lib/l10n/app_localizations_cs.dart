@@ -9011,6 +9011,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get loggingDomainWhatsNew => 'Novinky';
 
   @override
+  String get maintenanceCheckIntegrity => 'Zkontrolovat integritu databáze';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Ověř, že jsou soubory databáze v pořádku';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Nalezeny problémy v: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Všech $count databází je v pořádku.',
+      few: 'Všechny $count databáze jsou v pořádku.',
+      one: 'Databáze je v pořádku.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Smazat databázi agentů';
 
   @override
