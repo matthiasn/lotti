@@ -8,6 +8,10 @@ status: stable
 generated: { by: codex/gpt-5, at: 2026-08-06T00:25:30+02:00 }
 stale_after: 2026-11-02
 sources:
+  - id: metrics-panel
+    resource: ../../../lib/features/sync/ui/matrix_stats/matrix_metrics_panel.dart
+    title: Serialized Matrix metrics refreshes
+    last_modified: 2026-09-05
   - id: queue
     resource: ../../../lib/features/sync/queue
     title: Inbound queue pipeline
@@ -330,6 +334,28 @@ The backfill settings page hosts the operator surface:
 - `_AdvancedRecoveryGroup` drives
   `QueuePipelineCoordinator.triggerBridge()` (kick catch-up), retry of skipped
   rows, and the reset / retire-stuck backfill controls.
+
+The Matrix metrics panel polls every five seconds while foregrounded. Initial,
+periodic, and manual metrics loads share one in-flight guard. Periodic ticks skip
+an outstanding load; refresh, retry, and rescan actions request at most one
+trailing load so changes made during the outstanding probe are observed without
+parallel aggregate queries. Disposal discards an outstanding result and prevents
+its trailing refresh; completion of an earlier retry/rescan action also cannot
+refresh providers after disposal. The underlying queue depth emitter separately coalesces
+mutation-driven depth snapshots; its bounded aggregate excludes applied history,
+while an explicit full statistics read also counts the applied ledger.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Loading: initial load, foreground tick, or manual refresh
+    Loading --> Loading: periodic tick skips, manual action marks rerun
+    Loading --> Loading: completed probe with pending manual rerun
+    Loading --> Idle: completed probe without rerun, or failure
+    Idle --> Disposed: dispose
+    Loading --> Disposed: dispose, discard result and pending rerun
+    Disposed --> [*]
+```
 
 `QueuePipelineCoordinator.collectHistory` exists but is wired into no production
 UI; it is exercised only by tests.
