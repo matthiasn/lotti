@@ -229,15 +229,19 @@ histories. The journal strategy lives in `database_migration.dart` and
    transactional, so an interrupted upgrade rolls back to the version that
    was running instead of leaving a half-applied schema at the old
    `user_version` for the next launch to migrate again. That is why the
-   steps no longer probe for tables or columns before acting: on a database
-   that shipped, every column a step needs was added by an earlier step of
-   the same run, and a real schema bug should fail the upgrade loudly (the
-   history verifier catches it in development). The two probes that remain
-   are genuinely conditional on an install's history — `_ensureLabelTables`
-   for pre-release v26 installs and the v47 drop of the v20 `category_id`
-   column — and `_columnExists` propagates a failing PRAGMA rather than
-   reading it as "absent". Foreign-key enforcement is off during the upgrade
-   (it cannot change inside a transaction) and on from `beforeOpen` onward.
+   steps no longer probe for tables before acting: on a database that
+   shipped, every table a step needs exists, and a real schema bug should
+   fail the upgrade loudly (the history verifier catches it in development).
+   The probes that remain are conditional on an install's history:
+   `_ensureLabelTables` for pre-release v26 installs, the v47 drop of the
+   v20 `category_id` column, and `_addColumnUnlessPresent` around every
+   column-adding step before v48 — those steps shipped without the
+   transaction, so an install killed mid-step can already hold the column,
+   and a duplicate-column refusal inside the atomic upgrade would roll it
+   back on every launch. Steps from v48 on need no such check.
+   `_columnExists` propagates a failing PRAGMA rather than reading it as
+   "absent". Foreign-key enforcement is off during the upgrade (it cannot
+   change inside a transaction) and on from `beforeOpen` onward.
 3. Version steps run in order, adding tables, columns and partial indexes.
    Current index definitions may reference columns absent in historical
    schemas: the task priority index is created only after v29 adds priority

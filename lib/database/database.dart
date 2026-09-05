@@ -167,9 +167,11 @@ class JournalDb extends _$JournalDb
   @override
   int get schemaVersion => 48;
 
-  /// Whether [table] has a column named [column]. Used only where a step is
-  /// genuinely conditional on an install's history (the v20 `category_id`
-  /// column); a failing PRAGMA propagates rather than reading as "absent".
+  /// Whether [table] has a column named [column]. Used where a step is
+  /// conditional on an install's history: the v20 `category_id` column, and
+  /// the columns a pre-v48 upgrade may have added before it was interrupted
+  /// (see `_addColumnUnlessPresent`). A failing PRAGMA propagates rather
+  /// than reading as "absent".
   @override
   Future<bool> _columnExists(String table, String column) async {
     final rows = await customSelect('PRAGMA table_info($table)').get();

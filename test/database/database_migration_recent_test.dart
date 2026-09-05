@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/dev_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
@@ -47,6 +48,41 @@ void main() {
       testDirectory.deleteSync(recursive: true);
     }
   });
+
+  test(
+    'an install a pre-v48 app left mid-v45 finishes the step instead of '
+    'failing on the column it already added',
+    () async {
+      final dbFile = File(path.join(testDirectory.path, 'half_v45.db'));
+      final sqlite = sqlite3.open(dbFile.path);
+      createJournalSchema(sqlite, 44);
+      // Killed after the first ADD COLUMN, before the second and before
+      // user_version advanced: what a release without the upgrade
+      // transaction could leave behind.
+      sqlite
+        ..execute('ALTER TABLE journal ADD COLUMN day_id TEXT')
+        ..close();
+      DevLogger.capturedLogs.clear();
+
+      final db = JournalDb(overriddenFilename: 'half_v45.db');
+      addTearDown(db.close);
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), 48);
+
+      final columns =
+          (await db.customSelect('PRAGMA table_info(journal)').get())
+              .map((row) => row.read<String>('name'))
+              .toSet();
+      expect(columns, containsAll(['day_id', 'recording_session_id']));
+      expect(
+        DevLogger.capturedLogs.where(
+          (line) => line.contains('already present from an interrupted'),
+        ),
+        hasLength(1),
+        reason: DevLogger.capturedLogs.join('\n'),
+      );
+    },
+  );
 
   test('v45 backfills and indexes Daily OS audio lookup identity', () async {
     final databaseFile = File(path.join(testDirectory.path, 'v45.db'));

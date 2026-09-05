@@ -66,7 +66,11 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
                 name: 'JournalDb',
                 message: 'Add category_id in journal table, with index',
               );
-              await m.addColumn(journal, journal.category);
+              await _addColumnUnlessPresent(
+                journal.actualTableName,
+                journal.category.name,
+                () => m.addColumn(journal, journal.category),
+              );
             }();
           }
 
@@ -76,7 +80,11 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
                 name: 'JournalDb',
                 message: 'Add hidden in linked_entries table',
               );
-              await m.addColumn(linkedEntries, linkedEntries.hidden);
+              await _addColumnUnlessPresent(
+                linkedEntries.actualTableName,
+                linkedEntries.hidden.name,
+                () => m.addColumn(linkedEntries, linkedEntries.hidden),
+              );
             }();
           }
 
@@ -86,8 +94,16 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
                 name: 'JournalDb',
                 message: 'Add timestamps in linked_entries table, with index',
               );
-              await m.addColumn(linkedEntries, linkedEntries.createdAt);
-              await m.addColumn(linkedEntries, linkedEntries.updatedAt);
+              await _addColumnUnlessPresent(
+                linkedEntries.actualTableName,
+                linkedEntries.createdAt.name,
+                () => m.addColumn(linkedEntries, linkedEntries.createdAt),
+              );
+              await _addColumnUnlessPresent(
+                linkedEntries.actualTableName,
+                linkedEntries.updatedAt.name,
+                () => m.addColumn(linkedEntries, linkedEntries.updatedAt),
+              );
             }();
           }
 
@@ -162,8 +178,16 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
                 message: 'Adding task priority columns and updating index',
               );
 
-              await m.addColumn(journal, journal.taskPriority);
-              await m.addColumn(journal, journal.taskPriorityRank);
+              await _addColumnUnlessPresent(
+                journal.actualTableName,
+                journal.taskPriority.name,
+                () => m.addColumn(journal, journal.taskPriority),
+              );
+              await _addColumnUnlessPresent(
+                journal.actualTableName,
+                journal.taskPriorityRank.name,
+                () => m.addColumn(journal, journal.taskPriorityRank),
+              );
 
               // Backfill existing task rows to P2/2
               await customStatement(
@@ -300,7 +324,11 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
                 name: 'JournalDb',
                 message: 'Adding project_id column to journal table',
               );
-              await m.addColumn(journal, journal.projectId);
+              await _addColumnUnlessPresent(
+                journal.actualTableName,
+                journal.projectId.name,
+                () => m.addColumn(journal, journal.projectId),
+              );
               // Backfill project_id from the most-recent active ProjectLink.
               await customStatement(
                 "UPDATE journal SET project_id = ($_projectIdSubquery) WHERE type = 'Task'",

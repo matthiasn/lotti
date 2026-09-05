@@ -5,6 +5,34 @@ part of 'database.dart';
 mixin _JournalDbMigrationRecent on _$JournalDb {
   Future<bool> _columnExists(String table, String column);
 
+  /// Adds a column to [table] unless an interrupted upgrade already did.
+  ///
+  /// Every step before v48 shipped without a transaction around the upgrade,
+  /// so an install killed mid-step can hold the column while `user_version`
+  /// still names the previous version. `ALTER TABLE … ADD COLUMN` refuses a
+  /// duplicate, and inside the now-atomic upgrade that refusal would roll
+  /// the whole upgrade back on every launch; the pre-v48 column-adding steps
+  /// therefore skip a column that is already there. [add] issues the
+  /// statement: Drift's `Migrator.addColumn` where it derives the definition,
+  /// raw SQL where the declared type matters to the schema (`DATETIME`).
+  /// Steps from v48 on run atomically and need no such check.
+  Future<void> _addColumnUnlessPresent(
+    String table,
+    String column,
+    Future<void> Function() add,
+  ) async {
+    if (await _columnExists(table, column)) {
+      DevLogger.log(
+        name: 'JournalDb',
+        message:
+            'Column $table.$column already present from an interrupted '
+            'upgrade; skipping',
+      );
+      return;
+    }
+    await add();
+  }
+
   Future<void> _onUpgradeRecent(Migrator m, int from) async {
     // v41: Replace the `json_extract(serialized,'$.data.due')`
     // expression-keyed `idx_journal_tasks_due_open` with a partial
@@ -29,8 +57,11 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
         );
 
         // 1. Add the nullable column.
-        await customStatement(
-          'ALTER TABLE journal ADD COLUMN due_at DATETIME',
+        await _addColumnUnlessPresent(
+          'journal',
+          'due_at',
+          () =>
+              customStatement('ALTER TABLE journal ADD COLUMN due_at DATETIME'),
         );
 
         // 2. Backfill from JSON for every task with a non-null
@@ -197,9 +228,17 @@ mixin _JournalDbMigrationRecent on _$JournalDb {
               'Adding indexed Daily OS day and recording-session lookup '
               'columns',
         );
-        await customStatement('ALTER TABLE journal ADD COLUMN day_id TEXT');
-        await customStatement(
-          'ALTER TABLE journal ADD COLUMN recording_session_id TEXT',
+        await _addColumnUnlessPresent(
+          'journal',
+          'day_id',
+          () => customStatement('ALTER TABLE journal ADD COLUMN day_id TEXT'),
+        );
+        await _addColumnUnlessPresent(
+          'journal',
+          'recording_session_id',
+          () => customStatement(
+            'ALTER TABLE journal ADD COLUMN recording_session_id TEXT',
+          ),
         );
         await customStatement(r'''
 UPDATE journal
