@@ -53,55 +53,6 @@ void main() {
     }
   });
 
-  // Minimal pre-v39 schema: the journal table with the columns the v39
-  // migration touches, plus the old non-partial idx_journal_tasks_due_active
-  // that the migration is expected to drop and replace.
-  void createV38Schema(Database sqlite) {
-    sqlite.execute('''
-      CREATE TABLE IF NOT EXISTS journal (
-        id TEXT PRIMARY KEY,
-        serialized TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        date_from INTEGER NOT NULL,
-        date_to INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        subtype TEXT,
-        starred BOOLEAN DEFAULT FALSE,
-        private BOOLEAN DEFAULT FALSE,
-        deleted BOOLEAN DEFAULT FALSE,
-        task BOOLEAN DEFAULT FALSE,
-        task_status TEXT,
-        task_priority TEXT,
-        task_priority_rank INTEGER,
-        category TEXT NOT NULL DEFAULT '',
-        project_id TEXT,
-        flag INTEGER DEFAULT 0,
-        schema_version INTEGER DEFAULT 0,
-        plain_text TEXT,
-        latitude REAL,
-        longitude REAL,
-        geohash_string TEXT,
-        geohash_int INTEGER
-      )
-    ''');
-    sqlite.execute(r'''
-      CREATE INDEX idx_journal_tasks_due_active ON journal(
-        type COLLATE BINARY ASC,
-        deleted COLLATE BINARY ASC,
-        json_extract(serialized, '$.data.due') ASC
-      )
-    ''');
-    sqlite.execute('''
-      CREATE TABLE IF NOT EXISTS config_flags (
-        name TEXT NOT NULL UNIQUE,
-        description TEXT NOT NULL UNIQUE,
-        status BOOLEAN NOT NULL DEFAULT FALSE,
-        PRIMARY KEY (name)
-      )
-    ''');
-  }
-
   Future<String> indexSql(JournalDb db, String name) async {
     final rows = await db
         .customSelect(
@@ -121,8 +72,7 @@ void main() {
           p.join(testDirectory!.path, 'test_v39_due_open.db'),
         );
         final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 38');
+        createJournalSchema(sqlite, 38);
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_due_open.db');
@@ -158,8 +108,7 @@ void main() {
         p.join(testDirectory!.path, 'test_v39_status_private.db'),
       );
       final sqlite = sqlite3.open(dbFile.path);
-      createV38Schema(sqlite);
-      sqlite.execute('PRAGMA user_version = 38');
+      createJournalSchema(sqlite, 38);
       sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v39_status_private.db');
@@ -178,7 +127,7 @@ void main() {
       () async {
         final dbFile = File(p.join(testDirectory!.path, 'test_v39_rerun.db'));
         final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
+        createJournalSchema(sqlite, 38);
         // Pre-create the target indexes in the old v39 expression-keyed
         // shape so the v41 migration's DROP + CREATE path is exercised.
         sqlite.execute(
@@ -193,7 +142,6 @@ void main() {
           "WHERE type = 'Task' AND task = 1 AND deleted = FALSE "
           "AND task_status NOT IN ('DONE', 'REJECTED')",
         );
-        sqlite.execute('PRAGMA user_version = 38');
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_rerun.db');
@@ -215,8 +163,7 @@ void main() {
           p.join(testDirectory!.path, 'test_v39_count_plan.db'),
         );
         final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 38');
+        createJournalSchema(sqlite, 38);
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_count_plan.db');
@@ -247,8 +194,7 @@ void main() {
           p.join(testDirectory!.path, 'test_v39_due_plan.db'),
         );
         final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 38');
+        createJournalSchema(sqlite, 38);
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_due_plan.db');
@@ -317,8 +263,7 @@ void main() {
           p.join(testDirectory!.path, 'test_v44_task_priority_plan.db'),
         );
         final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 38');
+        createJournalSchema(sqlite, 38);
         sqlite.close();
 
         final db = JournalDb(
@@ -406,8 +351,7 @@ void main() {
           p.join(testDirectory!.path, 'test_v39_fallback.db'),
         );
         final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 39');
+        createJournalSchema(sqlite, 39);
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_fallback.db');

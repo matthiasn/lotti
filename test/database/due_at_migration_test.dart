@@ -1,4 +1,3 @@
-// ignore_for_file: cascade_invocations
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Variable;
@@ -8,6 +7,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
+
+import 'schema_fixtures.dart';
 
 import 'test_utils.dart';
 
@@ -65,58 +66,6 @@ void main() {
   /// reads from, plus the v39 `idx_journal_tasks_due_open` it expects to
   /// drop and the non-partial `idx_journal_tasks_due_active` it expects
   /// to drop. Mirrors the shape used by `task_indexes_v39_migration_test`.
-  void createV40Schema(Database sqlite) {
-    sqlite.execute('''
-      CREATE TABLE IF NOT EXISTS journal (
-        id TEXT PRIMARY KEY,
-        serialized TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        date_from INTEGER NOT NULL,
-        date_to INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        subtype TEXT,
-        starred BOOLEAN DEFAULT FALSE,
-        private BOOLEAN DEFAULT FALSE,
-        deleted BOOLEAN DEFAULT FALSE,
-        task BOOLEAN DEFAULT FALSE,
-        task_status TEXT,
-        task_priority TEXT,
-        task_priority_rank INTEGER,
-        category TEXT NOT NULL DEFAULT '',
-        project_id TEXT,
-        flag INTEGER DEFAULT 0,
-        schema_version INTEGER DEFAULT 0,
-        plain_text TEXT,
-        latitude REAL,
-        longitude REAL,
-        geohash_string TEXT,
-        geohash_int INTEGER
-      )
-    ''');
-    sqlite.execute(r'''
-      CREATE INDEX idx_journal_tasks_due_active ON journal(
-        type COLLATE BINARY ASC,
-        deleted COLLATE BINARY ASC,
-        json_extract(serialized, '$.data.due') ASC
-      )
-    ''');
-    sqlite.execute(
-      'CREATE INDEX idx_journal_tasks_due_open '
-      r"ON journal(json_extract(serialized, '$.data.due') ASC) "
-      "WHERE type = 'Task' AND task = 1 AND deleted = FALSE "
-      "AND task_status NOT IN ('DONE', 'REJECTED')",
-    );
-    sqlite.execute('''
-      CREATE TABLE IF NOT EXISTS config_flags (
-        name TEXT NOT NULL UNIQUE,
-        description TEXT NOT NULL UNIQUE,
-        status BOOLEAN NOT NULL DEFAULT FALSE,
-        PRIMARY KEY (name)
-      )
-    ''');
-  }
-
   /// Writes a journal row at v40 with a JSON `data.due` payload for
   /// `task` / non-task / null-due variants. The `data.due` field is
   /// serialized exactly as `DateTime.toIso8601String()` produces it,
@@ -165,8 +114,7 @@ void main() {
     test('adds the due_at column', () async {
       final dbFile = File(p.join(testDirectory!.path, 'test_v41_column.db'));
       final sqlite = sqlite3.open(dbFile.path);
-      createV40Schema(sqlite);
-      sqlite.execute('PRAGMA user_version = 40');
+      createJournalSchema(sqlite, 40);
       sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v41_column.db');
@@ -188,7 +136,7 @@ void main() {
           p.join(testDirectory!.path, 'test_v41_backfill.db'),
         );
         final sqlite = sqlite3.open(dbFile.path);
-        createV40Schema(sqlite);
+        createJournalSchema(sqlite, 40);
 
         // Tasks at every status that the migration must include.
         final openDue = DateTime.utc(2026, 5, 1, 12);
@@ -238,7 +186,6 @@ void main() {
           due: DateTime.utc(2026, 6),
         );
 
-        sqlite.execute('PRAGMA user_version = 40');
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v41_backfill.db');
@@ -273,8 +220,7 @@ void main() {
       () async {
         final dbFile = File(p.join(testDirectory!.path, 'test_v41_index.db'));
         final sqlite = sqlite3.open(dbFile.path);
-        createV40Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 40');
+        createJournalSchema(sqlite, 40);
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v41_index.db');
@@ -294,8 +240,7 @@ void main() {
     test('drops idx_journal_tasks_due_active', () async {
       final dbFile = File(p.join(testDirectory!.path, 'test_v41_drop.db'));
       final sqlite = sqlite3.open(dbFile.path);
-      createV40Schema(sqlite);
-      sqlite.execute('PRAGMA user_version = 40');
+      createJournalSchema(sqlite, 40);
       sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v41_drop.db');
@@ -313,8 +258,7 @@ void main() {
       () async {
         final dbFile = File(p.join(testDirectory!.path, 'test_v41_plan.db'));
         final sqlite = sqlite3.open(dbFile.path);
-        createV40Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 40');
+        createJournalSchema(sqlite, 40);
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v41_plan.db');
@@ -346,7 +290,7 @@ void main() {
         p.join(testDirectory!.path, 'test_v41_idempotent.db'),
       );
       final sqlite = sqlite3.open(dbFile.path);
-      createV40Schema(sqlite);
+      createJournalSchema(sqlite, 40);
       insertV40Task(
         sqlite,
         id: 'task-1',
@@ -355,7 +299,6 @@ void main() {
         taskStatus: 'OPEN',
         due: DateTime.utc(2026, 5),
       );
-      sqlite.execute('PRAGMA user_version = 40');
       sqlite.close();
 
       // First open runs the migration.

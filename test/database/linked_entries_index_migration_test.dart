@@ -8,7 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
-import 'migration_test_helper.dart';
+import 'schema_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +59,8 @@ void main() {
       );
       final sqlite = sqlite3.open(dbFile.path);
 
-      createV29Schema(sqlite);
+      // The real v29 schema, buggy index included.
+      createJournalSchema(sqlite, 29);
 
       // Verify the buggy index references from_id (not to_id) before migration.
       // We check the column list after 'ON linked_entries(' because the index
@@ -86,8 +87,6 @@ void main() {
         VALUES ('link-2', 'entry-c', 'entry-d', 'BasicLink', '{}', 1)
       """);
 
-      // Set user_version to 29 to trigger v30 migration
-      sqlite.execute('PRAGMA user_version = 29');
       sqlite.close();
 
       // Open with Drift to run migration

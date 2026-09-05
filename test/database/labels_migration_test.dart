@@ -12,7 +12,6 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
-import 'migration_test_helper.dart';
 import 'schema_fixtures.dart';
 
 void main() {
@@ -117,9 +116,9 @@ void main() {
         final dbFile = File(path.join(testDirectory!.path, 'test_v27.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        createJournalTable(sqlite, version: 26);
-
-        createLinkedEntriesTableWithBuggyIndex(sqlite);
+        // A pre-release v26 install: the real v25 schema stamped v26,
+        // without the label tables v26 was supposed to create.
+        createJournalSchema(sqlite, 25);
 
         // Set schema version to 26 without creating label tables
         sqlite.execute('PRAGMA user_version = 26');
@@ -152,13 +151,13 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // Create journal table
-      createJournalTable(sqlite, version: 27);
+      createJournalSchema(sqlite, 25);
 
       // Create label_definitions table
-      createLegacyLabelDefinitionsTable(sqlite);
+      _createLegacyLabelDefinitionsTable(sqlite);
 
       // Create old labeled table WITHOUT ON DELETE CASCADE
-      createLegacyLabeledTable(sqlite);
+      _createLegacyLabeledTable(sqlite);
 
       // Insert test data
       sqlite.execute('''
@@ -193,8 +192,6 @@ void main() {
       sqlite.execute('''
         DELETE FROM label_definitions WHERE id = 'label-orphaned'
       ''');
-
-      createLinkedEntriesTableWithBuggyIndex(sqlite);
 
       // Set schema version to 27
       sqlite.execute('PRAGMA user_version = 27');
@@ -232,9 +229,7 @@ void main() {
       final dbFile = File(path.join(testDirectory!.path, 'test_idempotent.db'));
       final sqlite = sqlite3.open(dbFile.path);
 
-      createJournalTable(sqlite, version: 25);
-      createLinkedEntriesTableWithBuggyIndex(sqlite);
-      sqlite.execute('PRAGMA user_version = 25');
+      createJournalSchema(sqlite, 25);
       sqlite.close();
 
       // First migration
@@ -285,11 +280,11 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // Create tables
-      createJournalTable(sqlite, version: 27);
+      createJournalSchema(sqlite, 25);
 
-      createLegacyLabelDefinitionsTable(sqlite);
+      _createLegacyLabelDefinitionsTable(sqlite);
 
-      createLegacyLabeledTable(sqlite);
+      _createLegacyLabeledTable(sqlite);
 
       // Insert multiple labels and tasks
       for (var i = 0; i < 5; i++) {
@@ -310,7 +305,6 @@ void main() {
         ''');
       }
 
-      createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 27');
       sqlite.close();
 
@@ -399,9 +393,7 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // Create minimal schema
-      createJournalTable(sqlite, version: 25);
-      createLinkedEntriesTableWithBuggyIndex(sqlite);
-      sqlite.execute('PRAGMA user_version = 25');
+      createJournalSchema(sqlite, 25);
       sqlite.close();
 
       // Open with JournalDb to trigger migration
@@ -422,4 +414,37 @@ void main() {
       await db.close();
     });
   });
+}
+
+/// The `label_definitions` table as v26/v27 created it, before v28.
+void _createLegacyLabelDefinitionsTable(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS label_definitions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL,
+      serialized TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted BOOLEAN DEFAULT FALSE,
+      private BOOLEAN DEFAULT FALSE,
+      schema_version INTEGER DEFAULT 0
+    )
+  ''');
+}
+
+/// The pre-v28 `labeled` link table: foreign keys without ON DELETE CASCADE,
+/// which the v28 migration rebuilds.
+void _createLegacyLabeledTable(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS labeled (
+      id TEXT NOT NULL UNIQUE,
+      journal_id TEXT NOT NULL,
+      label_id TEXT NOT NULL,
+      PRIMARY KEY (id),
+      FOREIGN KEY(journal_id) REFERENCES journal(id),
+      FOREIGN KEY(label_id) REFERENCES label_definitions(id),
+      UNIQUE(journal_id, label_id)
+    )
+  ''');
 }

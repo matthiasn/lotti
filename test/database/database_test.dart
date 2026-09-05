@@ -11,6 +11,8 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
+import 'schema_fixtures.dart';
+
 import 'test_utils.dart';
 
 void main() {
@@ -45,41 +47,10 @@ void main() {
         final dbFile = File(path.join(migrationDir.path, 'test_v18.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        // Keep the v18 schema faithful: category, task priority, project_id,
-        // and due_at must all be introduced by the migration itself.
-        // ignore: cascade_invocations
+        // The real v18 schema, as it shipped: category, task priority,
+        // project_id and due_at must all be introduced by the migration.
+        createJournalSchema(sqlite, 18);
         sqlite
-          ..execute('''
-          CREATE TABLE IF NOT EXISTS journal (
-            id TEXT PRIMARY KEY,
-            serialized TEXT NOT NULL,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            date_from INTEGER NOT NULL,
-            date_to INTEGER NOT NULL,
-            type TEXT NOT NULL,
-            subtype TEXT,
-            starred BOOLEAN DEFAULT FALSE,
-            private BOOLEAN DEFAULT FALSE,
-            deleted BOOLEAN DEFAULT FALSE,
-            task BOOLEAN DEFAULT FALSE,
-            task_status TEXT,
-            flag INTEGER DEFAULT 0,
-            schema_version INTEGER DEFAULT 0
-          )
-        ''')
-          // v18 linked_entries: NO hidden, created_at, or updated_at columns.
-          ..execute('''
-          CREATE TABLE IF NOT EXISTS linked_entries (
-            id TEXT NOT NULL UNIQUE,
-            from_id TEXT NOT NULL,
-            to_id TEXT NOT NULL,
-            type TEXT NOT NULL,
-            serialized TEXT NOT NULL,
-            PRIMARY KEY (id),
-            UNIQUE(from_id, to_id, type)
-          )
-        ''')
           // Seed one task row so later backfill UPDATEs run against real data.
           ..execute(
             'INSERT INTO journal '
@@ -87,7 +58,6 @@ void main() {
             'type, task, task_status) '
             "VALUES ('mig-task', '{}', 0, 0, 0, 0, 'Task', 1, 'OPEN')",
           )
-          ..execute('PRAGMA user_version = 18')
           ..close();
 
         // Create the default-named db file so the pre-migration backup (which
