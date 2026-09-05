@@ -6741,6 +6741,22 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> measurementsByTypeAllPrivate(
+    String? subtype,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'MeasurementEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(subtype),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<JournalDbEntity> habitCompletionsByHabitId(
     String? habitId,
     DateTime rangeStart,
@@ -6754,6 +6770,22 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<DateTime>(rangeEnd),
       ],
       readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> habitCompletionsByHabitIdAllPrivate(
+    String? habitId,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(habitId),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6773,11 +6805,27 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> quantitativeByTypeAllPrivate(
+    String? subtype,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(subtype),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<JournalDbEntity> latestQuantByType(String? subtype) {
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC LIMIT 1',
+      'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND deleted = FALSE ORDER BY date_from DESC LIMIT 1',
       variables: [Variable<String>(subtype)],
-      readsFrom: {journal, configFlags},
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 
@@ -6791,9 +6839,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> findLatestWorkout() {
     return customSelect(
-      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_to DESC LIMIT 1',
+      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND deleted = FALSE ORDER BY date_to DESC LIMIT 1',
       variables: [],
-      readsFrom: {journal, configFlags},
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
 

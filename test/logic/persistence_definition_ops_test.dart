@@ -99,7 +99,7 @@ void main() {
       () => mocks.journalDb.upsertEntityDefinition(renamed),
     ).thenAnswer((_) async => 1);
     when(
-      () => mocks.journalDb.getMeasurementsByType(
+      () => mocks.journalDb.getMeasurementsByTypeIncludingPrivate(
         type: previous.id,
         rangeStart: any(named: 'rangeStart'),
         rangeEnd: any(named: 'rangeEnd'),
@@ -145,7 +145,7 @@ void main() {
 
       verifyNoMoreInteractions(fts5Db);
       verifyNever(
-        () => mocks.journalDb.getMeasurementsByType(
+        () => mocks.journalDb.getMeasurementsByTypeIncludingPrivate(
           type: any(named: 'type'),
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),

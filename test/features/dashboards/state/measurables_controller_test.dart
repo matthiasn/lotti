@@ -301,6 +301,55 @@ void main() {
       expect(updated, hasLength(2));
     });
 
+    test(
+      'updates state when affected id arrives on update stream (private toggle)',
+      () async {
+        final entry1 = makeEntry(DateTime(2024, 3, 12, 9), 42);
+        final entry2 = makeEntry(DateTime(2024, 3, 13, 9), 84);
+
+        final streamController = StreamController<Set<String>>.broadcast();
+        var callCount = 0;
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockJournalDb.getMeasurementsByType(
+            type: typeId,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          return callCount == 1 ? [entry1] : [entry1, entry2];
+        });
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        addTearDown(streamController.close);
+
+        final params = (
+          measurableDataTypeId: typeId,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        // Read initial state.
+        final initial = await container.read(
+          measurableChartDataControllerProvider(params).future,
+        );
+        expect(initial, hasLength(1));
+
+        // Emit an update that contains our type id — triggers _listen().
+        streamController.add({privateToggleNotification});
+        await pumpEventQueue();
+
+        final updated = await container.read(
+          measurableChartDataControllerProvider(params).future,
+        );
+        expect(updated, hasLength(2));
+      },
+    );
+
     test('ignores update stream events for unrelated ids', () async {
       final entry = makeEntry(DateTime(2024, 3, 12, 9), 42);
 

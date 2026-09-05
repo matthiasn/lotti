@@ -828,52 +828,55 @@ void main() {
       Set<String> ids(Iterable<JournalEntity> entities) =>
           entities.map((e) => e.meta.id).toSet();
 
+      // The private row is always the newer one, so a "latest" read changes
+      // its answer with the flag rather than merely its count.
+      Future<void> seedSeries() async {
+        final rows = <JournalEntity>[
+          measurement('measurement-public', at),
+          asPrivate(measurement('measurement-private', at.add(hour))),
+          buildHabitCompletionEntry(
+            id: 'habit-public',
+            habitId: habitFlossing.id,
+            timestamp: at,
+          ),
+          // A day later: completions collapse to one per day.
+          asPrivate(
+            buildHabitCompletionEntry(
+              id: 'habit-private',
+              habitId: habitFlossing.id,
+              timestamp: at.add(const Duration(days: 1)),
+            ),
+          ),
+          buildQuantitativeEntry(
+            id: 'weight-public',
+            dataType: 'weight',
+            timestamp: at,
+          ),
+          asPrivate(
+            buildQuantitativeEntry(
+              id: 'weight-private',
+              dataType: 'weight',
+              timestamp: at.add(hour),
+            ),
+          ),
+          workout('workout-public', at, 'running'),
+          asPrivate(workout('workout-private-run', at.add(hour), 'running')),
+          asPrivate(
+            workout('workout-private-swim', at.add(hour * 2), 'swimming'),
+          ),
+          survey('survey-public', at),
+          asPrivate(survey('survey-private', at.add(hour))),
+        ];
+        for (final row in rows) {
+          await db!.updateJournalEntity(row);
+        }
+      }
+
       test(
         'every series read hides private entries while the flag is off and '
         'shows them while it is on',
         () async {
-          // The private row is always the newer one, so the "latest" reads
-          // change their answer with the flag rather than merely their count.
-          final rows = <JournalEntity>[
-            measurement('measurement-public', at),
-            asPrivate(measurement('measurement-private', at.add(hour))),
-            buildHabitCompletionEntry(
-              id: 'habit-public',
-              habitId: habitFlossing.id,
-              timestamp: at,
-            ),
-            // A day later: completions collapse to one per day.
-            asPrivate(
-              buildHabitCompletionEntry(
-                id: 'habit-private',
-                habitId: habitFlossing.id,
-                timestamp: at.add(const Duration(days: 1)),
-              ),
-            ),
-            buildQuantitativeEntry(
-              id: 'weight-public',
-              dataType: 'weight',
-              timestamp: at,
-            ),
-            asPrivate(
-              buildQuantitativeEntry(
-                id: 'weight-private',
-                dataType: 'weight',
-                timestamp: at.add(hour),
-              ),
-            ),
-            workout('workout-public', at, 'running'),
-            asPrivate(workout('workout-private-run', at.add(hour), 'running')),
-            asPrivate(
-              workout('workout-private-swim', at.add(hour * 2), 'swimming'),
-            ),
-            survey('survey-public', at),
-            asPrivate(survey('survey-private', at.add(hour))),
-          ];
-          for (final row in rows) {
-            await db!.updateJournalEntity(row);
-          }
-
+          await seedSeries();
           final reads =
               <
                 ({
@@ -920,14 +923,6 @@ void main() {
                   off: {'weight-public'},
                 ),
                 (
-                  name: 'latestQuantitativeByType',
-                  read: () async => {
-                    (await db!.latestQuantitativeByType('weight'))!.meta.id,
-                  },
-                  on: {'weight-private'},
-                  off: {'weight-public'},
-                ),
-                (
                   name: 'getWorkouts',
                   read: () async => ids(
                     await db!.getWorkouts(
@@ -952,12 +947,6 @@ void main() {
                     ),
                   ),
                   on: {'workout-public', 'workout-private-run'},
-                  off: {'workout-public'},
-                ),
-                (
-                  name: 'latestWorkout',
-                  read: () async => {(await db!.latestWorkout())!.meta.id},
-                  on: {'workout-private-swim'},
                   off: {'workout-public'},
                 ),
                 (
@@ -992,6 +981,54 @@ void main() {
               reason: '${read.name}, flag off',
             );
           }
+        },
+      );
+
+      test(
+        'import checkpoints and the reindex, repair and automation reads see '
+        'private rows while the flag is off',
+        () async {
+          await seedSeries();
+          await disablePrivate();
+
+          // Health-import checkpoints: the newest stored sample, whatever its
+          // flag, or the import re-reads the whole default window.
+          expect(
+            (await db!.latestQuantitativeByType('weight'))!.meta.id,
+            'weight-private',
+          );
+          expect((await db!.latestWorkout())!.meta.id, 'workout-private-swim');
+
+          expect(
+            ids(
+              await db!.getMeasurementsByTypeIncludingPrivate(
+                type: measurableWater.id,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+            ),
+            {'measurement-public', 'measurement-private'},
+          );
+          expect(
+            ids(
+              await db!.getHabitCompletionsByHabitIdIncludingPrivate(
+                habitId: habitFlossing.id,
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+            ),
+            {'habit-public', 'habit-private'},
+          );
+          expect(
+            ids(
+              await db!.getQuantitativeByTypeIncludingPrivate(
+                type: 'weight',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+            ),
+            {'weight-public', 'weight-private'},
+          );
         },
       );
     });

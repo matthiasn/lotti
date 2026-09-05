@@ -4,4 +4,5 @@
   other quantitative data, workouts, surveys, habit completions), the calendar
   day view, the Daily OS list of a day's recordings and the import badge count
   all showed or counted private entries regardless of the switch. Every one of
-  them now honours it.
+  them now honours it, and open dashboards refresh the moment the switch is
+  flipped instead of showing the old rows for up to five minutes.

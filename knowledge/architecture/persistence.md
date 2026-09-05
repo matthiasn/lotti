@@ -532,9 +532,18 @@ allowlist holds:
 - **Counts.** `countAllJournalEntries` and `countJournalEntries` — totals
   for progress reporting and the About page, not rows. The import badge count
   gates like any list, since it is derived from entries the badge leads to.
-- **Nothing else.** Every list, series and range read gates: the calendar
-  range read, the Daily OS day audio list and the data series behind
-  dashboards and health charts included, since 2026-09-05.
+- **Nothing else the user sees.** Every list, series and range read gates:
+  the calendar range read, the Daily OS day audio list and the data series
+  behind dashboards and health charts included, since 2026-09-05. What is not
+  a display read stays unfiltered on purpose, because the flag is a display
+  preference: the health import's checkpoints (`latestQuantByType`,
+  `findLatestWorkout`), and the `…IncludingPrivate` twins of the measurement,
+  habit-completion and quantitative reads used by the search reindex, the
+  sleep repair sweep and the auto-completion write guard — a guard that could
+  not see a private skip would write a second completion over it. The chart
+  controllers and the Daily OS activity projection refetch on
+  `PRIVATE_FLAG_TOGGLED`, so a cached chart does not keep showing rows the
+  user just hid.
 
 So the shape is: **lists, searches and batches thin out private entries; fetching
 one entity you already have the id for does not.** That is coherent with what the

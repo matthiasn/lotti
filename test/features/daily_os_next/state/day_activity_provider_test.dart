@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -45,7 +47,10 @@ void main() {
     if (root.existsSync()) root.deleteSync(recursive: true);
   });
 
-  ProviderContainer makeContainer(MockAgentRepository repository) {
+  ProviderContainer makeContainer(
+    MockAgentRepository repository, {
+    Stream<Set<String>> Function(String key)? updates,
+  }) {
     final container = ProviderContainer(
       overrides: [
         dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
@@ -53,7 +58,8 @@ void main() {
         draftedPlanForDateProvider.overrideWith((ref, date) async => null),
         agentRepositoryProvider.overrideWithValue(repository),
         agentUpdateStreamProvider.overrideWith(
-          (ref, agentId) => const Stream<Set<String>>.empty(),
+          (ref, agentId) =>
+              updates?.call(agentId) ?? const Stream<Set<String>>.empty(),
         ),
       ],
     );
@@ -98,6 +104,36 @@ void main() {
       );
     },
   );
+
+  test('re-runs the projection when the private flag toggles', () async {
+    final repository = MockAgentRepository();
+    when(
+      () => repository.getEntitiesByIds(any()),
+    ).thenAnswer((_) async => const {});
+    final toggles = StreamController<Set<String>>.broadcast();
+    addTearDown(toggles.close);
+    final container = makeContainer(
+      repository,
+      updates: (key) => key == privateToggleNotification
+          ? toggles.stream
+          : const Stream<Set<String>>.empty(),
+    );
+    // Keep the autoDispose provider alive across the rebuild.
+    final subscription = container.listen(
+      dayActivityProvider(date),
+      (_, _) {},
+    );
+    addTearDown(subscription.close);
+    await container.read(dayActivityProvider(date).future);
+    verify(() => journalDb.getDayAudioEntries(dayId)).called(1);
+
+    // The day audio read gates on the flag, so flipping it must re-run the
+    // projection rather than leave the previous rows on screen.
+    toggles.add({privateToggleNotification});
+    await pumpEventQueue();
+    await container.read(dayActivityProvider(date).future);
+    verify(() => journalDb.getDayAudioEntries(dayId)).called(1);
+  });
 
   test(
     'loads an offline day projection from its resolved dependencies',

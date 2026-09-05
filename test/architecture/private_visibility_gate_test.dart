@@ -35,6 +35,18 @@ const _ungatedNamedQueries = <String, String>{
   'orderedJournalInterval': 'historical re-sync walks every row for peers',
   // No rows at all.
   'emptyJournalSelection': 'WHERE 1 = 0: the placeholder for an empty filter',
+  // Health-import checkpoints: the newest stored sample decides the next
+  // delta window and is never shown.
+  'latestQuantByType': 'health-import checkpoint, never displayed',
+  'findLatestWorkout': 'health-import checkpoint, never displayed',
+  // The unfiltered twins behind the *IncludingPrivate reads: reindexing,
+  // repair and automation guards must see every row.
+  'measurementsByTypeAllPrivate':
+      'the search reindex after a definition edit must cover hidden rows',
+  'habitCompletionsByHabitIdAllPrivate':
+      'the auto-completion guard must see a private skip or it writes over it',
+  'quantitativeByTypeAllPrivate':
+      'the sleep repair sweep must cover hidden rows',
   // Numbers, not rows.
   'countJournalEntries': 'a count for maintenance progress',
 };

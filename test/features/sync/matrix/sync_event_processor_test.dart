@@ -591,7 +591,7 @@ void main() {
       () => journalDb.getMeasurableDataTypeById(renamed.id),
     ).thenAnswer((_) async => measurableHydration);
     when(
-      () => journalDb.getMeasurementsByType(
+      () => journalDb.getMeasurementsByTypeIncludingPrivate(
         type: renamed.id,
         rangeStart: any(named: 'rangeStart'),
         rangeEnd: any(named: 'rangeEnd'),

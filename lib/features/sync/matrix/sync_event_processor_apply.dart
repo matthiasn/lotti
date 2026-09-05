@@ -70,11 +70,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
             fts5Db != null &&
             measurementDefinitionAffectsFts(previousMeasurable, measurable)) {
           try {
-            final entries = await journalDb.getMeasurementsByType(
-              type: measurable.id,
-              rangeStart: DateTime(1),
-              rangeEnd: DateTime(9999, 12, 31, 23, 59, 59, 999),
-            );
+            final entries = await journalDb
+                .getMeasurementsByTypeIncludingPrivate(
+                  type: measurable.id,
+                  rangeStart: DateTime(1),
+                  rangeEnd: DateTime(9999, 12, 31, 23, 59, 59, 999),
+                );
             await fts5Db.reindexMeasurements(measurable, entries);
           } catch (exception, stackTrace) {
             // Search rows are derived. Keep the synced definition even if its
