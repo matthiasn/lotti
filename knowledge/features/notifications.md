@@ -5,7 +5,7 @@ description: Durable app-level alerts stored outside the journal, converging acr
 resource: ../../lib/features/notifications
 tags: [notifications, sync, convergence]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-03T09:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T18:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
@@ -19,7 +19,7 @@ sources:
   - id: os-boundary
     resource: ../../lib/services/notification_service.dart
     title: NotificationService — the OS delivery boundary
-    last_modified: 2026-08-17
+    last_modified: 2026-09-05
   - id: scheduler
     resource: ../../lib/features/notifications/scheduler/notification_scheduler.dart
     title: NotificationScheduler — rows to OS alarms, and reconcile
@@ -241,6 +241,23 @@ the platform is not a reason to report it as unsaved.
 
 Cancelling is the one thing that stays ungated: removing an alert must keep
 working after notifications are switched off.
+
+# Habit reminders retain their calendar date
+
+`scheduleHabitNotification` interprets the daily alert time in the resolved
+local zone. Completion requests the next calendar day; saving settings uses
+today if the alert time is still ahead, otherwise tomorrow. Calendar
+construction, rather than a 24-hour duration, preserves the intended day
+through daylight-saving changes and month/year boundaries. Subsecond clock
+values do not leak into the configured reminder time.
+
+`scheduleNotification` preserves that entire calendar date and wall-clock time
+when constructing the zoned alarm. Reusing today's date here would discard the
+completion caller's tomorrow: before the alert time it would ring again today,
+and after the alert time the plugin would reject the replacement after the
+previous alarm had been cancelled. This wall-clock contract differs from
+`scheduleNotificationAt`, which converts an absolute instant into the device
+zone. Both replace the prior alarm with the same notification ID.
 
 # Android needed settings before it needed anything else
 
