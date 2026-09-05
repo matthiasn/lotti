@@ -494,6 +494,61 @@ void main() {
       await expectation;
     });
 
+    test(
+      'resetDrafts forgets every draft, cancels pending writes and tells '
+      'open editors they are saved',
+      () {
+        fakeAsync((async) {
+          when(
+            () => mockEditorDb.getLatestDraft(
+              any(),
+              lastSaved: any(named: 'lastSaved'),
+            ),
+          ).thenAnswer((_) async => null);
+          final emitted = <bool>[];
+          editorStateService
+              .getUnsavedStream('entry-a', testEpochDateTime)
+              .listen(emitted.add);
+          editorStateService
+            ..saveTempState(
+              id: 'entry-a',
+              lastSaved: testEpochDateTime,
+              json: '{"ops":[{"insert":"a"}]}',
+            )
+            ..saveTempState(
+              id: 'entry-b',
+              lastSaved: testEpochDateTime,
+              json: '{"ops":[{"insert":"b"}]}',
+            )
+            ..saveSelection(
+              'entry-a',
+              const TextSelection.collapsed(offset: 1),
+            );
+          // The test environment debounces with zero delay, so stand in a
+          // write that is still pending, keyed the way the service keys it.
+          var pendingWriteFired = false;
+          EasyDebounce.debounce(
+            'persistDraftState-entry-a',
+            const Duration(seconds: 2),
+            () => pendingWriteFired = true,
+          );
+          async.flushMicrotasks();
+
+          editorStateService.resetDrafts();
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(seconds: 3));
+
+          expect(editorStateService.getDelta('entry-a'), isNull);
+          expect(editorStateService.getDelta('entry-b'), isNull);
+          expect(editorStateService.getSelection('entry-a'), isNull);
+          expect(editorStateService.entryIsUnsaved('entry-b'), isFalse);
+          expect(pendingWriteFired, isFalse);
+          expect(emitted.last, isFalse);
+        });
+      },
+    );
+
     test('entryIsUnsaved returns true when entry has unsaved state', () {
       const entryId = 'test-entry-id';
 

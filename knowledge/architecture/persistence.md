@@ -422,11 +422,16 @@ chosen by what the services holding a database can survive:
 
 - **Empty through the live connection** — `clearEditorDb`, `clearSyncDb`
   delete every row of every table (enumerated from `sqlite_master`, so the
-  raw-SQL `sync_sequence_watermarks` is included) and `VACUUM`. Every service
-  keeps a valid handle and the reset takes effect immediately. Unlinking the
-  file instead would leave those handles writing into a ghost inode until
-  restart and an orphaned `-wal` beside the file created on the next launch,
-  ready to be replayed into it.
+  raw-SQL `sync_sequence_watermarks` is included), `VACUUM`, and then call
+  `notifyUpdates` for those tables, because raw statements bypass Drift's
+  stream invalidation and the outbox count behind the sync badge would
+  otherwise keep its pre-reset value. Every service keeps a valid handle and
+  the reset takes effect immediately. `clearEditorDb` also calls
+  `EditorStateService.resetDrafts`, since drafts live in memory with a
+  debounced write and would otherwise be restored into an open editor or
+  written back moments later. Unlinking the file instead would leave those
+  handles writing into a ghost inode until restart and an orphaned `-wal`
+  beside the file created on the next launch, ready to be replayed into it.
 - **Close, then delete with companions** — `deleteAgentDb` backs up, closes
   the registered `AgentDatabase`, removes the file with `-wal`, `-shm` and
   `-journal`, and its caller quits the app, because every holder is now on a

@@ -11,6 +11,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/editor_state_service.dart';
 
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
@@ -41,9 +42,16 @@ class Maintenance {
     _deleteWithCompanions(file);
   }
 
-  /// Empties the editor drafts database through its live connection.
-  Future<void> clearEditorDb() =>
-      _emptyDatabase(getIt<EditorDb>(), subDomain: 'clearEditorDb');
+  /// Empties the editor drafts database through its live connection and
+  /// drops the drafts the editor still holds in memory, cancelling their
+  /// pending debounced writes — otherwise a draft the user just discarded
+  /// would be restored into the editor, or written back moments later.
+  Future<void> clearEditorDb() async {
+    await _emptyDatabase(getIt<EditorDb>(), subDomain: 'clearEditorDb');
+    if (getIt.isRegistered<EditorStateService>()) {
+      getIt<EditorStateService>().resetDrafts();
+    }
+  }
 
   /// Empties the sync database — outbox, sequence log, host activity, inbound
   /// queue, queue markers, onboarding rounds and watermarks — through its
@@ -71,15 +79,23 @@ class Maintenance {
           "AND name NOT LIKE 'sqlite_%'",
         )
         .get();
+    final names = [for (final row in tables) row.read<String>('name')];
     await db.transaction(() async {
-      for (final row in tables) {
-        await db.customStatement('DELETE FROM "${row.read<String>('name')}"');
+      for (final name in names) {
+        await db.customStatement('DELETE FROM "$name"');
       }
     });
     await db.customStatement('VACUUM');
+    // Raw statements bypass Drift's stream invalidation; tell every watched
+    // query (the outbox count behind the sync badge, for one) that its
+    // tables changed, or it would show the pre-reset value until the next
+    // ordinary write.
+    db.notifyUpdates({
+      for (final name in names) TableUpdate(name, kind: UpdateKind.delete),
+    });
     getIt<DomainLogger>().log(
       LogDomain.database,
-      'Emptied ${tables.length} table(s)',
+      'Emptied ${names.length} table(s)',
       subDomain: subDomain,
     );
   }

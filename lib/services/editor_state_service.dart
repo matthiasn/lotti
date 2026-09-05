@@ -153,5 +153,27 @@ class EditorStateService {
     unsavedStreamById[id]?.add(false);
   }
 
+  /// Forgets every draft held in memory without persisting any of it:
+  /// cancels each pending debounced write, clears deltas and selections, and
+  /// tells every open editor its entry is no longer unsaved.
+  ///
+  /// The database side is the caller's job — `Maintenance.clearEditorDb`
+  /// empties the drafts table and then calls this, so a draft the user just
+  /// discarded is neither restored into an open editor nor written back by a
+  /// debounce that was still pending. (A debounce that fires anyway finds no
+  /// delta and writes nothing.)
+  void resetDrafts() {
+    for (final id in editorStateById.keys.toList(growable: false)) {
+      EasyDebounce.cancel('persistDraftState-$id');
+    }
+    editorStateById.clear();
+    selectionById.clear();
+    for (final controller in unsavedStreamById.values) {
+      if (!controller.isClosed) {
+        controller.add(false);
+      }
+    }
+  }
+
   bool entryIsUnsaved(String id) => editorStateById.containsKey(id);
 }

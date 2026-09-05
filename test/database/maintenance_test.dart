@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -234,9 +235,14 @@ void main() {
             hasLength(1),
           );
 
+          final editorState = MockEditorStateService();
+          getIt.registerSingleton<EditorStateService>(editorState);
+
           await maintenance.clearEditorDb();
 
           expect(await editorDb.select(editorDb.editorDrafts).get(), isEmpty);
+          // Drafts still held in memory (and their pending writes) go too.
+          verify(editorState.resetDrafts).called(1);
           await editorDb.insertDraftState(
             entryId: 'entry-2',
             lastSaved: DateTime(2026, 9, 5),
@@ -268,9 +274,18 @@ void main() {
             'INSERT INTO sync_sequence_watermarks '
             "(host_id, last_counter, updated_at) VALUES ('host-a', 3, 0)",
           );
+          // A live Drift stream, as behind the sync badge: it must learn
+          // about the reset although the rows go through raw statements.
+          final counts = <int>[];
+          final subscription = syncDb.watchOutboxCount().listen(counts.add);
+          addTearDown(subscription.cancel);
+          await pumpEventQueue();
+          expect(counts, [1]);
 
           await maintenance.clearSyncDb();
+          await pumpEventQueue();
 
+          expect(counts.last, 0);
           expect(await syncDb.select(syncDb.outbox).get(), isEmpty);
           final watermarks = await syncDb
               .customSelect(
