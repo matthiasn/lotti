@@ -225,6 +225,67 @@ void main() {
     });
   });
 
+  group('backupBeforeMigration', () {
+    late Directory testDir;
+
+    setUp(() {
+      testDir = setupTestDirectory();
+      setupTestDirectoryWithGetIt(testDir);
+      DevLogger.capturedLogs.clear();
+    });
+
+    tearDown(() async {
+      await cleanupTestDirectoryWithGetIt(testDir);
+    });
+
+    test('writes the backup and logs where it went', () async {
+      final source = sqlite3.open(p.join(testDir.path, 'sync.sqlite'));
+      addTearDown(source.close);
+      source.execute('CREATE TABLE rows (id INTEGER PRIMARY KEY)');
+
+      await backupBeforeMigration('sync.sqlite', from: 3, to: 4);
+
+      final backups = Directory(
+        p.join(testDir.path, _backupDirectoryName),
+      ).listSync();
+      expect(backups, hasLength(1));
+      expect(
+        DevLogger.capturedLogs.any(
+          (line) =>
+              line.contains('Backed up sync.sqlite') &&
+              line.contains('before migrating v3 to v4'),
+        ),
+        isTrue,
+        reason: DevLogger.capturedLogs.join('\n'),
+      );
+    });
+
+    test(
+      'a failed backup is logged and never stops the migration',
+      () async {
+        // No such file: the backup throws, the migration must still run.
+        await expectLater(
+          backupBeforeMigration('missing.sqlite', from: 3, to: 4),
+          completes,
+        );
+
+        expect(
+          Directory(p.join(testDir.path, _backupDirectoryName)).existsSync(),
+          isFalse,
+        );
+        expect(
+          DevLogger.capturedLogs.any(
+            (line) => line.contains(
+              'Failed to back up missing.sqlite before migrating v3 to v4',
+            ),
+          ),
+          isTrue,
+          reason: DevLogger.capturedLogs.join('\n'),
+        );
+      },
+    );
+  });
+
   group('openDbConnection Tests', () {
     // Constructor smoke tests were removed: behavioral coverage for
     // openDbConnection (WAL mode, pragmas, directory creation) lives in

@@ -96,9 +96,7 @@ Future<File> createDbBackup(
           'VACUUM INTO failed for $fileName ($e); '
           'falling back to a raw copy of the main file and its WAL',
     );
-    if (target.existsSync()) {
-      await target.delete();
-    }
+    // File.copy replaces whatever a failed attempt left at the target.
     await file.copy(target.path);
     await walStash?.rename('${target.path}-wal');
   }
