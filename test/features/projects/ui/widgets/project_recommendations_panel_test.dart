@@ -162,13 +162,18 @@ void main() {
 
     expect(find.text('Recommended next steps'), findsOneWidget);
     expect(find.text('1 pending'), findsNWidgets(2));
-    expect(find.text('Dismissed'), findsOneWidget);
+    expect(
+      find.text('Split the first wave'),
+      findsNothing,
+      reason: 'A dismissed step is off the list — dismissed is dismissed.',
+    );
+    expect(find.text('Dismissed'), findsNothing);
     expect(find.text('Added'), findsOneWidget);
     expect(find.text('Open task'), findsOneWidget);
     expect(
       find.text('Undo'),
-      findsOneWidget,
-      reason: 'A dismissal stays undoable; a stored addition does not.',
+      findsNothing,
+      reason: 'A stored addition is past its undo window.',
     );
     expect(find.text('Proposed changes'), findsOneWidget);
     expect(find.text('Create task: Pack fish'), findsOneWidget);
@@ -179,10 +184,21 @@ void main() {
     );
     final tops = [
       'Confirm the escort',
-      'Split the first wave',
       'Brief the elders',
     ].map((title) => tester.getTopLeft(find.text(title)).dy).toList();
     expect(tops, orderedEquals([...tops]..sort()));
+
+    // The dismissal is not gone, only out of the way: the history discloses it
+    // under the open rows, and that is where it can be taken back.
+    await tester.tap(find.text('Show history'));
+    await tester.pump();
+    expect(find.text('Split the first wave'), findsOneWidget);
+    expect(find.text('Dismissed'), findsOneWidget);
+    expect(
+      find.text('Undo'),
+      findsOneWidget,
+      reason: 'Only the dismissed history row offers Undo.',
+    );
   });
 
   testWidgets(
@@ -326,26 +342,45 @@ void main() {
     expect(find.text('Open task'), findsNothing);
   });
 
-  testWidgets('Dismiss and Undo flip the row in place', (tester) async {
+  testWidgets('Dismiss removes the row; the history takes it back', (
+    tester,
+  ) async {
     when(
       () => service.dismissRecommendation('s1'),
     ).thenAnswer((_) async => true);
     when(
       () => service.restoreRecommendation('s1'),
     ).thenAnswer((_) async => true);
-    await pumpSubject(tester, subject(items: steps.sublist(0, 1)));
+    await pumpSubject(tester, subject(items: steps.sublist(0, 2)));
 
-    await tester.tap(find.text('Dismiss'));
+    await tester.tap(find.text('Dismiss').first);
     await settle(tester);
     verify(() => service.dismissRecommendation('s1')).called(1);
-    expect(find.text('Dismissed'), findsOneWidget);
+    expect(
+      find.text('Confirm the escort'),
+      findsNothing,
+      reason: 'The dismissed step leaves the list at once.',
+    );
+    expect(find.text('Split the first wave'), findsOneWidget);
+
+    await tester.tap(find.text('Show history'));
+    await tester.pump();
     expect(find.text('Confirm the escort'), findsOneWidget);
+    expect(find.text('Dismissed'), findsOneWidget);
 
     await tester.tap(find.text('Undo'));
     await settle(tester);
     verify(() => service.restoreRecommendation('s1')).called(1);
-    expect(find.text('Dismissed'), findsNothing);
-    expect(find.text('Add task'), findsOneWidget);
+    expect(
+      find.text('Dismissed'),
+      findsNothing,
+      reason: 'Nothing is left in the history to show.',
+    );
+    expect(
+      find.text('Add task'),
+      findsNWidgets(2),
+      reason: 'The restored step is open again, beside the untouched one.',
+    );
   });
 
   testWidgets('a refused Undo keeps the tag and says so', (tester) async {
@@ -367,10 +402,17 @@ void main() {
       ),
     );
 
+    await tester.tap(find.text('Show history'));
+    await tester.pump();
     await tester.tap(find.text('Undo'));
     await settle(tester);
 
-    expect(find.text('Dismissed'), findsOneWidget);
+    expect(
+      find.text('Dismissed'),
+      findsOneWidget,
+      reason: 'A refused restore leaves the history row exactly as it was.',
+    );
+    expect(find.text('Split the first wave'), findsOneWidget);
     expect(find.text(updateError), findsOneWidget);
   });
 
@@ -431,6 +473,11 @@ void main() {
     expect(added, ['s1', 's2', 's4']);
     expect(find.text('Added'), findsNWidgets(3));
     expect(find.text('Add all as tasks'), findsNothing);
+    expect(
+      find.text('Brief the elders'),
+      findsNothing,
+      reason: 'The already-dismissed step was never a row to act on.',
+    );
 
     await pumpSubject(
       tester,
@@ -440,7 +487,13 @@ void main() {
     await settle(tester);
     await settle(tester);
     expect(dismissed, ['s1', 's2']);
+    // Every step is gone from the list; the band says what happened and keeps
+    // both dismissals in its history.
+    expect(find.textContaining('Last run: 2 dismissed'), findsOneWidget);
+    await tester.tap(find.text('Show history'));
+    await tester.pump();
     expect(find.text('Dismissed'), findsNWidgets(2));
+    expect(find.text('Undo'), findsNWidgets(2));
   });
 
   testWidgets('a phone shows three rows until Show more', (tester) async {
@@ -501,21 +554,46 @@ void main() {
     },
   );
 
-  testWidgets('decisions made on the page keep their rows inline', (
-    tester,
-  ) async {
-    when(
-      () => service.dismissRecommendation(any()),
-    ).thenAnswer((_) async => true);
-    await pumpSubject(tester, subject(items: steps.sublist(0, 1)));
+  testWidgets(
+    'an addition made on the page keeps its row; a dismissal empties the band',
+    (tester) async {
+      when(() => service.createTask('s1')).thenAnswer(
+        (_) async => const ToolExecutionResult(
+          success: true,
+          output: '',
+          mutatedEntityId: 'task-1',
+        ),
+      );
+      when(
+        () => service.dismissRecommendation(any()),
+      ).thenAnswer((_) async => true);
+      await pumpSubject(tester, subject(items: steps.sublist(0, 2)));
 
-    await tester.tap(find.text('Dismiss'));
-    await settle(tester);
+      await tester.tap(find.text('Add task').first);
+      await settle(tester);
+      expect(find.textContaining('Last run:'), findsNothing);
+      expect(
+        find.text('Confirm the escort'),
+        findsOneWidget,
+        reason: 'An addition keeps its row, linked to the task it made.',
+      );
 
-    expect(find.textContaining('Last run:'), findsNothing);
-    expect(find.text('Dismissed'), findsOneWidget);
-    expect(find.text('Confirm the escort'), findsOneWidget);
-  });
+      await tester.tap(find.text('Dismiss'));
+      await settle(tester);
+
+      // The added row stays — it links the task it made — while the dismissed
+      // one is off the list, reachable only from the history under it.
+      expect(find.text('Confirm the escort'), findsOneWidget);
+      expect(find.text('Added'), findsOneWidget);
+      expect(find.text('Split the first wave'), findsNothing);
+      expect(find.textContaining('Last run:'), findsNothing);
+
+      await tester.tap(find.text('Show history'));
+      await tester.pump();
+      expect(find.text('Split the first wave'), findsOneWidget);
+      expect(find.text('Dismissed'), findsOneWidget);
+    },
+  );
 
   testWidgets('an empty run explains itself with when the agent last looked', (
     tester,

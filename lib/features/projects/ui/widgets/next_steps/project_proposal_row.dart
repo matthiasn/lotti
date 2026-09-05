@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_actions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -13,8 +16,10 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// A pending row carries the task agent's reject/confirm disc rail, so the
 /// same gesture applies the same kind of change on a task page and a project
-/// page. A decided row keeps its place with the shared resolved tag instead of
-/// leaving the band, so what was just done stays legible.
+/// page, and decides by swipe too — right to confirm, left to reject — the way
+/// the task card's proposals and the recommended next steps above it do. A
+/// decided row keeps its place with the shared resolved tag instead of leaving
+/// the band, so what was just done stays legible.
 class ProjectProposalRow extends StatelessWidget {
   const ProjectProposalRow({
     required this.changeSet,
@@ -55,7 +60,7 @@ class ProjectProposalRow extends StatelessWidget {
         localizedChangeSummary(context.messages, item.toolName, item.args) ??
         item.humanSummary;
 
-    return DecoratedBox(
+    final card = DecoratedBox(
       decoration: BoxDecoration(
         color: decided ? ai.subtleWash : ai.row,
         borderRadius: BorderRadius.circular(tokens.radii.s),
@@ -103,6 +108,32 @@ class ProjectProposalRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    final messages = context.messages;
+    final swipeable = enabled && !decided && !busy;
+    return DesignSystemSwipeActions(
+      swipeKey: ValueKey('project-proposal-swipe-${changeSet.id}:$itemIndex'),
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      startToEnd: swipeable
+          ? DesignSystemSwipeAction(
+              color: ai.accentSoft,
+              foregroundColor: ai.accent,
+              icon: LottiIcons.confirm,
+              label: messages.changeSetSwipeConfirm,
+              onTrigger: () => unawaited(onConfirm()),
+            )
+          : null,
+      endToStart: swipeable
+          ? DesignSystemSwipeAction(
+              color: ai.subtleWashStrong,
+              foregroundColor: ai.metaText,
+              icon: LottiIcons.close,
+              label: messages.changeSetSwipeReject,
+              onTrigger: () => unawaited(onReject()),
+            )
+          : null,
+      child: card,
     );
   }
 }

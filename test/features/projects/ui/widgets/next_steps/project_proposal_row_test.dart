@@ -165,4 +165,93 @@ void main() {
     expect(find.text('Dismissed'), findsOneWidget);
     expect(find.byType(RowActions), findsNothing);
   });
+
+  group('swipe', () {
+    ProjectProposalRow row({
+      int itemIndex = 0,
+      bool busy = false,
+      bool enabled = true,
+      Future<void> Function()? onConfirm,
+      Future<void> Function()? onReject,
+    }) => ProjectProposalRow(
+      changeSet: changeSet,
+      itemIndex: itemIndex,
+      busy: busy,
+      enabled: enabled,
+      onConfirm: onConfirm ?? () async {},
+      onReject: onReject ?? () async {},
+    );
+
+    testWidgets('a pending proposal confirms right and rejects left', (
+      tester,
+    ) async {
+      var confirmed = 0;
+      var rejected = 0;
+      await tester.pumpWidget(
+        subject(
+          row(
+            onConfirm: () async => confirmed++,
+            onReject: () async => rejected++,
+          ),
+        ),
+      );
+
+      await tester.drag(
+        find.text('Create task: Pack fish'),
+        const Offset(400, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(confirmed, 1);
+      expect(rejected, 0);
+      expect(
+        find.text('Create task: Pack fish'),
+        findsOneWidget,
+        reason: 'The row stays in place and takes its tag, as on a task page.',
+      );
+
+      await tester.drag(
+        find.text('Create task: Pack fish'),
+        const Offset(-400, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(rejected, 1);
+      expect(confirmed, 1);
+    });
+
+    testWidgets('a decided, busy or disabled row does not swipe', (
+      tester,
+    ) async {
+      // Already confirmed.
+      await tester.pumpWidget(subject(row(itemIndex: 1)));
+      expect(find.byType(Dismissible), findsNothing);
+
+      await tester.pumpWidget(subject(row(busy: true)));
+      expect(
+        find.byType(Dismissible),
+        findsNothing,
+        reason: 'A decision already in flight must not be repeated by a drag.',
+      );
+
+      await tester.pumpWidget(subject(row(enabled: false)));
+      expect(find.byType(Dismissible), findsNothing);
+    });
+
+    testWidgets('the drag names what letting go will do', (tester) async {
+      await tester.pumpWidget(subject(row()));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Create task: Pack fish')),
+      );
+      await gesture.moveBy(const Offset(80, 0));
+      await tester.pump();
+      expect(find.text('Confirm'), findsOneWidget);
+
+      await gesture.moveBy(const Offset(-200, 0));
+      await tester.pump();
+      expect(find.text('Reject'), findsOneWidget);
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+  });
 }

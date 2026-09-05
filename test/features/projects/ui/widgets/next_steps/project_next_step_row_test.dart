@@ -235,27 +235,30 @@ void main() {
     expect(find.text('Undo'), findsOneWidget);
   });
 
-  testWidgets('a dismissed step strikes its title and offers Undo', (
-    tester,
-  ) async {
-    var undone = 0;
-    await tester.pumpWidget(
-      subject(
-        ProjectNextStepRow(
-          step: step,
-          state: ProjectNextStepRowState.dismissed,
-          canUndo: true,
-          onUndo: () => undone++,
+  testWidgets(
+    'a done step keeps its title unstruck and offers Undo while reversible',
+    (tester) async {
+      var undone = 0;
+      await tester.pumpWidget(
+        subject(
+          ProjectNextStepRow(
+            step: step,
+            state: ProjectNextStepRowState.done,
+            canUndo: true,
+            onUndo: () => undone++,
+          ),
         ),
-      ),
-    );
+      );
 
-    final titleStyle = tester.widget<Text>(find.text(title)).style;
-    expect(titleStyle?.decoration, TextDecoration.lineThrough);
-    expect(find.text('Dismissed'), findsOneWidget);
-    await tester.tap(find.text('Undo'));
-    expect(undone, 1);
-  });
+      // A dismissal leaves the band entirely, so no row ever strikes its
+      // title through; the remaining decided states read as outcomes.
+      final titleStyle = tester.widget<Text>(find.text(title)).style;
+      expect(titleStyle?.decoration, isNot(TextDecoration.lineThrough));
+      expect(find.text('Done'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
+      expect(undone, 1);
+    },
+  );
 
   testWidgets('a failed attempt explains itself and offers Retry', (
     tester,

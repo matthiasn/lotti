@@ -6,6 +6,12 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 /// resolved step without one was marked done by an older surface.
 enum ProjectNextStepOutcome { pending, added, done, dismissed }
 
+/// Reads the outcome the band shows for one step. The band overlays the
+/// decision the user has just made on the stored one, so every surface that
+/// renders an outcome takes the reader rather than reaching for the entity.
+typedef ProjectNextStepOutcomeReader =
+    ProjectNextStepOutcome Function(ProjectRecommendationEntity step);
+
 /// The outcome the band shows for [step].
 ProjectNextStepOutcome projectNextStepOutcome(
   ProjectRecommendationEntity step,
@@ -29,15 +35,18 @@ class ProjectNextStepsTally {
     required this.dismissed,
   });
 
+  /// [outcomeOf] defaults to the stored outcome; the band passes its own
+  /// reader so a decision made a moment ago counts before the snapshot does.
   factory ProjectNextStepsTally.of(
-    Iterable<ProjectRecommendationEntity> steps,
-  ) {
+    Iterable<ProjectRecommendationEntity> steps, {
+    ProjectNextStepOutcomeReader outcomeOf = projectNextStepOutcome,
+  }) {
     var pending = 0;
     var added = 0;
     var done = 0;
     var dismissed = 0;
     for (final step in steps) {
-      switch (projectNextStepOutcome(step)) {
+      switch (outcomeOf(step)) {
         case ProjectNextStepOutcome.pending:
           pending++;
         case ProjectNextStepOutcome.added:

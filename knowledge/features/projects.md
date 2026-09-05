@@ -338,14 +338,23 @@ renders two bands inside the card: the newest run's **recommended next steps**
 (`ProjectNextStepRow`, one per step) and the agent's **proposed changes**
 (`ProjectProposalRow`, reusing Task Details' `RowActions` rail). A step offers
 **Add task** and **Dismiss** as labelled controls, and on touch the same two
-by swipe — right adds, left dismisses, each named on the band the row reveals
-(`DesignSystemSwipeActionBackground`), and the row snaps back rather than
-leaving. A decided step keeps its place with an *Added* (its link focuses the
-task in the list below), *Done* or *Dismissed* tag and an Undo — eight
-seconds for an addition, as long as the run is current for a dismissal. A
-failed creation keeps the row with Retry and the failure copy. Phones show
-three rows before "Show N more"; more than one open step adds **Add all as
-tasks** and **Dismiss all**.
+by swipe — right adds, left dismisses. Proposal rows swipe the same way (right
+confirms, left rejects), so the gesture means the same thing in both bands and
+on a task page. Both go through `DesignSystemSwipeActions`, the one wrapper
+that owns the direction, the threshold and the *never actually dismiss*
+contract; each surface supplies only its palette and its labels, and the band
+it reveals names what letting go will do
+(`DesignSystemSwipeActionBackground`).
+
+**A dismissal removes the step from the band at once** — dismissed is
+dismissed. An addition is what keeps its row, with an *Added* tag whose link
+focuses the task in the list below (or *Done* when the service created no
+task) and an Undo for eight seconds. There is no dismissed row state and no
+inline undo for one: the step moves to the band's history, which is disclosed
+under the open rows whenever any step has been decided, and the history row is
+where the dismissal is taken back. A failed creation keeps the row with Retry
+and the failure copy. Phones show three rows before "Show N more"; more than
+one open step adds **Add all as tasks** and **Dismiss all**.
 
 Proposals go through `ProjectProposalService` (`projectProposalServiceProvider`,
 kept alive for the session): `confirm` and `reject` delegate to the change
@@ -390,19 +399,25 @@ stateDiagram-v2
   busy --> done: created without a task id
   busy --> failed: creation refused
   failed --> busy: Retry
-  pending --> dismissed: Dismiss
-  failed --> dismissed: Dismiss
+  pending --> dismissed: Dismiss (row leaves the band)
+  failed --> dismissed: Dismiss (row leaves the band)
   added --> pending: Undo (within eight seconds)
-  dismissed --> pending: Undo
+  dismissed --> pending: Undo (from the history)
   done --> pending: Undo
 ```
 
-A run whose every step was already decided when the page opened collapses to
-`ProjectNextStepsSummary` — one line with the tally and when the agent last
-looked, plus a history disclosure — while decisions made on the page stay
-inline until the next visit. An empty run renders `ProjectNextStepsEmpty`
-with the same "last looked" age. The pure pieces (outcome mapping, tally,
-phone cap, age buckets) live in `project_next_steps_model.dart`. The
+A run with nothing left open — decided before the page opened, or emptied by
+the decisions just made — collapses to `ProjectNextStepsSummary`: one line
+with the tally and when the agent last looked, over the same history
+disclosure. An empty run renders `ProjectNextStepsEmpty` with the same "last
+looked" age. `ProjectNextStepsHistory` is the shared list behind both
+disclosures; it renders one quiet row per decided step and offers Undo on the
+dismissed ones. Every surface that shows an outcome takes a
+`ProjectNextStepOutcomeReader` rather than reading the entity, so the panel's
+optimistic overlay reaches the tally and the history rows too and a decision
+made a moment ago counts before the snapshot carries it. The pure pieces
+(outcome mapping, tally, phone cap, age buckets) live in
+`project_next_steps_model.dart`. The
 replacement, undo and migration lifecycle lives in
 [project and event agents](agents/project-and-event-agents.md#tools-and-recommendations).
 
@@ -477,6 +492,14 @@ groups are unchanged, and folding a group only removes its list sliver, which
 `MultiSliver` handles without the geometry assertion the plain pinned
 persistent header used to trip.
 
+`DecoratedSliver` paints the panel's outline *behind* its slivers, so that
+opaque full-width fill erases the card's left and right hairlines wherever a
+group starts — the card outline looked cut open at every group header. The
+header repaints them itself, as a **foreground** decoration: a border side in
+`decoration` would inset the header's content by a hairline and knock its
+label out of line with the rows beneath it, while a foreground decoration
+paints over the fill without touching layout.
+
 A `ProjectTaskFocus` (task id, request number, `scroll`) asks the panel to
 light one row up — the hover wash, held for `highlightDuration` — and, with
 `scroll` on, to bring it into view. The detail content owns the current focus
@@ -488,6 +511,21 @@ list is lazy, jumps to the group's header (always built) and looks for the
 row on the following frames, stepping one viewport further each time until it
 exists or `maxScrollAttempts` run out; the row is then eased into view with
 `Scrollable.ensureVisible`.
+
+The header reads left to right as *title, count badge*, then a trailing rail
+of *total estimate, sort control, Add task*, all on one vertical centre. The
+count badge belongs to the heading it counts; the estimate is a value of the
+list, so it joins the controls rather than trailing the badge. One tight
+`Expanded` around the heading owns all the slack, which is what keeps the rail
+flush against the card's right edge — a `Spacer` beside loose `Flexible`s
+split the free space three ways instead, stranding the controls mid-row with
+unused space behind them.
+
+`CountDotBadge` is a stadium with a minimum diameter, not a fixed circle: one
+or two digits still read as the round dot, and a longer count grows the pill
+instead of clipping. As a fixed circle a project with 153 tasks rendered as
+"15", off-centre — the badge looked both wrong and mis-set. It takes a
+`semanticsLabel` because the digits alone say nothing about what is counted.
 
 The header survives what used to break it: the title truncates before
 anything overflows, and in its compact form — below 480 pt of header width (a

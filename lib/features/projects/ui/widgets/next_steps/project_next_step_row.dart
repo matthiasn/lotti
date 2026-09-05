@@ -3,7 +3,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_swipe_action_background.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_swipe_actions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -12,17 +12,22 @@ import 'package:material_ui/material_ui.dart';
 /// What the row is doing right now, layered over the step's durable outcome:
 /// [busy] and [failed] are transient states of the current attempt, the rest
 /// mirror `projectNextStepOutcome`.
-enum ProjectNextStepRowState { pending, busy, added, done, dismissed, failed }
+///
+/// There is no dismissed state: a dismissed step leaves the list the moment it
+/// is dismissed and is shown — and undone — from the band's history instead.
+enum ProjectNextStepRowState { pending, busy, added, done, failed }
 
 /// One recommended next step inside the project AI card.
 ///
 /// The title, rationale and priority stay put whatever happens to the step;
 /// only the action strip changes. A pending step offers one labelled primary
 /// (**Add task**) and one labelled secondary (**Dismiss**), never a bare
-/// glyph. A decided step keeps its place with a quiet tag — *Added* with a
-/// link to the task, *Done*, or *Dismissed* — and, while the decision is still
-/// reversible, an Undo. A failed attempt shows what went wrong under the
-/// controls and offers Retry instead of leaving the row blank.
+/// glyph. A step that produced something keeps its place with a quiet tag —
+/// *Added* with a link to the task, or *Done* — and, while the decision is
+/// still reversible, an Undo. A dismissed step is not rendered at all; the
+/// band removes it and keeps it in its history. A failed attempt shows what
+/// went wrong under the controls and offers Retry instead of leaving the row
+/// blank.
 ///
 /// Above [wideBreakpoint] the strip sits beside the text; below it the strip
 /// stacks under the text so a phone title keeps the full row width instead
@@ -66,9 +71,7 @@ class ProjectNextStepRow extends StatelessWidget {
   final VoidCallback? onOpenTask;
 
   bool get _decided => switch (state) {
-    ProjectNextStepRowState.added ||
-    ProjectNextStepRowState.done ||
-    ProjectNextStepRowState.dismissed => true,
+    ProjectNextStepRowState.added || ProjectNextStepRowState.done => true,
     ProjectNextStepRowState.pending ||
     ProjectNextStepRowState.busy ||
     ProjectNextStepRowState.failed => false,
@@ -78,7 +81,6 @@ class ProjectNextStepRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final dismissed = state == ProjectNextStepRowState.dismissed;
     final rationale = step.rationale?.trim() ?? '';
     final priority = parseTaskPriority(step.priority);
 
@@ -89,9 +91,7 @@ class ProjectNextStepRow extends StatelessWidget {
         Text(
           step.title,
           style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: dismissed ? ai.metaText : ai.titleText,
-            decoration: dismissed ? TextDecoration.lineThrough : null,
-            decorationColor: ai.metaText,
+            color: ai.titleText,
           ),
         ),
         if (rationale.isNotEmpty) ...[
@@ -175,48 +175,32 @@ class ProjectNextStepRow extends StatelessWidget {
     );
 
     // On touch a pending row also decides by swipe — right to add the task,
-    // left to dismiss — with the action named on the band it reveals. The
-    // row snaps back rather than leaving: it stays in place with its tag.
-    final swipeable =
-        enabled &&
-        state == ProjectNextStepRowState.pending &&
-        (onAddTask != null || onDismiss != null);
-    if (!swipeable) return card;
+    // left to dismiss — with the action named on the band it reveals, through
+    // the same shared mechanic the proposal rows use.
+    final swipeable = enabled && state == ProjectNextStepRowState.pending;
     final messages = context.messages;
-    return ClipRRect(
+    return DesignSystemSwipeActions(
+      swipeKey: ValueKey('project-next-step-swipe-${step.id}'),
       borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: Dismissible(
-        key: ValueKey('project-next-step-swipe-${step.id}'),
-        direction: onAddTask == null
-            ? DismissDirection.endToStart
-            : onDismiss == null
-            ? DismissDirection.startToEnd
-            : DismissDirection.horizontal,
-        dismissThresholds: const {
-          DismissDirection.startToEnd: 0.4,
-          DismissDirection.endToStart: 0.4,
-        },
-        background: DesignSystemSwipeActionBackground(
-          alignment: Alignment.centerLeft,
-          color: ai.accentSoft,
-          foregroundColor: ai.accent,
-          icon: LottiIcons.add,
-          label: messages.projectActionAddTask,
-        ),
-        secondaryBackground: DesignSystemSwipeActionBackground(
-          alignment: Alignment.centerRight,
-          color: ai.subtleWashStrong,
-          foregroundColor: ai.metaText,
-          icon: LottiIcons.close,
-          label: messages.projectNextStepDismiss,
-        ),
-        confirmDismiss: (direction) async {
-          (direction == DismissDirection.startToEnd ? onAddTask : onDismiss)
-              ?.call();
-          return false;
-        },
-        child: card,
-      ),
+      startToEnd: !swipeable || onAddTask == null
+          ? null
+          : DesignSystemSwipeAction(
+              color: ai.accentSoft,
+              foregroundColor: ai.accent,
+              icon: LottiIcons.add,
+              label: messages.projectActionAddTask,
+              onTrigger: onAddTask!,
+            ),
+      endToStart: !swipeable || onDismiss == null
+          ? null
+          : DesignSystemSwipeAction(
+              color: ai.subtleWashStrong,
+              foregroundColor: ai.metaText,
+              icon: LottiIcons.close,
+              label: messages.projectNextStepDismiss,
+              onTrigger: onDismiss!,
+            ),
+      child: card,
     );
   }
 }
@@ -314,14 +298,6 @@ class _ActionStrip extends StatelessWidget {
           icon: LottiIcons.confirm,
           iconColor: ai.accent,
           label: messages.projectNextStepDone,
-        ),
-        if (row.canUndo) undo,
-      ],
-      ProjectNextStepRowState.dismissed => [
-        _OutcomeTag(
-          icon: LottiIcons.close,
-          iconColor: ai.metaText,
-          label: messages.projectNextStepDismissed,
         ),
         if (row.canUndo) undo,
       ],
