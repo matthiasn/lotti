@@ -353,11 +353,18 @@ set confirmation service, and `confirm` remembers what the tool changed — the
 task a `create_task` created, the status an `update_project_status` replaced.
 A decided proposal keeps its *Confirmed* or *Dismissed* tag and, for the same
 eight seconds, an Undo while `canUndo` holds (always for a rejection; for a
-confirmation only while this session holds the memo). `undo` removes the
-created task or restores the previous status and drops its history entry,
-then calls `ChangeSetConfirmationService.reopenItem`, which records a
-`deferred` decision and puts the item back to `pending`; a failed revert
-leaves the item decided and the memo in place.
+confirmation only while this session holds the memo). `undo` hands
+`ChangeSetConfirmationService.reopenItem` a revert closure: the record goes
+first — the item's newest user decision is rewritten in place as `deferred`
+(dated now, so it wins last-writer-wins and stops counting as feedback) and
+the item returns to `pending` — and only then does the revert remove the
+created task or restore the previous status and drop its history entry. The
+status restore is guarded: it happens only while the project still sits in
+the proposal's target status and the newest history entry is the status the
+memo remembers replacing; a status that moved on since is left alone. A
+refused or thrown revert makes `reopenItem` put the record back (verdict and
+item status) and return `false`, so the effect and the record always agree;
+the memo stays for another try.
 
 The band never invalidates the agent's update stream. The service notifies
 after each write, `projectNextStepsProvider` re-reads, and the row changes

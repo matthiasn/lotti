@@ -1,3 +1,6 @@
+import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -350,14 +353,28 @@ class ChangeSetConfirmationService {
   }
 
   /// Puts a decided item back to [ChangeItemStatus.pending] — the user's Undo
-  /// on a confirmed or rejected proposal — and records the reversal as a
-  /// [ChangeDecisionVerdict.deferred] decision, so the earlier verdict no
-  /// longer stands as feedback. Reverting whatever a confirmed tool did is
-  /// the caller's job; this only reopens the record.
+  /// on a confirmed or rejected proposal — and neutralises the verdict that
+  /// stood for it: the newest user decision for the item is rewritten in
+  /// place as [ChangeDecisionVerdict.deferred], dated now so the rewrite wins
+  /// last-writer-wins on other devices (feedback extraction reads verdicts
+  /// straight off the decisions, so a fresh neutral record next to the old
+  /// one would leave the undone verdict training the template). When no
+  /// decision can be found — decided on a device that has not synced it —
+  /// a fresh deferred decision is recorded instead.
+  ///
+  /// [revert] undoes whatever a confirmed tool did, and runs only once the
+  /// record says pending again, so a failed reopen never strands a reversed
+  /// effect behind a confirmed row. If the revert refuses or throws, the
+  /// record is put back the way it was — item status and verdict — and the
+  /// method returns `false`, leaving the effect and the record in agreement.
   ///
   /// Returns `false` when the item is out of range, still pending, or
   /// retracted by the agent (nothing of the user's to undo).
-  Future<bool> reopenItem(ChangeSetEntity changeSet, int itemIndex) async {
+  Future<bool> reopenItem(
+    ChangeSetEntity changeSet,
+    int itemIndex, {
+    Future<bool> Function()? revert,
+  }) async {
     final current = await _resolution.freshChangeSet(changeSet);
     if (itemIndex < 0 || itemIndex >= current.items.length) return false;
     final item = current.items[itemIndex];
@@ -378,21 +395,92 @@ class ChangeSetConfirmationService {
       'change set ${DomainLogger.sanitizeId(current.id)}',
       subDomain: _sub,
     );
-    await _resolution.persistDecision(
-      changeSet: current,
-      itemIndex: itemIndex,
-      toolName: item.toolName,
-      verdict: ChangeDecisionVerdict.deferred,
-      humanSummary: item.humanSummary,
-      args: item.args,
-    );
+    final standing = await _latestUserDecision(current, itemIndex);
+    final ChangeDecisionEntity decision;
+    if (standing == null) {
+      decision = await _resolution.persistDecision(
+        changeSet: current,
+        itemIndex: itemIndex,
+        toolName: item.toolName,
+        verdict: ChangeDecisionVerdict.deferred,
+        humanSummary: item.humanSummary,
+        args: item.args,
+      );
+    } else {
+      decision = standing.copyWith(
+        verdict: ChangeDecisionVerdict.deferred,
+        createdAt: clock.now(),
+      );
+      await _syncService.upsertEntity(decision);
+    }
     final reopened = await _resolution.updateChangeSetItemStatus(
       current,
       itemIndex,
       ChangeItemStatus.pending,
     );
-    return reopened != null;
+    if (reopened == null) return false;
+    if (revert == null) return true;
+
+    var reverted = false;
+    try {
+      reverted = await revert();
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomain.agentWorkflow,
+        error,
+        stackTrace: stackTrace,
+        subDomain: _sub,
+        message: 'Revert threw while reopening item $itemIndex',
+      );
+    }
+    if (reverted) return true;
+
+    // The effect stands, so the record must say so again.
+    _domainLogger?.log(
+      LogDomain.agentWorkflow,
+      'Revert refused for item $itemIndex (${item.toolName}); restoring '
+      '${item.status.name}',
+      subDomain: _sub,
+    );
+    await _syncService.upsertEntity(
+      decision.copyWith(
+        verdict: item.status == ChangeItemStatus.confirmed
+            ? ChangeDecisionVerdict.confirmed
+            : ChangeDecisionVerdict.rejected,
+        createdAt: clock.now(),
+      ),
+    );
+    await _resolution.updateChangeSetItemStatus(
+      current,
+      itemIndex,
+      item.status,
+    );
+    return false;
   }
+
+  /// The newest decision a user recorded for the item at [itemIndex] of
+  /// [changeSet], or `null` when none is stored locally.
+  Future<ChangeDecisionEntity?> _latestUserDecision(
+    ChangeSetEntity changeSet,
+    int itemIndex,
+  ) async {
+    final entities = await _syncService.repository.getEntitiesByAgentId(
+      changeSet.agentId,
+      type: AgentEntityTypes.changeDecision,
+      limit: _decisionLookupLimit,
+    );
+    // Newest first.
+    return entities.whereType<ChangeDecisionEntity>().firstWhereOrNull(
+      (decision) =>
+          decision.changeSetId == changeSet.id &&
+          decision.itemIndex == itemIndex &&
+          decision.actor == DecisionActor.user,
+    );
+  }
+
+  /// How far back the newest-first decision read looks for an item's
+  /// standing verdict; a decided item's decision is always recent.
+  static const _decisionLookupLimit = 200;
 
   /// Rejects a single change item at [itemIndex] without dispatching
   /// any tool call.

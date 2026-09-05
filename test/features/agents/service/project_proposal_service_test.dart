@@ -1,11 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/project_proposal_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -68,9 +70,20 @@ void main() {
       },
       domainLogger: logger,
     );
-    when(() => confirmation.reopenItem(any(), any())).thenAnswer(
-      (_) async => true,
-    );
+    // The real reopen runs the revert once the record is pending again and
+    // reports its outcome; the mock does the same so the tests exercise the
+    // revert through the same seam.
+    when(
+      () => confirmation.reopenItem(
+        any(),
+        any(),
+        revert: any(named: 'revert'),
+      ),
+    ).thenAnswer((invocation) async {
+      final revert =
+          invocation.namedArguments[#revert] as Future<bool> Function()?;
+      return revert == null || await revert();
+    });
     when(() => repository.updateProject(any())).thenAnswer((_) async => true);
   });
 
@@ -143,7 +156,13 @@ void main() {
 
     expect(await service.undo(applied, 0), isTrue);
     expect(removed, ['task-9']);
-    verify(() => confirmation.reopenItem(applied, 0)).called(1);
+    verify(
+      () => confirmation.reopenItem(
+        applied,
+        0,
+        revert: any(named: 'revert', that: isNotNull),
+      ),
+    ).called(1);
     verifyNever(() => repository.getProjectById(any()));
     expect(
       service.canUndo(applied, 0),
@@ -194,7 +213,13 @@ void main() {
     final rejected = decided(setStatus, ChangeItemStatus.rejected);
 
     expect(await service.undo(rejected, 0), isTrue);
-    verify(() => confirmation.reopenItem(rejected, 0)).called(1);
+    verify(
+      () => confirmation.reopenItem(
+        rejected,
+        0,
+        revert: any(named: 'revert', that: isNull),
+      ),
+    ).called(1);
     verifyNever(() => repository.updateProject(any()));
     expect(removed, isEmpty);
   });
@@ -213,20 +238,40 @@ void main() {
       removerSucceeds = false;
       final applied = decided(createTask, ChangeItemStatus.confirmed);
       expect(await service.undo(applied, 0), isFalse);
-      verifyNever(() => confirmation.reopenItem(any(), any()));
       expect(service.canUndo(applied, 0), isTrue, reason: 'still undoable');
+      verify(
+        () => logger.log(
+          LogDomain.agentWorkflow,
+          any<String>(that: contains('task-9')),
+          subDomain: 'ProjectProposal',
+          level: any<InsightLevel>(named: 'level'),
+        ),
+      ).called(1);
 
       final before = makeTestProject(id: projectId, status: open);
       when(
         () => repository.getProjectById(projectId),
       ).thenAnswer((_) async => before);
       await service.confirm(setWith(setStatus), 0);
+      final moved = before.copyWith(
+        data: before.data.copyWith(status: monitoring, statusHistory: [open]),
+      );
+      when(
+        () => repository.getProjectById(projectId),
+      ).thenAnswer((_) async => moved);
       when(
         () => repository.updateProject(any()),
       ).thenAnswer((_) async => false);
       final status = decided(setStatus, ChangeItemStatus.confirmed);
       expect(await service.undo(status, 0), isFalse);
-      verifyNever(() => confirmation.reopenItem(any(), any()));
+      verify(
+        () => logger.log(
+          LogDomain.agentWorkflow,
+          any<String>(that: contains('status')),
+          subDomain: 'ProjectProposal',
+          level: any<InsightLevel>(named: 'level'),
+        ),
+      ).called(1);
 
       when(
         () => repository.getProjectById(projectId),
@@ -235,10 +280,105 @@ void main() {
     },
   );
 
-  test('a refused reopen keeps the memo for another try', () async {
-    when(() => confirmation.reopenItem(any(), any())).thenAnswer(
-      (_) async => false,
+  test('a status that moved on since the confirmation is left alone', () async {
+    final before = makeTestProject(id: projectId, status: open);
+    when(
+      () => repository.getProjectById(projectId),
+    ).thenAnswer((_) async => before);
+    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+      (_) async => const ToolExecutionResult(
+        success: true,
+        output: '',
+        mutatedEntityId: projectId,
+      ),
     );
+    await service.confirm(setWith(setStatus), 0);
+    final applied = decided(setStatus, ChangeItemStatus.confirmed);
+    final active = ProjectStatus.active(
+      id: 'status-active',
+      createdAt: DateTime(2026, 9, 6),
+      utcOffset: 0,
+    );
+
+    // Another editor moved the project on after the tool set Monitoring.
+    when(() => repository.getProjectById(projectId)).thenAnswer(
+      (_) async => before.copyWith(
+        data: before.data.copyWith(
+          status: active,
+          statusHistory: [open, monitoring],
+        ),
+      ),
+    );
+    expect(await service.undo(applied, 0), isFalse);
+    verifyNever(() => repository.updateProject(any()));
+
+    // The tool's own write raced a sync: the status is right but the
+    // history does not end in what this session remembers replacing.
+    when(() => repository.getProjectById(projectId)).thenAnswer(
+      (_) async => before.copyWith(
+        data: before.data.copyWith(
+          status: monitoring,
+          statusHistory: [active],
+        ),
+      ),
+    );
+    expect(await service.undo(applied, 0), isFalse);
+    verifyNever(() => repository.updateProject(any()));
+    expect(service.canUndo(applied, 0), isTrue);
+  });
+
+  test('a status the tool did not need to change is not restored', () async {
+    final already = makeTestProject(id: projectId, status: monitoring);
+    when(
+      () => repository.getProjectById(projectId),
+    ).thenAnswer((_) async => already);
+    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+      (_) async => const ToolExecutionResult(success: true, output: ''),
+    );
+    await service.confirm(setWith(setStatus), 0);
+
+    expect(
+      await service.undo(decided(setStatus, ChangeItemStatus.confirmed), 0),
+      isTrue,
+    );
+    verifyNever(() => repository.updateProject(any()));
+  });
+
+  test('a proposal without a parsable target status is not restored', () async {
+    final before = makeTestProject(id: projectId, status: open);
+    when(
+      () => repository.getProjectById(projectId),
+    ).thenAnswer((_) async => before);
+    when(() => confirmation.confirmItem(any(), any())).thenAnswer(
+      (_) async => const ToolExecutionResult(success: true, output: ''),
+    );
+    const odd = ChangeItem(
+      toolName: 'update_project_status',
+      args: {'status': 42},
+      humanSummary: 'Set status',
+    );
+    await service.confirm(setWith(odd), 0);
+    when(() => repository.getProjectById(projectId)).thenAnswer(
+      (_) async => before.copyWith(
+        data: before.data.copyWith(status: monitoring, statusHistory: [open]),
+      ),
+    );
+
+    expect(
+      await service.undo(decided(odd, ChangeItemStatus.confirmed), 0),
+      isFalse,
+    );
+    verifyNever(() => repository.updateProject(any()));
+  });
+
+  test('a refused reopen keeps the memo for another try', () async {
+    when(
+      () => confirmation.reopenItem(
+        any(),
+        any(),
+        revert: any(named: 'revert'),
+      ),
+    ).thenAnswer((_) async => false);
     when(() => confirmation.confirmItem(any(), any())).thenAnswer(
       (_) async => const ToolExecutionResult(
         success: true,

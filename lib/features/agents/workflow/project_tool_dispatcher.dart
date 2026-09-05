@@ -13,7 +13,6 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 /// Dispatches confirmed project-agent change-set items to project-domain
@@ -322,7 +321,6 @@ class ProjectToolDispatcher {
     }
   }
 
-  @visibleForTesting
   static ProjectStatus? parseProjectStatus(
     String rawStatus, {
     required String? reason,
@@ -368,7 +366,6 @@ class ProjectToolDispatcher {
     };
   }
 
-  @visibleForTesting
   static bool isSameSemanticStatus(
     ProjectStatus current,
     ProjectStatus next,
