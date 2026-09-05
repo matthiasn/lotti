@@ -5,7 +5,7 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini, mlx]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-18T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T15:30:00Z }
 stale_after: 2026-10-19
 sources:
   - id: router
@@ -26,8 +26,12 @@ sources:
     last_modified: 2026-08-18
   - id: known-models-data
     resource: ../../../lib/features/ai/util/known_models_data.dart
-    title: The meliousModels catalog entries
-    last_modified: 2026-08-12
+    title: The curated provider catalogs
+    last_modified: 2026-09-05
+  - id: temporary-mp3
+    resource: ../../../lib/features/ai/util/temporary_mp3_encoder.dart
+    title: Temporary audio encoding and segment lifecycle
+    last_modified: 2026-09-05
 ---
 
 # One facade, two collaborators
@@ -116,6 +120,41 @@ Whisper-class ids (`whisper`, `transcribe`, `asr`, `stt`) route to
 and decode the returned `b64_json` bytes. Chat callers may opt into an
 OpenAI-compatible `reasoning_effort`; leaving it unset preserves the provider's
 model default.
+
+Melious's [transcription endpoint](https://melious.ai/docs/reference/audio)
+limits an uploaded file to 25 MB. Sources within that limit retain the original
+M4A upload. Larger sources are decoded once, then
+`encodeAudioBytesToTemporaryMp3Segments` prepares consecutive twenty-minute PCM
+ranges as independently playable 64 kbps MP3 files (about 9.6 MB each). Encoding
+uses bounded sample blocks, but the decoded WAV still occupies memory for the
+whole recording. No archived bytes are modified.
+
+```mermaid
+flowchart TD
+  Source[Archived audio bytes] --> Size{Within upload limit?}
+  Size -->|Yes| Original[Upload original M4A]
+  Size -->|No| Decode[Decode WAV once]
+  Decode --> Encode[Encode next temporary MP3 segment]
+  Encode --> Upload[Check size and upload segment]
+  Upload --> Clean[Delete temporary segment]
+  Clean --> More{More audio?}
+  More -->|Yes| Encode
+  More -->|No| Combine[Combine transcript and usage]
+  Upload -->|Failure or cancellation| Cleanup[Delete segment and stop]
+```
+
+Each segment is uploaded sequentially and deleted before the next is prepared.
+The caller receives one combined transcript only after every part succeeds;
+usage and additive environmental/billing quantities include every successful
+part. Cancellation aborts the active multipart request and stops further parts,
+including when a late successful response races cancellation. The request
+timeout covers both headers and response body. An unexpectedly oversized encoded
+part or unavailable decoder fails explicitly instead of sending an invalid
+upload. No automatic provider switch changes where private audio is sent.
+
+Buffered vision requests preserve the caller's forced tool choice as well as
+its tool schema. Collecting Melious impact data must not turn a required
+structured image summary into an automatic, optional tool call.
 
 **Reference-image generation is rejected explicitly** rather than silently
 ignored, because Melious currently documents only text-to-image generation.
@@ -265,9 +304,12 @@ deadline, conversion, cleanup, request errors and response normalization for bot
 providers. **Only the JSON audio part differs**: Melious uses the
 OpenAI-compatible `input_audio: {data, format: mp3}` object, while Mistral's
 native API expects `input_audio` to contain the base64 MP3 string directly.
-Mistral Transcribe 2 and other transcription-only variants stay on
-`/audio/transcriptions`, where diarization, timestamps and native `context_bias`
-are available.
+The `voxtral-mini-latest` alias now identifies Transcribe 2, so it uses
+`/audio/transcriptions` with diarization, timestamps and native `context_bias`.
+It is not a chat-audio alias. The fixed 25.07 Mini/Small models and
+`voxtral-small-latest` retain chat audio. This distinction follows the
+[Mistral transcription contract](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
+and applies to existing stored model IDs without a profile migration.
 
 ## Platform decoders
 

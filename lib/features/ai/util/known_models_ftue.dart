@@ -180,7 +180,7 @@ KnownModel? findMistralKnownModel(String providerModelId) {
 /// Returns the three KnownModel configurations needed for Mistral FTUE.
 /// - Flash model (Mistral Small) for fast processing tasks
 /// - Reasoning model (Magistral Medium) for complex reasoning tasks
-/// - Instruction-following audio model (Voxtral Mini) for transcription
+/// - Dedicated transcription model (Voxtral Mini Transcribe 2) for transcription
 /// Note: Mistral does not have a native image generation model.
 ({
   KnownModel flash,

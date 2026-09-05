@@ -105,7 +105,79 @@ Future<File> encodeWavBytesToTemporaryMp3(
     throw ArgumentError.value(bitRate, 'bitRate', 'must be positive');
   }
 
+  return _encodeWavSourceToTemporaryMp3(
+    _WavPcmSource.parse(wavBytes),
+    encoderFactory: encoderFactory,
+    temporaryDirectory: temporaryDirectory,
+    fileStem: fileStem,
+    bitRate: bitRate,
+  );
+}
+
+/// Prepares independently playable MP3 segments for bounded API uploads.
+///
+/// Decodes the source once and emits consecutive PCM ranges without dropping
+/// samples. At 64 kbps, the default twenty-minute segment is about 9.6 MB.
+/// Each file exists until the consumer advances or cancels the stream, then
+/// is deleted. The archived source is never changed.
+Stream<File> encodeAudioBytesToTemporaryMp3Segments(
+  Uint8List sourceBytes, {
+  M4aBytesToWavConverter? m4aToWavConverter,
+  Mp3FrameEncoderFactory? encoderFactory,
+  Directory? temporaryDirectory,
+  Duration segmentDuration = const Duration(minutes: 20),
+}) async* {
+  if (sourceBytes.isEmpty) {
+    throw const TemporaryMp3EncodingException('Audio data cannot be empty');
+  }
+  if (segmentDuration <= Duration.zero) {
+    throw ArgumentError.value(
+      segmentDuration,
+      'segmentDuration',
+      'must be positive',
+    );
+  }
+  final wavBytes = _isWavAudio(sourceBytes)
+      ? sourceBytes
+      : await (m4aToWavConverter ?? convertM4aBytesToTemporaryWav)(sourceBytes);
   final wav = _WavPcmSource.parse(wavBytes);
+  final framesPerSegment =
+      wav.sampleRate *
+      segmentDuration.inMicroseconds ~/
+      Duration.microsecondsPerSecond;
+  if (framesPerSegment == 0) {
+    throw ArgumentError.value(
+      segmentDuration,
+      'segmentDuration',
+      'must contain at least one audio frame',
+    );
+  }
+  for (var offset = 0; offset < wav.frameCount; offset += framesPerSegment) {
+    final file = await _encodeWavSourceToTemporaryMp3(
+      wav,
+      encoderFactory: encoderFactory,
+      temporaryDirectory: temporaryDirectory,
+      startFrame: offset,
+      endFrame: math.min(offset + framesPerSegment, wav.frameCount),
+    );
+    try {
+      yield file;
+    } finally {
+      if (file.existsSync()) file.deleteSync();
+    }
+  }
+}
+
+Future<File> _encodeWavSourceToTemporaryMp3(
+  _WavPcmSource wav, {
+  Mp3FrameEncoderFactory? encoderFactory,
+  Directory? temporaryDirectory,
+  String? fileStem,
+  int bitRate = 64,
+  int startFrame = 0,
+  int? endFrame,
+}) async {
+  final frameEnd = endFrame ?? wav.frameCount;
   final directory = temporaryDirectory ?? Directory.systemTemp;
   final stem = fileStem ?? 'lotti_voxtral_${const Uuid().v4()}';
   final outputFile = File(p.join(directory.path, '$stem.mp3'));
@@ -123,10 +195,10 @@ Future<File> encodeWavBytesToTemporaryMp3(
       bitRate: bitRate,
     );
 
-    for (var frameOffset = 0; frameOffset < wav.frameCount;) {
+    for (var frameOffset = startFrame; frameOffset < frameEnd;) {
       final frameLength = math.min(
         wav.sampleRate,
-        wav.frameCount - frameOffset,
+        frameEnd - frameOffset,
       );
       final leftChannel = wav.readChannel(
         channel: 0,

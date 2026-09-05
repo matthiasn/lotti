@@ -63,6 +63,29 @@ class MeliousCallImpact {
     return match.namedGroup('number') ?? match.namedGroup('string');
   }
 
+  /// Sums additive cost and environmental quantities across physical calls.
+  /// Descriptive metadata uses the first reported value; an exact provider
+  /// decimal is retained only when there is a single contributing call.
+  static MeliousCallImpact? combine(
+    MeliousCallImpact? a,
+    MeliousCallImpact? b,
+  ) {
+    if (a == null) return b;
+    if (b == null) return a;
+    double? sum(double? x, double? y) =>
+        x == null && y == null ? null : (x ?? 0) + (y ?? 0);
+    return MeliousCallImpact(
+      energyKwh: sum(a.energyKwh, b.energyKwh),
+      carbonGCo2: sum(a.carbonGCo2, b.carbonGCo2),
+      waterLiters: sum(a.waterLiters, b.waterLiters),
+      costCredits: sum(a.costCredits, b.costCredits),
+      renewablePercent: a.renewablePercent ?? b.renewablePercent,
+      pue: a.pue ?? b.pue,
+      dataCenter: a.dataCenter ?? b.dataCenter,
+      providerId: a.providerId ?? b.providerId,
+    );
+  }
+
   /// Energy in kilowatt-hours (`environment_impact.energy_kwh`).
   final double? energyKwh;
 

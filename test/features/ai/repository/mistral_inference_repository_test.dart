@@ -40,7 +40,7 @@ void main() {
   group('MistralInferenceRepository', () {
     group('chat audio', () {
       final modelCases = <String, bool>{
-        'voxtral-mini-latest': true,
+        'voxtral-mini-latest': false,
         'voxtral-small-latest': true,
         'voxtral-mini-2507': true,
         'voxtral-small-2507': true,
