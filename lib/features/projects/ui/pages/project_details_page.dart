@@ -19,10 +19,12 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
+import 'package:lotti/features/projects/state/project_task_list_options_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
+import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -178,6 +180,19 @@ class ProjectDetailsPage extends ConsumerWidget {
               onTaskTap: (summary) => beamToNamed(
                 '/tasks/${summary.task.meta.id}',
               ),
+              taskListOptions: ref.watch(
+                projectTaskListOptionsProvider(projectId),
+              ),
+              onTaskListOptionsChanged: (options) =>
+                  showProjectTaskListOptionsSheet(
+                    context: context,
+                    options: options,
+                    onChanged: ref
+                        .read(
+                          projectTaskListOptionsProvider(projectId).notifier,
+                        )
+                        .update,
+                  ),
             ),
           ),
         );

@@ -9,7 +9,11 @@ project agent is attached — a summary and health read that the agent maintains
 ## What it does for the user
 
 - **Groups related tasks.** A task belongs to at most one project, and the
-  project shows its tasks and their rollup.
+  project shows its tasks and their rollup. The list groups by the month each
+  task was created, newest first, folds finished tasks into a collapsed Done
+  group, and offers a Sort and group control (status, priority, due window or
+  no grouping; actionability, creation, due date, estimate, priority, last
+  update or title). The choice is remembered per project.
 - **Says where a project stands.** Six statuses: open, active, monitoring, on
   hold (with a required reason), completed, archived. "Monitoring" is for work
   that is not finished but has no time scheduled — checked on when something

@@ -10720,6 +10720,80 @@ class AppLocalizationsIt extends AppLocalizations {
   String get projectTaskProgressNone => 'Nessuna attività';
 
   @override
+  String get projectTasksDueLater => 'Più avanti';
+
+  @override
+  String get projectTasksDueNone => 'Senza scadenza';
+
+  @override
+  String get projectTasksDueOverdue => 'In ritardo';
+
+  @override
+  String get projectTasksDueThisWeek => 'Questa settimana';
+
+  @override
+  String get projectTasksGroupBy => 'Raggruppa per';
+
+  @override
+  String get projectTasksGroupByCreationMonth => 'Mese di creazione';
+
+  @override
+  String get projectTasksGroupByDueWindow => 'Scadenza';
+
+  @override
+  String get projectTasksGroupByNone => 'Nessuno';
+
+  @override
+  String get projectTasksGroupByPriority => 'Priorità';
+
+  @override
+  String get projectTasksGroupByStatus => 'Stato';
+
+  @override
+  String projectTasksGroupCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attività',
+      one: '1 attività',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectTasksGroupDone => 'Fatto';
+
+  @override
+  String get projectTasksShowDone => 'Mostra attività fatte';
+
+  @override
+  String get projectTasksSortActionability => 'Urgenza';
+
+  @override
+  String get projectTasksSortAndGroup => 'Ordina e raggruppa';
+
+  @override
+  String get projectTasksSortBy => 'Ordina per';
+
+  @override
+  String get projectTasksSortCreated => 'Creazione';
+
+  @override
+  String get projectTasksSortDueDate => 'Data di scadenza';
+
+  @override
+  String get projectTasksSortEstimate => 'Stima';
+
+  @override
+  String get projectTasksSortPriority => 'Priorità';
+
+  @override
+  String get projectTasksSortRecentlyUpdated => 'Ultima modifica';
+
+  @override
+  String get projectTasksSortTitle => 'Titolo';
+
+  @override
   String get projectTitleLabel => 'Titolo del progetto';
 
   @override

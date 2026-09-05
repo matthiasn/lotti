@@ -19,6 +19,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
@@ -191,6 +192,42 @@ void main() {
       await tester.tap(addButton, warnIfMissed: false);
       await tester.pump();
       expect(addRequests, 0);
+    });
+
+    testWidgets('forwards the task list options and their control', (
+      tester,
+    ) async {
+      const options = ProjectTaskListOptions(
+        groupBy: ProjectTaskGroupBy.status,
+      );
+      ProjectTaskListOptions? requested;
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            taskListOptions: options,
+            onTaskListOptionsChanged: (value) => requested = value,
+          ),
+          size: const Size(430, 1200),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Sort and group'));
+      expect(requested, options);
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+          size: const Size(430, 1200),
+        ),
+      );
+      await tester.pump();
+      expect(find.byTooltip('Sort and group'), findsNothing);
     });
 
     testWidgets(
@@ -803,18 +840,23 @@ void main() {
           ProjectMobileDetailContent(
             record: record,
             currentTime: DateTime(2026, 3, 28, 1, 18),
+            taskListOptions: const ProjectTaskListOptions(
+              groupBy: ProjectTaskGroupBy.none,
+              sortBy: ProjectTaskSortBy.title,
+            ),
           ),
         ),
       );
       await tester.pump();
 
+      // Title order puts "Task 9" last.
       expect(find.text('Task 0'), findsOneWidget);
-      expect(find.text('Task 49'), findsNothing);
+      expect(find.text('Task 9'), findsNothing);
 
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -8000));
       await tester.pump();
 
-      expect(find.text('Task 49'), findsOneWidget);
+      expect(find.text('Task 9'), findsOneWidget);
     });
 
     testWidgets('shows health once inside the AI card before project work', (

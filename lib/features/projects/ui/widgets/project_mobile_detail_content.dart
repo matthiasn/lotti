@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/components/scrollbars/design_system
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -58,6 +59,8 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.isRefreshingReport = false,
     this.isSaving = false,
     this.onTaskTap,
+    this.taskListOptions = ProjectTaskListOptions.defaults,
+    this.onTaskListOptionsChanged,
     super.key,
   });
 
@@ -84,6 +87,11 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final bool isRefreshingReport;
   final bool isSaving;
   final ValueChanged<TaskSummary>? onTaskTap;
+
+  /// How the task list groups and orders itself; the host remembers it per
+  /// project. Without [onTaskListOptionsChanged] the list shows no control.
+  final ProjectTaskListOptions taskListOptions;
+  final ValueChanged<ProjectTaskListOptions>? onTaskListOptionsChanged;
 
   @override
   State<ProjectMobileDetailContent> createState() =>
@@ -290,6 +298,9 @@ class _ProjectMobileDetailContentState
                             ),
                             ProjectTasksSliverPanel(
                               record: widget.record,
+                              now: widget.currentTime,
+                              options: widget.taskListOptions,
+                              onOptionsChanged: widget.onTaskListOptionsChanged,
                               onTaskTap: isMutating ? null : widget.onTaskTap,
                               onAddTask: widget.onAddTask == null
                                   ? null

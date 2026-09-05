@@ -10594,6 +10594,80 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectTaskProgressNone => 'Inga uppgifter';
 
   @override
+  String get projectTasksDueLater => 'Senare';
+
+  @override
+  String get projectTasksDueNone => 'Utan förfallodatum';
+
+  @override
+  String get projectTasksDueOverdue => 'Försenade';
+
+  @override
+  String get projectTasksDueThisWeek => 'Denna vecka';
+
+  @override
+  String get projectTasksGroupBy => 'Gruppera efter';
+
+  @override
+  String get projectTasksGroupByCreationMonth => 'Skapandemånad';
+
+  @override
+  String get projectTasksGroupByDueWindow => 'Förfallodatum';
+
+  @override
+  String get projectTasksGroupByNone => 'Ingen';
+
+  @override
+  String get projectTasksGroupByPriority => 'Prioritet';
+
+  @override
+  String get projectTasksGroupByStatus => 'Status';
+
+  @override
+  String projectTasksGroupCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uppgifter',
+      one: '1 uppgift',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectTasksGroupDone => 'Klar';
+
+  @override
+  String get projectTasksShowDone => 'Visa klara uppgifter';
+
+  @override
+  String get projectTasksSortActionability => 'Angelägenhet';
+
+  @override
+  String get projectTasksSortAndGroup => 'Sortera och gruppera';
+
+  @override
+  String get projectTasksSortBy => 'Sortera efter';
+
+  @override
+  String get projectTasksSortCreated => 'Skapad';
+
+  @override
+  String get projectTasksSortDueDate => 'Förfallodatum';
+
+  @override
+  String get projectTasksSortEstimate => 'Uppskattning';
+
+  @override
+  String get projectTasksSortPriority => 'Prioritet';
+
+  @override
+  String get projectTasksSortRecentlyUpdated => 'Senast uppdaterad';
+
+  @override
+  String get projectTasksSortTitle => 'Titel';
+
+  @override
   String get projectTitleLabel => 'Projekttitel';
 
   @override

@@ -10582,6 +10582,80 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectTaskProgressNone => 'Ingen opgaver';
 
   @override
+  String get projectTasksDueLater => 'Senere';
+
+  @override
+  String get projectTasksDueNone => 'Ingen forfaldsdato';
+
+  @override
+  String get projectTasksDueOverdue => 'Overskredet';
+
+  @override
+  String get projectTasksDueThisWeek => 'Denne uge';
+
+  @override
+  String get projectTasksGroupBy => 'Gruppér efter';
+
+  @override
+  String get projectTasksGroupByCreationMonth => 'Oprettelsesmåned';
+
+  @override
+  String get projectTasksGroupByDueWindow => 'Forfald';
+
+  @override
+  String get projectTasksGroupByNone => 'Ingen';
+
+  @override
+  String get projectTasksGroupByPriority => 'Prioritet';
+
+  @override
+  String get projectTasksGroupByStatus => 'Status';
+
+  @override
+  String projectTasksGroupCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count opgaver',
+      one: '1 opgave',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectTasksGroupDone => 'Færdig';
+
+  @override
+  String get projectTasksShowDone => 'Vis færdige opgaver';
+
+  @override
+  String get projectTasksSortActionability => 'Handlingsbehov';
+
+  @override
+  String get projectTasksSortAndGroup => 'Sortér og gruppér';
+
+  @override
+  String get projectTasksSortBy => 'Sortér efter';
+
+  @override
+  String get projectTasksSortCreated => 'Oprettet';
+
+  @override
+  String get projectTasksSortDueDate => 'Forfaldsdato';
+
+  @override
+  String get projectTasksSortEstimate => 'Estimat';
+
+  @override
+  String get projectTasksSortPriority => 'Prioritet';
+
+  @override
+  String get projectTasksSortRecentlyUpdated => 'Senest opdateret';
+
+  @override
+  String get projectTasksSortTitle => 'Titel';
+
+  @override
   String get projectTitleLabel => 'Projekttitel';
 
   @override

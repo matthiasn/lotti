@@ -17863,6 +17863,138 @@ abstract class AppLocalizations {
   /// **'No tasks'**
   String get projectTaskProgressNone;
 
+  /// No description provided for @projectTasksDueLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get projectTasksDueLater;
+
+  /// No description provided for @projectTasksDueNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get projectTasksDueNone;
+
+  /// No description provided for @projectTasksDueOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get projectTasksDueOverdue;
+
+  /// No description provided for @projectTasksDueThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get projectTasksDueThisWeek;
+
+  /// No description provided for @projectTasksGroupBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by'**
+  String get projectTasksGroupBy;
+
+  /// No description provided for @projectTasksGroupByCreationMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Creation month'**
+  String get projectTasksGroupByCreationMonth;
+
+  /// No description provided for @projectTasksGroupByDueWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due window'**
+  String get projectTasksGroupByDueWindow;
+
+  /// No description provided for @projectTasksGroupByNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get projectTasksGroupByNone;
+
+  /// No description provided for @projectTasksGroupByPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get projectTasksGroupByPriority;
+
+  /// No description provided for @projectTasksGroupByStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get projectTasksGroupByStatus;
+
+  /// No description provided for @projectTasksGroupCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
+  String projectTasksGroupCount(int count);
+
+  /// No description provided for @projectTasksGroupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get projectTasksGroupDone;
+
+  /// No description provided for @projectTasksShowDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Show done tasks'**
+  String get projectTasksShowDone;
+
+  /// No description provided for @projectTasksSortActionability.
+  ///
+  /// In en, this message translates to:
+  /// **'Actionability'**
+  String get projectTasksSortActionability;
+
+  /// No description provided for @projectTasksSortAndGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort and group'**
+  String get projectTasksSortAndGroup;
+
+  /// No description provided for @projectTasksSortBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get projectTasksSortBy;
+
+  /// No description provided for @projectTasksSortCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get projectTasksSortCreated;
+
+  /// No description provided for @projectTasksSortDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get projectTasksSortDueDate;
+
+  /// No description provided for @projectTasksSortEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get projectTasksSortEstimate;
+
+  /// No description provided for @projectTasksSortPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get projectTasksSortPriority;
+
+  /// No description provided for @projectTasksSortRecentlyUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently updated'**
+  String get projectTasksSortRecentlyUpdated;
+
+  /// No description provided for @projectTasksSortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get projectTasksSortTitle;
+
   /// No description provided for @projectTitleLabel.
   ///
   /// In en, this message translates to:

@@ -400,6 +400,47 @@ in the detail read model. A missing report renders the neutral report-empty
 state; it never repeats the project description under an AI-authored heading
 or presents the project's own modification time as report freshness.
 
+# The task list groups and orders itself
+
+`ProjectTasksSliverPanel` no longer renders one flat list. The pure model in
+`ui/model/project_task_groups.dart` turns the record's task summaries into
+`ProjectTaskGroup`s according to a `ProjectTaskListOptions` (grouping, sort
+key, whether done tasks stay in their groups):
+
+| Group by | Order of groups | Header |
+|---|---|---|
+| creation month (default) | newest month first | month and year |
+| status | actionability rank | the status label |
+| priority | highest first | the priority label |
+| due window | overdue, this week, later, no due date | the window |
+| none | one header-less group | — |
+
+With `showDone` off (the default) done tasks leave their groups for one
+trailing `ProjectTaskDoneKey` group, which starts collapsed; with it on they
+sort among their peers. Within a group the sort key applies — actionability
+(the same `compareTasksByActionability` the record provider uses for its
+rollups), created, due date, estimate, priority, recently updated or title —
+and every comparison breaks ties on title then id, so the result never depends
+on input order. Empty groups are omitted. Collapse state is keyed by the
+group's stable id and lives in the panel's state for the session.
+
+The choice is remembered per project by `ProjectTaskListOptionsController`
+(`projectTaskListOptionsProvider(projectId)`) under one `SettingsDb` key per
+project, JSON-encoded and tolerant of unknown values; like the tasks-list
+density preference it loads once, holds state in memory and never lets an
+in-flight load clobber a fresh edit. The detail page watches it and opens the
+"Sort and group" sheet (`project_task_list_options_sheet.dart`), whose rows
+apply on tap through the controller. Read-only showcases pass no callback and
+show no control.
+
+The header survives what used to break it: the title truncates before
+anything overflows, and in its compact form — below 560 pt of content width (a
+phone, or a narrowed desktop pane) or at a text scale of 1.2× and above — the
+total estimate is dropped in favour of the per-group estimates and Add task
+turns into the glyph-only icon action. Group headers are ordinary rows rather than
+pinned slivers, the same trade-off the agents listing made to avoid the sliver
+geometry assertion when groups change.
+
 # When the project agent actually wakes
 
 Project agents are stale and non-waking by default. They have no recurring
