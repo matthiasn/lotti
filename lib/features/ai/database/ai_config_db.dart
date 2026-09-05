@@ -19,13 +19,16 @@ class AiConfigDb extends _$AiConfigDb {
   AiConfigDb({
     this.inMemoryDatabase = false,
     AiApiKeyStorage? apiKeyStorage,
+    this.storageNamespace = 'default',
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : _apiKeyStorage =
            apiKeyStorage ??
            (inMemoryDatabase
                ? AiApiKeyStorage.inMemory()
-               : AiApiKeyStorage(getIt<SecureStorage>())),
+               : getIt.isRegistered<SecureStorage>()
+               ? AiApiKeyStorage(getIt<SecureStorage>())
+               : AiApiKeyStorage.inMemory()),
        super(
          openDbConnection(
            aiConfigDbFileName,
@@ -37,6 +40,7 @@ class AiConfigDb extends _$AiConfigDb {
 
   bool inMemoryDatabase = false;
   final AiApiKeyStorage _apiKeyStorage;
+  final String storageNamespace;
 
   @override
   int get schemaVersion => 1;
@@ -83,7 +87,8 @@ class AiConfigDb extends _$AiConfigDb {
       final raw = jsonDecode(existing.serialized) as Map<String, dynamic>;
       if (raw['runtimeType'] == 'inferenceProvider') {
         final storageKey =
-            raw['apiKeyStorageKey'] as String? ?? apiKeyStorageKeyFor(id);
+            raw['apiKeyStorageKey'] as String? ??
+            apiKeyStorageKeyFor(id, namespace: storageNamespace);
         await _apiKeyStorage.delete(storageKey);
       }
     }
@@ -116,7 +121,8 @@ class AiConfigDb extends _$AiConfigDb {
 
     if (map['runtimeType'] == 'inferenceProvider') {
       final storageKey =
-          map['apiKeyStorageKey'] as String? ?? apiKeyStorageKeyFor(entity.id);
+          map['apiKeyStorageKey'] as String? ??
+          apiKeyStorageKeyFor(entity.id, namespace: storageNamespace);
       final legacyApiKey = map.remove('apiKey');
       final needsMigration =
           legacyApiKey != null || map['apiKeyStorageKey'] != storageKey;
@@ -150,7 +156,8 @@ class AiConfigDb extends _$AiConfigDb {
   }) async {
     if (config is! AiConfigInferenceProvider) return config;
     final storageKey =
-        config.apiKeyStorageKey ?? apiKeyStorageKeyFor(config.id);
+        config.apiKeyStorageKey ??
+        apiKeyStorageKeyFor(config.id, namespace: storageNamespace);
     if (persistApiKey) {
       if (config.apiKey.isEmpty && !preserveExistingApiKeyOnEmpty) {
         await _apiKeyStorage.delete(storageKey);
@@ -167,7 +174,8 @@ class AiConfigDb extends _$AiConfigDb {
       json
         ..remove('apiKey')
         ..['apiKeyStorageKey'] =
-            config.apiKeyStorageKey ?? apiKeyStorageKeyFor(config.id);
+            config.apiKeyStorageKey ??
+            apiKeyStorageKeyFor(config.id, namespace: storageNamespace);
     }
     return json;
   }
@@ -186,4 +194,5 @@ class AiConfigDb extends _$AiConfigDb {
 }
 
 /// Stable platform-keychain name for one provider configuration.
-String apiKeyStorageKeyFor(String configId) => 'ai_provider_api_key:$configId';
+String apiKeyStorageKeyFor(String configId, {String namespace = 'default'}) =>
+    'ai_provider_api_key:$namespace:$configId';

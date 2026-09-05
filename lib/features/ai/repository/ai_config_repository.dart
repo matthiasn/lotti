@@ -44,6 +44,7 @@ class AiConfigRepository {
   List<AiConfig> _allConfigsSnapshot = const <AiConfig>[];
   Future<void>? _allConfigsBootstrap;
   StreamSubscription<List<AiConfigDbEntity>>? _allConfigsSubscription;
+  Future<void> _watchDecodeQueue = Future<void>.value();
   bool _allConfigsLoaded = false;
 
   /// Save or update an AI configuration
@@ -607,16 +608,14 @@ class AiConfigRepository {
   void _ensureWatchingAllConfigs() {
     _allConfigsSubscription ??= _db.watchAllConfigs().listen(
       (entities) {
-        unawaited(
-          _decodeDbEntities(entities).then(
-            _replaceAllConfigsSnapshot,
-            onError: (Object error, StackTrace stackTrace) {
+        _watchDecodeQueue = _watchDecodeQueue
+            .then((_) => _decodeDbEntities(entities))
+            .then<void>(_replaceAllConfigsSnapshot)
+            .catchError((Object error, StackTrace stackTrace) {
               if (!_allConfigsController.isClosed) {
                 _allConfigsController.addError(error, stackTrace);
               }
-            },
-          ),
-        );
+            });
       },
       onError: (Object error, StackTrace stackTrace) {
         if (!_allConfigsController.isClosed) {

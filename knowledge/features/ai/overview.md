@@ -65,6 +65,15 @@ rather than re-introducing seeding.
 syncs changes through the outbox. Device-local runtime controls use
 `AiRuntimeSettingsController` and `SettingsDb` instead.
 
+Provider API keys are included in the existing end-to-end encrypted sync
+payload, but are never written to the unencrypted SQLite JSON. `AiConfigDb`
+stores a stable `apiKeyStorageKey` reference and resolves the value through
+platform secure storage (Keychain, Keystore, or the platform equivalent) when
+loading a provider. Legacy rows containing `apiKey` are migrated lazily: the
+value is written to secure storage first, then removed from the row. Migration
+is retry-safe when secure storage is unavailable. Keys are scoped by world and
+removed when a provider is hard-deleted.
+
 | Object | Stored as | Used for |
 |--------|-----------|----------|
 | Provider | `AiConfig.inferenceProvider` | Base URL, API key, provider type |

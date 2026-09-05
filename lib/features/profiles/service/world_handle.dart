@@ -78,7 +78,10 @@ class WorldHandle {
         documentsDirectoryProvider: provider,
       ),
       fts5Db: Fts5Db(documentsDirectoryProvider: provider),
-      aiConfigDb: AiConfigDb(documentsDirectoryProvider: provider),
+      aiConfigDb: AiConfigDb(
+        documentsDirectoryProvider: provider,
+        storageNamespace: root.path,
+      ),
     );
   }
 
