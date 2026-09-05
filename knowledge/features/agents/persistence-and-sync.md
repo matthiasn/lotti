@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-10T01:20:00+02:00 }
+generated: { by: codex/gpt-6, at: 2026-09-05T19:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: error-logging
@@ -232,14 +232,25 @@ result is otherwise unspecified. The consumers are first-wins
 `unifiedSuggestionList`), so an unordered compound could let an older
 retry/audit decision override the newest one.
 
-`latestEntitiesByAgentIds` accepts an `outerPredicate` that is applied to the
-outer `WHERE rn = 1` — i.e. it filters the *winning* row per agent, after
-ranking. `getAgentStatesWithPendingWakes` uses it to return only agents that
-actually have a wake pending, instead of returning every agent's latest state
-for the pending-wakes screen to discard. Applying such a predicate inside the
-ranked subquery would be a correctness bug: it could promote an older row that
-satisfies it over a newer one that does not, resurrecting state the newest row
-had cleared.
+# Latest reads exclude candidates with a newer row
+
+`latestEntitiesByAgentIds` scans the active agent/type index for requested ids,
+with an optional subtype. A correlated `NOT EXISTS` check uses the matching
+ordered index to reject each candidate that has a greater `(created_at, id)`
+pair in its partition. This avoids carrying historical payloads through a
+window function. Candidate index work still grows with history; there is no
+constant-work or cross-call caching guarantee. Chunking, per-chunk agent-id
+ordering and transaction zones remain unchanged.
+
+Its `outerPredicate` filters the selected result **without constraining the
+newer-row check**. `getAgentStatesWithPendingWakes` uses it to exclude the latest
+states whose wakes are cleared. Adding that predicate inside `NOT EXISTS`
+could promote an older matching state and resurrect a cleared wake. SQLite may
+evaluate independent candidate predicates in any physical order; the newer-row
+check always sees newer records regardless of their wake fields.
+
+The reproducible experiment and limitations are in
+[the agent query benchmark](../../../docs/perf/2026-09-05-agent-query-followup.md).
 
 # The agent identity list is cached
 
@@ -264,10 +275,9 @@ The cache lives on `AgentRepoCore`, and three rules keep it honest:
   would publish a row the database no longer has. `AgentRepoCore` marks its
   transactions with a zone value so the load can tell.
 
-Latest-per-agent batch reads are backed by active-row indexes that include the
-`(created_at DESC, id DESC)` ranking order for both type-only and
-type-plus-subtype lookups, so the window-function query needs no temp sort for
-the final order term.
+Latest-per-agent checks use active-row indexes that include the
+`(created_at DESC, id DESC)` order for both type-only and type-plus-subtype
+lookups. The newer-row range check requires no historical payload sort.
 
 Due and pending scheduled-wake reads pin
 `idx_agent_entities_pending_scheduled_wake_at`. The partial expression index

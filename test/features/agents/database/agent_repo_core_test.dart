@@ -12,6 +12,9 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 import '../test_data/entity_factories.dart';
 import '../test_data/soul_factories.dart';
@@ -733,9 +736,196 @@ void main() {
   });
 
   group('latestEntitiesByAgentIds', () {
+    for (final subtype in [null, 'state']) {
+      test(
+        'uses indexed newer-row checks without a window with subtype $subtype',
+        () async {
+          await core.upsertEntity(
+            makeTestState(
+              id: 'winner',
+              agentId: 'agent',
+              updatedAt: testDate,
+            ),
+          );
+          await db.customStatement(
+            "UPDATE agent_entities SET subtype = 'state'",
+          );
+          final forwardingDb = MockAgentDatabase();
+          when(() => forwardingDb.agentEntities).thenReturn(db.agentEntities);
+          late String query;
+          late List<Variable> variables;
+          when(
+            () => forwardingDb.customSelect(
+              any(),
+              variables: any(named: 'variables'),
+              readsFrom: any(named: 'readsFrom'),
+            ),
+          ).thenAnswer((invocation) {
+            query = invocation.positionalArguments.single as String;
+            variables = invocation.namedArguments[#variables] as List<Variable>;
+            return db.customSelect(
+              query,
+              variables: variables,
+              readsFrom: {db.agentEntities},
+            );
+          });
+          final rows = await AgentRepoCore(forwardingDb)
+              .latestEntitiesByAgentIds(
+                agentIds: ['agent', 'missing'],
+                type: AgentEntityTypes.agentState,
+                subtype: subtype,
+              );
+          expect(rows.single.id, 'winner');
+          final plan = await db
+              .customSelect('EXPLAIN QUERY PLAN $query', variables: variables)
+              .get();
+          final details = plan
+              .map((row) => row.read<String>('detail'))
+              .join('\n');
+          // Execute and explain the actual repository statement, not a copied
+          // query. Indexed searches alone are insufficient: the old window also
+          // used this index but carried historical payloads through ranking.
+          expect(details, contains('CORRELATED SCALAR SUBQUERY'));
+          expect(
+            details,
+            contains(
+              subtype == null
+                  ? 'idx_agent_entities_active_agent_type_created_id'
+                  : 'idx_agent_entities_active_agent_type_sub_created_id',
+            ),
+          );
+          expect(details, isNot(contains('SCAN (subquery-')));
+        },
+      );
+    }
+
+    test(
+      'preserves ties, tombstones, missing agents and outer filters',
+      () async {
+        for (final agentId in ['agent-b', 'agent-a']) {
+          for (final (id, revision, date) in [
+            ('old', 1, DateTime(2026, 3, 14)),
+            ('tie-a', 2, testDate),
+            ('tie-z', 3, testDate),
+          ]) {
+            await core.upsertEntity(
+              makeTestState(
+                id: '$agentId-$id',
+                agentId: agentId,
+                revision: revision,
+                updatedAt: date,
+              ),
+            );
+          }
+        }
+        await core.upsertEntity(
+          makeTestState(
+            id: 'deleted-newer',
+            agentId: 'agent-a',
+            updatedAt: DateTime(2026, 3, 16),
+          ),
+        );
+        await db.customStatement(
+          "UPDATE agent_entities SET deleted_at = 1 WHERE id = 'deleted-newer'",
+        );
+        final latest = await core.latestEntitiesByAgentIds(
+          agentIds: ['agent-b', 'missing', 'agent-a', 'agent-a'],
+          type: AgentEntityTypes.agentState,
+        );
+        expect(latest.map((entity) => entity.id), [
+          'agent-a-tie-z',
+          'agent-b-tie-z',
+        ]);
+        // The current winners do not satisfy the predicate. Older matching
+        // states must not be promoted into the result.
+        expect(
+          await core.latestEntitiesByAgentIds(
+            agentIds: ['agent-b', 'agent-a'],
+            type: AgentEntityTypes.agentState,
+            outerPredicate: r"AND json_extract(serialized, '$.revision') = 1",
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test('latest reads observe transaction writes and rollback', () async {
+      await core.upsertEntity(
+        makeTestState(
+          id: 'committed',
+          agentId: 'agent',
+          updatedAt: testDate,
+        ),
+      );
+      await expectLater(
+        core.runInTransaction(() async {
+          await core.upsertEntity(
+            makeTestState(
+              id: 'uncommitted',
+              agentId: 'agent',
+              updatedAt: DateTime(2026, 3, 16),
+            ),
+          );
+          final inside = await core.latestEntitiesByAgentIds(
+            agentIds: ['agent'],
+            type: AgentEntityTypes.agentState,
+          );
+          expect(inside.single.id, 'uncommitted');
+          throw StateError('rollback');
+        }),
+        throwsStateError,
+      );
+      final outside = await core.latestEntitiesByAgentIds(
+        agentIds: ['agent'],
+        type: AgentEntityTypes.agentState,
+      );
+      expect(outside.single.id, 'committed');
+    });
+
+    test(
+      'newer rows from other types or subtypes do not hide the winner',
+      () async {
+        await core.upsertEntity(
+          makeTestState(
+            id: 'wanted',
+            agentId: 'agent',
+            updatedAt: testDate,
+          ),
+        );
+        await core.upsertEntity(
+          makeTestState(
+            id: 'other-subtype',
+            agentId: 'agent',
+            updatedAt: DateTime(2026, 3, 16),
+          ),
+        );
+        await core.upsertEntity(
+          makeTestIdentity(
+            id: 'other-type',
+            agentId: 'agent',
+            createdAt: DateTime(2026, 3, 17),
+          ),
+        );
+        await db.customStatement(
+          "UPDATE agent_entities SET subtype = 'wanted' WHERE id = 'wanted'",
+        );
+        final filtered = await core.latestEntitiesByAgentIds(
+          agentIds: ['agent'],
+          type: AgentEntityTypes.agentState,
+          subtype: 'wanted',
+        );
+        expect(filtered.single.id, 'wanted');
+        final unfiltered = await core.latestEntitiesByAgentIds(
+          agentIds: ['agent'],
+          type: AgentEntityTypes.agentState,
+        );
+        expect(unfiltered.single.id, 'other-subtype');
+      },
+    );
+
     test('keeps only the newest row per agent', () async {
       // AgentStateEntity has no `createdAt`; the row's `created_at` column is
-      // written from `updatedAt`, which is what the ROW_NUMBER ordering uses.
+      // written from `updatedAt`, which is what the newest-row ordering uses.
       await core.upsertEntity(
         makeTestState(
           id: 'state-old',
