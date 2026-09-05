@@ -459,6 +459,8 @@ A `Flight` is planned once, as a chain of straight **legs** with one
   `streetSpeed` (10 m/s) so the facades and the billboards pass by. A
   flight is routed when both ends are no higher than
   `FlyCameraController.groundCeiling` (the street height plus a metre).
+  A target at the current position uses a direct turn, avoiding a trip out
+  to the street and back merely to change heading.
 - **The S-curve** (`_Profile`): speed ramps up over `rampSeconds` (1.6 s)
   on a smoothstep, holds the cruise, and ramps down the same way, so
   acceleration starts and ends at zero; a way shorter than one cruise-ramp
