@@ -1244,6 +1244,116 @@ void main() {
         ),
       );
 
+      JournalEntity asPrivate(JournalEntity entity) =>
+          entity.copyWith(meta: entity.meta.copyWith(private: true));
+
+      test(
+        'getDayAudioEntries drops private recordings while the flag is off',
+        () async {
+          DayAudioContext context(String sessionId, DateTime capturedAt) =>
+              DayAudioContext(
+                dayId: 'dayplan-2026-07-18',
+                planDate: capturedAt,
+                recordingSessionId: sessionId,
+                activityEntryId: 'activity-$sessionId',
+                processingJobId: 'transcribe_$sessionId',
+                capturedAt: capturedAt,
+                intent: 'dayPlan',
+              );
+          final public = buildAudioEntry(
+            id: 'day-audio-public',
+            timestamp: DateTime(2026, 7, 18, 8),
+            audioDirectory: '/audio/',
+            audioFile: 'public.wav',
+            dayContext: context('session-public', DateTime(2026, 7, 18, 8)),
+          );
+          final private = asPrivate(
+            buildAudioEntry(
+              id: 'day-audio-private',
+              timestamp: DateTime(2026, 7, 18, 9),
+              audioDirectory: '/audio/',
+              audioFile: 'private.wav',
+              dayContext: context('session-private', DateTime(2026, 7, 18, 9)),
+            ),
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(public));
+          await db!.upsertJournalDbEntity(toDbEntity(private));
+
+          Future<List<String>> read() async => (await db!.getDayAudioEntries(
+            'dayplan-2026-07-18',
+          )).map((entry) => entry.meta.id).toList();
+          expect(await read(), ['day-audio-public', 'day-audio-private']);
+          await disablePrivate();
+          expect(await read(), ['day-audio-public']);
+        },
+      );
+
+      test(
+        'sortedCalendarEntries drops private entries while the flag is off',
+        () async {
+          final base = DateTime(2024, 11, 20, 9);
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildJournalEntry(
+                id: 'calendar-public',
+                timestamp: base,
+                text: 'public',
+              ),
+            ),
+          );
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildJournalEntry(
+                id: 'calendar-private',
+                timestamp: base.add(const Duration(hours: 1)),
+                text: 'private',
+                privateFlag: true,
+              ),
+            ),
+          );
+
+          Future<List<String>> read() async => (await db!.sortedCalendarEntries(
+            rangeStart: DateTime(2024, 11, 20),
+            rangeEnd: DateTime(2024, 11, 21),
+          )).map((entry) => entry.meta.id).toList();
+          expect(await read(), ['calendar-private', 'calendar-public']);
+          await disablePrivate();
+          expect(await read(), ['calendar-public']);
+        },
+      );
+
+      test(
+        'getCountImportFlagEntries leaves private flagged entries out while '
+        'the flag is off',
+        () async {
+          final base = DateTime(2024, 11, 12, 9);
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildJournalEntry(
+                id: 'import-public',
+                timestamp: base,
+                text: 'public',
+                flag: EntryFlag.import,
+              ),
+            ),
+          );
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildJournalEntry(
+                id: 'import-private',
+                timestamp: base,
+                text: 'private',
+                flag: EntryFlag.import,
+                privateFlag: true,
+              ),
+            ),
+          );
+          expect(await db!.getCountImportFlagEntries(), 2);
+          await disablePrivate();
+          expect(await db!.getCountImportFlagEntries(), 1);
+        },
+      );
+
       test(
         'getJournalEntitiesForIds filtered path drops private entries and '
         'sorts by date desc',

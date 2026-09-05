@@ -496,7 +496,7 @@ undercounts the gate badly:
 |-----------|-------|
 | `_queryWithPrivateFilter` | `journal_queries`, `definitions`, `project_queries`, `links_ratings` |
 | **`privateStatuses` passed as a parameter**, so the caller decides | `task_queries`, `task_query_builders`, `task_due_queries` |
-| **Raw SQL reading the flag directly** | `insights_queries` uses a `private_flag` CTE; `data_queries` uses a direct `config_flags` subquery in `getHabitCompletionRecordsInRange` |
+| **Raw SQL reading the flag directly** | `insights_queries` uses a `private_flag` CTE; every `data_queries` series read, the calendar range read and the import-flag count carry a direct `config_flags` subquery in their `.drift` query, as does `getHabitCompletionRecordsInRange` |
 
 Of the ten query-bearing mixins, **nine gate on private one of these ways**. The
 exception is `_JournalDbEntityOps`, which is maintenance and write operations
@@ -529,14 +529,12 @@ allowlist holds:
   device holds every row), the sequence-log population stream, the purge walk,
   the search reindex (hits resolve through the gated id-batch read), the demo
   reseed inventory.
-- **Counts.** `countAllJournalEntries`, `countJournalEntries`,
-  `countImportFlagEntries` — numbers, not rows.
-- **Not gated today, listed rather than silently so.** `getDayAudioEntries`,
-  the calendar range read (`sortedCalenderEntriesInRange`) and the data series
-  by type behind dashboards and health charts (measurements, quantitative,
-  workouts, surveys, habit completions). Whether they should gate is a product
-  decision, tracked as lotti3-0qaz; until it is made the audit keeps them
-  explicit.
+- **Counts.** `countAllJournalEntries` and `countJournalEntries` — totals
+  for progress reporting and the About page, not rows. The import badge count
+  gates like any list, since it is derived from entries the badge leads to.
+- **Nothing else.** Every list, series and range read gates: the calendar
+  range read, the Daily OS day audio list and the data series behind
+  dashboards and health charts included, since 2026-09-05.
 
 So the shape is: **lists, searches and batches thin out private entries; fetching
 one entity you already have the id for does not.** That is coherent with what the
