@@ -57,7 +57,6 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
             );
             await m.createTable(categoryDefinitions);
             await m.createIndex(idxCategoryDefinitionsName);
-            await m.createIndex(idxCategoryDefinitionsId);
             await m.createIndex(idxCategoryDefinitionsPrivate);
           }();
         }
@@ -76,10 +75,9 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
           await () async {
             DevLogger.log(
               name: 'JournalDb',
-              message: 'Add hidden in linked_entries table, with index',
+              message: 'Add hidden in linked_entries table',
             );
             await m.addColumn(linkedEntries, linkedEntries.hidden);
-            await m.createIndex(idxLinkedEntriesHidden);
           }();
         }
 
@@ -126,7 +124,6 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
               message: 'Creating label_definitions and labeled tables',
             );
             await m.createTable(labelDefinitions);
-            await m.createIndex(idxLabelDefinitionsId);
             await m.createIndex(idxLabelDefinitionsName);
             await m.createIndex(idxLabelDefinitionsPrivate);
 

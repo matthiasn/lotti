@@ -47,7 +47,7 @@ sources:
   - id: journal-migration
     resource: ../../lib/database/database_migration.dart
     title: JournalDb migration strategy
-    last_modified: 2026-07-09
+    last_modified: 2026-09-05
   - id: image-path-migration
     resource: ../../lib/features/journal/service/image_path_migration_service.dart
     title: ImagePathMigrationService
@@ -81,7 +81,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
-| `JournalDb` | `db.sqlite` | 45 | Journal entities, tasks, links, tags, config flags — the primary store |
+| `JournalDb` | `db.sqlite` | 46 | Journal entities, tasks, links, tags, config flags — the primary store |
 | `SyncDatabase` | `sync.sqlite` | 29 | Outbox, sequence log, host activity, inbound event queue, queue markers |
 | `AgentDatabase` | `agent.sqlite` | 19 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
@@ -216,6 +216,15 @@ The indexes matter: `idx_journal_tasks_due_open` is keyed on the denormalized
 `due_at` column added in v41, which replaced an expression index over
 `json_extract(serialized,'$.data.due')`. The column lets the planner stream
 `ORDER BY due_at ASC` straight from the index instead of parsing JSON per row.
+
+They also cost: every journal upsert rewrites the row, so each index is paid
+for on every write. v46 dropped nine that duplicated an index SQLite already
+had — the single-column DESC twins of the `date_from`/`date_to` indexes (an
+index is walked in either direction), the `idx_*_definitions_id` indexes on
+primary keys, the single-column `linked_entries` indexes shadowed by their
+composite prefixes, and the lone boolean `idx_linked_entries_hidden`. A new
+index needs a query that the planner demonstrably picks it for; the EXPLAIN
+tests under `test/database/` are where that is shown.
 
 # From write to UI
 
