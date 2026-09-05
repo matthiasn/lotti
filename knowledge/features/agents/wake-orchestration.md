@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-09-04T23:30:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T15:15:00Z }
 stale_after: 2026-10-12
 sources:
   - id: wake
@@ -179,6 +179,13 @@ Persisted throttle set/clear operations re-read and write the state inside the
 same repository transaction as other partial state writers. This keeps the
 device-local `nextWakeAt` mutation from restoring a consumed project marker or
 erasing activity that was persisted by the project monitor concurrently.
+Repeated clears for one agent share their pending transaction/read. Completion
+releases that sharing state, so a later clear still checks the database for
+unhydrated stale deadlines. Setting or hydrating a new deadline starts a new
+generation: its later clear cannot join an older operation, and an older
+completion cannot remove a newer pending clear. The existing deadline checks
+before and after the state read continue to protect re-armed cooldowns.
+Routine clear diagnostics use counted sampling rather than one line per call.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the
