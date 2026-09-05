@@ -1178,20 +1178,33 @@ void main() {
           );
           expect(content.onRefreshReport, isNotNull);
           expect(content.onCancelScheduledReportWake, isNotNull);
-          final panel = content.agentActionsBuilder!(enabled: true);
+          final focused = <String>[];
+          void focusTask(String taskId, {bool scroll = true}) =>
+              focused.add('$taskId scroll=$scroll');
+          final panel = content.agentActionsBuilder!(
+            enabled: true,
+            focusTask: focusTask,
+          );
           expect(panel, isA<ProjectRecommendationsPanel>());
           expect((panel as ProjectRecommendationsPanel).enabled, isTrue);
           expect(
-            (content.agentActionsBuilder!(enabled: false)
+            (content.agentActionsBuilder!(
+                      enabled: false,
+                      focusTask: focusTask,
+                    )
                     as ProjectRecommendationsPanel)
                 .enabled,
             isFalse,
           );
+          // "Added → title" brings the task into view in the list below
+          // instead of leaving the page; a fresh creation only marks it.
           final opened = <String>[];
           beamToNamedOverride = opened.add;
           addTearDown(() => beamToNamedOverride = null);
           panel.onOpenTask!('task-42');
-          expect(opened, ['/tasks/task-42']);
+          panel.onTaskCreated!('task-7');
+          expect(focused, ['task-42 scroll=true', 'task-7 scroll=false']);
+          expect(opened, isEmpty);
 
           // Invoking the wired callbacks must dispatch to the project
           // agent service for the resolved agent ID, with the cancel path

@@ -155,6 +155,17 @@ ordinary outer row padding. The hover ink is painted by an inner Material and
 then clipped by the menu outline, so the final action reaches the rounded bottom
 edge instead of leaving an unhighlighted strip above the border.
 
+`DesignSystemPopoverAnchor` (`components/popovers/`) is the same anchored
+overlay — `MenuAnchor` beneath a caller-built trigger, dismissed by an outside
+tap or the trigger — but hosts a widget instead of menu rows, on
+`DesignSystemPopoverSurface`: the context menu's `background.level01` fill,
+`radii.s` corners and `DsShadows.floatingSurface`, at the menu's default width
+unless widened. It is how a desktop control opens in place what a phone opens
+as a sheet; the project task list's "Sort and group" panel is the adopter. The
+content decides when it is done — nothing inside closes the popover — so a
+picker that applies on tap stays open for the next pick. A scrollable inside
+it must not claim the page's primary scroll controller.
+
 `DesignSystemFloatingActionButton` is circular and icon-only by default and
 takes its `semanticLabel` for assistive technology. Passing a `label` extends
 it into a worded pill: same height, same token background and radius, growing

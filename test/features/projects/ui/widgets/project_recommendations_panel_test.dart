@@ -79,6 +79,7 @@ void main() {
     List<AgentDomainEntity> sets = const [],
     bool enabled = true,
     ValueChanged<String>? onOpenTask,
+    ValueChanged<String>? onTaskCreated,
     double width = 390,
     bool withoutSnapshot = false,
     bool legacyRun = false,
@@ -88,6 +89,7 @@ void main() {
         projectId: projectId,
         enabled: enabled,
         onOpenTask: onOpenTask,
+        onTaskCreated: onTaskCreated,
       ),
     ),
     mediaQueryData: MediaQueryData(size: Size(width, 900)),
@@ -256,6 +258,33 @@ void main() {
     expect(calls, 2);
     expect(find.text('Added'), findsOneWidget);
     expect(find.text('Retry'), findsNothing);
+  });
+
+  testWidgets('reports a created task to the host, but never a failed one', (
+    tester,
+  ) async {
+    final created = <String>[];
+    var calls = 0;
+    when(() => service.createTask('s1')).thenAnswer((_) async {
+      calls++;
+      return ToolExecutionResult(
+        success: calls > 1,
+        output: calls > 1 ? '' : 'Recommendation is no longer active',
+        mutatedEntityId: calls > 1 ? 'task-1' : null,
+      );
+    });
+    await pumpSubject(
+      tester,
+      subject(items: steps.sublist(0, 1), onTaskCreated: created.add),
+    );
+
+    await tester.tap(find.text('Add task'));
+    await settle(tester);
+    expect(created, isEmpty);
+
+    await tester.tap(find.text('Retry'));
+    await settle(tester);
+    expect(created, ['task-1']);
   });
 
   testWidgets(

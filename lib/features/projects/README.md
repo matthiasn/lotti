@@ -13,7 +13,9 @@ project agent is attached — a summary and health read that the agent maintains
   task was created, newest first, folds finished tasks into a collapsed Done
   group, and offers a Sort and group control (status, priority, due window or
   no grouping; actionability, creation, due date, estimate, priority, last
-  update or title). The choice is remembered per project.
+  update or title) as a popover on desktop and a sheet on a phone. Group
+  headers stay pinned while their group scrolls past. The choice, and which
+  groups are folded, is remembered per project.
 - **Says where a project stands.** Six statuses: open, active, monitoring, on
   hold (with a required reason), completed, archived. "Monitoring" is for work
   that is not finished but has no time scheduled — checked on when something
@@ -40,7 +42,9 @@ project agent is attached — a summary and health read that the agent maintains
   the agent's current next steps. Each step offers two labelled actions: **Add
   task** creates a project-linked task and links the step to it, **Dismiss**
   sets it aside; both can be undone, and a decided step stays in place with its
-  tag instead of vanishing. Bulk actions add or dismiss every open step. The
+  tag instead of vanishing. The new task lights up in the list below, and the
+  step's "Added → title" link scrolls it into view. Bulk actions add or dismiss
+  every open step. The
   agent's proposed changes (a status change, a task it wants to create) sit in
   their own band under the steps. Each successful analysis replaces the list;
   a run that was already fully decided collapses to a one-line summary with its

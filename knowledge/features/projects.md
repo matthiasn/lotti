@@ -425,8 +425,9 @@ a task from "This week" to "Overdue". Within a group the sort key applies — ac
 (the same `compareTasksByActionability` the record provider uses for its
 rollups), created, due date, estimate, priority, recently updated or title —
 and every comparison breaks ties on title then id, so the result never depends
-on input order. Empty groups are omitted. Collapse state is keyed by the
-group's stable id and lives in the panel's state for the session.
+on input order. Empty groups are omitted. Which groups are folded is part of
+the options too (`collapsedGroups`, keyed by the group's stable id, `done`
+folded by default), so a fold is a change the host persists like any other.
 
 The choice is remembered per project by `ProjectTaskListOptionsController`
 (`projectTaskListOptionsProvider(projectId)`) under one `SettingsDb` key per
@@ -434,19 +435,43 @@ project, JSON-encoded and tolerant of unknown values; like the tasks-list
 density preference it loads once, holds state in memory and never lets an
 in-flight load clobber a fresh edit. Both database calls are fire-and-forget,
 so a failing read or write is logged under `LogDomain.settings` and swallowed:
-the read keeps the defaults, the write keeps the in-memory choice. The detail page watches it and opens the
-"Sort and group" sheet (`project_task_list_options_sheet.dart`), whose rows
-apply on tap through the controller. Read-only showcases pass no callback and
-show no control.
+the read keeps the defaults, the write keeps the in-memory choice. The detail
+page watches it and hands the panel the controller's `update` as its single
+`onOptionsChanged`: every pick in the "Sort and group" control and every fold
+flows through it. The panel decides how the control opens — on a screen at
+`kDesktopBreakpoint` or wider as a `DesignSystemPopoverAnchor` beside the sort
+button, otherwise as the shared single-page sheet
+(`project_task_list_options_sheet.dart`); both host the same
+`ProjectTaskListOptionsSheetContent`, whose rows apply on tap and leave the
+surface open for the next pick. Read-only showcases pass no callback, show no
+control, and keep folds in the panel's own state.
+
+Group headers are `SliverPinnedHeader`s inside a `MultiSliver` with
+`pushPinnedChildren` (the `sliver_tools` package): a group's header stays at
+the top of the viewport while its rows scroll past and is pushed out by the
+next group's header. The header paints the card surface opaquely so rows
+scroll beneath it. `DecoratedSliver` and `SliverMainAxisGroup` around the
+groups are unchanged, and folding a group only removes its list sliver, which
+`MultiSliver` handles without the geometry assertion the plain pinned
+persistent header used to trip.
+
+A `ProjectTaskFocus` (task id, request number, `scroll`) asks the panel to
+light one row up — the hover wash, held for `highlightDuration` — and, with
+`scroll` on, to bring it into view. The detail content owns the current focus
+and exposes `focusTask` to the agent band builder: the band's "Added → title"
+link calls it with scroll, a fresh creation calls it without, so the new task
+is marked where it is without pulling the page away from the band. Scrolling
+first unfolds the task's group through `onOptionsChanged`, then, because the
+list is lazy, jumps to the group's header (always built) and looks for the
+row on the following frames, stepping one viewport further each time until it
+exists or `maxScrollAttempts` run out; the row is then eased into view with
+`Scrollable.ensureVisible`.
 
 The header survives what used to break it: the title truncates before
 anything overflows, and in its compact form — below 480 pt of header width (a
 phone, or a desktop pane narrowed past what the full header needs) or at a
-text scale of 1.2× and above — the
-total estimate is dropped in favour of the per-group estimates and Add task
-turns into the glyph-only icon action. Group headers are ordinary rows rather than
-pinned slivers, the same trade-off the agents listing made to avoid the sliver
-geometry assertion when groups change.
+text scale of 1.2× and above — the total estimate is dropped in favour of the
+per-group estimates and Add task turns into the glyph-only icon action.
 
 # When the project agent actually wakes
 

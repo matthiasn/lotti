@@ -84,7 +84,10 @@ class _ProjectTaskListOptionsSheetContentState
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    // Never the page's primary scrollable: inside the desktop popover the
+    // page's own scroll view already holds the primary controller.
     return SingleChildScrollView(
+      primary: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

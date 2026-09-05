@@ -37,6 +37,7 @@ class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
     required this.projectId,
     this.enabled = true,
     this.onOpenTask,
+    this.onTaskCreated,
     super.key,
   });
 
@@ -52,8 +53,13 @@ class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
   /// own; the bands stay mounted so no decision state is lost.
   final bool enabled;
 
-  /// Opens the task an added step created.
+  /// Called with the task id when the "Added → title" link is tapped; the
+  /// page brings that task into view in the list below.
   final ValueChanged<String>? onOpenTask;
+
+  /// Called with the task id right after a step created it, so the page can
+  /// mark the new row in the list without moving the band.
+  final ValueChanged<String>? onTaskCreated;
 
   @override
   ConsumerState<ProjectRecommendationsPanel> createState() =>
@@ -162,7 +168,10 @@ class _ProjectRecommendationsPanelState
         _optimistic[step.id] = taskId == null
             ? ProjectNextStepRowState.done
             : ProjectNextStepRowState.added;
-        if (taskId != null) _createdTasks[step.id] = taskId;
+        if (taskId != null) {
+          _createdTasks[step.id] = taskId;
+          widget.onTaskCreated?.call(taskId);
+        }
         _armUndo(step.id);
         if (result.errorMessage case final warning?) {
           context.showToast(

@@ -22,6 +22,7 @@ import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
@@ -75,7 +76,7 @@ void main() {
           ProjectMobileDetailContent(
             record: makeTestProjectRecord(),
             currentTime: DateTime(2026, 3, 28, 1, 18),
-            agentActionsBuilder: ({required enabled}) =>
+            agentActionsBuilder: ({required enabled, required focusTask}) =>
                 const Text('Agent decisions'),
           ),
           size: const Size(430, 1400),
@@ -200,14 +201,14 @@ void main() {
       const options = ProjectTaskListOptions(
         groupBy: ProjectTaskGroupBy.status,
       );
-      ProjectTaskListOptions? requested;
+      ProjectTaskListOptions? changed;
       await tester.pumpWidget(
         wrap(
           ProjectMobileDetailContent(
             record: makeTestProjectRecord(),
             currentTime: DateTime(2026, 3, 28, 1, 18),
             taskListOptions: options,
-            onTaskListOptionsChanged: (value) => requested = value,
+            onTaskListOptionsChanged: (value) => changed = value,
           ),
           size: const Size(430, 1200),
         ),
@@ -215,7 +216,11 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byTooltip('Sort and group'));
-      expect(requested, options);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectTaskListOptionsSheetContent), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('project-tasks-group-none')));
+      await tester.pump();
+      expect(changed, options.copyWith(groupBy: ProjectTaskGroupBy.none));
 
       await tester.pumpWidget(
         wrap(
@@ -230,6 +235,41 @@ void main() {
       expect(find.byTooltip('Sort and group'), findsNothing);
     });
 
+    testWidgets('an agent band can light up a task in the list', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord(
+        highlightedTaskSummaries: [
+          makeTestTaskSummary(
+            task: makeTestTask(id: 'lit', title: 'Refill the krill'),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            agentActionsBuilder: ({required enabled, required focusTask}) =>
+                TextButton(
+                  onPressed: () => focusTask('lit', scroll: false),
+                  child: const Text('Mark it'),
+                ),
+          ),
+          size: const Size(430, 1400),
+        ),
+      );
+      await tester.pump();
+      final wash = find.byKey(
+        const ValueKey('task-summary-row-background-lit'),
+      );
+      expect(wash, findsNothing);
+
+      await tester.tap(find.text('Mark it'));
+      await tester.pump();
+      expect(wash, findsOneWidget);
+    });
+
     testWidgets(
       'keeps agent actions mounted but disabled while a mutation runs',
       (
@@ -238,7 +278,7 @@ void main() {
         Widget subject({required bool isSaving}) => ProjectMobileDetailContent(
           record: makeTestProjectRecord(),
           currentTime: DateTime(2026, 3, 28, 1, 18),
-          agentActionsBuilder: ({required enabled}) =>
+          agentActionsBuilder: ({required enabled, required focusTask}) =>
               Text(enabled ? 'Agent decisions' : 'Agent decisions (disabled)'),
           isSaving: isSaving,
         );

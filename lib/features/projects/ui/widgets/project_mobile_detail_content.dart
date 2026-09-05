@@ -82,14 +82,22 @@ class ProjectMobileDetailContent extends StatefulWidget {
   /// Builds the agent's action bands for the AI card. `enabled` is false
   /// while this surface runs a mutation of its own, so the bands stay
   /// mounted (no decision state is lost) but every control is disabled.
-  final Widget Function({required bool enabled})? agentActionsBuilder;
+  /// `focusTask` lets a band point at a task in the list below — the one an
+  /// added step created — and have the list scroll to it and light it up.
+  final Widget Function({
+    required bool enabled,
+    required ProjectTaskFocusRequest focusTask,
+  })?
+  agentActionsBuilder;
   final bool hasProjectAgent;
   final bool isRefreshingReport;
   final bool isSaving;
   final ValueChanged<TaskSummary>? onTaskTap;
 
-  /// How the task list groups and orders itself; the host remembers it per
-  /// project. Without [onTaskListOptionsChanged] the list shows no control.
+  /// How the task list groups, orders and folds itself; the host remembers
+  /// it per project and receives every change through
+  /// [onTaskListOptionsChanged]. Without the callback the list shows no
+  /// control and keeps its folds to itself.
   final ProjectTaskListOptions taskListOptions;
   final ValueChanged<ProjectTaskListOptions>? onTaskListOptionsChanged;
 
@@ -102,6 +110,18 @@ class _ProjectMobileDetailContentState
     extends State<ProjectMobileDetailContent> {
   late final ScrollController _scrollController = ScrollController();
   bool _isAddingTask = false;
+  ProjectTaskFocus? _taskFocus;
+
+  void _focusTask(String taskId, {bool scroll = true}) {
+    setState(() {
+      _taskFocus = ProjectTaskFocus(
+        taskId: taskId,
+        request: (_taskFocus?.request ?? 0) + 1,
+        scroll: scroll,
+      );
+    });
+  }
+
   bool _isDeleting = false;
   bool _isAssigningAgent = false;
 
@@ -289,6 +309,7 @@ class _ProjectMobileDetailContentState
                                     : () => widget.onTaskTap!(firstBlockedTask),
                                 actions: widget.agentActionsBuilder?.call(
                                   enabled: !isMutating,
+                                  focusTask: _focusTask,
                                 ),
                                 isRefreshing: widget.isRefreshingReport,
                               ),
@@ -301,6 +322,7 @@ class _ProjectMobileDetailContentState
                               now: widget.currentTime,
                               options: widget.taskListOptions,
                               onOptionsChanged: widget.onTaskListOptionsChanged,
+                              focus: _taskFocus,
                               onTaskTap: isMutating ? null : widget.onTaskTap,
                               onAddTask: widget.onAddTask == null
                                   ? null
