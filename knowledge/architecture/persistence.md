@@ -251,10 +251,13 @@ fails until you do. That test is what found the v24 drift below.
 
 **Indexes are reconciled from the declared schema on every upgrade.**
 `_reconcileIndexesWithSchema` ends `onUpgrade`: it drops explicit indexes on
-Drift-managed tables that `database.drift` no longer declares and creates
-declared ones that are missing. An index change is therefore an edit to
-`database.drift` plus a version bump, never a hand-written `CREATE INDEX`
-in a migration step. It exists because installs from before v25 (October
+Drift-managed tables that `database.drift` no longer declares, recreates
+declared ones whose stored definition differs (compared through
+`normaliseIndexDefinition`, which discards only case, whitespace, quoting
+and the default `COLLATE BINARY`/`ASC`), and creates declared ones that are
+missing. An index change — new, gone, or reshaped under the same name — is
+therefore an edit to `database.drift` plus a version bump, never a
+hand-written `CREATE INDEX` in a migration step. It exists because installs from before v25 (October
 2025) still carried up to seventeen single-column indexes the original schema
 created and later versions stopped declaring but never dropped, and lacked
 the two date indexes a fresh install has; v47 is the release that ran it for

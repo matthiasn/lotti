@@ -9,12 +9,14 @@
 // hand-written approximation — the check drift_dev's `SchemaVerifier` would
 // run if its CLI built in this repository.
 //
-// The comparison is structural (tables, columns, indexes), normalised for
-// the cosmetic differences between `createAll()` and `ALTER TABLE` /
-// `CREATE INDEX` statements: column order, declared type spelling within
-// one affinity, and boolean default spelling. Anything else — a column,
-// default, constraint or index that a fresh install has and a migrated
-// database does not, or the reverse — fails the test with a readable diff.
+// The comparison is structural — tables, columns, foreign keys, the
+// implicit indexes behind table-level UNIQUE and PRIMARY KEY constraints,
+// and explicit indexes — normalised for the cosmetic differences between
+// `createAll()` and `ALTER TABLE` / `CREATE INDEX` statements: column
+// order, declared type spelling within one affinity, and boolean default
+// spelling. Anything else — a column, default, constraint or index that a
+// fresh install has and a migrated database does not, or the reverse —
+// fails the test with a readable diff.
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show immutable;
@@ -194,6 +196,23 @@ List<String> _diff({required _Schema fresh, required _Schema migrated}) {
     }
   }
 
+  for (final table in fresh.constraints.keys) {
+    final expected = fresh.constraints[table]!;
+    final actual = migrated.constraints[table];
+    if (actual == null) continue; // the missing table is reported above
+    for (final constraint in expected.difference(actual)) {
+      differences.add(
+        'constraint on $table: $constraint missing after migration',
+      );
+    }
+    for (final constraint in actual.difference(expected)) {
+      differences.add(
+        'constraint on $table: $constraint present after migration, not in a '
+        'fresh install',
+      );
+    }
+  }
+
   for (final index in fresh.indexes.keys) {
     final expected = fresh.indexes[index]!;
     final actual = migrated.indexes[index];
@@ -216,13 +235,20 @@ List<String> _diff({required _Schema fresh, required _Schema migrated}) {
   return differences;
 }
 
-/// A structural snapshot of a database: every user table with its columns,
+/// A structural snapshot of a database: every user table with its columns
+/// and constraints (foreign keys, and the implicit indexes behind table-level
+/// UNIQUE and PRIMARY KEY clauses, which `PRAGMA table_info` does not show),
 /// and every explicitly created index with its normalised definition.
 class _Schema {
-  const _Schema({required this.tables, required this.indexes});
+  const _Schema({
+    required this.tables,
+    required this.constraints,
+    required this.indexes,
+  });
 
   static Future<_Schema> of(JournalDb db) async {
     final tables = <String, Map<String, _Column>>{};
+    final constraints = <String, Set<String>>{};
     final tableRows = await db
         .customSelect(
           "SELECT name FROM sqlite_master WHERE type = 'table' "
@@ -244,6 +270,7 @@ class _Schema {
         );
       }
       tables[table] = columns;
+      constraints[table] = await _constraintsOf(db, table);
     }
 
     final indexes = <String, _Index>{};
@@ -259,10 +286,38 @@ class _Schema {
         definition: _normaliseIndexSql(row.read<String>('sql')),
       );
     }
-    return _Schema(tables: tables, indexes: indexes);
+    return _Schema(tables: tables, constraints: constraints, indexes: indexes);
+  }
+
+  /// Foreign keys as `fk(col->table.col, delete:x, update:y)` and constraint
+  /// indexes as `unique(a,b)` / `pk(a,b)`, so a missing cascade or a dropped
+  /// UNIQUE clause shows up by name.
+  static Future<Set<String>> _constraintsOf(JournalDb db, String table) async {
+    final result = <String>{};
+    for (final fk
+        in await db.customSelect('PRAGMA foreign_key_list("$table")').get()) {
+      result.add(
+        'fk(${fk.read<String>('from')}->${fk.read<String>('table')}.'
+        '${fk.read<String>('to')}, delete:${fk.read<String>('on_delete')}, '
+        'update:${fk.read<String>('on_update')})',
+      );
+    }
+    for (final index
+        in await db.customSelect('PRAGMA index_list("$table")').get()) {
+      final origin = index.read<String>('origin');
+      if (origin == 'c') continue; // explicit CREATE INDEX, compared by name
+      final name = index.read<String>('name');
+      final columns =
+          (await db.customSelect('PRAGMA index_info("$name")').get())
+              .map((row) => row.readNullable<String>('name') ?? '<expr>')
+              .join(',');
+      result.add('$origin($columns)');
+    }
+    return result;
   }
 
   final Map<String, Map<String, _Column>> tables;
+  final Map<String, Set<String>> constraints;
   final Map<String, _Index> indexes;
 }
 
