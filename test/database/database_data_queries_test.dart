@@ -279,6 +279,47 @@ void main() {
         },
       );
 
+      for (final tieBreaker in ['dateTo', 'id']) {
+        test(
+          'winning completion keeps $tieBreaker tie-breaking after ranking',
+          () async {
+            final day = DateTime(2024, 4, 16, 12);
+            final earlier =
+                buildHabitCompletionEntry(
+                      id: tieBreaker == 'id' ? 'a' : 'z',
+                      habitId: 'tie-habit',
+                      timestamp: day,
+                      completionType: HabitCompletionType.success,
+                    )
+                    as HabitCompletionEntry;
+            final winner = earlier.copyWith(
+              meta: earlier.meta.copyWith(
+                id: tieBreaker == 'id' ? 'z' : 'a',
+                dateTo: tieBreaker == 'dateTo'
+                    ? day.add(const Duration(hours: 1))
+                    : day,
+              ),
+              data: earlier.data.copyWith(
+                completionType: HabitCompletionType.fail,
+                source: HabitCompletionSource.auto,
+                autoCompleteReason: 'Synthetic winning write',
+              ),
+            );
+            await db!.upsertJournalDbEntity(toDbEntity(winner));
+            await db!.upsertJournalDbEntity(toDbEntity(earlier));
+            final result = await db!.getHabitCompletionRecordsInRange(
+              rangeStart: DateTime(2024, 4),
+            );
+            expect(result, hasLength(1));
+            expect(result.single.habitId, 'tie-habit');
+            expect(result.single.dateFrom, day);
+            expect(result.single.completionType, HabitCompletionType.fail);
+            expect(result.single.source, HabitCompletionSource.auto);
+            expect(result.single.autoCompleteReason, 'Synthetic winning write');
+          },
+        );
+      }
+
       test(
         'getHabitCompletionRecordsInRange decodes an unknown completion type '
         'as null rather than throwing',

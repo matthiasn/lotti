@@ -44,6 +44,11 @@ class HabitsController extends Notifier<HabitsState> {
   StreamSubscription<Set<String>>? _updateSubscription;
   StreamSubscription<int>? _navIndexSubscription;
 
+  Timer? _refreshTimer;
+  Future<void>? _refreshFuture;
+  bool _refreshRequested = false;
+  int _generation = 0;
+
   List<HabitDefinition> _habitDefinitions = [];
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<HabitCompletionRecord> _habitCompletions = [];
@@ -68,6 +73,8 @@ class HabitsController extends Notifier<HabitsState> {
 
   @override
   HabitsState build() {
+    _refreshFuture = null;
+    _refreshRequested = false;
     _repository = ref.read(habitsRepositoryProvider);
     _now = ref.read(habitsNowProvider);
 
@@ -106,40 +113,73 @@ class HabitsController extends Notifier<HabitsState> {
     // runs as a microtask. The mounted-guard inside _startWatching
     // avoids touching disposed state if the provider is torn down
     // before the microtask drains.
-    Future.microtask(_startWatching);
+    final generation = _generation;
+    Future.microtask(() => _startWatching(generation));
     return HabitsState.initial(now: _now());
   }
 
   void _cleanup() {
+    _generation++;
+    _refreshTimer?.cancel();
     _definitionsSubscription?.cancel();
     _updateSubscription?.cancel();
     _navIndexSubscription?.cancel();
     EasyDebounce.cancel('clearInfoYmd');
   }
 
-  Future<void> _startWatching() async {
-    if (!ref.mounted) return;
-    await _fetchHabitCompletions();
-    if (!ref.mounted) return;
-    _determineHabitSuccessByDays();
-
-    _updateSubscription = _repository.updateStream.listen((affectedIds) async {
+  Future<void> _startWatching(int generation) async {
+    if (!ref.mounted || generation != _generation) return;
+    // Listen before the first read, so a write arriving during that read
+    // requests a trailing refresh instead of being lost.
+    _updateSubscription = _repository.updateStream.listen((affectedIds) {
       if (affectedIds.contains(habitCompletionNotification)) {
-        await _fetchHabitCompletions();
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        if (!ref.mounted) return;
-        _determineHabitSuccessByDays();
+        _refreshTimer?.cancel();
+        _refreshTimer = Timer(const Duration(milliseconds: 200), () {
+          _refreshTimer = null;
+          unawaited(refreshNow());
+        });
       }
     });
+    await refreshNow();
   }
 
-  Future<void> _fetchHabitCompletions() async {
-    final rangeStart = _now().dayAtMidnight.subtract(
-      Duration(days: state.timeSpanDays),
-    );
-    _habitCompletions = await _repository.getHabitCompletionsInRange(
-      rangeStart: rangeStart,
-    );
+  /// Serializes completion reads and collapses requests arriving during a read
+  /// into one trailing read with the latest range. All callers await that same
+  /// drain; an older result never overwrites the latest requested projection.
+  Future<void> _refreshCompletions() {
+    if (!ref.mounted) return Future<void>.value();
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+    _refreshRequested = true;
+    final existing = _refreshFuture;
+    if (existing != null) return existing;
+    final generation = _generation;
+    final completer = Completer<void>();
+    _refreshFuture = completer.future;
+    unawaited(() async {
+      try {
+        while (_refreshRequested && ref.mounted && generation == _generation) {
+          _refreshRequested = false;
+          final rangeStart = _now().dayAtMidnight.subtract(
+            Duration(days: state.timeSpanDays),
+          );
+          final completions = await _repository.getHabitCompletionsInRange(
+            rangeStart: rangeStart,
+          );
+          if (!ref.mounted || generation != _generation) break;
+          if (!_refreshRequested) {
+            _habitCompletions = completions;
+            _determineHabitSuccessByDays();
+          }
+        }
+        completer.complete();
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      } finally {
+        if (generation == _generation) _refreshFuture = null;
+      }
+    }());
+    return completer.future;
   }
 
   void _determineHabitSuccessByDays() {
@@ -328,9 +368,7 @@ class HabitsController extends Notifier<HabitsState> {
     _lastNavIndex = newIndex;
 
     if (isHabitsActive && (!wasActive || switchedTab)) {
-      await _fetchHabitCompletions();
-      if (!ref.mounted) return;
-      _determineHabitSuccessByDays();
+      await refreshNow();
     }
   }
 
@@ -340,10 +378,7 @@ class HabitsController extends Notifier<HabitsState> {
   /// database event): `showHabit` bucketing and the per-day maps are
   /// time-derived and would otherwise serve yesterday's split.
   Future<void> refreshNow() async {
-    if (!ref.mounted) return;
-    await _fetchHabitCompletions();
-    if (!ref.mounted) return;
-    _determineHabitSuccessByDays();
+    await _refreshCompletions();
   }
 
   /// Whether [navIndex] is a tab that renders habit rows from this
@@ -361,8 +396,7 @@ class HabitsController extends Notifier<HabitsState> {
       timeSpanDays: timeSpanDays,
       days: getHabitDays(timeSpanDays, now: _now()),
     );
-    await _fetchHabitCompletions();
-    _determineHabitSuccessByDays();
+    await refreshNow();
   }
 
   /// Sets the display filter for habits.

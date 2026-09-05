@@ -89,14 +89,15 @@ properties. It protects the tab maps, streak inputs, card strips, repository rea
 and direct `JournalDb` reads from **database row-order differences** when multiple
 writes share the same effective day.
 
-# Completions are read as a three-field projection
+# Completions are read as a narrow projection
 
 Both the tab controller and the heatmap read completions through
 `JournalDb.getHabitCompletionRecordsInRange`, which returns
-`HabitCompletionRecord` — **`habitId`, `dateFrom`, `completionType`** — and not
+`HabitCompletionRecord` — **`habitId`, `dateFrom`, `completionType`, `source`,
+`autoCompleteReason`** — and not
 the `HabitCompletionEntry` entity.
 
-Those three fields are all any consumer ever touched. Carrying the whole entity
+These fields carry the outcome and its auto-completion attribution. Carrying the whole entity
 was the cost: the read averaged **636 ms** in the 2026-06/07 slow-query logs
 while the SQL itself measures ~29 ms on a comparable 10,000-row / 1,460-result
 set. The gap is ~20 columns per row — including the fat `serialized` JSON blob —
@@ -135,6 +136,43 @@ auto-completions are both ordinary `success` records and maintain the streak.
 **The controller filters to `habit.active == true` immediately.** Archived habits
 still exist in settings and storage, but the main tab derives only from active
 definitions.
+
+## Completion refresh lifecycle
+
+Completion notifications debounce the database query itself by 200 ms. Initial
+load, tab activation, explicit midnight refresh, and range changes refresh
+immediately. One read runs at a time; requests arriving during that read share
+one trailing read with the latest range. All callers wait for that drain, and a
+superseded result never replaces the displayed completion data. Definitions and
+filters can still recompute using the last successful data while a read runs.
+The update subscription starts before the first query so notifications during
+initial loading are retained. Disposal cancels the debounce timer and advances
+the generation; a late read cannot publish into a replacement computation.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Debouncing: completion notification
+  Debouncing --> Debouncing: another notification resets timer
+  Debouncing --> Reading: 200 ms elapsed or explicit refresh
+  Idle --> Reading: initial load or explicit refresh
+  Reading --> ReadingAgain: refresh requested
+  ReadingAgain --> ReadingAgain: further requests coalesce
+  ReadingAgain --> Reading: read finishes, fetch latest range
+  Reading --> Idle: publish result or propagate error
+  ReadingAgain --> Idle: propagate error
+  Idle --> Disposed: dispose
+  Debouncing --> Disposed: cancel timer
+  Reading --> Disposed: discard late result
+  ReadingAgain --> Disposed: discard late result
+  Disposed --> [*]
+```
+
+The range query ranks IDs first, then joins the winning rows by primary key to
+project their five fields. Its local-day partition and write-recency tie-breakers
+are unchanged. This keeps wide serialized payloads out of the ranking sort and
+avoids extracting display fields for superseded rows. The synthetic benchmark
+and its reproduction are in [habit refresh costs](../../docs/perf/2026-09-05-habit-refreshes.md).
 
 # The editor lives on the habits page
 

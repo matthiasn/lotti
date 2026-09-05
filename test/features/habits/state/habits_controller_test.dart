@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/habits/model/habit_completion_record.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
@@ -496,6 +497,221 @@ void main() {
   });
 
   group('UpdateNotifications stream handling', () {
+    test('a completion burst debounces the query itself', () {
+      fakeAsync((async) {
+        container.read(habitsControllerProvider);
+        async.flushMicrotasks();
+        clearInteractions(mockRepository);
+        for (var i = 0; i < 100; i++) {
+          updateController.add({habitCompletionNotification});
+        }
+        async.flushMicrotasks();
+        verifyNever(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        );
+        async.elapse(const Duration(milliseconds: 200));
+        verify(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).called(1);
+      });
+    });
+
+    test(
+      'overlapping refreshes share one trailing read of the latest range',
+      () {
+        fakeAsync((async) {
+          final controller = container.read(habitsControllerProvider.notifier);
+          async.flushMicrotasks();
+          definitionsController.add([testHabit1]);
+          async.flushMicrotasks();
+          final pending = <Completer<List<HabitCompletionRecord>>>[];
+          final ranges = <DateTime>[];
+          when(
+            () => mockRepository.getHabitCompletionsInRange(
+              rangeStart: any(named: 'rangeStart'),
+            ),
+          ).thenAnswer((call) {
+            ranges.add(call.namedArguments[#rangeStart] as DateTime);
+            final next = Completer<List<HabitCompletionRecord>>();
+            pending.add(next);
+            return next.future;
+          });
+          var finished = 0;
+          controller.refreshNow().then((_) => finished++);
+          for (var i = 0; i < 20; i++) {
+            controller.setTimeSpan(30 + i).then((_) => finished++);
+          }
+          async.flushMicrotasks();
+          expect(pending, hasLength(1), reason: 'only one SQLite read may run');
+          pending.first.complete([
+            HabitCompletionRecord(
+              habitId: testHabit1.id,
+              dateFrom: controllerNow,
+              completionType: HabitCompletionType.success,
+            ),
+          ]);
+          async.flushMicrotasks();
+          expect(pending, hasLength(2));
+          expect(
+            ranges.last,
+            controllerNow.dayAtMidnight.subtract(const Duration(days: 49)),
+          );
+          expect(
+            finished,
+            0,
+            reason: 'callers wait until the latest request lands',
+          );
+          expect(
+            container.read(habitsControllerProvider).successfulToday,
+            isEmpty,
+            reason:
+                'an obsolete result must not publish during the trailing read',
+          );
+          pending.last.complete([
+            HabitCompletionRecord(
+              habitId: testHabit1.id,
+              dateFrom: controllerNow,
+              completionType: HabitCompletionType.fail,
+            ),
+          ]);
+          async.flushMicrotasks();
+          expect(finished, 21);
+          expect(
+            container
+                .read(habitsControllerProvider)
+                .failedByDay[controllerNow.ymd],
+            {testHabit1.id},
+          );
+          expect(container.read(habitsControllerProvider).timeSpanDays, 49);
+        });
+      },
+    );
+
+    test('a notification during the initial read is not lost', () {
+      fakeAsync((async) {
+        final pending = <Completer<List<HabitCompletionRecord>>>[];
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) {
+          final next = Completer<List<HabitCompletionRecord>>();
+          pending.add(next);
+          return next.future;
+        });
+        container.read(habitsControllerProvider);
+        async.flushMicrotasks();
+        updateController.add({habitCompletionNotification});
+        async.elapse(const Duration(milliseconds: 200));
+        expect(pending, hasLength(1));
+        pending.first.complete([]);
+        async.flushMicrotasks();
+        expect(pending, hasLength(2));
+        pending.last.complete([]);
+        async.flushMicrotasks();
+      });
+    });
+
+    test('a failed read releases the drain for a later refresh', () {
+      fakeAsync((async) {
+        final controller = container.read(habitsControllerProvider.notifier);
+        async.flushMicrotasks();
+        final failure = StateError('database unavailable');
+        var attempts = 0;
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async {
+          if (attempts++ == 0) throw failure;
+          return [];
+        });
+        Object? caught;
+        controller.refreshNow().then<void>(
+          (_) {},
+          onError: (Object error) {
+            caught = error;
+          },
+        );
+        async.flushMicrotasks();
+        expect(caught, same(failure));
+        var recovered = false;
+        controller.refreshNow().then((_) => recovered = true);
+        async.flushMicrotasks();
+        expect(recovered, isTrue);
+        expect(attempts, 2);
+      });
+    });
+
+    test('an invalidated drain cannot overwrite its replacement', () {
+      fakeAsync((async) {
+        final controller = container.read(habitsControllerProvider.notifier);
+        async.flushMicrotasks();
+        final pending = <Completer<List<HabitCompletionRecord>>>[];
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) {
+          final next = Completer<List<HabitCompletionRecord>>();
+          pending.add(next);
+          return next.future;
+        });
+        controller.refreshNow();
+        updateController.add({habitCompletionNotification});
+        async.flushMicrotasks();
+        container
+          ..invalidate(habitsControllerProvider)
+          ..read(habitsControllerProvider);
+        async.flushMicrotasks();
+        definitionsController.add([testHabit1]);
+        async.flushMicrotasks();
+        expect(pending, hasLength(2));
+        pending.last.complete([]);
+        async.flushMicrotasks();
+        pending.first.complete([
+          HabitCompletionRecord(
+            habitId: testHabit1.id,
+            dateFrom: controllerNow,
+            completionType: HabitCompletionType.success,
+          ),
+        ]);
+        async.flushMicrotasks();
+        expect(
+          container.read(habitsControllerProvider).successfulToday,
+          isEmpty,
+        );
+        expect(
+          async.pendingTimers,
+          isEmpty,
+          reason: 'invalidation cancels the queued notification debounce',
+        );
+      });
+    });
+
+    test(
+      'invalidation before startup does not duplicate the update listener',
+      () {
+        fakeAsync((async) {
+          container
+            ..read(habitsControllerProvider)
+            ..invalidate(habitsControllerProvider)
+            ..read(habitsControllerProvider);
+          async.flushMicrotasks();
+          verify(() => mockRepository.updateStream).called(1);
+          verify(
+            () => mockRepository.getHabitCompletionsInRange(
+              rangeStart: any(named: 'rangeStart'),
+            ),
+          ).called(1);
+        });
+      },
+    );
+
     test('refetches completions when habitCompletionNotification received', () {
       fakeAsync((async) {
         container.read(habitsControllerProvider);
