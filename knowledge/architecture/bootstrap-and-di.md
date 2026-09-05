@@ -5,9 +5,13 @@ description: How the app starts, which singletons GetIt owns, and why registrati
 resource: ../../lib/get_it.dart
 tags: [architecture, startup, dependency-injection, get-it, riverpod]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-06T15:25:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T16:05:00Z }
 stale_after: 2027-01-11
 sources:
+  - id: app-bootstrap
+    resource: ../../lib/app_bootstrap.dart
+    title: Per-generation service registration
+    last_modified: 2026-09-05
   - id: main
     resource: ../../lib/main.dart
     title: main() entry point
@@ -33,7 +37,7 @@ arbitrary.
 
 | Container | Holds | Lifetime |
 |-----------|-------|----------|
-| **GetIt** (`getIt`) | Process-wide services and database handles that exist before any widget does: `JournalDb`, `MatrixService`, `OutboxService`, `LoggingService`, `PersistenceLogic`. | Registered during startup, disposed at process exit. |
+| **GetIt** (`getIt`) | Profile services and database handles constructed before their widget tree: `JournalDb`, `MatrixService`, `OutboxService`, `LoggingService`, `PersistenceLogic`. | Registered per service generation, disposed on profile switch or process shutdown. |
 | **Riverpod** (`ProviderScope`) | Everything scoped to the widget tree: controllers, repositories built on top of GetIt services, UI state. | Created on first watch, disposed with its scope. |
 
 The rule that falls out of this: **Riverpod providers may resolve GetIt
@@ -74,10 +78,12 @@ ProviderScope(
 # Startup sequence
 
 The bootstrap is split along the profile-switch boundary
-(`lib/app_bootstrap.dart`): `registerProcessLogging()` and
-`initPlatformOnce()` run exactly once per process, while
-`resolveActiveProfile()` + `bootstrapProfileServices()` run once per service
-generation — on cold boot and again after every in-app profile switch.
+(`lib/app_bootstrap.dart`): `initPlatformOnce()` runs exactly once per process.
+`registerProcessLogging()`, `resolveActiveProfile()`, and
+`bootstrapProfileServices()` run once per service generation — on cold boot
+and again after every in-app profile switch. Each generation has its own
+logging pair; destination binding is described in
+[logging and diagnostics](logging-and-diagnostics.md).
 
 ```mermaid
 flowchart TD

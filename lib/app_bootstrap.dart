@@ -46,17 +46,15 @@ import 'package:window_manager/window_manager.dart';
 
 /// The bootstrap is split along the profile-switch boundary:
 ///
-/// - [registerProcessLogging] and [initPlatformOnce] run exactly once per
-///   process. They own state that must survive a profile switch (log sinks
-///   flush per-write against the active root; native inits are not
-///   re-runnable).
-/// - [resolveActiveProfile] and [bootstrapProfileServices] run once per
-///   service generation: on cold boot and again after every profile switch,
-///   re-pointing the entire documents/database layer at the active world.
+/// - [initPlatformOnce] runs once per process for native initialization that
+///   cannot safely be repeated during a profile switch.
+/// - [registerProcessLogging], [resolveActiveProfile], and
+///   [bootstrapProfileServices] run once per service generation: on cold boot
+///   and again after every profile switch, rebuilding logging and profile stores.
 
-/// Registers the process-lifetime logging pair. LoggingService resolves its
-/// log directory per write via the registered `Directory`, so a single
-/// instance follows the active profile across switches.
+/// Registers the logging pair for the next service generation. The profile
+/// directory is registered later; the sink binds lazily when a root becomes
+/// available and keeps that destination for any delayed writes after teardown.
 void registerProcessLogging() {
   final loggingService = LoggingService();
   getIt
@@ -171,7 +169,7 @@ class AppLifecycleHolder {
 /// Per-generation service bootstrap: registers the world-scoped singletons
 /// for the active profile and runs the full [registerSingletons] sequence
 /// against its root. Runs on cold boot and after every profile switch;
-/// expects getIt to contain only the process-lifetime registrations.
+/// expects the generation's logging pair to be registered already.
 Future<ProfileContext> bootstrapProfileServices(
   ProfileBootInfo info, {
   required AppLifecycleHolder lifecycleHolder,

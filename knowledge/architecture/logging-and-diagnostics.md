@@ -139,10 +139,22 @@ safe-error files. Routine lines are buffered per file stem and flushed on a
 **500 ms** timer or after **40 lines**. Domain logging no longer creates a
 synchronous, force-flushed disk write for every event. Queued routine payloads
 are capped at 1,048,576 UTF-16 code units per file, including batches waiting
-behind active disk I/O. Excess routine records are omitted with a counted
-summary, and the budget is released after each write completes or fails.
-Error records bypass this limit and the timer and request a durable flush; per-file drains serialize appends and
-`LoggingService.flush()` waits for every destination during orderly shutdown.
+behind active disk I/O. Excess routine records remain an aggregate counter
+behind at most one queued or in-flight summary per destination. The summary
+reads that counter when its write starts, so prolonged disk stalls cannot
+accumulate a separate summary for every timer window. Drops arriving during
+that write produce at most one successor summary. The payload budget is
+released after each write completes or fails.
+Error records bypass this limit and the timer and request a durable flush;
+per-file drains serialize appends. `LoggingService.flush()` waits until every
+destination is stable and empty, including successor summaries created while
+an earlier write finishes during orderly shutdown.
+
+Each logger lazily binds to the first registered documents directory observed
+at record admission. Bootstrap can construct it before that registration;
+unbound early records retry resolution when their drain runs. A profile switch
+creates a fresh logging pair, while queued and buffered writes in the outgoing
+instance retain its original destination even if its final flush times out.
 
 Files are named `<stem>-<yyyy-MM-dd>.log`, using the date at write time. In the
 test environment `DomainLogger` skips its additional file destinations;
