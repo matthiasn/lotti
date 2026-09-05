@@ -540,6 +540,19 @@ either service** — `purgeDeleted` lives in
 `lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
 entity operations, which is where to look for it.
 
+Both whole-journal walks are **rowid keyset scans**, not `OFFSET` pages:
+`purgeDeletedFiles` reads soft-deleted rows 500 at a time with
+`WHERE deleted = 1 AND rowid > ?`, deleting each entity's media and JSON
+sidecar as it goes, and `recreateFts5` reads live rows the same way to feed
+the index (order is irrelevant to FTS). An `OFFSET` page re-scans every
+earlier row, which made a rebuild quadratic in the journal's size. Counts
+come from `COUNT(*)`, progress is reported after each table (purge) or each
+percent (rebuild), and nothing sleeps to make it visible. Neither walk takes
+a transaction: a row inserted or deleted concurrently is simply seen or not
+by the next chunk, which is correct for both — a new live entry gets indexed
+by the app's own write path, and a row deleted mid-purge has nothing left to
+purge.
+
 # Where to look
 
 | Concern | File |
