@@ -101,6 +101,8 @@ void main() {
       expect(pick.mesh, isNotNull);
       expect(glow.mesh, isNotNull);
       expect(remote.mesh, isNotNull);
+      expect(remote.parent, same(root));
+      expect(root.children, contains(remote));
       expect(glow.parent, same(root));
       toggle.visible = false;
       expect(toggle.children.every((n) => n.mesh != null), isTrue);
