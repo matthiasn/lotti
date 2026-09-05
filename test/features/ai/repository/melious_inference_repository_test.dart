@@ -1215,7 +1215,15 @@ void main() {
                   utf8.encode(
                     jsonEncode(
                       calls == 1
-                          ? {'text': 'First part'}
+                          ? {
+                              'text': 'First part',
+                              'usage': {
+                                'prompt_tokens': 10,
+                                'completion_tokens': 5,
+                                'total_tokens': 15,
+                              },
+                              'billing_cost': {'credits': 2},
+                            }
                           : {
                               'error': {'message': 'Unavailable'},
                             },
@@ -1238,11 +1246,23 @@ void main() {
                 )
                 .forEach(received.add),
             throwsA(
-              isA<TranscriptionException>().having(
-                (e) => e.statusCode,
-                'status',
-                503,
-              ),
+              isA<TranscriptionException>()
+                  .having(
+                    (e) => e.statusCode,
+                    'status',
+                    503,
+                  )
+                  .having((e) => e.completedSegments, 'completedSegments', 1)
+                  .having(
+                    (e) => e.partialUsage?.totalTokens,
+                    'partial tokens',
+                    15,
+                  )
+                  .having(
+                    (e) => e.partialImpact?.costCredits,
+                    'partial credits',
+                    2,
+                  ),
             ),
           );
           expect(received, isEmpty);

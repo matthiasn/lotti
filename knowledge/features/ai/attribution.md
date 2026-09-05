@@ -5,7 +5,7 @@ description: How every inference call becomes an auditable, costed record attach
 resource: ../../../lib/features/ai_consumption
 tags: [ai, attribution, consumption, cost, provenance]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T16:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: consumption
@@ -15,7 +15,7 @@ sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner attribution sessions
-    last_modified: 2026-07-24
+    last_modified: 2026-09-05
 ---
 
 # The boundary
@@ -33,19 +33,35 @@ sequenceDiagram
   participant Journal as Journal/PersistenceLogic
   Runner->>Attr: begin(work type, actor, trigger, intended output)
   Runner->>Provider: inference request
-  Provider-->>Runner: response + usage/reported impact
-  Runner->>Attr: recordInteraction(digests + metadata)
-  Attr->>Sync: persist, then enqueue best effort
-  Runner->>Attr: prepareCompletion(output reference)
-  Runner->>Journal: persist carrier with attribution
-  Runner->>Attr: finalize local projection
+  alt complete response
+    Provider-->>Runner: response + usage/reported impact
+    Runner->>Attr: recordInteraction(digests + metadata)
+    Attr->>Sync: persist, then enqueue best effort
+    Runner->>Attr: prepareCompletion(output reference)
+    Runner->>Journal: persist carrier with attribution
+    Runner->>Attr: finalize local projection
+  else transcription fails after completed segments
+    Provider-->>Runner: error + incurred usage and impact
+    Runner->>Attr: recordInteraction(completed segments only)
+    Attr->>Sync: persist, then enqueue best effort
+    Runner->>Attr: prepareCompletion(failed)
+    Runner->>Attr: finalize failed local projection
+  end
 ```
 
 `SkillInferenceRunner` begins an in-memory attribution session **before**
 transcription, image analysis, prompt generation or image generation. Each
-provider call records usage, digests, and provider-reported cost/impact. The
+logical call records usage, digests, and provider-reported cost/impact. The
 completed output embeds the authoritative attribution, and only then is the local
 query projection updated.
+
+Segmented transcription aggregates its physical calls. If a later segment fails,
+`TranscriptionException` carries the completed segments' usage and impact; the
+runner records those incurred quantities once and finalizes a failed local
+attribution. No partial transcript carrier is written. Its output reference is
+an intended artifact, not evidence that an artifact exists. A canceled subscriber
+cannot receive this exception; cancellation accounting needs a separate caller
+lifecycle hook and is not captured by this failure path.
 
 # Carrier mapping is uniform
 

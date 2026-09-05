@@ -134,7 +134,7 @@ void main() {
         final chunks = await mistralGenerateMore
             .generateWithAudio(
               prompt,
-              model: 'voxtral-mini-latest',
+              model: 'voxtral-small-latest',
               audioBase64: 'mistral-audio',
               baseUrl: mistralProvider.baseUrl,
               apiKey: mistralProvider.apiKey,
@@ -150,7 +150,7 @@ void main() {
           'mistral voxtral chat text',
         );
         final request = mistralRepository.chatAudioCalls.single;
-        expect(request.model, 'voxtral-mini-latest');
+        expect(request.model, 'voxtral-small-latest');
         expect(request.audioBase64, 'mistral-audio');
         expect(request.baseUrl, baseUrl);
         expect(request.apiKey, 'key');

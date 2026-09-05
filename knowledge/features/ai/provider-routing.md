@@ -146,11 +146,17 @@ flowchart TD
 Each segment is uploaded sequentially and deleted before the next is prepared.
 The caller receives one combined transcript only after every part succeeds;
 usage and additive environmental/billing quantities include every successful
-part. Cancellation aborts the active multipart request and stops further parts,
+part. If a later part fails, the exception carries the already incurred usage
+and impact so the skill runner can record a failed attempt without saving a
+partial transcript. Cancellation aborts the active multipart request and stops further parts,
 including when a late successful response races cancellation. The request
 timeout covers both headers and response body. An unexpectedly oversized encoded
 part or unavailable decoder fails explicitly instead of sending an invalid
 upload. No automatic provider switch changes where private audio is sent.
+
+A subscriber that explicitly cancels cannot receive the terminal accounting
+exception. The runner currently has no cancellation-accounting hook, so charges
+incurred before such a cancellation are not persisted through this path.
 
 Buffered vision requests preserve the caller's forced tool choice as well as
 its tool schema. Collecting Melious impact data must not turn a required
@@ -306,7 +312,9 @@ OpenAI-compatible `input_audio: {data, format: mp3}` object, while Mistral's
 native API expects `input_audio` to contain the base64 MP3 string directly.
 The `voxtral-mini-latest` alias now identifies Transcribe 2, so it uses
 `/audio/transcriptions` with diarization, timestamps and native `context_bias`.
-It is not a chat-audio alias. The fixed 25.07 Mini/Small models and
+It is not a chat-audio alias. Dictionary phrases use repeated `context_bias`
+multipart text fields, matching the official SDK, rather than one comma-joined
+phrase; embedded commas and multi-word names remain intact. The fixed 25.07 Mini/Small models and
 `voxtral-small-latest` retain chat audio. This distinction follows the
 [Mistral transcription contract](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
 and applies to existing stored model IDs without a profile migration.

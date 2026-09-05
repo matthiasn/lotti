@@ -729,6 +729,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   }) {
     var canceled = false;
     final abortTrigger = Completer<void>();
+    final incurredImpact = impactCollector ?? InferenceImpactCollector();
+    var completedSegments = 0;
+    CompletionUsage? usage;
     late final StreamController<CreateChatCompletionStreamResponse> controller;
     Future<void> run() async {
       try {
@@ -753,7 +756,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             responseFormat: responseFormat,
             contextBiasTerms: contextBiasTerms,
             timeout: timeout,
-            impactCollector: impactCollector,
+            impactCollector: incurredImpact,
             abortTrigger: abortTrigger.future,
           ).first;
         }
@@ -763,13 +766,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           if (!canceled) controller.add(result);
         } else {
           final texts = <String>[];
-          CompletionUsage? usage;
           CreateChatCompletionStreamResponse? last;
           await for (final file in _audioSegmentEncoder(bytes)) {
             if (canceled) break;
             final payload = await _temporaryFileReader(file);
             if (canceled) break;
             final result = await upload(payload, 'audio.mp3');
+            completedSegments++;
             texts.add(result.choices?.first.delta?.content ?? '');
             usage = combineCompletionUsage(usage, result.usage);
             last = result;
@@ -798,13 +801,24 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         }
       } catch (error, stackTrace) {
         if (!canceled) {
+          final failure = error is TranscriptionException
+              ? error
+              : TranscriptionException(
+                  'Failed to prepare or transcribe audio. Try another transcription provider or a shorter recording.',
+                  provider: _providerName,
+                  originalError: error,
+                );
           controller.addError(
-            error is TranscriptionException
-                ? error
+            completedSegments == 0
+                ? failure
                 : TranscriptionException(
-                    'Failed to prepare or transcribe audio. Try another transcription provider or a shorter recording.',
-                    provider: _providerName,
-                    originalError: error,
+                    failure.message,
+                    provider: failure.provider,
+                    statusCode: failure.statusCode,
+                    originalError: failure.originalError ?? failure,
+                    completedSegments: completedSegments,
+                    partialUsage: usage,
+                    partialImpact: incurredImpact.impact,
                   ),
             stackTrace,
           );

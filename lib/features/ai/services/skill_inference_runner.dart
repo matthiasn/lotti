@@ -50,7 +50,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:openai_dart/openai_dart.dart' hide Error;
 
 part 'skill_inference_runner_internals.dart';
 
@@ -254,7 +254,43 @@ class SkillInferenceRunner {
               );
 
         // 6. Collect streaming response.
-        final collected = await _collectStream(responseStream);
+        final collected = await _collectStream(responseStream)
+            .onError<TranscriptionException>((error, stackTrace) async {
+              if (error.completedSegments > 0) {
+                try {
+                  final failedAttribution = await _recordAttributedConsumption(
+                    attribution: attribution,
+                    entryId: audioEntryId,
+                    taskId: linkedTaskId,
+                    categoryId: entity.meta.categoryId,
+                    skillId: skill.id,
+                    provider: provider,
+                    modelId: modelId,
+                    responseType: skill.skillType.toResponseType,
+                    usage: error.partialUsage,
+                    impact: error.partialImpact,
+                    start: start,
+                    interactionKind: AiInteractionKind.audioTranscription,
+                    requestText:
+                        '${promptResult.systemMessage}\n${promptResult.userMessage}',
+                    responseText: '',
+                    status: AiWorkStatus.failed,
+                    errorCode: 'transcription_incomplete',
+                    errorSummary:
+                        'Transcription failed after completed audio segments.',
+                  );
+                  await _finalizeAttribution(failedAttribution);
+                } catch (accountingError, accountingStackTrace) {
+                  _loggingService.error(
+                    LogDomain.ai,
+                    accountingError,
+                    stackTrace: accountingStackTrace,
+                    subDomain: 'runTranscription.accounting',
+                  );
+                }
+              }
+              Error.throwWithStackTrace(error, stackTrace);
+            });
 
         // The Melious chat-audio adapter supplies provider-reported billing
         // and environmental impact through this collector; other providers
@@ -1645,6 +1681,9 @@ class SkillInferenceRunner {
     required AiInteractionKind interactionKind,
     required String requestText,
     required String responseText,
+    AiWorkStatus status = AiWorkStatus.succeeded,
+    String? errorCode,
+    String? errorSummary,
   }) async {
     if (attribution == null) {
       return null;
@@ -1678,6 +1717,9 @@ class SkillInferenceRunner {
     return getIt<AiAttributionService>().prepareCompletion(
       attributionId: attribution.id,
       outputs: attribution.intendedOutputs,
+      status: status,
+      errorCode: errorCode,
+      errorSummary: errorSummary,
     );
   }
 
