@@ -56,6 +56,10 @@ class ProjectAgentSummaryCard extends ConsumerStatefulWidget {
   final VoidCallback? onViewBlocker;
   final VoidCallback? onRefresh;
   final VoidCallback? onCancelScheduledWake;
+
+  /// The action bands under the report. Stays mounted while the host
+  /// mutates — the host hands it a disabled build instead of dropping it, so
+  /// an in-flight decision keeps its row state.
   final Widget? actions;
   final bool isRefreshing;
 
@@ -120,7 +124,7 @@ class _ProjectAgentSummaryCardState
       if (widget.hasProjectAgent) {
         return _ProjectReportSummary(
           record: widget.record,
-          actions: widget.isMutating ? null : widget.actions,
+          actions: widget.actions,
           onViewBlocker: widget.isMutating ? null : widget.onViewBlocker,
         );
       }
@@ -216,7 +220,7 @@ class _ProjectAgentSummaryCardState
       agentName: agentName,
       onOpenInternals: openInternals,
       onViewBlocker: widget.isMutating ? null : widget.onViewBlocker,
-      actions: widget.isMutating ? null : widget.actions,
+      actions: widget.actions,
       footer: footer,
     );
   }

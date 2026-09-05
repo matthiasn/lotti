@@ -53,7 +53,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onCancelScheduledReportWake,
     this.onAssignAgent,
     this.agentIdentity,
-    this.agentActions,
+    this.agentActionsBuilder,
     this.hasProjectAgent = true,
     this.isRefreshingReport = false,
     this.isSaving = false,
@@ -75,7 +75,11 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final VoidCallback? onCancelScheduledReportWake;
   final Future<void> Function()? onAssignAgent;
   final AgentIdentityEntity? agentIdentity;
-  final Widget? agentActions;
+
+  /// Builds the agent's action bands for the AI card. `enabled` is false
+  /// while this surface runs a mutation of its own, so the bands stay
+  /// mounted (no decision state is lost) but every control is disabled.
+  final Widget Function({required bool enabled})? agentActionsBuilder;
   final bool hasProjectAgent;
   final bool isRefreshingReport;
   final bool isSaving;
@@ -275,7 +279,9 @@ class _ProjectMobileDetailContentState
                                         widget.onTaskTap == null
                                     ? null
                                     : () => widget.onTaskTap!(firstBlockedTask),
-                                actions: widget.agentActions,
+                                actions: widget.agentActionsBuilder?.call(
+                                  enabled: !isMutating,
+                                ),
                                 isRefreshing: widget.isRefreshingReport,
                               ),
                             ),

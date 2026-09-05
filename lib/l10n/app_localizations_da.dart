@@ -10250,6 +10250,130 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectManageTooltip => 'Styr projekter';
 
   @override
+  String get projectNextStepAdded => 'Tilføjet';
+
+  @override
+  String get projectNextStepCreateFailed =>
+      'Opgaven kunne ikke oprettes. Opdater nu for at hente den aktuelle liste, eller prøv igen.';
+
+  @override
+  String get projectNextStepCreating => 'Opretter opgave…';
+
+  @override
+  String get projectNextStepDismiss => 'Afvis';
+
+  @override
+  String get projectNextStepDismissed => 'Afvist';
+
+  @override
+  String get projectNextStepDone => 'Færdig';
+
+  @override
+  String get projectNextStepOpenTask => 'Åbn opgave';
+
+  @override
+  String get projectNextStepRetry => 'Prøv igen';
+
+  @override
+  String get projectNextStepsAddAll => 'Tilføj alle som opgaver';
+
+  @override
+  String projectNextStepsAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dage siden',
+      one: '1 dag siden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count t siden',
+      one: '1 t siden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsAgoJustNow => 'lige nu';
+
+  @override
+  String projectNextStepsAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min siden',
+      one: '1 min siden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tilføjet',
+      one: '1 tilføjet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDismissed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count afvist',
+      one: '1 afvist',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count færdige',
+      one: '1 færdig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsDismissAll => 'Afvis alle';
+
+  @override
+  String get projectNextStepsEmpty => 'Ingen åbne forslag.';
+
+  @override
+  String get projectNextStepsHideHistory => 'Skjul historik';
+
+  @override
+  String projectNextStepsLastLooked(String ago) {
+    return 'Sidst kigget $ago.';
+  }
+
+  @override
+  String projectNextStepsLastRun(String summary, String ago) {
+    return 'Seneste kørsel: $summary · $ago';
+  }
+
+  @override
+  String get projectNextStepsShowHistory => 'Vis historik';
+
+  @override
+  String projectNextStepsShowMore(int count) {
+    return 'Vis $count mere';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Ingen opgaver er linket endnu';
 
   @override
@@ -10267,12 +10391,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get projectPickerUpdateFailed =>
       'Opgavens projekt kunne ikke ændres. Kontrollér kategori og privatliv, og prøv igen.';
-
-  @override
-  String get projectRecommendationDismissTooltip => 'Afvist';
-
-  @override
-  String get projectRecommendationResolveTooltip => 'Mark besluttede sig';
 
   @override
   String get projectRecommendationsTitle => 'Anbefalede næste skridt';

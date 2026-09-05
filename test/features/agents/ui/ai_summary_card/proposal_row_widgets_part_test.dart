@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -193,6 +194,35 @@ void main() {
         );
       },
     );
+  });
+
+  group('AiSummaryCard – RowActions disabled', () {
+    testWidgets('a disabled rail keeps its footprint but takes no taps', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Center(
+            child: RowActions(
+              busy: false,
+              enabled: false,
+              onReject: () async => taps++,
+              onConfirm: () async => taps++,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Confirm'));
+      await tester.tap(find.byTooltip('Reject'));
+      expect(taps, 0);
+      final size = tester.getSize(find.byType(RowActions));
+      expect(size.width, RowActions.buttonSize * 2 + 4);
+      final semantics = tester.getSemantics(find.byTooltip('Confirm'));
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(semantics.flagsCollection.isButton, isTrue);
+    });
   });
 
   group('AiSummaryCard – RowActions footprint', () {

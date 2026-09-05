@@ -17395,6 +17395,144 @@ abstract class AppLocalizations {
   /// **'Manage projects'**
   String get projectManageTooltip;
 
+  /// No description provided for @projectNextStepAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get projectNextStepAdded;
+
+  /// No description provided for @projectNextStepCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the task. Update now to load the current list, or retry.'**
+  String get projectNextStepCreateFailed;
+
+  /// No description provided for @projectNextStepCreating.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating task…'**
+  String get projectNextStepCreating;
+
+  /// No description provided for @projectNextStepDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get projectNextStepDismiss;
+
+  /// No description provided for @projectNextStepDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed'**
+  String get projectNextStepDismissed;
+
+  /// No description provided for @projectNextStepDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get projectNextStepDone;
+
+  /// No description provided for @projectNextStepOpenTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Open task'**
+  String get projectNextStepOpenTask;
+
+  /// No description provided for @projectNextStepRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get projectNextStepRetry;
+
+  /// No description provided for @projectNextStepsAddAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Add all as tasks'**
+  String get projectNextStepsAddAll;
+
+  /// No description provided for @projectNextStepsAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day ago} other{{count} days ago}}'**
+  String projectNextStepsAgoDays(int count);
+
+  /// No description provided for @projectNextStepsAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 h ago} other{{count} h ago}}'**
+  String projectNextStepsAgoHours(int count);
+
+  /// No description provided for @projectNextStepsAgoJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get projectNextStepsAgoJustNow;
+
+  /// No description provided for @projectNextStepsAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String projectNextStepsAgoMinutes(int count);
+
+  /// No description provided for @projectNextStepsCountAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 added} other{{count} added}}'**
+  String projectNextStepsCountAdded(int count);
+
+  /// No description provided for @projectNextStepsCountDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 dismissed} other{{count} dismissed}}'**
+  String projectNextStepsCountDismissed(int count);
+
+  /// No description provided for @projectNextStepsCountDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 done} other{{count} done}}'**
+  String projectNextStepsCountDone(int count);
+
+  /// No description provided for @projectNextStepsDismissAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss all'**
+  String get projectNextStepsDismissAll;
+
+  /// No description provided for @projectNextStepsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No open suggestions.'**
+  String get projectNextStepsEmpty;
+
+  /// No description provided for @projectNextStepsHideHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide history'**
+  String get projectNextStepsHideHistory;
+
+  /// No description provided for @projectNextStepsLastLooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Last looked {ago}.'**
+  String projectNextStepsLastLooked(String ago);
+
+  /// No description provided for @projectNextStepsLastRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Last run: {summary} · {ago}'**
+  String projectNextStepsLastRun(String summary, String ago);
+
+  /// No description provided for @projectNextStepsShowHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Show history'**
+  String get projectNextStepsShowHistory;
+
+  /// No description provided for @projectNextStepsShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count} more'**
+  String projectNextStepsShowMore(int count);
+
   /// No description provided for @projectNoLinkedTasks.
   ///
   /// In en, this message translates to:
@@ -17430,18 +17568,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not change this task\'s project. Check its category and privacy, then try again.'**
   String get projectPickerUpdateFailed;
-
-  /// No description provided for @projectRecommendationDismissTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss'**
-  String get projectRecommendationDismissTooltip;
-
-  /// No description provided for @projectRecommendationResolveTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Mark resolved'**
-  String get projectRecommendationResolveTooltip;
 
   /// No description provided for @projectRecommendationsTitle.
   ///

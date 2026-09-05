@@ -9,12 +9,19 @@ class RowActions extends StatelessWidget {
     required this.busy,
     required this.onReject,
     required this.onConfirm,
+    this.enabled = true,
     super.key,
   });
 
   final bool busy;
   final Future<void> Function() onReject;
   final Future<void> Function() onConfirm;
+
+  /// `false` renders both discs inert and dimmed, with disabled semantics.
+  /// A host that cannot take a decision right now (a page mutation in
+  /// flight) keeps the rail on screen so the row holds its shape, without
+  /// a button that looks pressable and does nothing.
+  final bool enabled;
 
   /// The hit target of one action: 48×48, the visible disc centred inside.
   static const double buttonSize = 48;
@@ -57,14 +64,14 @@ class RowActions extends StatelessWidget {
         _SquareIconButton(
           icon: LottiIcons.close,
           tooltip: context.messages.changeSetSwipeReject,
-          onPressed: onReject,
+          onPressed: enabled ? onReject : null,
           variant: _SquareIconVariant.outline,
         ),
         SizedBox(width: context.designTokens.spacing.step2),
         _SquareIconButton(
           icon: LottiIcons.confirm,
           tooltip: context.messages.changeSetSwipeConfirm,
-          onPressed: onConfirm,
+          onPressed: enabled ? onConfirm : null,
           variant: _SquareIconVariant.accent,
         ),
       ],
@@ -84,7 +91,9 @@ class _SquareIconButton extends StatelessWidget {
 
   final IconData icon;
   final String tooltip;
-  final Future<void> Function() onPressed;
+
+  /// Null renders the disc inert and dimmed.
+  final Future<void> Function()? onPressed;
   final _SquareIconVariant variant;
 
   @override
@@ -102,9 +111,11 @@ class _SquareIconButton extends StatelessWidget {
     // navigation finds them — rather than leaning on the tooltip surfacing as
     // a label (which gives no role). The visual tooltip stays for pointer users
     // but is excluded from semantics to avoid a duplicate label.
+    final disabled = onPressed == null;
     return MergeSemantics(
       child: Semantics(
         button: true,
+        enabled: !disabled,
         label: tooltip,
         child: Tooltip(
           message: tooltip,
@@ -114,7 +125,7 @@ class _SquareIconButton extends StatelessWidget {
           // square around it. The disc answers hover/focus/press itself with
           // a border in its own hue family.
           child: DsQuietInk(
-            onTap: onPressed.call,
+            onTap: onPressed,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             builder: (context, highlighted) => SizedBox(
               width: RowActions.buttonSize,
@@ -125,7 +136,11 @@ class _SquareIconButton extends StatelessWidget {
                   height: tokens.spacing.step7,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isAccent ? ai.accentSoft : ai.subtleWashStrong,
+                    color: disabled
+                        ? ai.subtleWash
+                        : isAccent
+                        ? ai.accentSoft
+                        : ai.subtleWashStrong,
                     shape: BoxShape.circle,
                     border: highlighted
                         ? Border.all(
@@ -136,7 +151,11 @@ class _SquareIconButton extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: tokens.spacing.step5,
-                    color: isAccent ? ai.accent : ai.metaText,
+                    color: disabled
+                        ? ai.faintMeta
+                        : isAccent
+                        ? ai.accent
+                        : ai.metaText,
                   ),
                 ),
               ),

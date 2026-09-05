@@ -10387,6 +10387,130 @@ class AppLocalizationsIt extends AppLocalizations {
   String get projectManageTooltip => 'Gestione dei progetti';
 
   @override
+  String get projectNextStepAdded => 'Aggiunto';
+
+  @override
+  String get projectNextStepCreateFailed =>
+      'Impossibile creare l\'attività. Aggiorna ora per caricare l\'elenco attuale oppure riprova.';
+
+  @override
+  String get projectNextStepCreating => 'Creazione attività…';
+
+  @override
+  String get projectNextStepDismiss => 'Ignora';
+
+  @override
+  String get projectNextStepDismissed => 'Ignorato';
+
+  @override
+  String get projectNextStepDone => 'Fatto';
+
+  @override
+  String get projectNextStepOpenTask => 'Apri attività';
+
+  @override
+  String get projectNextStepRetry => 'Riprova';
+
+  @override
+  String get projectNextStepsAddAll => 'Aggiungi tutti come attività';
+
+  @override
+  String projectNextStepsAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count giorni fa',
+      one: '1 giorno fa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count h fa',
+      one: '1 h fa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsAgoJustNow => 'proprio ora';
+
+  @override
+  String projectNextStepsAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min fa',
+      one: '1 min fa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aggiunti',
+      one: '1 aggiunto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDismissed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ignorati',
+      one: '1 ignorato',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fatti',
+      one: '1 fatto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsDismissAll => 'Ignora tutti';
+
+  @override
+  String get projectNextStepsEmpty => 'Nessun suggerimento aperto.';
+
+  @override
+  String get projectNextStepsHideHistory => 'Nascondi cronologia';
+
+  @override
+  String projectNextStepsLastLooked(String ago) {
+    return 'Ultimo controllo $ago.';
+  }
+
+  @override
+  String projectNextStepsLastRun(String summary, String ago) {
+    return 'Ultima esecuzione: $summary · $ago';
+  }
+
+  @override
+  String get projectNextStepsShowHistory => 'Mostra cronologia';
+
+  @override
+  String projectNextStepsShowMore(int count) {
+    return 'Mostra altri $count';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Nessun compito ancora collegato';
 
   @override
@@ -10404,12 +10528,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get projectPickerUpdateFailed =>
       'Impossibile modificare il progetto dell\'attività. Controlla categoria e privacy e riprova.';
-
-  @override
-  String get projectRecommendationDismissTooltip => 'Discorso';
-
-  @override
-  String get projectRecommendationResolveTooltip => 'Mark risolto';
 
   @override
   String get projectRecommendationsTitle => 'Prossimi passi consigliati';

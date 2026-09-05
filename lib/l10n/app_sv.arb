@@ -4405,14 +4405,101 @@
   },
   "projectLinkedTasks": "Länkade uppgifter",
   "projectManageTooltip": "Hantera projekt",
+  "projectNextStepAdded": "Tillagt",
+  "projectNextStepCreateFailed": "Uppgiften kunde inte skapas. Uppdatera nu för att läsa in den aktuella listan, eller försök igen.",
+  "projectNextStepCreating": "Skapar uppgift…",
+  "projectNextStepDismiss": "Avfärda",
+  "projectNextStepDismissed": "Avfärdat",
+  "projectNextStepDone": "Klart",
+  "projectNextStepOpenTask": "Öppna uppgift",
+  "projectNextStepRetry": "Försök igen",
+  "projectNextStepsAddAll": "Lägg till alla som uppgifter",
+  "projectNextStepsAgoDays": "{count, plural, =1{1 dag sedan} other{{count} dagar sedan}}",
+  "@projectNextStepsAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectNextStepsAgoHours": "{count, plural, =1{1 h sedan} other{{count} h sedan}}",
+  "@projectNextStepsAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectNextStepsAgoJustNow": "nyss",
+  "projectNextStepsAgoMinutes": "{count, plural, =1{1 min sedan} other{{count} min sedan}}",
+  "@projectNextStepsAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectNextStepsCountAdded": "{count, plural, =1{1 tillagt} other{{count} tillagda}}",
+  "@projectNextStepsCountAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectNextStepsCountDismissed": "{count, plural, =1{1 avfärdat} other{{count} avfärdade}}",
+  "@projectNextStepsCountDismissed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectNextStepsCountDone": "{count, plural, =1{1 klart} other{{count} klara}}",
+  "@projectNextStepsCountDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectNextStepsDismissAll": "Avfärda alla",
+  "projectNextStepsEmpty": "Inga öppna förslag.",
+  "projectNextStepsHideHistory": "Dölj historik",
+  "projectNextStepsLastLooked": "Senast kontrollerat {ago}.",
+  "@projectNextStepsLastLooked": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "projectNextStepsLastRun": "Senaste körning: {summary} · {ago}",
+  "@projectNextStepsLastRun": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      },
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "projectNextStepsShowHistory": "Visa historik",
+  "projectNextStepsShowMore": "Visa {count} till",
+  "@projectNextStepsShowMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectNoLinkedTasks": "Inga uppgifter är länkade än",
   "projectNoProjects": "Inga projekt än",
   "projectNotFound": "Projekt ej hittat",
   "projectPickerLabel": "Projekt",
   "projectPickerUnassigned": "Inget projekt",
   "projectPickerUpdateFailed": "Det gick inte att ändra uppgiftens projekt. Kontrollera kategori och sekretess och försök igen.",
-  "projectRecommendationDismissTooltip": "Avslut",
-  "projectRecommendationResolveTooltip": "Mark bestämde sig",
   "projectRecommendationsTitle": "Rekommenderade nästa steg",
   "projectRecommendationUpdateError": "Kunde inte uppdatera rekommendationen. Försök igen, tack.",
   "projectsClearFilters": "Rensa filter",

@@ -1,29 +1,59 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
-import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
+import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_step_row.dart';
+import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_steps_model.dart';
+import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_steps_summary.dart';
+import 'package:lotti/features/projects/ui/widgets/next_steps/project_proposal_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// One compact action band inside the project AI card. Next steps and pending
-/// mutations share individual decisions and one confirm-all rail, following the
-/// task agent's controls without rendering a card for every analyst run.
+/// The action bands inside the project AI card: the newest run's
+/// **recommended next steps** and the agent's **proposed changes**, each under
+/// its own heading because they ask different questions — advice the user
+/// may turn into a task, versus a mutation the user authorises.
+///
+/// Every decision leaves its row in place with a tag; nothing is removed on
+/// tap and nothing on the page is invalidated by hand. The service notifies
+/// the agent's update stream, the snapshot provider re-reads, and the row
+/// changes state where it stands. A run whose every step was already decided
+/// when the page opened collapses to a one-line summary with a history
+/// disclosure; decisions made while the page is open stay inline.
 class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
-  const ProjectRecommendationsPanel({required this.projectId, super.key});
+  const ProjectRecommendationsPanel({
+    required this.projectId,
+    this.enabled = true,
+    this.onOpenTask,
+    super.key,
+  });
+
+  /// How long an added step keeps its Undo before the creation is final.
+  static const Duration undoWindow = Duration(seconds: 8);
+
+  /// Steps a phone shows before "Show N more".
+  static const int phoneStepCap = 3;
 
   final String projectId;
+
+  /// `false` disables every control while the page runs a mutation of its
+  /// own; the bands stay mounted so no decision state is lost.
+  final bool enabled;
+
+  /// Opens the task an added step created.
+  final ValueChanged<String>? onOpenTask;
 
   @override
   ConsumerState<ProjectRecommendationsPanel> createState() =>
@@ -32,66 +62,188 @@ class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
 
 class _ProjectRecommendationsPanelState
     extends ConsumerState<ProjectRecommendationsPanel> {
-  bool _busy = false;
-  final _consumed = <String>{};
+  final _busySteps = <String>{};
 
-  Future<bool> _apply(_ProjectAction row, _Action action) async {
-    final recommendation = row.recommendation;
-    if (recommendation != null) {
-      final service = ref.read(projectRecommendationServiceProvider);
-      switch (action) {
-        case _Action.confirm:
-          return service.markResolved(recommendation.id);
-        case _Action.dismiss:
-          return service.dismissRecommendation(recommendation.id);
-        case _Action.createTask:
-          final result = await service.createTask(recommendation.id);
-          if (result.success && result.errorMessage != null && mounted) {
-            context.showToast(
-              tone: DesignSystemToastTone.warning,
-              title: context.messages.changeSetItemConfirmedWithWarning(
-                result.errorMessage!,
-              ),
-            );
-          }
-          return result.success;
-      }
+  /// Steps whose last attempt failed: whether a retry can help, and the
+  /// message to show when it cannot (the step was consumed and a task may
+  /// need cleaning up).
+  final _failures = <String, ({bool retryable, String? message})>{};
+
+  /// Row states the user just produced, shown until the snapshot catches up
+  /// so a decided row never flickers back through "pending".
+  final _optimistic = <String, ProjectNextStepRowState>{};
+  final _undoDeadlines = <String, DateTime>{};
+  final _undoTimers = <String, Timer>{};
+
+  /// Task ids created this session, so "Open task" works before the snapshot
+  /// carries the id.
+  final _createdTasks = <String, String>{};
+  final _busyProposals = <String>{};
+
+  /// Proposals decided this session, kept visible with their tag after the
+  /// pending read stops returning their change set.
+  final _decidedProposals = <String, (ChangeSetEntity, int)>{};
+
+  bool _showAllSteps = false;
+  bool _bulkBusy = false;
+  bool _historyOpen = false;
+
+  /// The run the collapse decision below was made for, and the decision.
+  bool _collapseDecided = false;
+  DateTime? _collapseRun;
+  bool _collapsed = false;
+
+  @override
+  void dispose() {
+    for (final timer in _undoTimers.values) {
+      timer.cancel();
     }
-    final service = ref.read(projectChangeSetConfirmationServiceProvider);
-    return action == _Action.dismiss
-        ? service.rejectItem(row.changeSet!, row.itemIndex!)
-        : (await service.confirmItem(row.changeSet!, row.itemIndex!)).success;
+    super.dispose();
   }
 
-  Future<void> _run(List<_ProjectAction> rows, _Action action) async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    var failed = false;
-    for (final row in rows) {
-      try {
-        if (await _apply(row, action)) {
-          _consumed.add(row.id);
-        } else {
-          failed = true;
+  DateTime get _now => ref.read(projectDetailNowProvider)();
+
+  // ---------------------------------------------------------------- steps --
+
+  ProjectNextStepRowState _rowState(ProjectRecommendationEntity step) {
+    if (_busySteps.contains(step.id)) return ProjectNextStepRowState.busy;
+    if (_failures.containsKey(step.id)) return ProjectNextStepRowState.failed;
+    final durable = switch (projectNextStepOutcome(step)) {
+      ProjectNextStepOutcome.pending => ProjectNextStepRowState.pending,
+      ProjectNextStepOutcome.added => ProjectNextStepRowState.added,
+      ProjectNextStepOutcome.done => ProjectNextStepRowState.done,
+      ProjectNextStepOutcome.dismissed => ProjectNextStepRowState.dismissed,
+    };
+    final optimistic = _optimistic[step.id];
+    if (optimistic == null) return durable;
+    if (optimistic == durable) {
+      // The snapshot caught up; the overlay has done its job.
+      _optimistic.remove(step.id);
+      return durable;
+    }
+    return optimistic;
+  }
+
+  bool _canUndo(ProjectRecommendationEntity step, ProjectNextStepRowState s) {
+    if (!widget.enabled) return false;
+    return switch (s) {
+      ProjectNextStepRowState.dismissed || ProjectNextStepRowState.done => true,
+      ProjectNextStepRowState.added =>
+        _undoDeadlines[step.id]?.isAfter(_now) ?? false,
+      ProjectNextStepRowState.pending ||
+      ProjectNextStepRowState.busy ||
+      ProjectNextStepRowState.failed => false,
+    };
+  }
+
+  void _armUndo(String stepId) {
+    _undoTimers.remove(stepId)?.cancel();
+    _undoDeadlines[stepId] = _now.add(ProjectRecommendationsPanel.undoWindow);
+    _undoTimers[stepId] = Timer(ProjectRecommendationsPanel.undoWindow, () {
+      _undoTimers.remove(stepId);
+      if (!mounted) return;
+      setState(() => _undoDeadlines.remove(stepId));
+    });
+  }
+
+  Future<void> _addTask(ProjectRecommendationEntity step) async {
+    if (_busySteps.contains(step.id)) return;
+    setState(() {
+      _busySteps.add(step.id);
+      _failures.remove(step.id);
+    });
+    try {
+      final result = await ref
+          .read(projectRecommendationServiceProvider)
+          .createTask(step.id);
+      if (!mounted) return;
+      if (result.success) {
+        final taskId = result.mutatedEntityId;
+        _optimistic[step.id] = taskId == null
+            ? ProjectNextStepRowState.done
+            : ProjectNextStepRowState.added;
+        if (taskId != null) _createdTasks[step.id] = taskId;
+        _armUndo(step.id);
+        if (result.errorMessage case final warning?) {
+          context.showToast(
+            tone: DesignSystemToastTone.warning,
+            title: context.messages.changeSetItemConfirmedWithWarning(warning),
+          );
         }
-      } catch (error, stackTrace) {
-        failed = true;
-        developer.log(
-          'Failed to apply project suggestion',
-          name: 'ProjectRecommendationsPanel',
-          error: error,
-          stackTrace: stackTrace,
+      } else {
+        // A consumed claim (task created, link and rollback both failed)
+        // cannot be retried: every retry would report "no longer active".
+        _failures[step.id] = (
+          retryable: !result.nonRetryable,
+          message: result.nonRetryable ? result.errorMessage : null,
         );
       }
+    } catch (error, stackTrace) {
+      _log(
+        'Failed to create a task from a project suggestion',
+        error,
+        stackTrace,
+      );
       if (!mounted) return;
-      ref.invalidate(agentUpdateStreamProvider(row.agentId));
+      _failures[step.id] = (retryable: true, message: null);
+    } finally {
+      if (mounted) setState(() => _busySteps.remove(step.id));
+    }
+  }
+
+  Future<void> _dismiss(ProjectRecommendationEntity step) async {
+    await _transition(
+      step,
+      () => ref
+          .read(projectRecommendationServiceProvider)
+          .dismissRecommendation(step.id),
+      settled: ProjectNextStepRowState.dismissed,
+    );
+  }
+
+  Future<void> _undo(ProjectRecommendationEntity step) async {
+    await _transition(
+      step,
+      () => ref
+          .read(projectRecommendationServiceProvider)
+          .restoreRecommendation(step.id),
+      settled: ProjectNextStepRowState.pending,
+      // Only a successful restore forfeits the undo window and the task
+      // link; a refused undo leaves the row exactly as it was.
+      onSuccess: () {
+        _undoTimers.remove(step.id)?.cancel();
+        _undoDeadlines.remove(step.id);
+        _createdTasks.remove(step.id);
+      },
+    );
+  }
+
+  Future<void> _transition(
+    ProjectRecommendationEntity step,
+    Future<bool> Function() run, {
+    required ProjectNextStepRowState settled,
+    VoidCallback? onSuccess,
+  }) async {
+    if (_busySteps.contains(step.id)) return;
+    setState(() {
+      _busySteps.add(step.id);
+      _failures.remove(step.id);
+    });
+    var succeeded = false;
+    try {
+      succeeded = await run();
+    } catch (error, stackTrace) {
+      _log('Failed to update a project suggestion', error, stackTrace);
     }
     if (!mounted) return;
-    ref
-      ..invalidate(projectNextStepsProvider(widget.projectId))
-      ..invalidate(projectPendingChangeSetsProvider(widget.projectId));
-    setState(() => _busy = false);
-    if (failed) {
+    setState(() {
+      _busySteps.remove(step.id);
+      if (succeeded) {
+        _optimistic[step.id] = settled;
+        onSuccess?.call();
+      }
+    });
+    if (!succeeded) {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.projectRecommendationUpdateError,
@@ -99,123 +251,151 @@ class _ProjectRecommendationsPanelState
     }
   }
 
+  Future<void> _runBulk(
+    Iterable<ProjectRecommendationEntity> steps,
+    Future<void> Function(ProjectRecommendationEntity step) action,
+  ) async {
+    if (_bulkBusy) return;
+    setState(() => _bulkBusy = true);
+    try {
+      for (final step in steps.toList()) {
+        if (!mounted) return;
+        await action(step);
+      }
+    } finally {
+      if (mounted) setState(() => _bulkBusy = false);
+    }
+  }
+
+  // ------------------------------------------------------------ proposals --
+
+  String _proposalKey(ChangeSetEntity set, int index) => '${set.id}:$index';
+
+  Future<void> _decideProposal(
+    ChangeSetEntity set,
+    int index, {
+    required bool confirm,
+  }) async {
+    final key = _proposalKey(set, index);
+    if (_busyProposals.contains(key)) return;
+    setState(() => _busyProposals.add(key));
+    var succeeded = false;
+    try {
+      final service = ref.read(projectChangeSetConfirmationServiceProvider);
+      succeeded = confirm
+          ? (await service.confirmItem(set, index)).success
+          : await service.rejectItem(set, index);
+    } catch (error, stackTrace) {
+      _log('Failed to apply a project proposal', error, stackTrace);
+    }
+    if (!mounted) return;
+    setState(() {
+      _busyProposals.remove(key);
+      if (succeeded) {
+        final items = [...set.items];
+        items[index] = items[index].copyWith(
+          status: confirm
+              ? ChangeItemStatus.confirmed
+              : ChangeItemStatus.rejected,
+        );
+        _decidedProposals[key] = (set.copyWith(items: items), index);
+      }
+    });
+    // Only the proposal read moves; the agent's update stream is left alone
+    // so the report, health and footer never reload for a row decision.
+    ref.invalidate(projectPendingChangeSetsProvider(widget.projectId));
+    if (!succeeded) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectRecommendationUpdateError,
+      );
+    }
+  }
+
+  void _log(String message, Object error, StackTrace stackTrace) {
+    developer.log(
+      message,
+      name: 'ProjectRecommendationsPanel',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+
+  // ----------------------------------------------------------------- build --
+
   @override
   Widget build(BuildContext context) {
-    final recommendations =
-        ref
-            .watch(projectNextStepsProvider(widget.projectId))
-            .value
-            ?.pending
-            .toList() ??
-        const <ProjectRecommendationEntity>[];
+    final snapshot = ref
+        .watch(projectNextStepsProvider(widget.projectId))
+        .value;
     final sets =
-        ref
-            .watch(
-              projectPendingChangeSetsProvider(widget.projectId),
-            )
-            .value ??
+        ref.watch(projectPendingChangeSetsProvider(widget.projectId)).value ??
         const <AgentDomainEntity>[];
-    final rows = [
-      for (final recommendation in recommendations)
-        _ProjectAction.recommendation(recommendation),
-      for (final set in sets.whereType<ChangeSetEntity>())
-        for (final entry in set.items.indexed)
-          if (entry.$2.status == ChangeItemStatus.pending &&
-              entry.$2.toolName != ProjectAgentToolNames.recommendNextSteps)
-            _ProjectAction.change(set, entry.$1),
-    ].where((row) => !_consumed.contains(row.id)).toList();
-    if (rows.isEmpty) return const SizedBox.shrink();
+    final proposals = _proposalRows(sets);
+    if (snapshot == null && proposals.isEmpty) return const SizedBox.shrink();
 
     final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: ai.borderSoft)),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.cardPadding,
-        vertical: tokens.spacing.step3,
-      ),
-      alignment: Alignment.centerLeft,
+    final messages = context.messages;
+    final now = ref.watch(projectDetailNowProvider)();
+    // Counted from the rows' effective state, so a step added or dismissed a
+    // moment ago leaves the count and the bulk rail before the snapshot
+    // catches up.
+    final openSteps = snapshot == null
+        ? const <ProjectRecommendationEntity>[]
+        : snapshot.steps
+              .where(
+                (step) => _rowState(step) == ProjectNextStepRowState.pending,
+              )
+              .toList();
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: TldrBody.maxReadingWidth),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(LottiIcons.tip, size: IconSizes.s, color: ai.titleText),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Text(
-                    recommendations.isEmpty
-                        ? context.messages.changeSetCardTitle
-                        : context.messages.projectRecommendationsTitle,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: ai.titleText,
-                    ),
-                  ),
-                ),
-                Text(
-                  context.messages.changeSetPendingCount(rows.length),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: ai.metaText,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            for (final row in rows)
-              Padding(
-                key: ValueKey(row.id),
-                padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            row.title(context),
-                            style: tokens.typography.styles.body.bodyMedium
-                                .copyWith(color: ai.titleText),
-                          ),
-                          if (row.recommendation?.rationale
-                              case final String rationale)
-                            if (rationale.trim().isNotEmpty)
-                              Text(
-                                rationale,
-                                style: tokens.typography.styles.body.bodySmall
-                                    .copyWith(color: ai.metaText),
-                              ),
-                        ],
-                      ),
-                    ),
-                    if (row.recommendation != null)
-                      DesignSystemIconAction(
-                        icon: LottiIcons.add,
-                        tooltip: context.messages.projectActionAddTask,
-                        onPressed: _busy
-                            ? null
-                            : () => _run([row], _Action.createTask),
-                      ),
-                    RowActions(
-                      busy: _busy,
-                      onReject: () => _run([row], _Action.dismiss),
-                      onConfirm: () => _run([row], _Action.confirm),
-                    ),
-                  ],
-                ),
+            if (snapshot != null)
+              _Band(
+                icon: LottiIcons.tip,
+                title: messages.projectRecommendationsTitle,
+                count: openSteps.length,
+                child: _stepsBody(context, snapshot, now, openSteps),
               ),
-            if (rows.length > 1)
-              Align(
-                alignment: Alignment.centerRight,
-                child: DesignSystemButton(
-                  label: context.messages.changeSetConfirmAll,
-                  leadingIcon: LottiIcons.confirmAll,
-                  variant: DesignSystemButtonVariant.outlined,
-                  isLoading: _busy,
-                  onPressed: _busy ? null : () => _run(rows, _Action.confirm),
+            if (proposals.isNotEmpty)
+              _Band(
+                icon: LottiIcons.factCheck,
+                title: messages.changeSetCardTitle,
+                count: proposals
+                    .where(
+                      (row) =>
+                          row.$1.items[row.$2].status ==
+                          ChangeItemStatus.pending,
+                    )
+                    .length,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final (set, index) in proposals)
+                      Padding(
+                        key: ValueKey('proposal-${_proposalKey(set, index)}'),
+                        padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+                        child: ProjectProposalRow(
+                          changeSet: set,
+                          itemIndex: index,
+                          busy: _busyProposals.contains(
+                            _proposalKey(set, index),
+                          ),
+                          enabled: widget.enabled && !_bulkBusy,
+                          onConfirm: () =>
+                              _decideProposal(set, index, confirm: true),
+                          onReject: () =>
+                              _decideProposal(set, index, confirm: false),
+                        ),
+                      ),
+                  ],
                 ),
               ),
           ],
@@ -223,28 +403,224 @@ class _ProjectRecommendationsPanelState
       ),
     );
   }
+
+  /// Every proposal row to show: the live sets' open items in order, plus
+  /// rows decided this session — whether their set still comes back from the
+  /// pending read or not. Items decided in an earlier session stay out.
+  List<(ChangeSetEntity, int)> _proposalRows(List<AgentDomainEntity> sets) {
+    final rows = <(ChangeSetEntity, int)>[];
+    final seen = <String>{};
+    for (final set in sets.whereType<ChangeSetEntity>()) {
+      for (final (index, item) in set.items.indexed) {
+        if (item.toolName == ProjectAgentToolNames.recommendNextSteps) continue;
+        final key = _proposalKey(set, index);
+        final decided = _decidedProposals[key];
+        if (decided != null) {
+          seen.add(key);
+          rows.add(decided);
+          continue;
+        }
+        // A sibling decided in an earlier session is history, not a row.
+        if (item.status != ChangeItemStatus.pending) continue;
+        seen.add(key);
+        rows.add((set, index));
+      }
+    }
+    for (final entry in _decidedProposals.entries) {
+      if (!seen.contains(entry.key)) rows.add(entry.value);
+    }
+    return rows;
+  }
+
+  Widget _stepsBody(
+    BuildContext context,
+    ProjectNextStepsSnapshot snapshot,
+    DateTime now,
+    List<ProjectRecommendationEntity> pending,
+  ) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final steps = snapshot.steps;
+    final tally = ProjectNextStepsTally.of(steps);
+
+    if (!_collapseDecided || _collapseRun != snapshot.runCreatedAt) {
+      _collapseDecided = true;
+      _collapseRun = snapshot.runCreatedAt;
+      _collapsed = tally.allDecided;
+      _showAllSteps = false;
+      _historyOpen = false;
+    }
+
+    if (steps.isEmpty) {
+      return ProjectNextStepsEmpty(
+        runCreatedAt: snapshot.runCreatedAt,
+        now: now,
+      );
+    }
+    if (_collapsed) {
+      return ProjectNextStepsSummary(
+        steps: steps,
+        runCreatedAt: snapshot.runCreatedAt,
+        now: now,
+        historyOpen: _historyOpen,
+        onToggleHistory: () => setState(() => _historyOpen = !_historyOpen),
+      );
+    }
+
+    final phone =
+        MediaQuery.sizeOf(context).width < ProjectNextStepRow.wideBreakpoint;
+    final visible = visibleProjectNextSteps(
+      steps,
+      cap: phone ? ProjectRecommendationsPanel.phoneStepCap : steps.length,
+      showAll: _showAllSteps,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final step in visible)
+          Padding(
+            key: ValueKey('step-${step.id}'),
+            padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+            child: Builder(
+              builder: (context) {
+                final state = _rowState(step);
+                final taskId = step.createdTaskId ?? _createdTasks[step.id];
+                final openTask = widget.onOpenTask;
+                final failure = _failures[step.id];
+                return ProjectNextStepRow(
+                  step: step,
+                  state: state,
+                  enabled: widget.enabled && !_bulkBusy,
+                  canUndo: _canUndo(step, state),
+                  failureMessage: failure?.message,
+                  onAddTask: failure?.retryable == false
+                      ? null
+                      : () => unawaited(_addTask(step)),
+                  onDismiss: () => unawaited(_dismiss(step)),
+                  onUndo: () => unawaited(_undo(step)),
+                  onOpenTask: taskId == null || openTask == null
+                      ? null
+                      : () => openTask(taskId),
+                );
+              },
+            ),
+          ),
+        if (visible.length < steps.length)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: DesignSystemInlineAction(
+              onTap: () => setState(() => _showAllSteps = true),
+              semanticsLabel: messages.projectNextStepsShowMore(
+                steps.length - visible.length,
+              ),
+              label: messages.projectNextStepsShowMore(
+                steps.length - visible.length,
+              ),
+              leadingIcon: LottiIcons.chevronDown,
+              ink: tokens.colors.interactive.enabled,
+            ),
+          ),
+        if (pending.length > 1) ...[
+          SizedBox(height: tokens.spacing.step2),
+          Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step2,
+            children: [
+              IntrinsicWidth(
+                child: DesignSystemInlineAction(
+                  onTap: widget.enabled && !_bulkBusy
+                      ? () => unawaited(_runBulk(pending, _dismiss))
+                      : null,
+                  semanticsLabel: messages.projectNextStepsDismissAll,
+                  label: messages.projectNextStepsDismissAll,
+                  leadingIcon: LottiIcons.close,
+                ),
+              ),
+              DesignSystemButton(
+                label: messages.projectNextStepsAddAll,
+                leadingIcon: LottiIcons.add,
+                variant: DesignSystemButtonVariant.outlined,
+                size: DesignSystemButtonSize.dense,
+                tapTargetSize: MaterialTapTargetSize.padded,
+                isLoading: _bulkBusy,
+                onPressed: widget.enabled && !_bulkBusy
+                    ? () => unawaited(_runBulk(pending, _addTask))
+                    : null,
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
 }
 
-enum _Action { confirm, dismiss, createTask }
+/// One titled band inside the AI card: a hairline above, the heading with
+/// its pending count, then the band's rows.
+class _Band extends StatelessWidget {
+  const _Band({
+    required this.icon,
+    required this.title,
+    required this.count,
+    required this.child,
+  });
 
-class _ProjectAction {
-  const _ProjectAction.recommendation(this.recommendation)
-    : changeSet = null,
-      itemIndex = null;
-  const _ProjectAction.change(this.changeSet, this.itemIndex)
-    : recommendation = null;
+  final IconData icon;
+  final String title;
+  final int count;
+  final Widget child;
 
-  final ProjectRecommendationEntity? recommendation;
-  final ChangeSetEntity? changeSet;
-  final int? itemIndex;
-
-  String get id => recommendation?.id ?? '${changeSet!.id}:$itemIndex';
-  String get agentId => recommendation?.agentId ?? changeSet!.agentId;
-
-  String title(BuildContext context) {
-    if (recommendation case final recommendation?) return recommendation.title;
-    final item = changeSet!.items[itemIndex!];
-    return localizedChangeSummary(context.messages, item.toolName, item.args) ??
-        item.humanSummary;
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: ai.borderSoft)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.cardPadding,
+        tokens.spacing.step3,
+        tokens.spacing.cardPadding,
+        tokens.spacing.step4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: IconSizes.s, color: ai.titleText),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: ai.titleText,
+                  ),
+                ),
+              ),
+              if (count > 0) ...[
+                SizedBox(width: tokens.spacing.step3),
+                Text(
+                  context.messages.changeSetPendingCount(count),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: ai.metaText,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          child,
+        ],
+      ),
+    );
   }
 }
