@@ -104,6 +104,29 @@ void main() {
     expect(texels * 4 * 4 / 3, lessThan(32 * 1024 * 1024));
   });
 
+  test(
+    'window floor details scale with the reduced texture resolution',
+    () async {
+      final image = WallTextures.paintWindows(LanternState.open);
+      addTearDown(image.dispose);
+      final pixels = (await image.toByteData())!;
+      // At the left edge there are no panes: the slab is a three-pixel dark
+      // band, then a 1.5-pixel lit edge, then the wall. These were authored as
+      // six and three pixels at twice the raster resolution.
+      List<int> rgbAt(int y) {
+        final offset = y * image.width * 4;
+        return [
+          for (var channel = 0; channel < 3; channel++)
+            pixels.getUint8(offset + channel),
+        ];
+      }
+
+      expect(rgbAt(2), [7, 6, 13]);
+      expect(rgbAt(3), [28, 26, 42]);
+      expect(rgbAt(5), [11, 10, 20]);
+    },
+  );
+
   late final Map<LanternState, _Strip> strips;
   setUpAll(() async {
     strips = {

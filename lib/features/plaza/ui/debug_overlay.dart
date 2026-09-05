@@ -29,7 +29,7 @@ class PlazaHarnessStats extends ChangeNotifier {
 /// glows), so without a cap it paints on every vsync, 120 times a second
 /// on a ProMotion display, and re-encodes the whole district each time.
 enum PlazaFrameRate {
-  /// The display's rate while the camera moves, 30 Hz while it stands.
+  /// Display rate on movement/input, 30 Hz for live facades, 15 Hz at rest.
   auto,
   sixty,
   thirty;
@@ -48,11 +48,17 @@ enum PlazaFrameRate {
   };
 
   /// The cap, frames per second, or null for the display's rate.
-  double? capFor({required bool moving}) => switch (this) {
-    PlazaFrameRate.auto => moving ? null : 30,
-    PlazaFrameRate.sixty => 60,
-    PlazaFrameRate.thirty => 30,
-  };
+  double? capFor({required bool moving, bool activeSurface = false}) =>
+      switch (this) {
+        PlazaFrameRate.auto =>
+          moving
+              ? null
+              : activeSurface
+              ? 30
+              : 15,
+        PlazaFrameRate.sixty => 60,
+        PlazaFrameRate.thirty => 30,
+      };
 }
 
 /// World-scale tuning knobs. Changing one rebuilds the scene (they are

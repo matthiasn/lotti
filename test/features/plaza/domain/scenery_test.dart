@@ -411,7 +411,7 @@ void main() {
             (f.width, f.depth, f.height),
             (
               FurnitureKind.planter.width,
-              FurnitureKind.planter.width,
+              FurnitureKind.planter.depth,
               FurnitureKind.planter.height,
             ),
           );

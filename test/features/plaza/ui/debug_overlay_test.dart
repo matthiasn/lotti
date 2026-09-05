@@ -7,7 +7,7 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   test(
-    'default frame pacing rests at 30 fps and preserves explicit overrides',
+    'default frame pacing rests at 15 fps and preserves explicit overrides',
     () {
       for (final environment in <Map<String, String>>[
         {},
@@ -15,7 +15,7 @@ void main() {
       ]) {
         final rate = PlazaFrameRate.fromEnvironment(environment);
         expect(rate, PlazaFrameRate.auto);
-        expect(rate.capFor(moving: false), 30);
+        expect(rate.capFor(moving: false), 15);
         expect(rate.capFor(moving: true), isNull);
       }
       for (final rate in PlazaFrameRate.values) {
@@ -142,7 +142,23 @@ void main() {
     expect(PlazaFrameRate.sixty.capFor(moving: false), 60);
     expect(PlazaFrameRate.thirty.capFor(moving: true), 30);
     expect(PlazaFrameRate.auto.capFor(moving: true), isNull);
-    expect(PlazaFrameRate.auto.capFor(moving: false), 30);
+    expect(PlazaFrameRate.auto.capFor(moving: false), 15);
+    expect(
+      PlazaFrameRate.auto.capFor(moving: false, activeSurface: true),
+      30,
+    );
+    expect(
+      PlazaFrameRate.auto.capFor(moving: true, activeSurface: true),
+      isNull,
+    );
+    for (final rate in [PlazaFrameRate.thirty, PlazaFrameRate.sixty]) {
+      for (final moving in [false, true]) {
+        expect(
+          rate.capFor(moving: moving, activeSurface: true),
+          rate.capFor(moving: moving),
+        );
+      }
+    }
     expect(PlazaFrameRate.values.map((r) => r.label), ['auto', '60', '30']);
   });
 }

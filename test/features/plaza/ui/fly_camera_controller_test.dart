@@ -293,7 +293,9 @@ void main() {
       expect(camera.flying, isTrue);
       expect(camera.flight, same(flight));
       camera.update(flight.duration.inMicroseconds / 2e6);
-      expect(camera.pose.z, closeTo(10, 1e-6));
+      // The arrival turn takes extra time: halfway through the clock is
+      // past the spatial midpoint, still approaching the destination.
+      expect(camera.pose.z, inExclusiveRange(10, 20));
       expect(camera.flying, isTrue);
       camera.update(flight.duration.inMicroseconds / 2e6 + 0.01);
       expect(camera.flying, isFalse);

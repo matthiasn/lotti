@@ -463,9 +463,18 @@ A `Flight` is planned once, as a chain of straight **legs** with one
   on a smoothstep, holds the cruise, and ramps down the same way, so
   acceleration starts and ends at zero; a way shorter than one cruise-ramp
   (`cruise × ramp`) shrinks both ramps to `sqrt(length × ramp / cruise)`
-  and never reaches the cruise. Duration is `2 × ramp + (length − cruise ×
-  ramp) / cruise`. `distanceAt(t)` is the way covered, `cruiseSpeed` and
-  `rampTime` what was flown.
+  and never reaches the cruise. Base duration is `2 × ramp + (length −
+  cruise × ramp) / cruise`. `cruiseSpeed` and `rampTime` describe this base
+  profile; `distanceAt(t)` includes the extra time for turns.
+- **Turn timing** (`_TurnTiming`): a table samples the original plan at
+  120 Hz, capped at 4096 intervals. Each interval takes at least enough time
+  for its yaw change at 45°/s and pitch change at 30°/s. Only sections that
+  exceed these limits slow down; position still follows the exact lifted
+  path. Heading interpolates between the table's knots, keeping rotation
+  bounded between samples, including at street corners and the ±π seam.
+  A turn in place gets an eased timeline even with zero travel distance.
+  `duration` includes this added time. The table is built once per flight;
+  each frame locates its interval with a binary search.
 - **The lift of a leg**: `arc × profile(s)` over the leg's straight line,
   where `s` is the fraction of the leg and the profile is a smoothstep
   climb over the first `rampStart` of it, a cruise, and a smoothstep
@@ -916,7 +925,10 @@ The builder creates:
   widget quads put their texture's left edge), so the lit part reads as
   progress along a scale.
 - **Texture density**: fifteen window tiles are 480 × 192 px and fifteen
-  shopfront strips are 1584 × 192 px (`_px` 48). These thirty RGBA8 textures
+  shopfront strips are 1584 × 192 px. Both painters keep their original
+  96-unit artwork coordinates and scale the entire canvas by one half, so
+  fine mullions, floor slabs, sign strokes and metre-sized shapes retain
+  their proportions. These thirty RGBA8 textures
   occupy approximately 30 MiB including a full mip chain, versus 121 MiB at
   twice the dimensions. This is a pixel-storage estimate, not a measurement
   of process peak memory. Ground grain, paving and pool textures are separate.
@@ -1092,8 +1104,13 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   interval instead of adding drift. Input cancels the wait and coalesces
   into one immediate frame. There is no repeating idle `Ticker` waking the
   engine on every skipped vsync. `auto` follows the display while moving
-  (flight, walk, held key, drag and 0.6 s afterwards) and caps rest at 30 Hz;
-  `60` and `30` are fixed caps. Tour and bench remain uncapped.
+  (flight, walk, held key or drag) and for 0.6 s after movement or input.
+  With a settled camera, an active live facade retains 30 Hz while purely
+  decorative animation uses 15 Hz. Startup gets the same brief display-rate
+  window so initial captures and promotions can settle promptly. Animation
+  phases still use elapsed time: the lower cadence changes smoothness, not
+  ticker speed or pulse duration. `60` and `30` are fixed caps; tour and bench
+  remain uncapped.
   Hidden/inactive lifecycle states cancel both timer and pending callback;
   resume excludes the hidden duration from the animation clock.
 - **Engine and painted rates are distinct.** The HUD reports harness paints

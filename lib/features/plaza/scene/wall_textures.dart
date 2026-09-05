@@ -30,7 +30,10 @@ class WallTextures {
 
   /// One storey of the window tile, metres: walls stack whole storeys.
   static const double storeyHeight = tileHeight / floors;
-  static const _px = 48;
+  // Keep the authored coordinate space: both metre-sized shapes and fine
+  // pixel details scale together when rasterized into the smaller texture.
+  static const _px = 96;
+  static const _textureScale = 0.5;
 
   /// One paving tile covers this many metres of plaza: a 2 × 2 grid of
   /// slabs with a joint between.
@@ -147,6 +150,7 @@ class WallTextures {
     const h = shopfrontHeight * _px;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder)
+      ..scale(_textureScale)
       ..drawRect(
         const ui.Rect.fromLTWH(0, 0, w, h),
         ui.Paint()..color = _night,
@@ -158,7 +162,10 @@ class WallTextures {
       _paintShop(canvas, rng, shop, left, _m(shop.width), dressing);
       left += _m(shop.width);
     }
-    return recorder.endRecording().toImageSync(w.toInt(), h.toInt());
+    return recorder.endRecording().toImageSync(
+      (w * _textureScale).round(),
+      (h * _textureScale).round(),
+    );
   }
 
   /// Text on a sign or a notice: capitals, letter-spaced, centred in
@@ -1164,6 +1171,7 @@ class WallTextures {
     const h = floors * _px;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder)
+      ..scale(_textureScale)
       ..drawRect(
         ui.Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
         ui.Paint()..color = _night,
@@ -1256,7 +1264,10 @@ class WallTextures {
           ui.Paint()..color = const ui.Color(0xFF1C1A2A),
         );
     }
-    return recorder.endRecording().toImageSync(w, h);
+    return recorder.endRecording().toImageSync(
+      (w * _textureScale).round(),
+      (h * _textureScale).round(),
+    );
   }
 }
 

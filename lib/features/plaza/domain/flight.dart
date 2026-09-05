@@ -8,6 +8,7 @@
 library;
 
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/solid.dart';
@@ -29,8 +30,7 @@ class Flight {
     // ignore: prefer_initializing_formals
   }) : _legs = legs,
        _profile = profile,
-       _wayEnd = wayEnd ?? profile.length,
-       duration = Duration(microseconds: (profile.duration * 1e6).round());
+       _wayEnd = wayEnd ?? profile.length;
 
   /// Plans the direct flight from [from] to [to]: one straight leg, swept
   /// against [solids] and lifted over whatever it would pass through
@@ -115,6 +115,11 @@ class Flight {
   /// shortens both ramps and never reaches the cruise.
   static const rampSeconds = 1.6;
 
+  /// Maximum rotation rates, radians per second. Turning stretches only
+  /// the affected sections of the flight, preserving its collision-safe path.
+  static const double maxYawSpeed = math.pi / 4;
+  static const double maxPitchSpeed = math.pi / 6;
+
   /// A street flight cruises this high above the road: over the parade,
   /// level with the screens, under every sign and the gantry.
   static const streetFlightHeight = 5.0;
@@ -158,7 +163,16 @@ class Flight {
 
   final CameraPose from;
   final CameraPose to;
-  final Duration duration;
+
+  /// Travel time including the extra time needed for gentle turns.
+  late final Duration duration = Duration(
+    microseconds: (_timing.seconds * 1e6).ceil(),
+  );
+
+  late final _TurnTiming _timing = _TurnTiming(
+    _profile.duration,
+    _basePoseAt,
+  );
 
   /// Whether the flight follows the street (see [Flight.route]).
   final bool routed;
@@ -256,7 +270,7 @@ class Flight {
 
   /// How far along the way the flight is at [t] of its time (0..1).
   double distanceAt(double t) =>
-      _profile.distanceAt(t.clamp(0.0, 1.0) * _profile.duration);
+      _profile.distanceAt(_timing.at(t).progress * _profile.duration);
 
   /// The leg [d] metres along the way is on, and the fraction of it.
   (_Leg, double) _locate(double d) {
@@ -283,12 +297,34 @@ class Flight {
   /// heading during the last; the pitch dips while lifted so the camera
   /// looks down at what it crosses.
   CameraPose poseAt(double t) {
-    final d = distanceAt(t);
+    final sample = _timing.at(t);
+    return _basePoseAt(
+      sample.progress,
+      orientation: (yaw: sample.yaw, pitch: sample.pitch),
+    );
+  }
+
+  /// Original spatial plan. The timing table changes when each point is
+  /// reached; its interpolated orientation bounds rotation between samples.
+  CameraPose _basePoseAt(
+    double t, {
+    ({double yaw, double pitch})? orientation,
+  }) {
+    final d = _profile.distanceAt(t * _profile.duration);
     final (leg, f) = _locate(d);
     final x = _lerp(leg.from.x, leg.to.x, f);
     final z = _lerp(leg.from.z, leg.to.z, f);
     final lift = leg.liftAt(f);
     final y = _lerp(leg.from.y, leg.to.y, f) + lift;
+    if (orientation != null) {
+      return CameraPose(
+        x: x,
+        y: y,
+        z: z,
+        yaw: orientation.yaw,
+        pitch: orientation.pitch,
+      );
+    }
 
     final ramp = _profile.rampDistance;
     final total = length;
@@ -303,7 +339,11 @@ class Flight {
     // is settled for the whole ramp; between them the camera looks down
     // the way.
     final double yaw;
-    final along = routed ? _lookAheadYaw(d, x, z, leg) : travelYaw;
+    final along = total == 0
+        ? null
+        : routed
+        ? _lookAheadYaw(d, x, z, leg)
+        : travelYaw;
     if (along == null) {
       yaw = _blendHeading(from.yaw, to.yaw, _smooth(t));
     } else if (d < ramp) {
@@ -315,7 +355,7 @@ class Flight {
     }
 
     final double pitch;
-    if (routed) {
+    if (routed && total > 0) {
       // Level down the street; the stop's own pitch on arrival.
       pitch = d < ramp
           ? from.pitch * (1 - _smooth(inRamp))
@@ -387,6 +427,84 @@ class Flight {
       d += 2 * math.pi;
     }
     return a + d * s;
+  }
+}
+
+/// A bounded table computed once per flight. Each original time interval
+/// takes at least enough time to rotate between its endpoints at the limits.
+/// Position remains on the original curve; orientation interpolates between
+/// knots, so even a sharp look-ahead corner cannot exceed the rotation limits.
+class _TurnTiming {
+  factory _TurnTiming(
+    double travelSeconds,
+    CameraPose Function(double) poseAt,
+  ) {
+    final first = poseAt(0);
+    final last = poseAt(1);
+    // A pure turn still needs an eased timeline when translation takes no time.
+    final baseSeconds = travelSeconds == 0
+        ? 1.5 *
+              math.max(
+                _angle(last.yaw - first.yaw).abs() / Flight.maxYawSpeed,
+                (last.pitch - first.pitch).abs() / Flight.maxPitchSpeed,
+              )
+        : travelSeconds;
+    final steps = (baseSeconds * 120).ceil().clamp(1, 4096);
+    final times = Float64List(steps + 1);
+    final yaws = Float64List(steps + 1)..[0] = first.yaw;
+    final pitches = Float64List(steps + 1)..[0] = first.pitch;
+    var previous = first;
+    for (var i = 1; i <= steps; i++) {
+      final pose = poseAt(i / steps);
+      final yaw = _angle(pose.yaw - previous.yaw);
+      final pitch = pose.pitch - previous.pitch;
+      times[i] =
+          times[i - 1] +
+          math.max(
+            baseSeconds / steps,
+            math.max(
+              yaw.abs() / Flight.maxYawSpeed,
+              pitch.abs() / Flight.maxPitchSpeed,
+            ),
+          );
+      yaws[i] = yaws[i - 1] + yaw;
+      pitches[i] = pose.pitch;
+      previous = pose;
+    }
+    return _TurnTiming._(times, yaws, pitches);
+  }
+
+  const _TurnTiming._(this._times, this._yaws, this._pitches);
+
+  final Float64List _times;
+  final Float64List _yaws;
+  final Float64List _pitches;
+
+  double get seconds => _times.last;
+
+  static double _angle(double radians) =>
+      math.atan2(math.sin(radians), math.cos(radians));
+
+  ({double progress, double yaw, double pitch}) at(double t) {
+    final progress = t.clamp(0.0, 1.0);
+    final time = progress * seconds;
+    var lo = 0;
+    var hi = _times.length - 1;
+    while (hi - lo > 1) {
+      final mid = (lo + hi) ~/ 2;
+      if (_times[mid] <= time) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    final span = _times[hi] - _times[lo];
+    final f = span == 0 ? progress : (time - _times[lo]) / span;
+    return (
+      progress: (lo + f) / (_times.length - 1),
+      yaw: _lerp(_yaws[lo], _yaws[hi], f),
+      pitch: _lerp(_pitches[lo], _pitches[hi], f),
+    );
   }
 }
 
