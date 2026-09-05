@@ -372,7 +372,7 @@ void main() {
       expect(kl, closeTo(kioskLateral, 1e-9));
       expect(ka, closeTo(kioskAlong, 1e-9));
       expect(kiosks.single.yawRadians, plaza.headingRadians + math.pi / 2);
-      expect(kiosks.single.height, kioskHeight);
+      expect(kiosks.single.height, FurnitureKind.kiosk.height);
 
       // The foreground pair: a bench and a planter a few metres ahead of
       // home, either side of the axis.
@@ -400,12 +400,20 @@ void main() {
         if (f.kind == FurnitureKind.bench) {
           expect(
             (f.width, f.depth, f.height),
-            (benchWidth, benchLength, benchHeight),
+            (
+              FurnitureKind.bench.width,
+              FurnitureKind.bench.depth,
+              FurnitureKind.bench.height,
+            ),
           );
         } else {
           expect(
             (f.width, f.depth, f.height),
-            (planterSize, planterSize, planterHeight),
+            (
+              FurnitureKind.planter.width,
+              FurnitureKind.planter.width,
+              FurnitureKind.planter.height,
+            ),
           );
         }
       }
@@ -690,10 +698,10 @@ void main() {
       expect(spire.footprint.x, 1);
       expect(spire.footprint.z, 2);
       expect(spire.footprint.facingRadians, 0.5);
-      expect(spire.footprint.width, plotSpireSize);
-      expect(spire.footprint.depth, plotSpireSize);
+      expect(spire.footprint.width, SpireStyle.plot.size);
+      expect(spire.footprint.depth, SpireStyle.plot.size);
       expect(spire.bottom, 30);
-      expect(spire.top, 30 + plotSpireHeight);
+      expect(spire.top, 30 + SpireStyle.plot.height);
       expect(spire.atWalkHeight, isFalse);
     });
 
@@ -713,15 +721,15 @@ void main() {
       expect(hero.solids.first.bottom, 0);
       final spire = hero.solids.last;
       expect(spire.bottom, 60);
-      expect(spire.top, 60 + heroSpireHeight);
-      expect(spire.footprint.width, heroSpireSize);
-      expect(spire.footprint.depth, heroSpireSize);
+      expect(spire.top, 60 + SpireStyle.hero.height);
+      expect(spire.footprint.width, SpireStyle.hero.size);
+      expect(spire.footprint.depth, SpireStyle.hero.size);
       final tower = scenery.jumbotronTower!;
       expect(tower.solids, hasLength(2));
       expect(tower.solids.first.top, tower.height);
       expect(tower.solids.last.bottom, tower.height);
-      expect(tower.solids.last.top, tower.height + jumbotronSpireHeight);
-      expect(tower.solids.last.footprint.depth, jumbotronSpireSize);
+      expect(tower.solids.last.top, tower.height + SpireStyle.jumbotron.height);
+      expect(tower.solids.last.footprint.depth, SpireStyle.jumbotron.size);
       expect(scenery.fillers.first.solids, hasLength(1));
       expect(
         scenery.solids.length,

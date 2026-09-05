@@ -39,9 +39,12 @@ void main() {
     expect(world.billboardSlots.take(4).every((s) => s.onPylon), isTrue);
     expect(world.mountedScreens.every((s) => !s.onPylon), isTrue);
     // Only as many slots are built as there are candidates, in rank order.
-    expect(world.builtBillboardSlots, hasLength(world.billboards.length));
     expect(
-      world.builtBillboardSlots.map((s) => s.rank),
+      world.builtBillboards.map((b) => b.slot).toList(),
+      hasLength(world.billboards.length),
+    );
+    expect(
+      world.builtBillboards.map((b) => b.slot).toList().map((s) => s.rank),
       ranks.take(world.billboards.length),
     );
     final quiet = PlazaWorld(
@@ -50,8 +53,14 @@ void main() {
       projectLabel: 'Quiet',
       layout: StreetLayout(projectSeed: 1337),
     );
-    expect(quiet.builtBillboardSlots.length, quiet.billboards.length);
-    expect(quiet.builtBillboardSlots.length, lessThan(billboardSlots));
+    expect(
+      quiet.builtBillboards.map((b) => b.slot).toList().length,
+      quiet.billboards.length,
+    );
+    expect(
+      quiet.builtBillboards.map((b) => b.slot).toList().length,
+      lessThan(billboardSlots),
+    );
   });
 
   group('solids', () {
@@ -90,7 +99,10 @@ void main() {
       'the pylon posts, the gantry legs and the lamp posts are solid; the '
       'signs and the beam hang above the walker, for the flights',
       () {
-        final pylons = world.builtBillboardSlots.where((s) => s.onPylon);
+        final pylons = world.builtBillboards
+            .map((b) => b.slot)
+            .toList()
+            .where((s) => s.onPylon);
         expect(pylons, isNotEmpty);
         for (final s in pylonSolidsFor(pylons)) {
           final f = s.footprint;

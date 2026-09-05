@@ -8,7 +8,7 @@ import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
-import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/facade_widget.dart';
 import 'package:vector_math/vector_math.dart' show Vector3;
@@ -73,6 +73,7 @@ class _TestSurface extends WidgetComponent {
     required super.child,
     required super.size,
     required super.input,
+    super.pixelRatio,
   }) : super.bindOnly(bind: (_) {}, update: WidgetUpdatePolicy.manual);
 
   final _controller = FakeWidgetTextureController();
@@ -88,11 +89,13 @@ FacadeSurfaceBuilder _surfaceBuilder(List<_TestSurface> surfaces) =>
       required height,
       required pxPerMeter,
       input = WidgetInput.manual,
+      pixelRatio = 1,
     }) {
       final surface = _TestSurface(
         child: child,
         size: Size(width * pxPerMeter, height * pxPerMeter),
         input: input,
+        pixelRatio: pixelRatio,
       );
       surfaces.add(surface);
       return surface;
@@ -121,6 +124,12 @@ void main() {
     expect((lod.stats.live, lod.stats.sign), (0, 1));
     expect(surfaces.single.input, WidgetInput.manual);
     final sign = surfaces.single;
+    expect(sign.pixelRatio, 0.5);
+    expect(
+      sign.size,
+      const Size(720, 1080),
+      reason: 'capture density must not shrink widget layout',
+    );
     sign.controller.landed = 1;
     lod.update(eye, forward: forward, seconds: 3);
     expect(sign.controller.requests, 1, reason: 'a static sign does not poll');
@@ -139,6 +148,7 @@ void main() {
     expect(lod.focused, building);
     final live = surfaces.last;
     expect(live.input, WidgetInput.automatic);
+    expect(live.pixelRatio, 1);
     expect((live.child as FacadeWidget).ticks, same(ticks));
     expect(live.controller.requests, 1);
     lod.update(eye, forward: forward, seconds: 5.1);

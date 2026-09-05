@@ -12,13 +12,14 @@ class PlazaHarnessStats extends ChangeNotifier {
   double avgFrameMs = 0;
   double worstFrameMs = 0;
   int buildings = 0;
-  int live = 0;
-  int sign = 0;
-  int far = 0;
-  int captures = 0;
+  int get live => lod.live;
+  int get sign => lod.sign;
+  int get far => lod.far;
+  int get captures => lod.captures;
   int surfaceCaptures = 0;
-  double lastCaptureMs = 0;
-  int promotions = 0;
+  double get lastCaptureMs => lod.lastCapture.inMicroseconds / 1000;
+  FacadeLodStats lod = FacadeLodStats();
+  int get promotions => lod.promotions;
 
   void publish() => notifyListeners();
 }

@@ -25,20 +25,8 @@ fvm flutter run --enable-flutter-gpu -t lib/features/plaza/dev_main.dart -d maco
 is a `flutter run` flag only, and a built binary takes the engine switch
 from its environment instead (see the handover).
 
-## Environment switches
-
-All read at start-up; none is needed for an interactive session.
-
-| Variable | Read by | Effect |
-|---|---|---|
-| `PLAZA_TOUR=1` | `dev_main.dart` | Screenshot tour: steps through the fixed poses in `ui/plaza_tour.dart`, printing `PLAZA_TOUR ready <i> <name>` lines; input is ignored |
-| `PLAZA_TOUR_ONLY=home,block` | `dev_main.dart` | Restricts the tour to the named stops |
-| `PLAZA_BENCH=1` | `dev_main.dart` | Auto-walk benchmark through six LOD budgets, printing `PLAZA_BENCH result` lines; wins over `PLAZA_TOUR` |
-| `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls` | `dev_main.dart` | Leaves those pieces out of the scene (`PlazaSceneController(hidden:)`), to isolate what a screenshot shows |
-| `PLAZA_TRACE=1` | `dev_main.dart` | Prints one line per painted frame: frame time, engine frames since the last line, flight state, pose, how many solids contain the eye and the running widget-capture count |
-| `PLAZA_FPS=auto,60,30` | `dev_main.dart` | The frame-rate cap at start (the HUD control changes it); auto by default |
-| `PLAZA_CLICK=<stop>:<x>,<y>` | `tool/plaza/capture_tour.py` | After capturing that tour stop, clicks the window-relative point and grabs a second `-ticked` frame |
-| `LOTTI_WINDOW_SIZE=WxH` | `linux/runner/my_application.cc` | Linux runner window size (a generic Lotti runner feature the capture script uses) |
+The [handover](../../../docs/plaza/HANDOVER.md) covers controls, environment
+switches, screenshot tours and benchmarks.
 
 ## What it owns and what it delegates
 
@@ -77,7 +65,10 @@ lib/features/plaza/
                          roof panels and the spires
   scene/                 flutter_scene, needs a GPU context
     plaza_world.dart     everything derived from tasks and the clock (pure)
-    plaza_scene.dart     the scene graph: sky, road, buildings, fillers, skyline
+    plaza_scene.dart     scene ownership; fixture builders in library parts
+    plaza_scene_records.dart     records and shared bindings for sibling layers
+    plaza_primitives.dart        quad geometry and HDR colours
+    plaza_static_meshes.dart     static opaque mesh baking
     plaza_boxes.dart     shared unit geometry and solid materials for boxes
     facade_lod_manager.dart      far, sign and live facade tiers
     plaza_surfaces.dart  billboards, tickers, markers, signs, banners, jumbotron
@@ -94,6 +85,8 @@ lib/features/plaza/
     plaza_hud.dart, plaza_search_sheet.dart, task_side_panel.dart,
     debug_overlay.dart, checklist_ticks.dart, plaza_style.dart,
     plaza_chip.dart, cover_image.dart
+    plaza_frame_pacer.dart, plaza_repaint.dart, plaza_frame_window.dart
+                         frame scheduling, scene painting and bounded stats
     plaza_tour.dart      the tour stops
 tool/plaza/capture_tour.py       X11 screenshot capture for the tour
 test/features/plaza/             one test file per pure source file

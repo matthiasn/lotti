@@ -41,13 +41,11 @@ class PlazaWorld {
     spires = spiresFor(plan);
     weekSigns = weekSignsFor(plan, roadWidth: layout.roadWidth);
     final mounted = mountedSlotsFor(plan);
-    mountedScreens = mounted.screens;
+    mountedScreens = [for (final panel in mounted) panel.screen];
     // A band on a building speaks for that building; the gantry counts
     // the district; the hero rooflines carry the headlines.
-    final mountTasks = plazaMounts(plan);
     tickerTexts = Map.unmodifiable({
-      for (final (i, slot) in mounted.tickers.indexed)
-        slot: _ownTickerText(mountTasks[i].taskId),
+      for (final panel in mounted) panel.ticker: _ownTickerText(panel.taskId),
       ?gantry: countsText,
       for (final (i, hero) in heroes.indexed)
         rooflineTickerFor(plan.placements[hero.task.id]!, fast: i.isEven):
@@ -65,7 +63,9 @@ class PlazaWorld {
       for (final p in plan.placements.values) plotSolidFor(p),
       for (final p in spires) plotSpireSolidFor(p),
       ...scenery.solids,
-      ...pylonSolidsFor(builtBillboardSlots.where((s) => s.onPylon)),
+      ...pylonSolidsFor(
+        builtBillboards.map((b) => b.slot).where((s) => s.onPylon),
+      ),
       for (final panel in roofBillboards) signSolidFor(panel),
       if (gantry case final gantry?) ...gantrySolidsFor(gantry),
       ...lampPostSolidsFor(lampPosts),
@@ -158,9 +158,10 @@ class PlazaWorld {
   /// Eye-level week signs at each block head: (bucket, x, z, facing).
   late final List<(int, double, double, double)> weekSigns;
 
-  /// Attention verdict for each roof billboard, in slot order.
-  List<TaskAttention> get roofBillboardTasks => [
-    for (final slot in roofBillboards) anomalies[slot.rank],
+  /// Slots and attention travel together through the scene layers.
+  late final List<BillboardAssignment> roofPanels = [
+    for (final slot in roofBillboards)
+      (slot: slot, attention: anomalies[slot.rank]),
   ];
 
   /// The two tallest buildings that carry no roof billboard take the
@@ -189,10 +190,11 @@ class PlazaWorld {
     ...mountedScreens,
   ];
 
-  /// The slots that get a billboard: one per candidate, in rank order.
-  /// The rest stay empty and are not built.
-  List<BillboardSlot> get builtBillboardSlots =>
-      billboardSlots.take(billboards.length).toList();
+  /// Only populated slots, with their assigned task; unused mounts stay empty.
+  late final List<BillboardAssignment> builtBillboards = [
+    for (final (i, slot) in billboardSlots.take(billboards.length).indexed)
+      (slot: slot, attention: billboards[i]),
+  ];
 
   TaskAttention attentionOf(PlazaTask task) => attention[task.id]!;
 
@@ -250,3 +252,6 @@ class PlazaWorld {
 
 /// [anomalies] under a name that does not shadow the field.
 List<TaskAttention> anomalyList(List<TaskAttention> all) => anomalies(all);
+
+/// A physical panel paired with the attention verdict it presents.
+typedef BillboardAssignment = ({BillboardSlot slot, TaskAttention attention});

@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' show Size;
 
 import 'package:flutter_scene/scene.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,26 @@ import 'package:lotti/features/plaza/scene/plaza_sprites.dart';
 import 'package:vector_math/vector_math.dart';
 
 void main() {
+  test(
+    'sprite sizing reruns only for a changed eye, viewport or projection',
+    () {
+      final view = PlazaSpriteView();
+      final eye = Vector3(1, 2, 3);
+      const size = Size(800, 600);
+      const fov = math.pi / 3;
+      expect(view.update(eye, size, fov), isTrue);
+      final scale = view.metersPerPixel;
+      expect(scale, closeTo(2 * math.tan(fov / 2) / 600, 1e-12));
+      expect(view.update(Vector3.copy(eye), size, fov), isFalse);
+      eye.x++;
+      expect(view.update(eye, size, fov), isTrue);
+      expect(view.update(eye, const Size(800, 1200), fov), isTrue);
+      expect(view.metersPerPixel, closeTo(scale / 2, 1e-12));
+      expect(view.update(eye, const Size(800, 1200), fov / 2), isTrue);
+      expect(view.metersPerPixel, lessThan(scale / 2));
+    },
+  );
+
   const stride = BillboardGeometry.floatsPerInstance;
 
   test(

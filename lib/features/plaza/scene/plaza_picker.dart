@@ -3,7 +3,9 @@ import 'dart:ui' show Offset, Size;
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
+import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/scene/plaza_sprites.dart';
+import 'package:vector_math/vector_math.dart' show Ray;
 
 /// What a tap landed on.
 sealed class PickResult {
@@ -45,6 +47,16 @@ class PlazaPicker {
   /// that.
   static const maxTapDistance = 160.0;
 
+  /// Casts through hosted widget quads to their physical backing. Widget
+  /// input is routed separately by SceneView; ordinary walls still occlude
+  /// navigation, including walls consolidated into a static mesh.
+  static SceneRaycastHit? navigationHit(Node root, Ray ray) => raycastNode(
+    root,
+    ray,
+    maxDistance: maxTapDistance,
+    where: (node) => node.getComponent<WidgetComponent>() == null,
+  );
+
   PickResult? pick(Camera camera, Size viewSize, Offset point) {
     Beacon? nearestBeacon;
     var nearest = beaconHitPx;
@@ -61,13 +73,13 @@ class PlazaPicker {
     if (nearestBeacon != null) return PickedBeacon(nearestBeacon);
 
     final ray = camera.screenPointToRay(point, viewSize);
-    final hit = controller.scene.raycast(ray, maxDistance: maxTapDistance);
+    final hit = navigationHit(controller.scene.root, ray);
     if (hit == null) return null;
     Node? node = hit.node;
     while (node != null) {
-      final billboard = controller.pickableBillboards[node];
+      final billboard = controller.bindings.pickableBillboards[node];
       if (billboard != null) return PickedBillboard(billboard);
-      final building = controller.pickableBuildings[node];
+      final building = controller.bindings.pickableBuildings[node];
       if (building != null) return PickedBuilding(building);
       node = node.parent;
     }

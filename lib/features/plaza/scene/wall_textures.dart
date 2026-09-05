@@ -30,7 +30,7 @@ class WallTextures {
 
   /// One storey of the window tile, metres: walls stack whole storeys.
   static const double storeyHeight = tileHeight / floors;
-  static const _px = 96;
+  static const _px = 48;
 
   /// One paving tile covers this many metres of plaza: a 2 × 2 grid of
   /// slabs with a joint between.
@@ -66,7 +66,7 @@ class WallTextures {
     LanternState.off: ui.Color(0xFF6E7080),
   };
 
-  /// Paints and uploads the five window tiles, the five shopfront strips,
+  /// Paints and uploads the fifteen window tiles, fifteen shopfront strips,
   /// the light-pool falloff, the asphalt grain and the plaza paving.
   static Future<WallTextures> load() async {
     final map = <(LanternState, int), Texture2D>{};
@@ -152,7 +152,7 @@ class WallTextures {
         ui.Paint()..color = _night,
       );
     final rng = math.Random(31337 + state.index * 7 + variant);
-    final dressing = _dressingFor(state);
+    final dressing = _Dressing.forState(state);
     var left = 0.0;
     for (final shop in _parades[variant % _parades.length]) {
       _paintShop(canvas, rng, shop, left, _m(shop.width), dressing);
@@ -216,7 +216,7 @@ class WallTextures {
     _Dressing dressing,
   ) {
     const h = shopfrontHeight * _px;
-    final lit = dressing == _Dressing.trading || dressing == _Dressing.late;
+    final lit = dressing.lit;
     final accent = dressing == _Dressing.late ? _amber : shop.colour;
 
     // Fascia board with a little of the shop's hue in it, then the sign:
@@ -1347,26 +1347,25 @@ const _parades = <List<_Shop>>[
 
 /// How the parade is dressed for a lantern state.
 enum _Dressing {
-  /// Open for business: lit signs, lit glass, people inside.
-  trading,
+  /// Open for business: lit signs, glass and people inside.
+  trading(LanternState.inProgress, lit: true),
 
-  /// Open late: trading, flooded amber, every sign in amber.
-  late,
+  /// Trading, flooded amber, with amber signs.
+  late(LanternState.overdue, lit: true),
 
-  /// Not open yet: papered glass, a blank fascia, a notice on the door.
-  fittingOut,
+  /// Papered glass, blank fascia and a notice on the door.
+  fittingOut(LanternState.open),
 
-  /// Shutters down behind alarm tape, a red lamp over each door.
-  shuttered,
+  /// Shutters behind alarm tape, with a red lamp over the door.
+  shuttered(LanternState.blocked),
 
-  /// Shutters down, signs off, a security light over each door.
-  closed,
+  /// Shutters down, signs off and a security light over the door.
+  closed(LanternState.off);
+
+  const _Dressing(this.state, {this.lit = false});
+  final LanternState state;
+  final bool lit;
+
+  static _Dressing forState(LanternState state) =>
+      values.firstWhere((d) => d.state == state);
 }
-
-_Dressing _dressingFor(LanternState state) => switch (state) {
-  LanternState.inProgress => _Dressing.trading,
-  LanternState.overdue => _Dressing.late,
-  LanternState.open => _Dressing.fittingOut,
-  LanternState.blocked => _Dressing.shuttered,
-  LanternState.off => _Dressing.closed,
-};

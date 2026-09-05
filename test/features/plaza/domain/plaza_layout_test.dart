@@ -225,9 +225,9 @@ void main() {
         expect(along(m), sameSide.map(along).reduce(math.max));
       }
       final slots = mountedSlotsFor(plan);
-      expect(slots.screens.map((s) => s.rank), [4, 5]);
-      expect(slots.tickers, hasLength(2));
-      for (final s in slots.screens) {
+      expect(slots.map((p) => p.screen).toList().map((s) => s.rank), [4, 5]);
+      expect(slots.map((p) => p.ticker).toList(), hasLength(2));
+      for (final s in slots.map((p) => p.screen).toList()) {
         expect(s.onPylon, isFalse);
         expect(
           _norm(s.facingRadians),

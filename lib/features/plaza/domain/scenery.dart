@@ -103,7 +103,7 @@ class HeroTower extends SceneryBox {
   @override
   List<Solid> get solids => [
     ...super.solids,
-    spireSolid(size: heroSpireSize, spireHeight: heroSpireHeight),
+    spireSolid(size: SpireStyle.hero.size, spireHeight: SpireStyle.hero.height),
   ];
 }
 
@@ -122,7 +122,10 @@ class JumbotronTower extends SceneryBox {
   @override
   List<Solid> get solids => [
     ...super.solids,
-    spireSolid(size: jumbotronSpireSize, spireHeight: jumbotronSpireHeight),
+    spireSolid(
+      size: SpireStyle.jumbotron.size,
+      spireHeight: SpireStyle.jumbotron.height,
+    ),
   ];
 }
 
@@ -143,7 +146,20 @@ class SkylineTower extends SceneryBox {
 }
 
 /// What a piece of plaza furniture is.
-enum FurnitureKind { bench, planter, kiosk }
+enum FurnitureKind {
+  bench(width: 0.6, depth: 2, height: 0.9),
+  planter(width: 1.4, depth: 1.4, height: 0.8),
+  kiosk(width: 3, depth: 2.4, height: 3.2);
+
+  const FurnitureKind({
+    required this.width,
+    required this.depth,
+    required this.height,
+  });
+  final double width;
+  final double depth;
+  final double height;
+}
 
 /// A bench, a planter or a kiosk on the plaza: solid, so the walker goes
 /// round it.
@@ -191,14 +207,16 @@ class Scenery {
   List<Solid> get solids => [for (final box in boxes) ...box.solids];
 }
 
-/// Spires: on the two tallest plots, on every hero tower and on the
-/// jumbotron tower, each a square post with a blinking light on top.
-const plotSpireHeight = 8.0;
-const plotSpireSize = 0.4;
-const heroSpireHeight = 14.0;
-const heroSpireSize = 0.6;
-const jumbotronSpireHeight = 10.0;
-const jumbotronSpireSize = 0.5;
+/// Spire dimensions shared by the visual builder and collision solids.
+enum SpireStyle {
+  plot(height: 8, size: 0.4),
+  hero(height: 14, size: 0.6),
+  jumbotron(height: 10, size: 0.5);
+
+  const SpireStyle({required this.height, required this.size});
+  final double height;
+  final double size;
+}
 
 /// The mast is the tallest piece of a task building's roof kit: a flight
 /// over a plot clears the building's height plus this.
@@ -213,9 +231,9 @@ Solid plotSpireSolidFor(PlotPlacement p) => Solid.post(
   x: p.x,
   z: p.z,
   facingRadians: p.facingRadians,
-  size: plotSpireSize,
+  size: SpireStyle.plot.size,
   bottom: p.height,
-  top: p.height + plotSpireHeight,
+  top: p.height + SpireStyle.plot.height,
 );
 
 /// Fillers stand this far past the plots' back line.
@@ -465,14 +483,6 @@ List<SkylineTower> skylineFor(StreetPlan plan, FrontierPlaza? plaza) {
 /// every line from home to a pylon.
 const furnitureInset = 4.0;
 const furnitureSpacing = 12.0;
-const benchWidth = 0.6;
-const benchLength = 2.0;
-const benchHeight = 0.9;
-const planterSize = 1.4;
-const planterHeight = 0.8;
-const kioskWidth = 3.0;
-const kioskDepth = 2.4;
-const kioskHeight = 3.2;
 const kioskLateral = -21.0;
 const kioskAlong = 20.0;
 
@@ -494,18 +504,18 @@ List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
   for (final side in [-1.0, 1.0]) {
     var i = 0;
     for (var along = -reach; along <= reach + 1e-9; along += furnitureSpacing) {
-      final bench = i.isEven;
+      final kind = i.isEven ? FurnitureKind.bench : FurnitureKind.planter;
       final (x, z) = ground.toWorld(side * lateral, along);
       out.add(
         PlazaFurniture(
           id: 'plaza-${side < 0 ? 'l' : 'r'}-$i',
-          kind: bench ? FurnitureKind.bench : FurnitureKind.planter,
+          kind: kind,
           x: x,
           z: z,
           yawRadians: h,
-          width: bench ? benchWidth : planterSize,
-          depth: bench ? benchLength : planterSize,
-          height: bench ? benchHeight : planterHeight,
+          width: kind.width,
+          depth: kind.depth,
+          height: kind.height,
         ),
       );
       i++;
@@ -530,9 +540,9 @@ List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
         z: nz,
         // The bench sits across the axis, facing the pylons.
         yawRadians: bench ? h + math.pi / 2 : h,
-        width: bench ? benchWidth : planterSize,
-        depth: bench ? benchLength : planterSize,
-        height: bench ? benchHeight : planterHeight,
+        width: kind.width,
+        depth: kind.depth,
+        height: kind.height,
       ),
     );
   }
@@ -545,9 +555,9 @@ List<PlazaFurniture> plazaFurnitureFor(FrontierPlaza? plaza) {
       z: kz,
       // Its front faces the plaza's axis.
       yawRadians: h + math.pi / 2,
-      width: kioskWidth,
-      depth: kioskDepth,
-      height: kioskHeight,
+      width: FurnitureKind.kiosk.width,
+      depth: FurnitureKind.kiosk.depth,
+      height: FurnitureKind.kiosk.height,
     ),
   );
   return out;

@@ -92,6 +92,18 @@ const _glassTop = 0.9;
 const _glassBottom = 3.5;
 
 void main() {
+  test('window and shopfront tiles fit the reduced texture budget', () {
+    final window = WallTextures.paintWindows(LanternState.open);
+    final shops = WallTextures.paintShopfront(LanternState.open);
+    addTearDown(window.dispose);
+    addTearDown(shops.dispose);
+    expect((window.width, window.height), (480, 192));
+    expect((shops.width, shops.height), (1584, 192));
+    final texels =
+        (window.width * window.height + shops.width * shops.height) * 15;
+    expect(texels * 4 * 4 / 3, lessThan(32 * 1024 * 1024));
+  });
+
   late final Map<LanternState, _Strip> strips;
   setUpAll(() async {
     strips = {
@@ -171,9 +183,9 @@ void main() {
     },
   );
 
-  test('every strip is the parade at 96 px per metre', () {
+  test('every strip is the parade at 48 px per metre', () {
     for (final strip in strips.values) {
-      expect(strip.pxPerMeter, 96);
+      expect(strip.pxPerMeter, 48);
       expect(strip.height / strip.pxPerMeter, WallTextures.shopfrontHeight);
     }
   });
