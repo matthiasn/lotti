@@ -858,6 +858,7 @@ void main() {
       final file = File(p.join(testDirectory.path, 'db.sqlite'))
         ..writeAsStringSync('this is not a database');
       File('${file.path}-wal').writeAsStringSync('stale wal');
+      File('${file.path}-shm').writeAsStringSync('stale shm');
       backupOf('db', '2026-09-05_09-00-00-000', 'older');
       backupOf('db', '2026-09-05_11-00-00-000', 'newest');
 
@@ -884,8 +885,22 @@ void main() {
       // restored one, so it leaves the live path — with the corrupt file
       // rather than into the bin, because it holds the commits the snapshot
       // is missing.
-      expect(File('${file.path}-wal').existsSync(), isFalse);
       final corrupt = kept.single;
+      for (final suffix in const ['-wal', '-shm']) {
+        expect(
+          File('${file.path}$suffix').existsSync(),
+          isFalse,
+          reason: suffix,
+        );
+        // Kept, not deleted: an unreadable file's WAL holds exactly the
+        // commits the snapshot is missing. The bytes are whatever SQLite
+        // last wrote there, so presence is what the assertion can state.
+        expect(
+          File(p.join(testDirectory.path, '$corrupt$suffix')).existsSync(),
+          isTrue,
+          reason: suffix,
+        );
+      }
       expect(
         File(p.join(testDirectory.path, '$corrupt-wal')).readAsStringSync(),
         'stale wal',
