@@ -185,10 +185,11 @@ void main() {
             },
           ),
         );
-        async.flushMicrotasks();
-        async.elapse(
-          PortalConstants.responseTimeout - const Duration(milliseconds: 1),
-        );
+        async
+          ..flushMicrotasks()
+          ..elapse(
+            PortalConstants.responseTimeout - const Duration(milliseconds: 1),
+          );
         expect(failure, isNull);
         expect(service.disposed, 0);
         async.elapse(const Duration(milliseconds: 1));
@@ -222,8 +223,9 @@ void main() {
             },
           ),
         );
-        async.flushMicrotasks();
-        async.elapse(PortalConstants.responseTimeout);
+        async
+          ..flushMicrotasks()
+          ..elapse(PortalConstants.responseTimeout);
         expect(failure, isA<TimeoutException>());
         expect(service.disposed, 1);
         expect(service.responses.hasListener, isFalse);

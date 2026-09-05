@@ -7,6 +7,10 @@
 - **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
 - Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
 
+When scoping `dart-mcp.analyze_files`, pass **absolute file paths** in
+`roots[].paths`. The SDK MCP server can return "No errors" for relative paths
+without reporting their diagnostics; CI's `flutter analyze` still finds them.
+
 Run desktop integration tests and VM unit tests sequentially in the same
 checkout. Both materialize native libraries under `build/native_assets/`;
 overlapping builds can remove a library while another test process is loading

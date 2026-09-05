@@ -22,7 +22,8 @@ void main() {
         // A process double records argv and its working directory; no Flutter
         // suite is launched recursively from this test.
         final executable = File(path.join(root.path, 'flutter'));
-        await executable.writeAsString('''#!/bin/sh
+        await executable.writeAsString('''
+#!/bin/sh
 printf '%s\\n' "\$@" > arguments.txt
 pwd > working_directory.txt
 exit $status

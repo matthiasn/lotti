@@ -48,8 +48,9 @@ String summarizeTestEvents(Iterable<String> lines, {int thresholdMs = 2000}) {
         if (test != null && decoded['skipped'] != true) {
           final duration =
               (decoded['time'] as int) - (test['startedAt'] as int);
-          if (duration >= thresholdMs)
+          if (duration >= thresholdMs) {
             slow.add((name: name, duration: duration));
+          }
         }
       case 'done':
         runFinished = true;
@@ -85,7 +86,7 @@ String summarizeTestEvents(Iterable<String> lines, {int thresholdMs = 2000}) {
   return report.toString();
 }
 
-/// Usage: dart run test/tool/analyze_test_timings.dart report.json [thresholdMs]
+/// Usage: `dart run test/tool/analyze_test_timings.dart report.json [thresholdMs]`
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln('Usage: analyze_test_timings.dart <jsonFile> [thresholdMs]');
