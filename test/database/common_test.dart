@@ -227,6 +227,123 @@ void main() {
       },
     );
 
+    test(
+      'keeps only the newest snapshots of a database and takes a pruned '
+      "raw copy's WAL with it",
+      () async {
+        const fileName = 'test_db.sqlite';
+        seedWalDatabase(fileName);
+        final backupDir = Directory(p.join(testDir.path, _backupDirectoryName))
+          ..createSync();
+        // A legacy raw-copy snapshot from before VACUUM INTO, with its WAL:
+        // it sorts oldest and must be the first to go, sidecar included.
+        File(
+          p.join(backupDir.path, 'test_db.2026-01-01_00-00-00-000.sqlite'),
+        ).writeAsStringSync('old');
+        File(
+          p.join(backupDir.path, 'test_db.2026-01-01_00-00-00-000.sqlite-wal'),
+        ).writeAsStringSync('old wal');
+
+        final kept = <String>[];
+        for (final second in [10, 11, 12]) {
+          final backup = await withClock(
+            Clock.fixed(DateTime(2026, 9, 5, 10, 30, second)),
+            () => createDbBackup(fileName),
+          );
+          kept.add(p.basename(backup.path));
+        }
+
+        final remaining =
+            backupDir
+                .listSync()
+                .map((entity) => p.basename(entity.path))
+                .toList()
+              ..sort();
+        expect(remaining, kept..sort());
+        expect(remaining, hasLength(backupsKeptPerDatabase));
+      },
+    );
+
+    test(
+      'a snapshot taken after the clock moved backwards still counts as the '
+      'newest, so three copies remain',
+      () async {
+        const fileName = 'test_db.sqlite';
+        seedWalDatabase(fileName);
+        for (final second in [10, 11, 12]) {
+          await withClock(
+            Clock.fixed(DateTime(2026, 9, 5, 10, 30, second)),
+            () => createDbBackup(fileName),
+          );
+        }
+
+        // The device clock was corrected backwards: the new file sorts
+        // below all three existing ones.
+        final latest = await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 10, 30, 5)),
+          () => createDbBackup(fileName),
+        );
+
+        final remaining = Directory(
+          p.join(testDir.path, _backupDirectoryName),
+        ).listSync().map((entity) => p.basename(entity.path)).toList()..sort();
+        expect(remaining, hasLength(backupsKeptPerDatabase));
+        expect(remaining, contains(p.basename(latest.path)));
+        expect(
+          remaining,
+          isNot(contains('test_db.2026-09-05_10-30-10-000.sqlite')),
+        );
+      },
+    );
+
+    test('prunes each database separately', () async {
+      seedWalDatabase('db.sqlite');
+      seedWalDatabase('agent.sqlite');
+      for (final second in [10, 11, 12, 13]) {
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 10, 30, second)),
+          () => createDbBackup('db.sqlite'),
+        );
+      }
+      await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 10, 30, 10)),
+        () => createDbBackup('agent.sqlite'),
+      );
+
+      final names = Directory(
+        p.join(testDir.path, _backupDirectoryName),
+      ).listSync().map((entity) => p.basename(entity.path)).toList();
+      expect(names.where((n) => n.startsWith('db.')), hasLength(3));
+      expect(
+        names.where((n) => n.startsWith('db.')),
+        isNot(contains('db.2026-09-05_10-30-10-000.sqlite')),
+      );
+      expect(names.where((n) => n.startsWith('agent.')), hasLength(1));
+    });
+
+    test('a failed snapshot leaves the existing backups untouched', () async {
+      const fileName = 'test_db.sqlite';
+      seedWalDatabase(fileName);
+      final earlier = await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 10, 30, 10)),
+        () => createDbBackup(fileName),
+      );
+      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
+      Directory(
+        p.join(backupDir.path, 'test_db.2026-09-05_10-30-15-000.sqlite'),
+      ).createSync();
+
+      await expectLater(
+        withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15)),
+          () => createDbBackup(fileName),
+        ),
+        throwsA(isA<SqliteException>()),
+      );
+
+      expect(earlier.existsSync(), isTrue);
+    });
+
     test('throws when the source file does not exist', () async {
       await expectLater(
         createDbBackup('missing.sqlite'),

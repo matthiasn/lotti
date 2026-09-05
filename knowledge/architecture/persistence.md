@@ -489,7 +489,13 @@ WAL instead, and the fallback is logged, so a reset is never blocked on a
 backup. It runs automatically before a **journal, sync or agent migration**
 (`backupBeforeMigration`, which logs a failure and continues rather than
 refusing to open the app) and on demand from
-*Settings → Advanced → Maintenance*.
+*Settings → Advanced → Maintenance*. Once a snapshot is complete, older
+snapshots of the same source beyond the three newest are deleted, WAL
+sidecar included, so `backup/` holds at most three snapshots per store (plus
+the `-wal` sidecar a raw-copy fallback keeps beside its snapshot); the
+snapshot just written is always among the three, even if the device clock
+has moved backwards since the previous one, and a failed snapshot never costs
+an existing one.
 That helper is a **legacy per-database fallback**, not a supported profile
 backup. It copies only the main SQLite file, has no store identity, manifest,
 checksum, media coverage, encryption, coordinated quiescence, or restore path.
