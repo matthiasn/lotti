@@ -32,7 +32,7 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   }
 
   /// Latest habit completion per habit/day since [rangeStart], projected to
-  /// the three fields consumers actually read.
+  /// the five fields consumers actually read.
   ///
   /// Returns one winning row per habit/day under a last-write-wins contract,
   /// without ever putting the `serialized` payload on the wire.
@@ -58,21 +58,18 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
   /// Ranking is unaffected: `PARTITION BY`/`ORDER BY` still use the indexed
   /// column, exactly as before.
   ///
-  /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
+  /// Rank only row IDs first, then extract the display fields from winning
+  /// rows. This avoids carrying serialized payloads through the window sort
+  /// and parsing display fields for superseded completions.
+  ///
+  /// See `docs/perf/2026-09-05-habit-refreshes.md`.
   Future<List<HabitCompletionRecord>> getHabitCompletionRecordsInRange({
     required DateTime rangeStart,
   }) async {
     final rows = await customSelect(
       r'''
-        SELECT habit_id, recorded_at, completion_type, source, auto_reason
-        FROM (
-          SELECT
-            json_extract(serialized, '$.data.habitId') AS habit_id,
-            json_extract(serialized, '$.meta.dateFrom') AS recorded_at,
-            journal.date_from AS date_from,
-            json_extract(serialized, '$.data.completionType') AS completion_type,
-            json_extract(serialized, '$.data.source') AS source,
-            json_extract(serialized, '$.data.autoCompleteReason') AS auto_reason,
+        WITH ranked AS (
+          SELECT id,
             ROW_NUMBER() OVER (
               PARTITION BY
                 json_extract(serialized, '$.data.habitId'),
@@ -92,8 +89,16 @@ mixin _JournalDbDataQueries on _$JournalDb, _JournalDbConfigFlags {
             AND date_from >= ?
             AND deleted = FALSE
         )
+        SELECT
+          json_extract(j.serialized, '$.data.habitId') AS habit_id,
+          json_extract(j.serialized, '$.meta.dateFrom') AS recorded_at,
+          json_extract(j.serialized, '$.data.completionType') AS completion_type,
+          json_extract(j.serialized, '$.data.source') AS source,
+          json_extract(j.serialized, '$.data.autoCompleteReason') AS auto_reason
+        FROM ranked
+        JOIN journal AS j ON j.id = ranked.id
         WHERE rn = 1
-        ORDER BY date_from ASC, habit_id ASC
+        ORDER BY j.date_from ASC, habit_id ASC
       ''',
       variables: [Variable<DateTime>(rangeStart)],
       readsFrom: {journal, configFlags},
