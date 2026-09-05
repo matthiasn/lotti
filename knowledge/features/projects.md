@@ -406,10 +406,15 @@ stateDiagram-v2
   done --> pending: Undo
 ```
 
-A run with nothing left open — decided before the page opened, or emptied by
-the decisions just made — collapses to `ProjectNextStepsSummary`: one line
-with the tally and when the agent last looked, over the same history
-disclosure. An empty run renders `ProjectNextStepsEmpty` with the same "last
+The band collapses to `ProjectNextStepsSummary` — one line with the tally and
+when the agent last looked, over the same history disclosure — in two cases:
+the run was already fully decided when the page opened, or every row has since
+been **dismissed**, leaving nothing on the list. An addition does *not* collapse
+the band: an added step keeps its row and its link to the task it created, so a
+run whose last open step was added stays expanded until the next visit. The
+collapse decision is latched per run, and restoring a step from the history
+lifts it again — otherwise an Undo on a run that opened decided would leave the
+summary standing over a step that is open again. An empty run renders `ProjectNextStepsEmpty` with the same "last
 looked" age. `ProjectNextStepsHistory` is the shared list behind both
 disclosures; it renders one quiet row per decided step and offers Undo on the
 dismissed ones. Every surface that shows an outcome takes a

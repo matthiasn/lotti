@@ -524,6 +524,12 @@ class _ProjectRecommendationsPanelState
       _historyOpen = false;
       _openHistoryDisclosed = false;
     }
+    // Restoring a step from the history reopens the run. The latch above is
+    // only re-evaluated when the run changes, so without this an Undo on a
+    // run that was already decided when the page opened would leave the
+    // summary standing and the restored step reading as passive history with
+    // no Add task or Dismiss until the user left and came back.
+    if (_collapsed && tally.pending > 0) _collapsed = false;
 
     if (steps.isEmpty) {
       return ProjectNextStepsEmpty(

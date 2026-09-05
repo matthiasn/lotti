@@ -555,6 +555,58 @@ void main() {
   );
 
   testWidgets(
+    "undoing from a decided run's history reopens the step with its controls",
+    (tester) async {
+      when(
+        () => service.restoreRecommendation('s2'),
+      ).thenAnswer((_) async => true);
+      await pumpSubject(
+        tester,
+        subject(
+          items: [
+            step(
+              's1',
+              'Confirm the escort',
+              status: ProjectRecommendationStatus.resolved,
+              createdTaskId: 'task-1',
+            ),
+            step(
+              's2',
+              'Split the first wave',
+              position: 1,
+              status: ProjectRecommendationStatus.dismissed,
+            ),
+          ],
+        ),
+      );
+
+      // The run was already decided when the page opened, so the band starts
+      // collapsed to its summary.
+      expect(find.textContaining('Last run:'), findsOneWidget);
+      await tester.tap(find.text('Show history'));
+      await tester.pump();
+      await tester.tap(find.text('Undo'));
+      await settle(tester);
+
+      verify(() => service.restoreRecommendation('s2')).called(1);
+      // The collapse decision is latched per run, so without reopening it the
+      // restored step would stay stuck in the summary as passive history.
+      expect(
+        find.textContaining('Last run:'),
+        findsNothing,
+        reason: 'A step is open again, so the band is no longer a summary.',
+      );
+      expect(find.text('Split the first wave'), findsOneWidget);
+      expect(
+        find.text('Add task'),
+        findsOneWidget,
+        reason: 'The restored step is actionable, not passive history.',
+      );
+      expect(find.text('Dismiss'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'an addition made on the page keeps its row; a dismissal empties the band',
     (tester) async {
       when(() => service.createTask('s1')).thenAnswer(
