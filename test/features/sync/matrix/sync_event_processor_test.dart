@@ -611,6 +611,53 @@ void main() {
     verify(() => fts5Db.reindexMeasurements(renamed, entries)).called(1);
   });
 
+  test(
+    'a definition the journal refuses as older is neither reindexed nor '
+    'announced',
+    () async {
+      final fts5Db = MockFts5Db();
+      final renamed = measurableHydration.copyWith(
+        choices: [
+          for (final choice in measurableHydration.choices!)
+            if (choice.id == hydrationClear.id)
+              choice.copyWith(title: 'Transparent')
+            else
+              choice,
+        ],
+      );
+      processor = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        savedTaskFiltersRepository: savedTaskFiltersRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        fts5Db: fts5Db,
+      );
+      when(
+        () => journalDb.getMeasurableDataTypeById(renamed.id),
+      ).thenAnswer((_) async => measurableHydration);
+      when(
+        () => journalDb.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 0);
+      final message = SyncMessage.entityDefinition(
+        entityDefinition: renamed,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => fts5Db.reindexMeasurements(any(), any()));
+      verifyNever(
+        () => updateNotifications.notify(
+          any(),
+          fromSync: any(named: 'fromSync'),
+        ),
+      );
+    },
+  );
+
   test('processes ai config messages', () async {
     final message = SyncMessage.aiConfig(
       aiConfig: fallbackAiConfig,

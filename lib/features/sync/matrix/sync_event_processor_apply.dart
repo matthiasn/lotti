@@ -51,7 +51,21 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         final previousMeasurable = measurable != null && fts5Db != null
             ? await journalDb.getMeasurableDataTypeById(measurable.id)
             : null;
-        await journalDb.upsertEntityDefinition(entityDefinition);
+        final linesAffected = await journalDb.upsertEntityDefinition(
+          entityDefinition,
+        );
+        if (linesAffected == 0) {
+          // The journal kept a newer copy. Nothing changed locally, so there
+          // is nothing to reindex or announce — reindexing from this stale
+          // copy would rewrite search rows with labels the app no longer
+          // shows.
+          _loggingService.log(
+            LogDomain.sync,
+            'Skipped older definition ${entityDefinition.id}',
+            subDomain: 'processor.apply.entityDefinition.skipped',
+          );
+          return null;
+        }
         if (measurable != null &&
             fts5Db != null &&
             measurementDefinitionAffectsFts(previousMeasurable, measurable)) {

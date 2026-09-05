@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -18,14 +19,17 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
   PersistenceDefinitionOps(super.logic);
 
   Future<int> upsertEntityDefinitionImpl(
-    EntityDefinition entityDefinition,
+    EntityDefinition definition,
   ) async {
-    final previousMeasurable = entityDefinition is MeasurableDataType
-        ? await journalDb.getMeasurableDataTypeById(entityDefinition.id)
+    final previousMeasurable = definition is MeasurableDataType
+        ? await journalDb.getMeasurableDataTypeById(definition.id)
         : null;
-    final linesAffected = await journalDb.upsertEntityDefinition(
-      entityDefinition,
+    final written = await _writeLocalEdit(
+      definition,
+      journalDb.upsertEntityDefinition,
     );
+    if (written == null) return 0;
+    final (entityDefinition, linesAffected) = written;
     final typeNotification = switch (entityDefinition) {
       CategoryDefinition() => categoriesNotification,
       HabitDefinition() => habitsNotification,
@@ -50,6 +54,59 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
     return linesAffected;
   }
 
+  /// Writes a local definition edit so that it applies and wins on sync.
+  ///
+  /// `JournalDb` refuses a definition older than the stored one — the guard
+  /// that keeps a late sync arrival from overwriting a newer edit. A local
+  /// edit trips the same guard when a sync landed while the editor was open
+  /// and the caller did not refresh `updatedAt` (deletes from the settings
+  /// pages, for one). A user's action must still apply, so the edit is
+  /// rebuilt from the stored stamp: its timestamp goes strictly above the
+  /// stored one — even when the peer's clock runs ahead of ours — and it
+  /// carries the stored vector clock, so an ordered clock cannot outrank it
+  /// (equal clocks defer to `updatedAt`). That copy applies here and wins on
+  /// every peer holding the same stored version.
+  ///
+  /// Returns the definition that was actually stored with the write's row
+  /// count, or null when even the rebuilt copy was refused — then nothing
+  /// was saved, and the caller must neither announce nor sync it.
+  Future<(EntityDefinition, int)?> _writeLocalEdit(
+    EntityDefinition definition,
+    Future<int> Function(EntityDefinition definition) write,
+  ) async {
+    final linesAffected = await write(definition);
+    if (linesAffected != 0) {
+      return (definition, linesAffected);
+    }
+
+    final stored = await journalDb.definitionStamp(definition);
+    final now = clock.now();
+    final floor = stored?.updatedAt;
+    final restamped = definition.copyWith(
+      updatedAt: floor == null || now.isAfter(floor)
+          ? now
+          : floor.add(const Duration(milliseconds: 1)),
+      vectorClock: stored?.vectorClock ?? definition.vectorClock,
+    );
+    final restampedLines = await write(restamped);
+    if (restampedLines == 0) {
+      loggingService.error(
+        LogDomain.persistence,
+        StateError(
+          'Local definition edit ${definition.id} refused twice; not saved',
+        ),
+        subDomain: 'upsertEntityDefinition.restamp',
+      );
+      return null;
+    }
+    loggingService.log(
+      LogDomain.persistence,
+      'Re-stamped stale local definition edit ${definition.id}',
+      subDomain: 'upsertEntityDefinition.restamp',
+    );
+    return (restamped, restampedLines);
+  }
+
   Future<void> _reindexMeasurements(MeasurableDataType dataType) async {
     try {
       final entries = await journalDb.getMeasurementsByType(
@@ -72,9 +129,14 @@ class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
   }
 
   Future<int> upsertDashboardDefinitionImpl(
-    DashboardDefinition dashboard,
+    DashboardDefinition definition,
   ) async {
-    final linesAffected = await journalDb.upsertDashboardDefinition(dashboard);
+    final written = await _writeLocalEdit(
+      definition,
+      (d) => journalDb.upsertDashboardDefinition(d as DashboardDefinition),
+    );
+    if (written == null) return 0;
+    final (dashboard, linesAffected) = written;
     updateNotifications.notify({dashboard.id, dashboardsNotification});
     await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(

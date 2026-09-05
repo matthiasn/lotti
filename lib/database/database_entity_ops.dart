@@ -16,8 +16,20 @@ mixin _JournalDbEntityOps
 
   /// Writes the canonical JSON file for [updated], honoring the
   /// documents-directory override injected via the [JournalDb]
-  /// constructor.
-  Future<void> _persistEntityJson(JournalEntity updated);
+  /// constructor. Protected so a test double can delay or fail one write
+  /// and exercise [_publishSidecar]'s ordering.
+  @protected
+  @visibleForTesting
+  Future<void> persistEntityJson(JournalEntity updated);
+
+  // Per-entity ordering for sidecar writes. The transaction hands out a
+  // ticket per applied write; sidecar writes for one id run one after the
+  // other, and a ticket older than the newest one already on disk is
+  // skipped — so two accepted writes of the same entity can never leave
+  // the earlier document as the sync payload for the later row.
+  final Map<String, int> _sidecarIssued = <String, int>{};
+  final Map<String, int> _sidecarWritten = <String, int>{};
+  final Map<String, Future<void>> _sidecarChain = <String, Future<void>>{};
 
   /// Reports [error] to the domain logger, if one is available.
   void _captureException(
@@ -83,73 +95,127 @@ mixin _JournalDbEntityOps
     return VclockStatus.b_gt_a;
   }
 
+  /// Applies [updated] to the journal after a vector-clock comparison with
+  /// the stored row.
+  ///
+  /// The read of the existing row, the comparison, the upsert, the conflict
+  /// bookkeeping and the `labeled` reconciliation run in **one transaction**:
+  /// Drift serialises transactions on the write connection, so a concurrent
+  /// write to the same id — a local edit racing an inbound sync, or two
+  /// pooled readers seeing different snapshots — cannot slip between the
+  /// check and the write. A caller that already holds a transaction (the
+  /// sync inbound handler) simply nests this one.
+  ///
+  /// The JSON sidecar is written **after** the transaction commits: it is
+  /// the sync payload, so it must never describe a row that rolled back,
+  /// and writing it inside the transaction would hold the journal writer
+  /// lock across file I/O. Sidecar writes for one entity are published in
+  /// commit order (see [_publishSidecar]).
   Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
     bool overrideComparison = false,
     bool overwrite = true,
   }) async {
-    var applied = false;
-    JournalUpdateSkipReason? skipReason;
-    var rowsWritten = 0;
     final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: clock.now(),
     );
 
-    final existingDbEntity = await entityById(dbEntity.id);
+    var ticket = 0;
+    final result = await transaction(() async {
+      var applied = false;
+      JournalUpdateSkipReason? skipReason;
+      var rowsWritten = 0;
 
-    if (existingDbEntity != null && !overwrite) {
-      skipReason = JournalUpdateSkipReason.overwritePrevented;
-    } else if (existingDbEntity != null) {
-      final existing = fromDbEntity(existingDbEntity);
-      VclockStatus? status;
-      try {
-        status = await detectConflict(existing, updated);
-      } catch (error, stackTrace) {
-        _captureException(
-          error,
-          subDomain: 'detectConflict',
-          stackTrace: stackTrace,
-        );
-        skipReason = JournalUpdateSkipReason.conflict;
-      }
+      final existingDbEntity = await entityById(dbEntity.id);
 
-      final canApply =
-          status == VclockStatus.b_gt_a ||
-          (overrideComparison && status != null);
+      if (existingDbEntity != null && !overwrite) {
+        skipReason = JournalUpdateSkipReason.overwritePrevented;
+      } else if (existingDbEntity != null) {
+        final existing = fromDbEntity(existingDbEntity);
+        VclockStatus? status;
+        try {
+          status = await detectConflict(existing, updated);
+        } catch (error, stackTrace) {
+          _captureException(
+            error,
+            subDomain: 'detectConflict',
+            stackTrace: stackTrace,
+          );
+          skipReason = JournalUpdateSkipReason.conflict;
+        }
 
-      if (canApply) {
+        final canApply =
+            status == VclockStatus.b_gt_a ||
+            (overrideComparison && status != null);
+
+        if (canApply) {
+          rowsWritten = await upsertJournalDbEntity(dbEntity);
+          applied = true;
+          final existingConflict = await conflictById(dbEntity.id);
+
+          if (existingConflict != null) {
+            await resolveConflict(existingConflict);
+          }
+        } else if (status != null) {
+          _captureEvent(
+            EnumToString.convertToString(status),
+            subDomain: 'Conflict status',
+          );
+          skipReason = status == VclockStatus.concurrent
+              ? JournalUpdateSkipReason.conflict
+              : JournalUpdateSkipReason.olderOrEqual;
+        } else {
+          skipReason ??= JournalUpdateSkipReason.conflict;
+        }
+      } else {
         rowsWritten = await upsertJournalDbEntity(dbEntity);
         applied = true;
-        final existingConflict = await conflictById(dbEntity.id);
-
-        if (existingConflict != null) {
-          await resolveConflict(existingConflict);
-        }
-      } else if (status != null) {
-        _captureEvent(
-          EnumToString.convertToString(status),
-          subDomain: 'Conflict status',
-        );
-        skipReason = status == VclockStatus.concurrent
-            ? JournalUpdateSkipReason.conflict
-            : JournalUpdateSkipReason.olderOrEqual;
-      } else {
-        skipReason ??= JournalUpdateSkipReason.conflict;
       }
-    } else {
-      rowsWritten = await upsertJournalDbEntity(dbEntity);
-      applied = true;
-    }
 
-    if (applied) {
-      await _persistEntityJson(updated);
-      await addLabeled(updated);
-      return JournalUpdateResult.applied(rowsWritten: rowsWritten);
-    }
+      if (applied) {
+        await addLabeled(updated);
+        ticket = (_sidecarIssued[dbEntity.id] ?? 0) + 1;
+        _sidecarIssued[dbEntity.id] = ticket;
+        return JournalUpdateResult.applied(rowsWritten: rowsWritten);
+      }
 
-    return JournalUpdateResult.skipped(
-      reason: skipReason ?? JournalUpdateSkipReason.olderOrEqual,
-    );
+      return JournalUpdateResult.skipped(
+        reason: skipReason ?? JournalUpdateSkipReason.olderOrEqual,
+      );
+    });
+
+    if (result.applied) {
+      await _publishSidecar(updated, ticket);
+    }
+    return result;
+  }
+
+  /// Writes the sidecar for [entity] after the sidecar writes queued before
+  /// it for the same id, and only if no newer [ticket] has been written yet.
+  ///
+  /// A failed write does not poison the chain: the next writer for the id
+  /// still runs, and the failure surfaces to this caller.
+  Future<void> _publishSidecar(JournalEntity entity, int ticket) {
+    final id = entity.meta.id;
+    final previous = _sidecarChain[id] ?? Future<void>.value();
+    late final Future<void> current;
+    current = previous
+        .catchError((Object _) {})
+        .then((_) async {
+          if ((_sidecarWritten[id] ?? 0) >= ticket) return;
+          await persistEntityJson(entity);
+          _sidecarWritten[id] = ticket;
+        })
+        .whenComplete(() {
+          if (!identical(_sidecarChain[id], current)) return;
+          _sidecarChain.remove(id);
+          if (_sidecarWritten[id] == _sidecarIssued[id]) {
+            _sidecarIssued.remove(id);
+            _sidecarWritten.remove(id);
+          }
+        });
+    _sidecarChain[id] = current;
+    return current;
   }
 
   Future<Conflict?> conflictById(String id) async {

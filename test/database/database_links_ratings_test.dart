@@ -649,7 +649,7 @@ void main() {
         expect(newLookup.single.toId, 'updated');
       });
 
-      test('upsertEntryLink handles precheck errors gracefully', () async {
+      test('a failing pre-read propagates instead of writing blind', () async {
         final specialDb = _PrecheckThrowingJournalDb();
         addTearDown(() async {
           await specialDb.close();
@@ -663,11 +663,40 @@ void main() {
           timestamp: DateTime(2024, 8, 9),
         );
 
-        final result = await specialDb.upsertEntryLink(link);
-        expect(result, 1);
-        final stored = await specialDb.linksForEntryIds({'dst'});
-        expect(stored, hasLength(1));
+        await expectLater(specialDb.upsertEntryLink(link), throwsStateError);
+        expect(await specialDb.linksForEntryIds({'dst'}), isEmpty);
       });
+
+      test(
+        'concurrent inserts of one (from, to, type) with different ids are '
+        'serialised: one wins, the other is blocked rather than thrown',
+        () async {
+          final base = DateTime(2024, 8, 9);
+          final a = buildEntryLink(
+            id: 'race-a',
+            fromId: 'race-from',
+            toId: 'race-to',
+            timestamp: base,
+          );
+          final b = buildEntryLink(
+            id: 'race-b',
+            fromId: 'race-from',
+            toId: 'race-to',
+            timestamp: base,
+          );
+
+          // Without a transaction both duplicate checks see no row, both
+          // insert, and the second collides on UNIQUE(from_id, to_id, type).
+          final results = await Future.wait([
+            db!.upsertEntryLink(a),
+            db!.upsertEntryLink(b),
+          ]);
+
+          expect(results.where((r) => r != 0), hasLength(1));
+          expect(results, contains(0));
+          expect(await db!.linksForEntryIds({'race-to'}), hasLength(1));
+        },
+      );
     });
 
     group('typedLinksForTaskIds -', () {

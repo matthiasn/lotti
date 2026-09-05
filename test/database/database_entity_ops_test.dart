@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -23,6 +24,23 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 import 'test_utils.dart';
+
+/// Holds the first sidecar write until released so a later write for the
+/// same entity can overtake it on disk.
+class _SlowFirstSidecarJournalDb extends JournalDb {
+  _SlowFirstSidecarJournalDb() : super(inMemoryDatabase: true);
+
+  final Completer<void> releaseFirst = Completer<void>();
+  int sidecarWrites = 0;
+
+  @override
+  Future<void> persistEntityJson(JournalEntity updated) async {
+    if (++sidecarWrites == 1) {
+      await releaseFirst.future;
+    }
+    await super.persistEntityJson(updated);
+  }
+}
 
 enum _ConflictClockRelation {
   equal,
@@ -710,6 +728,98 @@ void main() {
           expect(retrieved?.meta.starred, false);
         },
       );
+    });
+
+    group('Write-path atomicity -', () {
+      test(
+        'concurrent writes of the same id are serialised: the second sees '
+        'the first and records a conflict instead of overwriting it',
+        () async {
+          const id = 'race-entry';
+          final first = createJournalEntryWithVclock(
+            const VectorClock({'a': 1}),
+            id: id,
+          );
+          final second = createJournalEntryWithVclock(
+            const VectorClock({'b': 1}),
+            id: id,
+          );
+
+          // Both calls are issued before either has read the row. Without a
+          // transaction around read + write, both reads return "no row", both
+          // writes apply, and the concurrent clocks are never noticed.
+          final results = await Future.wait([
+            db!.updateJournalEntity(first),
+            db!.updateJournalEntity(second),
+          ]);
+
+          expect(results.where((r) => r.applied), hasLength(1));
+          expect(
+            results.map((r) => r.skipReason),
+            contains(JournalUpdateSkipReason.conflict),
+          );
+          final conflict = await db!.conflictById(id);
+          expect(conflict, isNotNull);
+          expect(conflict!.status, ConflictStatus.unresolved.index);
+        },
+      );
+
+      test(
+        'sidecars for one entity land in commit order even when the earlier '
+        'write finishes last',
+        () async {
+          final slowDb = _SlowFirstSidecarJournalDb();
+          addTearDown(slowDb.close);
+          await initConfigFlags(slowDb, inMemoryDatabase: true);
+          const id = 'ordered-sidecar';
+          final first = createJournalEntryWithVclock(
+            const VectorClock({'a': 1}),
+            id: id,
+          );
+          final second = createJournalEntryWithVclock(
+            const VectorClock({'a': 2}),
+            id: id,
+          );
+
+          final firstWrite = slowDb.updateJournalEntity(first);
+          final secondWrite = slowDb.updateJournalEntity(second);
+          // Both rows commit; the first sidecar write is parked. Without
+          // per-entity ordering the second sidecar lands now and the first
+          // overwrites it once released, leaving the older document as the
+          // sync payload for the newer row.
+          await pumpEventQueue();
+          slowDb.releaseFirst.complete();
+          await Future.wait([firstWrite, secondWrite]);
+
+          final sidecar = File(entityPath(second, testDirectory));
+          final onDisk = JournalEntity.fromJson(
+            jsonDecode(sidecar.readAsStringSync()) as Map<String, dynamic>,
+          );
+          expect(onDisk.meta.vectorClock?.vclock, {'a': 2});
+        },
+      );
+
+      test('the JSON sidecar is written only for an applied write', () async {
+        final existing = createJournalEntryWithVclock(
+          const VectorClock({'a': 2}),
+          id: 'sidecar-entry',
+        );
+        await db!.updateJournalEntity(existing);
+        final sidecar = File(entityPath(existing, testDirectory));
+        expect(sidecar.existsSync(), isTrue);
+        final before = sidecar.lastModifiedSync();
+        final beforeContent = sidecar.readAsStringSync();
+
+        final older = createJournalEntryWithVclock(
+          const VectorClock({'a': 1}),
+          id: 'sidecar-entry',
+        );
+        final result = await db!.updateJournalEntity(older);
+
+        expect(result.applied, isFalse);
+        expect(sidecar.lastModifiedSync(), before);
+        expect(sidecar.readAsStringSync(), beforeContent);
+      });
     });
 
     group('Conflict Handling -', () {
