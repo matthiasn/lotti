@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.28]
+
+### Changed
+
+- **Project next steps are easier to review and turn into tasks.** The AI
+  summary now appears above project tasks with one compact list of suggestions.
+  Confirm or dismiss suggestions individually, confirm all, or create a linked
+  task from a suggestion. Each successful analysis replaces stale next steps.
+
 ## [1.0.27]
 
 ### Changed
