@@ -240,8 +240,9 @@ class AgentRepoCore {
   /// many independent callers (Riverpod provider families resolving one row
   /// each) firing concurrently, not of one loop that could be batched at its
   /// call site. The plan was always a clean primary-key seek; the cost was
-  /// ~19 ms of isolate round trip per call. Coalescing at this layer fixes
-  /// every such caller at once, including ones that have no single place to
+  /// ~19 ms of executor await per call (including queueing and transport).
+  /// Coalescing at this layer reduces the round trips for
+  /// every such caller, including ones that have no single place to
   /// batch.
   ///
   /// See `docs/perf/2026-08-01_slow-queries-investigation.md`.
@@ -259,8 +260,8 @@ class AgentRepoCore {
   /// agent_entities WHERE id = ? AND deleted_at IS NULL` — all from
   /// the per-row `Future.wait` fan-out in `_collectObservationPayloads`
   /// (project_agent_workflow.dart and task_agent_workflow.dart). The
-  /// plan was a clean PK seek; the cost was the writer-lock queue
-  /// wait piling up behind each independent isolate hop.
+  /// plan was a clean PK seek; the logged executor time included queueing
+  /// and isolate transport, without identifying which component dominated.
   ///
   /// Chunking guards the bulk path against SQLite's host-variable
   /// limit (default 999): an unbounded caller (e.g.
@@ -316,11 +317,12 @@ class AgentRepoCore {
   /// [type] (and optionally [subtype]). Shared batched read used by the
   /// state/head latest-per-agent lookups in this class and in
   /// [AgentRepoQueries].
-  /// [outerPredicate] is appended to the outer `WHERE rn = 1` — i.e. it filters
-  /// the *winning* row per agent, after ranking. Filtering inside the ranked
-  /// subquery instead would be a correctness bug: it could promote an older row
-  /// that satisfies the predicate over a newer one that does not, resurrecting
-  /// state the newest row had cleared.
+  /// A candidate is returned only when an indexed check finds no newer row in
+  /// its agent/type partition. This avoids carrying historical payloads through
+  /// a window function; candidate index work still grows with partition size.
+  /// [outerPredicate] filters the winner without constraining the newer-row
+  /// check. Applying it to that check could promote an older matching row over
+  /// a newer non-matching row, resurrecting state the newest row had cleared.
   Future<List<AgentDomainEntity>> latestEntitiesByAgentIds({
     required Iterable<String> agentIds,
     required String type,
@@ -328,31 +330,36 @@ class AgentRepoCore {
     String outerPredicate = '',
   }) async {
     final result = <AgentDomainEntity>[];
-    // Every chunk binds its own ids plus the type, the optional subtype, and
-    // whatever `outerPredicate` needs — all against one 999-variable budget.
+    // Every chunk binds its ids plus the type and optional subtype against
+    // one 999-variable budget. The outer predicate has no bound parameters.
     final reserved = 1 + (subtype == null ? 0 : 1);
     for (final chunk in sqliteInClauseChunks(agentIds, reserve: reserved)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final subtypePredicate = subtype == null ? '' : 'AND subtype = ? ';
+      final newerSubtypePredicate = subtype == null
+          ? ''
+          : 'AND newer.subtype = entity.subtype';
       final rows = await _db
           .customSelect(
             '''
-              SELECT id, agent_id, type, subtype, thread_id, created_at,
-                updated_at, deleted_at, serialized, schema_version
-              FROM (
-                SELECT agent_entities.*,
-                  ROW_NUMBER() OVER (
-                    PARTITION BY agent_id
-                    ORDER BY created_at DESC, id DESC
-                  ) AS rn
-                FROM agent_entities
-                WHERE agent_id IN ($placeholders)
-                  AND type = ?
-                  $subtypePredicate
-                  AND deleted_at IS NULL
-              )
-              WHERE rn = 1
+              SELECT entity.*
+              FROM agent_entities AS entity
+              WHERE agent_id IN ($placeholders)
+                AND type = ?
+                $subtypePredicate
+                AND deleted_at IS NULL
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM agent_entities AS newer
+                  WHERE newer.agent_id = entity.agent_id
+                    AND newer.type = entity.type
+                    $newerSubtypePredicate
+                    AND newer.deleted_at IS NULL
+                    AND (newer.created_at, newer.id) >
+                      (entity.created_at, entity.id)
+                )
                 $outerPredicate
+              ORDER BY entity.agent_id
             ''',
             variables: [
               ...chunk.map(Variable.withString),
@@ -571,8 +578,8 @@ class AgentRepoCore {
   /// On an install with ~900 agents that is ~900 rows decoded from JSON on
   /// every agent-update notification; the 2026-06/07 slow-query logs show 2,050
   /// full-population reads of this shape in 14 days (`args=901`), each around
-  /// 32 ms. The predicate is applied *after* ranking, so an agent whose newest
-  /// state cleared its wake is correctly excluded.
+  /// 32 ms. The predicate is applied *after* newest-row selection, so an agent
+  /// whose newest state cleared its wake is correctly excluded.
   Future<Map<String, AgentStateEntity>> getAgentStatesWithPendingWakes(
     List<String> agentIds, {
     Iterable<String> alsoIncludeAgentIds = const <String>[],
