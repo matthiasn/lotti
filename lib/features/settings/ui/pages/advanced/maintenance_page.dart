@@ -147,7 +147,7 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
                 confirmLabel: context.messages.maintenanceDeleteDatabaseConfirm,
               );
               if (confirmed && context.mounted) {
-                await maintenance.deleteEditorDb();
+                await maintenance.clearEditorDb();
               }
             },
           ),

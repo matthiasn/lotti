@@ -73,7 +73,9 @@ class SyncDatabase extends _$SyncDatabase
     bool background = true,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
-  }) : super(
+  }) : fileName = overriddenFilename ?? syncDbFileName,
+       _documentsDirectoryProvider = documentsDirectoryProvider,
+       super(
          openDbConnection(
            overriddenFilename ?? syncDbFileName,
            inMemoryDatabase: inMemoryDatabase,
@@ -85,9 +87,16 @@ class SyncDatabase extends _$SyncDatabase
 
   // Used by database tests to wrap instrumented Drift connections.
   // ignore: unused-code
-  SyncDatabase.connect(super.c) : super.connect();
+  SyncDatabase.connect(super.c)
+    : fileName = syncDbFileName,
+      _documentsDirectoryProvider = null,
+      super.connect();
 
   bool inMemoryDatabase = false;
+
+  /// The file this database lives in; the pre-migration backup copies it.
+  final String fileName;
+  final Future<Directory> Function()? _documentsDirectoryProvider;
 
   @override
   int get schemaVersion => 29;
@@ -104,6 +113,14 @@ class SyncDatabase extends _$SyncDatabase
         await customStatement(_createIdxOutboxActionableSubject);
       },
       onUpgrade: (Migrator m, int from, int to) async {
+        if (!inMemoryDatabase) {
+          await backupBeforeMigration(
+            fileName,
+            from: from,
+            to: to,
+            documentsDirectoryProvider: _documentsDirectoryProvider,
+          );
+        }
         if (from < 2) {
           // Creates tables with all current columns (including payload_type)
           await m.createTable(syncSequenceLog);

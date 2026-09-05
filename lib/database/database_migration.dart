@@ -9,6 +9,8 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
   Future<void> _ensureLabelTables(Migrator migrator);
   Future<void> _rebuildLabeledWithFkCascade();
   bool get inMemoryDatabase;
+  String get fileName;
+  Future<Directory> Function()? get _documentsDirectoryProvider;
 
   @override
   MigrationStrategy get migration {
@@ -33,20 +35,12 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
         );
 
         if (!inMemoryDatabase) {
-          try {
-            await createDbBackup(journalDbFileName);
-            DevLogger.log(
-              name: 'JournalDb',
-              message: 'Database backup created before migration',
-            );
-          } catch (e, s) {
-            DevLogger.error(
-              name: 'JournalDb',
-              message: 'Failed to create backup before migration',
-              error: e,
-              stackTrace: s,
-            );
-          }
+          await backupBeforeMigration(
+            fileName,
+            from: from,
+            to: to,
+            documentsDirectoryProvider: _documentsDirectoryProvider,
+          );
         }
 
         if (from < 19) {

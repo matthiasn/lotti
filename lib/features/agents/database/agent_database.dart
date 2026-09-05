@@ -20,7 +20,8 @@ class AgentDatabase extends _$AgentDatabase {
     int readPool = 2,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
-  }) : super(
+  }) : _documentsDirectoryProvider = documentsDirectoryProvider,
+       super(
          openDbConnection(
            agentDbFileName,
            inMemoryDatabase: inMemoryDatabase,
@@ -32,6 +33,7 @@ class AgentDatabase extends _$AgentDatabase {
        );
 
   final bool inMemoryDatabase;
+  final Future<Directory> Function()? _documentsDirectoryProvider;
 
   @override
   int get schemaVersion => 19;
@@ -144,6 +146,14 @@ class AgentDatabase extends _$AgentDatabase {
     return MigrationStrategy(
       onCreate: (m) => m.createAll(),
       onUpgrade: (m, from, to) async {
+        if (!inMemoryDatabase) {
+          await backupBeforeMigration(
+            agentDbFileName,
+            from: from,
+            to: to,
+            documentsDirectoryProvider: _documentsDirectoryProvider,
+          );
+        }
         if (from < 2) {
           await customStatement(
             'ALTER TABLE wake_run_log ADD COLUMN user_rating REAL',
