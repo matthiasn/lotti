@@ -31,6 +31,7 @@ class WakeThrottleCoordinator with AgentErrorLogging {
 
   final _throttleDeadlines = <String, DateTime>{};
   final _deferredDrainTimers = <String, Timer>{};
+  final _pendingClears = <String, Future<void>>{};
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(LogDomain.agentRuntime, message, subDomain: subDomain);
@@ -71,6 +72,9 @@ class WakeThrottleCoordinator with AgentErrorLogging {
       return;
     }
     final deadline = customDeadline ?? now.add(throttleWindow);
+    // A new deadline starts a new generation: a later clear must run after
+    // its persistence, even if the previous generation is still clearing.
+    unawaited(_pendingClears.remove(agentId));
     _throttleDeadlines[agentId] = deadline;
 
     // Schedule the deferred drain FIRST (synchronous) so the timer is always
@@ -107,6 +111,9 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   /// the past is ignored so a stale timestamp doesn't fire a drain immediately.
   void setDeadlineFromHydration(String agentId, DateTime deadline) {
     if (deadline.isBefore(clock.now())) return;
+    // A new deadline starts a new generation: a later clear must run after
+    // its persistence, even if the previous generation is still clearing.
+    unawaited(_pendingClears.remove(agentId));
     _throttleDeadlines[agentId] = deadline;
     _scheduleDeferredDrain(agentId, deadline);
   }
@@ -114,12 +121,16 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   /// Cancels [agentId]'s cooldown: drops the in-memory deadline, cancels the
   /// deferred drain timer, and clears the persisted `nextWakeAt`. Used when a
   /// wake is forced (e.g. manual re-analysis) and the countdown is moot.
+  /// Concurrent clears share the persisted read until it completes. Even when
+  /// no deadline was hydrated, the first clear retires stale persisted state.
   void clearThrottle(String agentId) {
     _throttleDeadlines.remove(agentId);
     _deferredDrainTimers[agentId]?.cancel();
     _deferredDrainTimers.remove(agentId);
-    _log(
+    domainLogger?.logSampled(
+      LogDomain.agentRuntime,
       'throttle cleared for ${DomainLogger.sanitizeId(agentId)}',
+      sampleKey: 'throttle.clear',
       subDomain: 'throttle',
     );
     unawaited(_clearPersistedThrottle(agentId));
@@ -138,7 +149,22 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   ///
   /// Writes directly to repository (bypassing AgentSyncService) because
   /// throttle state is per-device and should NOT be synced to other devices.
-  Future<void> _clearPersistedThrottle(String agentId) async {
+  Future<void> _clearPersistedThrottle(String agentId) {
+    final pending = _pendingClears[agentId];
+    if (pending != null) return pending;
+    final clear = _persistThrottleClear(agentId);
+    _pendingClears[agentId] = clear;
+    unawaited(
+      clear.whenComplete(() {
+        if (identical(_pendingClears[agentId], clear)) {
+          _pendingClears.remove(agentId);
+        }
+      }),
+    );
+    return clear;
+  }
+
+  Future<void> _persistThrottleClear(String agentId) async {
     try {
       if (_throttleDeadlines.containsKey(agentId)) return;
 

@@ -436,6 +436,112 @@ void main() {
       });
     });
 
+    test('coalesces repeated clears while the same state read is pending', () {
+      fakeAsync((async) {
+        final read = Completer<AgentStateEntity?>();
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) => read.future);
+        final changed = <String>[];
+        final coordinator = createCoordinator(
+          onDrainRequested: () async {},
+          onPersistedStateChanged: changed.add,
+        );
+        addTearDown(coordinator.dispose);
+        for (var i = 0; i < 100; i++) {
+          coordinator.clearThrottle('agent-1');
+          async.flushMicrotasks();
+        }
+        verify(() => repository.getAgentState('agent-1')).called(1);
+        read.complete(
+          makeTestState(
+            agentId: 'agent-1',
+            nextWakeAt: DateTime(2026, 9, 5, 12),
+          ),
+        );
+        async.flushMicrotasks();
+        final saved =
+            verify(() => repository.upsertEntity(captureAny())).captured.single
+                as AgentStateEntity;
+        expect(saved.nextWakeAt, isNull);
+        expect(changed, ['agent-1']);
+
+        // Once the clear completed, a later request must re-read persisted
+        // state: it may have changed without in-memory hydration.
+        coordinator.clearThrottle('agent-1');
+        async.flushMicrotasks();
+        verify(() => repository.getAgentState('agent-1')).called(1);
+      });
+    });
+
+    test('old clear completion cannot evict a newer deadline clear', () {
+      fakeAsync((async) {
+        final reads = <Completer<AgentStateEntity?>>[];
+        when(() => repository.getAgentState('agent-1')).thenAnswer((_) {
+          final read = Completer<AgentStateEntity?>();
+          reads.add(read);
+          return read.future;
+        });
+        final coordinator = createCoordinator(onDrainRequested: () async {});
+        addTearDown(coordinator.dispose);
+        coordinator.clearThrottle('agent-1');
+        async.flushMicrotasks();
+        unawaited(coordinator.setDeadline('agent-1'));
+        async.flushMicrotasks();
+        coordinator.clearThrottle('agent-1');
+        async.flushMicrotasks();
+        expect(reads, hasLength(3));
+
+        reads[0].complete(makeTestState(agentId: 'agent-1'));
+        async.flushMicrotasks();
+        coordinator.clearThrottle('agent-1');
+        async.flushMicrotasks();
+        expect(reads, hasLength(3), reason: 'the newer clear is still pending');
+
+        reads[1].complete(makeTestState(agentId: 'agent-1'));
+        async.flushMicrotasks();
+        final deadlineWrite =
+            verify(() => repository.upsertEntity(captureAny())).captured.single
+                as AgentStateEntity;
+        expect(deadlineWrite.nextWakeAt, isNotNull);
+        reads[2].complete(deadlineWrite);
+        async.flushMicrotasks();
+        final clearWrite =
+            verify(() => repository.upsertEntity(captureAny())).captured.single
+                as AgentStateEntity;
+        expect(clearWrite.nextWakeAt, isNull);
+        expect(coordinator.deadlineFor('agent-1'), isNull);
+      });
+    });
+
+    test('repeated clear diagnostics retain counted summaries', () {
+      fakeAsync((async) {
+        final logging = MockLoggingService();
+        stubLoggingService(logging);
+        final logger = DomainLogger(loggingService: logging)
+          ..enabledDomains.add(LogDomain.agentRuntime);
+        final coordinator = createCoordinator(
+          onDrainRequested: () async {},
+          domainLogger: logger,
+        );
+        addTearDown(coordinator.dispose);
+        for (var i = 0; i < 101; i++) {
+          coordinator.clearThrottle('agent-1');
+        }
+        async.flushMicrotasks();
+        final messages = verify(
+          () => logging.captureEvent(
+            captureAny<dynamic>(),
+            domain: 'agentRuntime',
+            subDomain: 'throttle',
+          ),
+        ).captured.cast<String>();
+        expect(messages, hasLength(2));
+        expect(messages.first, contains('observed=1 suppressed=0 total=1'));
+        expect(messages.last, contains('observed=100 suppressed=99 total=101'));
+      });
+    });
+
     test('serializes persisted throttle set and clear mutations', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final transactionRepository = _TransactionCheckingAgentRepository();
