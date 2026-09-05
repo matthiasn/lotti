@@ -142,7 +142,9 @@ definitions.
 Completion notifications debounce the database query itself by 200 ms. Initial
 load, tab activation, explicit midnight refresh, and range changes refresh
 immediately. One read runs at a time; requests arriving during that read share
-one trailing read with the latest range. All callers wait for that drain, and a
+one trailing read with the latest range, even if the earlier attempt fails.
+Without a queued request, a failed read propagates its error and releases the
+drain for a later refresh. All callers wait for that drain, and a
 superseded result never replaces the displayed completion data. Definitions and
 filters can still recompute using the last successful data while a read runs.
 The update subscription starts before the first query so notifications during
@@ -160,7 +162,7 @@ stateDiagram-v2
   ReadingAgain --> ReadingAgain: further requests coalesce
   ReadingAgain --> Reading: read finishes, fetch latest range
   Reading --> Idle: publish result or propagate error
-  ReadingAgain --> Idle: propagate error
+  ReadingAgain --> Reading: failed read, fetch queued request
   Idle --> Disposed: dispose
   Debouncing --> Disposed: cancel timer
   Reading --> Disposed: discard late result

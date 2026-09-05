@@ -163,9 +163,19 @@ class HabitsController extends Notifier<HabitsState> {
           final rangeStart = _now().dayAtMidnight.subtract(
             Duration(days: state.timeSpanDays),
           );
-          final completions = await _repository.getHabitCompletionsInRange(
-            rangeStart: rangeStart,
-          );
+          final List<HabitCompletionRecord> completions;
+          try {
+            completions = await _repository.getHabitCompletionsInRange(
+              rangeStart: rangeStart,
+            );
+          } catch (_) {
+            // A failed older attempt must not consume a newer request. Only
+            // retry when a caller actually queued another read in the meantime.
+            if (_refreshRequested && ref.mounted && generation == _generation) {
+              continue;
+            }
+            rethrow;
+          }
           if (!ref.mounted || generation != _generation) break;
           if (!_refreshRequested) {
             _habitCompletions = completions;

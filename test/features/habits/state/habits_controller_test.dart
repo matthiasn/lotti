@@ -712,6 +712,42 @@ void main() {
       },
     );
 
+    test('a queued refresh survives failure of the in-flight read', () {
+      fakeAsync((async) {
+        final controller = container.read(habitsControllerProvider.notifier);
+        async.flushMicrotasks();
+        final first = Completer<List<HabitCompletionRecord>>();
+        var attempts = 0;
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) {
+          attempts++;
+          return attempts == 1 ? first.future : Future.value([]);
+        });
+        final errors = <Object>[];
+        var completed = 0;
+        controller.refreshNow().then<void>(
+          (_) => completed++,
+          onError: errors.add,
+        );
+        controller.refreshNow().then<void>(
+          (_) => completed++,
+          onError: errors.add,
+        );
+        first.completeError(StateError('temporary read failure'));
+        async.flushMicrotasks();
+        expect(
+          attempts,
+          2,
+          reason: 'the queued request must still read after an earlier failure',
+        );
+        expect(errors, isEmpty);
+        expect(completed, 2);
+      });
+    });
+
     test('refetches completions when habitCompletionNotification received', () {
       fakeAsync((async) {
         container.read(habitsControllerProvider);
