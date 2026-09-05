@@ -454,6 +454,10 @@ class TutorialAppHarness {
 
   /// Boots the harness.
   ///
+  /// Persistence integration tests use [inMemoryJournal] = false and
+  /// [seedDemoWorld] = false for an empty, isolated on-disk journal without
+  /// downloading media. All files remain under [documentsDirectory].
+  ///
   /// The tutorial scenarios take the defaults: dark theme, the penguin
   /// category with its labels, cover art and tasks, and the config flags as
   /// a fresh install has them. The store-listing capture asks for more —
@@ -471,6 +475,8 @@ class TutorialAppHarness {
     CategoryDefinition Function(CategoryDefinition category)? categoryTransform,
     ThemeMode themeMode = ThemeMode.dark,
     bool seedHistory = false,
+    bool seedDemoWorld = true,
+    bool inMemoryJournal = true,
     Map<String, bool> configFlags = const {},
     Future<Uint8List> Function(Uri uri)? downloadMedia,
     DateTime? now,
@@ -485,7 +491,8 @@ class TutorialAppHarness {
     final loggingService = LoggingService();
     final settingsDb = SettingsDb(inMemoryDatabase: true);
     final journalDb = JournalDb(
-      inMemoryDatabase: true,
+      inMemoryDatabase: inMemoryJournal,
+      documentsDirectoryProvider: () async => documentsDirectory,
       background: false,
       readPool: 0,
       loggingService: DomainLogger(loggingService: loggingService),
@@ -594,15 +601,17 @@ class TutorialAppHarness {
     final category = categoryTransform == null
         ? world.category
         : categoryTransform(world.category);
-    await _seedWorld(
-      world,
-      category,
-      persistenceLogic,
-      journalDb,
-      documentsDirectory,
-      seedHistory: seedHistory,
-      downloadMedia: downloadMedia,
-    );
+    if (seedDemoWorld) {
+      await _seedWorld(
+        world,
+        category,
+        persistenceLogic,
+        journalDb,
+        documentsDirectory,
+        seedHistory: seedHistory,
+        downloadMedia: downloadMedia,
+      );
+    }
     for (final config in aiConfigs) {
       await aiConfigRepository.saveConfig(config, fromSync: true);
     }

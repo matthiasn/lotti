@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -37,44 +38,57 @@ void main() {
   group('dailyOsActualTimeUpdateProvider', () {
     test(
       'returns an empty stream when UpdateNotifications is not registered',
-      () async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
+      () {
+        fakeAsync((async) {
+          final container = ProviderContainer(
+            overrides: [
+              maybeUpdateNotificationsProvider.overrideWith((ref) => null),
+            ],
+          );
+          addTearDown(container.dispose);
+          final states = <AsyncValue<Set<String>>>[];
+          final subscription = container.listen(
+            dailyOsActualTimeUpdateProvider,
+            (_, next) => states.add(next),
+            fireImmediately: true,
+          );
+          addTearDown(subscription.close);
 
-        // Wait for the StreamProvider to settle to its empty stream value.
-        await container
-            .read(dailyOsActualTimeUpdateProvider.future)
-            .timeout(const Duration(seconds: 1))
-            .catchError((Object _) => <String>{});
-        expect(
-          container.read(dailyOsActualTimeUpdateProvider).asData,
-          isNull,
-        );
+          async.flushMicrotasks();
+          expect(states, [const AsyncLoading<Set<String>>()]);
+          expect(subscription.read().hasError, isFalse);
+        });
       },
     );
 
-    test('forwards non-empty batches from UpdateNotifications', () async {
-      final notifications = UpdateNotifications();
-      addTearDown(notifications.dispose);
+    test('forwards non-empty batches after the notification debounce', () {
+      fakeAsync((async) {
+        final notifications = UpdateNotifications();
+        addTearDown(notifications.dispose);
 
-      final container = ProviderContainer(
-        overrides: [
-          maybeUpdateNotificationsProvider.overrideWith(
-            (ref) => notifications,
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            maybeUpdateNotificationsProvider.overrideWith(
+              (ref) => notifications,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final sub = container.listen<AsyncValue<Set<String>>>(
-        dailyOsActualTimeUpdateProvider,
-        (_, _) {},
-      );
+        final sub = container.listen<AsyncValue<Set<String>>>(
+          dailyOsActualTimeUpdateProvider,
+          (_, _) {},
+        );
+        addTearDown(sub.close);
 
-      notifications.notify({'entry-1'});
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+        notifications.notify({'entry-1'});
+        async.elapse(const Duration(milliseconds: 99));
+        expect(sub.read().hasValue, isFalse);
+        notifications.notify({'entry-2'});
+        async.elapse(const Duration(milliseconds: 100));
 
-      expect(sub.read().asData?.value, {'entry-1'});
+        expect(sub.read().asData?.value, {'entry-1', 'entry-2'});
+      });
     });
   });
 

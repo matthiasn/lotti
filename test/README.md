@@ -2,10 +2,19 @@
 
 ## Running tests locally
 
-- Use `fvm` for every Flutter command — `.fvmrc` pins the version CI uses (currently 3.47.0). Running with a different local SDK can make a test pass locally and fail in CI (or vice versa).
+- Use `fvm` for every Flutter command — `.fvmrc` pins the version CI uses. Running with a different local SDK can make a test pass locally and fail in CI (or vice versa).
 - Iterate on a single file with `fvm flutter test test/path/foo_test.dart` (optionally `--plain-name '<test name>'`). Run targeted files, not the whole suite — the full run is slow.
 - **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
 - Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
+
+When scoping `dart-mcp.analyze_files`, pass **absolute file paths** in
+`roots[].paths`. The SDK MCP server can return "No errors" for relative paths
+without reporting their diagnostics; CI's `flutter analyze` still finds them.
+
+Run desktop integration tests and VM unit tests sequentially in the same
+checkout. Both materialize native libraries under `build/native_assets/`;
+overlapping builds can remove a library while another test process is loading
+it. Use separate checkouts for concurrent desktop and VM runs.
 
 ## Shared process state
 
@@ -89,7 +98,7 @@ fake clock (`test/features/tasks/ui/file_watcher_mixin_test.dart`).
 
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 
-A widget action that `await`s a `SystemChannels.platform` call — `HapticFeedback.lightImpact()`, clipboard, etc. — never resolves under the test binding unless a mock handler is installed, so any follow-up work after the await (a DB write, a `setState`, a navigation) silently never runs and the test fails in a confusing way. Install a handler in `setUp` **and reset it in `tearDown`**, or it leaks into every later test in the same isolate under the batched (`very_good`) runner:
+A widget action that `await`s a `SystemChannels.platform` call — `HapticFeedback.lightImpact()`, clipboard, etc. — never resolves under the test binding unless a mock handler is installed, so any follow-up work after the await (a DB write, a `setState`, a navigation) silently never runs and the test fails in a confusing way. Install a handler in `setUp` **and reset it in `tearDown`**, or it leaks into every later test in the same isolate under the optimized runner:
 
 ```dart
 setUp(() {
@@ -419,7 +428,7 @@ state between `when`/`verify` registration and the mock invocation that
 consumes them. A matcher that is registered but never consumed silently
 corrupts the next mock interaction — anywhere in the same isolate. Under
 plain `flutter test` every file gets its own isolate, so the damage stays
-local; under very_good's test optimizer (CI and `make test` run one isolate
+local; under the repository's test optimizer (CI and `make test` run one isolate
 per shard) it can break an unrelated test in a different file, and the victim
 depends on the platform-specific bundle order — which is why such failures
 appear on one machine/shard and not another.
@@ -440,7 +449,7 @@ test that ran earlier in the bundle — or the mixin-default pitfall below.
 noSuchMethod forwarders, and the forwarders' handling of *omitted optional
 parameters with default values* is **not stable for mixin-declared members**:
 in a plain `flutter test` run the forwarder fills in the declared default
-(`catalogId: 'session'`), but in very_good's optimizer bundle (CI) the same
+(`catalogId: 'session'`), but in the repository's optimizer bundle (CI) the same
 forwarder can fill `null` instead, because the default values of
 mixin-cloned members get lost in modular compilation. Which library is
 affected depends on compile order, so the failures are
@@ -507,29 +516,52 @@ The `tags` argument is a passthrough to `package:test`'s `test()`. It works the 
 ### Why the tag matters for CI
 
 CI runs two parallel test lanes — a ten-shard standard matrix plus a Glados job — followed by a final Codecov status job gated on both:
-- **Unit & Widget Tests** — `tool/ci/generate_test_optimizer.dart` creates the same sorted optimized bundle on every runner, then `flutter test` shards that bundle ten ways (fast feedback, all non-property tests). The repository generator is deliberate: Very Good CLI does not yet support sharding its optimizer across independent runners, and its filesystem-order bundle can otherwise make runners execute different slices.
-- **Glados Property Tests** — `very_good test --coverage --tags glados` (CPU-bound, runs longer in parallel)
+- **Unit & Widget Tests** — ten deterministic shards, excluding `glados` and `performance`.
+- **Glados Property Tests** — tagged property tests with separate coverage.
+- **Performance Budgets** — tagged stopwatch tests, scheduled weekly and available through workflow dispatch. Deterministic query-count gates stay in the standard lane.
 
-A new Glados test without `tags: 'glados'` will run in the standard suite, slowing fast feedback for everyone. The split also lets us upload separate codecov flags (`standard`, `glados`) while still merging all ten standard shards plus Glados into the project total. Codecov status publishing is manually triggered by a final CI job after every coverage upload job succeeds, so PRs do not show transient project coverage from only the Glados report or a partial standard shard set.
+All lanes use `tool/ci/run_tests.dart`. It generates a sorted optimized bundle
+plus `test/.test_targets.json`. A suite with library metadata (`@Tags`,
+`@Timeout`, `@TestOn`, `@Skip`, and other annotations) runs as a standalone file
+so the test runner receives the original metadata. Opting out of optimization
+never opts out of execution. Both generated files are ignored by Git.
+
+Codecov merges all ten standard shards and the Glados report; the final status
+job runs after all eleven uploads succeed. The performance lane does not upload
+coverage. Every unit/property/performance job uploads its JSON event report and
+ordering seed even on failure, and summarizes failures, skips, incomplete tests,
+and durations measured from each test's start to completion. The timing tool is
+`test/tool/analyze_test_timings.dart`; concurrent completion gaps are not test
+durations.
+
+The weekly run shuffles test order using its recorded workflow run number as the
+seed. Workflow dispatch accepts a `seed` to reproduce the order; `0` keeps
+declaration order. This changes test ordering, not Glados's generated inputs.
 
 ### Local commands
 
+Use targeted files during development. These broader targets are for explicitly
+requested suite runs:
+
 ```bash
-make test_standard      # everything except glados (wipes coverage/ first)
-make test_glados        # only glados property tests (wipes coverage/ first)
+make test_standard      # excludes glados and performance; resets coverage/
+make test_glados        # property tests; resets coverage/
+make test_performance   # stopwatch budgets, no coverage
+make test_policy_check  # static check for untagged Glados invocations
 make coverage_standard  # test_standard + HTML report
-make coverage_glados    # test_glados   + HTML report
-make test               # full suite, no filtering — same as before
+make coverage_glados    # test_glados + HTML report
+make test               # unit, widget and property tests; excludes performance
 ```
 
-To reproduce one standard CI shard locally, run:
+To reproduce one standard CI shard without replacing an existing coverage report:
 
 ```bash
-fvm dart run tool/ci/generate_test_optimizer.dart
-fvm flutter test --coverage --exclude-tags glados --total-shards=10 --shard-index=0 --no-pub test/.test_optimizer.dart
+fvm dart run tool/ci/run_tests.dart --exclude-tags 'glados || performance' \
+  --total-shards=10 --shard-index=0 --test-randomize-ordering-seed=0 --no-pub
 ```
 
-Replace `0` with any shard index from `1` through `9` for the other shards. The generated file is ignored by Git and may be deleted after the run. The Make test-suite targets (`test`, `test_standard`, `test_glados`, and their `coverage_*` variants) continue to use optimized `very_good test` runs when they are not sharded. Run `make activate_very_good` once on a fresh checkout.
+Replace the shard index and seed with the values from the failing job. No global
+Very Good CLI installation is required.
 
 ### Picking `numRuns`
 
@@ -560,7 +592,11 @@ These conventions are followed across the existing Glados tests. New tests shoul
 
 **`toString()` for shrunken-input legibility.** Every generated value class needs a `toString()` that names each input dimension. Glados prints this exact string when a property fails, so the failure message either reads like a debug record or like `Instance of '_GeneratedFooScenario'`. Pair this with `reason: '$scenario'` (or `reason: 'foo for $scenario'`) on the `expect` so shrunk failures land in the test output already labeled.
 
-**`tags: 'glados'` is enforced by convention, not the analyzer.** Every Glados invocation in this repo carries `tags: 'glados'`. There is no lint that fails on a missing tag — adding one without the tag silently routes it through the standard CI lane and slows everyone down. Mind the tag on copy-paste; check with `grep -L "tags: 'glados'" $(grep -rl 'Glados(' test/)` before opening a PR if you're touching many files.
+**`tags: 'glados'` is checked in CI.** `tool/ci/check_test_tags.dart` parses
+property-test call sites, including prefixed/generic constructors and
+`testWithRandom`, and requires a literal `tags: 'glados'` or a tag list containing
+it. Strings in fixtures or assertion bodies do not satisfy the check. Run
+`make test_policy_check` before submitting property tests.
 
 **Static vs. generated tests.** A handful of static `test('...', () { ... })` cases per file are useful as worked examples — they make a failure during local hacking land on a one-line concrete assertion rather than inside a 160-input Glados loop. Avoid keeping a static case for every variant the generator already covers; once the property exists, the static version is bloat that grows with the input space.
 
@@ -834,7 +870,7 @@ When a feature wants a reproducible, checked-in capture harness — see
 `test/features/insights/ui/time_analysis_screenshots_test.dart` for the
 canonical example — **it must be opt-in** (env-gated, e.g.
 `LOTTI_SCREENSHOT_DIR`): `FontLoader` registers fonts process-wide with no
-unload, and under very_good's single-isolate optimizer that silently
+unload, and under the repository's single-isolate optimizer that silently
 changes text metrics — and therefore intrinsic widths — for every test
 that runs afterwards. The three ingredients:
 
@@ -932,7 +968,7 @@ through their platform font fallback.
 
 This codebase is in the process of migrating all tests to fake time. See:
 - `docs/implementation_plans/2025-11-01_tests_fake_async_migration.md` - Full migration plan
-- Completed: All sync tests, AI inference tests
+- The historical plan is not a current completion checklist; inspect the tests you touch for remaining real waits.
 - In Progress: Additional service/controller tests
 
 ## Further Reading
@@ -959,3 +995,15 @@ the *first* list both times: the same widget type in the same slot reuses its
 the host a fresh `key: UniqueKey()` per pump (see
 `measurable_choices_editor_test.dart`), or drive the change through the
 host's own state.
+
+## Persistence integration checks
+
+`integration_test/home_integration_test.dart` boots the shared real-service app
+harness with an empty temporary file-backed journal. It creates a note through
+the UI, saves text, reads it through a second SQLite connection, and reopens the
+editor to check the persisted content. It never opens a personal profile.
+
+The Matrix workflow runs `integration_test/run_resilience_tests.sh` weekly and
+on workflow dispatch, using disposable accounts in the Docker homeserver and
+Toxiproxy. Account provisioning failures stop the script. Its JSON report is
+retained even if a resilience scenario fails.

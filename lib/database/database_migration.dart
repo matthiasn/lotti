@@ -112,7 +112,9 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
               message: 'Adding composite indices',
             );
             await m.createIndex(idxJournalTab);
-            await m.createIndex(idxJournalTasks);
+            // The current task index references priority columns introduced
+            // in v29. That step below creates it after adding the columns;
+            // creating it here would fail on an actual pre-v25 database.
             await m.createIndex(idxJournalTypeSubtype);
           }();
         }

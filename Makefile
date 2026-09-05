@@ -10,16 +10,13 @@
 HAS_FVM := $(shell command -v fvm 2>/dev/null)
 FLUTTER_CMD :=
 DART_CMD :=
-VERY_GOOD_CMD :=
 
 ifneq ($(HAS_FVM),)
 	FLUTTER_CMD := fvm flutter
 	DART_CMD := fvm dart
-	VERY_GOOD_CMD := fvm dart pub global run very_good_cli:very_good
 else
 	FLUTTER_CMD := flutter
 	DART_CMD := dart
-	VERY_GOOD_CMD := dart pub global run very_good_cli:very_good
 endif
 
 IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
@@ -37,17 +34,24 @@ MANUAL_MEDIA_DIR ?= $(abspath build/manual_media)
 
 .PHONY: test
 test:
-	$(VERY_GOOD_CMD) test --coverage
+	$(DART_CMD) run tool/ci/run_tests.dart --coverage --exclude-tags performance
 
 .PHONY: test_standard
 test_standard:
 	rm -rf coverage
-	$(VERY_GOOD_CMD) test --coverage --exclude-tags glados
+	$(DART_CMD) run tool/ci/run_tests.dart --coverage --exclude-tags "glados || performance"
 
 .PHONY: test_glados
 test_glados:
 	rm -rf coverage
-	$(VERY_GOOD_CMD) test --coverage --tags glados
+	$(DART_CMD) run tool/ci/run_tests.dart --coverage --tags glados
+
+.PHONY: test_performance test_policy_check
+test_performance:
+	$(DART_CMD) run tool/ci/run_tests.dart --tags performance
+
+test_policy_check:
+	$(DART_CMD) run tool/ci/check_test_tags.dart
 
 .PHONY: analyze
 analyze:
@@ -106,10 +110,10 @@ knowledge_check: okf_check mermaid_check
 junit_test:
 	$(FLUTTER_CMD) test --coverage --reporter json > TEST-report.jsonl
 
-.PHONY: slow_boundaries
-slow_boundaries: deps
+.PHONY: slow_tests
+slow_tests: deps
 	@mkdir -p reports
-	$(FLUTTER_CMD) test -r json --file-reporter json:reports/tests.json
+	$(DART_CMD) run tool/ci/run_tests.dart --exclude-tags performance --file-reporter json:reports/tests.json
 	$(DART_CMD) run test/tool/analyze_test_timings.dart reports/tests.json $(THRESH)
 
 .PHONY: junit_upload
@@ -179,10 +183,6 @@ watch: l10n
 .PHONY: activate_fluttium
 activate_fluttium:
 	$(FLUTTER_CMD) pub global activate fluttium_cli
-
-.PHONY: activate_very_good
-activate_very_good:
-	$(DART_CMD) pub global activate very_good_cli
 
 .PHONY: fluttium_linux
 fluttium_linux:

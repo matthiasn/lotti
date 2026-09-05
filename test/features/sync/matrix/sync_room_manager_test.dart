@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -13,19 +12,6 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-// ---------------------------------------------------------------------------
-// room_test.dart mocks (local to this file; use the same interfaces as
-// MockMatrixGateway / MockClient declared above but are only referenced inside
-// the 'SyncRoomManager (room_test)' group below)
-// ---------------------------------------------------------------------------
-class _MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
-
-class _MockMatrixClient extends Mock implements Client {}
-
-class MockMatrixGateway extends Mock implements MatrixSyncGateway {}
-
-class MockClient extends Mock implements Client {}
 
 class MockMatrixException extends Mock implements MatrixException {}
 
@@ -84,13 +70,13 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakeRoom());
   });
-  late MockMatrixGateway gateway;
+  late MockMatrixSyncGateway gateway;
   late MockSettingsDb settingsDb;
   late MockDomainLogger loggingService;
   late SyncRoomManager manager;
 
   setUp(() {
-    gateway = MockMatrixGateway();
+    gateway = MockMatrixSyncGateway();
     settingsDb = MockSettingsDb();
     loggingService = MockDomainLogger();
     when(
@@ -157,7 +143,7 @@ void main() {
 
   test('hydrateRoomSnapshot syncs client and resolves room', () async {
     final room = MockRoom();
-    final client = MockClient();
+    final client = MockMatrixClient();
     when(
       () => client.sync(),
     ).thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
@@ -181,7 +167,7 @@ void main() {
     'generated hydrate retry loop stops when the room snapshot appears',
     (scenario) {
       fakeAsync((async) {
-        final gateway = MockMatrixGateway();
+        final gateway = MockMatrixSyncGateway();
         final settingsDb = MockSettingsDb();
         final loggingService = MockDomainLogger();
         final manager = SyncRoomManager(
@@ -190,7 +176,7 @@ void main() {
           loggingService: loggingService,
         );
         final room = MockRoom();
-        final client = MockClient();
+        final client = MockMatrixClient();
         var syncCalls = 0;
         var resolveCalls = 0;
 
@@ -304,20 +290,20 @@ void main() {
   // Tests originally in room_test.dart
   // ---------------------------------------------------------------------------
   group('SyncRoomManager (room_test)', () {
-    late _MockMatrixSyncGateway mockGateway;
+    late MockMatrixSyncGateway mockGateway;
     late MockSettingsDb mockSettingsDb;
     late MockDomainLogger mockLoggingService;
     late SyncRoomManager manager;
     late MockRoom mockRoom;
-    late _MockMatrixClient mockClient;
+    late MockMatrixClient mockClient;
 
     setUp(() {
       registerFallbackValue(StackTrace.empty);
-      mockGateway = _MockMatrixSyncGateway();
+      mockGateway = MockMatrixSyncGateway();
       mockSettingsDb = MockSettingsDb();
       mockLoggingService = MockDomainLogger();
       mockRoom = MockRoom();
-      mockClient = _MockMatrixClient();
+      mockClient = MockMatrixClient();
 
       when(() => mockGateway.getRoomById(any<String>())).thenReturn(null);
       when(

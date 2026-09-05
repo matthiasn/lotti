@@ -1,12 +1,23 @@
 name: Flutter Tests (Unit + Glados Property)
 
 on:
+  schedule:
+    - cron: '17 3 * * 2'
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Ordering seed to replay (0 keeps declaration order)'
+        required: false
+        default: '0'
   push:
     branches: ["**"]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && 'push' || github.run_id }}
   cancel-in-progress: true
+
+env:
+  TEST_ORDER_SEED: ${{ github.event_name == 'schedule' && github.run_number || inputs.seed || '0' }}
 
 jobs:
   test:
@@ -54,21 +65,27 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
-      - name: Generate deterministic test bundle
-        run: dart run tool/ci/generate_test_optimizer.dart
       - name: Run Flutter tests (standard)
         run: |
-          # Very Good's generated bundle is not deterministic across runners:
-          # https://github.com/VeryGoodOpenSource/very_good_cli/issues/1538
-          # Generate the same sorted bundle in every job so package:test shards
-          # one stable suite and the coverage reports merge without gaps.
-          flutter test \
+          mkdir -p reports
+          echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
+          dart run tool/ci/run_tests.dart \
             --coverage \
-            --exclude-tags glados \
+            --exclude-tags 'glados || performance' \
             --total-shards=10 \
             --shard-index=${{ matrix.shard_index }} \
-            --no-pub \
-            test/.test_optimizer.dart
+            --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
+            --file-reporter=json:reports/tests.json \
+            --no-pub
+      - name: Summarize test results
+        if: always()
+        run: dart run test/tool/analyze_test_timings.dart reports/tests.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standard-shard-${{ matrix.shard_label }}-results
+          path: reports/
+          retention-days: 14
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -100,10 +117,22 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
-      - name: Activate very_good_cli
-        run: dart pub global activate very_good_cli
       - name: Run Flutter tests (glados)
-        run: very_good test --coverage --tags glados
+        run: |
+          mkdir -p reports
+          echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
+          dart run tool/ci/run_tests.dart --coverage --tags glados --no-pub \
+            --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
+            --file-reporter=json:reports/tests.json
+      - name: Summarize test results
+        if: always()
+        run: dart run test/tool/analyze_test_timings.dart reports/tests.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: glados-results
+          path: reports/
+          retention-days: 14
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -112,6 +141,45 @@ jobs:
           fail_ci_if_error: true
           flags: glados
           files: coverage/lcov.info
+
+  performance:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: Performance Budgets (Linux)
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Run Flutter tests (performance)
+        run: |
+          mkdir -p reports
+          echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
+          dart run tool/ci/run_tests.dart --tags performance --no-pub \
+            --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
+            --file-reporter=json:reports/tests.json
+      - name: Summarize test results
+        if: always()
+        run: dart run test/tool/analyze_test_timings.dart reports/tests.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-results
+          path: reports/
+          retention-days: 14
 
   codecov:
     name: Publish Codecov Status

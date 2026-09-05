@@ -264,5 +264,5 @@ void main() {
       totalTokens,
       rows.fold<int>(0, (sum, r) => sum + r.metrics.totalTokens),
     );
-  });
+  }, tags: 'glados');
 }

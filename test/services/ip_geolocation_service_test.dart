@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/services/ip_geolocation_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
-import '../test_utils/retry_fake_time.dart';
 
 class FakeUri extends Fake implements Uri {}
 
@@ -141,33 +141,42 @@ void main() {
 
       test('handles timeout gracefully', () {
         fakeAsync((async) {
+          final requests = <Uri>[];
           when(
             () => mockHttpClient.get(
               any(),
               headers: any(named: 'headers'),
             ),
-          ).thenAnswer((_) async {
-            // Exceed the 5s service timeout to deterministically trigger onTimeout
-            await Future<void>.delayed(const Duration(seconds: 6));
-            return http.Response('Timeout', 200);
+          ).thenAnswer((invocation) {
+            requests.add(invocation.positionalArguments.first as Uri);
+            return Completer<http.Response>().future;
           });
 
           Geolocation? result;
-          // Kick off under fake time.
-          IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient,
-          ).then((r) => result = r);
-
-          // Elapse timeout + epsilon via the retry helper (single attempt)
-          final plan = buildRetryBackoffPlan(
-            maxRetries: 1,
-            timeout: const Duration(seconds: 5),
-            baseDelay: Duration.zero,
-            epsilon: const Duration(seconds: 1),
+          var completed = false;
+          unawaited(
+            IpGeolocationService.getLocationFromIp(
+              httpClient: mockHttpClient,
+              clock: clock,
+            ).then((value) {
+              result = value;
+              completed = true;
+            }),
           );
-          async.elapseRetryPlan(plan);
+          async.flushMicrotasks();
+          expect(requests, [Uri.parse('https://ipapi.co/json/')]);
 
+          async.elapse(const Duration(seconds: 5));
+          expect(completed, isFalse);
+          expect(requests, [
+            Uri.parse('https://ipapi.co/json/'),
+            Uri.parse('https://ip-api.com/json'),
+          ]);
+
+          async.elapse(const Duration(seconds: 5));
+          expect(completed, isTrue);
           expect(result, isNull);
+          expect(async.pendingTimers, isEmpty);
         });
       });
 

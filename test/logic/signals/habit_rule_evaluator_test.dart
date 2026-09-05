@@ -536,7 +536,7 @@ void main() {
       final count = verdict.satisfiedLeaves.length;
       expect(count, bits.toRadixString(2).replaceAll('0', '').length);
       expect(verdict.satisfied, count >= n);
-    });
+    }, tags: 'glados');
 
     glados.Glados(glados.any.intInRange(0, 16)).test(
       'and is multiple(all) and or is multiple(1)',
@@ -557,6 +557,7 @@ void main() {
           ).satisfied,
         );
       },
+      tags: 'glados',
     );
   });
 }

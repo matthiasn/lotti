@@ -20,9 +20,25 @@ class ScreenshotPortalConstants {
 class ScreenshotPortalService extends PortalService {
   factory ScreenshotPortalService() => _instance;
 
-  ScreenshotPortalService._();
+  /// Creates an independently owned portal connection.
+  ScreenshotPortalService.forConnection();
 
-  static final ScreenshotPortalService _instance = ScreenshotPortalService._();
+  static final ScreenshotPortalService _instance =
+      ScreenshotPortalService.forConnection();
+
+  @protected
+  bool get portalEnabled => PortalService.shouldUsePortal;
+
+  /// Opens the response stream for one screenshot request.
+  @protected
+  Stream<DBusSignal> screenshotResponses(DBusObjectPath requestHandle) =>
+      DBusSignalStream(
+        client,
+        interface: 'org.freedesktop.portal.Request',
+        name: 'Response',
+        path: requestHandle,
+        signature: DBusSignature('ua{sv}'),
+      );
 
   /// Takes a screenshot using the portal
   /// Returns the path to the saved screenshot file
@@ -31,7 +47,7 @@ class ScreenshotPortalService extends PortalService {
     String? directory,
     String? filename,
   }) async {
-    if (!PortalService.shouldUsePortal) {
+    if (!portalEnabled) {
       throw UnsupportedError(
         'Screenshot portal should only be used in Flatpak environment',
       );
@@ -75,13 +91,7 @@ class ScreenshotPortalService extends PortalService {
       final completer = Completer<String?>();
 
       // Set up signal subscription for the Response signal
-      final signalStream = DBusSignalStream(
-        client,
-        interface: 'org.freedesktop.portal.Request',
-        name: 'Response',
-        path: requestHandle,
-        signature: DBusSignature('ua{sv}'),
-      );
+      final signalStream = screenshotResponses(requestHandle);
 
       final signalSubscription = signalStream.listen((DBusSignal signal) {
         try {

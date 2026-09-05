@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +21,6 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 import '../helpers/fake_image_compress_platform.dart';
-import '../helpers/fallbacks.dart';
 import '../helpers/path_provider.dart';
 import '../helpers/target_platform.dart';
 import '../mocks/mocks.dart';
@@ -117,217 +117,77 @@ Uint8List _createJpegWithGpsExif() {
   ]);
 }
 
-/// Creates a JPEG with GPS EXIF data at equator/prime meridian
-/// GPS coordinates: 0.0° N, 0.0° E (Null Island)
-Uint8List _createJpegWithGpsExifAtZeroZero() {
-  return Uint8List.fromList([
-    // JPEG SOI
-    0xFF, 0xD8,
-    // APP1 (EXIF) marker
-    0xFF, 0xE1,
-    // APP1 data length (needs to be large enough for GPS data)
-    0x00, 0xE0,
-    // EXIF header
-    0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
-    // TIFF header (little-endian)
-    0x49, 0x49, // Byte order
-    0x2A, 0x00, // TIFF magic
-    0x08, 0x00, 0x00, 0x00, // Offset to first IFD
-    // IFD0
-    0x02, 0x00, // Number of entries
-    // Entry 1: DateTime (tag 0x0132)
-    0x32, 0x01, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00,
-    // Entry 2: GPS IFD Pointer (tag 0x8825)
-    0x25, 0x88, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x50, 0x00, 0x00, 0x00,
-    // Next IFD offset
-    0x00, 0x00, 0x00, 0x00,
-    // DateTime value: "2024:01:15 10:20:30\0"
-    0x32, 0x30, 0x32, 0x34, 0x3A, 0x30, 0x31, 0x3A,
-    0x31, 0x35, 0x20, 0x31, 0x30, 0x3A, 0x32, 0x30,
-    0x3A, 0x33, 0x30, 0x00,
-    // GPS IFD (starts at offset 0x50)
-    0x04, 0x00, // Number of GPS entries
-    // GPSLatitudeRef (tag 0x0001) - 'N'
-    0x01, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00, 0x00,
-    // GPSLatitude (tag 0x0002) - 0° 0' 0"
-    0x02, 0x00, 0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x00,
-    // GPSLongitudeRef (tag 0x0003) - 'E'
-    0x03, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x45, 0x00, 0x00, 0x00,
-    // GPSLongitude (tag 0x0004) - 0° 0' 0"
-    0x04, 0x00, 0x05, 0x00, 0x03, 0x00, 0x00, 0x00, 0xA8, 0x00, 0x00, 0x00,
-    // Next IFD offset
-    0x00, 0x00, 0x00, 0x00,
-    // Latitude data: 0/1, 0/1, 0/1
-    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 0/1
-    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 0/1
-    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 0/1
-    // Longitude data: 0/1, 0/1, 0/1
-    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 0/1
-    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 0/1
-    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 0/1
-    // Padding
-    ...List.filled(50, 0x00),
-    // SOF0
-    0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11,
-    0x00,
-    // SOS
-    0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
-    // Image data
-    0xD2, 0x00,
-    // EOI
-    0xFF, 0xD9,
-  ]);
-}
-
-/// Creates a valid JPEG with real EXIF DateTimeOriginal data
-Uint8List _createJpegWithValidExif() {
-  return Uint8List.fromList([
-    // JPEG SOI
-    0xFF, 0xD8,
-    // APP1 (EXIF) marker
-    0xFF, 0xE1,
-    // APP1 data length (174 bytes including this field)
-    0x00, 0xAE,
-    // EXIF header
-    0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
-    // TIFF header (little-endian)
-    0x49, 0x49, // Byte order
-    0x2A, 0x00, // TIFF magic
-    0x08, 0x00, 0x00, 0x00, // Offset to first IFD
-    // IFD0
-    0x02, 0x00, // Number of entries
-    // Entry 1: DateTime (tag 0x0132)
-    0x32, 0x01, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0x00,
-    // Entry 2: ExifIFDPointer (tag 0x8769)
-    0x69, 0x87, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x4A, 0x00, 0x00, 0x00,
-    // Next IFD offset
-    0x00, 0x00, 0x00, 0x00,
-    // DateTime value: "2023:12:25 14:30:45\0"
-    0x32, 0x30, 0x32, 0x33, 0x3A, 0x31, 0x32, 0x3A,
-    0x32, 0x35, 0x20, 0x31, 0x34, 0x3A, 0x33, 0x30,
-    0x3A, 0x34, 0x35, 0x00,
-    // EXIF IFD
-    0x01, 0x00, // Number of entries
-    // DateTimeOriginal (tag 0x9003)
-    0x03, 0x90, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00,
-    // Next IFD offset
-    0x00, 0x00, 0x00, 0x00,
-    // DateTimeOriginal value: "2024:01:15 10:20:30\0"
-    0x32, 0x30, 0x32, 0x34, 0x3A, 0x30, 0x31, 0x3A,
-    0x31, 0x35, 0x20, 0x31, 0x30, 0x3A, 0x32, 0x30,
-    0x3A, 0x33, 0x30, 0x00,
-    // SOF0
-    0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11,
-    0x00,
-    // SOS
-    0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
-    // Image data
-    0xD2, 0x00,
-    // EOI
-    0xFF, 0xD9,
-  ]);
-}
-
-/// Creates JPEG with only Image DateTime (no DateTimeOriginal)
-Uint8List _createJpegWithImageDateTime() {
-  return Uint8List.fromList([
-    // JPEG SOI
-    0xFF, 0xD8,
-    // APP1 (EXIF)
-    0xFF, 0xE1,
-    // Length
-    0x00, 0x5A,
-    // EXIF header
-    0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
-    // TIFF header
-    0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00,
-    // IFD0
-    0x01, 0x00, // 1 entry
-    // DateTime (tag 0x0132)
-    0x32, 0x01, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x1A, 0x00, 0x00, 0x00,
-    // Next IFD
-    0x00, 0x00, 0x00, 0x00,
-    // DateTime value: "2022:06:10 08:15:22\0"
-    0x32, 0x30, 0x32, 0x32, 0x3A, 0x30, 0x36, 0x3A,
-    0x31, 0x30, 0x20, 0x30, 0x38, 0x3A, 0x31, 0x35,
-    0x3A, 0x32, 0x32, 0x00,
-    // SOF0
-    0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11,
-    0x00,
-    // SOS
-    0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
-    // Data
-    0xD2, 0x00,
-    // EOI
-    0xFF, 0xD9,
-  ]);
-}
-
-/// Creates JPEG with malformed datetime to trigger parse exception
-Uint8List _createJpegWithMalformedDateTime() {
-  return Uint8List.fromList([
-    // JPEG SOI
-    0xFF, 0xD8,
-    // APP1 (EXIF)
-    0xFF, 0xE1,
-    // Length
-    0x00, 0x50,
-    // EXIF header
-    0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
-    // TIFF header
-    0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00,
-    // IFD0
-    0x01, 0x00, // 1 entry
-    // DateTime (tag 0x0132)
-    0x32, 0x01, 0x02, 0x00, 0x14, 0x00, 0x00, 0x00, 0x1A, 0x00, 0x00, 0x00,
-    // Next IFD
-    0x00, 0x00, 0x00, 0x00,
-    // Malformed DateTime value: "9999:99:99 99:99:99\0" (invalid date)
-    0x39, 0x39, 0x39, 0x39, 0x3A, 0x39, 0x39, 0x3A,
-    0x39, 0x39, 0x20, 0x39, 0x39, 0x3A, 0x39, 0x39,
-    0x3A, 0x39, 0x39, 0x00,
-    // SOF0
-    0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11,
-    0x00,
-    // SOS
-    0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
-    // Data
-    0xD2, 0x00,
-    // EOI
-    0xFF, 0xD9,
-  ]);
-}
-
-/// Builds a minimal but byte-correct JPEG carrying an EXIF `Image DateTime`
-/// tag (0x0132) with the given [dateTime] string (EXIF format
-/// `yyyy:MM:dd HH:mm:ss`).
-///
-/// Unlike the hand-coded fixtures above — whose TIFF value offsets are off by
-/// the EXIF header size and therefore parse to garbage — every offset here is
-/// TIFF-relative and computed by construction, so the real `exif` package reads
-/// the timestamp back exactly. Used to prove the drop importer prefers the
-/// embedded capture time over the file's modified (drop) time.
-Uint8List buildExifJpegWithDateTime(String dateTime) {
-  final value = <int>[...dateTime.codeUnits, 0x00]; // NUL-terminated ASCII
-  final tiff = <int>[
-    0x49, 0x49, 0x2A, 0x00, // little-endian, TIFF magic 42
-    0x08, 0x00, 0x00, 0x00, // IFD0 starts at TIFF offset 8
-    0x01, 0x00, // one entry
-    0x32, 0x01, // tag 0x0132 (DateTime)
-    0x02, 0x00, // type ASCII
-    value.length, 0x00, 0x00, 0x00, // value count
-    0x1A, 0x00, 0x00, 0x00, // value at TIFF offset 26 (right after this IFD)
-    0x00, 0x00, 0x00, 0x00, // no next IFD
-    ...value,
+/// Builds a byte-correct JPEG with TIFF-relative timestamp offsets.
+Uint8List buildExifJpegWithDateTime(
+  String dateTime, {
+  String? originalDateTime,
+}) {
+  List<int> uint32(int value) => [
+    for (var shift = 0; shift < 32; shift += 8) (value >> shift) & 0xff,
   ];
-  final app1Len = 2 + 6 + tiff.length; // length field + "Exif\0\0" + TIFF
+  final value = [...dateTime.codeUnits, 0];
+  final original = originalDateTime == null
+      ? null
+      : [...originalDateTime.codeUnits, 0];
+  final valueOffset = original == null ? 26 : 38;
+  final exifOffset = valueOffset + value.length;
+  final tiff = <int>[
+    0x49,
+    0x49,
+    0x2a,
+    0,
+    8,
+    0,
+    0,
+    0,
+    if (original == null) 1 else 2,
+    0,
+    0x32,
+    0x01,
+    2,
+    0,
+    ...uint32(value.length),
+    ...uint32(valueOffset),
+    if (original != null) ...[
+      0x69,
+      0x87,
+      4,
+      0,
+      ...uint32(1),
+      ...uint32(exifOffset),
+    ],
+    ...uint32(0),
+    ...value,
+    if (original != null) ...[
+      1,
+      0,
+      0x03,
+      0x90,
+      2,
+      0,
+      ...uint32(original.length),
+      ...uint32(exifOffset + 18),
+      ...uint32(0),
+      ...original,
+    ],
+  ];
+  final app1Length = 2 + 6 + tiff.length;
   return Uint8List.fromList([
-    0xFF, 0xD8, // SOI
-    0xFF, 0xE1, // APP1
-    (app1Len >> 8) & 0xFF, app1Len & 0xFF,
-    0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
+    0xff,
+    0xd8,
+    0xff,
+    0xe1,
+    app1Length >> 8,
+    app1Length & 0xff,
+    0x45,
+    0x78,
+    0x69,
+    0x66,
+    0,
+    0,
     ...tiff,
-    0xFF, 0xD9, // EOI
+    0xff,
+    0xd9,
   ]);
 }
 
@@ -1287,471 +1147,125 @@ void main() {
         ).called(1);
       });
     }); // end createAnalysisCallback group
-  }); // end canonical group
+    group('EXIF timestamp persistence', () {
+      final fallback = DateTime(2024, 6, 10, 12);
 
-  // ---------------------------------------------------------------------------
-  // EXIF tests (originally in image_import_exif_test.dart)
-  // ---------------------------------------------------------------------------
-
-  group('exif_tests', () {
-    setUpAll(() async {
-      registerFallbackValue(fallbackJournalEntity);
-
-      getIt.pushNewScope();
-      setFakeDocumentsPath();
-
-      // Register mock services
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<JournalDb>(MockJournalDb())
-        ..registerSingleton<Fts5Db>(MockFts5Db())
-        ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-        ..registerSingleton<VectorClockService>(MockVectorClockService())
-        ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
-        ..registerSingleton<NotificationService>(MockNotificationService())
-        ..registerSingleton<TimeService>(MockTimeService())
-        ..registerSingleton<DomainLogger>(MockDomainLogger());
-    });
-
-    tearDownAll(() async {
-      await getIt.resetScope();
-      await getIt.popScope();
-    });
-
-    group('EXIF Timestamp Extraction', () {
-      test(
-        'extracts DateTimeOriginal from real EXIF data successfully',
-        () async {
-          // Use real valid EXIF data to trigger success path
-          final jpegWithExif = _createJpegWithValidExif();
-
-          // This should successfully extract DateTimeOriginal: 2024:01:15 10:20:30
-          await importPastedImages(data: jpegWithExif, fileExtension: 'jpg');
-
-          // Test passes if no exception thrown and import completes
-          expect(true, isTrue);
-        },
-      );
-
-      test('extracts Image DateTime when DateTimeOriginal missing', () async {
-        // Use JPEG with only Image DateTime to test fallback path
-        final jpegWithDateTime = _createJpegWithImageDateTime();
-
-        // This should extract Image DateTime: 2022:06:10 08:15:22
-        await importPastedImages(data: jpegWithDateTime, fileExtension: 'jpg');
-
-        // Test passes if no exception thrown
-        expect(true, isTrue);
-      });
-
-      test(
-        'handles malformed EXIF datetime that fails DateTime.parse',
-        () async {
-          // Use JPEG with malformed datetime to trigger DateTime.parse exception
-          final jpegWithMalformed = _createJpegWithMalformedDateTime();
-
-          // This should trigger the DateTime.parse exception path (line 249)
-          // and fall back to DateTime.now()
-          await importPastedImages(
-            data: jpegWithMalformed,
-            fileExtension: 'jpg',
-          );
-
-          // Test passes if no exception thrown (fallback worked)
-          expect(true, isTrue);
-        },
-      );
-
-      test('extracts DateTimeOriginal from real image with EXIF', () async {
-        // Create a minimal but valid JPEG with basic structure
-        final jpegWithExif = _createMinimalJpegWithExif();
-
-        // This should trigger EXIF parsing code paths
-        await importPastedImages(data: jpegWithExif, fileExtension: 'jpg');
-
-        expect(true, isTrue);
-      });
-
-      test('extracts DateTimeOriginal from valid EXIF data', () async {
-        // Create a minimal JPEG with EXIF DateTimeOriginal
-        // JPEG header + EXIF marker + DateTimeOriginal tag
-        final jpegWithExif = Uint8List.fromList([
-          // JPEG SOI marker
-          0xFF, 0xD8,
-          // APP1 marker (EXIF)
-          0xFF, 0xE1,
-          // APP1 length (high byte, low byte)
-          0x00, 0x16,
-          // EXIF identifier
-          0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
-          // Padding/dummy data to make it parseable
-          ...List.filled(100, 0x00),
-          // JPEG EOI marker
-          0xFF, 0xD9,
-        ]);
-
-        // Note: Real EXIF parsing will fail with this minimal data,
-        // so we're testing the fallback behavior
-        // Should complete without throwing
-        expect(
-          importPastedImages(data: jpegWithExif, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles image with no EXIF data gracefully', () async {
-        // Minimal valid JPEG without EXIF
-        final jpegNoExif = Uint8List.fromList([
-          0xFF, 0xD8, // SOI
-          0xFF, 0xD9, // EOI
-        ]);
-
-        expect(
-          importPastedImages(data: jpegNoExif, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles corrupted EXIF data without crashing', () async {
-        // Invalid/corrupted data
-        final corruptedData = Uint8List.fromList([
-          0xFF, 0xD8, // JPEG start
-          0xFF, 0xE1, // APP1 marker
-          0x00, 0x10, // Length
-          // Garbage data
-          ...List.generate(20, (i) => i % 256),
-        ]);
-
-        expect(
-          importPastedImages(data: corruptedData, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles empty image data', () async {
-        final emptyData = Uint8List.fromList([]);
-
-        expect(
-          importPastedImages(data: emptyData, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test(
-        'handles PNG images (which may have different metadata format)',
-        () async {
-          // PNG signature
-          final pngData = Uint8List.fromList([
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-            ...List.filled(50, 0x00), // Dummy data
-          ]);
-
-          expect(
-            importPastedImages(data: pngData, fileExtension: 'png'),
-            completes,
-          );
-        },
-      );
-    });
-
-    group('EXIF DateTime Parsing', () {
-      // Note: _parseExifDateTime is private, so we test it indirectly
-      // through importPastedImages behavior
-
-      test('importPastedImages processes valid image data', () async {
-        final validJpeg = Uint8List.fromList([
-          0xFF, 0xD8, // SOI
-          0xFF, 0xD9, // EOI
-        ]);
-
-        // Should not throw
-        expect(
-          importPastedImages(
-            data: validJpeg,
-            fileExtension: 'jpg',
-            linkedId: 'test-link',
-            categoryId: 'test-category',
+      Future<void> expectImportedImage(
+        Uint8List bytes, {
+        required DateTime capturedAt,
+        String extension = 'jpg',
+      }) async {
+        await withClock(
+          Clock.fixed(fallback),
+          () => importPastedImages(
+            data: bytes,
+            fileExtension: extension,
+            linkedId: 'parent-task',
+            categoryId: 'photos',
           ),
-          completes,
         );
-      });
 
-      test('handles various JPEG variations', () async {
-        // Test with slightly larger JPEG
-        final largerJpeg = Uint8List.fromList([
-          0xFF, 0xD8, // SOI
-          ...List.filled(1000, 0xFF), // Content
-          0xFF, 0xD9, // EOI
-        ]);
-
-        expect(
-          importPastedImages(data: largerJpeg, fileExtension: 'jpeg'),
-          completes,
-        );
-      });
-    });
-
-    group('File Size Validation', () {
-      test('rejects images exceeding size limit', () async {
-        final loggingService = getIt<DomainLogger>();
-
-        // Create oversized image (> 50MB)
-        final oversizedData = Uint8List(51 * 1024 * 1024);
-
-        await importPastedImages(data: oversizedData, fileExtension: 'jpg');
-
-        // Verify logging was called for oversized file
+        final image =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: 'parent-task',
+                    shouldAddGeolocation: false,
+                    // Verify the optional argument passed by production.
+                    // ignore: avoid_redundant_argument_values
+                    linkCollapsed: false,
+                  ),
+                ).captured.single
+                as JournalImage;
+        expect(image.data.capturedAt, capturedAt);
+        expect(image.data.imageFile, endsWith('.${extension.toLowerCase()}'));
+        expect(image.data.geolocation, isNull);
         verify(
-          () => loggingService.error(
-            LogDomain.ai,
-            any<String>(),
-            subDomain: 'importPastedImages',
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: capturedAt,
+            dateTo: capturedAt,
+            uuidV5Input: any(named: 'uuidV5Input'),
+            categoryId: 'photos',
+            flag: EntryFlag.import,
           ),
         ).called(1);
-      });
-
-      test('accepts images at size limit boundary', () async {
-        // Exactly 50MB
-        final boundaryData = Uint8List(50 * 1024 * 1024);
-
-        // Prepend JPEG markers
-        boundaryData[0] = 0xFF;
-        boundaryData[1] = 0xD8;
-        boundaryData[boundaryData.length - 2] = 0xFF;
-        boundaryData[boundaryData.length - 1] = 0xD9;
-
-        expect(
-          importPastedImages(data: boundaryData, fileExtension: 'jpg'),
-          completes,
+        final file = File(
+          path.join(
+            tempDir.path,
+            image.data.imageDirectory.replaceFirst(RegExp('^/'), ''),
+            image.data.imageFile,
+          ),
         );
-      });
-    });
+        expect(await file.readAsBytes(), orderedEquals(bytes));
+      }
 
-    group('Edge Cases', () {
-      test('handles null-like inputs gracefully', () async {
-        final minimalData = Uint8List.fromList([0x00]);
-
-        expect(
-          importPastedImages(data: minimalData, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles various file extensions', () async {
-        final data = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xD9]);
-
-        for (final ext in ['jpg', 'jpeg', 'JPG', 'JPEG', 'png', 'PNG']) {
-          await expectLater(
-            importPastedImages(data: data, fileExtension: ext),
-            completes,
-            reason: 'Should handle extension: $ext',
+      test(
+        'prefers DateTimeOriginal over the image modification timestamp',
+        () async {
+          await expectImportedImage(
+            buildExifJpegWithDateTime(
+              '2023:12:25 14:30:45',
+              originalDateTime: '2024:01:15 10:20:30',
+            ),
+            capturedAt: DateTime(2024, 1, 15, 10, 20, 30),
           );
-        }
-      });
-    });
+        },
+      );
 
-    group('EXIF DateTime String Parsing', () {
-      test('parses valid EXIF datetime with DateTimeOriginal', () async {
-        // Test by importing an image and checking it doesn't crash
-        // when EXIF data contains DateTimeOriginal
-        final jpegData = _createMinimalJpegWithExif();
-
-        await expectLater(
-          importPastedImages(data: jpegData, fileExtension: 'jpg'),
-          completes,
+      test('uses Image DateTime when DateTimeOriginal is absent', () async {
+        await expectImportedImage(
+          buildExifJpegWithDateTime('2022:06:10 08:15:22'),
+          capturedAt: DateTime(2022, 6, 10, 8, 15, 22),
         );
       });
 
-      test('parses valid EXIF datetime with Image DateTime fallback', () async {
-        // Test Image DateTime fallback path
-        final jpegData = _createMinimalJpegWithExif();
+      for (final (name, bytes) in [
+        ('malformed date', buildExifJpegWithDateTime('not-a-date')),
+        ('date only', buildExifJpegWithDateTime('2024:01:15')),
+        ('no EXIF', Uint8List.fromList([0xff, 0xd8, 0xff, 0xd9])),
+        ('empty data', Uint8List(0)),
+        ('truncated TIFF', _createMinimalJpegWithExif()),
+        (
+          'invalid EXIF header',
+          Uint8List.fromList([
+            0xff,
+            0xd8,
+            0xff,
+            0xe1,
+            0,
+            8,
+            0x45,
+            0x78,
+            0x69,
+            0x66,
+            0xff,
+            0xd9,
+          ]),
+        ),
+      ]) {
+        test('persists $name with the fallback timestamp', () async {
+          await expectImportedImage(bytes, capturedAt: fallback);
+        });
+      }
 
-        await expectLater(
-          importPastedImages(
-            data: jpegData,
-            fileExtension: 'jpg',
-            linkedId: 'test-link',
-          ),
-          completes,
-        );
-      });
+      for (final extension in ['jpg', 'jpeg', 'JPG', 'JPEG', 'png', 'PNG']) {
+        test('preserves clipboard bytes for $extension', () async {
+          await expectImportedImage(
+            Uint8List.fromList([0xff, 0xd8, 0xff, 0xd9]),
+            capturedAt: fallback,
+            extension: extension,
+          );
+        });
+      }
 
-      test('handles malformed EXIF datetime strings gracefully', () async {
-        // Corrupted EXIF data should fall back to current time
-        final corruptedExif = Uint8List.fromList([
-          0xFF, 0xD8, // SOI
-          0xFF, 0xE1, // APP1
-          0x00, 0x10, // Short length
-          0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
-          // Garbage TIFF data
-          0x12, 0x34, 0x56, 0x78,
-          0xFF, 0xD9, // EOI
-        ]);
-
-        await expectLater(
-          importPastedImages(data: corruptedExif, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles datetime strings with unexpected format', () async {
-        // Test with JPEG that might have unexpected datetime format
-        final jpegData = _createMinimalJpegWithExif();
-
-        await expectLater(
-          importPastedImages(
-            data: jpegData,
-            fileExtension: 'jpg',
-            categoryId: 'test-category',
-          ),
-          completes,
-        );
-      });
-
-      test('handles datetime with only date part', () async {
-        // EXIF datetime might be malformed with only date
-        final jpegData = _createMinimalJpegWithExif();
-
-        await expectLater(
-          importPastedImages(
-            data: jpegData,
-            fileExtension: 'jpg',
-            linkedId: 'link',
-            categoryId: 'category',
-          ),
-          completes,
+      test('persists an image exactly at the size limit', () async {
+        await expectImportedImage(
+          Uint8List(ImageImportConstants.maxFileSizeBytes),
+          capturedAt: fallback,
         );
       });
     });
-
-    group('EXIF Parsing Error Handling', () {
-      test('logs exception when EXIF parsing fails', () async {
-        final loggingService = getIt<DomainLogger>();
-
-        // Trigger EXIF parsing with minimal/invalid data
-        final invalidExif = Uint8List.fromList([
-          0xFF, 0xD8, // SOI
-          0xFF, 0xE1, // APP1
-          0x00, 0x08, // Very short length
-          0x45, 0x78, 0x69, 0x66, // "Exif" (incomplete)
-          0xFF, 0xD9, // EOI
-        ]);
-
-        await importPastedImages(data: invalidExif, fileExtension: 'jpg');
-
-        // Verify logging was called for EXIF parsing error
-        // Note: May be called multiple times if both EXIF reading and parsing fail
-        verify(
-          () => loggingService.error(
-            LogDomain.ai,
-            any<Object>(),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'extractImageTimestamp',
-          ),
-        ).called(greaterThan(0));
-      });
-
-      test('logs exception for unexpected EXIF date format', () async {
-        // Test with data that triggers date parsing error path
-        final jpegData = _createMinimalJpegWithExif();
-
-        await expectLater(
-          importPastedImages(data: jpegData, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('continues processing when EXIF extraction throws', () async {
-        // Verify that even if EXIF parsing throws, import continues
-        final corruptData = Uint8List.fromList([
-          0xFF, 0xD8, // SOI
-          ...List.generate(50, (i) => i % 256), // Random data
-          0xFF, 0xD9, // EOI
-        ]);
-
-        await expectLater(
-          importPastedImages(data: corruptData, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-    });
-
-    group('GPS EXIF Extraction', () {
-      test('extracts GPS coordinates from EXIF data successfully', () async {
-        final jpegWithGps = _createJpegWithGpsExif();
-
-        // This test verifies that the GPS extraction code path is exercised
-        // without crashing. Hand-crafted EXIF data may not be fully parseable
-        // by the native_exif library, but the code should handle it gracefully.
-        // The GPS parsing logic itself is tested in detail in the GPS group below.
-        await expectLater(
-          importPastedImages(data: jpegWithGps, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles images without GPS data gracefully', () async {
-        // Use image with only timestamp, no GPS
-        final jpegNoGps = _createJpegWithValidExif();
-
-        await expectLater(
-          importPastedImages(data: jpegNoGps, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles missing GPS latitude', () async {
-        // Minimal JPEG without GPS data
-        final jpegNoGps = _createMinimalJpegWithExif();
-
-        await expectLater(
-          importPastedImages(data: jpegNoGps, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles corrupted GPS data without crashing', () async {
-        // Invalid GPS data should be handled gracefully
-        final corruptedData = Uint8List.fromList([
-          0xFF, 0xD8, // JPEG start
-          0xFF, 0xE1, // APP1 marker
-          0x00, 0x30, // Length
-          0x45, 0x78, 0x69, 0x66, 0x00, 0x00, // "Exif\0\0"
-          ...List.generate(40, (i) => i % 256), // Garbage data
-          0xFF, 0xD9, // EOI
-        ]);
-
-        await expectLater(
-          importPastedImages(data: corruptedData, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('processes image with GPS at equator/prime meridian', () async {
-        // Edge case: GPS coordinates at 0,0 (Null Island) should be valid
-        final jpegWithGps = _createJpegWithGpsExifAtZeroZero();
-
-        await expectLater(
-          importPastedImages(data: jpegWithGps, fileExtension: 'jpg'),
-          completes,
-        );
-      });
-
-      test('handles image with partial GPS data', () async {
-        // Image might have latitude but not longitude
-        final jpegNoGps = _createMinimalJpegWithExif();
-
-        await expectLater(
-          importPastedImages(
-            data: jpegNoGps,
-            fileExtension: 'jpg',
-            linkedId: 'test-link',
-          ),
-          completes,
-        );
-      });
-    });
-  });
+  }); // end canonical group
 
   // ---------------------------------------------------------------------------
   // GPS tests (originally in image_import_gps_test.dart)
