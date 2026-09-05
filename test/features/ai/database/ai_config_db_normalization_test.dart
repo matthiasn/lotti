@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/database/ai_api_key_storage.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 
@@ -9,9 +10,11 @@ import '../test_utils.dart';
 void main() {
   group('AiConfigDb getConfigById provider type normalization', () {
     late AiConfigDb db;
+    late AiApiKeyStorage storage;
 
     setUp(() {
-      db = AiConfigDb(inMemoryDatabase: true);
+      storage = AiApiKeyStorage.inMemory();
+      db = AiConfigDb(inMemoryDatabase: true, apiKeyStorage: storage);
     });
 
     tearDown(() async {
@@ -98,9 +101,11 @@ void main() {
 
   group('AiConfigDb CRUD', () {
     late AiConfigDb db;
+    late AiApiKeyStorage storage;
 
     setUp(() {
-      db = AiConfigDb(inMemoryDatabase: true);
+      storage = AiApiKeyStorage.inMemory();
+      db = AiConfigDb(inMemoryDatabase: true, apiKeyStorage: storage);
     });
 
     tearDown(() async {
@@ -183,5 +188,63 @@ void main() {
       final first = await db.watchAllConfigs().first;
       expect(first.map((r) => r.id), ['m-w']);
     });
+
+    test(
+      'provider API keys are stored securely, not in the database JSON',
+      () async {
+        final provider = AiConfig.inferenceProvider(
+          id: 'secure-provider',
+          baseUrl: 'https://example.com',
+          apiKey: 'secret-value',
+          name: 'Provider',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        await db.saveConfig(provider);
+        final row = (await db.getAllConfigs()).single;
+        expect(row.serialized, isNot(contains('secret-value')));
+        expect(
+          await storage.read(apiKeyStorageKeyFor(provider.id)),
+          'secret-value',
+        );
+        final loaded = await db.getConfigById(provider.id);
+        expect((loaded! as AiConfigInferenceProvider).apiKey, 'secret-value');
+      },
+    );
+
+    test(
+      'legacy plaintext keys migrate idempotently and are cleared',
+      () async {
+        final now = DateTime(2024);
+        const id = 'legacy-provider';
+        final entity = AiConfigDbEntity(
+          id: id,
+          type: 'inferenceProvider',
+          name: 'Legacy',
+          serialized: jsonEncode({
+            'runtimeType': 'inferenceProvider',
+            'id': id,
+            'baseUrl': 'https://example.com',
+            'apiKey': 'legacy-secret',
+            'name': 'Legacy',
+            'createdAt': now.toIso8601String(),
+            'inferenceProviderType': 'openAi',
+          }),
+          createdAt: now,
+          updatedAt: now,
+        );
+        await db.into(db.aiConfigs).insert(entity);
+
+        final first = await db.getConfigById(id);
+        expect((first! as AiConfigInferenceProvider).apiKey, 'legacy-secret');
+        expect(
+          (await db.getAllConfigs()).single.serialized,
+          isNot(contains('legacy-secret')),
+        );
+        final second = await db.getConfigById(id);
+        expect((second! as AiConfigInferenceProvider).apiKey, 'legacy-secret');
+      },
+    );
   });
 }

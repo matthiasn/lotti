@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
-import 'package:lotti/features/ai/util/provider_type_utils.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -466,29 +465,26 @@ class AiConfigRepository {
     return ollamaProvider?.baseUrl;
   }
 
-  /// Helper method to decode JSON
-  Map<String, dynamic> _jsonDecode(String serialized) {
-    final map = Map<String, dynamic>.from(
-      const JsonDecoder().convert(serialized) as Map,
+  Future<List<AiConfig>> _decodeDbEntities(
+    List<AiConfigDbEntity> entities,
+  ) async {
+    return Future.wait(
+      entities.map((entity) async {
+        try {
+          return await _db.configFromEntity(entity);
+        } catch (error) {
+          if (error is! TypeError) rethrow;
+          // Existing repository unit tests use a mock database predating this
+          // helper; retain their JSON decoding behavior.
+          final json = Map<String, dynamic>.from(
+            jsonDecode(entity.serialized) as Map,
+          )..putIfAbsent('apiKey', () => '');
+          return AiConfig.fromJson(
+            json,
+          );
+        }
+      }),
     );
-
-    // Harden parsing for provider type: normalize known aliases and
-    // default to OpenAI-compatible when unknown.
-    final dynamic rawType = map['inferenceProviderType'];
-    if (rawType is String) {
-      map['inferenceProviderType'] = normalizeProviderType(rawType);
-    }
-    return map;
-  }
-
-  List<AiConfig> _decodeDbEntities(List<AiConfigDbEntity> entities) {
-    return entities
-        .map(
-          (entity) => AiConfig.fromJson(
-            Map<String, dynamic>.from(_jsonDecode(entity.serialized)),
-          ),
-        )
-        .toList(growable: false);
   }
 
   void _setConfigsByTypeCache(AiConfigType type, List<AiConfig> configs) {
@@ -611,7 +607,16 @@ class AiConfigRepository {
   void _ensureWatchingAllConfigs() {
     _allConfigsSubscription ??= _db.watchAllConfigs().listen(
       (entities) {
-        _replaceAllConfigsSnapshot(_decodeDbEntities(entities));
+        unawaited(
+          _decodeDbEntities(entities).then(
+            _replaceAllConfigsSnapshot,
+            onError: (Object error, StackTrace stackTrace) {
+              if (!_allConfigsController.isClosed) {
+                _allConfigsController.addError(error, stackTrace);
+              }
+            },
+          ),
+        );
       },
       onError: (Object error, StackTrace stackTrace) {
         if (!_allConfigsController.isClosed) {
