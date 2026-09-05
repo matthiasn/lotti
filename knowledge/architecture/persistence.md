@@ -514,7 +514,10 @@ select list or an ORDER BY does not count), nor dispatches on the flag
 (`_queryWithPrivateFilter`, `_matchesAllPrivateStates`), nor sits in its
 allowlist with a reason. A reader whose predicate is optional (a nullable
 `privateStatuses` parameter) is a builder: it is not judged itself, and each
-of its callers must dispatch or supply the statuses on every call. An
+of its callers must dispatch or supply, on every call, statuses the audit can
+prove non-null from the unresolved AST (a list literal, the awaited
+visible-statuses lookup, a non-nullable parameter, or a local bound to one of
+those). SQL comments are stripped before a predicate is looked for. An
 allowlist entry that stops being an exception fails the build too. What the
 allowlist holds:
 

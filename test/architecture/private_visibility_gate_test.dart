@@ -147,6 +147,15 @@ final RegExp _dispatch = RegExp(
 /// decide whether rows are filtered.
 final RegExp _optionalStatuses = RegExp(r'List<bool>\?\s+privateStatuses');
 
+/// [sql] without its `/* … */` and `-- …` comments, so a predicate that only
+/// appears in a comment is not mistaken for a filter. Applied to named
+/// queries, and to a declaration's source before its evidence is judged —
+/// never before deciding whether it reads journal rows at all, so stripping
+/// can only ever remove evidence, not hide a reader.
+String _withoutSqlComments(String sql) => sql
+    .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
+    .replaceAll(RegExp('--.*'), '');
+
 typedef _NamedQuery = ({String name, String sql});
 
 /// Every named query in [_driftFile] with its SQL, comments removed.
@@ -158,12 +167,12 @@ List<_NamedQuery> _namedQueries() {
     for (var i = 0; i < matches.length; i++)
       (
         name: matches[i].group(1)!,
-        sql: source
-            .substring(
-              matches[i].end,
-              i + 1 < matches.length ? matches[i + 1].start : source.length,
-            )
-            .replaceAll(RegExp('--.*'), ''),
+        sql: _withoutSqlComments(
+          source.substring(
+            matches[i].end,
+            i + 1 < matches.length ? matches[i + 1].start : source.length,
+          ),
+        ),
       ),
   ];
 }
@@ -197,9 +206,14 @@ final Map<String, List<_Declaration>> _parsed = {};
 /// begins, so an SQL string is always attributed to the code that runs it.
 List<_Declaration> _declarations(File file) {
   final path = _relative(file);
-  return _parsed[path] ??= () {
+  return _parsed[path] ??= _declarationsOf(file.readAsStringSync(), path);
+}
+
+/// The declarations of one Dart source; see [_declarations].
+List<_Declaration> _declarationsOf(String content, String path) {
+  {
     final result = parseString(
-      content: file.readAsStringSync(),
+      content: content,
       path: path,
       throwIfDiagnostics: false,
     );
@@ -260,7 +274,7 @@ List<_Declaration> _declarations(File file) {
       }
     }
     return declarations;
-  }();
+  }
 }
 
 /// Declarations in every `lib/` file whose text mentions [needle]. Files
@@ -306,8 +320,76 @@ class _InvocationsOf extends RecursiveAstVisitor<void> {
   }
 }
 
+/// Whether [expression], passed as `privateStatuses`, is guaranteed non-null
+/// by its own shape: a list literal, the awaited visible-statuses lookup, a
+/// non-nullable parameter of [caller], or a local bound to one of those. The
+/// audit works on the unresolved AST, so anything else — a nullable local, a
+/// field, a call — is not proven and counts as ungated.
+bool _provenNonNull(Expression expression, _Declaration caller) {
+  switch (expression) {
+    case ListLiteral():
+      return true;
+    case AwaitExpression(
+      expression: MethodInvocation(methodName: SimpleIdentifier(:final name)),
+    ):
+      return name == '_visiblePrivateStatuses';
+    case SimpleIdentifier(:final name):
+      final parameter = _parameterNamed(caller, name);
+      if (parameter != null) return _nonNullableType(parameter);
+      final local = _LocalsNamed(name);
+      caller.node.accept(local);
+      return local.found.any(
+        (variable) =>
+            _nonNullableType(variable.parent) ||
+            (variable.initializer != null &&
+                _provenNonNull(variable.initializer!, caller)),
+      );
+    default:
+      return false;
+  }
+}
+
+/// The formal parameter of [caller] called [name], unwrapped from a default.
+FormalParameter? _parameterNamed(_Declaration caller, String name) {
+  final parameters = switch (caller.node) {
+    MethodDeclaration(:final parameters) => parameters,
+    FunctionDeclaration(:final functionExpression) =>
+      functionExpression.parameters,
+    _ => null,
+  };
+  for (var parameter in parameters?.parameters ?? const <FormalParameter>[]) {
+    if (parameter is DefaultFormalParameter) parameter = parameter.parameter;
+    if (parameter.name?.lexeme == name) return parameter;
+  }
+  return null;
+}
+
+/// Whether a parameter or variable list declares a type with no `?`.
+bool _nonNullableType(AstNode? node) {
+  final type = switch (node) {
+    SimpleFormalParameter(:final type) => type,
+    VariableDeclarationList(:final type) => type,
+    _ => null,
+  };
+  return type != null && type.question == null;
+}
+
+/// Every local variable declaration called [name] inside a declaration.
+class _LocalsNamed extends RecursiveAstVisitor<void> {
+  _LocalsNamed(this.name);
+
+  final String name;
+  final List<VariableDeclaration> found = [];
+
+  @override
+  void visitVariableDeclaration(VariableDeclaration node) {
+    if (node.name.lexeme == name) found.add(node);
+    super.visitVariableDeclaration(node);
+  }
+}
+
 /// Whether every call of the builder [name] inside [caller] supplies a
-/// non-null `privateStatuses`.
+/// `privateStatuses` that is proven non-null.
 bool _alwaysSuppliesStatuses(_Declaration caller, String name) {
   final visitor = _InvocationsOf(name);
   caller.node.accept(visitor);
@@ -315,7 +397,7 @@ bool _alwaysSuppliesStatuses(_Declaration caller, String name) {
     (call) => call.argumentList.arguments.whereType<NamedExpression>().any(
       (argument) =>
           argument.name.label.name == 'privateStatuses' &&
-          argument.expression is! NullLiteral,
+          _provenNonNull(argument.expression, caller),
     ),
   );
 }
@@ -413,11 +495,12 @@ void main() {
           continue;
         }
         audited.add(key);
+        final evidence = _withoutSqlComments(declaration.source);
         final gated = builder == null
-            ? _sqlPredicate.hasMatch(declaration.source) ||
-                  _dartPredicate.hasMatch(declaration.source) ||
-                  declaration.source.contains('_queryWithPrivateFilter(')
-            : _dispatch.hasMatch(declaration.source) ||
+            ? _sqlPredicate.hasMatch(evidence) ||
+                  _dartPredicate.hasMatch(evidence) ||
+                  evidence.contains('_queryWithPrivateFilter(')
+            : _dispatch.hasMatch(evidence) ||
                   _alwaysSuppliesStatuses(declaration, builder);
         final listed = _ungatedDeclarations.containsKey(key);
         if (!gated && !listed) {
@@ -501,6 +584,89 @@ void main() {
       expect(_isBuilder(latestCheckIns), isFalse);
       expect(latestCheckIns.source, contains('_queryWithPrivateFilter('));
     });
+
+    test('a predicate inside an SQL comment is not a filter', () {
+      expect(
+        _sqlPredicate.hasMatch(
+          _withoutSqlComments(
+            '/* WHERE private IN (:statuses) */ SELECT * FROM journal',
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        _sqlPredicate.hasMatch(
+          _withoutSqlComments('SELECT * FROM journal -- private IN (0)'),
+        ),
+        isFalse,
+      );
+      expect(
+        _sqlPredicate.hasMatch(
+          _withoutSqlComments(
+            '/* all rows */ SELECT * FROM journal WHERE private IN :s',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'a builder call counts only when its statuses are proven non-null',
+      () {
+        const snippet = '''
+class Db {
+  void literal() => _rows(privateStatuses: [true, false]);
+  Future<void> lookup() async =>
+      _rows(privateStatuses: await _visiblePrivateStatuses());
+  void nonNullableParameter(List<bool> statuses) =>
+      _rows(privateStatuses: statuses);
+  void nullableParameter(List<bool>? statuses) =>
+      _rows(privateStatuses: statuses);
+  Future<void> local() async {
+    final statuses = await _visiblePrivateStatuses();
+    _rows(privateStatuses: statuses);
+  }
+  void typedLocal() {
+    final List<bool> statuses = [];
+    _rows(privateStatuses: statuses);
+  }
+  void nullableLocal() {
+    List<bool>? statuses;
+    _rows(privateStatuses: statuses);
+  }
+  void field() => _rows(privateStatuses: _statuses);
+  void explicitNull() => _rows(privateStatuses: null);
+  void oneOfTwo(List<bool> statuses) {
+    _rows(privateStatuses: statuses);
+    _rows();
+  }
+}
+''';
+        final declarations = _declarationsOf(snippet, 'snippet.dart');
+        bool supplies(String name) => _alwaysSuppliesStatuses(
+          declarations.singleWhere((d) => d.name == name),
+          '_rows',
+        );
+        for (final proven in [
+          'literal',
+          'lookup',
+          'nonNullableParameter',
+          'local',
+          'typedLocal',
+        ]) {
+          expect(supplies(proven), isTrue, reason: proven);
+        }
+        for (final unproven in [
+          'nullableParameter',
+          'nullableLocal',
+          'field',
+          'explicitNull',
+          'oneOfTwo',
+        ]) {
+          expect(supplies(unproven), isFalse, reason: unproven);
+        }
+      },
+    );
 
     test('a column mention is not a predicate', () {
       expect(
