@@ -97,6 +97,19 @@ void main() {
           (await db.getConfigById('p-ollama'))! as AiConfigInferenceProvider;
       expect(p.inferenceProviderType, InferenceProviderType.ollama);
     });
+
+    test(
+      'deleting an unmigrated provider removes its retry credential',
+      () async {
+        await insertSerialized(id: 'legacy-delete', rawType: 'openAi');
+        final key = apiKeyStorageKeyFor('legacy-delete');
+        // A previous migration may have written the key but not committed SQL.
+        await storage.write(key: key, value: 'k');
+        await db.deleteConfig('legacy-delete');
+        expect(await storage.read(key), isNull);
+        expect(await db.getConfigById('legacy-delete'), isNull);
+      },
+    );
   });
 
   group('AiConfigDb CRUD', () {
@@ -279,6 +292,40 @@ void main() {
         );
         final loaded = await db.getConfigById(provider.id);
         expect((loaded! as AiConfigInferenceProvider).apiKey, 'secret-value');
+      },
+    );
+
+    test(
+      'preserving an empty key retains authentication, clearing removes it',
+      () async {
+        final provider = AiConfigInferenceProvider(
+          id: 'preserve-key',
+          baseUrl: 'https://example.com',
+          apiKey: 'stored-key',
+          name: 'Provider',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        await db.saveConfig(provider);
+        await db.saveConfig(
+          provider.copyWith(apiKey: '', name: 'Renamed'),
+          preserveExistingApiKeyOnEmpty: true,
+        );
+        final loaded =
+            (await db.getConfigById(provider.id))! as AiConfigInferenceProvider;
+        expect(loaded.name, 'Renamed');
+        expect(loaded.apiKey, 'stored-key');
+        expect(
+          await storage.read(apiKeyStorageKeyFor(provider.id)),
+          'stored-key',
+        );
+        await db.saveConfig(provider.copyWith(apiKey: ''));
+        expect(await storage.read(apiKeyStorageKeyFor(provider.id)), isNull);
+        expect(
+          ((await db.getConfigById(provider.id))! as AiConfigInferenceProvider)
+              .apiKey,
+          isEmpty,
+        );
       },
     );
   });

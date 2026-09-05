@@ -166,7 +166,7 @@ class AiConfigDb extends _$AiConfigDb {
     if (persistApiKey) {
       if (config.apiKey.isEmpty && !preserveExistingApiKeyOnEmpty) {
         await _apiKeyStorage.delete(storageKey);
-      } else {
+      } else if (config.apiKey.isNotEmpty) {
         await _apiKeyStorage.write(key: storageKey, value: config.apiKey);
       }
     }
@@ -178,9 +178,7 @@ class AiConfigDb extends _$AiConfigDb {
     if (config is AiConfigInferenceProvider) {
       json
         ..remove('apiKey')
-        ..['apiKeyStorageKey'] =
-            config.apiKeyStorageKey ??
-            apiKeyStorageKeyFor(config.id, namespace: storageNamespace);
+        ..['apiKeyStorageKey'] = config.apiKeyStorageKey;
     }
     return json;
   }
