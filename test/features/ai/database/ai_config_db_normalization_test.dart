@@ -246,5 +246,40 @@ void main() {
         expect((second! as AiConfigInferenceProvider).apiKey, 'legacy-secret');
       },
     );
+
+    test('deleting a provider removes its secure credential', () async {
+      final provider = AiConfig.inferenceProvider(
+        id: 'delete-secure-provider',
+        baseUrl: 'https://example.com',
+        apiKey: 'secret-value',
+        name: 'Provider',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      );
+      await db.saveConfig(provider);
+      await db.deleteConfig(provider.id);
+      expect(await storage.read(apiKeyStorageKeyFor(provider.id)), isNull);
+    });
+
+    test(
+      'metadata-only save does not overwrite the secure credential',
+      () async {
+        final provider = AiConfig.inferenceProvider(
+          id: 'metadata-provider',
+          baseUrl: 'https://example.com',
+          apiKey: 'secret-value',
+          name: 'Provider',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        await db.saveConfig(provider);
+        await db.saveConfig(
+          (provider as AiConfigInferenceProvider).copyWith(apiKey: ''),
+          persistApiKey: false,
+        );
+        final loaded = await db.getConfigById(provider.id);
+        expect((loaded! as AiConfigInferenceProvider).apiKey, 'secret-value');
+      },
+    );
   });
 }
