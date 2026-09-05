@@ -129,8 +129,8 @@ void main() {
       );
 
       final mockMaintenance = MockMaintenance();
-      when(mockMaintenance.deleteEditorDb).thenAnswer((_) async {});
-      when(mockMaintenance.deleteSyncDb).thenAnswer((_) async {});
+      when(mockMaintenance.clearEditorDb).thenAnswer((_) async {});
+      when(mockMaintenance.clearSyncDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
       when(
         mockImagePathMigrationService.migrateAll,
@@ -422,7 +422,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        verify(() => getIt<Maintenance>().deleteEditorDb()).called(1);
+        verify(() => getIt<Maintenance>().clearEditorDb()).called(1);
       },
     );
 
@@ -658,7 +658,7 @@ void main() {
       );
 
       final mockMaintenance = MockMaintenance();
-      when(mockMaintenance.deleteEditorDb).thenAnswer((_) async {});
+      when(mockMaintenance.clearEditorDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
 
       getIt

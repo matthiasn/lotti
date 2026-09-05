@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -10,20 +11,24 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/editor_state_service.dart';
 
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
 
+  /// Backs up `agent.sqlite`, closes the registered [AgentDatabase], and
+  /// removes the file together with its WAL, shared-memory and rollback
+  /// journal companions.
+  ///
+  /// Closing first matters: an unlinked file stays open for every service
+  /// holding the handle, and a `-wal` left beside a freshly created file is
+  /// replayed into it on the next launch. Every holder is left with a closed
+  /// handle, which is why the caller quits the app right after — the next
+  /// launch starts from an empty agent database and the backup.
   Future<void> deleteAgentDb() async {
     final file = await getDatabaseFile(agentDbFileName);
     if (file.existsSync()) {
       await createDbBackup(agentDbFileName);
-      file.deleteSync();
-      // Delete WAL companion files created when SQLite WAL mode is enabled
-      final shmFile = File('${file.path}-shm');
-      final walFile = File('${file.path}-wal');
-      if (shmFile.existsSync()) shmFile.deleteSync();
-      if (walFile.existsSync()) walFile.deleteSync();
     } else {
       getIt<DomainLogger>().log(
         LogDomain.database,
@@ -31,31 +36,82 @@ class Maintenance {
         subDomain: 'deleteAgentDb',
       );
     }
-  }
-
-  Future<void> deleteEditorDb() async {
-    final file = await getDatabaseFile(editorDbFileName);
-    if (file.existsSync()) {
-      file.deleteSync();
-    } else {
-      getIt<DomainLogger>().log(
-        LogDomain.database,
-        'Database file $editorDbFileName does not exist',
-        subDomain: 'deleteEditorDb',
-      );
+    if (getIt.isRegistered<AgentDatabase>()) {
+      await getIt<AgentDatabase>().close();
     }
+    // Companions are removed even when the main file is gone: a leftover
+    // `-wal` would be replayed into the database created on the next launch.
+    _deleteWithCompanions(file);
   }
 
-  Future<void> deleteSyncDb() async {
-    final file = await getDatabaseFile(syncDbFileName);
-    if (file.existsSync()) {
-      file.deleteSync();
-    } else {
-      getIt<DomainLogger>().log(
-        LogDomain.database,
-        'Database file $syncDbFileName does not exist',
-        subDomain: 'deleteSyncDb',
-      );
+  /// Drops the drafts the editor holds in memory, cancelling their pending
+  /// debounced writes, then empties the drafts database through its live
+  /// connection — otherwise a draft the user just discarded would be
+  /// restored into the editor, or written back moments later.
+  Future<void> clearEditorDb() async {
+    // Drop the in-memory drafts first: a debounced write that fired while
+    // the rows were being deleted would land after them.
+    if (getIt.isRegistered<EditorStateService>()) {
+      getIt<EditorStateService>().resetDrafts();
+    }
+    await _emptyDatabase(getIt<EditorDb>(), subDomain: 'clearEditorDb');
+  }
+
+  /// Empties the sync database — outbox, sequence log, host activity, inbound
+  /// queue, queue markers, onboarding rounds and watermarks — through its
+  /// live connection.
+  Future<void> clearSyncDb() =>
+      _emptyDatabase(getIt<SyncDatabase>(), subDomain: 'clearSyncDb');
+
+  /// Deletes every row of every table in [db] and reclaims the space, on the
+  /// connection the app is using.
+  ///
+  /// Unlinking the file instead would leave every service holding the old
+  /// handle writing into a ghost inode until restart, and an orphaned `-wal`
+  /// beside the file created on the next launch. Emptying the tables keeps
+  /// every handle valid, takes effect immediately, and ends with the same
+  /// schema and no rows. Tables come from `sqlite_master`, not Drift's
+  /// `allTables`, because the sync watermarks are created by raw migration
+  /// SQL and would otherwise be skipped.
+  Future<void> _emptyDatabase(
+    GeneratedDatabase db, {
+    required String subDomain,
+  }) async {
+    final tables = await db
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table' "
+          "AND name NOT LIKE 'sqlite_%'",
+        )
+        .get();
+    final names = [for (final row in tables) row.read<String>('name')];
+    await db.transaction(() async {
+      for (final name in names) {
+        await db.customStatement('DELETE FROM "$name"');
+      }
+    });
+    await db.customStatement('VACUUM');
+    // Raw statements bypass Drift's stream invalidation; tell every watched
+    // query (the outbox count behind the sync badge, for one) that its
+    // tables changed, or it would show the pre-reset value until the next
+    // ordinary write.
+    db.notifyUpdates({
+      for (final name in names) TableUpdate(name, kind: UpdateKind.delete),
+    });
+    getIt<DomainLogger>().log(
+      LogDomain.database,
+      'Emptied ${names.length} table(s)',
+      subDomain: subDomain,
+    );
+  }
+
+  /// Removes [file] and the `-wal`, `-shm` and `-journal` companions SQLite
+  /// keeps beside it. Call only on a closed database.
+  static void _deleteWithCompanions(File file) {
+    for (final suffix in const ['', '-wal', '-shm', '-journal']) {
+      final companion = File('${file.path}$suffix');
+      if (companion.existsSync()) {
+        companion.deleteSync();
+      }
     }
   }
 
@@ -100,30 +156,27 @@ class Maintenance {
     return deleted;
   }
 
+  /// Removes the FTS index file and its companions. Call only after the
+  /// registered [Fts5Db] has been closed; [recreateFts5] does.
   Future<void> deleteFts5Db() async {
     final file = await getDatabaseFile(fts5DbFileName);
-    var deleted = false;
-    if (file.existsSync()) {
-      file.deleteSync();
-      deleted = true;
-    } else {
-      getIt<DomainLogger>().log(
-        LogDomain.database,
-        'Database file $fts5DbFileName does not exist',
-        subDomain: 'deleteFts5Db',
-      );
-    }
-
-    if (deleted) {
-      getIt<DomainLogger>().log(
-        LogDomain.database,
-        'FTS5 database DELETED',
-        subDomain: 'recreateFts5',
-      );
-    }
+    final existed = file.existsSync();
+    // Companions go regardless, so an orphaned `-wal` cannot be replayed
+    // into the index rebuilt next.
+    _deleteWithCompanions(file);
+    getIt<DomainLogger>().log(
+      LogDomain.database,
+      existed
+          ? 'FTS5 database DELETED'
+          : 'Database file $fts5DbFileName does not exist',
+      subDomain: existed ? 'recreateFts5' : 'deleteFts5Db',
+    );
   }
 
   Future<void> recreateFts5({void Function(double)? onProgress}) async {
+    // Close before unlinking: a file removed under an open connection keeps
+    // being written by that connection until restart.
+    await getIt<Fts5Db>().close();
     try {
       await deleteFts5Db();
     } catch (e, stackTrace) {
@@ -134,8 +187,6 @@ class Maintenance {
         subDomain: 'deleteFts5Db',
       );
     }
-
-    await getIt<Fts5Db>().close();
 
     getIt
       ..unregister<Fts5Db>()

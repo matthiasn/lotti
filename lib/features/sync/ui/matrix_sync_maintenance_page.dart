@@ -74,7 +74,7 @@ class _MatrixSyncMaintenanceBodyState extends State<MatrixSyncMaintenanceBody>
                 confirmLabel: context.messages.maintenanceDeleteDatabaseConfirm,
               );
               if (confirmed && context.mounted) {
-                await maintenance.deleteSyncDb();
+                await maintenance.clearSyncDb();
               }
             },
           ),

@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show QueryRow, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -15,6 +16,84 @@ import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart' show SqliteException, sqlite3;
 
 import '../test_data/change_set_factories.dart';
+
+/// Seeds the schema an agent database had at v1, with one wake run.
+void _seedAgentV1(String dbFile) {
+  final rawDb = sqlite3.open(dbFile);
+
+  // Create v1 schema tables (minimal — only wake_run_log needed)
+  rawDb.execute('''
+  CREATE TABLE agent_entities (
+    id TEXT NOT NULL PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    subtype TEXT,
+    thread_id TEXT,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    deleted_at DATETIME,
+    serialized TEXT NOT NULL,
+    schema_version INTEGER NOT NULL DEFAULT 1
+  )
+''');
+  rawDb.execute('''
+  CREATE TABLE agent_links (
+    id TEXT NOT NULL PRIMARY KEY,
+    from_id TEXT NOT NULL,
+    to_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    deleted_at DATETIME,
+    serialized TEXT NOT NULL,
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    UNIQUE(from_id, to_id, type)
+  )
+''');
+  rawDb.execute('''
+  CREATE TABLE wake_run_log (
+    run_key TEXT NOT NULL PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    reason_id TEXT,
+    thread_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    logical_change_key TEXT,
+    created_at DATETIME NOT NULL,
+    started_at DATETIME,
+    completed_at DATETIME,
+    error_message TEXT,
+    template_id TEXT,
+    template_version_id TEXT
+  )
+''');
+  rawDb.execute('''
+  CREATE TABLE saga_log (
+    operation_id TEXT NOT NULL PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    run_key TEXT NOT NULL,
+    phase TEXT NOT NULL,
+    status TEXT NOT NULL,
+    tool_name TEXT NOT NULL,
+    last_error TEXT,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
+  )
+''');
+
+  // Insert a test row to verify data survives migration
+  rawDb.execute('''
+  INSERT INTO wake_run_log
+    (run_key, agent_id, reason, thread_id, status, created_at)
+  VALUES
+    ('run-1', 'agent-1', 'scheduled', 'thread-1', 'completed',
+     '2026-02-20 10:00:00')
+''');
+
+  // Set schema version to 1
+  rawDb.execute('PRAGMA user_version = 1');
+  rawDb.close();
+}
 
 void main() {
   late Directory testDirectory;
@@ -346,84 +425,48 @@ void main() {
 
   group('AgentDatabase migration', () {
     test(
+      'upgrading a file-backed database first writes a consistent backup '
+      'named after it, in its own directory',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        _seedAgentV1(dbFile);
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+        // The migration runs on first use; the backup is taken inside it.
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15)),
+          () => db.customSelect('PRAGMA user_version').get(),
+        );
+
+        final backups = Directory(
+          path.join(testDirectory.path, 'backup'),
+        ).listSync().whereType<File>().toList();
+        expect(backups, hasLength(1));
+        expect(
+          path.basename(backups.single.path),
+          matches(RegExp(r'^agent\.2026-09-05_10-30-15-\d+\.sqlite$')),
+        );
+        // The backup is the pre-migration state, not the migrated one.
+        final snapshot = sqlite3.open(backups.single.path);
+        addTearDown(snapshot.close);
+        expect(
+          snapshot.select('PRAGMA user_version').single['user_version'],
+          1,
+        );
+      },
+    );
+
+    test(
       'v1 to v2 adds user_rating and rated_at columns to wake_run_log',
       () async {
         // Create a v1 database with the original schema (no rating columns)
         final dbFile = path.join(testDirectory.path, agentDbFileName);
-        final rawDb = sqlite3.open(dbFile);
-
-        // Create v1 schema tables (minimal — only wake_run_log needed)
-        rawDb.execute('''
-        CREATE TABLE agent_entities (
-          id TEXT NOT NULL PRIMARY KEY,
-          agent_id TEXT NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          thread_id TEXT,
-          created_at DATETIME NOT NULL,
-          updated_at DATETIME NOT NULL,
-          deleted_at DATETIME,
-          serialized TEXT NOT NULL,
-          schema_version INTEGER NOT NULL DEFAULT 1
-        )
-      ''');
-        rawDb.execute('''
-        CREATE TABLE agent_links (
-          id TEXT NOT NULL PRIMARY KEY,
-          from_id TEXT NOT NULL,
-          to_id TEXT NOT NULL,
-          type TEXT NOT NULL,
-          created_at DATETIME NOT NULL,
-          updated_at DATETIME NOT NULL,
-          deleted_at DATETIME,
-          serialized TEXT NOT NULL,
-          schema_version INTEGER NOT NULL DEFAULT 1,
-          UNIQUE(from_id, to_id, type)
-        )
-      ''');
-        rawDb.execute('''
-        CREATE TABLE wake_run_log (
-          run_key TEXT NOT NULL PRIMARY KEY,
-          agent_id TEXT NOT NULL,
-          reason TEXT NOT NULL,
-          reason_id TEXT,
-          thread_id TEXT NOT NULL,
-          status TEXT NOT NULL,
-          logical_change_key TEXT,
-          created_at DATETIME NOT NULL,
-          started_at DATETIME,
-          completed_at DATETIME,
-          error_message TEXT,
-          template_id TEXT,
-          template_version_id TEXT
-        )
-      ''');
-        rawDb.execute('''
-        CREATE TABLE saga_log (
-          operation_id TEXT NOT NULL PRIMARY KEY,
-          agent_id TEXT NOT NULL,
-          run_key TEXT NOT NULL,
-          phase TEXT NOT NULL,
-          status TEXT NOT NULL,
-          tool_name TEXT NOT NULL,
-          last_error TEXT,
-          created_at DATETIME NOT NULL,
-          updated_at DATETIME NOT NULL
-        )
-      ''');
-
-        // Insert a test row to verify data survives migration
-        rawDb.execute('''
-        INSERT INTO wake_run_log
-          (run_key, agent_id, reason, thread_id, status, created_at)
-        VALUES
-          ('run-1', 'agent-1', 'scheduled', 'thread-1', 'completed',
-           '2026-02-20 10:00:00')
-      ''');
-
-        // Set schema version to 1
-        rawDb.execute('PRAGMA user_version = 1');
-        rawDb.close();
+        _seedAgentV1(dbFile);
 
         // Open with AgentDatabase to trigger v1→v2 migration
         final db = AgentDatabase(

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show InsertMode, Value;
@@ -18,6 +19,7 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart'
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -91,6 +93,24 @@ class _ThrowingMaintenance extends Maintenance {
   @override
   Future<void> deleteFts5Db() {
     throw const FileSystemException('Simulated delete failure');
+  }
+}
+
+/// A file-backed agent database that records whether it was closed.
+class _ClosureTrackingAgentDb extends AgentDatabase {
+  _ClosureTrackingAgentDb(Directory directory)
+    : super(
+        background: false,
+        documentsDirectoryProvider: () async => directory,
+        tempDirectoryProvider: () async => directory,
+      );
+
+  bool closed = false;
+
+  @override
+  Future<void> close() {
+    closed = true;
+    return super.close();
   }
 }
 
@@ -198,91 +218,180 @@ void main() {
       await journalDb.close();
     });
 
-    group('database deletion helpers', () {
-      test('deleteEditorDb removes existing database file', () async {
-        final dbFile = await getDatabaseFile(editorDbFileName);
-        await dbFile.create(recursive: true);
-        expect(dbFile.existsSync(), isTrue);
-
-        await maintenance.deleteEditorDb();
-
-        expect(dbFile.existsSync(), isFalse);
-      });
-
-      test('deleteSyncDb removes existing database file', () async {
-        final dbFile = await getDatabaseFile(syncDbFileName);
-        await dbFile.create(recursive: true);
-        expect(dbFile.existsSync(), isTrue);
-
-        await maintenance.deleteSyncDb();
-
-        expect(dbFile.existsSync(), isFalse);
-      });
-
-      test('deleteFts5Db removes file and logs deletion event', () async {
-        final dbFile = await getDatabaseFile(fts5DbFileName);
-        await dbFile.create(recursive: true);
-        expect(dbFile.existsSync(), isTrue);
-
-        await maintenance.deleteFts5Db();
-
-        expect(dbFile.existsSync(), isFalse);
-
-        verify(
-          () => mockDomainLogger.log(
-            LogDomain.database,
-            'FTS5 database DELETED',
-            subDomain: 'recreateFts5',
-          ),
-        ).called(1);
-      });
-
+    group('database reset helpers', () {
       test(
-        'database deletion is idempotent when file does not exist',
+        'clearEditorDb empties the drafts through the live connection and '
+        'leaves it usable',
         () async {
-          final dbFile = await getDatabaseFile(editorDbFileName);
-          if (dbFile.existsSync()) {
-            await dbFile.delete();
-          }
+          final editorDb = EditorDb(inMemoryDatabase: true);
+          addTearDown(editorDb.close);
+          getIt.registerSingleton<EditorDb>(editorDb);
+          await editorDb.insertDraftState(
+            entryId: 'entry-1',
+            lastSaved: DateTime(2026, 9, 5),
+            draftDeltaJson: '{"ops":[]}',
+          );
+          expect(
+            await editorDb.select(editorDb.editorDrafts).get(),
+            hasLength(1),
+          );
 
-          await maintenance.deleteEditorDb();
+          final editorState = MockEditorStateService();
+          getIt.registerSingleton<EditorStateService>(editorState);
+          // Stand in for a debounced write still pending at reset time: it
+          // is queued when the in-memory drafts are dropped, so it must be
+          // deleted along with everything else rather than land afterwards.
+          when(editorState.resetDrafts).thenAnswer((_) {
+            unawaited(
+              editorDb.insertDraftState(
+                entryId: 'pending-at-reset',
+                lastSaved: DateTime(2026, 9, 5),
+                draftDeltaJson: '{"ops":[]}',
+              ),
+            );
+          });
 
-          expect(dbFile.existsSync(), isFalse);
+          await maintenance.clearEditorDb();
+
+          expect(await editorDb.select(editorDb.editorDrafts).get(), isEmpty);
+          verify(editorState.resetDrafts).called(1);
+          await editorDb.insertDraftState(
+            entryId: 'entry-2',
+            lastSaved: DateTime(2026, 9, 5),
+            draftDeltaJson: '{"ops":[]}',
+          );
+          expect(
+            await editorDb.select(editorDb.editorDrafts).get(),
+            hasLength(1),
+          );
         },
       );
 
-      test('deleteAgentDb removes database and WAL companion files', () async {
-        final dbFile = await getDatabaseFile(agentDbFileName);
-        await dbFile.create(recursive: true);
-        final shmFile = File('${dbFile.path}-shm');
-        final walFile = File('${dbFile.path}-wal');
-        await shmFile.create();
-        await walFile.create();
-        expect(dbFile.existsSync(), isTrue);
-        expect(shmFile.existsSync(), isTrue);
-        expect(walFile.existsSync(), isTrue);
+      test(
+        'clearSyncDb empties every table, including ones created by raw '
+        'migration SQL',
+        () async {
+          final syncDb = SyncDatabase(inMemoryDatabase: true);
+          addTearDown(syncDb.close);
+          getIt.registerSingleton<SyncDatabase>(syncDb);
+          await syncDb.addOutboxItem(
+            OutboxCompanion(
+              subject: const Value('s'),
+              message: const Value('{}'),
+              createdAt: Value(DateTime(2026, 9, 5)),
+              updatedAt: Value(DateTime(2026, 9, 5)),
+            ),
+          );
+          await syncDb.customStatement(
+            'INSERT INTO sync_sequence_watermarks '
+            "(host_id, last_counter, updated_at) VALUES ('host-a', 3, 0)",
+          );
+          // A live Drift stream, as behind the sync badge: it must learn
+          // about the reset although the rows go through raw statements.
+          final counts = <int>[];
+          final subscription = syncDb.watchOutboxCount().listen(counts.add);
+          addTearDown(subscription.cancel);
+          await pumpEventQueue();
+          expect(counts, [1]);
 
-        await maintenance.deleteAgentDb();
+          await maintenance.clearSyncDb();
+          await pumpEventQueue();
 
-        expect(dbFile.existsSync(), isFalse);
-        expect(shmFile.existsSync(), isFalse);
-        expect(walFile.existsSync(), isFalse);
-      });
+          expect(counts.last, 0);
+          expect(await syncDb.select(syncDb.outbox).get(), isEmpty);
+          final watermarks = await syncDb
+              .customSelect(
+                'SELECT COUNT(*) AS c FROM sync_sequence_watermarks',
+              )
+              .getSingle();
+          expect(watermarks.read<int>('c'), 0);
+        },
+      );
 
-      test('deleteAgentDb creates backup before deletion', () async {
-        final dbFile = await getDatabaseFile(agentDbFileName);
-        await dbFile.create(recursive: true);
-        await dbFile.writeAsString('test-data');
+      test(
+        'deleteAgentDb backs up, closes the registered database and removes '
+        'the file with every companion',
+        () async {
+          final agentDb = _ClosureTrackingAgentDb(tempDir);
+          addTearDown(() async {
+            if (!agentDb.closed) await agentDb.close();
+          });
+          getIt.registerSingleton<AgentDatabase>(agentDb);
+          // Opening lazily creates the file and its WAL companions.
+          await agentDb.customSelect('SELECT 1').get();
+          final dbFile = await getDatabaseFile(agentDbFileName);
+          expect(dbFile.existsSync(), isTrue);
+          File('${dbFile.path}-journal').createSync();
 
-        await maintenance.deleteAgentDb();
+          await maintenance.deleteAgentDb();
 
-        expect(dbFile.existsSync(), isFalse);
+          expect(agentDb.closed, isTrue);
+          for (final suffix in const ['', '-wal', '-shm', '-journal']) {
+            expect(
+              File('${dbFile.path}$suffix').existsSync(),
+              isFalse,
+              reason: 'companion "$suffix" must be gone',
+            );
+          }
+          final backups = Directory(
+            '${tempDir.path}/backup',
+          ).listSync().map((entity) => entity.uri.pathSegments.last).toList();
+          expect(backups, hasLength(1));
+          expect(backups.single, startsWith('agent.'));
+        },
+      );
 
-        final backupDir = Directory('${tempDir.path}/backup');
-        expect(backupDir.existsSync(), isTrue);
-        final backupFiles = backupDir.listSync();
-        expect(backupFiles, isNotEmpty);
-      });
+      test(
+        'deleteAgentDb still backs up a file SQLite cannot read, as a raw copy',
+        () async {
+          final dbFile = await getDatabaseFile(agentDbFileName);
+          await dbFile.create(recursive: true);
+          await dbFile.writeAsString('test-data');
+
+          await maintenance.deleteAgentDb();
+
+          expect(dbFile.existsSync(), isFalse);
+          final backupDir = Directory('${tempDir.path}/backup');
+          expect(backupDir.existsSync(), isTrue);
+          final backup = backupDir.listSync().single as File;
+          expect(backup.readAsStringSync(), 'test-data');
+        },
+      );
+
+      test(
+        'deleteAgentDb removes orphaned companions when the main file is '
+        'already gone',
+        () async {
+          final dbFile = await getDatabaseFile(agentDbFileName);
+          File('${dbFile.path}-wal').createSync(recursive: true);
+          File('${dbFile.path}-shm').createSync();
+
+          await maintenance.deleteAgentDb();
+
+          expect(File('${dbFile.path}-wal').existsSync(), isFalse);
+          expect(File('${dbFile.path}-shm').existsSync(), isFalse);
+        },
+      );
+
+      test(
+        'deleteFts5Db removes orphaned companions when the main file is '
+        'already gone',
+        () async {
+          final dbFile = await getDatabaseFile(fts5DbFileName);
+          File('${dbFile.path}-wal').createSync(recursive: true);
+
+          await maintenance.deleteFts5Db();
+
+          expect(File('${dbFile.path}-wal').existsSync(), isFalse);
+          verify(
+            () => mockDomainLogger.log(
+              LogDomain.database,
+              'Database file $fts5DbFileName does not exist',
+              subDomain: 'deleteFts5Db',
+            ),
+          ).called(1);
+        },
+      );
 
       test('deleteAgentDb is idempotent when file does not exist', () async {
         final dbFile = await getDatabaseFile(agentDbFileName);
@@ -298,6 +407,26 @@ void main() {
             LogDomain.database,
             'Database file $agentDbFileName does not exist',
             subDomain: 'deleteAgentDb',
+          ),
+        ).called(1);
+      });
+
+      test('deleteFts5Db removes the file, its companions and logs', () async {
+        final dbFile = await getDatabaseFile(fts5DbFileName);
+        await dbFile.create(recursive: true);
+        File('${dbFile.path}-wal').createSync();
+        File('${dbFile.path}-shm').createSync();
+
+        await maintenance.deleteFts5Db();
+
+        expect(dbFile.existsSync(), isFalse);
+        expect(File('${dbFile.path}-wal').existsSync(), isFalse);
+        expect(File('${dbFile.path}-shm').existsSync(), isFalse);
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.database,
+            'FTS5 database DELETED',
+            subDomain: 'recreateFts5',
           ),
         ).called(1);
       });

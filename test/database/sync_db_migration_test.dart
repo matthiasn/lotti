@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,6 +64,46 @@ void main() {
   });
 
   group('SyncDatabase Migration Tests', () {
+    test(
+      'upgrading a file-backed database first writes a consistent backup '
+      'named after it',
+      () async {
+        final dbFile = File(
+          path.join(testDirectory!.path, 'test_sync_backup.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+        _createOutboxV1(sqlite);
+        sqlite.execute('PRAGMA user_version = 1');
+        sqlite.close();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_backup.db');
+        addTearDown(db.close);
+        // The migration runs on first use; the backup is taken inside it.
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15)),
+          () => db.customSelect('PRAGMA user_version').get(),
+        );
+
+        final backups = Directory(
+          path.join(testDirectory!.path, 'backup'),
+        ).listSync().whereType<File>().toList();
+        expect(backups, hasLength(1));
+        expect(
+          path.basename(backups.single.path),
+          matches(
+            RegExp(r'^test_sync_backup\.2026-09-05_10-30-15-\d+\.sqlite$'),
+          ),
+        );
+        // The backup is the pre-migration state, not the migrated one.
+        final snapshot = sqlite3.open(backups.single.path);
+        addTearDown(snapshot.close);
+        expect(
+          snapshot.select('PRAGMA user_version').single['user_version'],
+          1,
+        );
+      },
+    );
+
     test(
       'v2 migration creates sync_sequence_log and host_activity tables',
       () async {

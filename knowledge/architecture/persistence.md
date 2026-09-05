@@ -452,19 +452,18 @@ paths, and failures are counted and reported without aborting the whole pass.
 The normal display resolver retains a read-only legacy fallback until repair,
 so affected screenshots do not disappear from existing journal entries.
 
-`createDbBackup(fileName)` copies a database to
-`backup/db.<yyyy-MM-dd_HH-mm-ss-S>.sqlite`. It runs automatically before a
-`JournalDb` migration and on demand from *Settings → Advanced → Maintenance*.
-Its timestamp comes from `package:clock`'s `clock.now()`, and so does every
-other instant the database layer stamps itself — the `updated_at` on a journal
-upsert, conflict rows, outbox enqueue stamps, leases and retries, sync
-watermarks, editor drafts and settings — so tests drive all of them with
-`withClock`. The one SQL-side
-default, the outbox `created_at`/`updated_at` pair, is Drift's
-`currentDateAndTime`, which SQLite evaluates on each insert; a
-`Constant(DateTime.now())` default would bake the app-launch instant into the
-`CREATE TABLE` statement instead.
-
+`createDbBackup(fileName)` snapshots a database to
+`backup/<stem>.<yyyy-MM-dd_HH-mm-ss-S>.sqlite` — `db.…` for the journal,
+`sync.…` and `agent.…` for the others — with `VACUUM INTO` on a private
+connection, run off the caller's isolate. The snapshot therefore holds every
+committed transaction, including those still in the WAL that a plain copy of
+the main file would miss, and arrives compacted. A file SQLite cannot open
+(the corrupt store a user is about to reset) is copied byte for byte with its
+WAL instead, and the fallback is logged, so a reset is never blocked on a
+backup. It runs automatically before a **journal, sync or agent migration**
+(`backupBeforeMigration`, which logs a failure and continues rather than
+refusing to open the app) and on demand from
+*Settings → Advanced → Maintenance*.
 That helper is a **legacy per-database fallback**, not a supported profile
 backup. It copies only the main SQLite file, has no store identity, manifest,
 checksum, media coverage, encryption, coordinated quiescence, or restore path.
@@ -485,13 +484,33 @@ and publish with one rename. It does not stop writers; lifecycle orchestration
 must satisfy that precondition. The full contract and remaining runtime layers
 are in [backup and restore](../features/backup-and-restore.md).
 
-`lib/database/maintenance.dart` owns physical database upkeep: whole-database
-deletion (`deleteAgentDb`, `deleteEditorDb`, `deleteSyncDb`), FTS rebuilding,
-and the `sent`-outbox purge. Historical re-send orchestration belongs to Sync
-and lives in `lib/features/sync/services/historical_sync_service.dart`; it uses
-database and repository row APIs without making queueing, retry, or Sync result
-types part of the database maintenance layer. **The deleted-entry purge is not
-in either service** — `purgeDeleted` lives in
+`lib/database/maintenance.dart` owns physical database upkeep. Two shapes,
+chosen by what the services holding a database can survive:
+
+- **Empty through the live connection** — `clearEditorDb`, `clearSyncDb`
+  delete every row of every table (enumerated from `sqlite_master`, so the
+  raw-SQL `sync_sequence_watermarks` is included), `VACUUM`, and then call
+  `notifyUpdates` for those tables, because raw statements bypass Drift's
+  stream invalidation and the outbox count behind the sync badge would
+  otherwise keep its pre-reset value. Every service keeps a valid handle and
+  the reset takes effect immediately. `clearEditorDb` also calls
+  `EditorStateService.resetDrafts`, since drafts live in memory with a
+  debounced write and would otherwise be restored into an open editor or
+  written back moments later. Unlinking the file instead would leave those
+  handles writing into a ghost inode until restart and an orphaned `-wal`
+  beside the file created on the next launch, ready to be replayed into it.
+- **Close, then delete with companions** — `deleteAgentDb` backs up, closes
+  the registered `AgentDatabase`, removes the file with `-wal`, `-shm` and
+  `-journal`, and its caller quits the app, because every holder is now on a
+  closed handle. `recreateFts5` does the same for the search index and then
+  registers a fresh instance.
+
+The `sent`-outbox purge lives here too. Historical re-send orchestration
+belongs to Sync and lives in
+`lib/features/sync/services/historical_sync_service.dart`; it uses database
+and repository row APIs without making queueing, retry, or Sync result types
+part of the database maintenance layer. **The deleted-entry purge is not in
+either service** — `purgeDeleted` lives in
 `lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
 entity operations, which is where to look for it.
 

@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart';
 
 // Test constants
 const String _testDirectoryPrefix = 'lotti_common_test_';
@@ -103,139 +104,239 @@ void main() {
       await cleanupTestDirectoryWithGetIt(testDir);
     });
 
-    test('creates backup directory if it does not exist', () async {
+    /// A real WAL-mode database with one row checkpointed into the main file
+    /// and, while the returned connection stays open, a second row that only
+    /// exists in the WAL.
+    Database seedWalDatabase(String fileName) {
+      final source = sqlite3.open(p.join(testDir.path, fileName));
+      addTearDown(source.close);
+      source
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('CREATE TABLE rows (id INTEGER PRIMARY KEY, label TEXT)')
+        ..execute("INSERT INTO rows (label) VALUES ('checkpointed')")
+        ..execute('PRAGMA wal_checkpoint(TRUNCATE)')
+        ..execute("INSERT INTO rows (label) VALUES ('still in the wal')");
+      return source;
+    }
+
+    List<String> labelsIn(File backup) {
+      final copy = sqlite3.open(backup.path);
+      addTearDown(copy.close);
+      return copy
+          .select('SELECT label FROM rows ORDER BY id')
+          .map((row) => row['label'] as String)
+          .toList();
+    }
+
+    test('the backup holds commits that are still in the WAL', () async {
       const fileName = 'test_db.sqlite';
+      seedWalDatabase(fileName);
+      final wal = File(p.join(testDir.path, '$fileName-wal'));
+      expect(wal.lengthSync(), greaterThan(0), reason: 'row must be in WAL');
 
-      // Create source file
-      final sourceFile = File(p.join(testDir.path, fileName));
-      await sourceFile.writeAsString('test data');
+      final backup = await createDbBackup(fileName);
 
-      // Create backup
-      await createDbBackup(fileName);
-
-      // Verify backup directory exists
-      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      expect(backupDir.existsSync(), isTrue);
+      // A plain copy of the main file would only carry 'checkpointed'.
+      expect(labelsIn(backup), ['checkpointed', 'still in the wal']);
+      expect(File('${backup.path}-wal').existsSync(), isFalse);
     });
 
-    test('creates backup with correct timestamp format', () async {
-      const fileName = 'test_db.sqlite';
+    test('backups are named after their source and the clock', () async {
+      seedWalDatabase('agent.sqlite');
 
-      // Create source file
-      final sourceFile = File(p.join(testDir.path, fileName));
-      await sourceFile.writeAsString('test data');
+      final backup = await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15)),
+        () => createDbBackup('agent.sqlite'),
+      );
 
-      // Create backup
-      await createDbBackup(fileName);
-
-      // Check backup directory for files
-      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      final backupFiles = backupDir.listSync();
-
-      expect(backupFiles.length, equals(1));
-      final backupFile = backupFiles.first as File;
-
-      // Verify timestamp format: db.yyyy-MM-dd_HH-mm-ss-S.sqlite
-      final backupFileName = p.basename(backupFile.path);
-      expect(backupFileName, startsWith('db.'));
-      expect(backupFileName, endsWith('.sqlite'));
+      expect(backup.parent.path, p.join(testDir.path, _backupDirectoryName));
       expect(
-        backupFileName,
-        matches(RegExp(r'db\.\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d+\.sqlite')),
+        p.basename(backup.path),
+        matches(RegExp(r'^agent\.2026-09-05_10-30-15-\d+\.sqlite$')),
       );
     });
 
-    test('creates backup in correct location', () async {
+    test('successive backups never collide', () async {
       const fileName = 'test_db.sqlite';
+      seedWalDatabase(fileName);
 
-      // Create source file
-      final sourceFile = File(p.join(testDir.path, fileName));
-      await sourceFile.writeAsString('test data');
-
-      // Create backup
-      await createDbBackup(fileName);
-
-      // Verify backup location
-      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      expect(backupDir.existsSync(), isTrue);
-
-      final backupFiles = backupDir.listSync();
-      expect(backupFiles.length, equals(1));
-    });
-
-    test('backup file contains same data as source', () async {
-      const fileName = 'test_db.sqlite';
-      const testData = 'This is test database content';
-
-      // Create source file with test data
-      final sourceFile = File(p.join(testDir.path, fileName));
-      await sourceFile.writeAsString(testData);
-
-      // Create backup
-      await createDbBackup(fileName);
-
-      // Read backup and verify content
-      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      final backupFiles = backupDir.listSync();
-      final backupFile = backupFiles.first as File;
-      final backupContent = await backupFile.readAsString();
-
-      expect(backupContent, equals(testData));
-    });
-
-    test('handles non-existent source file gracefully', () async {
-      const fileName = 'nonexistent_db.sqlite';
-
-      // Try to create backup of non-existent file
-      expect(
+      final first = await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15)),
         () => createDbBackup(fileName),
+      );
+      final second = await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 10, 30, 16)),
+        () => createDbBackup(fileName),
+      );
+
+      expect(first.path, isNot(second.path));
+      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
+      expect(backupDir.listSync(), hasLength(2));
+    });
+
+    test('two backups in the same instant get distinct files', () async {
+      const fileName = 'test_db.sqlite';
+      seedWalDatabase(fileName);
+      final sameInstant = Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15));
+
+      final first = await withClock(
+        sameInstant,
+        () => createDbBackup(fileName),
+      );
+      final second = await withClock(
+        sameInstant,
+        () => createDbBackup(fileName),
+      );
+
+      expect(first.path, isNot(second.path));
+      expect(p.basename(second.path), endsWith('-2.sqlite'));
+      // Both are real snapshots — the second did not overwrite the first.
+      expect(labelsIn(first), ['checkpointed', 'still in the wal']);
+      expect(labelsIn(second), ['checkpointed', 'still in the wal']);
+    });
+
+    test(
+      'a failure that is not an unreadable source propagates instead of '
+      'being papered over with a raw copy',
+      () async {
+        const fileName = 'test_db.sqlite';
+        seedWalDatabase(fileName);
+        // Occupy the exact target with a directory so VACUUM INTO cannot
+        // write there: the source is fine, the backup is what failed.
+        final backupDir = Directory(p.join(testDir.path, _backupDirectoryName))
+          ..createSync();
+        Directory(
+          p.join(backupDir.path, 'test_db.2026-09-05_10-30-15-000.sqlite'),
+        ).createSync();
+
+        await expectLater(
+          withClock(
+            Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15)),
+            () => createDbBackup(fileName),
+          ),
+          throwsA(isA<SqliteException>()),
+        );
+
+        expect(
+          backupDir.listSync().whereType<File>().where(
+            (f) => f.path.endsWith('.sqlite'),
+          ),
+          isEmpty,
+          reason: 'no raw copy may stand in for a failed snapshot',
+        );
+      },
+    );
+
+    test('throws when the source file does not exist', () async {
+      await expectLater(
+        createDbBackup('missing.sqlite'),
         throwsA(isA<FileSystemException>()),
       );
-    });
-
-    test('multiple backups create separate files', () async {
-      const fileName = 'test_db.sqlite';
-
-      // Create source file
-      final sourceFile = File(p.join(testDir.path, fileName));
-      await sourceFile.writeAsString('test data');
-
-      // Drive the backup timestamps with fixed clocks so the filenames are
-      // guaranteed distinct — no wall-clock wait (fake-time policy).
-      await withClock(
-        Clock.fixed(DateTime(2024, 3, 15, 10, 30)),
-        () => createDbBackup(fileName),
+      expect(
+        Directory(p.join(testDir.path, _backupDirectoryName)).existsSync(),
+        isFalse,
       );
-      await withClock(
-        Clock.fixed(DateTime(2024, 3, 15, 10, 30, 1)),
-        () => createDbBackup(fileName),
+    });
+
+    test(
+      'a source SQLite cannot read is copied byte for byte with its WAL',
+      () async {
+        const fileName = 'broken.sqlite';
+        final garbage = List<int>.generate(_testBinaryDataSize, (i) => i);
+        final walGarbage = List<int>.generate(
+          _testBinaryDataSize,
+          (i) => 255 - i,
+        );
+        File(p.join(testDir.path, fileName)).writeAsBytesSync(garbage);
+        File(
+          p.join(testDir.path, '$fileName-wal'),
+        ).writeAsBytesSync(walGarbage);
+
+        final backup = await createDbBackup(fileName);
+
+        expect(backup.readAsBytesSync(), garbage);
+        expect(File('${backup.path}-wal').readAsBytesSync(), walGarbage);
+      },
+    );
+
+    test('backs up from an explicit documents directory', () async {
+      final otherWorld = Directory(p.join(testDir.path, 'other-world'))
+        ..createSync();
+      final source = sqlite3.open(p.join(otherWorld.path, 'db.sqlite'));
+      addTearDown(source.close);
+      source
+        ..execute('CREATE TABLE rows (id INTEGER PRIMARY KEY, label TEXT)')
+        ..execute("INSERT INTO rows (label) VALUES ('elsewhere')");
+
+      final backup = await createDbBackup(
+        'db.sqlite',
+        documentsDirectoryProvider: () async => otherWorld,
       );
 
-      // Verify that two distinct backup files were created
-      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      final backupFiles = backupDir.listSync();
-      expect(backupFiles.length, equals(2));
+      expect(p.isWithin(otherWorld.path, backup.path), isTrue);
+      expect(labelsIn(backup), ['elsewhere']);
+    });
+  });
+
+  group('backupBeforeMigration', () {
+    late Directory testDir;
+
+    setUp(() {
+      testDir = setupTestDirectory();
+      setupTestDirectoryWithGetIt(testDir);
+      DevLogger.capturedLogs.clear();
     });
 
-    test('backup preserves binary data', () async {
-      const fileName = 'test_db.sqlite';
-      final binaryData = List.generate(_testBinaryDataSize, (i) => i);
-
-      // Create source file with binary data
-      final sourceFile = File(p.join(testDir.path, fileName));
-      await sourceFile.writeAsBytes(binaryData);
-
-      // Create backup
-      await createDbBackup(fileName);
-
-      // Read backup and verify content
-      final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      final backupFiles = backupDir.listSync();
-      final backupFile = backupFiles.first as File;
-      final backupContent = await backupFile.readAsBytes();
-
-      expect(backupContent, equals(binaryData));
+    tearDown(() async {
+      await cleanupTestDirectoryWithGetIt(testDir);
     });
+
+    test('writes the backup and logs where it went', () async {
+      final source = sqlite3.open(p.join(testDir.path, 'sync.sqlite'));
+      addTearDown(source.close);
+      source.execute('CREATE TABLE rows (id INTEGER PRIMARY KEY)');
+
+      await backupBeforeMigration('sync.sqlite', from: 3, to: 4);
+
+      final backups = Directory(
+        p.join(testDir.path, _backupDirectoryName),
+      ).listSync();
+      expect(backups, hasLength(1));
+      expect(
+        DevLogger.capturedLogs.any(
+          (line) =>
+              line.contains('Backed up sync.sqlite') &&
+              line.contains('before migrating v3 to v4'),
+        ),
+        isTrue,
+        reason: DevLogger.capturedLogs.join('\n'),
+      );
+    });
+
+    test(
+      'a failed backup is logged and never stops the migration',
+      () async {
+        // No such file: the backup throws, the migration must still run.
+        await expectLater(
+          backupBeforeMigration('missing.sqlite', from: 3, to: 4),
+          completes,
+        );
+
+        expect(
+          Directory(p.join(testDir.path, _backupDirectoryName)).existsSync(),
+          isFalse,
+        );
+        expect(
+          DevLogger.capturedLogs.any(
+            (line) => line.contains(
+              'Failed to back up missing.sqlite before migrating v3 to v4',
+            ),
+          ),
+          isTrue,
+          reason: DevLogger.capturedLogs.join('\n'),
+        );
+      },
+    );
   });
 
   group('openDbConnection Tests', () {
@@ -524,28 +625,23 @@ void main() {
       expect(file.path, equals(testDir.path));
     });
 
-    test('backup handles empty source file', () async {
+    test('an empty source file backs up as a valid empty database', () async {
       const fileName = 'empty_db.sqlite';
-
-      // Create empty source file
+      // SQLite treats a zero-length file as an empty database, so the
+      // snapshot is a real (header-only) database rather than an empty file.
       final sourceFile = File(p.join(testDir.path, fileName));
       await sourceFile.writeAsString('');
 
-      // Create backup
-      await createDbBackup(fileName);
+      final backup = await createDbBackup(fileName);
 
-      // Verify backup was created
       final backupDir = Directory(p.join(testDir.path, _backupDirectoryName));
-      final backupFiles = backupDir.listSync();
-      expect(backupFiles.length, equals(1));
-
-      // Verify backup is also empty
-      final backupFile = backupFiles.first as File;
-      final content = await backupFile.readAsString();
-      expect(content, isEmpty);
+      expect(backupDir.listSync(), hasLength(1));
+      final snapshot = sqlite3.open(backup.path);
+      addTearDown(snapshot.close);
+      expect(snapshot.select('SELECT name FROM sqlite_master'), isEmpty);
     });
 
-    test('backup handles large file', () async {
+    test('a large source SQLite cannot read is copied in full', () async {
       const fileName = 'large_db.sqlite';
 
       // Create large source file (1MB)

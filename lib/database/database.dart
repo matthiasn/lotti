@@ -135,7 +135,9 @@ class JournalDb extends _$JournalDb
     Future<Directory> Function()? tempDirectoryProvider,
     this._loggingService,
     this._documentsDirectory,
-  }) : super(
+  }) : fileName = overriddenFilename ?? journalDbFileName,
+       _documentsDirectoryProvider = documentsDirectoryProvider,
+       super(
          openDbConnection(
            overriddenFilename ?? journalDbFileName,
            inMemoryDatabase: inMemoryDatabase,
@@ -148,6 +150,17 @@ class JournalDb extends _$JournalDb
 
   @override
   bool inMemoryDatabase = false;
+
+  /// The file this database lives in — the default `db.sqlite` or the
+  /// overridden name a test or a second world passed in. The pre-migration
+  /// backup copies this file, not the default one.
+  @override
+  final String fileName;
+
+  /// Where this database's file lives when it was opened outside the active
+  /// profile root; null means the registered root.
+  @override
+  final Future<Directory> Function()? _documentsDirectoryProvider;
   final DomainLogger? _loggingService;
   final Directory? _documentsDirectory;
 

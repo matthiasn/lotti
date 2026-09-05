@@ -791,7 +791,7 @@ void main() {
     when(
       verificationRunner.acceptEmojiVerification,
     ).thenAnswer((_) async {});
-    when(() => maintenance.deleteSyncDb()).thenAnswer((_) async {});
+    when(() => maintenance.clearSyncDb()).thenAnswer((_) async {});
     when(
       () => maintenance.purgeSentOutboxItems(
         retention: any(named: 'retention'),

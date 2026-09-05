@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
@@ -15,7 +16,6 @@ import 'package:sqlite3/sqlite3.dart';
 
 /// Constants for database backup operations
 const String _backupDirectoryName = 'backup';
-const String _backupFilePrefix = 'db.';
 const String _backupFileExtension = '.sqlite';
 const String _backupTimestampFormat = 'yyyy-MM-dd_HH-mm-ss-S';
 
@@ -33,31 +33,149 @@ Future<File> getDatabaseFile(String dbFileName) async {
   return File(p.join(dbFolder.path, dbFileName));
 }
 
-/// Creates a timestamped backup of the database file.
+/// Creates a timestamped, transactionally consistent backup of a database.
 ///
-/// Creates a backup directory if it doesn't exist and copies the database
-/// file with a timestamp in the filename. The backup format is:
-/// `db.yyyy-MM-dd_HH-mm-ss-S.sqlite`
+/// The snapshot is taken with `VACUUM INTO` on a private connection, so it
+/// holds every committed transaction — including those still sitting in the
+/// WAL, which a plain copy of the main file would miss — and arrives
+/// compacted. It runs on its own isolate because the sqlite3 bindings are
+/// synchronous and a large journal would otherwise stall the caller.
 ///
-/// Throws [FileSystemException] if the source file doesn't exist or
-/// if there are permission issues.
+/// When the source cannot be read as a database (the corrupt file a user is
+/// about to reset, for one) the main file and its WAL are copied byte for
+/// byte instead and a warning is logged, so a reset is never blocked on a
+/// backup of something SQLite cannot open.
 ///
-/// Example:
-/// ```dart
-/// await createDbBackup('my_database.sqlite');
-/// // Creates: backup/db.2025-10-17_14-30-45-123.sqlite
-/// ```
-Future<void> createDbBackup(String fileName) async {
-  final file = await getDatabaseFile(fileName);
+/// Backups are named after their source: `backup/<stem>.<timestamp>.sqlite`,
+/// so `db.sqlite` becomes `backup/db.2025-10-17_14-30-45-123.sqlite` and
+/// `agent.sqlite` becomes `backup/agent.….sqlite`. Returns the backup file.
+///
+/// [documentsDirectoryProvider] names the directory the database lives in;
+/// it defaults to the active profile root, which is wrong for a database
+/// opened in another world, so a database backing itself up passes its own.
+///
+/// Throws [FileSystemException] if the source file does not exist.
+Future<File> createDbBackup(
+  String fileName, {
+  Future<Directory> Function()? documentsDirectoryProvider,
+}) async {
+  final directory = documentsDirectoryProvider == null
+      ? getDocumentsDirectory()
+      : await documentsDirectoryProvider();
+  final file = File(p.join(directory.path, fileName));
+  if (!file.existsSync()) {
+    throw FileSystemException('Database file does not exist', file.path);
+  }
   // clock.now() so tests can drive the backup timestamp deterministically
   // via withClock.
   final ts = DateFormat(_backupTimestampFormat).format(clock.now());
   final backupDir = await Directory(
     p.join(file.parent.path, _backupDirectoryName),
   ).create(recursive: true);
-  await file.copy(
-    p.join(backupDir.path, '$_backupFilePrefix$ts$_backupFileExtension'),
+  final stem = p.basenameWithoutExtension(fileName);
+  final target = _unusedBackupTarget(backupDir, '$stem.$ts');
+
+  // Stash the WAL before touching the file: SQLite discards a `-wal` it
+  // finds beside a file it cannot read as a database, and that WAL is the
+  // most valuable thing a raw copy of a corrupt store can carry.
+  final wal = File('${file.path}-wal');
+  final walStash = wal.existsSync()
+      ? await wal.copy('${target.path}-wal.stash')
+      : null;
+  try {
+    final sourcePath = file.path;
+    final targetPath = target.path;
+    await Isolate.run(() => _vacuumInto(sourcePath, targetPath));
+    await walStash?.delete();
+  } on SqliteException catch (e) {
+    if (!_isUnreadableSource(e)) {
+      // Anything but "the source is not a readable database" — a busy
+      // lock, an unwritable target — is a failure of *this* backup, not a
+      // reason to hand back a raw copy that may not be consistent.
+      await walStash?.delete();
+      rethrow;
+    }
+    DevLogger.warning(
+      name: 'Database',
+      message:
+          'VACUUM INTO failed for $fileName ($e); '
+          'falling back to a raw copy of the main file and its WAL',
+    );
+    // File.copy replaces whatever a failed attempt left at the target.
+    await file.copy(target.path);
+    await walStash?.rename('${target.path}-wal');
+  }
+  return target;
+}
+
+/// Two backups in one formatted instant (the same millisecond) must not
+/// share a target: `VACUUM INTO` refuses an existing non-empty file, and the
+/// fallback would then overwrite the first backup. Suffix until free.
+File _unusedBackupTarget(Directory backupDir, String baseName) {
+  var candidate = File(
+    p.join(backupDir.path, '$baseName$_backupFileExtension'),
   );
+  var attempt = 1;
+  while (candidate.existsSync()) {
+    attempt += 1;
+    candidate = File(
+      p.join(backupDir.path, '$baseName-$attempt$_backupFileExtension'),
+    );
+  }
+  return candidate;
+}
+
+/// `SQLITE_NOTADB` and `SQLITE_CORRUPT`: the source itself cannot be read as
+/// a database, which is the one case a raw copy is the best we can do.
+bool _isUnreadableSource(SqliteException e) {
+  const notADatabase = 26;
+  const corrupt = 11;
+  return e.resultCode == notADatabase || e.resultCode == corrupt;
+}
+
+/// Runs `VACUUM INTO` from a throwaway connection so the snapshot is taken
+/// under SQLite's own read transaction, independent of whatever the app's
+/// connection is doing (a migration in progress, for one).
+void _vacuumInto(String sourcePath, String targetPath) {
+  final database = sqlite3.open(sourcePath);
+  try {
+    database.execute('VACUUM INTO ?', [targetPath]);
+  } finally {
+    database.close();
+  }
+}
+
+/// Backs up [fileName] before a schema migration from [from] to [to].
+///
+/// A failed backup is logged, never fatal: refusing to migrate would leave
+/// the app unable to open at all, which is worse than migrating without a
+/// safety copy. Pass the database's actual file name — an overridden one
+/// included — so the copy is of the file being migrated.
+Future<void> backupBeforeMigration(
+  String fileName, {
+  required int from,
+  required int to,
+  Future<Directory> Function()? documentsDirectoryProvider,
+}) async {
+  try {
+    final backup = await createDbBackup(
+      fileName,
+      documentsDirectoryProvider: documentsDirectoryProvider,
+    );
+    DevLogger.log(
+      name: 'Database',
+      message:
+          'Backed up $fileName to ${backup.path} '
+          'before migrating v$from to v$to',
+    );
+  } catch (e, s) {
+    DevLogger.error(
+      name: 'Database',
+      message: 'Failed to back up $fileName before migrating v$from to v$to',
+      error: e,
+      stackTrace: s,
+    );
+  }
 }
 
 /// Configures WAL mode and recommended pragmas on a freshly opened database.

@@ -46,7 +46,7 @@ void main() {
 
       mockMaintenance = MockMaintenance();
       mockHistoricalSyncService = MockHistoricalSyncService();
-      when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});
+      when(() => mockMaintenance.clearSyncDb()).thenAnswer((_) async {});
       when(
         () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
@@ -153,7 +153,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      verify(() => mockMaintenance.deleteSyncDb()).called(1);
+      verify(() => mockMaintenance.clearSyncDb()).called(1);
     });
 
     testWidgets('sync definitions card opens sync modal', (tester) async {
@@ -334,7 +334,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer((_) async => ReSyncResult.empty);
-      when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});
+      when(() => mockMaintenance.clearSyncDb()).thenAnswer((_) async {});
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
