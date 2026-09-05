@@ -422,6 +422,10 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
       final unifiedGoalsEnabled =
           ref.watch(configFlagProvider(enableUnifiedGoalsFlag)).value ?? false;
       if (!unifiedGoalsEnabled) return const [];
+      // onDispose also runs at invalidation, before Riverpod replaces the ref.
+      // Stop this generation immediately, even if an awaited read lands first.
+      var disposed = false;
+      ref.onDispose(() => disposed = true);
       final lifecycleListener = AppLifecycleListener(
         onResume: ref.invalidateSelf,
       );
@@ -431,6 +435,7 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
       final agents = await ref
           .watch(agentServiceProvider)
           .listAgents(lifecycle: AgentLifecycle.active);
+      if (disposed) return const [];
       final repository = ref.watch(agentRepositoryProvider);
       final entries = <NudgeBannerEntry>[];
       final now = clock.now();
@@ -451,12 +456,14 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
         final head = await repository.getEntity(
           goalSpecHeadId(identity.agentId),
         );
+        if (disposed) return const [];
         // The head must RESOLVE: a dangling pointer (partial sync) is
         // not a live spec, and a tagged banner validated against it
         // would render with no goal statement behind it.
         final headVersion = head is GoalSpecHeadEntity
             ? await repository.getEntity(head.versionId)
             : null;
+        if (disposed) return const [];
         final activeVersionId = headVersion is GoalSpecVersionEntity
             ? headVersion.id
             : null;
@@ -464,6 +471,7 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
           identity.agentId,
           type: AgentEntityTypes.goalNudge,
         )).whereType<GoalNudgeEntity>();
+        if (disposed) return const [];
         for (final nudge in nudges) {
           final origin = nudge.provenance['specVersionId'];
           if (nudge.deletedAt != null ||

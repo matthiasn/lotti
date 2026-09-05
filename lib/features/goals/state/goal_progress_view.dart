@@ -1032,7 +1032,14 @@ Future<GoalProgressView?> _progressView(
   String agentId,
   int? historyDays,
 ) async {
+  // Invalidation runs onDispose before the scheduled rebuild replaces Ref.
+  // Guard the computation itself, including that interval between generations.
+  var disposed = false;
+  ref.onDispose(() => disposed = true);
   final health = await ref.watch(goalAgentHealthProvider(agentId).future);
+  // A dependency may complete after navigation or a reload disposed this
+  // computation. Never register a timer or read another provider in that case.
+  if (disposed) return null;
   final spec = health.spec;
   if (spec == null) return null;
   final reference = clock.now();
@@ -1057,6 +1064,7 @@ Future<GoalProgressView?> _progressView(
         shortTermDays: math.max(43, (historyDays ?? 0) + 7),
       );
 
+  if (disposed) return null;
   final habitIds = <String>{};
   void collect(GoalCriterion criterion) {
     switch (criterion) {
@@ -1124,6 +1132,7 @@ Future<GoalProgressView?> _progressView(
     final definition = await db.getLabelDefinitionById(labelId);
     if (definition != null) labelNames[labelId] = definition.name;
   }
+  if (disposed) return null;
   final captureDecisions = measurableIds.isEmpty
       ? const <String, GoalMeasurableCaptureDecision>{}
       : await ref.watch(
