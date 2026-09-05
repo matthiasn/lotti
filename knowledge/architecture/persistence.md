@@ -340,7 +340,7 @@ undercounts the gate badly:
 |-----------|-------|
 | `_queryWithPrivateFilter` | `journal_queries`, `definitions`, `project_queries`, `links_ratings` |
 | **`privateStatuses` passed as a parameter**, so the caller decides | `task_queries`, `task_query_builders`, `task_due_queries` |
-| **Raw SQL reading the flag directly** | `insights_queries` uses a `private_flag` CTE; `data_queries` uses a direct `config_flags` subquery in `getHabitCompletionsInRange` |
+| **Raw SQL reading the flag directly** | `insights_queries` uses a `private_flag` CTE; `data_queries` uses a direct `config_flags` subquery in `getHabitCompletionRecordsInRange` |
 
 Of the ten query-bearing mixins, **nine gate on private one of these ways**. The
 exception is `_JournalDbEntityOps`, which is maintenance and write operations
