@@ -151,7 +151,7 @@ class JournalDb extends _$JournalDb
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 45;
+  int get schemaVersion => 46;
 
   // Check whether a column exists in a given table to make migrations safer
   @override
@@ -180,7 +180,6 @@ class JournalDb extends _$JournalDb
     final hasLabelDefinitions = await _tableExists('label_definitions');
     if (!hasLabelDefinitions) {
       await migrator.createTable(labelDefinitions);
-      await migrator.createIndex(idxLabelDefinitionsId);
       await migrator.createIndex(idxLabelDefinitionsName);
       await migrator.createIndex(idxLabelDefinitionsPrivate);
     }

@@ -5639,17 +5639,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_date_from_asc',
     'CREATE INDEX idx_journal_date_from_asc ON journal (date_from ASC)',
   );
-  late final Index idxJournalDateFromDesc = Index(
-    'idx_journal_date_from_desc',
-    'CREATE INDEX idx_journal_date_from_desc ON journal (date_from DESC)',
-  );
   late final Index idxJournalDateToAsc = Index(
     'idx_journal_date_to_asc',
     'CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC)',
-  );
-  late final Index idxJournalDateToDesc = Index(
-    'idx_journal_date_to_desc',
-    'CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC)',
   );
   late final Index idxJournalDayAudio = Index(
     'idx_journal_day_audio',
@@ -5722,10 +5714,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
   );
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
-  late final Index idxHabitDefinitionsId = Index(
-    'idx_habit_definitions_id',
-    'CREATE INDEX idx_habit_definitions_id ON habit_definitions (id)',
-  );
   late final Index idxHabitDefinitionsName = Index(
     'idx_habit_definitions_name',
     'CREATE INDEX idx_habit_definitions_name ON habit_definitions (name)',
@@ -5741,10 +5729,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final CategoryDefinitions categoryDefinitions = CategoryDefinitions(
     this,
   );
-  late final Index idxCategoryDefinitionsId = Index(
-    'idx_category_definitions_id',
-    'CREATE INDEX idx_category_definitions_id ON category_definitions (id)',
-  );
   late final Index idxCategoryDefinitionsName = Index(
     'idx_category_definitions_name',
     'CREATE INDEX idx_category_definitions_name ON category_definitions (name)',
@@ -5754,10 +5738,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'CREATE INDEX idx_category_definitions_private ON category_definitions (private)',
   );
   late final LabelDefinitions labelDefinitions = LabelDefinitions(this);
-  late final Index idxLabelDefinitionsId = Index(
-    'idx_label_definitions_id',
-    'CREATE INDEX idx_label_definitions_id ON label_definitions (id)',
-  );
   late final Index idxLabelDefinitionsName = Index(
     'idx_label_definitions_name',
     'CREATE INDEX idx_label_definitions_name ON label_definitions (name)',
@@ -5776,10 +5756,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
   );
   late final DashboardDefinitions dashboardDefinitions = DashboardDefinitions(
     this,
-  );
-  late final Index idxDashboardDefinitionsId = Index(
-    'idx_dashboard_definitions_id',
-    'CREATE INDEX idx_dashboard_definitions_id ON dashboard_definitions (id)',
   );
   late final Index idxDashboardDefinitionsName = Index(
     'idx_dashboard_definitions_name',
@@ -5804,21 +5780,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'CREATE INDEX idx_labeled_label_id ON labeled (label_id)',
   );
   late final LinkedEntries linkedEntries = LinkedEntries(this);
-  late final Index idxLinkedEntriesFromId = Index(
-    'idx_linked_entries_from_id',
-    'CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id)',
-  );
-  late final Index idxLinkedEntriesToId = Index(
-    'idx_linked_entries_to_id',
-    'CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id)',
-  );
   late final Index idxLinkedEntriesType = Index(
     'idx_linked_entries_type',
     'CREATE INDEX idx_linked_entries_type ON linked_entries (type)',
-  );
-  late final Index idxLinkedEntriesHidden = Index(
-    'idx_linked_entries_hidden',
-    'CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden)',
   );
   late final Index idxLinkedEntriesFromIdHidden = Index(
     'idx_linked_entries_from_id_hidden',
@@ -5848,14 +5812,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     return customSelect(
       'SELECT * FROM config_flags',
       variables: [],
-      readsFrom: {configFlags},
-    ).asyncMap(configFlags.mapFromRow);
-  }
-
-  Selectable<ConfigFlag> configFlagByName(String name) {
-    return customSelect(
-      'SELECT * FROM config_flags WHERE name = ?1',
-      variables: [Variable<String>(name)],
       readsFrom: {configFlags},
     ).asyncMap(configFlags.mapFromRow);
   }
@@ -6084,90 +6040,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
       ],
       readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<String> filteredJournalIds(
-    List<String> types,
-    List<bool> starredStatuses,
-    List<bool> privateStatuses,
-    List<int> flaggedStatuses,
-    int limit,
-    int offset,
-  ) {
-    var $arrayStartIndex = 3;
-    final expandedtypes = $expandVar($arrayStartIndex, types.length);
-    $arrayStartIndex += types.length;
-    final expandedstarredStatuses = $expandVar(
-      $arrayStartIndex,
-      starredStatuses.length,
-    );
-    $arrayStartIndex += starredStatuses.length;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    final expandedflaggedStatuses = $expandVar(
-      $arrayStartIndex,
-      flaggedStatuses.length,
-    );
-    $arrayStartIndex += flaggedStatuses.length;
-    return customSelect(
-      'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-      variables: [
-        Variable<int>(limit),
-        Variable<int>(offset),
-        for (var $ in types) Variable<String>($),
-        for (var $ in starredStatuses) Variable<bool>($),
-        for (var $ in privateStatuses) Variable<bool>($),
-        for (var $ in flaggedStatuses) Variable<int>($),
-      ],
-      readsFrom: {journal},
-    ).map((QueryRow row) => row.read<String>('id'));
-  }
-
-  Selectable<String> filteredJournalIds2(
-    List<String> types,
-    List<String> ids,
-    List<bool> starredStatuses,
-    List<bool> privateStatuses,
-    List<int> flaggedStatuses,
-    int limit,
-    int offset,
-  ) {
-    var $arrayStartIndex = 3;
-    final expandedtypes = $expandVar($arrayStartIndex, types.length);
-    $arrayStartIndex += types.length;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    final expandedstarredStatuses = $expandVar(
-      $arrayStartIndex,
-      starredStatuses.length,
-    );
-    $arrayStartIndex += starredStatuses.length;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    final expandedflaggedStatuses = $expandVar(
-      $arrayStartIndex,
-      flaggedStatuses.length,
-    );
-    $arrayStartIndex += flaggedStatuses.length;
-    return customSelect(
-      'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-      variables: [
-        Variable<int>(limit),
-        Variable<int>(offset),
-        for (var $ in types) Variable<String>($),
-        for (var $ in ids) Variable<String>($),
-        for (var $ in starredStatuses) Variable<bool>($),
-        for (var $ in privateStatuses) Variable<bool>($),
-        for (var $ in flaggedStatuses) Variable<int>($),
-      ],
-      readsFrom: {journal},
-    ).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<JournalDbEntity> sortedCalenderEntriesInRange(
@@ -6791,82 +6663,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<String> filteredTaskIds(
-    List<bool> privateStatuses,
-    List<bool> starredStatuses,
-    List<String?> taskStatuses,
-    int limit,
-    int offset,
-  ) {
-    var $arrayStartIndex = 3;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    final expandedstarredStatuses = $expandVar(
-      $arrayStartIndex,
-      starredStatuses.length,
-    );
-    $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses = $expandVar(
-      $arrayStartIndex,
-      taskStatuses.length,
-    );
-    $arrayStartIndex += taskStatuses.length;
-    return customSelect(
-      'SELECT id FROM journal WHERE type = \'Task\' AND deleted = FALSE AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-      variables: [
-        Variable<int>(limit),
-        Variable<int>(offset),
-        for (var $ in privateStatuses) Variable<bool>($),
-        for (var $ in starredStatuses) Variable<bool>($),
-        for (var $ in taskStatuses) Variable<String>($),
-      ],
-      readsFrom: {journal},
-    ).map((QueryRow row) => row.read<String>('id'));
-  }
-
-  Selectable<String> filteredTaskIds2(
-    List<String> ids,
-    List<bool> privateStatuses,
-    List<bool> starredStatuses,
-    List<String?> taskStatuses,
-    int limit,
-    int offset,
-  ) {
-    var $arrayStartIndex = 3;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    final expandedstarredStatuses = $expandVar(
-      $arrayStartIndex,
-      starredStatuses.length,
-    );
-    $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses = $expandVar(
-      $arrayStartIndex,
-      taskStatuses.length,
-    );
-    $arrayStartIndex += taskStatuses.length;
-    return customSelect(
-      'SELECT id FROM journal WHERE type = \'Task\' AND deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-      variables: [
-        Variable<int>(limit),
-        Variable<int>(offset),
-        for (var $ in ids) Variable<String>($),
-        for (var $ in privateStatuses) Variable<bool>($),
-        for (var $ in starredStatuses) Variable<bool>($),
-        for (var $ in taskStatuses) Variable<String>($),
-      ],
-      readsFrom: {journal},
-    ).map((QueryRow row) => row.read<String>('id'));
-  }
-
   Selectable<JournalDbEntity> emptyJournalSelection() {
     return customSelect(
       'SELECT * FROM journal WHERE 1 = 0',
@@ -6897,22 +6693,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
         Variable<int>(limit),
         Variable<int>(offset),
       ],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> orderedAudioEntries(int limit, int offset) {
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'JournalAudio\' AND deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-      variables: [Variable<int>(limit), Variable<int>(offset)],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> entriesFlaggedImport(int limit) {
-    return customSelect(
-      'SELECT * FROM journal WHERE deleted = FALSE AND flag = 1 ORDER BY date_from DESC LIMIT ?1',
-      variables: [Variable<int>(limit)],
       readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }
@@ -7099,14 +6879,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in taskStatuses) Variable<String>($),
       ],
       readsFrom: {journal},
-    ).map((QueryRow row) => row.read<int>('_c0'));
-  }
-
-  Selectable<int> countTasksByCategory(String categoryId) {
-    return customSelect(
-      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND type = \'Task\' AND category = ?1 AND task = 1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
-      variables: [Variable<String>(categoryId)],
-      readsFrom: {journal, configFlags},
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
@@ -7334,51 +7106,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
   }
 
-  Future<int> deleteLabeledForId(String journalId) {
-    return customUpdate(
-      'DELETE FROM labeled WHERE journal_id = ?1',
-      variables: [Variable<String>(journalId)],
-      updates: {labeled},
-      updateKind: UpdateKind.delete,
-    );
-  }
-
-  Future<int> purgeDeletedDashboards() {
-    return customUpdate(
-      'DELETE FROM dashboard_definitions WHERE deleted = TRUE',
-      variables: [],
-      updates: {dashboardDefinitions},
-      updateKind: UpdateKind.delete,
-    );
-  }
-
-  Future<int> purgeDeletedMeasurables() {
-    return customUpdate(
-      'DELETE FROM measurable_types WHERE deleted = TRUE',
-      variables: [],
-      updates: {measurableTypes},
-      updateKind: UpdateKind.delete,
-    );
-  }
-
-  Future<int> purgeDeletedLabelDefinitions() {
-    return customUpdate(
-      'DELETE FROM label_definitions WHERE deleted = TRUE',
-      variables: [],
-      updates: {labelDefinitions},
-      updateKind: UpdateKind.delete,
-    );
-  }
-
-  Future<int> purgeDeletedJournalEntities() {
-    return customUpdate(
-      'DELETE FROM journal WHERE deleted = TRUE',
-      variables: [],
-      updates: {journal},
-      updateKind: UpdateKind.delete,
-    );
-  }
-
   Selectable<JournalDbEntity> linkedJournalEntities(
     String fromId,
     List<bool> privateStatuses,
@@ -7483,39 +7210,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> journalEntitiesByIds(
-    List<String> ids,
-    List<bool> privateStatuses,
-  ) {
-    var $arrayStartIndex = 1;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    final expandedprivateStatuses = $expandVar(
-      $arrayStartIndex,
-      privateStatuses.length,
-    );
-    $arrayStartIndex += privateStatuses.length;
-    return customSelect(
-      'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses) ORDER BY date_from DESC',
-      variables: [
-        for (var $ in ids) Variable<String>($),
-        for (var $ in privateStatuses) Variable<bool>($),
-      ],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> journalEntitiesByIdsAllPrivate(List<String> ids) {
-    var $arrayStartIndex = 1;
-    final expandedids = $expandVar($arrayStartIndex, ids.length);
-    $arrayStartIndex += ids.length;
-    return customSelect(
-      'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids) ORDER BY date_from DESC',
-      variables: [for (var $ in ids) Variable<String>($)],
-      readsFrom: {journal},
-    ).asyncMap(journal.mapFromRow);
-  }
-
   Selectable<JournalDbEntity> journalEntitiesByIdsUnordered(
     List<String> ids,
     List<bool> privateStatuses,
@@ -7549,20 +7243,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
       variables: [for (var $ in ids) Variable<String>($)],
       readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<String> linkedJournalEntityIds(String fromId, List<bool?> hidden) {
-    var $arrayStartIndex = 2;
-    final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
-    $arrayStartIndex += hidden.length;
-    return customSelect(
-      'SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden)',
-      variables: [
-        Variable<String>(fromId),
-        for (var $ in hidden) Variable<bool>($),
-      ],
-      readsFrom: {linkedEntries},
-    ).map((QueryRow row) => row.read<String>('to_id'));
   }
 
   Selectable<String> parentLinkedEntityIds(String toId) {
@@ -7732,9 +7412,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     journal,
     idxJournalDateFromAsc,
-    idxJournalDateFromDesc,
     idxJournalDateToAsc,
-    idxJournalDateToDesc,
     idxJournalDayAudio,
     idxJournalRecordingSession,
     idxJournalTab,
@@ -7755,22 +7433,18 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxConflictsStatusCreatedAt,
     measurableTypes,
     habitDefinitions,
-    idxHabitDefinitionsId,
     idxHabitDefinitionsName,
     idxHabitDefinitionsPrivate,
     idxHabitDefinitionsDeletedPrivate,
     categoryDefinitions,
-    idxCategoryDefinitionsId,
     idxCategoryDefinitionsName,
     idxCategoryDefinitionsPrivate,
     labelDefinitions,
-    idxLabelDefinitionsId,
     idxLabelDefinitionsName,
     idxLabelDefinitionsPrivate,
     idxLabelDefinitionsDeletedPrivateName,
     idxLabelDefinitionsDeletedNameNocase,
     dashboardDefinitions,
-    idxDashboardDefinitionsId,
     idxDashboardDefinitionsName,
     idxDashboardDefinitionsPrivate,
     idxDashboardDefinitionsDeletedPrivateName,
@@ -7779,10 +7453,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLabeledJournalId,
     idxLabeledLabelId,
     linkedEntries,
-    idxLinkedEntriesFromId,
-    idxLinkedEntriesToId,
     idxLinkedEntriesType,
-    idxLinkedEntriesHidden,
     idxLinkedEntriesFromIdHidden,
     idxLinkedEntriesFromIdHiddenToId,
     idxLinkedEntriesToIdHidden,

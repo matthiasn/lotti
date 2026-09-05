@@ -268,5 +268,42 @@ WHERE type = 'JournalAudio' AND deleted = FALSE
         await customStatement('ANALYZE');
       }();
     }
+    if (from < 46) {
+      await () async {
+        DevLogger.log(
+          name: 'JournalDb',
+          message: 'Dropping redundant journal, definition and link indexes',
+        );
+        // Each of these duplicated an index SQLite already had, so every
+        // upsert paid to maintain it without any query being able to
+        // prefer it. Fresh installs no longer create them; `IF EXISTS`
+        // keeps the step safe on databases that never had them.
+        for (final name in _redundantIndexesDroppedInV46) {
+          await customStatement('DROP INDEX IF EXISTS $name');
+        }
+      }();
+    }
   }
 }
+
+/// Indexes dropped by the v46 step, with the index that already covers each:
+///
+/// * `idx_journal_date_from_desc`, `idx_journal_date_to_desc` — single-column
+///   DESC twins of the ASC indexes; SQLite walks an index in either direction.
+/// * the four `idx_*_definitions_id` indexes — the primary key on `id`
+///   already carries an automatic unique index.
+/// * `idx_linked_entries_from_id`, `idx_linked_entries_to_id` — leading
+///   prefixes of `(from_id, hidden, …)` and `(to_id, hidden)` /
+///   `(to_id, type)`.
+/// * `idx_linked_entries_hidden` — a lone boolean column.
+const List<String> _redundantIndexesDroppedInV46 = [
+  'idx_journal_date_from_desc',
+  'idx_journal_date_to_desc',
+  'idx_habit_definitions_id',
+  'idx_category_definitions_id',
+  'idx_label_definitions_id',
+  'idx_dashboard_definitions_id',
+  'idx_linked_entries_from_id',
+  'idx_linked_entries_to_id',
+  'idx_linked_entries_hidden',
+];

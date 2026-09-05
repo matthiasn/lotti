@@ -96,7 +96,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 45);
+    expect(version.read<int>('user_version'), 46);
     final rows = await db
         .customSelect(
           'SELECT id, day_id, recording_session_id FROM journal ORDER BY id',

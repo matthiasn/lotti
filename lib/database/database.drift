@@ -35,10 +35,10 @@ CREATE TABLE journal (
   PRIMARY KEY (id)
 ) as JournalDbEntity;
 
+-- One index per date column: SQLite walks an index in either direction, so
+-- the DESC twins that used to sit next to these were pure write cost.
 CREATE INDEX idx_journal_date_from_asc ON journal (date_from ASC);
-CREATE INDEX idx_journal_date_from_desc ON journal (date_from DESC);
 CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC);
-CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC);
 
 CREATE INDEX idx_journal_day_audio ON journal(
   day_id COLLATE BINARY ASC,
@@ -57,10 +57,9 @@ WHERE type = 'JournalAudio'
   AND recording_session_id IS NOT NULL;
 
 CREATE INDEX idx_journal_tab ON journal(type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
--- Supports the import-flag maintenance views: `countImportFlagEntries` filters
--- by `flag = 1`, while `entriesFlaggedImport` needs the same subset ordered by
--- newest entry first. The broad tab index leads with type/starred and cannot
--- serve either shape when no type filter is present.
+-- Supports the import-flag maintenance count: `countImportFlagEntries`
+-- filters by `flag = 1`. The broad tab index leads with type/starred and
+-- cannot serve that shape when no type filter is present.
 CREATE INDEX idx_journal_import_flag_date ON journal(
   flag COLLATE BINARY ASC,
   date_from COLLATE BINARY DESC,
@@ -228,7 +227,6 @@ CREATE TABLE habit_definitions (
   PRIMARY KEY (id)
 ) as HabitDefinitionDbEntity;
 
-CREATE INDEX idx_habit_definitions_id ON habit_definitions (id);
 CREATE INDEX idx_habit_definitions_name ON habit_definitions (name);
 CREATE INDEX idx_habit_definitions_private ON habit_definitions (private);
 CREATE INDEX idx_habit_definitions_deleted_private ON habit_definitions(
@@ -248,7 +246,6 @@ CREATE TABLE category_definitions (
   PRIMARY KEY (id)
 ) as CategoryDefinitionDbEntity;
 
-CREATE INDEX idx_category_definitions_id ON category_definitions (id);
 CREATE INDEX idx_category_definitions_name ON category_definitions (name);
 CREATE INDEX idx_category_definitions_private ON category_definitions (private);
 
@@ -264,7 +261,6 @@ CREATE TABLE label_definitions (
   PRIMARY KEY (id)
 ) as LabelDefinitionDbEntity;
 
-CREATE INDEX idx_label_definitions_id ON label_definitions (id);
 CREATE INDEX idx_label_definitions_name ON label_definitions (name);
 CREATE INDEX idx_label_definitions_private ON label_definitions (private);
 CREATE INDEX idx_label_definitions_deleted_private_name ON label_definitions(
@@ -293,7 +289,6 @@ CREATE TABLE dashboard_definitions (
   PRIMARY KEY (id)
 ) as DashboardDefinitionDbEntity;
 
-CREATE INDEX idx_dashboard_definitions_id ON dashboard_definitions (id);
 CREATE INDEX idx_dashboard_definitions_name ON dashboard_definitions (name);
 CREATE INDEX idx_dashboard_definitions_private ON dashboard_definitions (private);
 CREATE INDEX idx_dashboard_definitions_deleted_private_name ON dashboard_definitions(
@@ -335,10 +330,7 @@ CREATE TABLE linked_entries (
   UNIQUE(from_id, to_id, type)
 ) as LinkedDbEntry;
 
-CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id);
-CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id);
 CREATE INDEX idx_linked_entries_type ON linked_entries (type);
-CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden);
 
 CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
 -- Covering variant so `getBulkLinkedTimeSpans` can resolve `to_id`
@@ -386,11 +378,6 @@ WHERE type = 'RatingLink' AND COALESCE(hidden, FALSE) = FALSE;
 listConfigFlags:
 SELECT *
   FROM config_flags;
-
-configFlagByName:
-SELECT *
-  FROM config_flags
-  WHERE name = :name;
 
 filteredJournal:
 SELECT * FROM journal
@@ -453,29 +440,6 @@ SELECT * FROM journal
 
 filteredJournalByIds:
 SELECT * FROM journal
-  WHERE type IN :types
-  AND deleted = false
-  AND id IN :ids
-  AND starred IN :starredStatuses
-  AND private IN :privateStatuses
-  AND flag IN :flaggedStatuses
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
-filteredJournalIds:
-SELECT id FROM journal
-  WHERE type IN :types
-  AND deleted = false
-  AND starred IN :starredStatuses
-  AND private IN :privateStatuses
-  AND flag IN :flaggedStatuses
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
-filteredJournalIds2:
-SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
@@ -795,31 +759,6 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
-filteredTaskIds:
-SELECT id FROM journal
-  WHERE type = 'Task'
-  AND deleted = false
-  AND private IN :privateStatuses
-  AND starred IN :starredStatuses
-  AND task = 1
-  AND task_status IN :taskStatuses
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
-filteredTaskIds2:
-SELECT id FROM journal
-  WHERE type = 'Task'
-  AND deleted = false
-  AND id IN :ids
-  AND private IN :privateStatuses
-  AND starred IN :starredStatuses
-  AND task = 1
-  AND task_status IN :taskStatuses
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
 emptyJournalSelection:
 SELECT * FROM journal
   WHERE 1 = 0;
@@ -839,20 +778,6 @@ SELECT * FROM journal
   ORDER BY updated_at ASC, id ASC
   LIMIT :limit
   OFFSET :offset;
-
-orderedAudioEntries:
-SELECT * FROM journal
-  WHERE type = 'JournalAudio'
-  AND deleted = false
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
-entriesFlaggedImport:
-SELECT * FROM journal
-  WHERE deleted = false AND flag = 1
-  ORDER BY date_from DESC
-  LIMIT :limit;
 
 conflictsByStatus:
 SELECT * FROM conflicts
@@ -968,14 +893,6 @@ SELECT COUNT(*) FROM journal
   AND task = 1
   AND private IN :privateStatuses
   AND task_status IN :taskStatuses;
-
-countTasksByCategory:
-SELECT COUNT(*) FROM journal
-  WHERE deleted = false
-  AND type = 'Task'
-  AND category = :categoryId
-  AND task = 1
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
 
 countTasksGroupedByCategory:
 SELECT category, COUNT(*) AS task_count FROM journal
@@ -1115,26 +1032,6 @@ DELETE FROM labeled
   WHERE journal_id = :journal_id
   AND label_id = :label_id;
 
-deleteLabeledForId:
-DELETE FROM labeled
-  WHERE journal_id = :journal_id;
-
-purgeDeletedDashboards:
-DELETE FROM dashboard_definitions
-  WHERE deleted = TRUE;
-
-purgeDeletedMeasurables:
-DELETE FROM measurable_types
-  WHERE deleted = TRUE;
-
-purgeDeletedLabelDefinitions:
-DELETE FROM label_definitions
-  WHERE deleted = TRUE;
-
-purgeDeletedJournalEntities:
-DELETE FROM journal
-  WHERE deleted = TRUE;
-
 linkedJournalEntities:
 SELECT journal.* FROM linked_entries
   INNER JOIN journal ON journal.id = linked_entries.to_id
@@ -1185,19 +1082,6 @@ entriesForIds:
 SELECT * FROM journal
   WHERE id IN :ids;
 
-journalEntitiesByIds:
-SELECT * FROM journal
-  WHERE deleted = false
-  AND id IN :ids
-  AND private IN :privateStatuses
-  ORDER BY date_from DESC;
-
-journalEntitiesByIdsAllPrivate:
-SELECT * FROM journal
-  WHERE deleted = false
-  AND id IN :ids
-  ORDER BY date_from DESC;
-
 journalEntitiesByIdsUnordered:
 SELECT * FROM journal
   WHERE deleted = false
@@ -1208,9 +1092,6 @@ journalEntitiesByIdsUnorderedAllPrivate:
 SELECT * FROM journal
   WHERE deleted = false
   AND id IN :ids;
-
-linkedJournalEntityIds:
-SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
 
 parentLinkedEntityIds:
 SELECT from_id FROM linked_entries WHERE to_id = :to_id;
