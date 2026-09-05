@@ -1,3 +1,8 @@
+// The production width cache must start with the fonts this suite measures.
+// Other bundled suites can populate it before loading the app fonts.
+@Tags(['skip_very_good_optimization'])
+library;
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,9 +12,12 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  setUpAll(loadAppFonts);
+
   final selected = DateTime(2026, 5, 27);
 
   Widget host({

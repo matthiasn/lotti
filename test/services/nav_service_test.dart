@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
+import '../widget_test_utils.dart';
 
 enum _GeneratedNavPathKind {
   tasksRoot,
@@ -246,19 +246,12 @@ void main() {
     late SettingsDb settingsDb;
     late JournalDb mockJournalDb;
 
-    setUpAll(() async {
-      await getIt.reset();
-      final secureStorageMock = MockSecureStorage();
+    setUp(() async {
+      await setUpTestGetIt();
+      await getIt.unregister<JournalDb>();
+      await getIt.unregister<SettingsDb>();
       settingsDb = SettingsDb(inMemoryDatabase: true);
       mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-
-      when(
-        () => secureStorageMock.readValue(lastRouteKey),
-      ).thenAnswer((_) async => '/settings');
-
-      when(
-        () => secureStorageMock.writeValue(lastRouteKey, any()),
-      ).thenAnswer((_) async {});
 
       when(() => mockJournalDb.watchConfigFlag(any())).thenAnswer((invocation) {
         final flagName = invocation.positionalArguments.first as String;
@@ -277,15 +270,15 @@ void main() {
       );
 
       getIt
-        ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<NavService>(navService);
     });
 
-    tearDownAll(() async {
+    tearDown(() async {
       await getIt<NavService>().dispose();
-      await getIt.reset();
+      await settingsDb.close();
+      await tearDownTestGetIt();
     });
 
     test('allowedTabDelegates refuses every route into a hidden tab', () async {
@@ -349,6 +342,9 @@ void main() {
 
     test('tap all tabs', () async {
       final navService = getIt<NavService>();
+      await navService.getIndexStream().firstWhere(
+        (_) => navService.beamerDelegates.length == 7,
+      );
 
       expect(navService.index, 0);
 
@@ -426,8 +422,11 @@ void main() {
       expect(navService.currentPath, '/habits');
     });
 
-    test('orders Daily OS directly after Tasks', () {
+    test('orders Daily OS directly after Tasks', () async {
       final navService = getIt<NavService>();
+      await navService.getIndexStream().firstWhere(
+        (_) => navService.beamerDelegates.length == 7,
+      );
 
       expect(
         navService.beamerDelegates,
@@ -704,14 +703,6 @@ void main() {
     });
 
     group('desktop task detail stack', () {
-      setUp(() {
-        // The NavService singleton is shared across tests. Clear the
-        // stack first so each test starts from a clean state and the
-        // idempotency guard in `resetDesktopTaskDetail` does not pick
-        // up state from a sibling test.
-        getIt<NavService>().resetDesktopTaskDetail(null);
-      });
-
       test('resetDesktopTaskDetail seeds the stack with one entry', () {
         final navService = getIt<NavService>()
           ..resetDesktopTaskDetail('task-a');
@@ -960,10 +951,6 @@ void main() {
     });
 
     group('resetDesktopTaskDetail selectedTaskId sync', () {
-      setUp(() {
-        getIt<NavService>().resetDesktopTaskDetail(null);
-      });
-
       test(
         'resetDesktopTaskDetail re-syncs desktopSelectedTaskId to stack.last '
         'when it had drifted',
@@ -1446,6 +1433,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
             ),
           ).thenReturn(null);
+          await getIt.unregister<DomainLogger>();
           getIt.registerSingleton<DomainLogger>(logger);
           addTearDown(() => getIt.unregister<DomainLogger>());
 
