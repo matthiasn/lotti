@@ -13,8 +13,11 @@ class AiApiKeyStorage {
   final SecureStorage? _storage;
   final Map<String, String>? _values;
 
-  Future<String?> read(String key) async =>
-      _values?[key] ?? await _storage!.read(key: key);
+  Future<String?> read(String key) async {
+    final values = _values;
+    if (values != null) return values[key];
+    return _storage!.read(key: key);
+  }
 
   Future<void> write({required String key, required String value}) async {
     final values = _values;

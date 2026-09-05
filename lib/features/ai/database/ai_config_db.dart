@@ -120,9 +120,10 @@ class AiConfigDb extends _$AiConfigDb {
     final map = Map<String, dynamic>.from(raw);
 
     if (map['runtimeType'] == 'inferenceProvider') {
-      final storageKey =
-          map['apiKeyStorageKey'] as String? ??
-          apiKeyStorageKeyFor(entity.id, namespace: storageNamespace);
+      final storageKey = apiKeyStorageKeyFor(
+        entity.id,
+        namespace: storageNamespace,
+      );
       final legacyApiKey = map.remove('apiKey');
       final needsMigration =
           legacyApiKey != null || map['apiKeyStorageKey'] != storageKey;
@@ -155,9 +156,13 @@ class AiConfigDb extends _$AiConfigDb {
     required bool preserveExistingApiKeyOnEmpty,
   }) async {
     if (config is! AiConfigInferenceProvider) return config;
-    final storageKey =
-        config.apiKeyStorageKey ??
-        apiKeyStorageKeyFor(config.id, namespace: storageNamespace);
+    // Never trust an identifier received from another world/device. The
+    // namespace is derived from this database instance so equal config IDs in
+    // real and demo worlds cannot overwrite each other's credentials.
+    final storageKey = apiKeyStorageKeyFor(
+      config.id,
+      namespace: storageNamespace,
+    );
     if (persistApiKey) {
       if (config.apiKey.isEmpty && !preserveExistingApiKeyOnEmpty) {
         await _apiKeyStorage.delete(storageKey);
