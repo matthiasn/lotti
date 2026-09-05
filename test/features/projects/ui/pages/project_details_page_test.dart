@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
+import 'package:lotti/features/projects/state/project_task_list_options_controller.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
@@ -2282,6 +2284,55 @@ void main() {
           expect(capturedPaths, contains('/projects'));
         },
       );
+    });
+  });
+
+  group('task list options', () {
+    testWidgets('the header control opens the sort-and-group sheet and the '
+        'choice is remembered per project', (tester) async {
+      final settingsDb = getIt<SettingsDb>() as MockSettingsDb;
+      when(
+        () => settingsDb.itemByKey(any<String>()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+      ).thenAnswer((_) async => 1);
+      final record = makeTestProjectRecord(
+        project: makeTestProject(id: _projectId, title: 'Waddle'),
+        highlightedTaskSummaries: [
+          makeTestTaskSummary(
+            task: makeTestTask(id: 't1', title: 'Pack fish'),
+          ),
+        ],
+      );
+      await pumpPageWithData(
+        tester,
+        controllerState: ProjectDetailState(
+          project: record.project,
+          linkedTasks: record.highlightedTaskSummaries
+              .map((s) => s.task)
+              .toList(),
+          isLoading: false,
+          isSaving: false,
+          hasChanges: false,
+        ),
+        record: record,
+      );
+
+      await tester.tap(find.byTooltip('Sort and group'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Group by'), findsOneWidget);
+
+      await tester.tap(find.text('None'));
+      await tester.pump();
+
+      verify(
+        () => settingsDb.saveSettingsItem(
+          projectTaskListOptionsSettingsKey(_projectId),
+          any<String>(that: contains('"groupBy":"none"')),
+        ),
+      ).called(1);
     });
   });
 }

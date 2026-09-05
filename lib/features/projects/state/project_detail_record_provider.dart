@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/model/project_task_groups.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -17,7 +18,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 ///
 /// Joins the editable project from [projectDetailControllerProvider] with the
 /// category, the latest project-agent report/state (health band, AI summary,
-/// next scheduled wake), and the linked tasks — sorted by [_compareTasks] and
+/// next scheduled wake), and the linked tasks — sorted by [compareTasksByActionability] and
 /// decorated with their per-task one-liners and a rolled-up estimate total.
 /// Recommendation UI watches its own provider separately. Returns `null` when
 /// the project no longer exists. Because this provider watches the controller,
@@ -35,7 +36,8 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
 
       final cache = getIt<EntitiesCacheService>();
       final category = cache.getCategoryById(project.meta.categoryId);
-      final linkedTasks = [...detailState.linkedTasks]..sort(_compareTasks);
+      final linkedTasks = [...detailState.linkedTasks]
+        ..sort(compareTasksByActionability);
       final agentRepository = ref.watch(agentRepositoryProvider);
       final taskReportsFuture = linkedTasks.isEmpty
           ? Future.value(const <String, AgentReportEntity>{})
@@ -110,47 +112,6 @@ bool _isCompletedTask(Task task) => switch (task.data.status) {
 bool _isBlockedTask(Task task) => switch (task.data.status) {
   TaskBlocked() => true,
   _ => false,
-};
-
-int _compareTasks(Task left, Task right) {
-  final statusOrder = _taskStatusRank(left.data.status).compareTo(
-    _taskStatusRank(right.data.status),
-  );
-  if (statusOrder != 0) {
-    return statusOrder;
-  }
-
-  final leftDue = left.data.due;
-  final rightDue = right.data.due;
-  if (leftDue != null || rightDue != null) {
-    if (leftDue == null) return 1;
-    if (rightDue == null) return -1;
-    final dueOrder = leftDue.compareTo(rightDue);
-    if (dueOrder != 0) {
-      return dueOrder;
-    }
-  }
-
-  final leftEstimate = left.data.estimate ?? Duration.zero;
-  final rightEstimate = right.data.estimate ?? Duration.zero;
-  final estimateOrder = rightEstimate.compareTo(leftEstimate);
-  if (estimateOrder != 0) {
-    return estimateOrder;
-  }
-
-  return left.data.title.toLowerCase().compareTo(
-    right.data.title.toLowerCase(),
-  );
-}
-
-int _taskStatusRank(TaskStatus status) => switch (status) {
-  TaskBlocked() => 0,
-  TaskOnHold() => 1,
-  TaskInProgress() => 2,
-  TaskOpen() => 3,
-  TaskGroomed() => 4,
-  TaskDone() => 5,
-  TaskRejected() => 6,
 };
 
 /// Injectable "current time" source for the detail UI (relative "updated X ago"

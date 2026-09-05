@@ -4144,6 +4144,35 @@
   "projectsUnavailableCategory": "Catégorie indisponible",
   "projectTargetDateLabel": "Date cible",
   "projectTaskProgressNone": "Aucune tâche",
+  "projectTasksDoneInGroups": "Garder les tâches faites dans leurs groupes",
+  "projectTasksDueLater": "Plus tard",
+  "projectTasksDueNone": "Sans échéance",
+  "projectTasksDueOverdue": "En retard",
+  "projectTasksDueThisWeek": "Cette semaine",
+  "projectTasksGroupBy": "Grouper par",
+  "projectTasksGroupByCreationMonth": "Mois de création",
+  "projectTasksGroupByDueWindow": "Échéance",
+  "projectTasksGroupByNone": "Aucun",
+  "projectTasksGroupByPriority": "Priorité",
+  "projectTasksGroupByStatus": "Statut",
+  "projectTasksGroupCount": "{count, plural, =1{1 tâche} other{{count} tâches}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Fait",
+  "projectTasksSortActionability": "Nécessite ton attention",
+  "projectTasksSortAndGroup": "Trier et grouper",
+  "projectTasksSortBy": "Trier par",
+  "projectTasksSortCreated": "Création",
+  "projectTasksSortDueDate": "Date d'échéance",
+  "projectTasksSortEstimate": "Estimation",
+  "projectTasksSortPriority": "Priorité",
+  "projectTasksSortRecentlyUpdated": "Dernière modification",
+  "projectTasksSortTitle": "Titre",
   "projectTitleLabel": "Titre du projet",
   "projectTitleRequired": "Le titre du projet ne peut pas être vide",
   "promptDefaultModelBadge": "Par défaut",

@@ -10785,6 +10785,82 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectTaskProgressNone => 'Nicio sarcină';
 
   @override
+  String get projectTasksDoneInGroups =>
+      'Păstrați sarcinile finalizate în grupurile lor';
+
+  @override
+  String get projectTasksDueLater => 'Mai târziu';
+
+  @override
+  String get projectTasksDueNone => 'Fără scadență';
+
+  @override
+  String get projectTasksDueOverdue => 'Restante';
+
+  @override
+  String get projectTasksDueThisWeek => 'Săptămâna aceasta';
+
+  @override
+  String get projectTasksGroupBy => 'Grupare după';
+
+  @override
+  String get projectTasksGroupByCreationMonth => 'Luna creării';
+
+  @override
+  String get projectTasksGroupByDueWindow => 'Scadență';
+
+  @override
+  String get projectTasksGroupByNone => 'Niciuna';
+
+  @override
+  String get projectTasksGroupByPriority => 'Prioritate';
+
+  @override
+  String get projectTasksGroupByStatus => 'Stare';
+
+  @override
+  String projectTasksGroupCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini',
+      few: '$count sarcini',
+      one: '1 sarcină',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectTasksGroupDone => 'Finalizat';
+
+  @override
+  String get projectTasksSortActionability => 'Necesită atenție';
+
+  @override
+  String get projectTasksSortAndGroup => 'Sortare și grupare';
+
+  @override
+  String get projectTasksSortBy => 'Sortare după';
+
+  @override
+  String get projectTasksSortCreated => 'Creare';
+
+  @override
+  String get projectTasksSortDueDate => 'Data scadenței';
+
+  @override
+  String get projectTasksSortEstimate => 'Estimare';
+
+  @override
+  String get projectTasksSortPriority => 'Prioritate';
+
+  @override
+  String get projectTasksSortRecentlyUpdated => 'Modificate recent';
+
+  @override
+  String get projectTasksSortTitle => 'Titlu';
+
+  @override
   String get projectTitleLabel => 'Titlu proiect';
 
   @override

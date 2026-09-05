@@ -4617,6 +4617,35 @@
   "projectsUnavailableCategory": "Categoria indisponível",
   "projectTargetDateLabel": "Data prevista",
   "projectTaskProgressNone": "Sem tarefas",
+  "projectTasksDoneInGroups": "Manter as tarefas concluídas nos seus grupos",
+  "projectTasksDueLater": "Mais tarde",
+  "projectTasksDueNone": "Sem prazo",
+  "projectTasksDueOverdue": "Atrasadas",
+  "projectTasksDueThisWeek": "Esta semana",
+  "projectTasksGroupBy": "Agrupar por",
+  "projectTasksGroupByCreationMonth": "Mês de criação",
+  "projectTasksGroupByDueWindow": "Prazo",
+  "projectTasksGroupByNone": "Nenhum",
+  "projectTasksGroupByPriority": "Prioridade",
+  "projectTasksGroupByStatus": "Estado",
+  "projectTasksGroupCount": "{count, plural, =1{1 tarefa} other{{count} tarefas}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Concluído",
+  "projectTasksSortActionability": "Precisa de atenção",
+  "projectTasksSortAndGroup": "Ordenar e agrupar",
+  "projectTasksSortBy": "Ordenar por",
+  "projectTasksSortCreated": "Criação",
+  "projectTasksSortDueDate": "Data de vencimento",
+  "projectTasksSortEstimate": "Estimativa",
+  "projectTasksSortPriority": "Prioridade",
+  "projectTasksSortRecentlyUpdated": "Atualização recente",
+  "projectTasksSortTitle": "Título",
   "projectTitleLabel": "Título do projeto",
   "projectTitleRequired": "O título do projeto não pode ficar vazio",
   "promptDefaultModelBadge": "Padrão",

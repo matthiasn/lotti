@@ -4618,6 +4618,35 @@
   "projectsUnavailableCategory": "Otillgänglig kategori",
   "projectTargetDateLabel": "Måldatum",
   "projectTaskProgressNone": "Inga uppgifter",
+  "projectTasksDoneInGroups": "Behåll klara uppgifter i sina grupper",
+  "projectTasksDueLater": "Senare",
+  "projectTasksDueNone": "Utan förfallodatum",
+  "projectTasksDueOverdue": "Försenade",
+  "projectTasksDueThisWeek": "Denna vecka",
+  "projectTasksGroupBy": "Gruppera efter",
+  "projectTasksGroupByCreationMonth": "Skapandemånad",
+  "projectTasksGroupByDueWindow": "Förfalloperiod",
+  "projectTasksGroupByNone": "Ingen",
+  "projectTasksGroupByPriority": "Prioritet",
+  "projectTasksGroupByStatus": "Status",
+  "projectTasksGroupCount": "{count, plural, =1{1 uppgift} other{{count} uppgifter}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Klar",
+  "projectTasksSortActionability": "Behöver uppmärksamhet",
+  "projectTasksSortAndGroup": "Sortera och gruppera",
+  "projectTasksSortBy": "Sortera efter",
+  "projectTasksSortCreated": "Skapad",
+  "projectTasksSortDueDate": "Förfallodatum",
+  "projectTasksSortEstimate": "Uppskattning",
+  "projectTasksSortPriority": "Prioritet",
+  "projectTasksSortRecentlyUpdated": "Senast uppdaterad",
+  "projectTasksSortTitle": "Titel",
   "projectTitleLabel": "Projekttitel",
   "projectTitleRequired": "Projekttiteln kan inte vara tom",
   "promptDefaultModelBadge": "Standard",

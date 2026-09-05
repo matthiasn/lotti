@@ -4618,6 +4618,35 @@
   "projectsUnavailableCategory": "Utilgængelig kategori",
   "projectTargetDateLabel": "Måldato",
   "projectTaskProgressNone": "Ingen opgaver",
+  "projectTasksDoneInGroups": "Behold færdige opgaver i deres grupper",
+  "projectTasksDueLater": "Senere",
+  "projectTasksDueNone": "Ingen forfaldsdato",
+  "projectTasksDueOverdue": "Forfaldne",
+  "projectTasksDueThisWeek": "Denne uge",
+  "projectTasksGroupBy": "Gruppér efter",
+  "projectTasksGroupByCreationMonth": "Oprettelsesmåned",
+  "projectTasksGroupByDueWindow": "Forfald",
+  "projectTasksGroupByNone": "Ingen",
+  "projectTasksGroupByPriority": "Prioritet",
+  "projectTasksGroupByStatus": "Status",
+  "projectTasksGroupCount": "{count, plural, =1{1 opgave} other{{count} opgaver}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Færdig",
+  "projectTasksSortActionability": "Handlingsbehov",
+  "projectTasksSortAndGroup": "Sortér og gruppér",
+  "projectTasksSortBy": "Sortér efter",
+  "projectTasksSortCreated": "Oprettet",
+  "projectTasksSortDueDate": "Forfaldsdato",
+  "projectTasksSortEstimate": "Estimat",
+  "projectTasksSortPriority": "Prioritet",
+  "projectTasksSortRecentlyUpdated": "Senest opdateret",
+  "projectTasksSortTitle": "Titel",
   "projectTitleLabel": "Projekttitel",
   "projectTitleRequired": "Projekttitel kan ikke være tom",
   "promptDefaultModelBadge": "Default",

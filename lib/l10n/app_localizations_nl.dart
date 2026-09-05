@@ -10601,6 +10601,80 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectTaskProgressNone => 'Geen taken';
 
   @override
+  String get projectTasksDoneInGroups => 'Afgeronde taken in hun groepen laten';
+
+  @override
+  String get projectTasksDueLater => 'Later';
+
+  @override
+  String get projectTasksDueNone => 'Geen deadline';
+
+  @override
+  String get projectTasksDueOverdue => 'Te laat';
+
+  @override
+  String get projectTasksDueThisWeek => 'Deze week';
+
+  @override
+  String get projectTasksGroupBy => 'Groeperen op';
+
+  @override
+  String get projectTasksGroupByCreationMonth => 'Aanmaakmaand';
+
+  @override
+  String get projectTasksGroupByDueWindow => 'Termijn';
+
+  @override
+  String get projectTasksGroupByNone => 'Geen';
+
+  @override
+  String get projectTasksGroupByPriority => 'Prioriteit';
+
+  @override
+  String get projectTasksGroupByStatus => 'Status';
+
+  @override
+  String projectTasksGroupCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count taken',
+      one: '1 taak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectTasksGroupDone => 'Klaar';
+
+  @override
+  String get projectTasksSortActionability => 'Aandacht nodig';
+
+  @override
+  String get projectTasksSortAndGroup => 'Sorteren en groeperen';
+
+  @override
+  String get projectTasksSortBy => 'Sorteren op';
+
+  @override
+  String get projectTasksSortCreated => 'Aangemaakt';
+
+  @override
+  String get projectTasksSortDueDate => 'Verloopdatum';
+
+  @override
+  String get projectTasksSortEstimate => 'Schatting';
+
+  @override
+  String get projectTasksSortPriority => 'Prioriteit';
+
+  @override
+  String get projectTasksSortRecentlyUpdated => 'Laatst bijgewerkt';
+
+  @override
+  String get projectTasksSortTitle => 'Titel';
+
+  @override
   String get projectTitleLabel => 'Projecttitel';
 
   @override

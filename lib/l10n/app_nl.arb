@@ -4617,6 +4617,35 @@
   "projectsUnavailableCategory": "Niet-beschikbare categorie",
   "projectTargetDateLabel": "Streefdatum",
   "projectTaskProgressNone": "Geen taken",
+  "projectTasksDoneInGroups": "Afgeronde taken in hun groepen laten",
+  "projectTasksDueLater": "Later",
+  "projectTasksDueNone": "Geen deadline",
+  "projectTasksDueOverdue": "Te laat",
+  "projectTasksDueThisWeek": "Deze week",
+  "projectTasksGroupBy": "Groeperen op",
+  "projectTasksGroupByCreationMonth": "Aanmaakmaand",
+  "projectTasksGroupByDueWindow": "Termijn",
+  "projectTasksGroupByNone": "Geen",
+  "projectTasksGroupByPriority": "Prioriteit",
+  "projectTasksGroupByStatus": "Status",
+  "projectTasksGroupCount": "{count, plural, =1{1 taak} other{{count} taken}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Klaar",
+  "projectTasksSortActionability": "Aandacht nodig",
+  "projectTasksSortAndGroup": "Sorteren en groeperen",
+  "projectTasksSortBy": "Sorteren op",
+  "projectTasksSortCreated": "Aangemaakt",
+  "projectTasksSortDueDate": "Verloopdatum",
+  "projectTasksSortEstimate": "Schatting",
+  "projectTasksSortPriority": "Prioriteit",
+  "projectTasksSortRecentlyUpdated": "Laatst bijgewerkt",
+  "projectTasksSortTitle": "Titel",
   "projectTitleLabel": "Projecttitel",
   "projectTitleRequired": "Projecttitel kan niet leeg zijn",
   "promptDefaultModelBadge": "Standaard",

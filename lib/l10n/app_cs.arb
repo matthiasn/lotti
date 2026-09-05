@@ -4151,6 +4151,35 @@
   "projectsUnavailableCategory": "Nedostupná kategorie",
   "projectTargetDateLabel": "Cílové datum",
   "projectTaskProgressNone": "Žádné úkoly",
+  "projectTasksDoneInGroups": "Nechat hotové úkoly v jejich skupinách",
+  "projectTasksDueLater": "Později",
+  "projectTasksDueNone": "Bez termínu",
+  "projectTasksDueOverdue": "Po termínu",
+  "projectTasksDueThisWeek": "Tento týden",
+  "projectTasksGroupBy": "Seskupit podle",
+  "projectTasksGroupByCreationMonth": "Měsíc vytvoření",
+  "projectTasksGroupByDueWindow": "Termín",
+  "projectTasksGroupByNone": "Žádné",
+  "projectTasksGroupByPriority": "Priorita",
+  "projectTasksGroupByStatus": "Stav",
+  "projectTasksGroupCount": "{count, plural, =1{1 úkol} few{{count} úkoly} other{{count} úkolů}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Hotovo",
+  "projectTasksSortActionability": "Vyžaduje pozornost",
+  "projectTasksSortAndGroup": "Řadit a seskupit",
+  "projectTasksSortBy": "Řadit podle",
+  "projectTasksSortCreated": "Vytvořeno",
+  "projectTasksSortDueDate": "Datum termínu",
+  "projectTasksSortEstimate": "Odhad",
+  "projectTasksSortPriority": "Priorita",
+  "projectTasksSortRecentlyUpdated": "Naposledy upraveno",
+  "projectTasksSortTitle": "Název",
   "projectTitleLabel": "Název projektu",
   "projectTitleRequired": "Název projektu nesmí být prázdný",
   "promptDefaultModelBadge": "Výchozí",

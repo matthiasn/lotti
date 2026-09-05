@@ -6072,6 +6072,35 @@
   "projectsUnavailableCategory": "Unavailable category",
   "projectTargetDateLabel": "Target Date",
   "projectTaskProgressNone": "No tasks",
+  "projectTasksDoneInGroups": "Keep done tasks in their groups",
+  "projectTasksDueLater": "Later",
+  "projectTasksDueNone": "No due date",
+  "projectTasksDueOverdue": "Overdue",
+  "projectTasksDueThisWeek": "This week",
+  "projectTasksGroupBy": "Group by",
+  "projectTasksGroupByCreationMonth": "Creation month",
+  "projectTasksGroupByDueWindow": "Due window",
+  "projectTasksGroupByNone": "None",
+  "projectTasksGroupByPriority": "Priority",
+  "projectTasksGroupByStatus": "Status",
+  "projectTasksGroupCount": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Done",
+  "projectTasksSortActionability": "Actionability",
+  "projectTasksSortAndGroup": "Sort and group",
+  "projectTasksSortBy": "Sort by",
+  "projectTasksSortCreated": "Created",
+  "projectTasksSortDueDate": "Due date",
+  "projectTasksSortEstimate": "Estimate",
+  "projectTasksSortPriority": "Priority",
+  "projectTasksSortRecentlyUpdated": "Recently updated",
+  "projectTasksSortTitle": "Title",
   "projectTitleLabel": "Project Title",
   "projectTitleRequired": "Project title cannot be empty",
   "promptDefaultModelBadge": "Default",

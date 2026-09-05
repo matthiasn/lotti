@@ -4144,6 +4144,35 @@
   "projectsUnavailableCategory": "Categorie indisponibilă",
   "projectTargetDateLabel": "Data țintă",
   "projectTaskProgressNone": "Nicio sarcină",
+  "projectTasksDoneInGroups": "Păstrați sarcinile finalizate în grupurile lor",
+  "projectTasksDueLater": "Mai târziu",
+  "projectTasksDueNone": "Fără scadență",
+  "projectTasksDueOverdue": "Restante",
+  "projectTasksDueThisWeek": "Săptămâna aceasta",
+  "projectTasksGroupBy": "Grupare după",
+  "projectTasksGroupByCreationMonth": "Luna creării",
+  "projectTasksGroupByDueWindow": "Scadență",
+  "projectTasksGroupByNone": "Niciuna",
+  "projectTasksGroupByPriority": "Prioritate",
+  "projectTasksGroupByStatus": "Stare",
+  "projectTasksGroupCount": "{count, plural, =1{1 sarcină} few{{count} sarcini} other{{count} de sarcini}}",
+  "@projectTasksGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectTasksGroupDone": "Finalizat",
+  "projectTasksSortActionability": "Necesită atenție",
+  "projectTasksSortAndGroup": "Sortare și grupare",
+  "projectTasksSortBy": "Sortare după",
+  "projectTasksSortCreated": "Creare",
+  "projectTasksSortDueDate": "Data scadenței",
+  "projectTasksSortEstimate": "Estimare",
+  "projectTasksSortPriority": "Prioritate",
+  "projectTasksSortRecentlyUpdated": "Modificate recent",
+  "projectTasksSortTitle": "Titlu",
   "projectTitleLabel": "Titlu proiect",
   "projectTitleRequired": "Titlul proiectului nu poate fi gol",
   "promptDefaultModelBadge": "Implicit",

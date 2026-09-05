@@ -10725,6 +10725,82 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectTaskProgressNone => 'Žádné úkoly';
 
   @override
+  String get projectTasksDoneInGroups =>
+      'Nechat hotové úkoly v jejich skupinách';
+
+  @override
+  String get projectTasksDueLater => 'Později';
+
+  @override
+  String get projectTasksDueNone => 'Bez termínu';
+
+  @override
+  String get projectTasksDueOverdue => 'Po termínu';
+
+  @override
+  String get projectTasksDueThisWeek => 'Tento týden';
+
+  @override
+  String get projectTasksGroupBy => 'Seskupit podle';
+
+  @override
+  String get projectTasksGroupByCreationMonth => 'Měsíc vytvoření';
+
+  @override
+  String get projectTasksGroupByDueWindow => 'Termín';
+
+  @override
+  String get projectTasksGroupByNone => 'Žádné';
+
+  @override
+  String get projectTasksGroupByPriority => 'Priorita';
+
+  @override
+  String get projectTasksGroupByStatus => 'Stav';
+
+  @override
+  String projectTasksGroupCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '1 úkol',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectTasksGroupDone => 'Hotovo';
+
+  @override
+  String get projectTasksSortActionability => 'Vyžaduje pozornost';
+
+  @override
+  String get projectTasksSortAndGroup => 'Řadit a seskupit';
+
+  @override
+  String get projectTasksSortBy => 'Řadit podle';
+
+  @override
+  String get projectTasksSortCreated => 'Vytvořeno';
+
+  @override
+  String get projectTasksSortDueDate => 'Datum termínu';
+
+  @override
+  String get projectTasksSortEstimate => 'Odhad';
+
+  @override
+  String get projectTasksSortPriority => 'Priorita';
+
+  @override
+  String get projectTasksSortRecentlyUpdated => 'Naposledy upraveno';
+
+  @override
+  String get projectTasksSortTitle => 'Název';
+
+  @override
   String get projectTitleLabel => 'Název projektu';
 
   @override
