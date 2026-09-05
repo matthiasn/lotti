@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show InsertMode, Value;
@@ -237,11 +238,22 @@ void main() {
 
           final editorState = MockEditorStateService();
           getIt.registerSingleton<EditorStateService>(editorState);
+          // Stand in for a debounced write still pending at reset time: it
+          // is queued when the in-memory drafts are dropped, so it must be
+          // deleted along with everything else rather than land afterwards.
+          when(editorState.resetDrafts).thenAnswer((_) {
+            unawaited(
+              editorDb.insertDraftState(
+                entryId: 'pending-at-reset',
+                lastSaved: DateTime(2026, 9, 5),
+                draftDeltaJson: '{"ops":[]}',
+              ),
+            );
+          });
 
           await maintenance.clearEditorDb();
 
           expect(await editorDb.select(editorDb.editorDrafts).get(), isEmpty);
-          // Drafts still held in memory (and their pending writes) go too.
           verify(editorState.resetDrafts).called(1);
           await editorDb.insertDraftState(
             entryId: 'entry-2',
@@ -343,6 +355,41 @@ void main() {
           expect(backupDir.existsSync(), isTrue);
           final backup = backupDir.listSync().single as File;
           expect(backup.readAsStringSync(), 'test-data');
+        },
+      );
+
+      test(
+        'deleteAgentDb removes orphaned companions when the main file is '
+        'already gone',
+        () async {
+          final dbFile = await getDatabaseFile(agentDbFileName);
+          File('${dbFile.path}-wal').createSync(recursive: true);
+          File('${dbFile.path}-shm').createSync();
+
+          await maintenance.deleteAgentDb();
+
+          expect(File('${dbFile.path}-wal').existsSync(), isFalse);
+          expect(File('${dbFile.path}-shm').existsSync(), isFalse);
+        },
+      );
+
+      test(
+        'deleteFts5Db removes orphaned companions when the main file is '
+        'already gone',
+        () async {
+          final dbFile = await getDatabaseFile(fts5DbFileName);
+          File('${dbFile.path}-wal').createSync(recursive: true);
+
+          await maintenance.deleteFts5Db();
+
+          expect(File('${dbFile.path}-wal').existsSync(), isFalse);
+          verify(
+            () => mockDomainLogger.log(
+              LogDomain.database,
+              'Database file $fts5DbFileName does not exist',
+              subDomain: 'deleteFts5Db',
+            ),
+          ).called(1);
         },
       );
 

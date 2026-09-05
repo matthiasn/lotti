@@ -27,30 +27,34 @@ class Maintenance {
   /// launch starts from an empty agent database and the backup.
   Future<void> deleteAgentDb() async {
     final file = await getDatabaseFile(agentDbFileName);
-    if (!file.existsSync()) {
+    if (file.existsSync()) {
+      await createDbBackup(agentDbFileName);
+    } else {
       getIt<DomainLogger>().log(
         LogDomain.database,
         'Database file $agentDbFileName does not exist',
         subDomain: 'deleteAgentDb',
       );
-      return;
     }
-    await createDbBackup(agentDbFileName);
     if (getIt.isRegistered<AgentDatabase>()) {
       await getIt<AgentDatabase>().close();
     }
+    // Companions are removed even when the main file is gone: a leftover
+    // `-wal` would be replayed into the database created on the next launch.
     _deleteWithCompanions(file);
   }
 
-  /// Empties the editor drafts database through its live connection and
-  /// drops the drafts the editor still holds in memory, cancelling their
-  /// pending debounced writes — otherwise a draft the user just discarded
-  /// would be restored into the editor, or written back moments later.
+  /// Drops the drafts the editor holds in memory, cancelling their pending
+  /// debounced writes, then empties the drafts database through its live
+  /// connection — otherwise a draft the user just discarded would be
+  /// restored into the editor, or written back moments later.
   Future<void> clearEditorDb() async {
-    await _emptyDatabase(getIt<EditorDb>(), subDomain: 'clearEditorDb');
+    // Drop the in-memory drafts first: a debounced write that fired while
+    // the rows were being deleted would land after them.
     if (getIt.isRegistered<EditorStateService>()) {
       getIt<EditorStateService>().resetDrafts();
     }
+    await _emptyDatabase(getIt<EditorDb>(), subDomain: 'clearEditorDb');
   }
 
   /// Empties the sync database — outbox, sequence log, host activity, inbound
@@ -156,19 +160,16 @@ class Maintenance {
   /// registered [Fts5Db] has been closed; [recreateFts5] does.
   Future<void> deleteFts5Db() async {
     final file = await getDatabaseFile(fts5DbFileName);
-    if (!file.existsSync()) {
-      getIt<DomainLogger>().log(
-        LogDomain.database,
-        'Database file $fts5DbFileName does not exist',
-        subDomain: 'deleteFts5Db',
-      );
-      return;
-    }
+    final existed = file.existsSync();
+    // Companions go regardless, so an orphaned `-wal` cannot be replayed
+    // into the index rebuilt next.
     _deleteWithCompanions(file);
     getIt<DomainLogger>().log(
       LogDomain.database,
-      'FTS5 database DELETED',
-      subDomain: 'recreateFts5',
+      existed
+          ? 'FTS5 database DELETED'
+          : 'Database file $fts5DbFileName does not exist',
+      subDomain: existed ? 'recreateFts5' : 'deleteFts5Db',
     );
   }
 

@@ -174,6 +174,59 @@ void main() {
       expect(backupDir.listSync(), hasLength(2));
     });
 
+    test('two backups in the same instant get distinct files', () async {
+      const fileName = 'test_db.sqlite';
+      seedWalDatabase(fileName);
+      final sameInstant = Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15));
+
+      final first = await withClock(
+        sameInstant,
+        () => createDbBackup(fileName),
+      );
+      final second = await withClock(
+        sameInstant,
+        () => createDbBackup(fileName),
+      );
+
+      expect(first.path, isNot(second.path));
+      expect(p.basename(second.path), endsWith('-2.sqlite'));
+      // Both are real snapshots — the second did not overwrite the first.
+      expect(labelsIn(first), ['checkpointed', 'still in the wal']);
+      expect(labelsIn(second), ['checkpointed', 'still in the wal']);
+    });
+
+    test(
+      'a failure that is not an unreadable source propagates instead of '
+      'being papered over with a raw copy',
+      () async {
+        const fileName = 'test_db.sqlite';
+        seedWalDatabase(fileName);
+        // Occupy the exact target with a directory so VACUUM INTO cannot
+        // write there: the source is fine, the backup is what failed.
+        final backupDir = Directory(p.join(testDir.path, _backupDirectoryName))
+          ..createSync();
+        Directory(
+          p.join(backupDir.path, 'test_db.2026-09-05_10-30-15-000.sqlite'),
+        ).createSync();
+
+        await expectLater(
+          withClock(
+            Clock.fixed(DateTime(2026, 9, 5, 10, 30, 15)),
+            () => createDbBackup(fileName),
+          ),
+          throwsA(isA<SqliteException>()),
+        );
+
+        expect(
+          backupDir.listSync().whereType<File>().where(
+            (f) => f.path.endsWith('.sqlite'),
+          ),
+          isEmpty,
+          reason: 'no raw copy may stand in for a failed snapshot',
+        );
+      },
+    );
+
     test('throws when the source file does not exist', () async {
       await expectLater(
         createDbBackup('missing.sqlite'),

@@ -73,9 +73,7 @@ Future<File> createDbBackup(
     p.join(file.parent.path, _backupDirectoryName),
   ).create(recursive: true);
   final stem = p.basenameWithoutExtension(fileName);
-  final target = File(
-    p.join(backupDir.path, '$stem.$ts$_backupFileExtension'),
-  );
+  final target = _unusedBackupTarget(backupDir, '$stem.$ts');
 
   // Stash the WAL before touching the file: SQLite discards a `-wal` it
   // finds beside a file it cannot read as a database, and that WAL is the
@@ -90,6 +88,13 @@ Future<File> createDbBackup(
     await Isolate.run(() => _vacuumInto(sourcePath, targetPath));
     await walStash?.delete();
   } on SqliteException catch (e) {
+    if (!_isUnreadableSource(e)) {
+      // Anything but "the source is not a readable database" — a busy
+      // lock, an unwritable target — is a failure of *this* backup, not a
+      // reason to hand back a raw copy that may not be consistent.
+      await walStash?.delete();
+      rethrow;
+    }
     DevLogger.warning(
       name: 'Database',
       message:
@@ -101,6 +106,31 @@ Future<File> createDbBackup(
     await walStash?.rename('${target.path}-wal');
   }
   return target;
+}
+
+/// Two backups in one formatted instant (the same millisecond) must not
+/// share a target: `VACUUM INTO` refuses an existing non-empty file, and the
+/// fallback would then overwrite the first backup. Suffix until free.
+File _unusedBackupTarget(Directory backupDir, String baseName) {
+  var candidate = File(
+    p.join(backupDir.path, '$baseName$_backupFileExtension'),
+  );
+  var attempt = 1;
+  while (candidate.existsSync()) {
+    attempt += 1;
+    candidate = File(
+      p.join(backupDir.path, '$baseName-$attempt$_backupFileExtension'),
+    );
+  }
+  return candidate;
+}
+
+/// `SQLITE_NOTADB` and `SQLITE_CORRUPT`: the source itself cannot be read as
+/// a database, which is the one case a raw copy is the best we can do.
+bool _isUnreadableSource(SqliteException e) {
+  const notADatabase = 26;
+  const corrupt = 11;
+  return e.resultCode == notADatabase || e.resultCode == corrupt;
 }
 
 /// Runs `VACUUM INTO` from a throwaway connection so the snapshot is taken
