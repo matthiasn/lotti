@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T14:55:00Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -15,11 +15,11 @@ sources:
   - id: logging-service
     resource: ../../lib/services/logging_service.dart
     title: LoggingService
-    last_modified: 2026-07-12
+    last_modified: 2026-09-05
   - id: domain-logging
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
-    last_modified: 2026-08-01
+    last_modified: 2026-09-05
   - id: framework-errors
     resource: ../../lib/main.dart
     title: Flutter framework error handler
@@ -65,16 +65,18 @@ there is no separate registry to keep in step.
 flowchart TD
   Log["DomainLogger.log(domain, ...)"] --> Enabled{"domain flag enabled?"}
   Enabled -->|no| Drop["dropped"]
-  Enabled -->|yes| General["general app log for the day"]
+  Enabled -->|yes| RoutineRoute{"domain routes to the sync file?"}
+  RoutineRoute -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
+  RoutineRoute -->|no| General["general app log for the day"]
+  RoutineRoute -->|no| DomainLog["&lt;domain&gt;-YYYY-MM-DD.log"]
   Err["DomainLogger.error(...)"] --> General2["general app log + error-YYYY-MM-DD.log<br/>full text, force-flushed"]
   Err --> Safe["error-safe-YYYY-MM-DD.log<br/>no raw error, no stack trace<br/>message kept verbatim"]
-  Enabled -->|yes| PerDomain
   Err --> PerDomain{"domain routes to the sync file?"}
-  PerDomain -->|yes| SyncLog["sync-YYYY-MM-DD.log"]
-  PerDomain -->|no| DomainLog["&lt;domain&gt;-YYYY-MM-DD.log"]
+  PerDomain -->|yes| SyncLog
+  PerDomain -->|no| DomainLog
 ```
 
-**An error reaches two to four files**, depending on its domain: the general log,
+**A production `DomainLogger.error` call targets four files**: the general log,
 the full `error-<date>.log` mirror, the PII-safe `error-safe-<date>.log`, and then
 either the shared `sync-<date>.log` or its own `<domain>-<date>.log`.
 
@@ -120,21 +122,49 @@ its pending count before removing the state. This preserves both the diagnostic
 context and evidence of a rebuild loop without allowing one framework
 exception to generate an unbounded error file.
 
-**`sync` is the one domain that routes to its own file.** It is off by default
-and far noisier than everything else — a catch-up can produce thousands of lines
-in a second — so it goes to `sync-<date>.log` where it can be read in isolation
-without burying the rest.
+**Routine `sync` events omit the general log.** Sync is off by default;
+a catch-up can produce thousands of lines in a second. Those events go to
+`sync-<date>.log` without burying the rest of the app's general telemetry.
 
 Flags are toggled in *Settings → Advanced → Logging Domains* and stored as
-config flags in `JournalDb`. `LoggingService.listenToConfigFlag()` subscribes at
-startup, so a toggle takes effect immediately rather than at next launch.
+config flags in `JournalDb`. `domainLoggerProvider` listens to each domain flag
+and updates the shared logger in place without restarting the agent runtime.
+`LoggingService.listenToConfigFlag()` separately tracks the general logging and
+slow-query flags, so these gates also update without a restart.
 
 # File writing is batched
 
-Log lines are buffered per file stem and flushed on a **500 ms** timer rather
-than written synchronously. Files are named `<stem>-<yyyy-MM-dd>.log`, so a day
-is one file and rotation is implicit. In the test environment file writing is
-skipped entirely — tests assert on the logger, not on disk.
+`LoggingService` owns the shared file sink for general, sync, per-domain and
+safe-error files. Routine lines are buffered per file stem and flushed on a
+**500 ms** timer or after **40 lines**. Domain logging no longer creates a
+synchronous, force-flushed disk write for every event. Queued routine payloads
+are capped at 1,048,576 UTF-16 code units per file, including batches waiting
+behind active disk I/O. Excess routine records remain an aggregate counter
+behind at most one queued or in-flight summary per destination. The summary
+reads that counter when its write starts, so prolonged disk stalls cannot
+accumulate a separate summary for every timer window. Drops arriving during
+that write produce at most one successor summary. The payload budget is
+released after each write completes or fails.
+Error records bypass this limit and the timer and request a durable flush;
+per-file drains serialize appends. `LoggingService.flush()` waits until every
+destination is stable and empty, including successor summaries created while
+an earlier write finishes during orderly shutdown.
+
+Each logger lazily binds to the first registered documents directory observed
+at record admission. Bootstrap can construct it before that registration;
+unbound early records retry resolution when their drain runs. A profile switch
+creates a fresh logging pair, while queued and buffered writes in the outgoing
+instance retain its original destination even if its final flush times out.
+
+Files are named `<stem>-<yyyy-MM-dd>.log`, using the date at write time. In the
+test environment `DomainLogger` skips its additional file destinations;
+`LoggingService` uses a synchronous sink for deterministic legacy file tests.
+File-sink integration tests exercise production buffering explicitly.
+
+Routine Matrix initialization logs readiness without account IDs, device IDs
+or device names. Recorder start/delete telemetry omits absolute paths while
+retaining recording configuration for diagnosis. Full exception diagnostics
+remain available locally under the error policy above.
 
 # Slow queries
 

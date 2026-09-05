@@ -17,8 +17,15 @@ class LoggingService {
   bool _enableLogging = !isTestEnv;
   bool _enableSlowQueryLogging = false;
   final _dateFmt = DateFormat('yyyy-MM-dd');
+  Directory? _documentsDirectory;
+
+  Directory _resolveDocumentsDirectory() =>
+      _documentsDirectory ??= getDocumentsDirectory();
   static const Duration _fileFlushInterval = Duration(milliseconds: 500);
   static const int _fileFlushLineThreshold = 40;
+  // Includes pending lines and payloads queued behind an active disk write.
+  // Error records bypass this routine-telemetry limit to retain diagnostics.
+  static const int _maxQueuedFileCharacters = 1024 * 1024;
   static const String _generalLogStem = 'lotti';
   static const String _syncLogStem = 'sync';
 
@@ -33,6 +40,11 @@ class LoggingService {
   final Map<String, List<String>> _pendingFileLinesByStem =
       <String, List<String>>{};
   final Map<String, Timer> _fileFlushTimers = <String, Timer>{};
+  final _queuedFileCharacters = <String, int>{};
+  final _droppedFileLines = <String, int>{};
+  // One queued/in-flight loss summary per destination, regardless of how many
+  // timer windows overflow while disk I/O is blocked.
+  final _queuedDropSummaries = <String>{};
 
   /// Seam for scheduling the buffered-flush timer. Defaults to the real
   /// [Timer] constructor; tests override it so the 500 ms flush path can be
@@ -136,12 +148,36 @@ class LoggingService {
     await _slowQueryFlagSubscription?.cancel();
   }
 
+  /// Appends an already formatted domain or safe-error line to the shared sink.
+  ///
+  /// DomainLogger owns the domain gate. Errors bypass that gate and request an
+  /// immediate durable write; routine lines use the same batching as app logs.
+  /// All destinations participate in [flush] during orderly shutdown.
+  void captureFileLine(
+    String fileStem,
+    String line, {
+    bool forceFlush = false,
+  }) {
+    final future = _appendToNamedFile(fileStem, line, forceFlush: forceFlush);
+    _pendingWrites.add(future);
+    unawaited(future.whenComplete(() => _pendingWrites.remove(future)));
+  }
+
   // --- Text file sink -----------------------------------------------------
   Future<void> _appendToNamedFile(
     String fileStem,
     String line, {
     bool forceFlush = false,
   }) async {
+    // Bootstrap constructs logging before registering the profile directory.
+    // Bind once it is available, at admission rather than delayed disk I/O,
+    // so a timed-out old drain cannot follow GetIt into a new profile.
+    try {
+      _resolveDocumentsDirectory();
+    } catch (_) {
+      // Early bootstrap records may precede registration. The drain retries
+      // resolution, preserving the existing best-effort startup behavior.
+    }
     if (isTestEnv) {
       _appendToNamedFileSync(fileStem, line);
       return;
@@ -150,7 +186,20 @@ class LoggingService {
     final pendingLines = _pendingFileLinesByStem.putIfAbsent(
       fileStem,
       () => <String>[],
-    )..add(line);
+    );
+    final queuedCharacters = _queuedFileCharacters[fileStem] ?? 0;
+    final lineCharacters = line.length + 1;
+    if (!forceFlush &&
+        queuedCharacters + lineCharacters > _maxQueuedFileCharacters) {
+      _droppedFileLines.update(
+        fileStem,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+    } else {
+      pendingLines.add(line);
+      _queuedFileCharacters[fileStem] = queuedCharacters + lineCharacters;
+    }
     final shouldFlushNow =
         forceFlush || pendingLines.length >= _fileFlushLineThreshold;
 
@@ -171,7 +220,7 @@ class LoggingService {
 
   void _appendToNamedFileSync(String fileStem, String line) {
     try {
-      final dir = getDocumentsDirectory();
+      final dir = _resolveDocumentsDirectory();
       final logDir = Directory(p.join(dir.path, 'logs'));
       final fileName = '$fileStem-${_dateFmt.format(DateTime.now())}.log';
       final file = File(p.join(logDir.path, fileName));
@@ -190,17 +239,34 @@ class LoggingService {
     bool forceFlush = false,
   }) async {
     final pendingLines = _pendingFileLinesByStem[fileStem];
-    if (pendingLines == null || pendingLines.isEmpty) {
+    final includeDropSummary =
+        (_droppedFileLines[fileStem] ?? 0) > 0 &&
+        _queuedDropSummaries.add(fileStem);
+    if ((pendingLines == null || pendingLines.isEmpty) && !includeDropSummary) {
       return;
     }
 
-    final lines = List<String>.from(pendingLines);
-    pendingLines.clear();
-
+    final lines = List<String>.of(pendingLines ?? const <String>[]);
+    final queuedCharacters = lines.fold<int>(
+      0,
+      (count, line) => count + line.length + 1,
+    );
+    pendingLines?.clear();
     final currentDrain = _fileDrains[fileStem] ?? Future<void>.value();
     final nextDrain = currentDrain.then((_) async {
       try {
-        final dir = getDocumentsDirectory();
+        // Read the counter only when this drain reaches the disk, so repeated
+        // overflow windows share one marker instead of retaining many strings.
+        final dropped = includeDropSummary
+            ? (_droppedFileLines.remove(fileStem) ?? 0)
+            : 0;
+        if (dropped > 0) {
+          lines.add(
+            '${DateTime.now().toIso8601String()} [WARN] logging: '
+            'routine buffer capacity exceeded dropped=$dropped',
+          );
+        }
+        final dir = _resolveDocumentsDirectory();
         final logDir = Directory(p.join(dir.path, 'logs'));
         final fileName = '$fileStem-${_dateFmt.format(DateTime.now())}.log';
         final file = File(p.join(logDir.path, fileName));
@@ -213,6 +279,22 @@ class LoggingService {
         );
       } catch (_) {
         // Swallow file-sink errors so logging never interferes with app flows.
+      } finally {
+        final remaining =
+            (_queuedFileCharacters[fileStem] ?? 0) - queuedCharacters;
+        if (remaining == 0) {
+          _queuedFileCharacters.remove(fileStem);
+        } else {
+          _queuedFileCharacters[fileStem] = remaining;
+        }
+        if (includeDropSummary) {
+          _queuedDropSummaries.remove(fileStem);
+          if ((_droppedFileLines[fileStem] ?? 0) > 0) {
+            // Overflow can arrive while the summary itself is being written.
+            // Queue one successor without awaiting our own drain chain.
+            unawaited(_flushPendingLines(fileStem, forceFlush: forceFlush));
+          }
+        }
       }
     });
     _fileDrains[fileStem] = nextDrain;
@@ -226,20 +308,29 @@ class LoggingService {
   /// timer are not lost when `_exit(0)` terminates the process before the
   /// timer fires.
   Future<void> flush() async {
-    // Await all tracked unawaited writes (captureEvent / captureException).
-    // Snapshot first since whenComplete callbacks remove items during iteration.
-    await Future.wait(List<Future<void>>.of(_pendingWrites));
-    // Cancel any pending timer-based flushes and drain remaining lines.
-    for (final entry in _fileFlushTimers.entries.toList()) {
-      entry.value.cancel();
+    while (true) {
+      // Callbacks can enqueue a final loss summary as a blocked write drains.
+      // Keep taking snapshots until every destination is stable and empty.
+      await Future.wait(List<Future<void>>.of(_pendingWrites));
+      for (final timer in _fileFlushTimers.values.toList()) {
+        timer.cancel();
+      }
+      _fileFlushTimers.clear();
+      for (final stem in _pendingFileLinesByStem.keys.toList()) {
+        await _flushPendingLines(stem, forceFlush: true);
+      }
+      final drains = Map<String, Future<void>>.of(_fileDrains);
+      await Future.wait(drains.values);
+      if (_pendingWrites.isEmpty &&
+          _pendingFileLinesByStem.values.every((lines) => lines.isEmpty) &&
+          _droppedFileLines.isEmpty &&
+          _queuedDropSummaries.isEmpty &&
+          _fileDrains.entries.every(
+            (entry) => identical(drains[entry.key], entry.value),
+          )) {
+        break;
+      }
     }
-    _fileFlushTimers.clear();
-    for (final stem in _pendingFileLinesByStem.keys.toList()) {
-      await _flushPendingLines(stem, forceFlush: true);
-    }
-    // A timer callback may already have moved its lines into an active drain.
-    // Wait for those writes as well so shutdown cannot return before disk IO.
-    await Future.wait(List<Future<void>>.of(_fileDrains.values));
     await SlowQueryInterceptor.flushPendingFileWrites();
   }
 

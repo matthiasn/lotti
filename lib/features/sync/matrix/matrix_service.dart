@@ -317,8 +317,7 @@ class MatrixService {
 
     _loggingService.log(
       LogDomain.sync,
-      'MatrixService initialized - deviceId: ${client.deviceID}, '
-      'deviceName: ${client.deviceName}, userId: ${client.userID}',
+      'MatrixService initialized',
       subDomain: 'init',
     );
   }

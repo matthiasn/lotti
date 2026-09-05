@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' as io;
 
 import 'package:beamer/beamer.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -1580,3 +1581,7 @@ class MockOrtSession extends Mock implements OrtSession {}
 class MockOnnxRuntime extends Mock implements OnnxRuntime {}
 
 class MockSupertonicTtsSession extends Mock implements SupertonicTtsSession {}
+
+class MockIoFile extends Mock implements io.File {}
+
+class MockIoDirectory extends Mock implements io.Directory {}

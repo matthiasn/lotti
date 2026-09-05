@@ -6,11 +6,13 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart' as platform_utils;
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../mocks/mocks.dart';
+import '../widget_test_utils.dart';
 
 class _GeneratedId {
   const _GeneratedId({
@@ -362,7 +364,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('DomainLogger file sink (non-test-env)', () {
     late Directory tempDocs;
-    late MockLoggingService mockLoggingService;
+    late LoggingService loggingService;
     late DomainLogger logger;
 
     File? findLogFile(String prefix) {
@@ -386,35 +388,52 @@ void main() {
         }
       });
 
-      await getIt.reset();
-      getIt.registerSingleton<Directory>(tempDocs);
-
-      mockLoggingService = MockLoggingService();
-      stubLoggingService(mockLoggingService);
-      logger = DomainLogger(loggingService: mockLoggingService);
+      await setUpTestGetIt(
+        additionalSetup: () => getIt.registerSingleton<Directory>(tempDocs),
+      );
+      loggingService = getIt<LoggingService>();
+      logger = getIt<DomainLogger>();
     });
 
     tearDown(() async {
-      await getIt.reset();
+      await loggingService.flush();
+      await tearDownTestGetIt();
     });
 
-    test('log writes message to domain log file when domain is enabled', () {
+    test('routine domain lines wait for the shared shutdown flush', () async {
       logger.enabledDomains.add(LogDomain.agentRuntime);
-
-      logger.log(LogDomain.agentRuntime, 'file sink message');
-
-      final logFile = findLogFile('agentRuntime-');
-      expect(
-        logFile,
-        isNotNull,
-        reason: 'Domain log file should have been created',
-      );
-      final content = logFile!.readAsStringSync();
-      expect(content, contains('[INFO]'));
-      expect(content, contains('file sink message'));
+      logger
+        ..log(LogDomain.agentRuntime, 'first buffered event')
+        ..log(LogDomain.agentRuntime, 'second buffered event');
+      expect(findLogFile('agentRuntime-'), isNull);
+      await loggingService.flush();
+      final lines = findLogFile('agentRuntime-')!.readAsLinesSync();
+      expect(lines, hasLength(2));
+      expect(lines[0], contains('first buffered event'));
+      expect(lines[1], contains('second buffered event'));
     });
 
-    test('log writes subDomain and custom level to domain log file', () {
+    test(
+      'log writes message to domain log file when domain is enabled',
+      () async {
+        logger.enabledDomains.add(LogDomain.agentRuntime);
+
+        logger.log(LogDomain.agentRuntime, 'file sink message');
+
+        await loggingService.flush();
+        final logFile = findLogFile('agentRuntime-');
+        expect(
+          logFile,
+          isNotNull,
+          reason: 'Domain log file should have been created',
+        );
+        final content = logFile!.readAsStringSync();
+        expect(content, contains('[INFO]'));
+        expect(content, contains('file sink message'));
+      },
+    );
+
+    test('log writes subDomain and custom level to domain log file', () async {
       logger.enabledDomains.add(LogDomain.agentWorkflow);
 
       logger.log(
@@ -424,6 +443,7 @@ void main() {
         level: InsightLevel.warn,
       );
 
+      await loggingService.flush();
       final logFile = findLogFile('agentWorkflow-');
       expect(
         logFile,
@@ -436,7 +456,7 @@ void main() {
       expect(content, contains('sub-domain log'));
     });
 
-    test('error writes full description to domain log file', () {
+    test('error writes full description to domain log file', () async {
       final exception = Exception('disk full');
       logger.error(
         LogDomain.agentRuntime,
@@ -444,6 +464,7 @@ void main() {
         message: 'write failed',
       );
 
+      await loggingService.flush();
       final domainFile = findLogFile('agentRuntime-');
       expect(
         domainFile,
@@ -456,7 +477,7 @@ void main() {
       expect(content, contains('disk full'));
     });
 
-    test('error appends stackTrace lines to domain log file', () {
+    test('error appends stackTrace lines to domain log file', () async {
       final stackTrace = StackTrace.fromString(
         '#0  fake_frame (package:lotti/fake.dart:1:1)',
       );
@@ -466,6 +487,7 @@ void main() {
         stackTrace: stackTrace,
       );
 
+      await loggingService.flush();
       final logFile = findLogFile('agentRuntime-');
       expect(logFile, isNotNull);
       final content = logFile!.readAsStringSync();
@@ -473,7 +495,7 @@ void main() {
       expect(content, contains('fake_frame'));
     });
 
-    test('error keeps diagnostics out of the PII-safe log file', () {
+    test('error keeps diagnostics out of the PII-safe log file', () async {
       final exception = Exception('secret user content');
       logger.errorWithDiagnostics(
         LogDomain.agentRuntime,
@@ -482,6 +504,7 @@ void main() {
         diagnostics: 'widget: private journal title',
       );
 
+      await loggingService.flush();
       final safeFile = findLogFile('error-safe-');
       expect(
         safeFile,
@@ -504,25 +527,28 @@ void main() {
       );
     });
 
-    test('error for sync domain skips domain log file but writes safe log', () {
+    test('sync error is written once alongside its safe mirror', () async {
       logger.error(
         LogDomain.sync,
         'sync error',
       );
 
-      // sync domain routes to the shared sync file, not a domain log file
+      await loggingService.flush();
       final domainFile = findLogFile('sync-');
-      // There is no per-domain file written for sync (routesToSyncFile == true)
       // The PII-safe log should still be created.
       final safeFile = findLogFile('error-safe-');
       expect(safeFile, isNotNull, reason: 'PII-safe error log always written');
       final safeContent = safeFile!.readAsStringSync();
       expect(safeContent, contains('sync'));
-      // domain log file should not exist (no _appendToDomainFile call for sync)
-      expect(domainFile, isNull, reason: 'sync domain skips per-domain file');
+      expect(
+        domainFile!.readAsLinesSync().where(
+          (line) => line.contains('sync error'),
+        ),
+        hasLength(1),
+      );
     });
 
-    test('_writeLine swallows file-sink errors gracefully', () {
+    test('_writeLine swallows file-sink errors gracefully', () async {
       // Point getIt at a path that cannot be created (a file used as dir).
       File(p.join(tempDocs.path, 'logs')).createSync();
 

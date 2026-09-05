@@ -347,7 +347,12 @@ void main() {
         verify(
           () => mockDomainLogger.log(
             LogDomain.speech,
-            any<String>(that: contains('Deleted cancelled recording')),
+            any<String>(
+              that: allOf(
+                contains('Deleted cancelled recording'),
+                isNot(contains(tempDir.path)),
+              ),
+            ),
             subDomain: AudioRecorderConstants.deleteRecordingSubdomain,
           ),
         ).called(1);
@@ -480,14 +485,16 @@ void main() {
             path: any(named: 'path'),
           ),
         ).called(1);
-        // log is called twice: "Starting..." then "Audio recording started successfully"
-        verify(
+        final messages = verify(
           () => mockDomainLogger.log(
             LogDomain.speech,
-            any<String>(),
+            captureAny<String>(),
             subDomain: AudioRecorderConstants.startRecordingSubdomain,
           ),
-        ).called(2);
+        ).captured.cast<String>();
+        expect(messages, hasLength(2));
+        expect(messages.first, contains('sampleRate='));
+        expect(messages.join(), isNot(contains(tempDir.path)));
       },
     );
 

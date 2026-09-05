@@ -1,12 +1,9 @@
 import 'dart:collection';
-import 'dart:io';
 
 import 'package:clock/clock.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 
 export 'package:lotti/services/logging_domains.dart';
@@ -35,7 +32,6 @@ class DomainLogger {
   DomainLogger({required this._loggingService});
 
   final LoggingService _loggingService;
-  static final _dateFmt = DateFormat('yyyy-MM-dd');
 
   static const int _sampleStateCapacity = 256;
   final LinkedHashMap<String, _LogSampleState> _sampleStates =
@@ -256,6 +252,7 @@ class DomainLogger {
       fileStem: domain,
       line: '${_now()} [$level]$sd: $message',
       stackTrace: stackTrace,
+      forceFlush: level == 'ERROR',
     );
   }
 
@@ -274,39 +271,25 @@ class DomainLogger {
       fileStem: fileStem,
       line: '${_now()} [$level] $domain$sd: $message',
       stackTrace: stackTrace,
+      forceFlush: level == 'ERROR',
     );
   }
 
   String _now() => clock.now().toIso8601String();
 
-  /// Best-effort synchronous append. File-sink errors are swallowed so logging
-  /// never interferes with app flows. Skipped entirely in test environments.
+  /// Uses the shared buffered sink so shutdown drains every destination.
   void _writeLine({
     required String fileStem,
     required String line,
     StackTrace? stackTrace,
+    bool forceFlush = false,
   }) {
     if (isTestEnv) return;
-    try {
-      final dir = getDocumentsDirectory();
-      final logDir = Directory('${dir.path}/logs');
-      if (!logDir.existsSync()) {
-        logDir.createSync(recursive: true);
-      }
-      final date = _dateFmt.format(DateTime.now());
-      final file = File('${logDir.path}/$fileStem-$date.log');
-      final buffer = StringBuffer(line)..writeln();
-      if (stackTrace != null) {
-        buffer.writeln(stackTrace);
-      }
-      file.writeAsStringSync(
-        buffer.toString(),
-        mode: FileMode.append,
-        flush: true,
-      );
-    } catch (_) {
-      // Swallow file-sink errors.
-    }
+    _loggingService.captureFileLine(
+      fileStem,
+      stackTrace == null ? line : '$line\n$stackTrace',
+      forceFlush: forceFlush,
+    );
   }
 
   // ── PII scrubbing helpers ───────────────────────────────────────────────

@@ -433,7 +433,7 @@ void main() {
 
     // Covers lines 301-306: init() logs the initialized banner after wiring
     // the sync engine, config load, connect, and queue pipeline start.
-    test('init logs initialized banner with device and user ids', () async {
+    test('init logs readiness without account or device identity', () async {
       when(
         () => syncEngine.initialize(
           onLogin: any(named: 'onLogin'),
@@ -460,8 +460,10 @@ void main() {
           LogDomain.sync,
           any(
             that: allOf(
-              contains('DEVICE1'),
-              contains('@me:server'),
+              contains('MatrixService initialized'),
+              isNot(contains('DEVICE1')),
+              isNot(contains('@me:server')),
+              isNot(contains('Lotti')),
             ),
           ),
           subDomain: 'init',

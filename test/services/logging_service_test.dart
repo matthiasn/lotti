@@ -764,6 +764,253 @@ void main() {
     File? findGeneralLog() => _findLogFile(bufferedTempDocs);
     File? findSyncLog() => _findLogFile(bufferedTempDocs, prefix: 'sync-');
 
+    ({
+      MockIoFile file,
+      MockIoDirectory directory,
+      List<String> writes,
+      List<Completer<File>> gates,
+    })
+    blockedSink() {
+      final file = MockIoFile();
+      final directory = MockIoDirectory();
+      when(
+        () => directory.path,
+      ).thenReturn(p.join(bufferedTempDocs.path, 'logs'));
+      final writes = <String>[];
+      final gates = <Completer<File>>[];
+      when(
+        () => directory.create(recursive: true),
+      ).thenAnswer((_) async => directory);
+      when(
+        () => file.writeAsString(
+          any(),
+          mode: FileMode.append,
+          flush: any(named: 'flush'),
+        ),
+      ).thenAnswer((invocation) {
+        writes.add(invocation.positionalArguments.single as String);
+        return writes.length <= gates.length
+            ? gates[writes.length - 1].future
+            : Future.value(file);
+      });
+      return (file: file, directory: directory, writes: writes, gates: gates);
+    }
+
+    test(
+      'coalesces prolonged overflow behind a blocked sink and retains errors',
+      () {
+        final sink = blockedSink();
+        IOOverrides.runZoned(
+          () => fakeAsync((async) {
+            sink.gates.addAll(List.generate(3, (_) => Completer<File>()));
+            sink.gates[1].complete(sink.file);
+            sink.gates[2].complete(sink.file);
+            bufferedLogging.captureFileLine('blocked', 'initial');
+            async.elapse(const Duration(milliseconds: 500));
+            expect(sink.writes, ['initial\n']);
+            final oversized = 'x' * (2 * 1024 * 1024);
+            for (var i = 0; i < 100; i++) {
+              bufferedLogging.captureFileLine('blocked', oversized);
+              async.elapse(const Duration(milliseconds: 500));
+            }
+            bufferedLogging.captureFileLine(
+              'blocked',
+              'critical failure',
+              forceFlush: true,
+            );
+            var flushed = false;
+            unawaited(bufferedLogging.flush().then((_) => flushed = true));
+            async.flushMicrotasks();
+            expect(flushed, isFalse);
+            sink.gates.first.complete(sink.file);
+            async.flushMicrotasks();
+            expect(flushed, isTrue);
+            expect(
+              sink.writes,
+              hasLength(3),
+              reason:
+                  'one initial write, one aggregate loss summary, one retained error',
+            );
+            expect(sink.writes[1], contains('dropped=100'));
+            expect(sink.writes.last, 'critical failure\n');
+            expect(async.pendingTimers, isEmpty);
+          }),
+          createFile: (_) => sink.file,
+          createDirectory: (_) => sink.directory,
+        );
+      },
+    );
+
+    test('shutdown awaits overflow arriving during a loss-summary write', () {
+      final sink = blockedSink();
+      IOOverrides.runZoned(
+        () => fakeAsync((async) {
+          sink.gates.addAll(List.generate(3, (_) => Completer<File>()));
+          bufferedLogging.captureFileLine('blocked', 'initial');
+          async.elapse(const Duration(milliseconds: 500));
+          final oversized = 'x' * (2 * 1024 * 1024);
+          bufferedLogging.captureFileLine('blocked', oversized);
+          async.elapse(const Duration(milliseconds: 500));
+          sink.gates.first.complete(sink.file);
+          async.flushMicrotasks();
+          expect(sink.writes, hasLength(2));
+          expect(sink.writes[1], contains('dropped=1'));
+          for (var i = 0; i < 5; i++) {
+            bufferedLogging.captureFileLine('blocked', oversized);
+            async.elapse(const Duration(milliseconds: 500));
+          }
+          var flushed = false;
+          unawaited(bufferedLogging.flush().then((_) => flushed = true));
+          async.flushMicrotasks();
+          sink.gates[1].complete(sink.file);
+          async.flushMicrotasks();
+          expect(sink.writes, hasLength(3));
+          expect(sink.writes[2], contains('dropped=5'));
+          expect(
+            flushed,
+            isFalse,
+            reason: 'the follow-up loss write still owns disk IO',
+          );
+          sink.gates[2].complete(sink.file);
+          async.flushMicrotasks();
+          expect(flushed, isTrue);
+          expect(sink.writes, hasLength(3));
+          expect(async.pendingTimers, isEmpty);
+        }),
+        createFile: (_) => sink.file,
+        createDirectory: (_) => sink.directory,
+      );
+    });
+
+    test('old queued and buffered batches keep their originating profile', () {
+      final nextProfile = Directory(
+        p.join(bufferedTempDocs.path, 'next-profile'),
+      );
+      final sink = blockedSink();
+      final openedPaths = <String>[];
+      var directoryPath = '';
+      when(() => sink.directory.path).thenAnswer((_) => directoryPath);
+      IOOverrides.runZoned(
+        () => fakeAsync((async) {
+          sink.gates.addAll(List.generate(3, (_) => Completer<File>()));
+          sink.gates[1].complete(sink.file);
+          sink.gates[2].complete(sink.file);
+          unawaited(Future<void>.sync(() => getIt.unregister<Directory>()));
+          async.flushMicrotasks();
+          // Logging is constructed and can receive an early record before
+          // bootstrap has registered the profile directory.
+          final oldLogging = LoggingService();
+          oldLogging.captureFileLine('profile', 'initial old record');
+          getIt.registerSingleton<Directory>(bufferedTempDocs);
+          async.elapse(const Duration(milliseconds: 500));
+          oldLogging.captureFileLine(
+            'profile',
+            'queued old record',
+            forceFlush: true,
+          );
+          oldLogging.captureFileLine('profile', 'buffered old record');
+          getIt.pushNewScope(
+            init: (scope) => scope.registerSingleton<Directory>(nextProfile),
+          );
+          addTearDown(getIt.popScope);
+          var oldFlushed = false;
+          unawaited(oldLogging.flush().then((_) => oldFlushed = true));
+          async.flushMicrotasks();
+          expect(oldFlushed, isFalse);
+          sink.gates.first.complete(sink.file);
+          async.flushMicrotasks();
+          expect(oldFlushed, isTrue);
+          final nextLogging = LoggingService();
+          nextLogging.captureFileLine('profile', 'new profile record');
+          var newFlushed = false;
+          unawaited(nextLogging.flush().then((_) => newFlushed = true));
+          async.flushMicrotasks();
+          expect(newFlushed, isTrue);
+          expect(sink.writes, [
+            'initial old record\n',
+            'queued old record\n',
+            'buffered old record\n',
+            'new profile record\n',
+          ]);
+          expect(
+            openedPaths.take(3).map(p.dirname),
+            everyElement(p.join(bufferedTempDocs.path, 'logs')),
+          );
+          expect(p.dirname(openedPaths.last), p.join(nextProfile.path, 'logs'));
+          expect(async.pendingTimers, isEmpty);
+        }),
+        createFile: (path) {
+          openedPaths.add(path);
+          return sink.file;
+        },
+        createDirectory: (path) {
+          directoryPath = path;
+          return sink.directory;
+        },
+      );
+    });
+
+    test(
+      'bounds queued routine payloads and retains errors under pressure',
+      () async {
+        final payload = 'x' * 10000;
+        for (var i = 0; i < 200; i++) {
+          bufferedLogging.captureFileLine('bounded', 'record-$i $payload');
+        }
+        bufferedLogging.captureFileLine(
+          'bounded',
+          'important failure',
+          forceFlush: true,
+        );
+        await bufferedLogging.flush();
+        final lines = _findLogFile(
+          bufferedTempDocs,
+          prefix: 'bounded-',
+        )!.readAsLinesSync();
+        final records = lines
+            .where((line) => line.startsWith('record-'))
+            .toList();
+        expect(records.length, greaterThanOrEqualTo(40));
+        expect(records.length, lessThan(200));
+        expect(records.first, 'record-0 $payload');
+        expect(lines, contains('important failure'));
+        expect(lines, contains(contains('dropped=${200 - records.length}')));
+
+        // Pressure has drained; future routine records must be admitted again.
+        bufferedLogging.captureFileLine('bounded', 'after drain');
+        await bufferedLogging.flush();
+        expect(
+          _findLogFile(
+            bufferedTempDocs,
+            prefix: 'bounded-',
+          )!.readAsLinesSync().last,
+          'after drain',
+        );
+      },
+    );
+
+    test(
+      'oversized routine line reports loss but oversized error survives',
+      () async {
+        final payload = 'x' * (2 * 1024 * 1024);
+        bufferedLogging.captureFileLine('oversized', payload);
+        await bufferedLogging.flush();
+        final file = _findLogFile(bufferedTempDocs, prefix: 'oversized-')!;
+        expect(file.lengthSync(), lessThan(1000));
+        expect(file.readAsLinesSync(), hasLength(1));
+        expect(file.readAsStringSync(), contains('dropped=1'));
+        expect(file.readAsStringSync(), isNot(contains(payload)));
+
+        bufferedLogging.captureFileLine('oversized', payload, forceFlush: true);
+        await bufferedLogging.flush();
+        expect(
+          file.readAsLinesSync().last == payload,
+          isTrue,
+          reason: 'the complete oversized error must survive the routine limit',
+        );
+      },
+    );
+
     test(
       'single buffered line is flushed when the 500 ms flush timer fires',
       () async {
