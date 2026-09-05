@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 
 class _GeneratedColorChannels {
   const _GeneratedColorChannels({

@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart' show compute;
-import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart'
     show CheckedFromJsonException;
 import 'package:lotti/classes/entity_definitions.dart';
@@ -58,6 +57,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 
 export 'package:lotti/features/sync/matrix/descriptor_downloader.dart';

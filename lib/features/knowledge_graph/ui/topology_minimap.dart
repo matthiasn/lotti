@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
+import 'package:material_ui/material_ui.dart';
 
 class TopologyMiniMap extends StatelessWidget {
   const TopologyMiniMap({

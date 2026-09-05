@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_title.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Project reference shown in the breadcrumb. When the task has a category but
 /// no project, the connector passes `null` and the crumb renders the literal

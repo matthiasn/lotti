@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
@@ -55,7 +54,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -224,6 +225,7 @@ void main() {
         late BuildContext capturedContext;
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             // The sync-backfill builder reads design tokens eagerly to
             // compute its desktop inset, so the host theme must carry the
             // DsTokens extension.
@@ -511,6 +513,7 @@ void main() {
       addTearDown(source.dispose);
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: DetailIdDispatch(
             idParamKey: 'categoryId',
             listenable: source,
@@ -753,6 +756,7 @@ void main() {
       // DetailIdDispatch can be cast (the cast itself is the assertion).
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Builder(
             builder: (context) {
               capturedContext = context;
@@ -1284,6 +1288,7 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               home: DetailIdDispatch(
                 idParamKey: 'categoryId',
                 list: (_) => const Text('marker:list'),
@@ -1325,11 +1330,15 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: AiPanelDispatch(listenable: notifier),
             ),
@@ -1362,11 +1371,15 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: AiPanelDispatch(listenable: notifier),
             ),
@@ -1398,11 +1411,15 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: AiPanelDispatch(listenable: notifier),
             ),
@@ -1466,11 +1483,15 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const AiPanelDispatch(),
             ),

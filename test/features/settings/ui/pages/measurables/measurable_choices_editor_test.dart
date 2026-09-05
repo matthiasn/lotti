@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_choices_editor.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_data/test_data.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 /// Plays the editor's parent: holds the list, hands every emitted list back
@@ -196,12 +197,12 @@ void main() {
     ) async {
       const blank = MeasurableChoice(id: 'blank', title: '');
       await pump(tester, initial: const [blank]);
-      expect(find.byTooltip('Reorder Choice name'), findsOneWidget);
-      expect(find.byTooltip('Archive Choice name'), findsOneWidget);
+      expect(findMaterialTooltip('Reorder Choice name'), findsOneWidget);
+      expect(findMaterialTooltip('Archive Choice name'), findsOneWidget);
 
       await pump(tester, initial: const [hydrationClear]);
-      expect(find.byTooltip('Reorder Clear'), findsOneWidget);
-      expect(find.byTooltip('Archive Clear'), findsOneWidget);
+      expect(findMaterialTooltip('Reorder Clear'), findsOneWidget);
+      expect(findMaterialTooltip('Archive Clear'), findsOneWidget);
     });
   });
 

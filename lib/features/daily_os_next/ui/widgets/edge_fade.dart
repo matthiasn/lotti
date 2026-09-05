@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Dissolves one horizontal edge of [child] so content meeting that edge
 /// (a scroll viewport boundary, a squeezed zone) fades out instead of

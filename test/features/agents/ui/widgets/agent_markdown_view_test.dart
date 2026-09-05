@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as legacy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -206,13 +208,13 @@ void main() {
         final tokens = context.designTokens;
 
         final gptContext = tester.element(find.byType(GptMarkdown));
-        final checkbox = Theme.of(gptContext).checkboxTheme;
+        final checkbox = legacy.Theme.of(gptContext).checkboxTheme;
 
         expect(
           checkbox.materialTapTargetSize,
-          MaterialTapTargetSize.shrinkWrap,
+          legacy.MaterialTapTargetSize.shrinkWrap,
         );
-        expect(checkbox.visualDensity, VisualDensity.compact);
+        expect(checkbox.visualDensity, legacy.VisualDensity.compact);
 
         final side = checkbox.side!;
         expect(side.color, tokens.colors.text.lowEmphasis);
@@ -251,11 +253,13 @@ void main() {
         final hostTheme = ThemeData(useMaterial3: true).copyWith(
           extensions: <ThemeExtension<dynamic>>[
             dsTokensLight,
-            GptMarkdownThemeData(
-              brightness: Brightness.light,
-              linkColor: Colors.purple,
-              h1: const TextStyle(fontSize: 999),
-            ),
+            LegacyMaterialExtensions([
+              GptMarkdownThemeData(
+                brightness: Brightness.light,
+                linkColor: Colors.purple,
+                h1: const TextStyle(fontSize: 999),
+              ),
+            ]),
           ],
         );
 
@@ -269,13 +273,13 @@ void main() {
 
         // Exactly one GptMarkdownThemeData survives in the resolved theme.
         final gptContext = tester.element(find.byType(GptMarkdown));
-        final extensions = Theme.of(gptContext).extensions.values;
+        final extensions = legacy.Theme.of(gptContext).extensions.values;
         final markdownExtensions = extensions
             .whereType<GptMarkdownThemeData>()
             .toList();
         expect(markdownExtensions.length, 1);
         // DsTokens from the host theme is preserved across the injection.
-        expect(extensions.whereType<DsTokens>(), isNotEmpty);
+        expect(Theme.of(gptContext).extension<DsTokens>(), isNotNull);
       },
     );
 

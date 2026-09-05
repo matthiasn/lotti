@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Sticky glass footer for the AI Settings edit forms.
 ///

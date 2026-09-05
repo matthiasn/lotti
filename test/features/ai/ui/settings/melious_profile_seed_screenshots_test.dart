@@ -14,8 +14,6 @@
 ///   test/features/ai/ui/settings/melious_profile_seed_screenshots_test.dart`
 library;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +32,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart'
     hide aiConfigRepositoryProvider;
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -58,6 +58,7 @@ Widget _app({
       child: MediaQuery(
         data: MediaQueryData(size: device.size),
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
@@ -65,9 +66,7 @@ Widget _app({
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: manualScreenshotLocale,

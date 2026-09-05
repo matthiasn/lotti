@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../test_helper.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 
 void main() {
   group('DashboardItemCard', () {
@@ -461,15 +462,15 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Edit aggregation'), findsOneWidget);
-      expect(find.byTooltip('Remove chart'), findsOneWidget);
+      expect(findMaterialTooltip('Edit aggregation'), findsOneWidget);
+      expect(findMaterialTooltip('Remove chart'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Edit aggregation'));
+      await tester.tap(findMaterialTooltip('Edit aggregation'));
       await tester.pump();
       expect(edited, isTrue);
       expect(removed, isFalse);
 
-      await tester.tap(find.byTooltip('Remove chart'));
+      await tester.tap(findMaterialTooltip('Remove chart'));
       await tester.pump();
       expect(removed, isTrue);
     });

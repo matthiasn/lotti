@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('ConfigLoadingState', () {
     Widget createWidget() {
       return const MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         home: Scaffold(
           body: ConfigLoadingState(),
         ),

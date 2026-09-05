@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Viewport width at or above which the toast is considered "desktop":
 /// the SnackBar is constrained to roughly 75% of the viewport (clamped

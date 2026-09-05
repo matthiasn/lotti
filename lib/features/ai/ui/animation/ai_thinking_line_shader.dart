@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// GLSL fragment-shader animation of flowing "thinking" lines.
 ///

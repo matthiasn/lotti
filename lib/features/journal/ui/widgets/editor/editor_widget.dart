@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as legacy;
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +17,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Returns the appropriate user-facing message for a speech dictionary result.
 /// Returns null for edge cases that should be silent (no user notification needed).
@@ -185,7 +186,7 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                       ...FlutterQuillEmbeds.defaultEditorBuilders(),
                     ],
                     unknownEmbedBuilder: const UnknownEmbedBuilder(),
-                    textSelectionThemeData: TextSelectionThemeData(
+                    textSelectionThemeData: legacy.TextSelectionThemeData(
                       cursorColor: context.colorScheme.onSurface,
                       selectionColor: context.colorScheme.primary.withAlpha(
                         127,

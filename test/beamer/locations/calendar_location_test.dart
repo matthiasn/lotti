@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:beamer/beamer.dart';
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,9 +24,11 @@ import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+import '../../test_utils/material_ui_finders.dart';
 import '../../widget_test_utils.dart';
 
 class _MockBuildContext extends Mock implements BuildContext {}
@@ -322,9 +323,9 @@ void main() {
       final messages = tester.element(find.byType(Scaffold)).messages;
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byIcon(LottiIcons.back), findsOneWidget);
-      expect(find.byTooltip(messages.dailyOsNextDayBack), findsOneWidget);
+      expect(findMaterialTooltip(messages.dailyOsNextDayBack), findsOneWidget);
 
-      await tester.tap(find.byTooltip(messages.dailyOsNextDayBack));
+      await tester.tap(findMaterialTooltip(messages.dailyOsNextDayBack));
       await tester.pump();
     });
 
@@ -347,7 +348,7 @@ void main() {
       final messages = tester.element(find.byType(Scaffold)).messages;
       expect(find.textContaining('boom'), findsOneWidget);
       expect(find.byIcon(LottiIcons.back), findsOneWidget);
-      expect(find.byTooltip(messages.dailyOsNextDayBack), findsOneWidget);
+      expect(findMaterialTooltip(messages.dailyOsNextDayBack), findsOneWidget);
     });
 
     testWidgets('DailyOS route falls back to capture when no plan exists', (

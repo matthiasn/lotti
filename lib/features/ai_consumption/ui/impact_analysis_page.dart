@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-screen AI Impact dashboard, routed at `/calendar/impact` — the same
 /// push pattern as the Time Analysis page it sits beside in the sidebar.

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A vertical neon banner down a tall building's end wall: the category
 /// name (or the task's state) running top to bottom in mono capitals on a

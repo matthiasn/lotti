@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -11,10 +9,13 @@ import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -71,13 +72,12 @@ void main() {
           labelsRepositoryProvider.overrideWithValue(repository),
         ],
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(
@@ -150,7 +150,7 @@ void main() {
     expect(find.text('Applies to all categories'), findsNothing);
 
     // Remove the chip via its delete action
-    await tester.tap(find.byTooltip('Remove'));
+    await tester.tap(findMaterialTooltip('Remove'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 

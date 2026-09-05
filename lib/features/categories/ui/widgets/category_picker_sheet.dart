@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Whether the picker assigns a single category or edits a set of categories.
 enum CategoryPickerMode { single, multi }

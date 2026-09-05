@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -10,6 +9,8 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
     show AiConfigByTypeController;
 import 'package:lotti/features/ai/ui/ollama_model_install_dialog.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -108,8 +109,12 @@ void main() {
           ).overrideWith(() => _ImmediateAiConfigByTypeController(providers)),
         ],
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
           // Push the dialog onto a base Scaffold route so _installModel's
           // Navigator.of(context).pop() returns to the base (which hosts the

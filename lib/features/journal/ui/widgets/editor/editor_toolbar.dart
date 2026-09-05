@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as legacy;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +10,7 @@ import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The editor's formatting toolbar, shown while an entry is being edited.
 ///
@@ -171,7 +172,7 @@ QuillSimpleToolbarButtonOptions _buttonOptions(
             ),
             iconButtonSelectedData: IconButtonData(
               color: activeInk,
-              style: IconButton.styleFrom(
+              style: legacy.IconButton.styleFrom(
                 backgroundColor: tokens.colors.interactive.enabled,
                 foregroundColor: activeInk,
               ),

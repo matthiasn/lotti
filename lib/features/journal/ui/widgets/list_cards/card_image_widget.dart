@@ -1,11 +1,11 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Thumbnail for a [JournalImage] inside a list card.
 ///

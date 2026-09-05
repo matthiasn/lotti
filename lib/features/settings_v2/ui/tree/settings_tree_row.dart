@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Renders one tree row per spec §3 "Row anatomy": left active rail,
 /// icon tile, title + description column, optional live indicator, chevron.

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
 import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
 

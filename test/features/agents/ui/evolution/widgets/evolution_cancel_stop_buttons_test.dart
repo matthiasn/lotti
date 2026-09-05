@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_cancel_stop_buttons.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_circle_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -33,8 +34,8 @@ void main() {
     expect(find.byType(EvolutionCircleButton), findsNWidgets(2));
     expect(find.byIcon(LottiIcons.close), findsOneWidget);
     expect(find.byIcon(LottiIcons.stop), findsOneWidget);
-    expect(find.byTooltip('Cancel recording'), findsOneWidget);
-    expect(find.byTooltip('Stop recording'), findsOneWidget);
+    expect(findMaterialTooltip('Cancel recording'), findsOneWidget);
+    expect(findMaterialTooltip('Stop recording'), findsOneWidget);
   });
 
   testWidgets('tapping the close button invokes only onCancel', (

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/features/design_system/components/headers/tab_section_head
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Measured panel width at which the docked day view shows the planned and
 /// actual lanes side by side. Below it the timeline falls back to its paged

@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/onboarding/ui/widgets/recording_style_live_preview.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
 

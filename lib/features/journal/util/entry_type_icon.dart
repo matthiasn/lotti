@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Maps an entry-type key (as stored in `selectedEntryTypes`) to the glyph the
 /// matching list card leads with, so the filter and the feed share one icon

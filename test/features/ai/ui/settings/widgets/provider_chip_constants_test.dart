@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('ProviderChipConstants', () {

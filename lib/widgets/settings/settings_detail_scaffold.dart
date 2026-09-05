@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
+import 'package:material_ui/material_ui.dart';
 
 bool _saveShortcutEnabledByDefault() => true;
 

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Enters the demo world from a UI entry point.
 ///

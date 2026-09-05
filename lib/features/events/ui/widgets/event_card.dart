@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A large, photo-led card representing one event in the overview.
 ///

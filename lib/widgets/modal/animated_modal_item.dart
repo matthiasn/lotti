@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A wrapper widget that provides hover and tap animations for modal items
 class AnimatedModalItem extends StatefulWidget {

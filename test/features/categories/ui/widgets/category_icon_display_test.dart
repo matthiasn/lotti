@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('CategoryIconDisplay', () {
@@ -31,6 +32,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(category: categoryWithIcon),
           ),
@@ -48,6 +50,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(category: testCategory),
           ),
@@ -67,6 +70,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(category: emptyNameCategory),
           ),
@@ -82,6 +86,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(
               category: testCategory,
@@ -99,6 +104,7 @@ void main() {
     testWidgets('should show border by default', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(category: testCategory),
           ),
@@ -113,6 +119,7 @@ void main() {
     testWidgets('should hide border when showBorder is false', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(
               category: testCategory,
@@ -132,6 +139,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(category: testCategory),
           ),
@@ -161,6 +169,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(category: lowercaseCategory),
           ),
@@ -181,6 +190,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(
               category: categoryWithIcon,
@@ -201,6 +211,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: CategoryIconDisplay(
               category: testCategory,

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/events/ui/widgets/event_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_feature_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The Events overview: a memory-forward, photo-led wall of event cards,
 /// grouped into time sections and filterable by category.

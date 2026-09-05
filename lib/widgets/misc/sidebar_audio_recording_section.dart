@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/sidebar_live_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 final FutureProviderFamily<JournalEntity?, String>
 sidebarAudioRecordingLinkedEntryProvider = FutureProvider.autoDispose

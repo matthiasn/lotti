@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_root.dart';
@@ -36,8 +35,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -92,6 +93,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: TooltipVisibility(
             visible: true,
             child: Tooltip(
@@ -115,6 +117,7 @@ void main() {
     testWidgets('TooltipVisibility works with visible false', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: TooltipVisibility(
             visible: false,
             child: Tooltip(
@@ -149,6 +152,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: state.lightTheme,
           darkTheme: state.darkTheme,
           themeMode: state.themeMode,
@@ -220,6 +224,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Listener(
             behavior: HitTestBehavior.translucent,
             onPointerDown: (event) => pointerDownCount++,

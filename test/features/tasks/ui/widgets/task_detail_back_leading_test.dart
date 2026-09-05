@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,10 +13,12 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Serves a fixed task so the cover-art question has an answer without a
@@ -132,7 +133,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byTooltip('Show list'), findsOneWidget);
+      expect(findMaterialTooltip('Show list'), findsOneWidget);
       final semanticsFinder = find.bySemanticsLabel('Show list');
       expect(semanticsFinder, findsOneWidget);
       final semantics = tester.getSemantics(semanticsFinder);

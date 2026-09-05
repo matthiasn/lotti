@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
 // Legacy colors (keeping for backward compatibility)

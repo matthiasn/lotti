@@ -3,8 +3,6 @@
 library;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -33,8 +31,10 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/logic/signals/signal_window.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:material_ui/material_ui.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -402,6 +402,7 @@ Future<void> _pumpHabitsDashboard(
         ),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
         theme: theme,
         localizationsDelegates: _localizationsDelegates,
@@ -444,6 +445,7 @@ Future<void> _pumpHabitCompletion(
         ).overrideWith(_FixedSuggestions.new),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
         theme: theme,
         localizationsDelegates: _localizationsDelegates,
@@ -474,9 +476,7 @@ ThemeData _theme(Brightness brightness) => brightness == Brightness.dark
 const List<LocalizationsDelegate<dynamic>> _localizationsDelegates = [
   AppLocalizations.delegate,
   FormBuilderLocalizations.delegate,
-  GlobalMaterialLocalizations.delegate,
-  GlobalWidgetsLocalizations.delegate,
-  GlobalCupertinoLocalizations.delegate,
+  ...GlobalMaterialLocalizations.delegates,
 ];
 
 HabitsState _habitsState() {
@@ -581,6 +581,7 @@ Future<void> _pumpHabitEditor(
         ),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
         theme: theme,
         localizationsDelegates: _localizationsDelegates,

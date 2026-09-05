@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as legacy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/surveys/definitions/cfq11_survey.dart';
@@ -9,6 +9,7 @@ import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:research_package/model.dart';
 
@@ -287,6 +288,15 @@ void main() {
 
     final surveyWidget = tester.widget<SurveyWidget>(find.byType(SurveyWidget));
     expect(surveyWidget.task, same(task));
+    final surveyContext = tester.element(find.byType(SurveyWidget));
+    expect(
+      legacy.Theme.of(surveyContext).scaffoldBackgroundColor,
+      Colors.transparent,
+    );
+    expect(
+      legacy.Theme.of(surveyContext).textTheme.bodyLarge?.fontSize,
+      Theme.of(surveyContext).textTheme.bodyLarge?.fontSize,
+    );
     // The callback only runs when the survey is submitted, not on open.
     expect(callbackInvoked, isFalse);
 

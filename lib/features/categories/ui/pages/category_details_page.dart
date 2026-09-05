@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -32,6 +31,7 @@ import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 part 'category_details_form_sections.dart';
 

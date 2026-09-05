@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// History-first review home for standalone soul evolution sessions.
 class SoulEvolutionReviewPage extends ConsumerWidget {

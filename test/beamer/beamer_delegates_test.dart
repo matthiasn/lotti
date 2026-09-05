@@ -1,5 +1,4 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('BeamerDelegates', () {

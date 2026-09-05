@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum SupportedLanguage {
   ar('ar', 'Arabic'),

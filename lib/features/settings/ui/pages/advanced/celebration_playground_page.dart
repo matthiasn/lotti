@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/settings/ui/widgets/celebration_preview_hero.dart
 import 'package:lotti/features/settings/ui/widgets/celebration_variant_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The localized label for a [CelebrationSliderSpec.id]. Several ids are shared
 /// across variants (e.g. `gravity`, `wobble`) and intentionally map to the same

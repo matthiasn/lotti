@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/nudge_models.dart';
@@ -10,10 +9,12 @@ import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 /// The shared banner-action contract (`showNudgeBannerSnoozeSheet`,
@@ -276,7 +277,7 @@ void main() {
       final (ctx, ref) = await host(tester);
       unawaited(showNudgeBannerRatingSheet(ctx, ref, entryFor()));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('4'));
+      await tester.tap(findMaterialTooltip('4'));
       await tester.pumpAndSettle();
       verify(
         () => interactions.recordRating('ad-1', rating: 4, forActivation: 1),

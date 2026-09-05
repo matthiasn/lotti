@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/surveys/definitions/cfq11_survey.dart';
 import 'package:lotti/features/surveys/definitions/ghq12_survey.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/tools/calculate.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:research_package/research_package.dart';
 
 /// Presents [task] in a themed single-page modal and forwards the submitted
@@ -37,7 +38,7 @@ Future<void> runSurvey({
             headlineSmall: themeData.textTheme.bodyLarge,
           ),
         ),
-        child: SurveyWidget(task, resultCallback),
+        child: LegacyMaterialBridge(child: SurveyWidget(task, resultCallback)),
       );
     },
   );

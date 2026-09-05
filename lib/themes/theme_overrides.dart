@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme_constants.dart';
 import 'package:lotti/themes/theme_text_styles.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 ThemeData withOverrides(ThemeData themeData) {
@@ -173,63 +174,66 @@ ThemeData withOverrides(ThemeData themeData) {
       builders: <TargetPlatform, PageTransitionsBuilder>{},
     ),
     extensions: <ThemeExtension>[
-      const WoltModalSheetThemeData(
-        // No Material-3 elevation tint: the modal surface must stay on the
-        // page's own background token family. With a tint, the light theme's
-        // sheets picked up a faint primary wash and read as a second design
-        // system laid over the first.
-        surfaceTintColor: Colors.transparent,
-        animationStyle: WoltModalSheetAnimationStyle(
-          paginationAnimationStyle: WoltModalSheetPaginationAnimationStyle(
-            paginationDuration: MotionDurations.medium4,
-            modalSheetHeightTransitionCurve: MotionCurves.emphasizedDecelerate,
-            mainContentIncomingSlidePositionCurve: MotionCurves.standard,
-            mainContentOutgoingSlidePositionCurve: MotionCurves.standard,
-            // Clear the outgoing page before the replacement becomes legible,
-            // then give the incoming content most of the height transition to
-            // fade in. This avoids both a blank-page flash and overlapping
-            // lines of old/new copy during multipage modal navigation.
-            mainContentIncomingOpacityCurve: Interval(
-              0.30,
-              1,
+      LegacyMaterialExtensions([
+        const WoltModalSheetThemeData(
+          // No Material-3 elevation tint: the modal surface must stay on the
+          // page's own background token family. With a tint, the light theme's
+          // sheets picked up a faint primary wash and read as a second design
+          // system laid over the first.
+          surfaceTintColor: Colors.transparent,
+          animationStyle: WoltModalSheetAnimationStyle(
+            paginationAnimationStyle: WoltModalSheetPaginationAnimationStyle(
+              paginationDuration: MotionDurations.medium4,
+              modalSheetHeightTransitionCurve:
+                  MotionCurves.emphasizedDecelerate,
+              mainContentIncomingSlidePositionCurve: MotionCurves.standard,
+              mainContentOutgoingSlidePositionCurve: MotionCurves.standard,
+              // Clear the outgoing page before the replacement becomes legible,
+              // then give the incoming content most of the height transition to
+              // fade in. This avoids both a blank-page flash and overlapping
+              // lines of old/new copy during multipage modal navigation.
+              mainContentIncomingOpacityCurve: Interval(
+                0.30,
+                1,
+              ),
+              mainContentOutgoingOpacityCurve: Interval(
+                0,
+                0.35,
+              ),
+              incomingMainContentSlideBeginOffset: Offset.zero,
+              outgoingMainContentSlideEndOffset: Offset.zero,
             ),
-            mainContentOutgoingOpacityCurve: Interval(
-              0,
-              0.35,
-            ),
-            incomingMainContentSlideBeginOffset: Offset.zero,
-            outgoingMainContentSlideEndOffset: Offset.zero,
           ),
         ),
-      ),
-      GptMarkdownThemeData(
-        brightness: themeData.brightness,
-        linkColor: themeData.colorScheme.primary,
-        h1: themeData.textTheme.titleLarge?.copyWith(
-          fontSize: fontSizeMediumLarge,
-          fontWeight: FontWeight.w600,
+        GptMarkdownThemeData(
+          brightness: themeData.brightness,
+          linkColor: themeData.colorScheme.primary,
+          h1: themeData.textTheme.titleLarge?.copyWith(
+            fontSize: fontSizeMediumLarge,
+            fontWeight: FontWeight.w600,
+          ),
+          h2: themeData.textTheme.titleMedium?.copyWith(
+            fontSize: fontSizeMedium + 2,
+            fontWeight: FontWeight.w500,
+          ),
+          h3: themeData.textTheme.titleSmall?.copyWith(
+            fontSize: fontSizeMedium,
+            fontWeight: FontWeight.w500,
+          ),
+          h4: themeData.textTheme.bodyLarge?.copyWith(
+            fontSize: fontSizeMedium,
+            fontWeight: FontWeight.w500,
+          ),
+          h5: themeData.textTheme.bodyMedium?.copyWith(
+            fontSize: fontSizeMedium,
+            fontWeight: FontWeight.w400,
+          ),
+          h6: themeData.textTheme.bodySmall?.copyWith(
+            fontSize: fontSizeSmall,
+            fontWeight: FontWeight.w400,
+          ),
         ),
-        h2: themeData.textTheme.titleMedium?.copyWith(
-          fontSize: fontSizeMedium + 2,
-          fontWeight: FontWeight.w500,
-        ),
-        h3: themeData.textTheme.titleSmall?.copyWith(
-          fontSize: fontSizeMedium,
-          fontWeight: FontWeight.w500,
-        ),
-        h4: themeData.textTheme.bodyLarge?.copyWith(
-          fontSize: fontSizeMedium,
-          fontWeight: FontWeight.w500,
-        ),
-        h5: themeData.textTheme.bodyMedium?.copyWith(
-          fontSize: fontSizeMedium,
-          fontWeight: FontWeight.w400,
-        ),
-        h6: themeData.textTheme.bodySmall?.copyWith(
-          fontSize: fontSizeSmall,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
+      ]),
       if (isDark) dsTokensDark else dsTokensLight,
     ],
   );

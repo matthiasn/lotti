@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/index.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The entry `•••` menu — one of the app's two action modals, on the shared
 /// [DsActionModal] shell.

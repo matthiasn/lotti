@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,9 +18,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../pages/day_page_test_helpers.dart';
@@ -237,7 +238,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byTooltip('Your highest-focus window.'), findsOneWidget);
+      expect(findMaterialTooltip('Your highest-focus window.'), findsOneWidget);
     });
 
     testWidgets('opens task-backed timeline blocks through app navigation', (
@@ -524,7 +525,7 @@ void main() {
 
       // Placement reasons stay compact in the duration-sized timeline boxes.
       expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
-      expect(find.byTooltip('Your highest-focus window.'), findsOneWidget);
+      expect(findMaterialTooltip('Your highest-focus window.'), findsOneWidget);
     });
 
     testWidgets('now-line renders inside the visible window', (tester) async {
@@ -585,7 +586,7 @@ void main() {
       expect(find.text(messages.dailyOsNextTimelineActual), findsOneWidget);
       expect(find.byType(PageView), findsNothing);
       expect(
-        find.byTooltip(messages.dailyOsNextTimelineShowPaged),
+        findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
         findsOneWidget,
       );
     });
@@ -609,7 +610,7 @@ void main() {
       final messages = tester.element(find.byType(DayTimeline)).messages;
       expect(find.byType(PageView), findsOneWidget);
       expect(
-        find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+        findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
         findsOneWidget,
       );
     });
@@ -1094,7 +1095,7 @@ void main() {
           find.byKey(const Key('trailing_probe')),
         );
         final toggle = tester.getRect(
-          find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+          findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
         );
         // Same row (vertical overlap): leading, then the toggle, then
         // trailing.
@@ -1347,26 +1348,26 @@ void main() {
 
       // Compact screen starts in paged mode → button tooltip says "show both".
       expect(
-        find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+        findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
         findsOneWidget,
       );
       expect(find.byType(PageView), findsOneWidget);
 
       // Tap toggles to "both" side-by-side mode.
       await tester.tap(
-        find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+        findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
       );
       await tester.pump();
 
       expect(find.byType(PageView), findsNothing);
       expect(
-        find.byTooltip(messages.dailyOsNextTimelineShowPaged),
+        findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
         findsOneWidget,
       );
 
       // Tap again goes back to paged.
       await tester.tap(
-        find.byTooltip(messages.dailyOsNextTimelineShowPaged),
+        findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
       );
       await tester.pump();
 
@@ -2638,7 +2639,7 @@ void main() {
         expect(find.byType(PageView), findsOneWidget);
         final messages = tester.element(find.byType(DayTimeline)).messages;
         expect(
-          find.byTooltip(messages.dailyOsNextTimelineShowBoth),
+          findMaterialTooltip(messages.dailyOsNextTimelineShowBoth),
           findsOneWidget,
         );
       },

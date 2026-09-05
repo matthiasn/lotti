@@ -1,11 +1,11 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens the adaptive project-status picker.
 ///

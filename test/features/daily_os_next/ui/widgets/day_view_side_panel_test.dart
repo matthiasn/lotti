@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -14,7 +13,9 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_date_strip.dart
 import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../lockdown/lockdown_test_utils.dart';
 
@@ -190,7 +191,7 @@ void main() {
         final label = tester.getCenter(find.text(messages.dailyOsTodayButton));
         final next = tester.getCenter(find.byIcon(LottiIcons.chevronRight));
         final toggle = tester.getCenter(
-          find.byTooltip(messages.dailyOsNextTimelineShowPaged),
+          findMaterialTooltip(messages.dailyOsNextTimelineShowPaged),
         );
         final hide = tester.getCenter(
           find.byKey(const Key('day_view_panel_hide_button')),
@@ -525,7 +526,7 @@ void main() {
       // side, so the toggle offers the paged view.
       final timeline = tester.element(find.byType(DayViewSidePanel));
       final toggleTooltip = timeline.messages.dailyOsNextTimelineShowPaged;
-      await tester.tap(find.byTooltip(toggleTooltip));
+      await tester.tap(findMaterialTooltip(toggleTooltip));
       await tester.pump();
       expect(prefs.markCalls, 1);
     });

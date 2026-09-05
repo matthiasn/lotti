@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// `flutter_form_builder` text field rendered with the design-system input
 /// components, so FormBuilder-driven definition forms (habits, measurables,

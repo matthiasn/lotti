@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 enum _Mode { first, second, third }
@@ -283,8 +284,8 @@ void main() {
         expect(find.text('Day'), findsNothing);
 
         // The label rides a tooltip instead of visible text.
-        expect(find.byTooltip('Day'), findsOneWidget);
-        expect(find.byTooltip('Night'), findsOneWidget);
+        expect(findMaterialTooltip('Day'), findsOneWidget);
+        expect(findMaterialTooltip('Night'), findsOneWidget);
 
         // Tapping the inactive segment reports its value.
         await tester.tap(find.byIcon(LottiIcons.night));

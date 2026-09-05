@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 /// A phone lane's width once the hour rail and the gutters are taken: the
@@ -74,7 +75,7 @@ void main() {
           expect(label, findsOneWidget);
           // What the ellipsis takes at this size is still one long-press
           // away.
-          expect(find.byTooltip('08:00-18:00'), findsOneWidget);
+          expect(findMaterialTooltip('08:00-18:00'), findsOneWidget);
           final region = find.byKey(const Key('daily_os_timeline_fold_8_18'));
           final regionRect = tester.getRect(region);
           final labelRect = tester.getRect(label);

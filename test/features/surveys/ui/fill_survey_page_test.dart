@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/surveys/definitions/panas_survey.dart';
 import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:research_package/research_package.dart';
 
 import '../../../widget_test_utils.dart';

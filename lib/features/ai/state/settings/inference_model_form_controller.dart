@@ -1,11 +1,11 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:material_ui/material_ui.dart';
 
 final AsyncNotifierProviderFamily<
   InferenceModelFormController,

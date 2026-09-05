@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The independent direction hue. A goal can be behind while improving or
 /// healthy while slipping, so direction never borrows the status hue.

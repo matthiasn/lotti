@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -6,9 +5,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -309,10 +310,10 @@ void main() {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
       await tester.pump();
 
-      expect(find.byTooltip('Expand'), findsOneWidget);
-      await tester.tap(find.byTooltip('Expand'));
+      expect(findMaterialTooltip('Expand'), findsOneWidget);
+      await tester.tap(findMaterialTooltip('Expand'));
       await tester.pump();
-      expect(find.byTooltip('Collapse'), findsOneWidget);
+      expect(findMaterialTooltip('Collapse'), findsOneWidget);
     });
 
     testWidgets('icon buttons have zero padding and minimal constraints', (

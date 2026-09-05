@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Unified AI popup menu that shows available skills for the current entity
 class UnifiedAiPopUpMenu extends ConsumerWidget {

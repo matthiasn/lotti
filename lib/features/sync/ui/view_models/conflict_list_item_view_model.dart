@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Visual tone for the status badge. Mapped to a `DesignSystemBadgeTone`
 /// at the widget layer; kept token-free here so the view model stays a

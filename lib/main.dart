@@ -5,13 +5,13 @@ import 'dart:ui' show AppExitResponse;
 
 import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppConstants {
   const AppConstants._();

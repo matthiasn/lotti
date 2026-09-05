@@ -1,9 +1,10 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:lotti/widgets/modal/animated_modal_item_controller.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('AnimatedModalItem', () {
@@ -16,6 +17,7 @@ void main() {
     testWidgets('renders child widget correctly', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               onTap: () {},
@@ -33,6 +35,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               onTap: () => tapCount++,
@@ -51,6 +54,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               onTap: () => tapCount++,
@@ -68,6 +72,7 @@ void main() {
     testWidgets('shows reduced opacity when disabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               onTap: () {},
@@ -91,6 +96,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               controller: controller,
@@ -142,6 +148,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               controller: controller,
@@ -190,6 +197,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               controller: controller,
@@ -228,6 +236,7 @@ void main() {
     testWidgets('applies correct container styling', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: AnimatedModalItem(
@@ -263,6 +272,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: AnimatedModalItem(
@@ -311,6 +321,7 @@ void main() {
     testWidgets('respects custom animation parameters', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               onTap: () {},
@@ -335,6 +346,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               controller: controller,
@@ -387,6 +399,7 @@ void main() {
     testWidgets('cleans up resources on dispose', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: AnimatedModalItem(
               onTap: () {},
@@ -401,6 +414,7 @@ void main() {
       // Replace with empty container to trigger dispose
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: SizedBox(),
           ),

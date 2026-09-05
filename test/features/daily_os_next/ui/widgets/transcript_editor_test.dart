@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
 

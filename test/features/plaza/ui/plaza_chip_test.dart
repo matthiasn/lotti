@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   Widget host(Widget child) => MaterialApp(
+    builder: LegacyMaterialBridge.builder,
     home: Scaffold(body: Center(child: child)),
   );
 

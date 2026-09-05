@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper for the Speech settings. Keeps the
 /// `SliverBoxAdapterPage` chrome and delegates content to

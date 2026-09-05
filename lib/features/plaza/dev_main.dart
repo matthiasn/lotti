@@ -24,7 +24,6 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui' show FrameTiming;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart' hide FlyCameraController;
@@ -55,6 +54,8 @@ import 'package:lotti/features/plaza/ui/plaza_repaint.dart';
 import 'package:lotti/features/plaza/ui/plaza_search_sheet.dart';
 import 'package:lotti/features/plaza/ui/plaza_tour.dart';
 import 'package:lotti/features/plaza/ui/task_side_panel.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() => runApp(const PlazaDevApp());
 
@@ -64,6 +65,7 @@ class PlazaDevApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       debugShowCheckedModeBanner: false,
       theme: DesignSystemTheme.dark(),
       home: const _PlazaHarness(),

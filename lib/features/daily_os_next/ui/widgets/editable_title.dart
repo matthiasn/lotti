@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Click-to-edit title for standalone (no-task) agenda items and day
 /// blocks (`prototype/shared.jsx → EditableTitle`, handoff v2 item 3).

@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/gradient_themes.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   // GradientThemes is a thin delegation layer over ModernGradientThemes
@@ -17,6 +18,7 @@ void main() {
     late BuildContext capturedContext;
     await tester.pumpWidget(
       MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: ThemeData(brightness: brightness),
         home: Builder(
           builder: (context) {

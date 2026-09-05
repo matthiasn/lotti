@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The heading that names a block of metric tiles — "Top KPIs", each grouped
 /// section, "Sent messages", and the diagnostics disclosure.

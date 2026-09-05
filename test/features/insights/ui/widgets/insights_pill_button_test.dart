@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -105,7 +106,7 @@ void main() {
     testWidgets('renders the tooltip message when provided', (tester) async {
       await pump(tester, active: false, tooltip: 'This month so far');
       expect(
-        find.byTooltip('This month so far'),
+        findMaterialTooltip('This month so far'),
         findsOneWidget,
       );
     });

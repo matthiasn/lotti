@@ -15,7 +15,7 @@ msix_config:
   logo_path: .\assets\icon\app_icon_1024.png
 
 environment:
-  sdk: '>=3.12.0 <4.0.0'
+  sdk: '>=3.13.0 <4.0.0'
   flutter: '>=3.47.0'
 
 dependencies:
@@ -23,12 +23,7 @@ dependencies:
   async: ^2.13.0
   audio_decoder: ^0.8.1
   beamer: ^1.5.2
-  # cached_network_image 4.x, flex_color_picker 4.x and flutter_form_builder
-  # 11.x moved from package:flutter/material.dart to package:material_ui.
-  # Its widgets are distinct types that do not see this app's
-  # flutter/material Theme, so they stay on the last flutter/material-based
-  # major until the app itself migrates to material_ui.
-  cached_network_image: ^3.2.0
+  cached_network_image: ^4.0.0
   camera: ^0.12.1
   camera_desktop: ^1.2.1
   clock: ^1.1.1
@@ -36,6 +31,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   country_flags: ^4.1.1
   crypto: ^3.0.1
+  cupertino_ui: ^1.0.2
   dart_geohash: ^2.0.1
   dbus: ^0.7.11
   delta_markdown:
@@ -50,7 +46,7 @@ dependencies:
   exif: ^3.3.0
   file_selector: ^1.0.3
   fl_chart: ^1.0.0
-  flex_color_picker: ^3.4.1
+  flex_color_picker: ^4.0.0
   flutter:
     sdk: flutter
   flutter_animate: ^4.1.1+1
@@ -59,7 +55,7 @@ dependencies:
   # only — the picker is never opened on desktop, where contact channels are
   # entered manually.
   flutter_contacts: ^2.3.1
-  flutter_form_builder: ^10.0.1
+  flutter_form_builder: ^11.0.0
   flutter_image_compress: ^2.0.3
   flutter_lame: 1.0.3
   flutter_linkify: ^6.0.0
@@ -96,6 +92,7 @@ dependencies:
   latlong2: ^0.10.1
   location: ^10.0.2
   lucide_icons_flutter: ^3.1.15
+  material_ui: ^1.1.1
   matrix: ^12.0.1
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7

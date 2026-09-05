@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
 

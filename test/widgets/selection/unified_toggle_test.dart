@@ -1,9 +1,10 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('UnifiedToggle', () {
@@ -29,6 +30,7 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: ThemeData.light(),
             home: Scaffold(
               body: UnifiedToggle(
@@ -52,6 +54,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedToggle(
@@ -77,6 +80,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: StatefulBuilder(
@@ -117,6 +121,7 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: UnifiedToggle(
               value: value,
@@ -139,6 +144,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedToggle(
@@ -166,6 +172,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedAiToggleField(
@@ -205,6 +212,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedAiToggleField(
@@ -225,6 +233,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedAiToggleField(
@@ -248,6 +257,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedAiToggleField(
@@ -270,6 +280,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: StatefulBuilder(
@@ -302,6 +313,7 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -324,6 +336,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: UnifiedAiToggleField(

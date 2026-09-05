@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Playback-speed control over [kTtsSpeedSequence] (0.5×–2×).
 ///

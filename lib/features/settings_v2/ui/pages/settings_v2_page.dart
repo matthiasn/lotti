@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_width_controller.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/settings_v2/ui/tree/settings_tree_view.dart';
 import 'package:lotti/features/settings_v2/ui/url_sync/settings_tree_url_sync.dart';
 import 'package:lotti/features/settings_v2/ui/widgets/settings_tree_resize_handle.dart';
 import 'package:lotti/features/settings_v2/ui/widgets/settings_v2_top_crumbs.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fixed height of the Settings V2 page header (spec §2). Kept as a
 /// top-level const so existing callers (and tests) can reference it

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper. Keeps the existing `SliverBoxAdapterPage`
 /// chrome and delegates content to [ThemingBody] so the same widget

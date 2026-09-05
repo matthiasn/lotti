@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/insights/model/insights_models.dart'
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/device_region.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

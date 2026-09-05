@@ -6,7 +6,6 @@ library;
 
 import 'dart:isolate';
 
-import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -22,6 +21,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:material_ui/material_ui.dart' show Color;
 
 /// Synthetic category id used when an entry has no category.
 const String kUncategorized = 'uncategorized';

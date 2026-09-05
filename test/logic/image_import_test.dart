@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -16,6 +15,8 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -1548,6 +1549,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -1591,6 +1593,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 savedContext = context;
@@ -1650,6 +1653,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -1710,6 +1714,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -1770,6 +1775,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -1830,6 +1836,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -1894,6 +1901,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -1945,6 +1953,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -1994,6 +2003,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -2040,6 +2050,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -2099,6 +2110,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -2143,6 +2155,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(
@@ -2193,6 +2206,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) {
                 return ElevatedButton(

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Represents the urgency status of a due date.
 enum DueDateUrgency {

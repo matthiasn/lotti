@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('dragging one member scrolls every member — clamped to a '
@@ -11,6 +12,7 @@ void main() {
     final short = group.attach();
     await tester.pumpWidget(
       MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         home: Center(
           // A 300px viewport, so BOTH members overflow — the short one by
           // 200px, the long one by 700px.

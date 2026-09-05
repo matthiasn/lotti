@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_voice_controls.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 import 'evolution_recorder_test_utils.dart';
 
@@ -80,11 +81,11 @@ void main() {
 
     final context = tester.element(find.byType(EvolutionVoiceControls));
     expect(
-      find.byTooltip(context.messages.chatInputCancelRecording),
+      findMaterialTooltip(context.messages.chatInputCancelRecording),
       findsOneWidget,
     );
     expect(
-      find.byTooltip(context.messages.chatInputStopTranscribe),
+      findMaterialTooltip(context.messages.chatInputStopTranscribe),
       findsOneWidget,
     );
   });

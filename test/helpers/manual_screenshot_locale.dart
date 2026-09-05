@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_czech_text.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_danish_text.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/demo/seed/l10n/demo_seed_portuguese_text.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_romanian_text.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_spanish_text.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_swedish_text.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Locale requested for the current manual capture process.
 ///

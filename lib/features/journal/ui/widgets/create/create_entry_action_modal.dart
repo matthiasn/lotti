@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The "Add" sheet — the second of the app's two action modals, on the shared
 /// [DsActionModal] shell.

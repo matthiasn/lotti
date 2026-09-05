@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The six characters both devices derive independently, plus the line that
 /// tells the reader what to do with them.

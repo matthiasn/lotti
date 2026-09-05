@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
 /// + `SyncFeatureGate` and delegates content to

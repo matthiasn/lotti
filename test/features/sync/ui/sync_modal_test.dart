@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -14,6 +13,8 @@ import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -239,8 +240,12 @@ void main() {
         syncControllerProvider.overrideWith(SpySyncController.new),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: resolveTestTheme(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Material(
           child: child,
@@ -501,8 +506,12 @@ void main() {
             syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) {
@@ -591,8 +600,12 @@ void main() {
             syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) => Scaffold(

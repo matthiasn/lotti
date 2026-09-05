@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Presentation models for the task list/detail "showcase" UI. They flatten the
 // domain entities (Task, categories, linked entries) into pre-formatted,

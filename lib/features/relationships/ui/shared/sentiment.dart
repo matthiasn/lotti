@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The single sentiment → color mapping for the relationships surface
 /// (design plan §0.6). One helper, used by the list rows, the detail beats

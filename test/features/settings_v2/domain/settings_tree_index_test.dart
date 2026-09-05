@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart'
     show
@@ -14,6 +13,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
+import 'package:material_ui/material_ui.dart';
 
 SettingsTreeLabel _labels(String id) => (title: 'title:$id', desc: 'desc:$id');
 

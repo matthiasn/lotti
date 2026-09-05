@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as legacy;
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Renders agent-authored markdown using the same typography and surface
 /// styling as the entry text editor: body text in `body.bodySmall`, headings
@@ -38,6 +40,7 @@ class AgentMarkdownView extends StatelessWidget {
     final textColor = theme.textTheme.bodyLarge?.color;
     final bodyStyle = style ?? styles.body.bodySmall.copyWith(color: textColor);
 
+    final legacyTheme = legacyMaterialTheme(theme);
     final markdownTheme = GptMarkdownThemeData(
       brightness: theme.brightness,
       linkColor: theme.colorScheme.primary,
@@ -49,11 +52,11 @@ class AgentMarkdownView extends StatelessWidget {
       h6: styles.others.caption.copyWith(color: textColor),
     );
 
-    return Theme(
-      data: theme.copyWith(
-        checkboxTheme: theme.checkboxTheme.copyWith(
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
+    return legacy.Theme(
+      data: legacyTheme.copyWith(
+        checkboxTheme: legacyTheme.checkboxTheme.copyWith(
+          materialTapTargetSize: legacy.MaterialTapTargetSize.shrinkWrap,
+          visualDensity: legacy.VisualDensity.compact,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(tokens.radii.xs),
           ),
@@ -71,19 +74,24 @@ class AgentMarkdownView extends StatelessWidget {
           mouseCursor: const WidgetStatePropertyAll(SystemMouseCursors.basic),
         ),
         extensions: [
-          ...theme.extensions.values.where((e) => e is! GptMarkdownThemeData),
+          ...legacyTheme.extensions.values.where(
+            (e) => e is! GptMarkdownThemeData,
+          ),
           markdownTheme,
         ],
       ),
-      child: DefaultTextStyle.merge(
-        style: bodyStyle,
-        child: GptMarkdown(
-          text,
+      child: legacy.Material(
+        type: legacy.MaterialType.transparency,
+        child: DefaultTextStyle.merge(
           style: bodyStyle,
-          maxLines: maxLines,
-          overflow: overflow,
-          onLinkTap: handleMarkdownLinkTap,
-          linkBuilder: buildMarkdownLink,
+          child: GptMarkdown(
+            text,
+            style: bodyStyle,
+            maxLines: maxLines,
+            overflow: overflow,
+            onLinkTap: handleMarkdownLinkTap,
+            linkBuilder: buildMarkdownLink,
+          ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../test_data/test_data.dart';
 
@@ -12,6 +13,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         home: Scaffold(
           body: Center(
             child: LabelChip(label: testLabelDefinition1),

@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filt
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum _DayMenuAction { settings, inspectAgent, knowledge, deletePlan }
 

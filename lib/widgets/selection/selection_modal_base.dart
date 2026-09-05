@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Base class for selection modals using Wolt Modal Sheet
 ///

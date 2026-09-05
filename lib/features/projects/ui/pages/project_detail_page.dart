@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-screen, form-style project editor used by the Projects-owned
 /// `/projects/<id>/edit` route and settings/category entry points.

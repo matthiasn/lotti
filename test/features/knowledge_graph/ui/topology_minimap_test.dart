@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -8,6 +7,8 @@ import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
 import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   test('topology transform fits world bounds inside the viewport', () {
@@ -56,6 +57,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: DesignSystemTheme.dark(),
         home: Scaffold(
           body: Center(
@@ -109,6 +111,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: DesignSystemTheme.dark(),
         home: Scaffold(
           body: TopologyMiniMap(

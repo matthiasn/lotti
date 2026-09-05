@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../../../../widget_test_utils.dart';
 import 'audio_progress_bar_test_helpers.dart';
 

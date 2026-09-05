@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The geometry one day track draws on: the column pitch, whether the weekday
 /// captions still fit at full length, and how tall a caption row has to be.

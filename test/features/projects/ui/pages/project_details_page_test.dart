@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,10 +34,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
 import '../../../agents/test_data/template_factories.dart';
@@ -2332,7 +2333,7 @@ void main() {
         record: record,
       );
 
-      await tester.tap(find.byTooltip('Sort and group'));
+      await tester.tap(findMaterialTooltip('Sort and group'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.text('Group by'), findsOneWidget);

@@ -4,8 +4,6 @@ import 'dart:math' as math;
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/foundation.dart' show listEquals;
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -73,6 +71,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -81,6 +80,7 @@ import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 
 /// Check if the app is running inside Flatpak sandbox
@@ -1832,9 +1832,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
             localizationsDelegates: const [
               AppLocalizations.delegate,
               FormBuilderLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
               FlutterQuillLocalizations.delegate,
             ],
             debugShowCheckedModeBanner: false,
@@ -1843,7 +1841,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
             backButtonDispatcher: BeamerBackButtonDispatcher(
               delegate: routerDelegate,
             ),
-            builder: (context, child) {
+            builder: LegacyMaterialBridge.wrapBuilder((context, child) {
               // Publish the RESOLVED theme (light vs dark per themeMode and
               // platform brightness — known only here, below MaterialApp's
               // own Theme) so the next profile switch can paint its splash
@@ -1885,7 +1883,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
                   ),
                 ),
               );
-            },
+            }),
           ),
         ),
       ),

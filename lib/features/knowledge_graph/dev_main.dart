@@ -10,11 +10,12 @@
 /// This is a developer harness only — it is not part of the shipping app.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_view.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() => runApp(const KnowledgeGraphDevApp());
 
@@ -34,6 +35,7 @@ class _KnowledgeGraphDevAppState extends State<KnowledgeGraphDevApp> {
   Widget build(BuildContext context) {
     final scenario = _scenarios[_index];
     return MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true).copyWith(
         extensions: const [dsTokensLight],

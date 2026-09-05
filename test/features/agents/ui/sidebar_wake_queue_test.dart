@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:beamer/beamer.dart';
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
@@ -14,9 +13,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
@@ -349,7 +350,7 @@ void main() {
 
     final element = tester.element(find.byType(SidebarWakeQueue));
     expect(
-      find.byTooltip(
+      findMaterialTooltip(
         '${element.messages.sidebarWakesOpenTask}: Inbox triage · 00:30',
       ),
       findsOneWidget,
@@ -416,7 +417,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
-        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+        findMaterialTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -568,7 +569,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
-        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+        findMaterialTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -617,7 +618,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
-        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+        findMaterialTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -817,7 +818,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
-        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+        findMaterialTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       // Single-frame pump: pumpAndSettle would hang on the spinner.
       await tester.pump();
@@ -865,7 +866,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
-        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+        findMaterialTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -908,7 +909,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
-        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+        findMaterialTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       // Single-frame pump: pumpAndSettle would hang on the spinner.
       await tester.pump();
@@ -1001,7 +1002,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
-        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+        findMaterialTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       // Single-frame pump: pumpAndSettle would hang on the spinner that
       // replaces the × once the abort signal is delivered.
@@ -1042,7 +1043,7 @@ void main() {
       final element = tester.element(find.byType(SidebarWakeQueue));
       final cancelTooltip = element.messages.sidebarWakesCancelTooltip;
 
-      await tester.tap(find.byTooltip(cancelTooltip));
+      await tester.tap(findMaterialTooltip(cancelTooltip));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -1053,7 +1054,7 @@ void main() {
       // didSignal=false → _cancelling stays false → no spinner, the ×
       // remains tappable so the user can retry once the running-set
       // stream catches up.
-      expect(find.byTooltip(cancelTooltip), findsOneWidget);
+      expect(findMaterialTooltip(cancelTooltip), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     },
   );
@@ -1089,7 +1090,7 @@ void main() {
       final cancelTooltip = element.messages.sidebarWakesCancelTooltip;
 
       // First tap fires abort + flips _cancelling → spinner replaces ×.
-      await tester.tap(find.byTooltip(cancelTooltip));
+      await tester.tap(findMaterialTooltip(cancelTooltip));
       // Single-frame pump: pumpAndSettle would hang on the spinner.
       await tester.pump();
 
@@ -1100,7 +1101,7 @@ void main() {
       // running-set stream emits and the row is rebuilt or torn down.
       // Belt-and-braces: try to tap the tooltip and verify nothing
       // additional reaches the service.
-      expect(find.byTooltip(cancelTooltip), findsNothing);
+      expect(findMaterialTooltip(cancelTooltip), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       verifyNoMoreInteractions(agentService);
@@ -1265,7 +1266,9 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       expect(
-        find.byTooltip('${element.messages.sidebarWakesOpenTask}: Live wake'),
+        findMaterialTooltip(
+          '${element.messages.sidebarWakesOpenTask}: Live wake',
+        ),
         findsOneWidget,
       );
 

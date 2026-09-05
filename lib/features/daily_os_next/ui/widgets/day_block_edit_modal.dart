@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Atomic draft returned by [DayBlockEditModal].
 ///

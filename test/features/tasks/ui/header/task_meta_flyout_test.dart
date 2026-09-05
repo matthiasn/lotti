@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -22,10 +21,12 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../ai_consumption/test_utils.dart';
 
@@ -178,7 +179,7 @@ void main() {
 
     // The picker is the later of the two modal routes, so its close button is
     // the later of the two in the tree.
-    await tester.tap(find.byTooltip('Close').last);
+    await tester.tap(findMaterialTooltip('Close').last);
     await tester.pumpAndSettle();
 
     // The picker really closed — without this the whole test would also pass

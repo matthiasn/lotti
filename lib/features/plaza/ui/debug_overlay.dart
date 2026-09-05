@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Rolling frame stats published by the harness a few times a second.
 class PlazaHarnessStats extends ChangeNotifier {

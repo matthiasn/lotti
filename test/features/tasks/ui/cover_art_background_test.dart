@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui' show SemanticsAction;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -11,10 +10,12 @@ import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:photo_view/photo_view.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
@@ -524,6 +525,7 @@ void main() {
             createEntryControllerOverride(textEntry),
           ],
           child: const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: CoverArtBackground(imageId: 'text-1'),
             ),
@@ -545,6 +547,7 @@ void main() {
             createEntryControllerOverride(image),
           ],
           child: const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: CoverArtBackground(imageId: 'image-1'),
             ),
@@ -565,6 +568,7 @@ void main() {
             createEntryControllerOverride(image),
           ],
           child: const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: CustomScrollView(
                 slivers: [
@@ -596,6 +600,7 @@ void main() {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: CoverArtBackground(imageId: 'nonexistent'),
             ),
@@ -637,6 +642,7 @@ void main() {
             createEntryControllerOverride(image2),
           ],
           child: const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: CoverArtBackground(imageId: 'image-1'),
             ),
@@ -655,6 +661,7 @@ void main() {
             createEntryControllerOverride(image2),
           ],
           child: const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: CoverArtBackground(imageId: 'image-2'),
             ),
@@ -676,6 +683,7 @@ void main() {
             createEntryControllerOverride(image),
           ],
           child: const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: SizedBox(
                 width: 300,
@@ -695,6 +703,7 @@ void main() {
             createEntryControllerOverride(image),
           ],
           child: const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: SizedBox(
                 width: 400, // Different container size

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row_state.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Duration for the archive SnackBar countdown.
 const kChecklistArchiveDuration = Duration(seconds: 2);

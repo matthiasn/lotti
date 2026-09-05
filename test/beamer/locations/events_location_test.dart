@@ -1,9 +1,9 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/events_location.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/pages/events_overview_page.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockBuildContext extends Mock implements BuildContext {}

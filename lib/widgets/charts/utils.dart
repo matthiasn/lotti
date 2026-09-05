@@ -4,11 +4,11 @@ import 'dart:math';
 
 import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:material_ui/material_ui.dart';
 
 class Observation extends Equatable {
   const Observation(this.dateTime, this.value);

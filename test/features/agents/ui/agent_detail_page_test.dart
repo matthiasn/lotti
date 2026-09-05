@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,9 +15,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
@@ -439,7 +440,7 @@ void main() {
       // The running indicator tooltip should be present (back button also has one).
       final context = tester.element(find.byType(AgentDetailPage));
       expect(
-        find.byTooltip(context.messages.agentRunningIndicator),
+        findMaterialTooltip(context.messages.agentRunningIndicator),
         findsOneWidget,
       );
     });
@@ -459,7 +460,7 @@ void main() {
       // No spinner in the app bar.
       expect(find.byType(CircularProgressIndicator), findsNothing);
       // No tooltip for running indicator.
-      expect(find.byTooltip('Running'), findsNothing);
+      expect(findMaterialTooltip('Running'), findsNothing);
     });
 
     testWidgets(

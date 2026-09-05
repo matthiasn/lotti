@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// An ambient, looping "external brain" backdrop: glowing cell bodies drift on
 /// gentle elliptical paths, curved tendrils connect into one branching organism,

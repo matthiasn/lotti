@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -29,6 +28,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.da
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Which breakdown charts + tables the dashboard shows. `both` (the default)
 /// stacks the category and model breakdowns; `category`/`model` narrow to one.

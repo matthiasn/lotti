@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -109,7 +110,7 @@ void main() {
 
     // Use copy action while expanded
     final copyButton = find.descendant(
-      of: find.byTooltip(messages.thinkingDisclosureCopy),
+      of: findMaterialTooltip(messages.thinkingDisclosureCopy),
       matching: find.byType(IconButton),
     );
     await tester.tap(copyButton);

@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/full_height_wolt_dialog_type.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 class EntryDateTimeMultiPageModal {

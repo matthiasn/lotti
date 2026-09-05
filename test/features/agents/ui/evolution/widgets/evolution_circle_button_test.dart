@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_circle_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -86,6 +87,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Record'), findsOneWidget);
+    expect(findMaterialTooltip('Record'), findsOneWidget);
   });
 }

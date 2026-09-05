@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Root page for the Settings tab.
 ///

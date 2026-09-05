@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One rendered group inside [TaskRelationshipSections]: a header + its rows.
 ///

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared "glass chip" building blocks for sticky bottom action bars that
 /// float over backdrop-blurred glass (see `DesignSystemGlassStrip`).

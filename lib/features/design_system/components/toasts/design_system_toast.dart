@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Visual constants that aren't backed by an exported design-system token.
 // Kept here as named constants — callers should still prefer tokens for

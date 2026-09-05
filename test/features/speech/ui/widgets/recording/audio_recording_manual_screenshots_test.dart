@@ -4,7 +4,6 @@
 /// staging inputs for the manual media manifest and are never committed here.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -17,7 +16,9 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../daily_os_next/screenshot_harness.dart';
 
@@ -120,11 +121,15 @@ Future<void> _pumpActiveRecording(
           ),
         ],
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: manualScreenshotLocale,
           home: Builder(

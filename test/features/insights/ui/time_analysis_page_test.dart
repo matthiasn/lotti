@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
 import 'package:lotti/utils/device_region.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

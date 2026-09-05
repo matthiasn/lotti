@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Maps the design-system typography/color tokens onto Quill's [DefaultStyles]
 /// so editor and read-only viewers render headings, body text, lists, and

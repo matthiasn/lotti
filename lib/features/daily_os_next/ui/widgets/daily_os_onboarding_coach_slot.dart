@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_coach_strip.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Session-aware slot that renders a [DailyOsOnboardingCoachStrip] at one beat
 /// of the create modal — but only while a Daily OS onboarding walkthrough

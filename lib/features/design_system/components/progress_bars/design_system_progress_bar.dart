@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum DesignSystemProgressBarStyle {
   defaultStyle,

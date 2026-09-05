@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/settings_v2/ui/settings_node_action_handler.dart'
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_node_indicators.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Per-row selector computed once per path mutation so the enclosing
 /// `ref.watch` only rebuilds when *this* node's active/expanded state

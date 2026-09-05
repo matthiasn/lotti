@@ -21,7 +21,6 @@ library;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsProperties;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_label_layout.dart';
@@ -29,6 +28,7 @@ import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_motion_controller.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Whether a node's label must survive crowding (pure; unit-tested).
 ///

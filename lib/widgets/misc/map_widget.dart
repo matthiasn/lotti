@@ -1,10 +1,10 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/map/cached_tile_provider.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MapWidget extends StatefulWidget {
   const MapWidget({super.key, this.geolocation});

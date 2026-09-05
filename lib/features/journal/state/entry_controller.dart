@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:delta_markdown/delta_markdown.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide ChangeSource;
@@ -37,6 +36,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 /// Delay before stopping the time service after save.

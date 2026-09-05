@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,11 +18,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/fallbacks.dart';
 import '../../mocks/mocks.dart';
 import '../../test_data/test_data.dart';
+import '../../test_utils/material_ui_finders.dart';
 import '../../widget_test_utils.dart';
 import 'test_utils.dart';
 
@@ -599,7 +600,7 @@ void main() {
     expect(loadingButton.isLoading, isTrue);
     expect(find.byKey(_saveKey), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Close'));
+    await tester.tap(findMaterialTooltip('Close'));
     await tester.pump();
     expect(find.byKey(_valueKey), findsOneWidget);
 

@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A habit row that carries its own per-day completion history strip — used by
 /// the dashboard habit chart, where seeing the chain over the dashboard's range

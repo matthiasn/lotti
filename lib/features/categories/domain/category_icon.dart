@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/categories/domain/category_icon_data.dart';
 import 'package:lotti/features/categories/domain/category_icon_names.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/categories/domain/category_icon_data.dart';
 export 'package:lotti/features/categories/domain/category_icon_names.dart';

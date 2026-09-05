@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -8,9 +7,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 
@@ -228,7 +229,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DesignSystemTimeWheel), findsNWidgets(2));
 
-    await tester.tap(find.byTooltip('Back'));
+    await tester.tap(findMaterialTooltip('Back'));
     await tester.pumpAndSettle();
 
     expect(find.text('Edit block'), findsOneWidget);

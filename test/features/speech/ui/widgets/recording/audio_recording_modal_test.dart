@@ -2,7 +2,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,7 +37,9 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
@@ -365,8 +366,12 @@ void main() {
           }
 
           return MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: DesignSystemTheme.light(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: AudioRecordingModalContent(
@@ -528,8 +533,12 @@ void main() {
             ...extraOverrides,
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: theme ?? resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             locale: locale,
             home: Scaffold(
@@ -555,8 +564,12 @@ void main() {
         ProviderScope(
           overrides: [...baseOverrides(), ...extraOverrides],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) => Scaffold(
@@ -588,8 +601,12 @@ void main() {
         ProviderScope(
           overrides: baseOverrides(),
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (context) {
@@ -733,8 +750,12 @@ void main() {
                 ),
               ],
               child: MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 theme: resolveTestTheme(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 navigatorObservers: [rootObserver],
                 home: Navigator(
@@ -1536,8 +1557,12 @@ void main() {
             });
 
             return MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: DesignSystemTheme.light(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: AudioRecordingModalContent(
@@ -1650,8 +1675,12 @@ void main() {
               }
 
               return MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 theme: DesignSystemTheme.light(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
@@ -1732,8 +1761,12 @@ void main() {
               }
 
               return MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 theme: DesignSystemTheme.light(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
@@ -1809,8 +1842,12 @@ void main() {
               }
 
               return MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 theme: DesignSystemTheme.light(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
@@ -1888,9 +1925,12 @@ void main() {
                 }
 
                 return MaterialApp(
+                  builder: LegacyMaterialBridge.builder,
                   theme: DesignSystemTheme.light(),
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    ...GlobalMaterialLocalizations.delegates,
+                  ],
                   supportedLocales: AppLocalizations.supportedLocales,
                   home: const Scaffold(
                     body: AudioRecordingModalContent(
@@ -1969,8 +2009,12 @@ void main() {
               }
 
               return MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 theme: DesignSystemTheme.light(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
@@ -2047,8 +2091,12 @@ void main() {
               }
 
               return MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 theme: DesignSystemTheme.light(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: AudioRecordingModalContent(
@@ -2147,9 +2195,12 @@ void main() {
                 }
 
                 return MaterialApp(
+                  builder: LegacyMaterialBridge.builder,
                   theme: DesignSystemTheme.light(),
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    ...GlobalMaterialLocalizations.delegates,
+                  ],
                   supportedLocales: AppLocalizations.supportedLocales,
                   home: const Scaffold(
                     body: AudioRecordingModalContent(

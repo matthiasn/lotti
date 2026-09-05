@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,10 +14,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 class _TestEntryController extends EntryController {
@@ -275,7 +276,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(LottiIcons.edit), findsOneWidget);
-      expect(find.byTooltip('Edit labels'), findsOneWidget);
+      expect(findMaterialTooltip('Edit labels'), findsOneWidget);
     });
 
     testWidgets('hides edit button when showEditButton is false', (
@@ -334,7 +335,7 @@ void main() {
       expect(editButton, findsOneWidget);
 
       // Verify tooltip
-      expect(find.byTooltip('Edit labels'), findsOneWidget);
+      expect(findMaterialTooltip('Edit labels'), findsOneWidget);
     });
 
     testWidgets('edit button has correct icon styling', (tester) async {

@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncData;
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -17,10 +16,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 JournalEntry _entry({
@@ -239,7 +240,7 @@ void main() {
 
       expect(find.byType(CalendarDatePicker), findsOneWidget);
       expect(find.byType(ModalBarrier), findsNWidgets(modalBarrierCount));
-      expect(find.byTooltip('Back'), findsOneWidget);
+      expect(findMaterialTooltip('Back'), findsOneWidget);
       expect(find.text('Start date'), findsOneWidget);
       expect(find.text('Saturday, June 15, 2024'), findsWidgets);
       expect(find.text('Done'), findsOneWidget);
@@ -295,7 +296,7 @@ void main() {
       await tester.tap(find.text('Saturday, June 15, 2024'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Back'));
+      await tester.tap(findMaterialTooltip('Back'));
       await tester.pumpAndSettle();
 
       expect(find.text('Date & Time'), findsOneWidget);

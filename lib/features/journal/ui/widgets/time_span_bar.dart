@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A compact "this spans a stretch of time" readout: the start and end times
 /// flanking a filled track, with the elapsed duration called out at the end.

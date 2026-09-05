@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_summary_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';

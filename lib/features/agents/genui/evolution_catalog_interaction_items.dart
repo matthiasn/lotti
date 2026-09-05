@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/ab_comparison_card.dart';
 import 'package:lotti/features/agents/genui/binary_choice_prompt_card.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Interactive category ratings widget for Phase 1 of the two-phase dialog.
 final categoryRatingsItem = CatalogItem(

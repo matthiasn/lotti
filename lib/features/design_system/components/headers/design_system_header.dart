@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The design-system's desktop page header — a fixed-height ([desktopHeight])
 /// top bar on the level-01 background.

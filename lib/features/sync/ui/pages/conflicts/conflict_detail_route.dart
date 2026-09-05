@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Conflict resolution page. Loads the local + remote versions of the
 /// conflicted entry, renders a full field-level diff, and lets the user keep

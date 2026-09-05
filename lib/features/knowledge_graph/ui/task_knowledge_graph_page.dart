@@ -5,7 +5,6 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_view.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Adds [expansion]'s nodes and edges to [current] without changing the
 /// scenario seed, then recomputes layout for the combined graph.

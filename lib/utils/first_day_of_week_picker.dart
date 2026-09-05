@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A `builder` for [showDatePicker] / [showDateRangePicker] that makes the
 /// picker's calendar start the week on [firstDayOfWeekIndex] (the device

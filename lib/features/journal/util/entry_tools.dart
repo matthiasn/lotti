@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
+import 'package:material_ui/material_ui.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 

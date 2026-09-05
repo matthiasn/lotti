@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart' show DateUtils;
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:material_ui/material_ui.dart' show DateUtils;
 
 /// How one day's criteria actually turned out, per the evidence.
 typedef GoalDayOutcome = ({int met, int total});

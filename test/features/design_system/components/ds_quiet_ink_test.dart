@@ -1,13 +1,15 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   Widget host(Widget child) => MaterialApp(
+    builder: LegacyMaterialBridge.builder,
     home: Scaffold(body: Center(child: child)),
   );
 
@@ -152,6 +154,7 @@ void main() {
         'quiet as the builder made it', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: DesignSystemTheme.dark(),
           home: Scaffold(
             body: Center(
@@ -209,6 +212,7 @@ void main() {
         'the doorway takes it with it', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: DesignSystemTheme.dark(),
           home: Scaffold(
             body: Center(

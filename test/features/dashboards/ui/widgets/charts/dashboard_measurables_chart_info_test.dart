@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
@@ -8,9 +7,11 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 // ---------------------------------------------------------------------------
@@ -378,7 +379,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('Mood'), findsWidgets);
-        expect(find.byTooltip('Close'), findsOneWidget);
+        expect(findMaterialTooltip('Close'), findsOneWidget);
       },
     );
 

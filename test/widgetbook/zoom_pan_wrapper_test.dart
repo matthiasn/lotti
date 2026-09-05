@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgetbook/zoom_pan_wrapper.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The two modifier keys [ZoomPanWrapperState.handleKeyEvent] accepts —
 /// Command (macOS) and Control (Windows/Linux). Tests run against both so the
@@ -37,6 +38,7 @@ Future<void> _pumpWrapper(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       home: Scaffold(
         body: ZoomPanWrapper(
           key: key,
@@ -63,6 +65,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(body: ZoomPanWrapper(child: null)),
         ),
       );
@@ -318,7 +321,12 @@ void main() {
     ) async {
       await _pumpWrapper(tester);
 
-      await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      await tester.pumpWidget(
+        const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
+          home: SizedBox.shrink(),
+        ),
+      );
       await tester.pump();
 
       expect(tester.takeException(), isNull);

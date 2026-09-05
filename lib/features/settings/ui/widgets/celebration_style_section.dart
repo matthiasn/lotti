@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/settings/state/celebration_preferences_controller
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_playground_page.dart';
 import 'package:lotti/features/settings/ui/widgets/celebration_variant_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The content type a celebration style is being assigned to.
 enum _CelebrationSurface { tasks, habits, checklists }

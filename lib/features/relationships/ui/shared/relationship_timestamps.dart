@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 24h, mono date-time formatting for the relationships surface (design
 /// plan §0.5 — "All date/time strings render in `--ff-mono` (Inconsolata)

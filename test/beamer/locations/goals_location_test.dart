@@ -1,5 +1,4 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/goals/ui/pages/goal_agent_chat_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../widget_test_utils.dart';
 

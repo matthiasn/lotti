@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_shell.dart'
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_tree_page.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

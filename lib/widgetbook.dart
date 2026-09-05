@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/features/ai/widgetbook/ai_shader_animations_widgetbook.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -11,7 +10,9 @@ import 'package:lotti/features/tasks/widgetbook/task_widgetbook.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgetbook/zoom_pan_wrapper.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 void main() {
@@ -39,16 +40,30 @@ class WidgetbookApp extends StatelessWidget {
         InspectorAddon(),
         GridAddon(100),
         AlignmentAddon(),
-        MaterialThemeAddon(
+        ThemeAddon<ThemeData>(
+          themeBuilder: (context, theme, child) => Theme(
+            data: theme,
+            child: LegacyMaterialBridge(
+              child: ColoredBox(
+                color: theme.scaffoldBackgroundColor,
+                child: DefaultTextStyle(
+                  style: theme.textTheme.bodyMedium!,
+                  child: child,
+                ),
+              ),
+            ),
+          ),
           themes: [lightTheme, darkTheme],
           initialTheme: darkTheme,
         ),
       ],
       appBuilder: (context, child) => MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         themeMode: ThemeMode.dark,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FlutterQuillLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         home: Scaffold(
           body: ZoomPanWrapper(child: child),

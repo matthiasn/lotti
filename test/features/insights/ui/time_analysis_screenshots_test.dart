@@ -16,10 +16,8 @@ import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -32,6 +30,8 @@ import 'package:lotti/features/insights/state/insights_preferences_controller.da
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
@@ -270,15 +270,14 @@ Future<void> _pumpDashboard(
             ),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             debugShowCheckedModeBanner: false,
             theme: brightness == Brightness.dark
                 ? DesignSystemTheme.dark()
                 : DesignSystemTheme.light(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             locale: manualScreenshotLocale,

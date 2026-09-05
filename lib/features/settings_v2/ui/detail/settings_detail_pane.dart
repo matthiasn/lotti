@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/settings_v2/ui/detail/leaf_panel.dart';
 import 'package:lotti/features/settings_v2/ui/labels/settings_tree_labels.dart';
 import 'package:lotti/features/settings_v2/ui/settings_tree_scope.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Cross-fade duration between detail-pane states (spec §7
 /// "Detail pane swap").

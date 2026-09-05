@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Measures visibility episodes for one banner: the stopwatch runs while
 /// the host tab is on screen (TickerMode — the app shell keeps inactive

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,11 +25,13 @@ import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 /// Stubs the measurable lookups every dashboard-definition test needs:
@@ -875,7 +876,7 @@ void main() {
         expect(find.byType(Dismissible), findsOneWidget);
         expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        await tester.tap(find.byTooltip('Remove chart'));
+        await tester.tap(findMaterialTooltip('Remove chart'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

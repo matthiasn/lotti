@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 typedef ProjectTaskCreator = Future<Task?> Function(String projectId);
 typedef ProjectTaskAgentAssigner = Future<void> Function(Task task);

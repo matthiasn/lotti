@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Builds a widget for a [CatalogItem] with the given [data], wrapped in
 /// a [Builder] so it can be pumped inside a testable material app.

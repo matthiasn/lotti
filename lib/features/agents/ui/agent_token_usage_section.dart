@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Breakpoint below which the token usage table switches to a card layout.
 const _narrowBreakpoint = 600.0;

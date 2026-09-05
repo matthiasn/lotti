@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A small, static glass banner that narrates one beat of the Daily OS
 /// onboarding walkthrough inside the real create modal (Capture / Reconcile /

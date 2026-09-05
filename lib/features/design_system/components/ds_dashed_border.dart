@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Dashed rounded-rectangle border around [child] — the design system's
 /// "provisional / placeholder" surface treatment.

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_range.dart';
+import 'package:material_ui/material_ui.dart' show TimeOfDay;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 

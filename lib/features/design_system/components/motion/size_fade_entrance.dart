@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Reveals newly inserted content with a one-shot vertical expansion and fade.
 ///

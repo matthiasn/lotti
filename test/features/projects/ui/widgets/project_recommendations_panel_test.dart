@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -12,10 +11,12 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/change_set_factories.dart';
 
@@ -555,13 +556,13 @@ void main() {
       await pumpSubject(tester, subject(items: const [], sets: [proposals]));
       final readsBefore = pendingReads;
 
-      await tester.tap(find.byTooltip('Confirm'));
+      await tester.tap(findMaterialTooltip('Confirm'));
       await settle(tester);
 
       verify(() => proposalService.confirm(proposals, 0)).called(1);
       expect(find.text('Confirmed'), findsOneWidget);
       expect(find.text('Create task: Pack fish'), findsOneWidget);
-      expect(find.byTooltip('Confirm'), findsNothing);
+      expect(findMaterialTooltip('Confirm'), findsNothing);
       expect(
         pendingReads,
         greaterThan(readsBefore),
@@ -573,7 +574,7 @@ void main() {
         () => proposalService.reject(any(), any()),
       ).thenAnswer((_) async => true);
       await pumpSubject(tester, subject(items: const [], sets: [proposals]));
-      await tester.tap(find.byTooltip('Reject'));
+      await tester.tap(findMaterialTooltip('Reject'));
       await settle(tester);
       verify(() => proposalService.reject(proposals, 0)).called(1);
       expect(find.text('Dismissed'), findsOneWidget);
@@ -591,7 +592,7 @@ void main() {
     );
     await pumpSubject(tester, subject(items: const [], sets: [proposals]));
 
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await settle(tester);
     expect(find.text('Confirmed'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
@@ -602,14 +603,14 @@ void main() {
     verify(() => proposalService.undo(any(), 0)).called(1);
     expect(find.text('Confirmed'), findsNothing);
     expect(
-      find.byTooltip('Confirm'),
+      findMaterialTooltip('Confirm'),
       findsOneWidget,
       reason: 'The proposal is pending again.',
     );
     expect(pendingReads, greaterThan(readsBefore));
 
     // The window closes on its own.
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await settle(tester);
     expect(find.text('Undo'), findsOneWidget);
     await tester.pump(ProjectRecommendationsPanel.undoWindow);
@@ -628,7 +629,7 @@ void main() {
       (_) async => false,
     );
     await pumpSubject(tester, subject(items: const [], sets: [proposals]));
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await settle(tester);
 
     await tester.tap(find.text('Undo'));
@@ -639,7 +640,7 @@ void main() {
 
     when(() => proposalService.canUndo(any(), any())).thenReturn(false);
     await pumpSubject(tester, subject(items: const [], sets: [proposals]));
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await settle(tester);
     expect(find.text('Confirmed'), findsOneWidget);
     expect(
@@ -659,7 +660,7 @@ void main() {
       () => proposalService.undo(any(), any()),
     ).thenThrow(StateError('offline'));
     await pumpSubject(tester, subject(items: const [], sets: [proposals]));
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await settle(tester);
 
     await tester.tap(find.text('Undo'));
@@ -676,10 +677,10 @@ void main() {
     );
     await pumpSubject(tester, subject(items: const [], sets: [proposals]));
 
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await settle(tester);
 
-    expect(find.byTooltip('Confirm'), findsOneWidget);
+    expect(findMaterialTooltip('Confirm'), findsOneWidget);
     expect(find.text(updateError), findsOneWidget);
   });
 
@@ -718,7 +719,7 @@ void main() {
       isFalse,
       reason: 'The proposal rail is inert, not a no-op.',
     );
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await tester.pump();
     verifyNever(() => proposalService.confirm(any(), any()));
   });
@@ -869,10 +870,10 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Retry'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Confirm'));
     await settle(tester);
     expect(tester.takeException(), isNull);
-    expect(find.byTooltip('Confirm'), findsOneWidget);
+    expect(findMaterialTooltip('Confirm'), findsOneWidget);
     expect(find.text(updateError), findsOneWidget);
   });
 

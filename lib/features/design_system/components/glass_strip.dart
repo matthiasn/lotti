@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Edge-to-edge "glass" strip used by sticky bottom bars (e.g. the task
 /// details action bar). Renders three layers:

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/settings_tree_builder.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
 

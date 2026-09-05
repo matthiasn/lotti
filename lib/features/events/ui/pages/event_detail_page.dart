@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
@@ -28,6 +27,7 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Route-level page for a single event's detail view.
 ///

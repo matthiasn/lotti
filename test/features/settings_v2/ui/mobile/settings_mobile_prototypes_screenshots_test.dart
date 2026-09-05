@@ -9,8 +9,6 @@
 ///   test/features/settings_v2/ui/mobile/settings_mobile_prototypes_screenshots_test.dart`
 library;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
@@ -20,6 +18,8 @@ import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings_v2/ui/labels/settings_tree_labels.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_tree_page.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../daily_os_next/screenshot_harness.dart';
 
@@ -48,6 +48,7 @@ Widget _app({
           textScaler: TextScaler.linear(textScale),
         ),
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,
           locale: const Locale('en'),
           theme: brightness == Brightness.dark
@@ -56,9 +57,7 @@ Widget _app({
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(builder: builder),

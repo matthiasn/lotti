@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Text scale at which the bar stacks its pills vertically instead of
 /// laying them out in one row. Mirrors the daily-OS planning bar policy

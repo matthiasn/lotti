@@ -1,10 +1,10 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Widget to display due date with color coding for overdue/today status.
 /// Supports tapping to toggle between absolute (e.g., "Dec 24, 2025") and

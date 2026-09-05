@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Undo window for the delete toast. Matches the checklist row's delete
 /// pattern so the destructive-undoable feedback feels uniform across the

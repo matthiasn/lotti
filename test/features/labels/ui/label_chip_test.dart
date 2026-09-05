@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../test_data/test_data.dart';
 
@@ -13,6 +14,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: testLabelDefinition1),
@@ -39,6 +41,7 @@ void main() {
     testWidgets('renders colored dot consistently', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: testLabelDefinition1),
@@ -62,6 +65,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: testLabelDefinition1),
@@ -86,6 +90,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.light(),
           home: Scaffold(
             body: Center(
@@ -125,6 +130,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData.dark(),
           home: Scaffold(
             body: Center(
@@ -161,6 +167,7 @@ void main() {
     testWidgets('dot color matches label color', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: testLabelDefinition1),
@@ -195,6 +202,7 @@ void main() {
     testWidgets('tooltip shows description when present', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: testLabelDefinition1),
@@ -220,6 +228,7 @@ void main() {
       // testLabelDefinition2 has no description
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: testLabelDefinition2),
@@ -249,6 +258,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: SizedBox(
               width: 150,
@@ -280,6 +290,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: invalidColorLabel),
@@ -309,6 +320,7 @@ void main() {
     testWidgets('has proper semantic labels for accessibility', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: LabelChip(label: testLabelDefinition1),

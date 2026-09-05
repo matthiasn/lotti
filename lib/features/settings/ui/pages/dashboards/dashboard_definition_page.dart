@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 export 'package:lotti/features/settings/ui/pages/dashboards/edit_dashboard_page.dart';

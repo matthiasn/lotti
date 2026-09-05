@@ -1,7 +1,8 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 Future<ui.FragmentProgram> hFailingProgramLoader() {
   return Future<ui.FragmentProgram>.error(StateError('shader unavailable'));
@@ -31,6 +32,7 @@ class TestSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       home: Scaffold(
         body: Center(child: child),
       ),

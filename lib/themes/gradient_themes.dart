@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Gradient and shadow constants - tuned for polished, modern look
 class GradientConstants {

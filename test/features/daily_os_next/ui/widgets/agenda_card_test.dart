@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,8 +9,10 @@ import 'package:lotti/features/daily_os_next/ui/widgets/link_badge.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 Widget _wrap(Widget child) => makeTestableWidget2(
@@ -119,7 +120,10 @@ void main() {
       // pill out-shouting the title.
       expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
       expect(find.text('WHY'), findsNothing);
-      expect(find.byTooltip('High-energy window 8–10:30.'), findsOneWidget);
+      expect(
+        findMaterialTooltip('High-energy window 8–10:30.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('omits why metadata when no reason is provided', (

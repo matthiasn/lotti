@@ -1,8 +1,8 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/events/ui/pages/event_detail_page.dart';
 import 'package:lotti/features/events/ui/pages/events_overview_page.dart';
 import 'package:lotti/utils/uuid.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Beamer location for the first-class Events feature: the overview at
 /// `/events` and a single event's detail at `/events/:eventId`.

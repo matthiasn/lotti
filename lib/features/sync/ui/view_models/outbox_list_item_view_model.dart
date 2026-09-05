@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 class OutboxListItemViewModel {
   const OutboxListItemViewModel({

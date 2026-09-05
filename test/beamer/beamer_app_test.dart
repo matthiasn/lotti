@@ -3,7 +3,6 @@ import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +71,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -81,6 +81,7 @@ import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart' hide Profile;
 import 'package:mocktail/mocktail.dart';
@@ -446,9 +447,13 @@ Future<void> _pumpAppScreen(
         ...extraOverrides,
       ],
       child: MaterialApp.router(
+        builder: LegacyMaterialBridge.builder,
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         routerDelegate: routerDelegate,
         routeInformationParser: BeamerParser(),
         backButtonDispatcher: BeamerBackButtonDispatcher(
@@ -550,9 +555,13 @@ Future<void> _pumpAppScreenCustomProviders(
         ...extraOverrides,
       ],
       child: MaterialApp.router(
+        builder: LegacyMaterialBridge.builder,
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
         supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
         routerDelegate: routerDelegate,
         routeInformationParser: BeamerParser(),
         backButtonDispatcher: BeamerBackButtonDispatcher(
@@ -4060,9 +4069,13 @@ void main() {
               tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
             ],
             child: MaterialApp.router(
+              builder: LegacyMaterialBridge.builder,
               theme: withOverrides(ThemeData.dark(useMaterial3: true)),
               supportedLocales: AppLocalizations.supportedLocales,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               routerDelegate: routerDelegate,
               routeInformationParser: BeamerParser(),
               backButtonDispatcher: BeamerBackButtonDispatcher(

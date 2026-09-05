@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _internalRouteRoots = <String>{

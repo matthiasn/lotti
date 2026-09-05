@@ -1,9 +1,9 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../test_helper.dart';
 

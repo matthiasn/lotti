@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,10 +13,12 @@ import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 /// Mutable entry source so tests can push new provider snapshots into the
@@ -822,9 +823,9 @@ void main() {
       entry(id: 'a', headline: 'First voice', cta: 'Log a walk'),
     ]);
     expect(find.text('Log a walk'), findsOneWidget);
-    expect(find.byTooltip('Rate this banner'), findsOneWidget);
+    expect(findMaterialTooltip('Rate this banner'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Rate this banner'));
+    await tester.tap(findMaterialTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     expect(find.text('How was this banner?'), findsOneWidget);
   });
@@ -958,7 +959,7 @@ void main() {
       [entry(id: 'a', headline: 'First voice')],
       compact: true,
     );
-    expect(find.byTooltip('Rate this banner'), findsNothing);
+    expect(findMaterialTooltip('Rate this banner'), findsNothing);
     expect(
       find.byKey(const ValueKey('nudge-banner-dock-snooze')),
       findsOneWidget,

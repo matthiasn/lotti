@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_transcript_container.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shows streaming transcription progress with partial text.
 class EvolutionTranscriptionProgress extends StatelessWidget {

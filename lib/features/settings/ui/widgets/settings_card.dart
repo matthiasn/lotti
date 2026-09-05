@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tappable settings row built on a `Material` + `ListTile`.
 ///

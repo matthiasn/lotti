@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Square initial-tile avatar keyed by hue. Used at 20–32px in the
 /// instances list (per design spec).

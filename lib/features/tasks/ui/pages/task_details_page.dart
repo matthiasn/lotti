@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -33,6 +32,7 @@ import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/widgets/media/media_drop_target.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-screen detail view for a single task identified by [taskId].
 ///

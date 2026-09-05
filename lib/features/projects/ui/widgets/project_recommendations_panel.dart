@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_steps
 import 'package:lotti/features/projects/ui/widgets/next_steps/project_next_steps_summary.dart';
 import 'package:lotti/features/projects/ui/widgets/next_steps/project_proposal_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The action bands inside the project AI card: the newest run's
 /// **recommended next steps** and the agent's **proposed changes**, each under

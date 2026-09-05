@@ -1,9 +1,9 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Backdrop blur strength for the frosted-glass category chips. Sits within
 /// the codebase's glass-surface range (10–20); chip-sized blurs use a softer

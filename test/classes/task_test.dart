@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:glados/glados.dart' show AnyUtils, ExploreConfig, Glados, any;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('TaskData', () {

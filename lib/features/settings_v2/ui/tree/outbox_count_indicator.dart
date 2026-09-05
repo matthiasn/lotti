@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Live trailing indicator for the `sync/outbox` settings-tree row.
 ///

@@ -3,7 +3,7 @@
 /// again: a network image decodes after the first capture.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CoverImage extends StatefulWidget {
   const CoverImage({

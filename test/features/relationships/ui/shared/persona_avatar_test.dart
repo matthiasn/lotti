@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -77,6 +78,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: const PersonaAvatar(initial: 'A', id: 'rel-1'),
         ),
@@ -93,6 +95,7 @@ void main() {
       const accent = Color(0xFF123456);
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: const PersonaAvatar(initial: 'A', id: 'rel-1', accent: accent),
         ),
@@ -115,6 +118,7 @@ void main() {
     testWidgets('uses the middot for an empty initial', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: const PersonaAvatar(initial: '', id: 'rel-1'),
         ),

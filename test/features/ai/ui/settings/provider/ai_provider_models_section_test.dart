@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_models_section.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 import '../widgets/v2/ai_settings_cards_test_helpers.dart';
 
@@ -46,7 +47,7 @@ void main() {
         );
         await tester.pump();
 
-        final trashIcons = find.byTooltip('Delete model');
+        final trashIcons = findMaterialTooltip('Delete model');
         expect(
           trashIcons,
           findsNWidgets(2),
@@ -95,7 +96,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(EmptySectionCard), findsOneWidget);
-        expect(find.byTooltip('Delete model'), findsNothing);
+        expect(findMaterialTooltip('Delete model'), findsNothing);
         expect(deleteCalls, 0);
       },
     );

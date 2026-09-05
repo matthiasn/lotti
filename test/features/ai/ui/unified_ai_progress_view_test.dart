@@ -2,7 +2,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,6 +25,8 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -337,6 +338,7 @@ void main() {
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
@@ -409,6 +411,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
@@ -554,6 +557,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
@@ -602,6 +606,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
@@ -623,6 +628,7 @@ void main() {
       // Remove the widget to trigger dispose
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: const Scaffold(
             body: SizedBox(),
@@ -1191,6 +1197,7 @@ Generate a widget that renders a login form.''',
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
@@ -1256,6 +1263,7 @@ Generate a widget that renders a login form.''',
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
@@ -1415,8 +1423,12 @@ Generate a widget that renders a login form.''',
             }),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(
               body: UnifiedAiProgressContent(
@@ -1573,8 +1585,12 @@ Generate a widget that renders a login form.''',
               }),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(
                 body: UnifiedAiProgressContent(
@@ -1673,8 +1689,12 @@ Generate a widget that renders a login form.''',
             }),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               // Keep aiConfigByTypeControllerProvider alive (autoDispose) so the

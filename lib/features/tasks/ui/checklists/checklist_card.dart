@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/services/app_prefs_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A single checklist card with the new visual design.
 ///

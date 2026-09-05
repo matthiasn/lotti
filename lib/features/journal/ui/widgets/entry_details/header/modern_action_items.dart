@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_advanced_action_items.dart';
 export 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_media_action_items.dart';

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:material_ui/material_ui.dart';
 
 part 'entry_state.freezed.dart';
 

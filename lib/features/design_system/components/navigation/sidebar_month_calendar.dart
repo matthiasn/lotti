@@ -1,10 +1,10 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/first_day_of_week.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact month calendar for the desktop navigation sidebar — the
 /// `CalendarWidget` from the Daily OS design handoff (sidebar spec):

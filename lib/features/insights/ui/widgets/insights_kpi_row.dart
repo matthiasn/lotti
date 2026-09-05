@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Headline numbers: plain figures in quiet tiles — no gauges, no donuts.
 ///

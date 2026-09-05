@@ -8,11 +8,11 @@
 /// from the ontology brief).
 library;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Material glyph for each node type (ADR 0029 Decision 4 — existing
 /// iconography reads better than 16 abstract shapes).

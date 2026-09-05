@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/settings_v2/ui/labels/settings_tree_labels.dart';
 import 'package:lotti/features/settings_v2/ui/settings_tree_scope.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_node_widget.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Scrollable tree of settings sections. Consumes the shared tree
 /// published by [SettingsTreeScope] when present (the production

@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The small tracked-of-estimated bar shared by the task header's estimate
 /// read-out and the details section's Estimate row: green while the tracked

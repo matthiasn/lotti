@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/tts/ui/widgets/tts_voice_selector.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Headerless body for the Speech settings, shared by the mobile page and the
 /// desktop Settings-v2 detail panel (mirrors how ThemingBody / category bodies

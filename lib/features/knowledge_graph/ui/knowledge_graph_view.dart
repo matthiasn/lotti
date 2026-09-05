@@ -12,7 +12,6 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_keyboard_navigation.dart';
@@ -33,6 +32,7 @@ import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
 import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 typedef GraphImageLoader =
     Future<ui.Image> Function(String path, int targetExtent);

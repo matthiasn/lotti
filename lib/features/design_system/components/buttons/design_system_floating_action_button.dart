@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The design-system's floating action button — a circular icon button sized
 /// from typography/spacing tokens, or an extended pill when given a [label].

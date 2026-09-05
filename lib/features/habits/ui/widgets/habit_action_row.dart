@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -26,6 +25,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The 0→1 progress of a celebration beat whose window is `[start, end]` within
 /// the shared timeline [c], or `null` when [c] is outside that window so the

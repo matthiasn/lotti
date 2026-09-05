@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/journal/ui/widgets/text_viewer_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detail-view summary for a habit-completion entry. Resolves the habit
 /// definition via a notification-driven stream so it live-updates when the

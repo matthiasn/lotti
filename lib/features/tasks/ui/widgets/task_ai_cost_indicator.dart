@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_cost_indicator.dart';
 import 'package:lotti/features/tasks/ui/header/task_meta_flyout.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The task-bound [AiCostIndicator]: watches one task's lifetime consumption
 /// and renders the leaf-and-amount read-out on the task's own surfaces — its

@@ -1,7 +1,11 @@
+// These layout assertions use the deterministic Flutter test font.
+// Bundled screenshot suites load app fonts globally and change their metrics.
+@Tags(['skip_very_good_optimization'])
+library;
+
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -13,6 +17,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

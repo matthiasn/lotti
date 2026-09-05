@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
 /// and delegates content to [MaintenanceBody] so the same widget can

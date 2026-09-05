@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
     show formatShare;
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// How many leading buckets of [data] have elapsed (start on or before today).
 ///

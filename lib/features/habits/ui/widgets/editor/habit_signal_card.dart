@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/habits/ui/widgets/editor/habit_composite_picker.d
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_presentation.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The rule a workout row offers: any session, or a dimension threshold.
 enum _WorkoutRule { any, duration, distance, energy }

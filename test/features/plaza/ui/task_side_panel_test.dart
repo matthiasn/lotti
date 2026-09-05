@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/task_side_panel.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -67,7 +68,7 @@ void main() {
       TextDecoration.lineThrough,
     );
 
-    await tester.tap(find.byTooltip('Close'));
+    await tester.tap(findMaterialTooltip('Close'));
     expect(closed, 1);
   });
 }

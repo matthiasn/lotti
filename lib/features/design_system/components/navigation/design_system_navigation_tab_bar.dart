@@ -1,7 +1,7 @@
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One entry in [DesignSystemNavigationTabBar]: a [label], an [icon] (with an
 /// optional [activeIcon] swapped in when [active]), and a tap callback.

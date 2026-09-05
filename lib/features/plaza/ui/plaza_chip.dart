@@ -2,8 +2,8 @@
 /// from the font it carries so it scales with the surface it sits on.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A chip of [label] in [ink] on [fill]; every measure is a fraction of
 /// [fontPx]. With [onTap] it is a button with the teal hover, and needs a

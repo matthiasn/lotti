@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/events/state/event_view_mapping.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../test_data/test_data.dart';
 import '../test_utils.dart';

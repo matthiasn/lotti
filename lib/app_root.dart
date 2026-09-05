@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/beamer/beamer_app.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Root widget above the ProviderScope. Deliberately Riverpod-free: on a
 /// profile switch the entire scope below is discarded via a new generation

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Local host id provider — wraps `VectorClockService.getHost()` so the
 /// pinning UI rebuilds when host id changes (e.g. after `setNewHost()`).

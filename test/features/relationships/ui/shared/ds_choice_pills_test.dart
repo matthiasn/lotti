@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -15,6 +16,7 @@ void main() {
       required void Function(T) onSelected,
     }) {
       return MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: resolveTestTheme(),
         home: Scaffold(
           body: DsChoicePills<T>(

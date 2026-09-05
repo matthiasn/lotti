@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/sync/ui/view_models/outbox_list_item_view_model.d
 import 'package:lotti/features/sync/ui/view_models/outbox_status_presentation.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A single sync-outbox row: a token-driven card with a plain-language status
 /// badge, the human "what" (payload kind), and — for failed items — a

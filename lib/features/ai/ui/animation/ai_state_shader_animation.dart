@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/ai/ui/animation/ai_thinking_line_shader.dart';
 export 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';

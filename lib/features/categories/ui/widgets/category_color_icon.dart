@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A small rounded-square swatch filled with [color] (corner radius `size/4`).
 /// Reused wherever a bare color chip is needed.

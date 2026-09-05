@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Info-blue pill marking an agenda item / day block as bound to a task
 /// (`prototype/shared.jsx → LinkBadge`, handoff v2 item 3). Shows the

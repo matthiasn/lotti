@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_model_form_state.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Create / edit page for an inference model row. Rewritten in v3 to
 /// match the visual language shipped by the AI Settings v1 → v3 page

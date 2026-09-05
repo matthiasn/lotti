@@ -1,11 +1,12 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -86,7 +87,7 @@ void main() {
   testWidgets('the back chevron steps one period back', (tester) async {
     var delta = 0;
     await pump(tester, selection: weekOf(now), onStep: (d) => delta = d);
-    await tester.tap(find.byTooltip('Previous period'));
+    await tester.tap(findMaterialTooltip('Previous period'));
     expect(delta, -1);
   });
 
@@ -95,7 +96,7 @@ void main() {
   ) async {
     var delta = 0;
     await pump(tester, selection: weekOf(now), onStep: (d) => delta = d);
-    await tester.tap(find.byTooltip('Next period'));
+    await tester.tap(findMaterialTooltip('Next period'));
     expect(delta, 0); // disabled: no future period to step into
   });
 
@@ -111,7 +112,7 @@ void main() {
       ),
     );
     await pump(tester, selection: lastWeek, onStep: (d) => delta = d);
-    await tester.tap(find.byTooltip('Next period'));
+    await tester.tap(findMaterialTooltip('Next period'));
     expect(delta, 1);
   });
 

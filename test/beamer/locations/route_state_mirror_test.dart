@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/route_state_mirror.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Calls [mirrorRouteState] from inside a build, the way Beamer's delegate
 /// calls `buildPages`, and records what the listener beside it sees.

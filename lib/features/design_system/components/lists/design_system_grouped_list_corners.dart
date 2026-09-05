@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tells a grouped-list child which of the group's rounded corners it owns.
 ///

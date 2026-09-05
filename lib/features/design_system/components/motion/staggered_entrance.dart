@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lays out [children] in a column and plays a one-time staggered entrance:
 /// each child fades in and rises a few pixels, offset from the previous by

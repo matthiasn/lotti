@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Presence/availability of the avatar's subject, mapped to the ring color
 /// (neutral / success / warning / error).

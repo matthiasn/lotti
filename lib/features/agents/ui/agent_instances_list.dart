@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/instances/agent_instances_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Public entry point used by `AgentSettingsPage` for the
 /// `Settings → Agents → Instances` tab.

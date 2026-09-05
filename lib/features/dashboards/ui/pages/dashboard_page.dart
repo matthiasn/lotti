@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full view of a single dashboard: a pinned header (title + time-span picker +
 /// edit affordance) above a scrolling stack of charts ([DashboardWidget]).

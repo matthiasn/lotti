@@ -3,9 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
-
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
@@ -14,6 +12,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
 

@@ -1,10 +1,11 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/map/cached_tile_provider.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +17,7 @@ void main() {
       Geolocation? geolocation,
     }) {
       return MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         home: Scaffold(
           body: MapWidget(
             geolocation: geolocation,

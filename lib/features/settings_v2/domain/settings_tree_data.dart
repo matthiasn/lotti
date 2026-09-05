@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// (title, desc) pair resolved for a single tree node.
 typedef SettingsTreeLabel = ({String title, String desc});

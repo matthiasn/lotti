@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Entry point for creating a measurable data type.
 ///

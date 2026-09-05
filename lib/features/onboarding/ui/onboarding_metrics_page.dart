@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile / legacy wrapper that keeps the `SliverBoxAdapterPage` chrome and
 /// delegates content to [OnboardingMetricsBody], mirroring `MaintenancePage`.
