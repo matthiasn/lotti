@@ -712,6 +712,63 @@ void main() {
       );
     });
 
+    group('Write-path atomicity -', () {
+      test(
+        'concurrent writes of the same id are serialised: the second sees '
+        'the first and records a conflict instead of overwriting it',
+        () async {
+          const id = 'race-entry';
+          final first = createJournalEntryWithVclock(
+            const VectorClock({'a': 1}),
+            id: id,
+          );
+          final second = createJournalEntryWithVclock(
+            const VectorClock({'b': 1}),
+            id: id,
+          );
+
+          // Both calls are issued before either has read the row. Without a
+          // transaction around read + write, both reads return "no row", both
+          // writes apply, and the concurrent clocks are never noticed.
+          final results = await Future.wait([
+            db!.updateJournalEntity(first),
+            db!.updateJournalEntity(second),
+          ]);
+
+          expect(results.where((r) => r.applied), hasLength(1));
+          expect(
+            results.map((r) => r.skipReason),
+            contains(JournalUpdateSkipReason.conflict),
+          );
+          final conflict = await db!.conflictById(id);
+          expect(conflict, isNotNull);
+          expect(conflict!.status, ConflictStatus.unresolved.index);
+        },
+      );
+
+      test('the JSON sidecar is written only for an applied write', () async {
+        final existing = createJournalEntryWithVclock(
+          const VectorClock({'a': 2}),
+          id: 'sidecar-entry',
+        );
+        await db!.updateJournalEntity(existing);
+        final sidecar = File(entityPath(existing, testDirectory));
+        expect(sidecar.existsSync(), isTrue);
+        final before = sidecar.lastModifiedSync();
+        final beforeContent = sidecar.readAsStringSync();
+
+        final older = createJournalEntryWithVclock(
+          const VectorClock({'a': 1}),
+          id: 'sidecar-entry',
+        );
+        final result = await db!.updateJournalEntity(older);
+
+        expect(result.applied, isFalse);
+        expect(sidecar.lastModifiedSync(), before);
+        expect(sidecar.readAsStringSync(), beforeContent);
+      });
+    });
+
     group('Conflict Handling -', () {
       test(
         'addConflict upserts: writing the same conflict id twice keeps a '

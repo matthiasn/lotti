@@ -310,23 +310,27 @@ mixin _JournalDbLinksRatings
     return entryLinkFromLinkedDbEntry(res);
   }
 
+  /// Inserts or updates [link], refusing self-links and active duplicates.
+  ///
+  /// The equality pre-read, the `(from_id, to_id, type)` duplicate check,
+  /// the tombstone replacement and the upsert run in one transaction, so two
+  /// concurrent creations of the same link — a local one racing the same
+  /// link arriving by sync — cannot both pass the duplicate check and then
+  /// collide on the UNIQUE constraint. A failing read propagates; it is a
+  /// database error, not a reason to write blind.
   Future<int> upsertEntryLink(EntryLink link) async {
-    if (link.fromId != link.toId) {
-      try {
-        // Equality precheck: if an entry with the same id exists and the
-        // serialized payload is identical, skip the UPSERT to avoid a no-op
-        // UPDATE and downstream log noise.
-        final existing = await (select(
-          linkedEntries,
-        )..where((t) => t.id.equals(link.id))).getSingleOrNull();
-        if (existing != null) {
-          final incomingSerialized = jsonEncode(link);
-          if (existing.serialized == incomingSerialized) {
-            return 0; // no change needed
-          }
-        }
-      } catch (_) {
-        // Best-effort precheck only; fall through to UPSERT on failure.
+    if (link.fromId == link.toId) {
+      return 0;
+    }
+    return transaction(() async {
+      // Equality precheck: if an entry with the same id exists and the
+      // serialized payload is identical, skip the UPSERT to avoid a no-op
+      // UPDATE and downstream log noise.
+      final existing = await (select(
+        linkedEntries,
+      )..where((t) => t.id.equals(link.id))).getSingleOrNull();
+      if (existing != null && existing.serialized == jsonEncode(link)) {
+        return 0; // no change needed
       }
 
       // Guard against secondary UNIQUE(from_id, to_id, type) constraint.
@@ -366,9 +370,7 @@ mixin _JournalDbLinksRatings
       }
 
       return res;
-    } else {
-      return 0;
-    }
+    });
   }
 }
 

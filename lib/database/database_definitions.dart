@@ -161,31 +161,59 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
 
   Future<int> upsertMeasurableDataType(
     MeasurableDataType entityDefinition,
-  ) async {
-    return into(
-      measurableTypes,
-    ).insertOnConflictUpdate(measurableDbEntity(entityDefinition));
+  ) {
+    return _upsertDefinitionIfNotOlder(
+      entityDefinition,
+      readExistingSerialized: () => _serializedById(
+        measurableTypes,
+        entityDefinition.id,
+      ),
+      write: () => into(
+        measurableTypes,
+      ).insertOnConflictUpdate(measurableDbEntity(entityDefinition)),
+    );
   }
 
-  Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
-    return into(
-      habitDefinitions,
-    ).insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
+  Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) {
+    return _upsertDefinitionIfNotOlder(
+      habitDefinition,
+      readExistingSerialized: () => _serializedById(
+        habitDefinitions,
+        habitDefinition.id,
+      ),
+      write: () => into(
+        habitDefinitions,
+      ).insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition)),
+    );
   }
 
   Future<int> upsertDashboardDefinition(
     DashboardDefinition dashboardDefinition,
-  ) async {
-    return into(dashboardDefinitions).insertOnConflictUpdate(
-      dashboardDefinitionDbEntity(dashboardDefinition),
+  ) {
+    return _upsertDefinitionIfNotOlder(
+      dashboardDefinition,
+      readExistingSerialized: () => _serializedById(
+        dashboardDefinitions,
+        dashboardDefinition.id,
+      ),
+      write: () => into(dashboardDefinitions).insertOnConflictUpdate(
+        dashboardDefinitionDbEntity(dashboardDefinition),
+      ),
     );
   }
 
   Future<int> upsertCategoryDefinition(
     CategoryDefinition categoryDefinition,
-  ) async {
-    return into(categoryDefinitions).insertOnConflictUpdate(
-      categoryDefinitionDbEntity(categoryDefinition),
+  ) {
+    return _upsertDefinitionIfNotOlder(
+      categoryDefinition,
+      readExistingSerialized: () => _serializedById(
+        categoryDefinitions,
+        categoryDefinition.id,
+      ),
+      write: () => into(categoryDefinitions).insertOnConflictUpdate(
+        categoryDefinitionDbEntity(categoryDefinition),
+      ),
     );
   }
 
@@ -204,9 +232,99 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
 
   Future<int> upsertLabelDefinition(
     LabelDefinition labelDefinition,
+  ) {
+    return _upsertDefinitionIfNotOlder(
+      labelDefinition,
+      readExistingSerialized: () => _serializedById(
+        labelDefinitions,
+        labelDefinition.id,
+      ),
+      write: () => into(
+        labelDefinitions,
+      ).insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition)),
+    );
+  }
+
+  /// The stored JSON document for [id] in [table], or null when absent.
+  ///
+  /// Reads by primary key with no `deleted`/`private` filter: the recency
+  /// gate must see a deleted-but-newer row, or an older live copy arriving
+  /// late would resurrect it.
+  Future<String?> _serializedById<T extends Table, R>(
+    TableInfo<T, R> table,
+    String id,
   ) async {
-    return into(
-      labelDefinitions,
-    ).insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition));
+    final row = await customSelect(
+      'SELECT serialized FROM ${table.actualTableName} WHERE id = ?',
+      variables: [Variable.withString(id)],
+      readsFrom: {table},
+    ).getSingleOrNull();
+    return row?.read<String>('serialized');
+  }
+
+  /// Writes [incoming] unless the stored definition is strictly newer.
+  ///
+  /// Definitions replicate as whole documents and the local edit paths
+  /// refresh `updatedAt` so that "the later edit wins" on sync. This is
+  /// where that rule is enforced: an older definition arriving late — a
+  /// delayed sync event, a historical re-send — must not overwrite a newer
+  /// local one, and an older live copy must not resurrect a newer deletion.
+  /// When both sides carry a vector clock that orders them, the clock
+  /// decides; otherwise `updatedAt` does, and an exact tie applies
+  /// [incoming] so a local re-save never silently disappears.
+  ///
+  /// Only `updatedAt` and `vectorClock` of the stored document are decoded,
+  /// never the whole document, which for legacy dashboards may not parse.
+  /// Read and write share one transaction so the decision cannot interleave
+  /// with another writer. Returns the write's result, or 0 when skipped.
+  Future<int> _upsertDefinitionIfNotOlder(
+    EntityDefinition incoming, {
+    required Future<String?> Function() readExistingSerialized,
+    required Future<int> Function() write,
+  }) {
+    return transaction(() async {
+      final existingSerialized = await readExistingSerialized();
+      if (existingSerialized != null) {
+        final existing =
+            json.decode(existingSerialized) as Map<String, dynamic>;
+        if (_definitionIsOlder(incoming, than: existing)) {
+          DevLogger.log(
+            name: 'JournalDb',
+            message:
+                'Skipping older definition ${incoming.id}: '
+                'incoming ${incoming.updatedAt.toIso8601String()} '
+                'vs stored ${existing['updatedAt']}',
+          );
+          return 0;
+        }
+      }
+      return write();
+    });
+  }
+
+  static bool _definitionIsOlder(
+    EntityDefinition incoming, {
+    required Map<String, dynamic> than,
+  }) {
+    final incomingClock = incoming.vectorClock;
+    final existingClockJson = than['vectorClock'];
+    if (incomingClock != null && existingClockJson is Map<String, dynamic>) {
+      switch (VectorClock.compare(
+        VectorClock.fromJson(existingClockJson),
+        incomingClock,
+      )) {
+        case VclockStatus.a_gt_b:
+          return true;
+        case VclockStatus.b_gt_a:
+          return false;
+        case VclockStatus.equal:
+        case VclockStatus.concurrent:
+          break;
+      }
+    }
+    final existingUpdatedAt = than['updatedAt'];
+    if (existingUpdatedAt is! String) return false;
+    final stored = DateTime.tryParse(existingUpdatedAt);
+    return stored != null && incoming.updatedAt.isBefore(stored);
   }
 }

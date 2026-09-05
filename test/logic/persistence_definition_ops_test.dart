@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -151,6 +152,75 @@ void main() {
       );
     },
   );
+
+  group('stale local edits -', () {
+    test(
+      'an edit the database skips as older is re-stamped and written again, '
+      'and the re-stamped copy is what syncs',
+      () async {
+        final stale = categoryMindfulness.copyWith(
+          updatedAt: DateTime(2026, 9, 5, 10),
+        );
+        final fixedNow = DateTime(2026, 9, 5, 12);
+        final answers = <int>[0, 1];
+        when(
+          () => mocks.journalDb.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => answers.removeAt(0));
+
+        final affected = await withClock(
+          Clock.fixed(fixedNow),
+          () => ops.upsertEntityDefinitionImpl(stale),
+        );
+
+        expect(affected, 1);
+        final written = verify(
+          () => mocks.journalDb.upsertEntityDefinition(captureAny()),
+        ).captured.cast<EntityDefinition>().toList();
+        expect(written, hasLength(2));
+        expect(written.first, stale);
+        expect(written.last.updatedAt, fixedNow);
+        expect(written.last.id, stale.id);
+        final message =
+            verify(
+                  () => outboxService.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncEntityDefinition;
+        expect(message.entityDefinition.updatedAt, fixedNow);
+      },
+    );
+
+    test('an edit the database applies is written exactly once', () async {
+      when(
+        () => mocks.journalDb.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
+
+      await ops.upsertEntityDefinitionImpl(categoryMindfulness);
+
+      verify(
+        () => mocks.journalDb.upsertEntityDefinition(categoryMindfulness),
+      ).called(1);
+    });
+
+    test('a stale dashboard edit is re-stamped the same way', () async {
+      final fixedNow = DateTime(2026, 9, 5, 12);
+      final answers = <int>[0, 1];
+      when(
+        () => mocks.journalDb.upsertDashboardDefinition(any()),
+      ).thenAnswer((_) async => answers.removeAt(0));
+
+      final affected = await withClock(
+        Clock.fixed(fixedNow),
+        () => ops.upsertDashboardDefinitionImpl(dashboard),
+      );
+
+      expect(affected, 1);
+      final written = verify(
+        () => mocks.journalDb.upsertDashboardDefinition(captureAny()),
+      ).captured.cast<DashboardDefinition>().toList();
+      expect(written, hasLength(2));
+      expect(written.last.updatedAt, fixedNow);
+    });
+  });
 
   test(
     'upsertDashboardDefinitionImpl notifies and enqueues a sync update',

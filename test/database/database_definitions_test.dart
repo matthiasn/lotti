@@ -8,6 +8,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
@@ -284,6 +285,209 @@ void main() {
           ).name,
           'Entity Habit',
         );
+      });
+    });
+
+    group('Recency gate -', () {
+      final base = DateTime(2026, 9, 5, 10);
+
+      Future<String?> storedCategoryName(String id) async {
+        final row = await (db!.select(
+          db!.categoryDefinitions,
+        )..where((t) => t.id.equals(id))).getSingleOrNull();
+        return row == null ? null : fromCategoryDefinitionDbEntity(row).name;
+      }
+
+      test('an older incoming definition is skipped', () async {
+        final stored = categoryMindfulness.copyWith(
+          name: 'Stored',
+          updatedAt: base,
+        );
+        expect(await db!.upsertEntityDefinition(stored), isNot(0));
+
+        final lateArrival = categoryMindfulness.copyWith(
+          name: 'Late arrival',
+          updatedAt: base.subtract(const Duration(minutes: 1)),
+        );
+        expect(await db!.upsertEntityDefinition(lateArrival), 0);
+
+        expect(await storedCategoryName(categoryMindfulness.id), 'Stored');
+      });
+
+      test('a newer incoming definition replaces the stored one', () async {
+        await db!.upsertEntityDefinition(
+          categoryMindfulness.copyWith(name: 'Stored', updatedAt: base),
+        );
+
+        final newer = categoryMindfulness.copyWith(
+          name: 'Newer',
+          updatedAt: base.add(const Duration(minutes: 1)),
+        );
+        expect(await db!.upsertEntityDefinition(newer), isNot(0));
+
+        expect(await storedCategoryName(categoryMindfulness.id), 'Newer');
+      });
+
+      test(
+        'an equal updatedAt still applies, so a local re-save that did not '
+        'touch the timestamp is never dropped',
+        () async {
+          await db!.upsertEntityDefinition(
+            categoryMindfulness.copyWith(name: 'Stored', updatedAt: base),
+          );
+
+          final resave = categoryMindfulness.copyWith(
+            name: 'Re-saved',
+            updatedAt: base,
+          );
+          expect(await db!.upsertEntityDefinition(resave), isNot(0));
+
+          expect(await storedCategoryName(categoryMindfulness.id), 'Re-saved');
+        },
+      );
+
+      test(
+        'an older deleted definition cannot resurrect a newer deletion',
+        () async {
+          await db!.upsertEntityDefinition(
+            categoryMindfulness.copyWith(
+              name: 'Deleted',
+              updatedAt: base,
+              deletedAt: base,
+            ),
+          );
+
+          final resurrect = categoryMindfulness.copyWith(
+            name: 'Back from the dead',
+            updatedAt: base.subtract(const Duration(hours: 1)),
+          );
+          expect(await db!.upsertEntityDefinition(resurrect), 0);
+
+          final row = await (db!.select(
+            db!.categoryDefinitions,
+          )..where((t) => t.id.equals(categoryMindfulness.id))).getSingle();
+          expect(row.deleted, isTrue);
+        },
+      );
+
+      test(
+        'ordered vector clocks decide before updatedAt does',
+        () async {
+          await db!.upsertEntityDefinition(
+            categoryMindfulness.copyWith(
+              name: 'Stored',
+              updatedAt: base,
+              vectorClock: const VectorClock({'a': 2}),
+            ),
+          );
+
+          // Causally newer but with an older wall clock: the clock wins.
+          final causallyNewer = categoryMindfulness.copyWith(
+            name: 'Causally newer',
+            updatedAt: base.subtract(const Duration(hours: 1)),
+            vectorClock: const VectorClock({'a': 3}),
+          );
+          expect(await db!.upsertEntityDefinition(causallyNewer), isNot(0));
+          expect(
+            await storedCategoryName(categoryMindfulness.id),
+            'Causally newer',
+          );
+
+          // Causally older but with a newer wall clock: still skipped.
+          final causallyOlder = categoryMindfulness.copyWith(
+            name: 'Causally older',
+            updatedAt: base.add(const Duration(hours: 1)),
+            vectorClock: const VectorClock({'a': 1}),
+          );
+          expect(await db!.upsertEntityDefinition(causallyOlder), 0);
+          expect(
+            await storedCategoryName(categoryMindfulness.id),
+            'Causally newer',
+          );
+        },
+      );
+
+      test('concurrent vector clocks fall back to updatedAt', () async {
+        await db!.upsertEntityDefinition(
+          categoryMindfulness.copyWith(
+            name: 'Stored',
+            updatedAt: base,
+            vectorClock: const VectorClock({'a': 1}),
+          ),
+        );
+
+        final olderConcurrent = categoryMindfulness.copyWith(
+          name: 'Older concurrent',
+          updatedAt: base.subtract(const Duration(minutes: 1)),
+          vectorClock: const VectorClock({'b': 1}),
+        );
+        expect(await db!.upsertEntityDefinition(olderConcurrent), 0);
+
+        final newerConcurrent = categoryMindfulness.copyWith(
+          name: 'Newer concurrent',
+          updatedAt: base.add(const Duration(minutes: 1)),
+          vectorClock: const VectorClock({'b': 1}),
+        );
+        expect(await db!.upsertEntityDefinition(newerConcurrent), isNot(0));
+        expect(
+          await storedCategoryName(categoryMindfulness.id),
+          'Newer concurrent',
+        );
+      });
+
+      test('the gate covers every definition table', () async {
+        final older = base.subtract(const Duration(minutes: 1));
+
+        await db!.upsertHabitDefinition(
+          habitFlossing.copyWith(name: 'Stored habit', updatedAt: base),
+        );
+        expect(
+          await db!.upsertHabitDefinition(
+            habitFlossing.copyWith(name: 'Late habit', updatedAt: older),
+          ),
+          0,
+        );
+        final habitRow = await (db!.select(
+          db!.habitDefinitions,
+        )..where((t) => t.id.equals(habitFlossing.id))).getSingle();
+        expect(fromHabitDefinitionDbEntity(habitRow).name, 'Stored habit');
+
+        await db!.upsertLabelDefinition(
+          testLabelDefinition1.copyWith(name: 'Stored label', updatedAt: base),
+        );
+        expect(
+          await db!.upsertLabelDefinition(
+            testLabelDefinition1.copyWith(
+              name: 'Late label',
+              updatedAt: older,
+            ),
+          ),
+          0,
+        );
+        final labelRow = await (db!.select(
+          db!.labelDefinitions,
+        )..where((t) => t.id.equals(testLabelDefinition1.id))).getSingle();
+        expect(fromLabelDefinitionDbEntity(labelRow).name, 'Stored label');
+
+        await db!.upsertMeasurableDataType(
+          measurableWater.copyWith(
+            displayName: 'Stored water',
+            updatedAt: base,
+          ),
+        );
+        expect(
+          await db!.upsertMeasurableDataType(
+            measurableWater.copyWith(
+              displayName: 'Late water',
+              updatedAt: older,
+            ),
+          ),
+          0,
+        );
+        final measurableRow = await (db!.select(
+          db!.measurableTypes,
+        )..where((t) => t.id.equals(measurableWater.id))).getSingle();
+        expect(measurableDataType(measurableRow).displayName, 'Stored water');
       });
     });
 

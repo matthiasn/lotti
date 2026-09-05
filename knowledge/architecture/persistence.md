@@ -226,6 +226,40 @@ composite prefixes, and the lone boolean `idx_linked_entries_hidden`. A new
 index needs a query that the planner demonstrably picks it for; the EXPLAIN
 tests under `test/database/` are where that is shown.
 
+# Write atomicity
+
+Three write paths do a check before they write, and each runs the check and
+the write in **one Drift transaction**. Drift serialises transactions on the
+write connection, so the second of two concurrent writes to the same row waits
+for the first and then sees its result — a pooled read snapshot cannot slip
+between the check and the write.
+
+- **`JournalDb.updateJournalEntity`** reads the stored row, compares vector
+  clocks, upserts, records or resolves the conflict row, and reconciles the
+  `labeled` table inside the transaction. Two concurrent writes of one id with
+  concurrent clocks therefore end with one applied and one recorded in
+  `conflicts`, never a silent overwrite. The JSON sidecar — the sync payload —
+  is written **after** commit, so it never describes a row that rolled back and
+  the writer lock is never held across file I/O. The sync inbound handler wraps
+  the same call together with the entity's embedded links in an outer
+  transaction; the inner one nests.
+- **`JournalDb.upsertEntryLink`** runs its equality pre-read, the
+  `(from_id, to_id, type)` duplicate check, the tombstone replacement and the
+  upsert the same way, so a local link creation racing the same link arriving by
+  sync is blocked as a duplicate instead of colliding on the UNIQUE constraint.
+  A failing pre-read propagates; it is not swallowed.
+- **Definition upserts** (`upsertEntityDefinition` and the five typed
+  variants) refuse a definition that is **strictly older** than the stored one.
+  Definitions replicate as whole documents and every local edit path refreshes
+  `updatedAt`, so "the later edit wins" — and this gate is where that rule is
+  enforced against a delayed sync event or a historical re-send. When both
+  sides carry a vector clock that orders them the clock decides; otherwise
+  `updatedAt` does, an exact tie applies the incoming copy, and the stored row
+  is read by id with no `deleted`/`private` filter so an older live copy cannot
+  resurrect a newer deletion. `PersistenceDefinitionOps` re-stamps a local edit
+  the gate rejected — a sync landed while the editor was open — and writes it
+  again, so a user's action always applies and wins on every peer.
+
 # From write to UI
 
 Journal writes announce themselves to the UI through

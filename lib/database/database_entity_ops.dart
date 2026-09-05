@@ -83,73 +83,95 @@ mixin _JournalDbEntityOps
     return VclockStatus.b_gt_a;
   }
 
+  /// Applies [updated] to the journal after a vector-clock comparison with
+  /// the stored row.
+  ///
+  /// The read of the existing row, the comparison, the upsert, the conflict
+  /// bookkeeping and the `labeled` reconciliation run in **one transaction**:
+  /// Drift serialises transactions on the write connection, so a concurrent
+  /// write to the same id — a local edit racing an inbound sync, or two
+  /// pooled readers seeing different snapshots — cannot slip between the
+  /// check and the write. A caller that already holds a transaction (the
+  /// sync inbound handler) simply nests this one.
+  ///
+  /// The JSON sidecar is written **after** the transaction commits: it is
+  /// the sync payload, so it must never describe a row that rolled back,
+  /// and writing it inside the transaction would hold the journal writer
+  /// lock across file I/O.
   Future<JournalUpdateResult> updateJournalEntity(
     JournalEntity updated, {
     bool overrideComparison = false,
     bool overwrite = true,
   }) async {
-    var applied = false;
-    JournalUpdateSkipReason? skipReason;
-    var rowsWritten = 0;
     final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: clock.now(),
     );
 
-    final existingDbEntity = await entityById(dbEntity.id);
+    final result = await transaction(() async {
+      var applied = false;
+      JournalUpdateSkipReason? skipReason;
+      var rowsWritten = 0;
 
-    if (existingDbEntity != null && !overwrite) {
-      skipReason = JournalUpdateSkipReason.overwritePrevented;
-    } else if (existingDbEntity != null) {
-      final existing = fromDbEntity(existingDbEntity);
-      VclockStatus? status;
-      try {
-        status = await detectConflict(existing, updated);
-      } catch (error, stackTrace) {
-        _captureException(
-          error,
-          subDomain: 'detectConflict',
-          stackTrace: stackTrace,
-        );
-        skipReason = JournalUpdateSkipReason.conflict;
-      }
+      final existingDbEntity = await entityById(dbEntity.id);
 
-      final canApply =
-          status == VclockStatus.b_gt_a ||
-          (overrideComparison && status != null);
+      if (existingDbEntity != null && !overwrite) {
+        skipReason = JournalUpdateSkipReason.overwritePrevented;
+      } else if (existingDbEntity != null) {
+        final existing = fromDbEntity(existingDbEntity);
+        VclockStatus? status;
+        try {
+          status = await detectConflict(existing, updated);
+        } catch (error, stackTrace) {
+          _captureException(
+            error,
+            subDomain: 'detectConflict',
+            stackTrace: stackTrace,
+          );
+          skipReason = JournalUpdateSkipReason.conflict;
+        }
 
-      if (canApply) {
+        final canApply =
+            status == VclockStatus.b_gt_a ||
+            (overrideComparison && status != null);
+
+        if (canApply) {
+          rowsWritten = await upsertJournalDbEntity(dbEntity);
+          applied = true;
+          final existingConflict = await conflictById(dbEntity.id);
+
+          if (existingConflict != null) {
+            await resolveConflict(existingConflict);
+          }
+        } else if (status != null) {
+          _captureEvent(
+            EnumToString.convertToString(status),
+            subDomain: 'Conflict status',
+          );
+          skipReason = status == VclockStatus.concurrent
+              ? JournalUpdateSkipReason.conflict
+              : JournalUpdateSkipReason.olderOrEqual;
+        } else {
+          skipReason ??= JournalUpdateSkipReason.conflict;
+        }
+      } else {
         rowsWritten = await upsertJournalDbEntity(dbEntity);
         applied = true;
-        final existingConflict = await conflictById(dbEntity.id);
-
-        if (existingConflict != null) {
-          await resolveConflict(existingConflict);
-        }
-      } else if (status != null) {
-        _captureEvent(
-          EnumToString.convertToString(status),
-          subDomain: 'Conflict status',
-        );
-        skipReason = status == VclockStatus.concurrent
-            ? JournalUpdateSkipReason.conflict
-            : JournalUpdateSkipReason.olderOrEqual;
-      } else {
-        skipReason ??= JournalUpdateSkipReason.conflict;
       }
-    } else {
-      rowsWritten = await upsertJournalDbEntity(dbEntity);
-      applied = true;
-    }
 
-    if (applied) {
+      if (applied) {
+        await addLabeled(updated);
+        return JournalUpdateResult.applied(rowsWritten: rowsWritten);
+      }
+
+      return JournalUpdateResult.skipped(
+        reason: skipReason ?? JournalUpdateSkipReason.olderOrEqual,
+      );
+    });
+
+    if (result.applied) {
       await _persistEntityJson(updated);
-      await addLabeled(updated);
-      return JournalUpdateResult.applied(rowsWritten: rowsWritten);
     }
-
-    return JournalUpdateResult.skipped(
-      reason: skipReason ?? JournalUpdateSkipReason.olderOrEqual,
-    );
+    return result;
   }
 
   Future<Conflict?> conflictById(String id) async {
