@@ -165,22 +165,17 @@ class JournalDb extends _$JournalDb
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 47;
+  int get schemaVersion => 48;
 
-  // Check whether a column exists in a given table to make migrations safer
+  /// Whether [table] has a column named [column]. Used where a step is
+  /// conditional on an install's history: the v20 `category_id` column, and
+  /// the columns a pre-v48 upgrade may have added before it was interrupted
+  /// (see `_addColumnUnlessPresent`). A failing PRAGMA propagates rather
+  /// than reading as "absent".
   @override
   Future<bool> _columnExists(String table, String column) async {
-    try {
-      final rows = await customSelect('PRAGMA table_info($table)').get();
-      for (final row in rows) {
-        final name = row.read<String>('name');
-        if (name == column) return true;
-      }
-      return false;
-    } catch (_) {
-      // If PRAGMA fails for any reason, fall back to false so migration attempts add the column
-      return false;
-    }
+    final rows = await customSelect('PRAGMA table_info($table)').get();
+    return rows.any((row) => row.read<String>('name') == column);
   }
 
   @override
@@ -243,7 +238,6 @@ WHERE EXISTS (
     );
   }
 
-  @override
   Future<bool> _tableExists(String tableName) async {
     final result = await customSelect(
       'SELECT name FROM sqlite_master WHERE type = ? AND name = ?',

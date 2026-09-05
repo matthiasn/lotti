@@ -103,7 +103,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 47);
+      expect(db.schemaVersion, 48);
 
       final names = await indexNames(db);
       expect(names.intersection(_redundant), isEmpty);
@@ -121,7 +121,7 @@ void main() {
       addTearDown(db.close);
 
       final version = await db.customSelect('PRAGMA user_version').get();
-      expect(version.first.read<int>('user_version'), 47);
+      expect(version.first.read<int>('user_version'), 48);
       expect((await indexNames(db)).intersection(_redundant), isEmpty);
     });
 

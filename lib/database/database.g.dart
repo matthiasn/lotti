@@ -4578,7 +4578,7 @@ class ConfigFlags extends Table with TableInfo<ConfigFlags, ConfigFlag> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL UNIQUE',
+    $customConstraints: 'NOT NULL',
   );
   static const VerificationMeta _descriptionMeta = const VerificationMeta(
     'description',
@@ -4589,7 +4589,7 @@ class ConfigFlags extends Table with TableInfo<ConfigFlags, ConfigFlag> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL UNIQUE',
+    $customConstraints: 'NOT NULL',
   );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   late final GeneratedColumn<bool> status = GeneratedColumn<bool>(

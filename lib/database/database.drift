@@ -307,9 +307,11 @@ CREATE INDEX idx_dashboard_definitions_deleted_private_name ON dashboard_definit
   name COLLATE NOCASE ASC
 );
 
+-- `description` is a display string: no uniqueness on it, and `name` is
+-- unique through the primary key alone. Rebuilt into this shape in v48.
 CREATE TABLE config_flags (
-  name TEXT NOT NULL UNIQUE,
-  description TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
   status BOOLEAN NOT NULL DEFAULT FALSE,
   PRIMARY KEY (name)
 );
