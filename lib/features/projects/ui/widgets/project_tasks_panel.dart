@@ -335,6 +335,31 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
   }
 }
 
+/// The human label of a task group's [key], localized for [context].
+///
+/// The ungrouped set ([ProjectTaskAllKey]) never gets a header, so it has no
+/// label.
+String projectTaskGroupLabel(BuildContext context, ProjectTaskGroupKey key) {
+  final messages = context.messages;
+  return switch (key) {
+    ProjectTaskMonthKey(:final firstDay) => DateFormat.yMMMM(
+      Localizations.localeOf(context).toString(),
+    ).format(firstDay),
+    ProjectTaskStatusKey(:final status) => status.localizedLabel(context),
+    ProjectTaskPriorityKey(:final priority) => priority.localizedLabel(
+      context,
+    ),
+    ProjectTaskDueWindowKey(:final window) => switch (window) {
+      ProjectDueWindow.overdue => messages.projectTasksDueOverdue,
+      ProjectDueWindow.thisWeek => messages.projectTasksDueThisWeek,
+      ProjectDueWindow.later => messages.projectTasksDueLater,
+      ProjectDueWindow.none => messages.projectTasksDueNone,
+    },
+    ProjectTaskDoneKey() => messages.projectTasksGroupDone,
+    ProjectTaskAllKey() => '',
+  };
+}
+
 /// A collapsible group heading: chevron, name, task count and total estimate.
 class _ProjectTaskGroupHeader extends StatelessWidget {
   const _ProjectTaskGroupHeader({
@@ -347,27 +372,6 @@ class _ProjectTaskGroupHeader extends StatelessWidget {
   final ProjectTaskGroup group;
   final bool expanded;
   final VoidCallback onToggle;
-
-  String _label(BuildContext context) {
-    final messages = context.messages;
-    return switch (group.key) {
-      ProjectTaskMonthKey(:final firstDay) => DateFormat.yMMMM(
-        Localizations.localeOf(context).toString(),
-      ).format(firstDay),
-      ProjectTaskStatusKey(:final status) => status.localizedLabel(context),
-      ProjectTaskPriorityKey(:final priority) => priority.localizedLabel(
-        context,
-      ),
-      ProjectTaskDueWindowKey(:final window) => switch (window) {
-        ProjectDueWindow.overdue => messages.projectTasksDueOverdue,
-        ProjectDueWindow.thisWeek => messages.projectTasksDueThisWeek,
-        ProjectDueWindow.later => messages.projectTasksDueLater,
-        ProjectDueWindow.none => messages.projectTasksDueNone,
-      },
-      ProjectTaskDoneKey() => messages.projectTasksGroupDone,
-      ProjectTaskAllKey() => '',
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -403,7 +407,7 @@ class _ProjectTaskGroupHeader extends StatelessWidget {
                 SizedBox(width: tokens.spacing.step2),
                 Flexible(
                   child: Text(
-                    _label(context),
+                    projectTaskGroupLabel(context, group.key),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: tokens.typography.styles.subtitle.subtitle2.copyWith(

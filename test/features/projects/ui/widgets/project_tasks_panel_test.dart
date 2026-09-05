@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_ic
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/model/project_task_groups.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 
@@ -600,6 +601,104 @@ void main() {
       await tester.pump();
       expect(find.byTooltip('Add task'), findsNothing);
       expect(find.text('Add task'), findsNothing);
+    });
+
+    testWidgets('groups by due window, overdue first and undated last', (
+      tester,
+    ) async {
+      TaskSummary dueOn(String id, String title, DateTime? due) {
+        final task = makeTestTask(
+          id: id,
+          title: title,
+          createdAt: DateTime(2026, 9),
+        );
+        return makeTestTaskSummary(
+          task: due == null
+              ? task
+              : task.copyWith(data: task.data.copyWith(due: due)),
+        );
+      }
+
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: makeTestProjectRecord(
+              highlightedTaskSummaries: [
+                dueOn('none', 'Undated', null),
+                dueOn('later', 'Next month', DateTime(2026, 10, 20)),
+                dueOn('week', 'Tomorrow', DateTime(2026, 9, 6)),
+                dueOn('late', 'Yesterday', DateTime(2026, 9, 4)),
+              ],
+            ),
+            now: now,
+            options: const ProjectTaskListOptions(
+              groupBy: ProjectTaskGroupBy.dueWindow,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      double top(String text) => tester.getTopLeft(find.text(text)).dy;
+      expect(top('Overdue'), lessThan(top('Yesterday')));
+      expect(top('Yesterday'), lessThan(top('This week')));
+      expect(top('This week'), lessThan(top('Tomorrow')));
+      expect(top('Tomorrow'), lessThan(top('Later')));
+      expect(top('Later'), lessThan(top('Next month')));
+      expect(top('Next month'), lessThan(top('No due date')));
+      expect(top('No due date'), lessThan(top('Undated')));
+    });
+
+    testWidgets('names every group key, and the ungrouped set not at all', (
+      tester,
+    ) async {
+      late BuildContext context;
+      await tester.pumpWidget(
+        wrapSliver(
+          SliverToBoxAdapter(
+            child: Builder(
+              builder: (c) {
+                context = c;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      String label(ProjectTaskGroupKey key) =>
+          projectTaskGroupLabel(context, key);
+
+      expect(label(const ProjectTaskMonthKey(2026, 9)), 'September 2026');
+      expect(
+        label(
+          ProjectTaskStatusKey(
+            TaskStatus.open(id: 'open', createdAt: now, utcOffset: 0),
+          ),
+        ),
+        'Open',
+      );
+      expect(
+        label(const ProjectTaskDueWindowKey(ProjectDueWindow.overdue)),
+        'Overdue',
+      );
+      expect(
+        label(const ProjectTaskDueWindowKey(ProjectDueWindow.thisWeek)),
+        'This week',
+      );
+      expect(
+        label(const ProjectTaskDueWindowKey(ProjectDueWindow.later)),
+        'Later',
+      );
+      expect(
+        label(const ProjectTaskDueWindowKey(ProjectDueWindow.none)),
+        'No due date',
+      );
+      expect(label(const ProjectTaskDoneKey()), 'Done');
+      expect(
+        label(const ProjectTaskAllKey()),
+        isEmpty,
+        reason: 'the ungrouped set never shows a header',
+      );
     });
 
     testWidgets('due-window groups move on at local midnight', (

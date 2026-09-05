@@ -344,6 +344,32 @@ void main() {
     });
   });
 
+  group('ProjectTaskGroupKey', () {
+    test('equal keys share a hash, so sets and maps dedupe them', () {
+      final keys = <ProjectTaskGroupKey>{
+        // ignore: prefer_const_constructors
+        ProjectTaskMonthKey(2026, 9),
+        // ignore: prefer_const_constructors
+        ProjectTaskMonthKey(2026, 9),
+        // ignore: prefer_const_constructors
+        ProjectTaskDueWindowKey(ProjectDueWindow.later),
+        // ignore: prefer_const_constructors
+        ProjectTaskDueWindowKey(ProjectDueWindow.later),
+        // ignore: prefer_const_constructors
+        ProjectTaskDoneKey(),
+        // ignore: prefer_const_constructors
+        ProjectTaskDoneKey(),
+        // ignore: prefer_const_constructors
+        ProjectTaskAllKey(),
+        // ignore: prefer_const_constructors
+        ProjectTaskAllKey(),
+      };
+
+      expect(keys, hasLength(4));
+      expect(keys.map((key) => key.id).toSet(), hasLength(4));
+    });
+  });
+
   group('properties', () {
     final anyKind = glados.any.choose([
       'open',
