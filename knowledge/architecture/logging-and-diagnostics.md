@@ -76,7 +76,7 @@ flowchart TD
   PerDomain -->|no| DomainLog
 ```
 
-**An error reaches two to four files**, depending on its domain: the general log,
+**A production `DomainLogger.error` call targets four files**: the general log,
 the full `error-<date>.log` mirror, the PII-safe `error-safe-<date>.log`, and then
 either the shared `sync-<date>.log` or its own `<domain>-<date>.log`.
 
@@ -122,14 +122,15 @@ its pending count before removing the state. This preserves both the diagnostic
 context and evidence of a rebuild loop without allowing one framework
 exception to generate an unbounded error file.
 
-**`sync` is the one domain that routes to its own file.** It is off by default
-and far noisier than everything else — a catch-up can produce thousands of lines
-in a second — so it goes to `sync-<date>.log` where it can be read in isolation
-without burying the rest.
+**Routine `sync` events omit the general log.** Sync is off by default;
+a catch-up can produce thousands of lines in a second. Those events go to
+`sync-<date>.log` without burying the rest of the app's general telemetry.
 
 Flags are toggled in *Settings → Advanced → Logging Domains* and stored as
-config flags in `JournalDb`. `LoggingService.listenToConfigFlag()` subscribes at
-startup, so a toggle takes effect immediately rather than at next launch.
+config flags in `JournalDb`. `domainLoggerProvider` listens to each domain flag
+and updates the shared logger in place without restarting the agent runtime.
+`LoggingService.listenToConfigFlag()` separately tracks the general logging and
+slow-query flags, so these gates also update without a restart.
 
 # File writing is batched
 
