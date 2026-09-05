@@ -628,9 +628,9 @@ void main() {
         );
         expect(find.text('Project Waddle'), findsWidgets);
         expect(
-          find.text(_messages(tester).projectShowcaseProjectTasksTab),
+          find.text(_messages(tester).aiCardTitle),
           findsOneWidget,
-          reason: 'The Task-style detail surface leads with project work.',
+          reason: 'The project detail leads with the AI summary.',
         );
         await captureScreenshot(
           tester,

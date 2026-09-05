@@ -143,7 +143,7 @@ final eventChangeSetConfirmationServiceProvider =
     });
 
 /// Service that persists the project agent's "next steps" recommendations as
-/// durable [ProjectRecommendationEntity] rows once the user confirms them.
+/// durable [ProjectRecommendationEntity] rows with individual user actions.
 ///
 /// Falls back to a bare [UpdateNotifications] in tests where one isn't
 /// registered, so the service can always notify the project detail page.
@@ -157,6 +157,13 @@ final projectRecommendationServiceProvider =
           syncService: ref.watch(agentSyncServiceProvider),
           notifications: notifications,
           domainLogger: ref.watch(domainLoggerProvider),
+          taskDispatcher: (tool, args, projectId) => ProjectToolDispatcher(
+            projectRepository: ref.read(projectRepositoryProvider),
+            persistenceLogic: getIt<PersistenceLogic>(),
+            entitiesCacheService: getIt<EntitiesCacheService>(),
+            domainLogger: ref.read(domainLoggerProvider),
+            taskAgentService: ref.read(taskAgentServiceProvider),
+          ).dispatch(tool, args, projectId),
         );
       },
     );
@@ -172,6 +179,12 @@ projectRecommendationsProvider = FutureProvider.autoDispose
       ref.watch(agentUpdateStreamProvider(identity.agentId));
 
       final repo = ref.watch(agentRepositoryProvider);
+      await ref
+          .read(projectRecommendationServiceProvider)
+          .migratePendingBatches(
+            identity.agentId,
+            projectId,
+          );
       final entities = await repo.getEntitiesByAgentId(
         identity.agentId,
         type: AgentEntityTypes.projectRecommendation,

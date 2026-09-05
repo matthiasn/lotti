@@ -13,7 +13,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
@@ -1174,9 +1173,7 @@ void main() {
           );
           expect(content.onRefreshReport, isNotNull);
           expect(content.onCancelScheduledReportWake, isNotNull);
-          final actions = content.agentActions! as Column;
-          expect(actions.children.first, isA<ProjectRecommendationsPanel>());
-          expect(actions.children.last, isA<ChangeSetSummaryCard>());
+          expect(content.agentActions, isA<ProjectRecommendationsPanel>());
 
           // Invoking the wired callbacks must dispatch to the project
           // agent service for the resolved agent ID, with the cancel path

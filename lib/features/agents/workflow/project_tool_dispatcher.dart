@@ -232,6 +232,7 @@ class ProjectToolDispatcher {
       final rolledBack = await _rollbackCreatedTask(task);
       return ToolExecutionResult(
         success: false,
+        nonRetryable: !rolledBack,
         output: rolledBack
             ? 'Error: failed to link task "$title" to the project. '
                   'Rolled back the created task.'

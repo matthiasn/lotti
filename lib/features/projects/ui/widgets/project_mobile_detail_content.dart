@@ -256,18 +256,6 @@ class _ProjectMobileDetailContentState
                                 child: SizedBox(height: tokens.spacing.step6),
                               ),
                             ],
-                            ProjectTasksSliverPanel(
-                              record: widget.record,
-                              onTaskTap: isMutating ? null : widget.onTaskTap,
-                              onAddTask: widget.onAddTask == null
-                                  ? null
-                                  : _handleAddTask,
-                              isAddTaskEnabled: !isMutating,
-                              isAddingTask: _isAddingTask,
-                            ),
-                            SliverToBoxAdapter(
-                              child: SizedBox(height: tokens.spacing.step5),
-                            ),
                             SliverToBoxAdapter(
                               child: ProjectAgentSummaryCard(
                                 projectId: widget.record.project.meta.id,
@@ -290,6 +278,18 @@ class _ProjectMobileDetailContentState
                                 actions: widget.agentActions,
                                 isRefreshing: widget.isRefreshingReport,
                               ),
+                            ),
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: tokens.spacing.step5),
+                            ),
+                            ProjectTasksSliverPanel(
+                              record: widget.record,
+                              onTaskTap: isMutating ? null : widget.onTaskTap,
+                              onAddTask: widget.onAddTask == null
+                                  ? null
+                                  : _handleAddTask,
+                              isAddTaskEnabled: !isMutating,
+                              isAddingTask: _isAddingTask,
                             ),
                           ],
                         ),

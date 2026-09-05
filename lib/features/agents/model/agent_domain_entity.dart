@@ -754,7 +754,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = ChangeDecisionEntity;
 
-  /// A human-approved project recommendation with lifecycle.
+  /// A project next-step suggestion with an individual user-decision lifecycle.
   const factory AgentDomainEntity.projectRecommendation({
     required String id,
     required String agentId,

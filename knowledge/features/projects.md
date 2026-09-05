@@ -8,6 +8,10 @@ status: stable
 generated: { by: codex/gpt-5, at: 2026-09-04T12:00:00Z }
 stale_after: 2027-03-01
 sources:
+  - id: project-actions
+    resource: ../../lib/features/projects/ui/widgets/project_recommendations_panel.dart
+    title: Consolidated next steps and pending project actions
+    last_modified: 2026-09-05
   - id: src
     resource: ../../lib/features/projects
     title: Projects feature source
@@ -329,7 +333,14 @@ chrome, identity route, report expansion, automation toggle, countdown,
 run-now action and setup route as Task Details. Project health and durable
 recommendation/change-set actions remain project-owned content inside that one
 surface instead of becoming competing cards or duplicating the report in the
-editor.
+editor. The AI surface appears above the task list. `ProjectRecommendationsPanel`
+combines current next steps and other pending proposals in one compact action
+band, using Task Details' `RowActions` and confirm-all button pattern. Each step
+can be confirmed, dismissed, or turned into a project-linked task. A shared busy
+guard serializes row and batch actions; failed rows remain available while
+successful rows disappear. Provider reloads retain the last displayed data.
+The replacement and migration lifecycle lives in
+[project and event agents](agents/project-and-event-agents.md#tools-and-recommendations).
 
 **There is no aggregator object** — each surface watches the providers it needs.
 

@@ -107,9 +107,11 @@ parallel tool calls in a single turn rather than one per turn.
 
 ## Deferred Tools
 
-The `recommend_next_steps`, `update_project_status`, and `create_task` tools
-are deferred — they queue changes for user review rather than executing
-immediately.''';
+The `update_project_status` and `create_task` tools queue changes for user review.
+`recommend_next_steps` supplies the complete current list of suggestions for this
+run. It replaces previous next steps when the run succeeds, including clearing
+old steps when none are recommended. Users confirm, dismiss, or create a task
+from each suggestion individually. Include only steps that remain relevant.''';
 
     return composeAgentSystemPrompt(
       scaffold: scaffold,

@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
-import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -168,12 +167,7 @@ class ProjectDetailsPage extends ConsumerWidget {
               agentIdentity: identity,
               agentActions: identity == null
                   ? null
-                  : Column(
-                      children: [
-                        ProjectRecommendationsPanel(projectId: projectId),
-                        ChangeSetSummaryCard.project(projectId: projectId),
-                      ],
-                    ),
+                  : ProjectRecommendationsPanel(projectId: projectId),
               hasProjectAgent: identity != null || agentAsync.isLoading,
               isRefreshingReport: isRefreshingReport,
               isSaving: detailState.isSaving,

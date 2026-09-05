@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -46,6 +47,372 @@ void main() {
       syncService: mockSyncService,
       notifications: mockNotifications,
       domainLogger: mockDomainLogger,
+    );
+  });
+
+  group('current next steps', () {
+    late Map<String, AgentDomainEntity> rows;
+    final now = DateTime(2026, 9, 5);
+    final proposal = <Map<String, dynamic>>[
+      {
+        'toolName': 'recommend_next_steps',
+        'args': {
+          'steps': [
+            {
+              'title': 'Review penguin launch',
+              'rationale': 'Check seals',
+              'priority': 'high',
+            },
+            {'title': 'Pack fish'},
+          ],
+        },
+      },
+    ];
+    setUp(() {
+      rows = {};
+      when(
+        () => mockRepository.getLatestReport(any(), any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getEntitiesByAgentId(
+          any(),
+          type: AgentEntityTypes.projectRecommendation,
+        ),
+      ).thenAnswer(
+        (_) async =>
+            rows.values.whereType<ProjectRecommendationEntity>().toList(),
+      );
+      when(
+        () => mockRepository.getPendingChangeSets(
+          any(),
+          taskId: any(named: 'taskId'),
+        ),
+      ).thenAnswer(
+        (_) async => rows.values
+            .whereType<ChangeSetEntity>()
+            .where(
+              (set) => set.items.any(
+                (item) => item.status == ChangeItemStatus.pending,
+              ),
+            )
+            .toList(),
+      );
+      when(() => mockRepository.getEntity(any())).thenAnswer(
+        (call) async => rows[call.positionalArguments.first],
+      );
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((call) async {
+        final row = call.positionalArguments.first as AgentDomainEntity;
+        rows[row.id] = row;
+      });
+    });
+
+    Future<void> publish(String run, List<Map<String, dynamic>> items) =>
+        withClock(
+          Clock.fixed(now),
+          () => service.replaceForRun(
+            agentId: 'agent-1',
+            projectId: 'project-1',
+            runKey: run,
+            deferredItems: items,
+          ),
+        );
+    List<ProjectRecommendationEntity> active() => rows.values
+        .whereType<ProjectRecommendationEntity>()
+        .where(
+          (row) => row.status == ProjectRecommendationStatus.active,
+        )
+        .toList();
+
+    test(
+      'new runs replace suggestions and empty runs retract the list',
+      () async {
+        await publish('run-1', proposal);
+        final previous = active().map((row) => row.id).toList();
+        expect(active().map((row) => row.title), [
+          'Review penguin launch',
+          'Pack fish',
+        ]);
+        await publish('run-2', proposal);
+        expect(active(), hasLength(2));
+        for (final id in previous) {
+          expect(
+            (rows[id]! as ProjectRecommendationEntity).status,
+            ProjectRecommendationStatus.superseded,
+          );
+        }
+        await publish('run-3', []);
+        expect(active(), isEmpty);
+      },
+    );
+
+    test(
+      'retrying a run never revives individually decided suggestions',
+      () async {
+        await publish('run-1', proposal);
+        final first = active().first;
+        expect(await service.markResolved(first.id), isTrue);
+        await publish('run-1', proposal);
+        expect(active().map((row) => row.title), ['Pack fish']);
+        expect(
+          rows.values.whereType<ProjectRecommendationEntity>(),
+          hasLength(2),
+        );
+      },
+    );
+
+    test(
+      'migration keeps newest run and retracts only pending recommendations',
+      () async {
+        for (final index in [1, 2]) {
+          rows['set-$index'] = makeTestChangeSet(
+            id: 'set-$index',
+            agentId: 'agent-1',
+            taskId: 'project-1',
+            runKey: 'run-$index',
+            createdAt: now.subtract(Duration(days: 3 - index)),
+            items: [
+              ChangeItem(
+                toolName: 'recommend_next_steps',
+                args: {
+                  'steps': [
+                    {'title': 'Step $index'},
+                  ],
+                },
+                humanSummary: 'opaque',
+              ),
+              const ChangeItem(
+                toolName: 'create_task',
+                args: {'title': 'Existing task proposal'},
+                humanSummary: 'Keep me',
+              ),
+            ],
+          );
+        }
+        await withClock(
+          Clock.fixed(now),
+          () => service.migratePendingBatches('agent-1', 'project-1'),
+        );
+        expect(active().map((row) => row.title), ['Step 2']);
+        for (final set in rows.values.whereType<ChangeSetEntity>()) {
+          expect(set.items.map((item) => item.status), [
+            ChangeItemStatus.retracted,
+            ChangeItemStatus.pending,
+          ]);
+          expect(set.status, ChangeSetStatus.partiallyResolved);
+        }
+        final id = active().single.id;
+        await service.dismissRecommendation(id);
+        await service.migratePendingBatches('agent-1', 'project-1');
+        expect(active(), isEmpty);
+      },
+    );
+
+    test(
+      'successful run retracts legacy batches while retaining other tools',
+      () async {
+        rows['legacy'] = makeTestChangeSet(
+          id: 'legacy',
+          agentId: 'agent-1',
+          taskId: 'project-1',
+          items: [
+            const ChangeItem(
+              toolName: 'recommend_next_steps',
+              args: {'steps': <Object>[]},
+              humanSummary: 'old',
+            ),
+            const ChangeItem(
+              toolName: 'update_project_status',
+              args: {'status': 'completed'},
+              humanSummary: 'Keep',
+            ),
+          ],
+        );
+        await publish('new', proposal);
+        final legacy = rows['legacy']! as ChangeSetEntity;
+        expect(legacy.items.first.status, ChangeItemStatus.retracted);
+        expect(legacy.items.last.status, ChangeItemStatus.pending);
+        expect(active(), hasLength(2));
+      },
+    );
+
+    for (final succeeds in [true, false]) {
+      test(
+        'task creation forwards project, text and priority; success=$succeeds',
+        () async {
+          var calls = 0;
+          service = ProjectRecommendationService(
+            syncService: mockSyncService,
+            notifications: mockNotifications,
+            taskDispatcher: (tool, args, projectId) async {
+              calls++;
+              expect(tool, 'create_task');
+              expect(projectId, 'project-1');
+              expect(args, {
+                'title': 'Review penguin launch',
+                'description': 'Check seals',
+                'priority': 'HIGH',
+              });
+              return ToolExecutionResult(
+                success: succeeds,
+                output: '',
+                mutatedEntityId: succeeds ? 'task-1' : null,
+              );
+            },
+          );
+          await publish('run-1', proposal);
+          final id = active().first.id;
+          expect((await service.createTask(id)).success, succeeds);
+          expect(calls, 1);
+          expect(
+            (rows[id]! as ProjectRecommendationEntity).status,
+            succeeds
+                ? ProjectRecommendationStatus.resolved
+                : ProjectRecommendationStatus.active,
+          );
+          if (succeeds) {
+            expect((await service.createTask(id)).success, isFalse);
+            expect(calls, 1);
+          }
+        },
+      );
+    }
+
+    test(
+      'migration does not revive steps from before the latest report',
+      () async {
+        rows['legacy'] = makeTestChangeSet(
+          id: 'legacy',
+          agentId: 'agent-1',
+          taskId: 'project-1',
+          createdAt: now.subtract(const Duration(days: 1)),
+          items: [
+            const ChangeItem(
+              toolName: 'recommend_next_steps',
+              args: {
+                'steps': [
+                  {'title': 'Stale'},
+                ],
+              },
+              humanSummary: 'old',
+            ),
+          ],
+        );
+        when(
+          () => mockRepository.getLatestReport(any(), any()),
+        ).thenAnswer((_) async => makeTestReport(createdAt: now));
+        await service.migratePendingBatches('agent-1', 'project-1');
+        expect(active(), isEmpty);
+        expect(
+          (rows['legacy']! as ChangeSetEntity).items.single.status,
+          ChangeItemStatus.retracted,
+        );
+      },
+    );
+
+    test(
+      'failed creation cannot revive a step superseded by a newer report',
+      () async {
+        service = ProjectRecommendationService(
+          syncService: mockSyncService,
+          taskDispatcher: (_, _, _) async {
+            when(() => mockRepository.getLatestReport(any(), any())).thenAnswer(
+              (_) async =>
+                  makeTestReport(createdAt: now.add(const Duration(hours: 1))),
+            );
+            return const ToolExecutionResult(success: false, output: 'failed');
+          },
+        );
+        await publish('run-1', proposal);
+        final id = active().first.id;
+        expect((await service.createTask(id)).success, isFalse);
+        expect(
+          (rows[id]! as ProjectRecommendationEntity).status,
+          ProjectRecommendationStatus.superseded,
+        );
+      },
+    );
+
+    test('a task whose rollback failed stays consumed', () async {
+      service = ProjectRecommendationService(
+        syncService: mockSyncService,
+        taskDispatcher: (_, _, _) async => const ToolExecutionResult(
+          success: false,
+          nonRetryable: true,
+          output: 'rollback failed',
+        ),
+      );
+      await publish('run-1', proposal);
+      final id = active().first.id;
+      expect((await service.createTask(id)).success, isFalse);
+      expect(
+        (rows[id]! as ProjectRecommendationEntity).status,
+        ProjectRecommendationStatus.resolved,
+      );
+    });
+
+    test(
+      'migration retains a newer individually decided recommendation',
+      () async {
+        rows['newer'] = makeTestProjectRecommendation(
+          id: 'newer',
+          projectId: 'project-1',
+          createdAt: now,
+          status: ProjectRecommendationStatus.dismissed,
+        );
+        rows['legacy'] = makeTestChangeSet(
+          id: 'legacy',
+          agentId: 'agent-1',
+          taskId: 'project-1',
+          createdAt: now.subtract(const Duration(days: 1)),
+          items: const [
+            ChangeItem(
+              toolName: 'recommend_next_steps',
+              args: {
+                'steps': [
+                  {'title': 'Old step'},
+                ],
+              },
+              humanSummary: 'Old',
+            ),
+          ],
+        );
+        final newer = rows['newer'];
+        await service.migratePendingBatches('agent-1', 'project-1');
+        expect(rows['newer'], newer);
+        expect(active(), isEmpty);
+        expect(
+          (rows['legacy']! as ChangeSetEntity).items.single.status,
+          ChangeItemStatus.retracted,
+        );
+      },
+    );
+
+    test(
+      'creating a task without a dispatcher fails before consuming a step',
+      () async {
+        await publish('run-1', proposal);
+        final id = active().first.id;
+        await expectLater(service.createTask(id), throwsStateError);
+        expect(
+          (rows[id]! as ProjectRecommendationEntity).status,
+          ProjectRecommendationStatus.active,
+        );
+      },
+    );
+
+    test(
+      'uncertain task failure stays consumed to prevent a duplicate retry',
+      () async {
+        service = ProjectRecommendationService(
+          syncService: mockSyncService,
+          taskDispatcher: (_, _, _) async =>
+              throw StateError('unknown commit outcome'),
+        );
+        await publish('run-1', proposal);
+        final id = active().first.id;
+        await expectLater(service.createTask(id), throwsStateError);
+        expect((await service.createTask(id)).success, isFalse);
+      },
     );
   });
 

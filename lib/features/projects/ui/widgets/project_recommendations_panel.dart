@@ -3,137 +3,95 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/localized_change_summary.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
-import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Actionable project-agent recommendations for the read-first project detail.
-///
-/// The report itself is rendered by the shared AI report card. This panel owns
-/// only durable next-step recommendations and their resolve/dismiss actions so
-/// the project surface does not duplicate agent identity or report content.
-class ProjectRecommendationsPanel extends ConsumerWidget {
+/// One compact action band inside the project AI card. Next steps and pending
+/// mutations share individual decisions and one confirm-all rail, following the
+/// task agent's controls without rendering a card for every analyst run.
+class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
   const ProjectRecommendationsPanel({required this.projectId, super.key});
 
   final String projectId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recommendationsAsync = ref.watch(
-      projectRecommendationsProvider(projectId),
-    );
+  ConsumerState<ProjectRecommendationsPanel> createState() =>
+      _ProjectRecommendationsPanelState();
+}
 
-    return recommendationsAsync.when(
-      skipLoadingOnReload: true,
-      skipLoadingOnRefresh: true,
-      skipError: true,
-      data: (recommendations) {
-        if (recommendations.isEmpty) return const SizedBox.shrink();
-        final tokens = context.designTokens;
-        return DesignSystemSectionCard(
-          margin: EdgeInsets.only(top: tokens.spacing.step5),
-          padding: EdgeInsets.zero,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.step5,
-                  tokens.spacing.step4,
-                  tokens.spacing.step5,
-                  tokens.spacing.step3,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      LottiIcons.tip,
-                      size: IconSizes.s,
-                      color: tokens.colors.interactive.enabled,
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(
-                      child: Text(
-                        context.messages.projectRecommendationsTitle,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
+class _ProjectRecommendationsPanelState
+    extends ConsumerState<ProjectRecommendationsPanel> {
+  bool _busy = false;
+  final _consumed = <String>{};
+
+  Future<bool> _apply(_ProjectAction row, _Action action) async {
+    final recommendation = row.recommendation;
+    if (recommendation != null) {
+      final service = ref.read(projectRecommendationServiceProvider);
+      switch (action) {
+        case _Action.confirm:
+          return service.markResolved(recommendation.id);
+        case _Action.dismiss:
+          return service.dismissRecommendation(recommendation.id);
+        case _Action.createTask:
+          final result = await service.createTask(recommendation.id);
+          if (result.success && result.errorMessage != null && mounted) {
+            context.showToast(
+              tone: DesignSystemToastTone.warning,
+              title: context.messages.changeSetItemConfirmedWithWarning(
+                result.errorMessage!,
               ),
-              const DesignSystemDivider(),
-              for (var index = 0; index < recommendations.length; index++) ...[
-                _ProjectRecommendationRow(
-                  projectId: projectId,
-                  recommendation: recommendations[index],
-                ),
-                if (index != recommendations.length - 1)
-                  const DesignSystemDivider(),
-              ],
-            ],
-          ),
-        );
-      },
-      error: (_, _) => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
-    );
+            );
+          }
+          return result.success;
+      }
+    }
+    final service = ref.read(projectChangeSetConfirmationServiceProvider);
+    return action == _Action.dismiss
+        ? service.rejectItem(row.changeSet!, row.itemIndex!)
+        : (await service.confirmItem(row.changeSet!, row.itemIndex!)).success;
   }
-}
 
-enum _RecommendationAction { resolve, dismiss }
-
-class _ProjectRecommendationRow extends ConsumerStatefulWidget {
-  const _ProjectRecommendationRow({
-    required this.projectId,
-    required this.recommendation,
-  });
-
-  final String projectId;
-  final ProjectRecommendationEntity recommendation;
-
-  @override
-  ConsumerState<_ProjectRecommendationRow> createState() =>
-      _ProjectRecommendationRowState();
-}
-
-class _ProjectRecommendationRowState
-    extends ConsumerState<_ProjectRecommendationRow> {
-  _RecommendationAction? _busyAction;
-
-  Future<void> _run(_RecommendationAction action) async {
-    if (_busyAction != null) return;
-    setState(() => _busyAction = action);
-    final service = ref.read(projectRecommendationServiceProvider);
-    var success = false;
-    try {
-      success = switch (action) {
-        _RecommendationAction.resolve => await service.markResolved(
-          widget.recommendation.id,
-        ),
-        _RecommendationAction.dismiss => await service.dismissRecommendation(
-          widget.recommendation.id,
-        ),
-      };
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to update project recommendation',
-        name: 'ProjectRecommendationsPanel',
-        error: error,
-        stackTrace: stackTrace,
-      );
+  Future<void> _run(List<_ProjectAction> rows, _Action action) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    var failed = false;
+    for (final row in rows) {
+      try {
+        if (await _apply(row, action)) {
+          _consumed.add(row.id);
+        } else {
+          failed = true;
+        }
+      } catch (error, stackTrace) {
+        failed = true;
+        developer.log(
+          'Failed to apply project suggestion',
+          name: 'ProjectRecommendationsPanel',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+      if (!mounted) return;
+      ref.invalidate(agentUpdateStreamProvider(row.agentId));
     }
     if (!mounted) return;
-    setState(() => _busyAction = null);
-    if (success) {
-      ref.invalidate(projectRecommendationsProvider(widget.projectId));
-    } else {
+    ref
+      ..invalidate(projectRecommendationsProvider(widget.projectId))
+      ..invalidate(projectPendingChangeSetsProvider(widget.projectId));
+    setState(() => _busy = false);
+    if (failed) {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.projectRecommendationUpdateError,
@@ -143,69 +101,150 @@ class _ProjectRecommendationRowState
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final recommendation = widget.recommendation;
-    final rationale = recommendation.rationale?.trim();
-    final priority = recommendation.priority?.trim();
-    final busy = _busyAction != null;
+    final recommendations =
+        ref
+            .watch(
+              projectRecommendationsProvider(widget.projectId),
+            )
+            .value ??
+        const <ProjectRecommendationEntity>[];
+    final sets =
+        ref
+            .watch(
+              projectPendingChangeSetsProvider(widget.projectId),
+            )
+            .value ??
+        const <AgentDomainEntity>[];
+    final rows = [
+      for (final recommendation in recommendations)
+        _ProjectAction.recommendation(recommendation),
+      for (final set in sets.whereType<ChangeSetEntity>())
+        for (final entry in set.items.indexed)
+          if (entry.$2.status == ChangeItemStatus.pending &&
+              entry.$2.toolName != ProjectAgentToolNames.recommendNextSteps)
+            _ProjectAction.change(set, entry.$1),
+    ].where((row) => !_consumed.contains(row.id)).toList();
+    if (rows.isEmpty) return const SizedBox.shrink();
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step5,
-        tokens.spacing.step3,
-        tokens.spacing.step3,
-        tokens.spacing.step3,
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: ai.borderSoft)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.cardPadding,
+        vertical: tokens.spacing.step3,
+      ),
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: TldrBody.maxReadingWidth),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(
-                  recommendation.title,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                    fontWeight: tokens.typography.weight.semiBold,
+                Icon(LottiIcons.tip, size: IconSizes.s, color: ai.titleText),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    recommendations.isEmpty
+                        ? context.messages.changeSetCardTitle
+                        : context.messages.projectRecommendationsTitle,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: ai.titleText,
+                    ),
                   ),
                 ),
-                if (rationale != null && rationale.isNotEmpty) ...[
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    rationale,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
+                Text(
+                  context.messages.changeSetPendingCount(rows.length),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: ai.metaText,
                   ),
-                ],
-                if (priority != null && priority.isNotEmpty) ...[
-                  SizedBox(height: tokens.spacing.step2),
-                  Text(
-                    priority,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.interactive.enabled,
-                      fontWeight: tokens.typography.weight.semiBold,
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
-          ),
-          DesignSystemIconAction(
-            icon: LottiIcons.confirmCircled,
-            tooltip: context.messages.projectRecommendationResolveTooltip,
-            onPressed: busy ? null : () => _run(_RecommendationAction.resolve),
-            isBusy: _busyAction == _RecommendationAction.resolve,
-          ),
-          DesignSystemIconAction(
-            icon: LottiIcons.close,
-            tooltip: context.messages.projectRecommendationDismissTooltip,
-            onPressed: busy ? null : () => _run(_RecommendationAction.dismiss),
-            isBusy: _busyAction == _RecommendationAction.dismiss,
-          ),
-        ],
+            SizedBox(height: tokens.spacing.step3),
+            for (final row in rows)
+              Padding(
+                key: ValueKey(row.id),
+                padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            row.title(context),
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(color: ai.titleText),
+                          ),
+                          if (row.recommendation?.rationale
+                              case final String rationale)
+                            if (rationale.trim().isNotEmpty)
+                              Text(
+                                rationale,
+                                style: tokens.typography.styles.body.bodySmall
+                                    .copyWith(color: ai.metaText),
+                              ),
+                        ],
+                      ),
+                    ),
+                    if (row.recommendation != null)
+                      DesignSystemIconAction(
+                        icon: LottiIcons.add,
+                        tooltip: context.messages.projectActionAddTask,
+                        onPressed: _busy
+                            ? null
+                            : () => _run([row], _Action.createTask),
+                      ),
+                    RowActions(
+                      busy: _busy,
+                      onReject: () => _run([row], _Action.dismiss),
+                      onConfirm: () => _run([row], _Action.confirm),
+                    ),
+                  ],
+                ),
+              ),
+            if (rows.length > 1)
+              Align(
+                alignment: Alignment.centerRight,
+                child: DesignSystemButton(
+                  label: context.messages.changeSetConfirmAll,
+                  leadingIcon: LottiIcons.confirmAll,
+                  variant: DesignSystemButtonVariant.outlined,
+                  isLoading: _busy,
+                  onPressed: _busy ? null : () => _run(rows, _Action.confirm),
+                ),
+              ),
+          ],
+        ),
       ),
     );
+  }
+}
+
+enum _Action { confirm, dismiss, createTask }
+
+class _ProjectAction {
+  const _ProjectAction.recommendation(this.recommendation)
+    : changeSet = null,
+      itemIndex = null;
+  const _ProjectAction.change(this.changeSet, this.itemIndex)
+    : recommendation = null;
+
+  final ProjectRecommendationEntity? recommendation;
+  final ChangeSetEntity? changeSet;
+  final int? itemIndex;
+
+  String get id => recommendation?.id ?? '${changeSet!.id}:$itemIndex';
+  String get agentId => recommendation?.agentId ?? changeSet!.agentId;
+
+  String title(BuildContext context) {
+    if (recommendation case final recommendation?) return recommendation.title;
+    final item = changeSet!.items[itemIndex!];
+    return localizedChangeSummary(context.messages, item.toolName, item.args) ??
+        item.humanSummary;
   }
 }
