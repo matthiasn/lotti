@@ -8,7 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
-import 'migration_test_helper.dart';
+import 'schema_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -60,10 +60,8 @@ void main() {
       final dbFile = File(p.join(testDirectory!.path, 'test_v29_priority.db'));
       final sqlite = sqlite3.open(dbFile.path);
 
-      // Create a v28-style journal table without priority columns
-      createJournalTable(sqlite, version: 28);
-
-      createLinkedEntriesTableWithBuggyIndex(sqlite);
+      // The real v28 schema: no priority columns yet.
+      createJournalSchema(sqlite, 28);
 
       // Insert a legacy task row (no priority columns exist yet)
       sqlite.execute("""
@@ -71,8 +69,6 @@ void main() {
         VALUES ('legacy-task', '{}', 0, 0, 0, 0, 'Task', 1, 'OPEN')
       """);
 
-      // Set user_version to 28 to trigger v29 migration
-      sqlite.execute('PRAGMA user_version = 28');
       sqlite.close();
 
       // Open with Drift to run migration
@@ -123,18 +119,8 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        createJournalTable(sqlite, version: 32);
+        createJournalSchema(sqlite, 30);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS config_flags (
-          name TEXT NOT NULL UNIQUE,
-          description TEXT NOT NULL UNIQUE,
-          status BOOLEAN NOT NULL DEFAULT FALSE,
-          PRIMARY KEY (name)
-        )
-      ''');
-
-        sqlite.execute('PRAGMA user_version = 32');
         sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v33_due_idx.db');
@@ -165,9 +151,8 @@ void main() {
       );
       final sqlite = sqlite3.open(dbFile.path);
 
-      createJournalTable(sqlite, version: 34);
+      createJournalSchema(sqlite, 30);
 
-      sqlite.execute('PRAGMA user_version = 34');
       sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v35_task_date_idx.db');
@@ -199,7 +184,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        createJournalTable(sqlite, version: 34);
+        createJournalSchema(sqlite, 30);
 
         sqlite.execute('''
         CREATE INDEX idx_journal_tasks_date
@@ -212,7 +197,6 @@ void main() {
         WHERE type = 'Task' AND deleted = FALSE AND task = 1
       ''');
 
-        sqlite.execute('PRAGMA user_version = 34');
         sqlite.close();
 
         final db = JournalDb(
@@ -243,9 +227,8 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        createJournalTable(sqlite, version: 35);
+        createJournalSchema(sqlite, 30);
 
-        sqlite.execute('PRAGMA user_version = 35');
         sqlite.close();
 
         final db = JournalDb(
@@ -282,7 +265,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        createJournalTable(sqlite, version: 35);
+        createJournalSchema(sqlite, 30);
 
         sqlite.execute('''
         CREATE INDEX idx_journal_browse
@@ -293,7 +276,6 @@ void main() {
         )
       ''');
 
-        sqlite.execute('PRAGMA user_version = 35');
         sqlite.close();
 
         final db = JournalDb(
@@ -324,7 +306,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        createJournalTable(sqlite, version: 36);
+        createJournalSchema(sqlite, 30);
 
         sqlite.execute('''
         CREATE TABLE IF NOT EXISTS labeled (
@@ -334,7 +316,6 @@ void main() {
         )
       ''');
 
-        sqlite.execute('PRAGMA user_version = 36');
         sqlite.close();
 
         final db = JournalDb(
@@ -410,7 +391,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        createJournalTable(sqlite, version: 36);
+        createJournalSchema(sqlite, 30);
 
         sqlite.execute('''
         CREATE TABLE IF NOT EXISTS labeled (
@@ -428,7 +409,6 @@ void main() {
         )
       ''');
 
-        sqlite.execute('PRAGMA user_version = 36');
         sqlite.close();
 
         final db = JournalDb(

@@ -8,6 +8,8 @@ import 'package:lotti/get_it.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
+import 'schema_fixtures.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -60,9 +62,8 @@ void main() {
       );
       final sqlite = sqlite3.open(dbFile.path);
 
-      _createV33DefinitionSchema(sqlite);
-
-      sqlite.execute('PRAGMA user_version = 33');
+      // Versions 31-36 never shipped; a real install upgrades from v30.
+      createJournalSchema(sqlite, 30);
       sqlite.close();
 
       final db = JournalDb(
@@ -130,7 +131,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        _createV33DefinitionSchema(sqlite);
+        createJournalSchema(sqlite, 30);
         sqlite.execute('''
         CREATE INDEX idx_habit_definitions_deleted_private
         ON habit_definitions (
@@ -138,7 +139,6 @@ void main() {
           private COLLATE BINARY ASC
         )
       ''');
-        sqlite.execute('PRAGMA user_version = 33');
         sqlite.close();
 
         final db = JournalDb(
@@ -165,77 +165,4 @@ void main() {
       },
     );
   });
-}
-
-void _createV33DefinitionSchema(Database sqlite) {
-  sqlite.execute('''
-    CREATE TABLE IF NOT EXISTS habit_definitions (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      deleted BOOLEAN NOT NULL DEFAULT FALSE,
-      private BOOLEAN NOT NULL DEFAULT FALSE,
-      serialized TEXT NOT NULL,
-      active BOOLEAN NOT NULL
-    )
-  ''');
-
-  sqlite.execute('''
-    CREATE TABLE IF NOT EXISTS label_definitions (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      color TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      deleted BOOLEAN NOT NULL DEFAULT FALSE,
-      private BOOLEAN NOT NULL DEFAULT FALSE,
-      serialized TEXT NOT NULL
-    )
-  ''');
-
-  sqlite.execute('''
-    CREATE TABLE IF NOT EXISTS dashboard_definitions (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      last_reviewed INTEGER NOT NULL,
-      deleted BOOLEAN NOT NULL DEFAULT FALSE,
-      private BOOLEAN NOT NULL DEFAULT FALSE,
-      serialized TEXT NOT NULL,
-      active BOOLEAN NOT NULL
-    )
-  ''');
-
-  sqlite.execute('''
-    CREATE TABLE IF NOT EXISTS tag_entities (
-      id TEXT NOT NULL UNIQUE,
-      tag TEXT NOT NULL,
-      type TEXT NOT NULL,
-      inactive BOOLEAN DEFAULT FALSE,
-      private BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      deleted BOOLEAN DEFAULT FALSE,
-      serialized TEXT NOT NULL,
-      PRIMARY KEY (id),
-      UNIQUE(tag, type)
-    )
-  ''');
-
-  sqlite.execute('''
-    CREATE TABLE IF NOT EXISTS linked_entries (
-      id TEXT NOT NULL UNIQUE,
-      from_id TEXT NOT NULL,
-      to_id TEXT NOT NULL,
-      type TEXT NOT NULL,
-      serialized TEXT NOT NULL,
-      hidden BOOLEAN DEFAULT FALSE,
-      created_at INTEGER,
-      updated_at INTEGER,
-      PRIMARY KEY (id),
-      UNIQUE(from_id, to_id, type)
-    )
-  ''');
 }
