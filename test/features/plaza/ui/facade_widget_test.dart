@@ -7,6 +7,7 @@ import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/facade_widget.dart';
+import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
 import '../../../widget_test_utils.dart';
@@ -85,6 +86,34 @@ void main() {
     coverImage = await createTestImage();
   });
   tearDownAll(() => coverImage.dispose());
+
+  testWidgets('a short street facade keeps its photo across the panel', (
+    tester,
+  ) async {
+    const url = 'https://demo.invalid/short-facade.webp';
+    final decoded = _pendingCover(url);
+    await tester.pumpWidget(
+      _host(
+        _task(coverUrl: url),
+        variant: FacadeVariant.sign,
+        heightMeters: 4,
+      ),
+    );
+    decoded.complete(ImageInfo(image: coverImage.clone()));
+    await tester.pump();
+    await tester.pump();
+    final image = find.byType(Image);
+    expect(image, findsOneWidget);
+    final art = tester.getRect(image);
+    final facade = tester.getRect(find.byType(FacadeWidget));
+    expect(art.width, greaterThan(facade.width * 0.9));
+    expect(art.height, greaterThan(facade.height * 0.9));
+    final title = tester.getRect(find.text('Negotiate sardine futures'));
+    expect(facade.contains(title.topLeft), isTrue);
+    expect(facade.contains(title.bottomRight), isTrue);
+    expect(find.text('fly there ›'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('a late decoded cover invalidates its sign texture once', (
     tester,
@@ -182,25 +211,36 @@ void main() {
     }
   });
 
-  testWidgets('a finished task is a quiet, small sign', (tester) async {
-    double titlePx(PlazaTaskState state, FacadeVariant variant) {
-      final text = tester.widget<Text>(find.text('Negotiate sardine futures'));
-      return text.style!.fontSize!;
-    }
+  testWidgets(
+    'finished facades retain a readable poster and quiet live title',
+    (tester) async {
+      double titlePx(PlazaTaskState state, FacadeVariant variant) {
+        final text = tester.widget<Text>(
+          find.text('Negotiate sardine futures'),
+        );
+        return text.style!.fontSize!;
+      }
 
-    for (final variant in FacadeVariant.values) {
-      await tester.pumpWidget(
-        _host(_task(), variant: variant),
-      );
-      final open = titlePx(PlazaTaskState.open, variant);
-      await tester.pumpWidget(
-        _host(_task(state: PlazaTaskState.done), variant: variant),
-      );
-      final done = titlePx(PlazaTaskState.done, variant);
-      expect(done, closeTo(open * 0.55, 1e-6), reason: '$variant');
-      expect(tester.takeException(), isNull);
-    }
-  });
+      for (final variant in FacadeVariant.values) {
+        await tester.pumpWidget(
+          _host(_task(), variant: variant),
+        );
+        final open = titlePx(PlazaTaskState.open, variant);
+        await tester.pumpWidget(
+          _host(_task(state: PlazaTaskState.done), variant: variant),
+        );
+        final done = titlePx(PlazaTaskState.done, variant);
+        expect(
+          done,
+          closeTo(open * (variant == FacadeVariant.sign ? 1 : 0.55), 1e-6),
+          reason: '$variant',
+        );
+        expect(find.textContaining('DONE'), findsOneWidget);
+        expect(find.textContaining('OPEN'), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 
   testWidgets('live facade shows title, chip, meta and progress', (
     tester,
@@ -226,7 +266,7 @@ void main() {
     expect(find.byType(FractionallySizedBox), findsNothing);
   });
 
-  testWidgets('sign facade keeps title, cover, chip and bar only', (
+  testWidgets('sign facade keeps its poster free of interactive controls', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -248,11 +288,11 @@ void main() {
     expect(find.text('DETAILS ›'), findsNothing);
     // Cover art stays: it is what makes a street read from a distance.
     expect(find.byType(Image), findsOneWidget);
-    // Bigger type than the live variant for the same wall.
-    final sign = tester.widget<Text>(find.text('Negotiate sardine futures'));
-    await tester.pumpWidget(_host(_task()));
-    final live = tester.widget<Text>(find.text('Negotiate sardine futures'));
-    expect(sign.style!.fontSize, greaterThan(live.style!.fontSize!));
+    final art = tester.getRect(find.byType(Image));
+    final poster = tester.getRect(find.byType(FacadeWidget));
+    expect(art.width, greaterThan(poster.width * 0.9));
+    expect(art.height, greaterThan(poster.height * 0.9));
+    expect(find.text('fly there ›'), findsNothing);
   });
 
   testWidgets('overdue overrides the chip', (tester) async {
@@ -261,18 +301,21 @@ void main() {
     expect(find.textContaining('OPEN'), findsNothing);
   });
 
-  testWidgets('the sign variant carries the state as a full-width band', (
+  testWidgets('the poster keeps status in a compact chip over the photo', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      _host(_task(state: PlazaTaskState.blocked), variant: FacadeVariant.sign),
-    );
-    final band = tester.widget<Text>(find.textContaining('BLOCKED'));
-    expect(band.textAlign, TextAlign.center);
-    expect(band.data, startsWith('✕'));
-    await tester.pumpWidget(_host(_task(state: PlazaTaskState.blocked)));
-    final chip = tester.widget<Text>(find.textContaining('BLOCKED'));
-    expect(band.style!.fontSize, greaterThan(chip.style!.fontSize!));
+    final task = _task(state: PlazaTaskState.blocked);
+    await tester.pumpWidget(_host(task, variant: FacadeVariant.sign));
+    final chip = tester.widget<PlazaChip>(find.byType(PlazaChip));
+    final expected = PlazaStyle.chip(attentionFor(task, _now));
+    expect(chip.label, startsWith('✕'));
+    expect(chip.label, contains('BLOCKED'));
+    expect((chip.fill, chip.ink), (expected.fill, expected.ink));
+    final bounds = tester.getRect(find.byType(PlazaChip));
+    final poster = tester.getRect(find.byType(FacadeWidget));
+    expect(bounds.width, lessThan(poster.width * 0.5));
+    expect(poster.contains(bounds.topLeft), isTrue);
+    expect(poster.contains(bounds.bottomRight), isTrue);
   });
 
   testWidgets('a long word shrinks the title instead of breaking mid-word', (

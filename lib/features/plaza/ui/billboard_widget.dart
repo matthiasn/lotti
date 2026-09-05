@@ -6,8 +6,8 @@ import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 
-/// A frontier-plaza billboard: the headline for one task that needs
-/// attention, framed in its state colour.
+/// A photo-led plaza poster, used by billboards and static facades:
+/// one task's headline and cover, framed in its state colour.
 ///
 /// A still face, captured once (and again when its cover lands, through
 /// [onCoverChanged]): nothing here animates. An anomaly's frame breathes
@@ -19,6 +19,7 @@ class BillboardWidget extends StatelessWidget {
     required this.heightMeters,
     required this.pxPerMeter,
     this.reasonFirst = false,
+    this.showNavigationHint = true,
     this.onCoverChanged,
     super.key,
   });
@@ -27,10 +28,13 @@ class BillboardWidget extends StatelessWidget {
   /// already carries the title) and drops its 'fly there'.
   final bool reasonFirst;
 
+  /// Navigation panels offer a flight; a facade poster is activated in place.
+  final bool showNavigationHint;
+
   final TaskAttention attention;
   final double widthMeters;
 
-  /// Panel height; a squat roof panel drops the cover, then the reason.
+  /// Panel height; a squat panel keeps its cover but drops the reason.
   final double heightMeters;
   final double pxPerMeter;
 
@@ -79,8 +83,8 @@ class BillboardWidget extends StatelessWidget {
             ),
           ),
         ),
-        if (!reasonFirst) SizedBox(width: chipPx * 0.6),
-        if (!reasonFirst)
+        if (!reasonFirst && showNavigationHint) SizedBox(width: chipPx * 0.6),
+        if (!reasonFirst && showNavigationHint)
           // The call to action is a chip like the state, not loose type.
           PlazaChip(
             label: 'fly there ›',

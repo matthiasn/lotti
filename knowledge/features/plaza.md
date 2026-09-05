@@ -541,10 +541,9 @@ fix is a climb that starts *under* a solid in the air and rises into it;
 no stop stands under a sign or the beam.
 
 Every flight pushes the departure pose onto a back stack in the harness;
-Backspace flies the reverse without pushing. While the camera flies
-(`FlyCameraController.flying`, landings included) the LOD manager makes
-no promotions, and the destination building of a facade flight is
-pre-promoted to the sign tier (`prepare`). `Tab` cycles the navigation
+Backspace flies the reverse without pushing. The destination building of a
+facade flight is pre-promoted to the sign tier (`prepare`); nearby signs
+also load under the [flight promotion budget](#facade-tiers-and-the-budget). `Tab` cycles the navigation
 beacons (everything but attention); when cycling toward older weeks a block
 or corner pose is turned round so the walk reads as walking, not reversing.
 
@@ -659,10 +658,10 @@ task data.
 
 ```mermaid
 flowchart TD
-  Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m and sign cap 80, one promotion per frame"| Sign["sign<br/>FacadeWidget sign variant<br/>initial capture and cover completion, manual input"]
+  Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m, sign cap 80, paced promotions"| Sign["sign<br/>FacadeWidget sign variant<br/>initial capture and cover completion, manual input"]
   Far -->|"tapped within live range, in front and in view, live budget available"| Live["live<br/>FacadeWidget live variant<br/>captured every 50 ms, automatic input"]
   Sign -->|"tapped within live range, in front and in view, live budget available"| Live
-  Live -->|"immediately when out of budget or range"| Sign
+  Live -->|"on flight start, or out of budget, range or view"| Sign
   Sign -->|"immediately"| Far
   Far -->|"prepare on flight start, the destination only"| Sign
 ```
@@ -676,8 +675,12 @@ up to it leaves its sign static. Live also needs the eye on the street side
 of the wall and the wall ahead of the camera. Leaving live range, turning
 away or activating another wall disarms the previous one; returning needs
 a new tap. A distant tap still flies to the building first.
-Promotions are rate-limited to one per frame and suspended while
-`flying` is set; demotions are immediate. `forceAllLive` (the
+Promotions are rate-limited to one per frame. During flight only static
+signs are created, at most one every 100 ms (`flightPromotionInterval`),
+within the same distance and surface caps. This starts cover loading before
+an approaching facade is reached without creating a frame-time burst.
+Starting a flight disarms the active wall; landing requires a new tap.
+Demotions are immediate. `forceAllLive` (the
 overlay's stress switch) makes every facade live and ignores the per-frame
 budget. The nearest live building is the **focused** one: its teal ring
 node is shown, and it is the wall whose checkboxes and details button
@@ -755,11 +758,15 @@ tour. No widget owns an animation controller: a billboard's glow, a
 ticker's scroll and the jumbotron's slides all read their cadence's clock,
 which advances only when a capture is requested.
 
-The **sign** facade variant is the category bar, a state marquee band with
-its glyph, the title (up to three lines, shrunk until its longest word fits
-the wall) and the cover art. The **live** variant adds the due and links
-line, as many open checklist items as the wall has room for, the state
-chip, a details button (opens the side panel) and the done count.
+The **sign** facade variant reuses `BillboardWidget` as a photo-led poster:
+cover art fills the panel, including short ground-floor signs, with its
+existing scrim behind the title, reason and compact state chip. It hides the
+billboard navigation hint because a nearby facade activates in place.
+Finished posters retain readable titles and use the subdued done chip and
+frame. The **live** variant uses its checklist layout with the due and links
+line, as many open checklist items as the wall has room for, a smaller cover
+band when space permits, the state chip, a details button (opens the side
+panel) and the done count.
 
 # Sprites
 
