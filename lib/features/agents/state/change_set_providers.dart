@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
+import 'package:lotti/features/agents/service/project_proposal_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
@@ -163,21 +164,33 @@ final projectRecommendationServiceProvider =
             domainLogger: ref.read(domainLoggerProvider),
             taskAgentService: ref.read(taskAgentServiceProvider),
           ).dispatch(tool, args, projectId),
-          // The repository delete logs and swallows a failed write, so its
-          // return value is not proof; the tombstone is. `journalEntityById`
-          // filters deleted rows, so a null read means the task is gone.
-          taskRemover: (taskId) async {
-            await ref
-                .read(journalRepositoryProvider)
-                .deleteJournalEntity(taskId);
-            final remaining = await ref
-                .read(journalDbProvider)
-                .journalEntityById(taskId);
-            return remaining == null;
-          },
+          taskRemover: projectTaskRemover(ref),
         );
       },
     );
+
+/// Soft-deletes a task and reports whether it is gone.
+///
+/// The repository delete logs and swallows a failed write, so its return
+/// value is not proof; the tombstone is. `journalEntityById` filters deleted
+/// rows, so a null read means the task is gone.
+ProjectTaskRemover projectTaskRemover(Ref ref) => (taskId) async {
+  await ref.read(journalRepositoryProvider).deleteJournalEntity(taskId);
+  final remaining = await ref.read(journalDbProvider).journalEntityById(taskId);
+  return remaining == null;
+};
+
+/// Decisions on the project agent's proposed changes, with Undo. Kept alive
+/// for the session so a confirmed proposal's effect stays undoable across
+/// rebuilds of the page that applied it.
+final projectProposalServiceProvider = Provider<ProjectProposalService>(
+  (ref) => ProjectProposalService(
+    confirmation: ref.watch(projectChangeSetConfirmationServiceProvider),
+    projectRepository: ref.watch(projectRepositoryProvider),
+    taskRemover: projectTaskRemover(ref),
+    domainLogger: ref.watch(domainLoggerProvider),
+  ),
+);
 
 /// The newest run's next steps for a project, in every status the detail
 /// band shows, plus when that run was published. Legacy pending batches are

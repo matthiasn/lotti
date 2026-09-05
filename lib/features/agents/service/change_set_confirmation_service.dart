@@ -349,6 +349,51 @@ class ChangeSetConfirmationService {
         '$detail';
   }
 
+  /// Puts a decided item back to [ChangeItemStatus.pending] — the user's Undo
+  /// on a confirmed or rejected proposal — and records the reversal as a
+  /// [ChangeDecisionVerdict.deferred] decision, so the earlier verdict no
+  /// longer stands as feedback. Reverting whatever a confirmed tool did is
+  /// the caller's job; this only reopens the record.
+  ///
+  /// Returns `false` when the item is out of range, still pending, or
+  /// retracted by the agent (nothing of the user's to undo).
+  Future<bool> reopenItem(ChangeSetEntity changeSet, int itemIndex) async {
+    final current = await _resolution.freshChangeSet(changeSet);
+    if (itemIndex < 0 || itemIndex >= current.items.length) return false;
+    final item = current.items[itemIndex];
+    if (item.status != ChangeItemStatus.confirmed &&
+        item.status != ChangeItemStatus.rejected) {
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Skipping reopen for item $itemIndex (${item.toolName}) — '
+        '${item.status.name}',
+        subDomain: _sub,
+      );
+      return false;
+    }
+
+    _domainLogger?.log(
+      LogDomain.agentWorkflow,
+      'Reopening ${item.status.name} item $itemIndex (${item.toolName}) in '
+      'change set ${DomainLogger.sanitizeId(current.id)}',
+      subDomain: _sub,
+    );
+    await _resolution.persistDecision(
+      changeSet: current,
+      itemIndex: itemIndex,
+      toolName: item.toolName,
+      verdict: ChangeDecisionVerdict.deferred,
+      humanSummary: item.humanSummary,
+      args: item.args,
+    );
+    final reopened = await _resolution.updateChangeSetItemStatus(
+      current,
+      itemIndex,
+      ChangeItemStatus.pending,
+    );
+    return reopened != null;
+  }
+
   /// Rejects a single change item at [itemIndex] without dispatching
   /// any tool call.
   ///

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -22,6 +23,8 @@ class ProjectProposalRow extends StatelessWidget {
     required this.onConfirm,
     required this.onReject,
     this.enabled = true,
+    this.canUndo = false,
+    this.onUndo,
     super.key,
   });
 
@@ -36,6 +39,10 @@ class ProjectProposalRow extends StatelessWidget {
 
   /// `false` keeps the rail visible but inert.
   final bool enabled;
+
+  /// Whether a decided row still offers Undo; [onUndo] puts it back.
+  final bool canUndo;
+  final VoidCallback? onUndo;
 
   ChangeItem get item => changeSet.items[itemIndex];
 
@@ -73,9 +80,20 @@ class ProjectProposalRow extends StatelessWidget {
               ),
             ),
             SizedBox(width: tokens.spacing.step3),
-            if (decided)
-              ResolvedTag(status: item.status)
-            else
+            if (decided) ...[
+              ResolvedTag(status: item.status),
+              if (canUndo) ...[
+                SizedBox(width: tokens.spacing.step3),
+                IntrinsicWidth(
+                  child: DesignSystemInlineAction(
+                    onTap: enabled ? onUndo : null,
+                    semanticsLabel: context.messages.designSystemUndoLabel,
+                    label: context.messages.designSystemUndoLabel,
+                    leadingIcon: LottiIcons.undo,
+                  ),
+                ),
+              ],
+            ] else
               RowActions(
                 busy: busy,
                 enabled: enabled,

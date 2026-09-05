@@ -41,12 +41,13 @@ project agent is attached — a summary and health read that the agent maintains
 - **Keeps agent output actionable.** The AI report leads the task list with
   the agent's current next steps. Each step offers two labelled actions: **Add
   task** creates a project-linked task and links the step to it, **Dismiss**
-  sets it aside; both can be undone, and a decided step stays in place with its
-  tag instead of vanishing. The new task lights up in the list below, and the
-  step's "Added → title" link scrolls it into view. Bulk actions add or dismiss
-  every open step. The
+  sets it aside; on touch a swipe right or left does the same. Both can be
+  undone, and a decided step stays in place with its tag instead of vanishing.
+  The new task lights up in the list below, and the step's "Added → title"
+  link scrolls it into view. Bulk actions add or dismiss every open step. The
   agent's proposed changes (a status change, a task it wants to create) sit in
-  their own band under the steps. Each successful analysis replaces the list;
+  their own band under the steps; applying or rejecting one can be undone for
+  eight seconds, which puts the project back and reopens the proposal. Each successful analysis replaces the list;
   a run that was already fully decided collapses to a one-line summary with its
   history, and an empty run says when the agent last looked.
 

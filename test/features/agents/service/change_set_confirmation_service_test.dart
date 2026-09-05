@@ -1217,6 +1217,99 @@ void main() {
       });
     });
 
+    group('reopenItem', () {
+      test(
+        'puts a confirmed item back to pending under a deferred decision',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: [
+              const ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 120},
+                humanSummary: 'Set estimate to 2 hours',
+                status: ChangeItemStatus.confirmed,
+              ),
+              const ChangeItem(
+                toolName: 'set_task_title',
+                args: {'title': 'New Title'},
+                humanSummary: 'Set title to "New Title"',
+                status: ChangeItemStatus.rejected,
+              ),
+            ],
+          );
+
+          await withClock(testClock, () async {
+            expect(await service.reopenItem(changeSet, 0), isTrue);
+
+            verifyNever(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            );
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(captured, hasLength(2));
+
+            final decision = captured[0] as ChangeDecisionEntity;
+            expect(decision.verdict, ChangeDecisionVerdict.deferred);
+            expect(decision.actor, DecisionActor.user);
+            expect(decision.itemIndex, 0);
+            expect(decision.args, {'minutes': 120});
+
+            final reopened = captured[1] as ChangeSetEntity;
+            expect(reopened.items[0].status, ChangeItemStatus.pending);
+            expect(reopened.items[1].status, ChangeItemStatus.rejected);
+            expect(reopened.status, ChangeSetStatus.partiallyResolved);
+            expect(reopened.resolvedAt, isNull);
+          });
+        },
+      );
+
+      test('reopens a rejected item too', () async {
+        final changeSet = makeChangeSetWith(
+          items: [
+            const ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'New Title'},
+              humanSummary: 'Set title',
+              status: ChangeItemStatus.rejected,
+            ),
+          ],
+        );
+
+        expect(await service.reopenItem(changeSet, 0), isTrue);
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final reopened = captured.last as ChangeSetEntity;
+        expect(reopened.items[0].status, ChangeItemStatus.pending);
+        expect(reopened.status, ChangeSetStatus.pending);
+      });
+
+      test('refuses a pending or retracted item and a bad index', () async {
+        final changeSet = makeChangeSetWith(
+          items: [
+            const ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'A'},
+              humanSummary: 'Pending',
+            ),
+            const ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'B'},
+              humanSummary: 'Retracted',
+              status: ChangeItemStatus.retracted,
+            ),
+          ],
+        );
+
+        expect(await service.reopenItem(changeSet, 0), isFalse);
+        expect(await service.reopenItem(changeSet, 1), isFalse);
+        expect(await service.reopenItem(changeSet, 2), isFalse);
+        expect(await service.reopenItem(changeSet, -1), isFalse);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      });
+    });
+
     group('rejectItem', () {
       test('persists rejected decision without tool dispatch', () async {
         final changeSet = makeChangeSetWith();

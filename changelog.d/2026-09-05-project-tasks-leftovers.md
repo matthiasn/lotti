@@ -9,3 +9,9 @@
   in the project's task list, and the step's "Added → title" link now scrolls
   the list to it, unfolding its group if needed, instead of leaving the
   project page.
+- **Next steps decide by swipe, and proposals can be undone.** On a phone,
+  swiping a recommended step right adds it as a task and left dismisses it,
+  with the action named on the band the row reveals. Applying or rejecting
+  one of the agent's proposed changes now offers Undo for eight seconds: the
+  created task is removed or the previous status restored, and the proposal
+  is open again.

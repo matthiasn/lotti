@@ -290,10 +290,10 @@ class _ProjectRecommendationsPanelState
     setState(() => _busyProposals.add(key));
     var succeeded = false;
     try {
-      final service = ref.read(projectChangeSetConfirmationServiceProvider);
+      final service = ref.read(projectProposalServiceProvider);
       succeeded = confirm
-          ? (await service.confirmItem(set, index)).success
-          : await service.rejectItem(set, index);
+          ? (await service.confirm(set, index)).success
+          : await service.reject(set, index);
     } catch (error, stackTrace) {
       _log('Failed to apply a project proposal', error, stackTrace);
     }
@@ -308,10 +308,50 @@ class _ProjectRecommendationsPanelState
               : ChangeItemStatus.rejected,
         );
         _decidedProposals[key] = (set.copyWith(items: items), index);
+        _armUndo(key);
       }
     });
     // Only the proposal read moves; the agent's update stream is left alone
     // so the report, health and footer never reload for a row decision.
+    ref.invalidate(projectPendingChangeSetsProvider(widget.projectId));
+    if (!succeeded) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectRecommendationUpdateError,
+      );
+    }
+  }
+
+  /// A decided proposal offers Undo for the same window as an added step,
+  /// and only while the service can still put its effect back.
+  bool _canUndoProposal(ChangeSetEntity set, int index) {
+    if (!widget.enabled) return false;
+    final key = _proposalKey(set, index);
+    if (!(_undoDeadlines[key]?.isAfter(_now) ?? false)) return false;
+    return ref.read(projectProposalServiceProvider).canUndo(set, index);
+  }
+
+  Future<void> _undoProposal(ChangeSetEntity set, int index) async {
+    final key = _proposalKey(set, index);
+    if (_busyProposals.contains(key)) return;
+    setState(() => _busyProposals.add(key));
+    var succeeded = false;
+    try {
+      succeeded = await ref
+          .read(projectProposalServiceProvider)
+          .undo(set, index);
+    } catch (error, stackTrace) {
+      _log('Failed to undo a project proposal', error, stackTrace);
+    }
+    if (!mounted) return;
+    setState(() {
+      _busyProposals.remove(key);
+      if (succeeded) {
+        _decidedProposals.remove(key);
+        _undoTimers.remove(key)?.cancel();
+        _undoDeadlines.remove(key);
+      }
+    });
     ref.invalidate(projectPendingChangeSetsProvider(widget.projectId));
     if (!succeeded) {
       context.showToast(
@@ -402,6 +442,8 @@ class _ProjectRecommendationsPanelState
                               _decideProposal(set, index, confirm: true),
                           onReject: () =>
                               _decideProposal(set, index, confirm: false),
+                          canUndo: _canUndoProposal(set, index),
+                          onUndo: () => _undoProposal(set, index),
                         ),
                       ),
                   ],

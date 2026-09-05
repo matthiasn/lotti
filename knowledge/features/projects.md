@@ -337,12 +337,27 @@ editor. The AI surface appears above the task list. `ProjectRecommendationsPanel
 renders two bands inside the card: the newest run's **recommended next steps**
 (`ProjectNextStepRow`, one per step) and the agent's **proposed changes**
 (`ProjectProposalRow`, reusing Task Details' `RowActions` rail). A step offers
-**Add task** and **Dismiss** as labelled controls; a decided step keeps its
-place with an *Added* (linking to the task), *Done* or *Dismissed* tag and an
-Undo — eight seconds for an addition, as long as the run is current for a
-dismissal. A failed creation keeps the row with Retry and the failure copy.
-Phones show three rows before "Show N more"; more than one open step adds
-**Add all as tasks** and **Dismiss all**.
+**Add task** and **Dismiss** as labelled controls, and on touch the same two
+by swipe — right adds, left dismisses, each named on the band the row reveals
+(`DesignSystemSwipeActionBackground`), and the row snaps back rather than
+leaving. A decided step keeps its place with an *Added* (its link focuses the
+task in the list below), *Done* or *Dismissed* tag and an Undo — eight
+seconds for an addition, as long as the run is current for a dismissal. A
+failed creation keeps the row with Retry and the failure copy. Phones show
+three rows before "Show N more"; more than one open step adds **Add all as
+tasks** and **Dismiss all**.
+
+Proposals go through `ProjectProposalService` (`projectProposalServiceProvider`,
+kept alive for the session): `confirm` and `reject` delegate to the change
+set confirmation service, and `confirm` remembers what the tool changed — the
+task a `create_task` created, the status an `update_project_status` replaced.
+A decided proposal keeps its *Confirmed* or *Dismissed* tag and, for the same
+eight seconds, an Undo while `canUndo` holds (always for a rejection; for a
+confirmation only while this session holds the memo). `undo` removes the
+created task or restores the previous status and drops its history entry,
+then calls `ChangeSetConfirmationService.reopenItem`, which records a
+`deferred` decision and puts the item back to `pending`; a failed revert
+leaves the item decided and the memo in place.
 
 The band never invalidates the agent's update stream. The service notifies
 after each write, `projectNextStepsProvider` re-reads, and the row changes
