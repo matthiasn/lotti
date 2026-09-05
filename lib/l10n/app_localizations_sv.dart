@@ -8929,6 +8929,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get loggingDomainWhatsNew => 'Vad är nytt';
 
   @override
+  String get maintenanceCheckIntegrity => 'Kontrollera databasens integritet';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Kontrollera att databasfilerna är intakta';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Problem hittades i: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    return 'Alla $count databaser är intakta.';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Databas för borttagningsagenter';
 
   @override

@@ -115,6 +115,39 @@ class Maintenance {
     }
   }
 
+  /// Runs `PRAGMA quick_check` against every registered database and returns
+  /// one report per store, in the order checked.
+  ///
+  /// Nothing here repairs anything: the point is to tell a user whose app is
+  /// behaving strangely whether the files under it are sound, and to name the
+  /// store that is not. A store that is not registered is skipped rather than
+  /// reported, so a build without the agent or embedding databases does not
+  /// show phantom results.
+  Future<List<DatabaseIntegrityReport>> checkIntegrity() async {
+    final reports = <DatabaseIntegrityReport>[];
+    Future<void> check<T extends GeneratedDatabase>(String name) async {
+      if (!getIt.isRegistered<T>()) return;
+      try {
+        reports.add(await quickCheck(name, getIt<T>()));
+      } catch (e, stackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.database,
+          e,
+          stackTrace: stackTrace,
+          subDomain: 'checkIntegrity',
+        );
+        reports.add((database: name, problems: ['$e']));
+      }
+    }
+
+    await check<JournalDb>('journal');
+    await check<SyncDatabase>('sync');
+    await check<AgentDatabase>('agent');
+    await check<EditorDb>('editor');
+    await check<Fts5Db>('search');
+    return reports;
+  }
+
   /// One-shot purge of `sent` outbox rows older than [retention].
   ///
   /// Deletes in chunks of [chunkSize] so the writer lock is released

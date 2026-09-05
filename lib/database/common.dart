@@ -126,20 +126,23 @@ final RegExp _backupTimestamp = RegExp(
   r'^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d+)(?:-(\d+))?$',
 );
 
-/// Keeps [newest] plus the [backupsKeptPerDatabase] − 1 most recent other
-/// snapshots of [stem] in [backupDir] and deletes the rest. [newest] is
+/// Keeps `newest` plus the [backupsKeptPerDatabase] − 1 most recent other
+/// snapshots of [stem] in [backupDir] and deletes the rest. `newest` is
 /// kept by identity, not by rank: if the device clock has moved backwards
 /// since the previous snapshot, the file just written sorts *below* older
 /// ones, and ranking alone would keep four copies. Ordering of the others
 /// comes from the timestamp in the file name, so it matches the clock that
 /// named them rather than filesystem times.
-Future<void> _pruneOlderBackups(
+/// Every snapshot of [stem] in [backupDir] as (timestamp, collision suffix,
+/// file), newest first. Ordering comes from the timestamp in the file name,
+/// so it follows the clock that named them rather than filesystem times.
+List<(String, int, File)> _snapshotsOf(
   Directory backupDir, {
   required String stem,
-  required File newest,
-}) async {
+}) {
   final prefix = '$stem.';
   final snapshots = <(String, int, File)>[];
+  if (!backupDir.existsSync()) return snapshots;
   for (final entity in backupDir.listSync()) {
     if (entity is! File) continue;
     final name = p.basename(entity.path);
@@ -156,12 +159,19 @@ Future<void> _pruneOlderBackups(
       entity,
     ));
   }
-  snapshots
-    ..removeWhere((snapshot) => p.equals(snapshot.$3.path, newest.path))
-    ..sort((a, b) {
-      final byTime = b.$1.compareTo(a.$1);
-      return byTime != 0 ? byTime : b.$2.compareTo(a.$2);
-    });
+  return snapshots..sort((a, b) {
+    final byTime = b.$1.compareTo(a.$1);
+    return byTime != 0 ? byTime : b.$2.compareTo(a.$2);
+  });
+}
+
+Future<void> _pruneOlderBackups(
+  Directory backupDir, {
+  required String stem,
+  required File newest,
+}) async {
+  final snapshots = _snapshotsOf(backupDir, stem: stem)
+    ..removeWhere((snapshot) => p.equals(snapshot.$3.path, newest.path));
   final stale = snapshots.skip(backupsKeptPerDatabase - 1);
   var pruned = 0;
   for (final (_, _, file) in stale) {
@@ -373,6 +383,9 @@ LazyDatabase openDbConnection(
       );
     }
 
+    // A file whose header no longer reads as a database fails every query
+    // that follows, so try the newest backup before opening it.
+    await recoverDatabaseIfUnreadable(file);
     final executor = background
         ? NativeDatabase.createInBackground(
             file,
@@ -393,4 +406,145 @@ LazyDatabase openDbConnection(
       ),
     );
   });
+}
+
+/// Whether [file] can still be opened and read as a SQLite database.
+///
+/// Reads the header and the schema cookie only, so the cost does not grow
+/// with the database — this runs once per store per launch. A file that is
+/// not a database at all, or whose header is damaged, reports `false`;
+/// anything else (a lock, a missing file, a permission problem) is not a
+/// corruption verdict and reports `true` so the normal open path surfaces it.
+bool isReadableDatabaseFile(File file) {
+  if (!file.existsSync()) return true;
+  Database? database;
+  try {
+    database = sqlite3.open(file.path)..select('PRAGMA schema_version');
+    return true;
+  } on SqliteException catch (e) {
+    return !_isUnreadableSource(e);
+  } catch (_) {
+    return true;
+  } finally {
+    database?.close();
+  }
+}
+
+/// Replaces an unreadable [file] with the newest usable backup of it, if one
+/// exists, and returns the backup that was restored.
+///
+/// The damaged file is kept as `<name>.corrupt-<timestamp>` rather than
+/// deleted: it is the only copy of whatever the backup does not carry, and a
+/// user who asks for help later needs it. The `-wal` and `-shm` companions
+/// go, because SQLite would otherwise replay a write-ahead log belonging to
+/// the file that was just replaced.
+///
+/// Snapshots are tried newest first, so a backup that is itself damaged does
+/// not block recovery from an older one. Returns `null` when nothing was
+/// restored — no backup directory, no snapshot, or none of them readable.
+Future<File?> restoreDatabaseFromBackup(File file) async {
+  final backupDir = Directory(p.join(file.parent.path, _backupDirectoryName));
+  final stem = p.basenameWithoutExtension(file.path);
+  for (final (_, _, snapshot) in _snapshotsOf(backupDir, stem: stem)) {
+    if (!isReadableDatabaseFile(snapshot)) {
+      DevLogger.warning(
+        name: 'Database',
+        message:
+            'Backup ${p.basename(snapshot.path)} is unreadable too, '
+            'trying an older one',
+      );
+      continue;
+    }
+    final ts = DateFormat(_backupTimestampFormat).format(clock.now());
+    if (file.existsSync()) {
+      await file.rename('${file.path}.corrupt-$ts');
+    }
+    for (final suffix in const ['-wal', '-shm']) {
+      final companion = File('${file.path}$suffix');
+      if (companion.existsSync()) await companion.delete();
+    }
+    await snapshot.copy(file.path);
+    return snapshot;
+  }
+  return null;
+}
+
+/// Restores [file] from its newest backup when it can no longer be read.
+///
+/// Called on the open path, before the connection is built: a database whose
+/// header is damaged fails every query afterwards, and the snapshot taken
+/// before the last migration is a better starting point than an app that
+/// cannot start. A store with no backup is left alone, so the failure
+/// surfaces where it always did.
+Future<void> recoverDatabaseIfUnreadable(File file) async {
+  if (isReadableDatabaseFile(file)) return;
+  DevLogger.warning(
+    name: 'Database',
+    message:
+        '${p.basename(file.path)} cannot be read as a database, '
+        'looking for a backup to restore',
+  );
+  try {
+    final restored = await restoreDatabaseFromBackup(file);
+    DevLogger.log(
+      name: 'Database',
+      message: restored == null
+          ? 'No usable backup of ${p.basename(file.path)} to restore from'
+          : 'Restored ${p.basename(file.path)} from '
+                '${p.basename(restored.path)}',
+    );
+  } catch (e, stackTrace) {
+    // Recovery is best effort: a failure here must not stop the app from
+    // reaching the open call that reports the real problem.
+    DevLogger.warning(
+      name: 'Database',
+      message: 'Restoring ${p.basename(file.path)} failed: $e\n$stackTrace',
+    );
+  }
+}
+
+/// Runs `PRAGMA optimize` and closes [database].
+///
+/// `ANALYZE` only ever runs inside a migration step here, so planner
+/// statistics age with the data while the schema stands still — and the
+/// index comments in `database.drift` record how sensitive this schema's
+/// plans are to stale statistics. `PRAGMA optimize` is the cheap form:
+/// SQLite re-analyses only the indexes whose statistics it believes have
+/// gone stale, and does nothing at all on a connection that barely queried.
+/// Shutdown is where it costs nothing the user can feel.
+///
+/// A failure is logged and swallowed: this runs on the way out, and nothing
+/// about it is worth failing a shutdown for.
+Future<void> optimizeAndClose(GeneratedDatabase database) async {
+  try {
+    await database.customStatement('PRAGMA optimize');
+  } catch (e, stackTrace) {
+    DevLogger.warning(
+      name: 'Database',
+      message: 'PRAGMA optimize failed before close: $e\n$stackTrace',
+    );
+  }
+  await database.close();
+}
+
+/// The result of an integrity check over one database file.
+typedef DatabaseIntegrityReport = ({String database, List<String> problems});
+
+/// Runs `PRAGMA quick_check` against [database] and reports what it found.
+///
+/// `quick_check` is the cheaper half of `integrity_check`: it verifies page
+/// structure and record layout but skips the index-content cross-checks, so
+/// it is fast enough to run from a settings page. SQLite reports a single
+/// row reading `ok` on a healthy database; anything else is the list of
+/// problems, which is what the report's `problems` carries.
+Future<DatabaseIntegrityReport> quickCheck(
+  String name,
+  GeneratedDatabase database,
+) async {
+  final rows = await database.customSelect('PRAGMA quick_check').get();
+  final results = rows
+      .map((row) => row.data.values.first.toString())
+      .where((result) => result != 'ok')
+      .toList(growable: false);
+  return (database: name, problems: results);
 }

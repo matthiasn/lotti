@@ -613,7 +613,36 @@ the `-wal` sidecar a raw-copy fallback keeps beside its snapshot); the
 snapshot just written is always among the three, even if the device clock
 has moved backwards since the previous one, and a failed snapshot never costs
 an existing one.
-That helper is a **legacy per-database fallback**, not a supported profile
+Those snapshots are also the recovery path. Every database opened through
+`openDbConnection` is probed before its connection is built
+(`recoverDatabaseIfUnreadable`): opening the file and reading its schema
+cookie costs nothing that grows with the database, and a header SQLite can no
+longer read means every query after it would fail. When that happens the
+newest readable snapshot of the same store is copied over the file, its `-wal`
+and `-shm` companions are removed (they belong to the file just replaced), and
+the damaged file is kept as `<name>.corrupt-<timestamp>` because it holds
+whatever the snapshot does not. A damaged snapshot is skipped for an older
+one, and a store with no snapshot is left exactly as it was, so the failure
+surfaces where it always did. Recovery is best effort: a failure inside it is
+logged and the normal open proceeds.
+
+*Settings → Advanced → Maintenance* also runs `PRAGMA quick_check` across the
+journal, sync, agent, editor and search stores on demand
+(`Maintenance.checkIntegrity`), naming the stores that report problems. It
+repairs nothing — the point is to tell a user whose app is behaving strangely
+whether the files under it are sound.
+
+Planner statistics are refreshed on the way out rather than on a schedule:
+`ServiceDisposer` closes every registered database through `optimizeAndClose`,
+which issues `PRAGMA optimize` first. `ANALYZE` otherwise runs only inside
+migration steps, so statistics would age with the data while the schema stands
+still, and the index comments in `database.drift` record how sensitive this
+schema's plans are to stale ones. `PRAGMA optimize` re-analyses only what
+SQLite believes has gone stale and does nothing on a connection that barely
+queried, so shutdown is where it costs the user nothing. A failure there is
+logged and the close proceeds.
+
+`createDbBackup` is a **legacy per-database fallback**, not a supported profile
 backup. It has no store identity, manifest, checksum, media coverage,
 encryption, coordinated quiescence, or restore path. The corruption fallback's
 raw copy is not safe while WAL-backed writers are active.

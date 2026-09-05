@@ -432,6 +432,54 @@ void main() {
       });
     });
 
+    group('checkIntegrity', () {
+      test('reports every registered database as sound', () async {
+        final reports = await maintenance.checkIntegrity();
+
+        // Only journal and search are registered in this harness; a store
+        // that is absent is skipped rather than reported.
+        expect(
+          reports.map((report) => report.database),
+          ['journal', 'search'],
+        );
+        expect(
+          reports.every((report) => report.problems.isEmpty),
+          isTrue,
+          reason: reports.toString(),
+        );
+      });
+
+      test('names the database whose check fails, and keeps going', () async {
+        // A store whose check cannot run is reported against that store
+        // rather than aborting the sweep.
+        final failing = MockFts5Db();
+        when(() => failing.customSelect(any())).thenThrow(
+          StateError('quick_check unavailable'),
+        );
+        final real = getIt<Fts5Db>();
+        getIt
+          ..unregister<Fts5Db>()
+          ..registerSingleton<Fts5Db>(failing);
+        addTearDown(() {
+          getIt
+            ..unregister<Fts5Db>()
+            ..registerSingleton<Fts5Db>(real);
+        });
+
+        final reports = await maintenance.checkIntegrity();
+
+        expect(
+          reports.singleWhere((r) => r.database == 'journal').problems,
+          isEmpty,
+        );
+        expect(
+          reports.singleWhere((r) => r.database == 'search').problems,
+          isNotEmpty,
+        );
+        expect(loggedExceptions, isNotEmpty);
+      });
+    });
+
     group('recreateFts5', () {
       test('deletes existing index file and reindexes all entries', () async {
         when(

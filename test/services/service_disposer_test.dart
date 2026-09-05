@@ -174,6 +174,44 @@ void main() {
       expect(loggedErrors, isEmpty);
     });
 
+    test('refreshes planner statistics before closing each database', () async {
+      final steps = <String>[];
+      final journalDb = MockJournalDb();
+      when(() => journalDb.customStatement(any())).thenAnswer((
+        invocation,
+      ) async {
+        steps.add('optimize:${invocation.positionalArguments.first}');
+      });
+      when(journalDb.close).thenAnswer((_) async {
+        steps.add('close');
+      });
+      testGetIt.registerSingleton<JournalDb>(journalDb);
+
+      await disposer.disposeAll();
+
+      // Shutdown is the one moment PRAGMA optimize costs nothing, and it
+      // only counts if it lands while the connection is still open.
+      expect(steps, ['optimize:PRAGMA optimize', 'close']);
+      expect(loggedErrors, isEmpty);
+    });
+
+    test('closes a database whose optimize fails', () async {
+      final journalDb = MockJournalDb();
+      when(() => journalDb.customStatement(any())).thenThrow(
+        StateError('optimize boom'),
+      );
+      var closed = false;
+      when(journalDb.close).thenAnswer((_) async {
+        closed = true;
+      });
+      testGetIt.registerSingleton<JournalDb>(journalDb);
+
+      await disposer.disposeAll();
+
+      expect(closed, isTrue);
+      expect(loggedErrors, isEmpty, reason: 'optimize failure is not fatal');
+    });
+
     test('continues disposing even if a service throws', () async {
       final order = <String>[];
 

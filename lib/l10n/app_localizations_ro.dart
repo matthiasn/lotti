@@ -9085,6 +9085,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get loggingDomainWhatsNew => 'Noutăți';
 
   @override
+  String get maintenanceCheckIntegrity =>
+      'Verificați integritatea bazei de date';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Verificați dacă fișierele bazei de date sunt intacte';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Probleme găsite în: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    return 'Toate cele $count baze de date sunt intacte.';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Ștergeți baza de date a agenților';
 
   @override

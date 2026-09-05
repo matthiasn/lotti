@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get_it/get_it.dart';
+import 'package:lotti/database/common.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -101,32 +102,46 @@ class ServiceDisposer {
 
     // 6. Close every registered Drift database so no native handle is left
     // for a Dart finalizer to release after the Flutter engine starts tearing
-    // down FFI callback metadata.
-    await _disposeAsyncSafely<JournalDb>((db) => db.close(), 'JournalDb');
-    await _disposeAsyncSafely<SyncDatabase>((db) => db.close(), 'SyncDatabase');
+    // down FFI callback metadata. Each one refreshes its planner statistics
+    // on the way out (see optimizeAndClose): shutdown is the one moment that
+    // work costs the user nothing.
+    await _disposeAsyncSafely<JournalDb>(
+      optimizeAndClose,
+      'JournalDb',
+    );
+    await _disposeAsyncSafely<SyncDatabase>(
+      optimizeAndClose,
+      'SyncDatabase',
+    );
     await _disposeAsyncSafely<AgentDatabase>(
-      (db) => db.close(),
+      optimizeAndClose,
       'AgentDatabase',
     );
-    await _disposeAsyncSafely<EditorDb>((db) => db.close(), 'EditorDb');
-    await _disposeAsyncSafely<Fts5Db>((db) => db.close(), 'Fts5Db');
+    await _disposeAsyncSafely<EditorDb>(
+      optimizeAndClose,
+      'EditorDb',
+    );
+    await _disposeAsyncSafely<Fts5Db>(optimizeAndClose, 'Fts5Db');
     await _disposeAsyncSafely<ConsumptionDatabase>(
-      (db) => db.close(),
+      optimizeAndClose,
       'ConsumptionDatabase',
     );
     await _disposeAsyncSafely<NotificationsDb>(
-      (db) => db.close(),
+      optimizeAndClose,
       'NotificationsDb',
     );
     await _disposeAsyncSafely<OnboardingMetricsDb>(
-      (db) => db.close(),
+      optimizeAndClose,
       'OnboardingMetricsDb',
     );
     await _disposeAsyncSafely<DayProcessingDb>(
-      (db) => db.close(),
+      optimizeAndClose,
       'DayProcessingDb',
     );
-    await _disposeAsyncSafely<SettingsDb>((db) => db.close(), 'SettingsDb');
+    await _disposeAsyncSafely<SettingsDb>(
+      optimizeAndClose,
+      'SettingsDb',
+    );
   }
 
   void _disposeSyncSafely<T extends Object>(

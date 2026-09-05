@@ -9000,6 +9000,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get loggingDomainWhatsNew => 'O que há de novo';
 
   @override
+  String get maintenanceCheckIntegrity =>
+      'Verificar integridade da base de dados';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Verifica se os ficheiros da base de dados estão íntegros';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Problemas encontrados em: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    return 'As $count bases de dados estão íntegras.';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Excluir banco de dados de agentes';
 
   @override

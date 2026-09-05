@@ -132,6 +132,12 @@ void main() {
       when(mockMaintenance.clearEditorDb).thenAnswer((_) async {});
       when(mockMaintenance.clearSyncDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
+      when(mockMaintenance.checkIntegrity).thenAnswer(
+        (_) async => const [
+          (database: 'journal', problems: <String>[]),
+          (database: 'search', problems: <String>[]),
+        ],
+      );
       when(
         mockImagePathMigrationService.migrateAll,
       ).thenAnswer((_) async => ImagePathMigrationReport(const []));
@@ -405,6 +411,45 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
     });
 
+    testWidgets('integrity check reports a sound database', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Check database integrity'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(() => getIt<Maintenance>().checkIntegrity()).called(1);
+      expect(find.text('All 2 databases are sound.'), findsOneWidget);
+    });
+
+    testWidgets('integrity check names the damaged databases', (tester) async {
+      when(getIt<Maintenance>().checkIntegrity).thenAnswer(
+        (_) async => const [
+          (
+            database: 'journal',
+            problems: <String>['row 42 missing from index'],
+          ),
+          (database: 'search', problems: <String>[]),
+        ],
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Check database integrity'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Problems found in: journal.'), findsOneWidget);
+    });
+
     testWidgets(
       'delete editor database button deletes database when confirmed',
       (tester) async {
@@ -574,12 +619,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      // Nine action rows (including the screenshot repair and the two
-      // onboarding/FTUE debug actions) carry chevrons. The diagnostic
-      // repaint-rainbow toggle is the tenth item and uses an adaptive Switch.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(10));
-      expect(find.byType(SettingsIcon), findsNWidgets(10));
-      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(9));
+      // Ten action rows (including the integrity check, the screenshot
+      // repair and the two onboarding/FTUE debug actions) carry chevrons.
+      // The diagnostic repaint-rainbow toggle is the eleventh item and uses
+      // an adaptive Switch.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+      expect(find.byType(SettingsIcon), findsNWidgets(11));
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(10));
       expect(find.byType(Switch), findsOneWidget);
     });
 
@@ -660,6 +706,12 @@ void main() {
       final mockMaintenance = MockMaintenance();
       when(mockMaintenance.clearEditorDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
+      when(mockMaintenance.checkIntegrity).thenAnswer(
+        (_) async => const [
+          (database: 'journal', problems: <String>[]),
+          (database: 'search', problems: <String>[]),
+        ],
+      );
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -947,6 +999,9 @@ void main() {
 
       final generateButton = find.text('Generate Embeddings').first;
       await tester.ensureVisible(generateButton);
+      // The list grew past the viewport, so let the scroll settle before
+      // the tap resolves the row's position.
+      await tester.pumpAndSettle();
       await tester.tap(generateButton);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

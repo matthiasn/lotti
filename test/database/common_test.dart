@@ -782,4 +782,169 @@ void main() {
       expect(backupSize, equals(sourceSize));
     });
   });
+
+  group('recoverDatabaseIfUnreadable', () {
+    late Directory testDirectory;
+
+    setUp(() {
+      testDirectory = setupTestDirectory();
+      setupTestDirectoryWithGetIt(testDirectory);
+      DevLogger.capturedLogs.clear();
+    });
+
+    tearDown(() => cleanupTestDirectoryWithGetIt(testDirectory));
+
+    /// A real SQLite file holding one row, so a restore can be told apart
+    /// from an empty file by its contents.
+    void writeDatabase(String path, String marker) {
+      sqlite3.open(path)
+        ..execute('CREATE TABLE t (v TEXT)')
+        ..execute("INSERT INTO t (v) VALUES ('$marker')")
+        ..close();
+    }
+
+    String markerOf(String path) {
+      final db = sqlite3.open(path);
+      try {
+        return db.select('SELECT v FROM t').single['v'] as String;
+      } finally {
+        db.close();
+      }
+    }
+
+    File backupOf(String stem, String timestamp, String marker) {
+      final dir = Directory(p.join(testDirectory.path, _backupDirectoryName))
+        ..createSync(recursive: true);
+      final file = File(p.join(dir.path, '$stem.$timestamp.sqlite'));
+      writeDatabase(file.path, marker);
+      return file;
+    }
+
+    test('a readable database is left exactly as it is', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'));
+      writeDatabase(file.path, 'live');
+      backupOf('db', '2026-09-05_10-00-00-000', 'backup');
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(markerOf(file.path), 'live');
+      expect(
+        Directory(
+          testDirectory.path,
+        ).listSync().whereType<File>().map((f) => p.basename(f.path)),
+        ['db.sqlite'],
+        reason: 'nothing should have been moved aside',
+      );
+    });
+
+    test('a corrupt database is replaced by the newest backup', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('this is not a database');
+      File('${file.path}-wal').writeAsStringSync('stale wal');
+      backupOf('db', '2026-09-05_09-00-00-000', 'older');
+      backupOf('db', '2026-09-05_11-00-00-000', 'newest');
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 9, 5, 12)),
+        () => recoverDatabaseIfUnreadable(file),
+      );
+
+      expect(markerOf(file.path), 'newest');
+      // The damaged file is kept: it holds whatever the backup does not.
+      final kept = Directory(testDirectory.path)
+          .listSync()
+          .whereType<File>()
+          .map((f) => p.basename(f.path))
+          .where((name) => name.contains('.corrupt-'));
+      expect(kept, hasLength(1));
+      // A WAL belonging to the replaced file would be replayed into the
+      // restored one.
+      expect(File('${file.path}-wal').existsSync(), isFalse);
+    });
+
+    test(
+      'falls back to an older backup when the newest is damaged too',
+      () async {
+        final file = File(p.join(testDirectory.path, 'db.sqlite'))
+          ..writeAsStringSync('not a database');
+        backupOf('db', '2026-09-05_09-00-00-000', 'older');
+        backupOf(
+          'db',
+          '2026-09-05_11-00-00-000',
+          'newest',
+        ).writeAsStringSync('also not a database');
+
+        await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 12)),
+          () => recoverDatabaseIfUnreadable(file),
+        );
+
+        expect(markerOf(file.path), 'older');
+      },
+    );
+
+    test('leaves the file alone when there is no backup to restore', () async {
+      final file = File(p.join(testDirectory.path, 'db.sqlite'))
+        ..writeAsStringSync('not a database');
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(file.readAsStringSync(), 'not a database');
+      expect(
+        DevLogger.capturedLogs.any((line) => line.contains('No usable backup')),
+        isTrue,
+        reason: DevLogger.capturedLogs.join('\n'),
+      );
+    });
+
+    test('a missing file is not a corruption verdict', () async {
+      final file = File(p.join(testDirectory.path, 'absent.sqlite'));
+      backupOf('absent', '2026-09-05_11-00-00-000', 'backup');
+
+      await recoverDatabaseIfUnreadable(file);
+
+      expect(
+        file.existsSync(),
+        isFalse,
+        reason: 'a first launch must not be handed an old backup',
+      );
+    });
+  });
+
+  group('optimizeAndClose', () {
+    test('refreshes planner statistics and closes the database', () async {
+      final directory = setupTestDirectory();
+      addTearDown(() => directory.deleteSync(recursive: true));
+      final db = AiConfigDb(
+        documentsDirectoryProvider: () async => directory,
+        tempDirectoryProvider: () async => directory,
+      );
+      // Give the planner something worth analysing, then a query that makes
+      // the stale-statistics estimate worth refreshing.
+      await db.customStatement(
+        'CREATE TABLE t (id INTEGER PRIMARY KEY, k TEXT)',
+      );
+      await db.customStatement('CREATE INDEX i ON t(k)');
+      for (var i = 0; i < 400; i++) {
+        await db.customStatement(
+          "INSERT INTO t (k) VALUES ('k' || ${i % 5})",
+        );
+      }
+      await db.customSelect("SELECT * FROM t WHERE k = 'k3'").get();
+
+      await optimizeAndClose(db);
+
+      final raw = sqlite3.open(p.join(directory.path, aiConfigDbFileName));
+      addTearDown(raw.close);
+      expect(
+        raw
+            .select(
+              "SELECT name FROM sqlite_master WHERE name = 'sqlite_stat1'",
+            )
+            .length,
+        1,
+        reason: 'PRAGMA optimize should have left statistics behind',
+      );
+    });
+  });
 }

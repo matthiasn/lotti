@@ -5205,6 +5205,24 @@
   "loggingDomainTasks": "Tasks & checklists",
   "loggingDomainTheming": "Theming",
   "loggingDomainWhatsNew": "What's new",
+  "maintenanceCheckIntegrity": "Check database integrity",
+  "maintenanceCheckIntegrityDescription": "Verify that the database files are sound",
+  "maintenanceCheckIntegrityFailed": "Problems found in: {databases}.",
+  "@maintenanceCheckIntegrityFailed": {
+    "placeholders": {
+      "databases": {
+        "type": "String"
+      }
+    }
+  },
+  "maintenanceCheckIntegrityOk": "All {count} databases are sound.",
+  "@maintenanceCheckIntegrityOk": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceDeleteAgentDb": "Delete Agents Database",
   "maintenanceDeleteAgentDbDescription": "Delete agents database and restart app",
   "maintenanceDeleteDatabaseConfirm": "Yes, delete database",

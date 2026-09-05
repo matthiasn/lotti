@@ -8883,6 +8883,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loggingDomainWhatsNew => 'What\'s new';
 
   @override
+  String get maintenanceCheckIntegrity => 'Check database integrity';
+
+  @override
+  String get maintenanceCheckIntegrityDescription =>
+      'Verify that the database files are sound';
+
+  @override
+  String maintenanceCheckIntegrityFailed(String databases) {
+    return 'Problems found in: $databases.';
+  }
+
+  @override
+  String maintenanceCheckIntegrityOk(int count) {
+    return 'All $count databases are sound.';
+  }
+
+  @override
   String get maintenanceDeleteAgentDb => 'Delete Agents Database';
 
   @override

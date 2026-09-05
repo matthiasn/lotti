@@ -15210,6 +15210,30 @@ abstract class AppLocalizations {
   /// **'What\'s new'**
   String get loggingDomainWhatsNew;
 
+  /// No description provided for @maintenanceCheckIntegrity.
+  ///
+  /// In en, this message translates to:
+  /// **'Check database integrity'**
+  String get maintenanceCheckIntegrity;
+
+  /// No description provided for @maintenanceCheckIntegrityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify that the database files are sound'**
+  String get maintenanceCheckIntegrityDescription;
+
+  /// No description provided for @maintenanceCheckIntegrityFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Problems found in: {databases}.'**
+  String maintenanceCheckIntegrityFailed(String databases);
+
+  /// No description provided for @maintenanceCheckIntegrityOk.
+  ///
+  /// In en, this message translates to:
+  /// **'All {count} databases are sound.'**
+  String maintenanceCheckIntegrityOk(int count);
+
   /// No description provided for @maintenanceDeleteAgentDb.
   ///
   /// In en, this message translates to:
