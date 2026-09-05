@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -1327,6 +1328,350 @@ void main() {
     });
   });
 
+  group('transaction diagnostics', () {
+    late MockQueryExecutor parent;
+    late MockTransactionExecutor inner;
+    late MockQueryExecutorUser user;
+    late List<SlowQueryLogEntry> entries;
+    late QueryExecutor connection;
+
+    setUp(() {
+      SlowQueryLoggingGate.isEnabled = true;
+      parent = MockQueryExecutor();
+      inner = MockTransactionExecutor();
+      user = MockQueryExecutorUser();
+      entries = [];
+      when(parent.beginTransaction).thenReturn(inner);
+      when(() => inner.ensureOpen(user)).thenAnswer((_) async => true);
+      when(inner.send).thenAnswer((_) async {});
+      when(inner.rollback).thenAnswer((_) async {});
+      when(() => inner.runCustom('INSIDE', const [])).thenAnswer((_) async {});
+      when(
+        () => parent.runCustom('OUTSIDE', const []),
+      ).thenAnswer((_) async {});
+      connection = parent.interceptWith(
+        SlowQueryInterceptor(
+          databaseName: 'transactions',
+          threshold: Duration.zero,
+          reporter: entries.add,
+        ),
+      );
+    });
+
+    tearDown(resetSlowQueryLoggingGate);
+
+    test(
+      'reports acquisition and lifetime around a successful transaction',
+      () async {
+        final tx = connection.beginTransaction();
+        expect(await tx.ensureOpen(user), isTrue);
+        await tx.runCustom('INSIDE');
+        await connection.runCustom('OUTSIDE');
+        await tx.send();
+        await connection.runCustom('OUTSIDE');
+
+        expect(entries.map((entry) => entry.operation), [
+          'transaction.open',
+          'custom',
+          'custom',
+          'transaction.commit',
+          'transaction',
+          'custom',
+        ]);
+        expect(entries[1].transactionId, 1);
+        expect(entries[1].activeTransactionIdsAtStart, [1]);
+        expect(entries[2].transactionId, isNull);
+        expect(entries[2].activeTransactionIdsAtStart, [1]);
+        expect(entries[4].scope, 'transactionLifetime');
+        expect(entries.last.activeTransactionIdsAtStart, isEmpty);
+        expect(
+          entries
+              .where((entry) => entry.operation == 'transaction')
+              .single
+              .statement,
+          'COMMIT',
+        );
+        verify(() => inner.ensureOpen(user)).called(1);
+        verify(inner.send).called(1);
+      },
+    );
+
+    test('failed commit preserves the transaction until rollback', () async {
+      final failure = StateError('synthetic commit failure');
+      when(inner.send).thenAnswer((_) async => throw failure);
+      final tx = connection.beginTransaction();
+      await tx.ensureOpen(user);
+      await expectLater(tx.send(), throwsA(same(failure)));
+      await connection.runCustom('OUTSIDE');
+      await tx.rollback();
+      await connection.runCustom('OUTSIDE');
+
+      expect(entries.map((entry) => entry.operation), [
+        'transaction.open',
+        'transaction.commit',
+        'custom',
+        'transaction.rollback',
+        'transaction',
+        'custom',
+      ]);
+      expect(entries[2].activeTransactionIdsAtStart, [1]);
+      expect(entries.last.activeTransactionIdsAtStart, isEmpty);
+      expect(
+        entries
+            .where((entry) => entry.operation == 'transaction')
+            .single
+            .statement,
+        'ROLLBACK',
+      );
+      verify(inner.rollback).called(1);
+    });
+
+    test(
+      'reporter failures cannot alter transaction results or mask SQL errors',
+      () async {
+        final sqlFailure = StateError('original SQL failure');
+        connection = parent.interceptWith(
+          SlowQueryInterceptor(
+            databaseName: 'throwing_reporter',
+            threshold: Duration.zero,
+            reporter: (_) => throw StateError('synthetic reporting failure'),
+          ),
+        );
+        final tx = connection.beginTransaction();
+        expect(await tx.ensureOpen(user), isTrue);
+        await tx.runCustom('INSIDE');
+        await tx.send();
+        verify(inner.send).called(1);
+        verifyNever(inner.rollback);
+
+        when(
+          () => parent.runCustom('OUTSIDE', const []),
+        ).thenAnswer((_) async => throw sqlFailure);
+        await expectLater(
+          connection.runCustom('OUTSIDE'),
+          throwsA(same(sqlFailure)),
+        );
+      },
+    );
+
+    test('nested transaction IDs preserve the still-active parent', () async {
+      final nested = MockTransactionExecutor();
+      when(inner.beginTransaction).thenReturn(nested);
+      when(() => nested.ensureOpen(user)).thenAnswer((_) async => true);
+      when(nested.send).thenAnswer((_) async {});
+      final tx = connection.beginTransaction();
+      await tx.ensureOpen(user);
+      final child = tx.beginTransaction();
+      await child.ensureOpen(user);
+      await child.send();
+      await tx.runCustom('INSIDE');
+      await tx.rollback();
+      await connection.runCustom('OUTSIDE');
+      final childSpan = entries.firstWhere(
+        (entry) => entry.operation == 'transaction' && entry.transactionId == 2,
+      );
+      expect(childSpan.parentTransactionId, 1);
+      expect(childSpan.activeTransactionIdsAtStart, [1, 2]);
+      final parentQuery = entries.firstWhere(
+        (entry) => entry.statement == 'INSIDE',
+      );
+      expect(parentQuery.transactionId, 1);
+      expect(parentQuery.activeTransactionIdsAtStart, [1]);
+      expect(entries.last.activeTransactionIdsAtStart, isEmpty);
+    });
+
+    test(
+      'acquisition is reported once and pending opens are not active',
+      () async {
+        final opened = Completer<bool>();
+        when(() => inner.ensureOpen(user)).thenAnswer((_) => opened.future);
+        final tx = connection.beginTransaction();
+        final first = tx.ensureOpen(user);
+        final second = tx.ensureOpen(user);
+        await connection.runCustom('OUTSIDE');
+        expect(entries.single.activeTransactionIdsAtStart, isEmpty);
+        opened.complete(true);
+        expect(await first, isTrue);
+        expect(await second, isTrue);
+        await connection.runCustom('OUTSIDE');
+        expect(entries.last.activeTransactionIdsAtStart, [1]);
+        expect(
+          entries.where((entry) => entry.operation == 'transaction.open'),
+          hasLength(1),
+        );
+        await tx.rollback();
+      },
+    );
+
+    test('failed opening and rollback release their observations', () async {
+      final failure = StateError('synthetic open failure');
+      when(() => inner.ensureOpen(user)).thenAnswer((_) async => throw failure);
+      final failed = connection.beginTransaction();
+      await expectLater(failed.ensureOpen(user), throwsA(same(failure)));
+      await failed.rollback();
+      expect(
+        entries.where((entry) => entry.operation == 'transaction'),
+        isEmpty,
+      );
+      when(() => inner.ensureOpen(user)).thenAnswer((_) async => true);
+      final tx = connection.beginTransaction();
+      await tx.ensureOpen(user);
+      when(inner.rollback).thenAnswer((_) async => throw failure);
+      await expectLater(tx.rollback(), throwsA(same(failure)));
+      await connection.runCustom('OUTSIDE');
+      expect(entries.last.activeTransactionIdsAtStart, isEmpty);
+      expect(
+        entries
+            .firstWhere((entry) => entry.operation == 'transaction')
+            .statement,
+        'ROLLBACK_FAILED',
+      );
+    });
+
+    test(
+      'native transaction delays an unrelated indexed read until commit',
+      () async {
+        final native = NativeDatabase.memory().interceptWith(
+          SlowQueryInterceptor(
+            databaseName: 'native_transaction',
+            threshold: Duration.zero,
+            reporter: entries.add,
+          ),
+        );
+        addTearDown(native.close);
+        await native.ensureOpen(user);
+        await native.runCustom(
+          'CREATE TABLE markers (id INTEGER PRIMARY KEY, value TEXT)',
+        );
+        final tx = native.beginTransaction();
+        await tx.ensureOpen(user);
+        await tx.runInsert('INSERT INTO markers VALUES (?, ?)', [
+          1,
+          'synthetic',
+        ]);
+        var completed = false;
+        final read = native
+            .runSelect('SELECT value FROM markers WHERE id = ?', [1])
+            .then((rows) {
+              completed = true;
+              return rows;
+            });
+        await Future<void>.value();
+        expect(completed, isFalse);
+        await tx.send();
+        expect(await read, [
+          {'value': 'synthetic'},
+        ]);
+        final query = entries.firstWhere(
+          (entry) => entry.operation == 'select',
+        );
+        expect(query.transactionId, isNull);
+        expect(query.activeTransactionIdsAtStart, [1]);
+        final span = entries.firstWhere(
+          (entry) => entry.operation == 'transaction',
+        );
+        expect(span.scope, 'transactionLifetime');
+        expect(span.transactionId, 1);
+      },
+    );
+
+    test('disabled diagnostics preserve transaction delegation', () async {
+      SlowQueryLoggingGate.isEnabled = false;
+      final tx = connection.beginTransaction();
+      expect(await tx.ensureOpen(user), isTrue);
+      await tx.runCustom('INSIDE');
+      await tx.send();
+      expect(entries, isEmpty);
+      verify(() => inner.runCustom('INSIDE', const [])).called(1);
+      verify(inner.send).called(1);
+    });
+
+    test(
+      'completed lifetimes retain their own origin and timing bounds',
+      () async {
+        SlowQueryLoggingGate.captureFirstCallStack = true;
+        var now = DateTime.utc(2026, 9, 5, 12);
+        final start = now;
+        await withClock(Clock(() => now), () async {
+          final tx = connection.beginTransaction();
+          await tx.ensureOpen(user);
+          now = now.add(const Duration(seconds: 4));
+          await tx.send();
+          final next = connection.beginTransaction();
+          await next.ensureOpen(user);
+          now = now.add(const Duration(seconds: 2));
+          await next.rollback();
+        });
+        final spans = entries
+            .where((entry) => entry.operation == 'transaction')
+            .toList();
+        expect(spans.map((entry) => entry.transactionId), [1, 2]);
+        expect(spans.first.startedAt, start);
+        expect(spans.first.completedAt, start.add(const Duration(seconds: 4)));
+        expect(spans.last.startedAt, spans.first.completedAt);
+        expect(spans.last.completedAt, now);
+        final openings = entries
+            .where((entry) => entry.operation == 'transaction.open')
+            .toList();
+        expect(spans.first.callerStack, same(openings.first.callerStack));
+        expect(spans.last.callerStack, same(openings.last.callerStack));
+        expect(
+          spans.first.callerStack.toString(),
+          isNot(spans.last.callerStack.toString()),
+        );
+        for (final span in spans) {
+          expect(span.scope, 'transactionLifetime');
+          expect(
+            span.callerStack.toString(),
+            contains('slow_query_logging_test.dart'),
+          );
+        }
+      },
+    );
+
+    test(
+      'turning logging off during a transaction still releases its observation',
+      () async {
+        final tx = connection.beginTransaction();
+        await tx.ensureOpen(user);
+        SlowQueryLoggingGate.isEnabled = false;
+        await tx.send();
+        SlowQueryLoggingGate.isEnabled = true;
+        await connection.runCustom('OUTSIDE');
+        expect(
+          entries.where((entry) => entry.operation == 'transaction'),
+          isEmpty,
+        );
+        expect(entries.last.activeTransactionIdsAtStart, isEmpty);
+      },
+    );
+
+    test(
+      'a lifetime reporter failure cannot undo a successful commit',
+      () async {
+        connection = parent.interceptWith(
+          SlowQueryInterceptor(
+            databaseName: 'lifetime_reporter',
+            threshold: Duration.zero,
+            reporter: (entry) {
+              if (entry.operation == 'transaction') {
+                throw StateError('lifetime report failed');
+              }
+              entries.add(entry);
+            },
+          ),
+        );
+        final tx = connection.beginTransaction();
+        await tx.ensureOpen(user);
+        await tx.send();
+        await connection.runCustom('OUTSIDE');
+        verify(inner.send).called(1);
+        verifyNever(inner.rollback);
+        expect(entries.last.activeTransactionIdsAtStart, isEmpty);
+      },
+    );
+  });
+
   group('integration: interceptor + fileReporter end-to-end', () {
     late Directory tempDir;
     late MockQueryExecutor mockExecutor;
@@ -1382,5 +1727,45 @@ void main() {
       expect(content, contains('args=1'));
       expect(content, contains('SELECT * FROM items WHERE id = ?'));
     });
+
+    test(
+      'transaction file records distinguish lifetime from SQL and identify overlap',
+      () async {
+        final report = SlowQueryInterceptor.fileReporter(
+          documentsDirectoryPath: tempDir.path,
+        );
+        report(
+          SlowQueryLogEntry(
+            databaseName: 'sync.sqlite',
+            operation: 'transaction',
+            statement: 'COMMIT',
+            arguments: const [],
+            elapsed: const Duration(seconds: 3),
+            startedAt: DateTime.utc(2026, 9, 5, 12),
+            completedAt: DateTime.utc(2026, 9, 5, 12, 0, 3),
+            scope: 'transactionLifetime',
+            transactionId: 2,
+            parentTransactionId: 1,
+            activeTransactionIdsAtStart: const [1, 2],
+            isSuperSlow: true,
+          ),
+        );
+        await SlowQueryInterceptor.flushPendingFileWrites();
+        final files = Directory(
+          '${tempDir.path}/logs',
+        ).listSync().whereType<File>().toList();
+        expect(files, hasLength(2));
+        for (final file in files) {
+          final text = file.readAsStringSync();
+          expect(text, contains('transaction 3000.000ms'));
+          expect(text, contains('TIMING: scope=transactionLifetime'));
+          expect(
+            text,
+            contains('TRANSACTION: id=2 parent=1 activeAtStart=[1, 2]'),
+          );
+          expect(text, isNot(contains('scope=executorAwait')));
+        }
+      },
+    );
   });
 }

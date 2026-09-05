@@ -29,8 +29,9 @@ abstract final class SlowQueryLoggingGate {
   /// the same statement do **not** capture again, so the boot wave
   /// produces one trace per unique query shape — exactly what we need
   /// to identify which Riverpod provider / widget mounted each fetch.
-  /// Off by default because capturing stack traces costs a few hundred
-  /// microseconds per first call.
+  /// Transactions additionally capture their origin when each transaction is
+  /// created, so repeated transactions retain distinct initiating call sites.
+  /// Off by default because capturing stack traces adds diagnostic overhead.
   static bool captureFirstCallStack = false;
 
   /// Internal set of statements already traced for this process.
@@ -58,6 +59,10 @@ class SlowQueryLogEntry {
     this.startedAt,
     this.completedAt,
     this.inFlightAtStart,
+    this.scope = 'executorAwait',
+    this.transactionId,
+    this.parentTransactionId,
+    this.activeTransactionIdsAtStart,
   });
 
   final String databaseName;
@@ -65,11 +70,13 @@ class SlowQueryLogEntry {
   final String statement;
   final List<Object?> arguments;
 
-  /// Awaited executor duration, including scheduling and isolate transport.
-  /// This is not a measurement of native SQLite execution alone.
+  /// Awaited executor duration, including scheduling and isolate transport,
+  /// or acknowledged transaction lifetime as identified by [scope]. Neither
+  /// measures native SQLite execution alone.
   final Duration elapsed;
 
-  /// Wall-clock bounds captured around the executor await, before EXPLAIN.
+  /// Wall-clock bounds around the executor await (before EXPLAIN), or the
+  /// opening and ending acknowledgements for a transaction lifetime.
   /// Optional for manually constructed and logging-disabled entries.
   final DateTime? startedAt;
   final DateTime? completedAt;
@@ -77,6 +84,19 @@ class SlowQueryLogEntry {
   /// Calls awaiting this interceptor's executor when this call started,
   /// including this call. This is observed concurrency, not a queue length.
   final int? inFlightAtStart;
+
+  /// Identifies executor awaits versus the observed lifetime of a transaction.
+  /// Neither scope measures native SQLite execution or exact lock hold time.
+  final String scope;
+
+  /// IDs local to this interceptor, correlated by database and timing bounds.
+  final int? transactionId;
+  final int? parentTransactionId;
+
+  /// Transactions whose opening acknowledgement has arrived but whose end has
+  /// not been acknowledged when this operation starts. Overlap is not proof
+  /// that these transactions blocked the operation (read pools may bypass it).
+  final List<int>? activeTransactionIdsAtStart;
 
   /// True when the query exceeded the interceptor's super-slow threshold and
   /// should be replicated to the dedicated super-slow log file.
@@ -87,11 +107,9 @@ class SlowQueryLogEntry {
   /// failed.
   final List<String>? queryPlan;
 
-  /// Stack trace captured at the *first* invocation of this statement
-  /// when [SlowQueryLoggingGate.captureFirstCallStack] is enabled. Lets
-  /// us pinpoint the Riverpod provider / widget that originates each
-  /// boot-wave query. Null on subsequent invocations or when capture is
-  /// disabled.
+  /// First-invocation statement stack, or the initiating stack for this
+  /// transaction's opening and lifetime, when
+  /// [SlowQueryLoggingGate.captureFirstCallStack] is enabled.
   final StackTrace? callerStack;
 
   String get formattedStatement =>
@@ -117,6 +135,131 @@ class SlowQueryInterceptor extends QueryInterceptor {
   final Duration threshold;
   final SlowQueryReporter reporter;
   int _inFlight = 0;
+  int _nextTransactionId = 0;
+  final _transactions = Map<QueryExecutor, _ObservedTransaction>.identity();
+
+  List<int> _activeTransactionIds() => [
+    for (final tx in _transactions.values)
+      if (tx.lifetime != null) tx.id,
+  ];
+
+  @override
+  TransactionExecutor beginTransaction(QueryExecutor parent) {
+    final executor = parent.beginTransaction();
+    if (SlowQueryLoggingGate.isEnabled) {
+      _transactions[executor] = _ObservedTransaction(
+        id: ++_nextTransactionId,
+        parentId: _transactions[parent]?.id,
+        callerStack: SlowQueryLoggingGate.captureFirstCallStack
+            ? StackTrace.current
+            : null,
+      );
+    }
+    return executor;
+  }
+
+  @override
+  Future<bool> ensureOpen(
+    QueryExecutor executor,
+    QueryExecutorUser user,
+  ) async {
+    final tx = _transactions[executor];
+    if (tx == null || tx.openRequested) {
+      return executor.ensureOpen(user);
+    }
+    tx.openRequested = true;
+    try {
+      return await _measure(
+        executor: executor,
+        operation: 'transaction.open',
+        statement: 'BEGIN',
+        arguments: const [],
+        callerStackOverride: tx.callerStack,
+        run: () async {
+          final opened = await executor.ensureOpen(user);
+          tx
+            ..openedAt = clock.now()
+            ..lifetime = (Stopwatch()..start())
+            ..activeIdsAtOpen = _activeTransactionIds();
+          return opened;
+        },
+      );
+    } catch (_) {
+      _transactions.remove(executor);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> commitTransaction(TransactionExecutor inner) async {
+    await _measure(
+      executor: inner,
+      operation: 'transaction.commit',
+      statement: 'COMMIT',
+      arguments: const [],
+      run: inner.send,
+    );
+    // Drift retains the transaction after a failed commit so it can roll back.
+    _finishTransaction(inner, 'COMMIT');
+  }
+
+  @override
+  Future<void> rollbackTransaction(TransactionExecutor inner) async {
+    var succeeded = false;
+    try {
+      await _measure(
+        executor: inner,
+        operation: 'transaction.rollback',
+        statement: 'ROLLBACK',
+        arguments: const [],
+        run: inner.rollback,
+      );
+      succeeded = true;
+    } finally {
+      // Drift releases remote transactions even when rollback throws.
+      _finishTransaction(inner, succeeded ? 'ROLLBACK' : 'ROLLBACK_FAILED');
+    }
+  }
+
+  void _finishTransaction(QueryExecutor executor, String outcome) {
+    final tx = _transactions.remove(executor);
+    final lifetime = tx?.lifetime;
+    if (tx == null || lifetime == null) return;
+    lifetime.stop();
+    if (!SlowQueryLoggingGate.isEnabled || lifetime.elapsed < threshold) return;
+    _reportSafely(
+      SlowQueryLogEntry(
+        databaseName: databaseName,
+        operation: 'transaction',
+        statement: outcome,
+        arguments: const [],
+        elapsed: lifetime.elapsed,
+        scope: 'transactionLifetime',
+        isSuperSlow: lifetime.elapsed >= superSlowThreshold,
+        startedAt: tx.openedAt,
+        completedAt: clock.now(),
+        transactionId: tx.id,
+        parentTransactionId: tx.parentId,
+        activeTransactionIdsAtStart: tx.activeIdsAtOpen,
+        callerStack: tx.callerStack,
+      ),
+    );
+  }
+
+  void _reportSafely(SlowQueryLogEntry entry) {
+    try {
+      reporter(entry);
+    } catch (error, stackTrace) {
+      // Observability must never turn a successful BEGIN/COMMIT into an
+      // apparent failure, or hide the original database exception.
+      DevLogger.error(
+        name: 'DB_SLOW_QUERY',
+        message: 'Failed to report database timing',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   /// Queries whose elapsed time crosses this threshold also have their
   /// `EXPLAIN QUERY PLAN` captured (selects only) and are duplicated to the
@@ -142,10 +285,13 @@ class SlowQueryInterceptor extends QueryInterceptor {
           '${elapsedMs.toStringAsFixed(3)}ms '
           'args=${entry.arguments.length} '
           '${entry.formattedStatement}'
-          '${entry.startedAt == null ? '' : '\n  TIMING: scope=executorAwait '
+          '${entry.startedAt == null ? '' : '\n  TIMING: scope=${entry.scope} '
                     'started=${entry.startedAt!.toIso8601String()} '
                     'completed=${entry.completedAt?.toIso8601String()} '
-                    'inFlightAtStart=${entry.inFlightAtStart}'}';
+                    'inFlightAtStart=${entry.inFlightAtStart}'}'
+          '${entry.transactionId == null && (entry.activeTransactionIdsAtStart?.isEmpty ?? true) ? '' : '\n  TRANSACTION: id=${entry.transactionId} '
+                    'parent=${entry.parentTransactionId} '
+                    'activeAtStart=${entry.activeTransactionIdsAtStart}'}';
       _SlowQueryFileSink.instance.append(logFile, line);
 
       if (entry.isSuperSlow) {
@@ -221,11 +367,13 @@ class SlowQueryInterceptor extends QueryInterceptor {
   }
 
   Future<T> _measure<T>({
+    required QueryExecutor executor,
     required String operation,
     required String statement,
     required List<Object?> arguments,
     required Future<T> Function() run,
     Future<List<String>> Function()? capturePlan,
+    StackTrace? callerStackOverride,
   }) async {
     // Capture the caller stack BEFORE awaiting `run()`. By the time
     // the interceptor reports, drift's executor is deep in the call
@@ -233,12 +381,15 @@ class SlowQueryInterceptor extends QueryInterceptor {
     // here keeps the frames that show which provider / widget kicked
     // off the query. Gated to one capture per unique statement so the
     // diagnostic is one-shot.
-    StackTrace? callerStack;
-    if (SlowQueryLoggingGate.captureFirstCallStack &&
+    var callerStack = callerStackOverride;
+    if (callerStack == null &&
+        SlowQueryLoggingGate.captureFirstCallStack &&
         SlowQueryLoggingGate.markStatementSeenAndIsFirst(statement)) {
       callerStack = StackTrace.current;
     }
     final startedAt = SlowQueryLoggingGate.isEnabled ? clock.now() : null;
+    final tx = _transactions[executor];
+    final activeIds = startedAt == null ? null : _activeTransactionIds();
     final inFlightAtStart = ++_inFlight;
     final stopwatch = Stopwatch()..start();
     try {
@@ -264,7 +415,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
             );
           }
         }
-        reporter(
+        _reportSafely(
           SlowQueryLogEntry(
             databaseName: databaseName,
             operation: operation,
@@ -277,6 +428,9 @@ class SlowQueryInterceptor extends QueryInterceptor {
             startedAt: startedAt,
             completedAt: completedAt,
             inFlightAtStart: inFlightAtStart,
+            transactionId: tx?.id,
+            parentTransactionId: tx?.parentId,
+            activeTransactionIdsAtStart: activeIds,
           ),
         );
       }
@@ -316,6 +470,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
         .toList(growable: false);
 
     return _measure(
+      executor: executor,
       operation: 'batch[$statementCount]',
       statement: preview,
       arguments: allArguments,
@@ -330,6 +485,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
     List<Object?> args,
   ) {
     return _measure(
+      executor: executor,
       operation: 'custom',
       statement: statement,
       arguments: args,
@@ -344,6 +500,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
     List<Object?> args,
   ) {
     return _measure(
+      executor: executor,
       operation: 'delete',
       statement: statement,
       arguments: args,
@@ -358,6 +515,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
     List<Object?> args,
   ) {
     return _measure(
+      executor: executor,
       operation: 'insert',
       statement: statement,
       arguments: args,
@@ -372,6 +530,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
     List<Object?> args,
   ) {
     return _measure(
+      executor: executor,
       operation: 'select',
       statement: statement,
       arguments: args,
@@ -387,12 +546,29 @@ class SlowQueryInterceptor extends QueryInterceptor {
     List<Object?> args,
   ) {
     return _measure(
+      executor: executor,
       operation: 'update',
       statement: statement,
       arguments: args,
       run: () => executor.runUpdate(statement, args),
     );
   }
+}
+
+class _ObservedTransaction {
+  _ObservedTransaction({
+    required this.id,
+    required this.parentId,
+    this.callerStack,
+  });
+
+  final int id;
+  final int? parentId;
+  final StackTrace? callerStack;
+  bool openRequested = false;
+  DateTime? openedAt;
+  Stopwatch? lifetime;
+  List<int>? activeIdsAtOpen;
 }
 
 class _SlowQueryFileSink {

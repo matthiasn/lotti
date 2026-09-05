@@ -1530,6 +1530,20 @@ class MockPlayerStream extends Mock implements PlayerStream {}
 
 class MockQueryExecutor extends Mock implements drift.QueryExecutor {}
 
+class MockTransactionExecutor extends Mock
+    implements drift.TransactionExecutor {}
+
+class MockQueryExecutorUser extends Mock implements drift.QueryExecutorUser {
+  @override
+  int get schemaVersion => 1;
+
+  @override
+  Future<void> beforeOpen(
+    drift.QueryExecutor executor,
+    drift.OpeningDetails details,
+  ) async {}
+}
+
 class MockPathProviderPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {}

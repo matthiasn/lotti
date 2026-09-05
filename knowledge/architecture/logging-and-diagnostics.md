@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T14:55:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T19:28:47Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -28,6 +28,10 @@ sources:
     resource: ../../lib/services/window_service.dart
     title: Ordered shutdown and final log flush
     last_modified: 2026-08-01
+  - id: slow-query-logging
+    resource: ../../lib/database/slow_query_logging.dart
+    title: SlowQueryInterceptor
+    last_modified: 2026-09-05
 ---
 
 # A closed set of domains
@@ -169,15 +173,17 @@ remain available locally under the error policy above.
 # Slow queries
 
 The database layer has its own gate, described in
-[persistence](persistence.md). `SlowQueryInterceptor` wraps every connection but
-stays inert until its logging domain is enabled, so it costs nothing in normal
-use. `LoggingService` keeps that gate in sync with the config flag alongside the
-general logging gate.
+[persistence](persistence.md#slow-query-capture). `SlowQueryInterceptor` wraps
+every connection. Timing bookkeeping still runs with logging disabled, while
+file output, plans, and transaction tracking are gated. `LoggingService` keeps
+that gate in sync with the config flag alongside the general logging gate.
 
 **It has two tiers, and they write different files** — 10 ms to `slow_queries`,
 200 ms to `super_slow_queries` with an `EXPLAIN QUERY PLAN` attached. Start with
 the second file, since it is the only one carrying a plan; the thresholds and what
-each tier is for are in [persistence](persistence.md).
+each tier is for are in [persistence](persistence.md). The files also contain
+transaction operations and lifetime spans; their interpretation and limits
+are documented under [transaction overlap](persistence.md#transaction-overlap).
 
 # Where to look
 
