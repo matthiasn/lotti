@@ -673,6 +673,336 @@ void main() {
       );
     }
 
+    ChangeSetEntity decisionSourceFor(String title) => rows.values
+        .whereType<ChangeSetEntity>()
+        .singleWhere((set) => set.items.single.humanSummary == title);
+
+    test(
+      'currentRunSnapshot lists the newest run in position order, decided '
+      'rows included, and names when the run was published',
+      () async {
+        await publish('run-1', proposal);
+        final first = active().singleWhere(
+          (row) => row.title == 'Review penguin launch',
+        );
+        expect(await service.dismissRecommendation(first.id), isTrue);
+
+        final snapshot = await service.currentRunSnapshot(
+          'agent-1',
+          'project-1',
+        );
+
+        expect(
+          snapshot.steps.map((row) => row.title),
+          ['Review penguin launch', 'Pack fish'],
+          reason: 'A decided row keeps its place instead of leaving the run.',
+        );
+        expect(
+          snapshot.steps.first.status,
+          ProjectRecommendationStatus.dismissed,
+        );
+        expect(snapshot.pending.map((row) => row.title), ['Pack fish']);
+        expect(snapshot.hasPending, isTrue);
+        expect(snapshot.runCreatedAt, starts['run-1']);
+        expect(
+          (await service.currentRecommendations(
+            'agent-1',
+            'project-1',
+          )).map((row) => row.title),
+          ['Pack fish'],
+        );
+      },
+    );
+
+    test('currentRunSnapshot is empty before any run was published', () async {
+      final snapshot = await service.currentRunSnapshot('agent-1', 'project-1');
+      expect(snapshot.isEmpty, isTrue);
+      expect(snapshot.hasPending, isFalse);
+      expect(snapshot.runCreatedAt, isNull);
+    });
+
+    test('createTask records the created task on the resolved step', () async {
+      service = ProjectRecommendationService(
+        syncService: mockSyncService,
+        notifications: mockNotifications,
+        taskDispatcher: (tool, args, projectId) async =>
+            const ToolExecutionResult(
+              success: true,
+              output: '',
+              mutatedEntityId: 'task-1',
+            ),
+      );
+      await publish('run-1', proposal);
+      final id = active().first.id;
+
+      expect((await service.createTask(id)).success, isTrue);
+
+      final row = rows[id]! as ProjectRecommendationEntity;
+      expect(row.status, ProjectRecommendationStatus.resolved);
+      expect(row.createdTaskId, 'task-1');
+      final snapshot = await service.currentRunSnapshot('agent-1', 'project-1');
+      expect(snapshot.steps.map((step) => step.createdTaskId), [
+        'task-1',
+        null,
+      ]);
+    });
+
+    test(
+      'restoreRecommendation reopens a dismissed step and withdraws its '
+      'decision from the feedback history',
+      () async {
+        await publish('run-1', proposal);
+        final id = active().first.id;
+        await withClock(Clock.fixed(now), () async {
+          expect(await service.dismissRecommendation(id), isTrue);
+        });
+        expect(decisionSourceFor('Review penguin launch').deletedAt, isNull);
+        clearInteractions(mockNotifications);
+
+        final restoredAt = now.add(const Duration(minutes: 5));
+        final restored = await withClock(
+          Clock.fixed(restoredAt),
+          () => service.restoreRecommendation(id),
+        );
+
+        expect(restored, isTrue);
+        final row = rows[id]! as ProjectRecommendationEntity;
+        expect(row.status, ProjectRecommendationStatus.active);
+        expect(row.dismissedAt, isNull);
+        expect(row.updatedAt, restoredAt);
+        expect(
+          decisionSourceFor('Review penguin launch').deletedAt,
+          restoredAt,
+          reason: 'An undone verdict must not train the template.',
+        );
+        final decision = rows.values.whereType<ChangeDecisionEntity>().single;
+        expect(
+          decision.verdict,
+          ChangeDecisionVerdict.deferred,
+          reason: 'Feedback extraction reads the verdict off the decision.',
+        );
+        expect(
+          decision.createdAt,
+          restoredAt,
+          reason: 'A fresh timestamp lets the rewrite win last-writer-wins.',
+        );
+
+        verify(
+          () => mockNotifications.notifyUiOnly({
+            'agent-1',
+            'project-1',
+            agentNotification,
+          }),
+        ).called(1);
+        expect(active().map((step) => step.id), contains(id));
+
+        expect(await service.dismissRecommendation(id), isTrue);
+        expect(
+          rows.values.whereType<ChangeDecisionEntity>().single.verdict,
+          ChangeDecisionVerdict.rejected,
+          reason: 'Deciding again revives the deterministic decision.',
+        );
+        expect(decisionSourceFor('Review penguin launch').deletedAt, isNull);
+      },
+    );
+
+    for (final taskRemoved in [true, false]) {
+      test(
+        'restoreRecommendation on an added step removes the task first and '
+        '${taskRemoved ? 'reopens the step' : 'keeps the step resolved'}',
+        () async {
+          final removed = <String>[];
+          service = ProjectRecommendationService(
+            syncService: mockSyncService,
+            notifications: mockNotifications,
+            taskDispatcher: (tool, args, projectId) async =>
+                const ToolExecutionResult(
+                  success: true,
+                  output: '',
+                  mutatedEntityId: 'task-1',
+                ),
+            taskRemover: (taskId) async {
+              removed.add(taskId);
+              return taskRemoved;
+            },
+          );
+          await publish('run-1', proposal);
+          final id = active().first.id;
+          expect((await service.createTask(id)).success, isTrue);
+
+          expect(await service.restoreRecommendation(id), taskRemoved);
+
+          expect(removed, ['task-1']);
+          final row = rows[id]! as ProjectRecommendationEntity;
+          expect(
+            row.status,
+            taskRemoved
+                ? ProjectRecommendationStatus.active
+                : ProjectRecommendationStatus.resolved,
+          );
+          expect(row.createdTaskId, taskRemoved ? isNull : 'task-1');
+          expect(row.resolvedAt, taskRemoved ? isNull : isNotNull);
+        },
+      );
+    }
+
+    test(
+      'restoreRecommendation gives up when a newer run wins while the task '
+      'is being removed',
+      () async {
+        final removed = <String>[];
+        service = ProjectRecommendationService(
+          syncService: mockSyncService,
+          notifications: mockNotifications,
+          taskDispatcher: (tool, args, projectId) async =>
+              const ToolExecutionResult(
+                success: true,
+                output: '',
+                mutatedEntityId: 'task-1',
+              ),
+          taskRemover: (taskId) async {
+            removed.add(taskId);
+            await publish('run-2', [
+              {
+                'toolName': 'recommend_next_steps',
+                'args': {
+                  'steps': [
+                    {'title': 'Inspect habitat'},
+                  ],
+                },
+              },
+            ]);
+            return true;
+          },
+        );
+        await publish('run-1', proposal);
+        final id = active().first.id;
+        expect((await service.createTask(id)).success, isTrue);
+
+        expect(await service.restoreRecommendation(id), isFalse);
+
+        expect(removed, ['task-1']);
+        final row = rows[id]! as ProjectRecommendationEntity;
+        expect(
+          row.status,
+          ProjectRecommendationStatus.resolved,
+          reason: 'A step the newer run replaced must not come back to life.',
+        );
+        expect(
+          (await service.currentRunSnapshot(
+            'agent-1',
+            'project-1',
+          )).steps.map((step) => step.title),
+          ['Inspect habitat'],
+        );
+      },
+    );
+
+    test(
+      'currentRunSnapshot orders legacy rows by position, then creation, '
+      'then id',
+      () async {
+        final base = now.subtract(const Duration(days: 1));
+        rows['legacy-b'] = makeTestProjectRecommendation(
+          id: 'legacy-b',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Same slot, same time, later id',
+          createdAt: base,
+        );
+        rows['legacy-a'] = makeTestProjectRecommendation(
+          id: 'legacy-a',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Same slot, same time, earlier id',
+          createdAt: base,
+        );
+        rows['legacy-later'] = makeTestProjectRecommendation(
+          id: 'legacy-later',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Same slot, newer batch',
+          createdAt: base.add(const Duration(hours: 1)),
+        );
+        rows['legacy-second'] = makeTestProjectRecommendation(
+          id: 'legacy-second',
+          agentId: 'agent-1',
+          projectId: 'project-1',
+          title: 'Second slot',
+          position: 1,
+          createdAt: base,
+        );
+
+        final snapshot = await service.currentRunSnapshot(
+          'agent-1',
+          'project-1',
+        );
+
+        expect(
+          snapshot.steps.map((step) => step.id),
+          ['legacy-a', 'legacy-b', 'legacy-later', 'legacy-second'],
+        );
+        expect(snapshot.runCreatedAt, isNull);
+      },
+    );
+
+    test(
+      'restoreRecommendation throws without a task remover for an added step',
+      () async {
+        service = ProjectRecommendationService(
+          syncService: mockSyncService,
+          notifications: mockNotifications,
+          taskDispatcher: (tool, args, projectId) async =>
+              const ToolExecutionResult(
+                success: true,
+                output: '',
+                mutatedEntityId: 'task-1',
+              ),
+        );
+        await publish('run-1', proposal);
+        final id = active().first.id;
+        expect((await service.createTask(id)).success, isTrue);
+
+        await expectLater(service.restoreRecommendation(id), throwsStateError);
+        expect(
+          (rows[id]! as ProjectRecommendationEntity).status,
+          ProjectRecommendationStatus.resolved,
+        );
+      },
+    );
+
+    test(
+      'restoreRecommendation refuses steps that are open or replaced by a '
+      'newer run',
+      () async {
+        await publish('run-1', proposal);
+        final open = active().first.id;
+        expect(
+          await service.restoreRecommendation(open),
+          isFalse,
+          reason: 'There is nothing to undo on an open step.',
+        );
+        expect(await service.dismissRecommendation(open), isTrue);
+        await publish('run-2', [
+          {
+            'toolName': 'recommend_next_steps',
+            'args': {
+              'steps': [
+                {'title': 'Inspect habitat'},
+              ],
+            },
+          },
+        ]);
+
+        expect(await service.restoreRecommendation(open), isFalse);
+        expect(
+          (rows[open]! as ProjectRecommendationEntity).status,
+          ProjectRecommendationStatus.dismissed,
+        );
+        expect(await service.restoreRecommendation('missing'), isFalse);
+      },
+    );
+
     test(
       'migration does not revive steps from before the latest report',
       () async {

@@ -1554,6 +1554,7 @@ ProjectRecommendationEntity _$ProjectRecommendationEntityFromJson(
   sourceDecisionId: json['sourceDecisionId'] as String?,
   rationale: json['rationale'] as String?,
   priority: json['priority'] as String?,
+  createdTaskId: json['createdTaskId'] as String?,
   resolvedAt: json['resolvedAt'] == null
       ? null
       : DateTime.parse(json['resolvedAt'] as String),
@@ -1586,6 +1587,7 @@ Map<String, dynamic> _$ProjectRecommendationEntityToJson(
   'sourceDecisionId': instance.sourceDecisionId,
   'rationale': instance.rationale,
   'priority': instance.priority,
+  'createdTaskId': instance.createdTaskId,
   'resolvedAt': instance.resolvedAt?.toIso8601String(),
   'dismissedAt': instance.dismissedAt?.toIso8601String(),
   'supersededAt': instance.supersededAt?.toIso8601String(),

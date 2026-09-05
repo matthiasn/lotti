@@ -19,12 +19,14 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../projects/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -37,8 +39,8 @@ void main() {
     mockRepository = MockAgentRepository();
     recommendations = MockProjectRecommendationService();
     when(
-      () => recommendations.currentRecommendations(any(), any()),
-    ).thenAnswer((_) async => []);
+      () => recommendations.currentRunSnapshot(any(), any()),
+    ).thenAnswer((_) async => const ProjectNextStepsSnapshot.empty());
     when(
       () => recommendations.migratePendingBatches(any(), any()),
     ).thenAnswer((_) async {});
@@ -160,18 +162,18 @@ void main() {
     });
   });
 
-  group('projectRecommendationsProvider', () {
-    test('returns empty list when no project agent exists', () async {
+  group('projectNextStepsProvider', () {
+    test('returns an empty snapshot when no project agent exists', () async {
       final container = createProjectAgentContainer(
         projectId: 'project-001',
-        listenTo: projectRecommendationsProvider('project-001'),
+        listenTo: projectNextStepsProvider('project-001'),
       );
 
       final result = await container.read(
-        projectRecommendationsProvider('project-001').future,
+        projectNextStepsProvider('project-001').future,
       );
 
-      expect(result, isEmpty);
+      expect(result.isEmpty, isTrue);
       verifyNever(
         () => mockRepository.getEntitiesByAgentId(
           any(),
@@ -182,19 +184,19 @@ void main() {
     });
 
     test(
-      'returns empty list when project agent is not an identity entity',
+      'returns an empty snapshot when project agent is not an identity entity',
       () async {
         final container = createProjectAgentContainer(
           projectId: 'project-001',
           agent: makeTestState(),
-          listenTo: projectRecommendationsProvider('project-001'),
+          listenTo: projectNextStepsProvider('project-001'),
         );
 
         final result = await container.read(
-          projectRecommendationsProvider('project-001').future,
+          projectNextStepsProvider('project-001').future,
         );
 
-        expect(result, isEmpty);
+        expect(result.isEmpty, isTrue);
         verifyNever(
           () => mockRepository.getEntitiesByAgentId(
             any(),
@@ -206,7 +208,7 @@ void main() {
     );
 
     test(
-      'returns active project recommendations ordered for display',
+      'passes the newest run snapshot through for display',
       () async {
         final agent = makeTestIdentity();
         final updateController = StreamController<Set<String>>.broadcast();
@@ -238,27 +240,35 @@ void main() {
           priority: 'MEDIUM',
         );
         when(
-          () => recommendations.currentRecommendations(
+          () => recommendations.currentRunSnapshot(
             agent.agentId,
             'project-001',
           ),
-        ).thenAnswer((_) async => [olderActive, secondInBatch, firstInBatch]);
+        ).thenAnswer(
+          (_) async => ProjectNextStepsSnapshot(
+            steps: [firstInBatch, secondInBatch, olderActive],
+            runCreatedAt: DateTime(2024, 3, 16, 9),
+          ),
+        );
 
         final container = createProjectAgentContainer(
           projectId: 'project-001',
           agent: agent,
           updateController: updateController,
-          listenTo: projectRecommendationsProvider('project-001'),
+          listenTo: projectNextStepsProvider('project-001'),
         );
 
         final result = await container.read(
-          projectRecommendationsProvider('project-001').future,
+          projectNextStepsProvider('project-001').future,
         );
 
-        expect(result, hasLength(3));
-        expect(result[0].id, 'pr-first');
-        expect(result[1].id, 'pr-second');
-        expect(result[2].id, 'pr-older');
+        expect(
+          result.steps.map((step) => step.id),
+          ['pr-first', 'pr-second', 'pr-older'],
+          reason: 'The service owns the order; the provider passes it through.',
+        );
+        expect(result.runCreatedAt, DateTime(2024, 3, 16, 9));
+        expect(result.pending.map((step) => step.id), contains('pr-older'));
       },
     );
   });
@@ -338,45 +348,41 @@ void main() {
 
       expect(service, isA<ProjectRecommendationService>());
     });
-  });
 
-  group('selfTargetedPendingChangeSetsProvider', () {
-    test('fetches change sets the agent targets at itself and deduplicates '
-        'them', () async {
-      final updateController = StreamController<Set<String>>.broadcast();
-      addTearDown(updateController.close);
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          agentUpdateStreamProvider(
-            'goal-1',
-          ).overrideWith((ref) => updateController.stream),
-        ],
-      );
-      addTearDown(container.dispose);
+    for (final gone in [true, false]) {
+      test(
+        'undoing a created task deletes it through the journal and reports '
+        '${gone ? 'success once the tombstone reads back' : 'failure while the task still reads'}',
+        () async {
+          final journal = MockJournalRepository();
+          final journalDb = MockJournalDb();
+          when(
+            () => journal.deleteJournalEntity('task-1'),
+          ).thenAnswer((_) async => true);
+          when(
+            () => journalDb.journalEntityById('task-1'),
+          ).thenAnswer((_) async => gone ? null : makeTestTask(id: 'task-1'));
+          final container = ProviderContainer(
+            overrides: [
+              agentSyncServiceProvider.overrideWithValue(
+                MockAgentSyncService(),
+              ),
+              domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+              maybeUpdateNotificationsProvider.overrideWith((ref) => null),
+              journalRepositoryProvider.overrideWithValue(journal),
+              journalDbProvider.overrideWithValue(journalDb),
+            ],
+          );
+          addTearDown(container.dispose);
 
-      final older = makeTestChangeSet(
-        id: 'cs-old',
-        agentId: 'goal-1',
-        taskId: 'goal-1',
-        createdAt: DateTime(2026, 8, 9),
-      );
-      final newer = makeTestChangeSet(
-        id: 'cs-new',
-        agentId: 'goal-1',
-        taskId: 'goal-1',
-        createdAt: DateTime(2026, 8, 10),
-      );
-      when(
-        () => mockRepository.getPendingChangeSets('goal-1', taskId: 'goal-1'),
-      ).thenAnswer((_) async => [newer, older]);
+          final service = container.read(projectRecommendationServiceProvider);
 
-      final result = await container.read(
-        selfTargetedPendingChangeSetsProvider('goal-1').future,
+          expect(await service.taskRemover!('task-1'), gone);
+          verify(() => journal.deleteJournalEntity('task-1')).called(1);
+          verify(() => journalDb.journalEntityById('task-1')).called(1);
+        },
       );
-      // Identical pending items → the duplicate collapses to the newest.
-      expect(result, [newer]);
-    });
+    }
   });
 
   group('eventPendingChangeSetsProvider', () {

@@ -783,6 +783,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     String? sourceDecisionId,
     String? rationale,
     String? priority,
+
+    /// The project-linked task created from this step, once "Add task"
+    /// succeeded. Lets the detail surface link a resolved step to its task
+    /// and undo the creation while the step is still current.
+    String? createdTaskId,
     DateTime? resolvedAt,
     DateTime? dismissedAt,
     DateTime? supersededAt,

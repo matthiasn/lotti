@@ -163,35 +163,39 @@ final projectRecommendationServiceProvider =
             domainLogger: ref.read(domainLoggerProvider),
             taskAgentService: ref.read(taskAgentServiceProvider),
           ).dispatch(tool, args, projectId),
+          // The repository delete logs and swallows a failed write, so its
+          // return value is not proof; the tombstone is. `journalEntityById`
+          // filters deleted rows, so a null read means the task is gone.
+          taskRemover: (taskId) async {
+            await ref
+                .read(journalRepositoryProvider)
+                .deleteJournalEntity(taskId);
+            final remaining = await ref
+                .read(journalDbProvider)
+                .journalEntityById(taskId);
+            return remaining == null;
+          },
         );
       },
     );
 
-/// Fetches active project recommendations for a given project agent.
-final FutureProviderFamily<List<ProjectRecommendationEntity>, String>
-projectRecommendationsProvider = FutureProvider.autoDispose
-    .family<List<ProjectRecommendationEntity>, String>((ref, projectId) async {
+/// The newest run's next steps for a project, in every status the detail
+/// band shows, plus when that run was published. Legacy pending batches are
+/// upgraded first. Re-evaluates on the agent's update stream, so a decision
+/// made on the band arrives here through the service's notification rather
+/// than through a manual invalidation.
+final FutureProviderFamily<ProjectNextStepsSnapshot, String>
+projectNextStepsProvider = FutureProvider.autoDispose
+    .family<ProjectNextStepsSnapshot, String>((ref, projectId) async {
       final agent = await ref.watch(projectAgentProvider(projectId).future);
       final identity = agent?.mapOrNull(agent: (a) => a);
-      if (identity == null) return const [];
+      if (identity == null) return const ProjectNextStepsSnapshot.empty();
 
       ref.watch(agentUpdateStreamProvider(identity.agentId));
 
       final service = ref.read(projectRecommendationServiceProvider);
       await service.migratePendingBatches(identity.agentId, projectId);
-      final recommendations = await service.currentRecommendations(
-        identity.agentId,
-        projectId,
-      );
-      recommendations.sort((a, b) {
-        final updatedAtOrder = b.updatedAt.compareTo(a.updatedAt);
-        if (updatedAtOrder != 0) {
-          return updatedAtOrder;
-        }
-        return a.position.compareTo(b.position);
-      });
-
-      return recommendations;
+      return service.currentRunSnapshot(identity.agentId, projectId);
     });
 
 /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.

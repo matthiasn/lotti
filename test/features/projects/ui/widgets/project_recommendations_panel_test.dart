@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -62,8 +63,11 @@ void main() {
   }) => makeTestableWidgetWithScaffold(
     const ProjectRecommendationsPanel(projectId: projectId),
     overrides: [
-      projectRecommendationsProvider(projectId).overrideWith(
-        (ref) => load?.call() ?? Future.value(items ?? recommendations),
+      projectNextStepsProvider(projectId).overrideWith(
+        (ref) async => ProjectNextStepsSnapshot(
+          steps: await (load?.call() ?? Future.value(items ?? recommendations)),
+          runCreatedAt: null,
+        ),
       ),
       projectPendingChangeSetsProvider(
         projectId,

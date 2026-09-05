@@ -1,5 +1,6 @@
 // Tool definitions for the project agent.
 
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
@@ -32,6 +33,26 @@ String? canonicalProjectStatus(String raw) {
     'on_hold' || 'hold' || 'blocked' || 'at_risk' => 'on_hold',
     'completed' || 'complete' || 'done' => 'completed',
     'archived' || 'archive' || 'cancelled' || 'canceled' => 'archived',
+    _ => null,
+  };
+}
+
+/// The [TaskPriority] a project-agent priority word means, or `null` when the
+/// word is outside the vocabulary. A missing priority is medium, the default
+/// every new task wears.
+///
+/// Shared by the `create_task` apply path and the next-steps surface, so a
+/// step's priority chip can never show a level different from the task that
+/// "Add task" would create.
+TaskPriority? parseTaskPriority(Object? rawPriority) {
+  if (rawPriority == null) return TaskPriority.p2Medium;
+  if (rawPriority is! String) return null;
+
+  return switch (rawPriority.trim().toUpperCase()) {
+    'CRITICAL' || 'P0' => TaskPriority.p0Urgent,
+    'HIGH' || 'P1' => TaskPriority.p1High,
+    'MEDIUM' || 'P2' => TaskPriority.p2Medium,
+    'LOW' || 'P3' => TaskPriority.p3Low,
     _ => null,
   };
 }

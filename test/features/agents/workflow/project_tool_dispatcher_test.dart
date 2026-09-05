@@ -1232,12 +1232,12 @@ void main() {
       };
       for (final entry in expected.entries) {
         expect(
-          ProjectToolDispatcher.parseTaskPriority(entry.key),
+          parseTaskPriority(entry.key),
           entry.value,
           reason: entry.key,
         );
         expect(
-          ProjectToolDispatcher.parseTaskPriority(
+          parseTaskPriority(
             ' ${entry.key.toLowerCase()} ',
           ),
           entry.value,
@@ -1247,11 +1247,11 @@ void main() {
 
       // Absent priority defaults to medium; junk is rejected.
       expect(
-        ProjectToolDispatcher.parseTaskPriority(null),
+        parseTaskPriority(null),
         TaskPriority.p2Medium,
       );
-      expect(ProjectToolDispatcher.parseTaskPriority('P9'), isNull);
-      expect(ProjectToolDispatcher.parseTaskPriority(42), isNull);
+      expect(parseTaskPriority('P9'), isNull);
+      expect(parseTaskPriority(42), isNull);
     });
   });
 }

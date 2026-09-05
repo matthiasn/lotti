@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -171,9 +172,9 @@ List<Override> _baseOverrides({
         projectAgentProvider(_projectId).overrideWith(
           (ref) async => projectAgent,
         ),
-    projectRecommendationsProvider(
+    projectNextStepsProvider(
       _projectId,
-    ).overrideWith((ref) async => []),
+    ).overrideWith((ref) async => const ProjectNextStepsSnapshot.empty()),
     projectPendingChangeSetsProvider(
       _projectId,
     ).overrideWith((ref) async => []),
@@ -1150,9 +1151,11 @@ void main() {
                   (ref, agentId) => Stream.value(false),
                 ),
                 projectAgentServiceProvider.overrideWithValue(agentService),
-                projectRecommendationsProvider(
+                projectNextStepsProvider(
                   _projectId,
-                ).overrideWith((ref) async => []),
+                ).overrideWith(
+                  (ref) async => const ProjectNextStepsSnapshot.empty(),
+                ),
                 projectPendingChangeSetsProvider(
                   _projectId,
                 ).overrideWith((ref) async => []),

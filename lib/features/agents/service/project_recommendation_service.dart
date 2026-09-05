@@ -19,12 +19,17 @@ class ProjectRecommendationService {
     required this._syncService,
     this._notifications,
     this.taskDispatcher,
+    this.taskRemover,
     this._domainLogger,
   });
 
   final AgentSyncService _syncService;
   final UpdateNotifications? _notifications;
   final AgentToolDispatch? taskDispatcher;
+
+  /// Soft-deletes the task a step created, so "Add task" can be undone.
+  /// Returns whether the task is gone; `false` keeps the step resolved.
+  final Future<bool> Function(String taskId)? taskRemover;
   final DomainLogger? _domainLogger;
 
   static const _uuid = Uuid();
@@ -282,10 +287,20 @@ class ProjectRecommendationService {
       });
   }
 
-  /// Selects one immutable run after sync, including an empty winning run.
-  /// Unknown run rows stay hidden until their snapshot arrives: retracting them
-  /// early could destroy the eventual winner when sync delivers rows first.
+  /// The still-open steps of the newest run: [currentRunSnapshot] without the
+  /// decided rows.
   Future<List<ProjectRecommendationEntity>> currentRecommendations(
+    String agentId,
+    String projectId,
+  ) async => (await currentRunSnapshot(agentId, projectId)).pending.toList();
+
+  /// Selects one immutable run after sync, including an empty winning run, and
+  /// returns every step of it the detail surface shows — open, added, done or
+  /// dismissed — in the agent's order. Unknown run rows stay hidden until
+  /// their snapshot arrives: retracting them early could destroy the eventual
+  /// winner when sync delivers rows first. Open rows of a known losing run are
+  /// superseded here; decided rows keep their history untouched.
+  Future<ProjectNextStepsSnapshot> currentRunSnapshot(
     String agentId,
     String projectId,
   ) => _syncService.runInTransaction(() async {
@@ -294,23 +309,27 @@ class ProjectRecommendationService {
       agentId,
       type: AgentEntityTypes.projectRecommendation,
     );
-    final active = entities.whereType<ProjectRecommendationEntity>().where(
+    final rows = entities.whereType<ProjectRecommendationEntity>().where(
       (row) =>
           row.projectId == projectId &&
           row.deletedAt == null &&
-          row.status == ProjectRecommendationStatus.active,
+          row.status != ProjectRecommendationStatus.superseded,
     );
     if (runs.isEmpty) {
-      return active.where((row) => row.sourceRunId == null).toList();
+      return ProjectNextStepsSnapshot(
+        steps: rows.where((row) => row.sourceRunId == null).toList()
+          ..sort(_byPosition),
+        runCreatedAt: null,
+      );
     }
     final winner = runs.first;
     final knownRuns = runs.map((run) => run.id).toSet();
     final current = <ProjectRecommendationEntity>[];
-    for (final row in active) {
+    for (final row in rows) {
       if (winner.recommendationIds.contains(row.id)) {
         current.add(row);
-      } else if (row.sourceRunId == null ||
-          knownRuns.contains(row.sourceRunId)) {
+      } else if (row.status == ProjectRecommendationStatus.active &&
+          (row.sourceRunId == null || knownRuns.contains(row.sourceRunId))) {
         await _syncService.upsertEntity(
           row.copyWith(
             status: ProjectRecommendationStatus.superseded,
@@ -320,8 +339,21 @@ class ProjectRecommendationService {
         );
       }
     }
-    return current;
+    return ProjectNextStepsSnapshot(
+      steps: current..sort(_byPosition),
+      runCreatedAt: winner.createdAt,
+    );
   });
+
+  static int _byPosition(
+    ProjectRecommendationEntity a,
+    ProjectRecommendationEntity b,
+  ) {
+    final order = a.position.compareTo(b.position);
+    if (order != 0) return order;
+    final created = a.createdAt.compareTo(b.createdAt);
+    return created != 0 ? created : a.id.compareTo(b.id);
+  }
 
   Future<void> _retractPendingBatches(String agentId, String projectId) async {
     final sets = await _syncService.repository.getPendingChangeSets(
@@ -369,14 +401,12 @@ class ProjectRecommendationService {
           !await _isCurrent(row)) {
         return;
       }
-      claimed = row;
-      await _syncService.upsertEntity(
-        row.copyWith(
-          status: ProjectRecommendationStatus.resolved,
-          resolvedAt: clock.now(),
-          updatedAt: clock.now(),
-        ),
+      claimed = row.copyWith(
+        status: ProjectRecommendationStatus.resolved,
+        resolvedAt: clock.now(),
+        updatedAt: clock.now(),
       );
+      await _syncService.upsertEntity(claimed!);
     });
     final row = claimed;
     if (row == null) {
@@ -392,12 +422,14 @@ class ProjectRecommendationService {
         if (row.priority != null) 'priority': row.priority,
       }, row.projectId);
       if (result.success) {
-        await _syncService.runInTransaction(
-          () => _recordDecision(
-            row,
-            ChangeDecisionVerdict.confirmed,
-          ),
-        );
+        await _syncService.runInTransaction(() async {
+          if (result.mutatedEntityId case final taskId?) {
+            await _syncService.upsertEntity(
+              row.copyWith(createdTaskId: taskId, updatedAt: clock.now()),
+            );
+          }
+          await _recordDecision(row, ChangeDecisionVerdict.confirmed);
+        });
       }
       if (!result.success && !result.nonRetryable) {
         await _restoreAfterFailedCreation(row);
@@ -452,6 +484,92 @@ class ProjectRecommendationService {
       recommendationId,
       ProjectRecommendationStatus.dismissed,
     );
+  }
+
+  /// Reverts a dismissal or a task creation while the step still belongs to
+  /// the newest run. A created task is removed first: if that fails the step
+  /// stays resolved, so a retry cannot leave the task orphaned. The decision
+  /// recorded for the agent's feedback history is withdrawn with the step.
+  Future<bool> restoreRecommendation(String recommendationId) async {
+    final entity = await _syncService.repository.getEntity(recommendationId);
+    final row = entity?.mapOrNull(projectRecommendation: (e) => e);
+    if (row == null ||
+        row.deletedAt != null ||
+        (row.status != ProjectRecommendationStatus.resolved &&
+            row.status != ProjectRecommendationStatus.dismissed) ||
+        !await _isCurrent(row)) {
+      return false;
+    }
+    if (row.createdTaskId case final taskId?) {
+      final remove = taskRemover;
+      if (remove == null) throw StateError('No project task remover');
+      if (!await remove(taskId)) return false;
+    }
+    final restored = await _syncService.runInTransaction(() async {
+      final latest = await _syncService.repository.getEntity(row.id);
+      final current = latest?.mapOrNull(projectRecommendation: (e) => e);
+      // Re-validated inside the transaction: a newer run can win while the
+      // task removal above is in flight, and a step that run replaced must
+      // not come back to life. Its task is already gone, which is what the
+      // undo asked for; the step itself stays out of the current snapshot.
+      if (current == null ||
+          current.status != row.status ||
+          !await _isCurrent(current)) {
+        return false;
+      }
+      final now = clock.now();
+      await _syncService.upsertEntity(
+        current.copyWith(
+          status: ProjectRecommendationStatus.active,
+          resolvedAt: null,
+          dismissedAt: null,
+          createdTaskId: null,
+          updatedAt: now,
+        ),
+      );
+      await _withdrawDecision(current, now);
+      return true;
+    });
+    if (restored) {
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Restored project recommendation '
+        '${DomainLogger.sanitizeId(row.id)} to active',
+        subDomain: _sub,
+      );
+      _notifyRecommendationUpdate(row.agentId, row.projectId);
+    }
+    return restored;
+  }
+
+  /// Neutralises what [_recordDecision] wrote for [row]. The decision itself
+  /// is rewritten as *deferred*, dated [now] — feedback extraction reads the
+  /// verdict straight off the decision, so tombstoning only its source set
+  /// would leave the undone verdict training the template, and the fresh
+  /// timestamp lets the rewrite win last-writer-wins on other devices. The
+  /// single-item source set is tombstoned alongside; a later decision on the
+  /// same step revives both under their deterministic ids.
+  Future<void> _withdrawDecision(
+    ProjectRecommendationEntity row,
+    DateTime now,
+  ) async {
+    final setId = _uuid.v5(Namespace.url.value, '${row.id}/decision-source');
+    final decisionId = _uuid.v5(Namespace.url.value, '${row.id}/decision');
+    final decision = await _syncService.repository.getEntity(decisionId);
+    if (decision case ChangeDecisionEntity(
+      verdict: != ChangeDecisionVerdict.deferred,
+    )) {
+      await _syncService.upsertEntity(
+        decision.copyWith(
+          verdict: ChangeDecisionVerdict.deferred,
+          createdAt: now,
+        ),
+      );
+    }
+    final set = await _syncService.repository.getEntity(setId);
+    if (set case ChangeSetEntity(deletedAt: null)) {
+      await _syncService.upsertEntity(set.copyWith(deletedAt: now));
+    }
   }
 
   Future<bool> _transitionRecommendation(
@@ -607,4 +725,33 @@ class _RecommendationDraft {
   final String title;
   final String? rationale;
   final String? priority;
+}
+
+/// The newest run's steps as the project detail shows them, in the agent's
+/// order, plus when that run was published so an empty or fully decided band
+/// can say when the agent last looked.
+class ProjectNextStepsSnapshot {
+  const ProjectNextStepsSnapshot({
+    required this.steps,
+    required this.runCreatedAt,
+  });
+
+  const ProjectNextStepsSnapshot.empty()
+    : steps = const [],
+      runCreatedAt = null;
+
+  /// Every open, added, done or dismissed step of the run, by position.
+  final List<ProjectRecommendationEntity> steps;
+
+  /// Start of the run the steps came from; `null` for legacy rows that
+  /// predate run snapshots, or when the agent has never published one.
+  final DateTime? runCreatedAt;
+
+  Iterable<ProjectRecommendationEntity> get pending => steps.where(
+    (step) => step.status == ProjectRecommendationStatus.active,
+  );
+
+  bool get hasPending => pending.isNotEmpty;
+
+  bool get isEmpty => steps.isEmpty;
 }
