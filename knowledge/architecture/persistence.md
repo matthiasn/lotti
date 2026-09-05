@@ -463,7 +463,10 @@ WAL instead, and the fallback is logged, so a reset is never blocked on a
 backup. It runs automatically before a **journal, sync or agent migration**
 (`backupBeforeMigration`, which logs a failure and continues rather than
 refusing to open the app) and on demand from
-*Settings → Advanced → Maintenance*.
+*Settings → Advanced → Maintenance*. Once a snapshot is complete, older
+snapshots of the same source beyond the three newest are deleted, WAL
+sidecar included, so `backup/` stays bounded at three files per store; a
+failed snapshot never costs an existing one.
 That helper is a **legacy per-database fallback**, not a supported profile
 backup. It copies only the main SQLite file, has no store identity, manifest,
 checksum, media coverage, encryption, coordinated quiescence, or restore path.

@@ -16,6 +16,15 @@ import 'package:sqlite3/sqlite3.dart';
 
 /// Constants for database backup operations
 const String _backupDirectoryName = 'backup';
+
+/// How many snapshots of one database [createDbBackup] keeps.
+///
+/// A backup is the safety copy for the migration or purge that just ran,
+/// not an archive: three covers the copy before this upgrade, the one
+/// before that, and a purge in between, while keeping `backup/` bounded.
+/// Before retention existed the directory only ever grew — three stores
+/// each adding a journal-sized file per upgrade.
+const int backupsKeptPerDatabase = 3;
 const String _backupFileExtension = '.sqlite';
 const String _backupTimestampFormat = 'yyyy-MM-dd_HH-mm-ss-S';
 
@@ -48,7 +57,11 @@ Future<File> getDatabaseFile(String dbFileName) async {
 ///
 /// Backups are named after their source: `backup/<stem>.<timestamp>.sqlite`,
 /// so `db.sqlite` becomes `backup/db.2025-10-17_14-30-45-123.sqlite` and
-/// `agent.sqlite` becomes `backup/agent.….sqlite`. Returns the backup file.
+/// `agent.sqlite` becomes `backup/agent.….sqlite`. Once the new snapshot is
+/// complete, older snapshots of the same source beyond
+/// [backupsKeptPerDatabase] are deleted (with the WAL sidecar a raw-copy
+/// fallback leaves), so a failed snapshot never costs an existing one.
+/// Returns the backup file.
 ///
 /// [documentsDirectoryProvider] names the directory the database lives in;
 /// it defaults to the active profile root, which is wrong for a database
@@ -105,7 +118,64 @@ Future<File> createDbBackup(
     await file.copy(target.path);
     await walStash?.rename('${target.path}-wal');
   }
+  await _pruneOlderBackups(backupDir, stem: stem, newest: target);
   return target;
+}
+
+final RegExp _backupTimestamp = RegExp(
+  r'^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d+)(?:-(\d+))?$',
+);
+
+/// Deletes every snapshot of [stem] in [backupDir] older than the
+/// [backupsKeptPerDatabase] newest, [newest] included. Ordering comes from
+/// the timestamp in the file name, so it matches the clock that named them
+/// rather than filesystem times.
+Future<void> _pruneOlderBackups(
+  Directory backupDir, {
+  required String stem,
+  required File newest,
+}) async {
+  final prefix = '$stem.';
+  final snapshots = <(String, int, File)>[];
+  for (final entity in backupDir.listSync()) {
+    if (entity is! File) continue;
+    final name = p.basename(entity.path);
+    if (!name.startsWith(prefix) || !name.endsWith(_backupFileExtension)) {
+      continue;
+    }
+    final match = _backupTimestamp.firstMatch(
+      name.substring(prefix.length, name.length - _backupFileExtension.length),
+    );
+    if (match == null) continue;
+    snapshots.add((
+      match.group(1)!,
+      int.tryParse(match.group(2) ?? '1') ?? 1,
+      entity,
+    ));
+  }
+  snapshots.sort((a, b) {
+    final byTime = b.$1.compareTo(a.$1);
+    return byTime != 0 ? byTime : b.$2.compareTo(a.$2);
+  });
+  final stale = snapshots.skip(backupsKeptPerDatabase);
+  var pruned = 0;
+  for (final (_, _, file) in stale) {
+    if (p.equals(file.path, newest.path)) continue;
+    await file.delete();
+    final wal = File('${file.path}-wal');
+    if (wal.existsSync()) {
+      await wal.delete();
+    }
+    pruned += 1;
+  }
+  if (pruned > 0) {
+    DevLogger.log(
+      name: 'Database',
+      message:
+          'Pruned $pruned older backup(s) of $stem, '
+          'keeping the $backupsKeptPerDatabase newest',
+    );
+  }
 }
 
 /// Two backups in one formatted instant (the same millisecond) must not
