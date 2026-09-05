@@ -37,15 +37,17 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
           );
         }
 
-        // Every step, and the index reconcile that ends them, in one
-        // transaction. Drift runs onUpgrade outside one, and SQLite's DDL is
-        // transactional, so an interrupted upgrade — a crash, a kill mid
-        // rebuild — rolls back to the version that was running instead of
-        // leaving a half-applied schema at the old user_version that the
-        // next launch would try to migrate again. Foreign-key enforcement
-        // cannot change inside a transaction and is off on a fresh
-        // connection; it is switched on in beforeOpen once the upgrade has
-        // committed.
+        // Every step, the index reconcile that ends them, and the version
+        // stamp, in one transaction. Drift runs onUpgrade outside one and
+        // writes user_version only after onUpgrade and beforeOpen have both
+        // completed; SQLite's DDL is transactional, so an interrupted
+        // upgrade — a crash, a kill mid rebuild — rolls back to the version
+        // that was running instead of leaving a half-applied schema at the
+        // old user_version that the next launch would try to migrate again,
+        // and a kill after the commit cannot leave the new schema under the
+        // old stamp either. Foreign-key enforcement cannot change inside a
+        // transaction and is off on a fresh connection; it is switched on in
+        // beforeOpen once the upgrade has committed.
         await customStatement('PRAGMA foreign_keys = OFF');
         await transaction(() async {
           if (from < 19) {
@@ -431,6 +433,9 @@ mixin _JournalDbMigration on _$JournalDb, _JournalDbMigrationRecent {
 
           await _onUpgradeRecent(m, from);
           await _reconcileIndexesWithSchema(m);
+          // Drift repeats this write after beforeOpen; stamping here makes
+          // the schema and its version commit together.
+          await customStatement('PRAGMA user_version = $to');
         });
       },
     );

@@ -14,6 +14,28 @@ import 'package:sqlite3/sqlite3.dart';
 
 import 'schema_fixtures.dart';
 
+/// Reads the version stamp from inside the upgrade transaction, after the
+/// steps and before the commit: what the file would carry if the process
+/// died right after that commit, before Drift's own stamp.
+class _StampProbingDb extends JournalDb {
+  _StampProbingDb({required super.overriddenFilename});
+
+  int? versionInsideTransaction;
+
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) {
+    return super.transaction(() async {
+      final result = await action();
+      final row = await customSelect('PRAGMA user_version').getSingle();
+      versionInsideTransaction = row.read<int>('user_version');
+      return result;
+    }, requireNew: requireNew);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -176,6 +198,25 @@ WHERE type = 'Task'
         expect(indexes, contains('idx_journal_category_id'));
         expect(indexes, contains('idx_blocker'));
         expect(raw.select('PRAGMA user_version').single['user_version'], 46);
+      },
+    );
+
+    test(
+      'the version stamp commits with the schema, not after it',
+      () async {
+        final dbFile = File(p.join(testDirectory.path, 'stamped.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+        createJournalSchema(sqlite, 46);
+        sqlite.close();
+
+        final db = _StampProbingDb(overriddenFilename: 'stamped.db');
+        addTearDown(db.close);
+        await db.customSelect('PRAGMA user_version').get();
+
+        // Drift stamps the version only after onUpgrade and beforeOpen have
+        // both completed; a kill in between would otherwise leave the new
+        // schema under the old stamp for the next launch to re-migrate.
+        expect(db.versionInsideTransaction, db.schemaVersion);
       },
     );
 

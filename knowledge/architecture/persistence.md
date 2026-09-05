@@ -224,11 +224,15 @@ histories. The journal strategy lives in `database_migration.dart` and
 
 1. `onUpgrade` takes a timestamped backup first — `backup/db.<ts>.sqlite` —
    unless the database is in-memory. A failed backup is logged, not fatal.
-2. **Every version step, and the index reconcile that ends them, runs in one
-   transaction.** Drift runs `onUpgrade` outside one, and SQLite's DDL is
-   transactional, so an interrupted upgrade rolls back to the version that
-   was running instead of leaving a half-applied schema at the old
-   `user_version` for the next launch to migrate again. That is why the
+2. **Every version step, the index reconcile that ends them, and the
+   version stamp run in one transaction.** Drift runs `onUpgrade` outside
+   one and writes `user_version` only after `onUpgrade` and `beforeOpen`
+   have both completed, so the transaction stamps `PRAGMA user_version`
+   itself before committing (Drift's later write only repeats it). SQLite's
+   DDL is transactional, so an interrupted upgrade rolls back to the version
+   that was running instead of leaving a half-applied schema at the old
+   `user_version` for the next launch to migrate again, and a kill after the
+   commit cannot leave the new schema under the old stamp. That is why the
    steps no longer probe for tables before acting: on a database that
    shipped, every table a step needs exists, and a real schema bug should
    fail the upgrade loudly (the history verifier catches it in development).
