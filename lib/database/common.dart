@@ -126,10 +126,13 @@ final RegExp _backupTimestamp = RegExp(
   r'^(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d+)(?:-(\d+))?$',
 );
 
-/// Deletes every snapshot of [stem] in [backupDir] older than the
-/// [backupsKeptPerDatabase] newest, [newest] included. Ordering comes from
-/// the timestamp in the file name, so it matches the clock that named them
-/// rather than filesystem times.
+/// Keeps [newest] plus the [backupsKeptPerDatabase] − 1 most recent other
+/// snapshots of [stem] in [backupDir] and deletes the rest. [newest] is
+/// kept by identity, not by rank: if the device clock has moved backwards
+/// since the previous snapshot, the file just written sorts *below* older
+/// ones, and ranking alone would keep four copies. Ordering of the others
+/// comes from the timestamp in the file name, so it matches the clock that
+/// named them rather than filesystem times.
 Future<void> _pruneOlderBackups(
   Directory backupDir, {
   required String stem,
@@ -153,14 +156,15 @@ Future<void> _pruneOlderBackups(
       entity,
     ));
   }
-  snapshots.sort((a, b) {
-    final byTime = b.$1.compareTo(a.$1);
-    return byTime != 0 ? byTime : b.$2.compareTo(a.$2);
-  });
-  final stale = snapshots.skip(backupsKeptPerDatabase);
+  snapshots
+    ..removeWhere((snapshot) => p.equals(snapshot.$3.path, newest.path))
+    ..sort((a, b) {
+      final byTime = b.$1.compareTo(a.$1);
+      return byTime != 0 ? byTime : b.$2.compareTo(a.$2);
+    });
+  final stale = snapshots.skip(backupsKeptPerDatabase - 1);
   var pruned = 0;
   for (final (_, _, file) in stale) {
-    if (p.equals(file.path, newest.path)) continue;
     await file.delete();
     final wal = File('${file.path}-wal');
     if (wal.existsSync()) {

@@ -264,6 +264,38 @@ void main() {
       },
     );
 
+    test(
+      'a snapshot taken after the clock moved backwards still counts as the '
+      'newest, so three copies remain',
+      () async {
+        const fileName = 'test_db.sqlite';
+        seedWalDatabase(fileName);
+        for (final second in [10, 11, 12]) {
+          await withClock(
+            Clock.fixed(DateTime(2026, 9, 5, 10, 30, second)),
+            () => createDbBackup(fileName),
+          );
+        }
+
+        // The device clock was corrected backwards: the new file sorts
+        // below all three existing ones.
+        final latest = await withClock(
+          Clock.fixed(DateTime(2026, 9, 5, 10, 30, 5)),
+          () => createDbBackup(fileName),
+        );
+
+        final remaining = Directory(
+          p.join(testDir.path, _backupDirectoryName),
+        ).listSync().map((entity) => p.basename(entity.path)).toList()..sort();
+        expect(remaining, hasLength(backupsKeptPerDatabase));
+        expect(remaining, contains(p.basename(latest.path)));
+        expect(
+          remaining,
+          isNot(contains('test_db.2026-09-05_10-30-10-000.sqlite')),
+        );
+      },
+    );
+
     test('prunes each database separately', () async {
       seedWalDatabase('db.sqlite');
       seedWalDatabase('agent.sqlite');
