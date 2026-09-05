@@ -43,3 +43,5 @@ jobs:
       # a released version that landed in some of those files but not all.
       - name: Check release-note fragments
         run: dart run tool/changelog/validate.dart
+      - name: Check property-test tags
+        run: dart run tool/ci/check_test_tags.dart

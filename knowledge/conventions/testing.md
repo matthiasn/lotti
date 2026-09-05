@@ -5,7 +5,7 @@ description: "The rules that keep a single-threaded CI lane green — fake time,
 resource: ../../test/README.md
 tags: [convention, testing, fake-time, glados, ci]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T15:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T12:00:00Z }
 stale_after: 2027-01-18
 sources:
   - id: test-readme
@@ -29,17 +29,11 @@ subscription, database handle or unconsumed Mocktail matcher can outlive its tes
 and break a later test in the same file or in an optimized local suite. Almost
 every rule below exists because of that.
 
-Unsharded `very_good test` runs use the optimizer by default: it generates a
-single `.test_optimizer.dart` importing every test file into one isolate. Very
-Good CLI does not yet support sharding independently generated optimized bundles
-across runners because their filesystem ordering can differ. The ten-way
-standard CI lane therefore uses `tool/ci/generate_test_optimizer.dart` to create
-the same sorted bundle in every job before `package:test` slices that one stable
-suite into shards. Opt-outs are detected from parsed `@Tags` annotations, not
-raw source text, so a fixture string that merely mentions
-`skip_very_good_optimization` cannot silently remove its containing test file
-from CI. Tests within a shard still share an isolate, while execution and merged
-coverage remain complete.
+The repository's runner generates one sorted bundle for unannotated suites and
+executes annotated suites separately, preserving their library metadata. Within
+the bundle, tests share an isolate. The execution, sharding, tag enforcement,
+reporting, and scheduled order checks are documented in
+[`test/README.md`](../../test/README.md#local-commands).
 
 Two consequences:
 
@@ -162,7 +156,7 @@ directory it sits in.
 — `agents` is the clearest case — runs for many minutes locally, and worse inside
 a Linux VM, which is long enough to stall the work the tests exist to protect.
 CI is both faster and free of your machine: the Linux lane shards
-`very_good test` **ten ways** across parallel matrix jobs. Push, keep working,
+the standard test lane **ten ways** across parallel matrix jobs. Push, keep working,
 read the result when it lands.
 
 Two exceptions, and only two: when someone asks for a broader run, and when a

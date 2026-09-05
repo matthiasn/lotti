@@ -71,6 +71,7 @@ app.*.map.json
 /ios/build
 
 /coverage
+/reports/
 
 /config/mail.yaml
 local.properties
@@ -202,6 +203,7 @@ env/
 ENV/
 
 test/.test_optimizer.dart
+test/.test_targets.json
 
 # Golden-test failure artifacts (diff/master/test images) written on failure
 test/failures/

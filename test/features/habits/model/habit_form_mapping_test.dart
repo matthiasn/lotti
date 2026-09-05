@@ -236,7 +236,7 @@ void main() {
       );
       final rule = HabitFormMapping.toRule(form);
       expect(HabitFormMapping.fromRule(rule), form.normalized());
-    });
+    }, tags: 'glados');
   });
 
   group('HabitSignalsForm', () {

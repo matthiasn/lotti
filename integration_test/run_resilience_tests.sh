@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 # Resilience tests for Matrix sync under adverse network conditions
 
 SCRIPT_DIR="$(dirname "$0")"
@@ -15,8 +17,8 @@ done
 # Create test users in Dendrite
 echo "Creating test users..."
 for user in "${TEST_USERS[@]}"; do
-  docker compose -f "$DOCKER_DIR/docker-compose.yml" exec dendrite \
-    create-account -config dendrite.yaml -username "$user" -admin -password "?Secret123@" 2>/dev/null || true
+  docker compose -f "$DOCKER_DIR/docker-compose.yml" exec -T dendrite \
+    create-account -config dendrite.yaml -username "$user" -admin -password "?Secret123@"
 done
 
 echo "Running resilience tests..."
@@ -27,8 +29,14 @@ echo "Test 4 users: @${TEST_USERS[6]}:localhost / @${TEST_USERS[7]}:localhost"
 
 cd "$PROJECT_ROOT" || exit
 
-fvm flutter test integration_test/sync_resilience_test.dart \
-  -d macos \
+if command -v fvm >/dev/null 2>&1; then
+  flutter_command=(fvm flutter)
+else
+  # CI installs the SDK pinned by .fvmrc directly, like the Makefile fallback.
+  flutter_command=(flutter)
+fi
+
+"${flutter_command[@]}" test integration_test/sync_resilience_test.dart \
   --dart-define=TEST_USER1="@${TEST_USERS[0]}:localhost" \
   --dart-define=TEST_USER2="@${TEST_USERS[1]}:localhost" \
   --dart-define=TEST_USER3="@${TEST_USERS[2]}:localhost" \

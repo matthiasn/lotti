@@ -1,11 +1,11 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 @Timeout(Duration(minutes: 2))
-@Tags(['performance'])
 library;
 
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,27 +14,26 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 
+import '../widget_test_utils.dart';
+
 void main() {
   late JournalDb db;
-  Directory? previousDirectory;
+  late Directory directory;
 
-  setUp(() {
-    if (getIt.isRegistered<Directory>()) {
-      previousDirectory = getIt<Directory>();
-      getIt.unregister<Directory>();
-    } else {
-      previousDirectory = null;
-    }
-    getIt.registerSingleton<Directory>(Directory.systemTemp);
+  setUp(() async {
+    directory = await Directory.systemTemp.createTemp('label_cost_');
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<Directory>(directory);
+      },
+    );
     db = JournalDb(inMemoryDatabase: true);
   });
 
   tearDown(() async {
     await db.close();
-    getIt.unregister<Directory>();
-    if (previousDirectory != null) {
-      getIt.registerSingleton<Directory>(previousDirectory!);
-    }
+    await tearDownTestGetIt();
+    await directory.delete(recursive: true);
   });
 
   LabelDefinition buildLabel(int index) {
@@ -120,6 +119,7 @@ void main() {
         reason: 'Filtering should complete under 500ms',
       );
     },
+    tags: 'performance',
   );
 
   // intentionally giving more time because of anemic GitHub Actions test runner
@@ -153,44 +153,47 @@ void main() {
       final labeled = await db.labeledForJournal('task-0').get();
       expect(labeled, hasLength(1));
     },
+    tags: 'performance',
   );
 
-  test(
-    'no N+1 queries when filtering by multiple labels',
-    () async {
-      // Create 10 labels
+  for (final size in [10, 100, 1000]) {
+    test('multi-label filtering uses two SELECTs for $size tasks', () async {
       for (var i = 0; i < 10; i++) {
         await db.upsertLabelDefinition(buildLabel(i));
       }
-
-      // Create 100 tasks with various label combinations
-      for (var i = 0; i < 100; i++) {
-        final labelIds = <String>[
-          'label-${i % 10}',
-          'label-${(i + 1) % 10}',
-        ];
-        final task = buildTask(i, labelIds);
-        await db.updateJournalEntity(task);
+      for (var i = 0; i < size; i++) {
+        await db.updateJournalEntity(
+          buildTask(i, [
+            'label-${i % 10}',
+            'label-${(i + 1) % 10}',
+          ]),
+        );
       }
-
-      // Filter by multiple labels (OR logic)
-      final stopwatch = Stopwatch()..start();
-      final filtered = await db.getTasks(
-        starredStatuses: const [true, false],
-        taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
-        categoryIds: const [''],
-        labelIds: const ['label-0', 'label-1', 'label-2'],
+      final counter = _SelectCounter();
+      final filtered = await db.runWithInterceptor(
+        () => db.getTasks(
+          starredStatuses: const [true, false],
+          taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
+          categoryIds: const [''],
+          labelIds: const ['label-0', 'label-1', 'label-2'],
+        ),
+        interceptor: counter,
       );
-      stopwatch.stop();
-
-      expect(filtered.isNotEmpty, isTrue);
       expect(
-        stopwatch.elapsedMilliseconds,
-        lessThan(200),
-        reason: 'Multi-label filtering should use efficient joins',
+        filtered.map((task) => task.meta.id),
+        unorderedEquals([
+          for (var i = 0; i < size; i++)
+            if ({0, 1, 2, 9}.contains(i % 10)) 'task-$i',
+        ]),
       );
-    },
-  );
+      expect(
+        counter.selects,
+        2,
+        reason:
+            'One privacy flag lookup and one task query, independent of results',
+      );
+    });
+  }
 
   test(
     'reconciliation handles mixed add/remove operations efficiently',
@@ -227,6 +230,7 @@ void main() {
       expect(labelIds, isNot(contains('label-0')));
       expect(labelIds, isNot(contains('label-2')));
     },
+    tags: 'performance',
   );
 
   test(
@@ -254,6 +258,7 @@ void main() {
       expect(unlabeled.length, greaterThan(100));
       expect(stopwatch.elapsedMilliseconds, lessThan(250));
     },
+    tags: 'performance',
   );
 
   test(
@@ -314,6 +319,7 @@ void main() {
       expect(filtered, isNotEmpty);
       expect(stopwatch.elapsedMilliseconds, lessThan(300));
     },
+    tags: 'performance',
   );
 
   test(
@@ -338,5 +344,20 @@ void main() {
       final labeled = await db.labeledForJournal('task-0').get();
       expect(labeled, hasLength(labelCount));
     },
+    tags: 'performance',
   );
+}
+
+class _SelectCounter extends QueryInterceptor {
+  int selects = 0;
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) {
+    selects++;
+    return executor.runSelect(statement, args);
+  }
 }

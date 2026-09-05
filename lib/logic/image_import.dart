@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:exif/exif.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart'
@@ -546,7 +547,7 @@ Future<DateTime> _extractImageTimestamp(
   }
 
   // Fallback when no EXIF timestamp is available.
-  return fallback ?? DateTime.now();
+  return fallback ?? clock.now();
 }
 
 /// Extracts GPS coordinates from image EXIF data

@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-05T22:23:21Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T12:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: sync-db
@@ -123,8 +123,8 @@ flowchart TD
 ```
 
 - **Background isolates by default.** `background: true` moves SQLite work off
-  the UI isolate. It is set to `false` only when opening from an actor isolate,
-  where nesting isolates would be wrong.
+  the UI isolate. Callers can opt into same-isolate connections with `false`;
+  `SettingsDb` defaults to that mode, as do many focused tests.
 - **`readPool` offloads heavy reads** to read-only isolates. It only takes
   effect when `background` is true, and `inMemoryDatabase: true` bypasses it —
   a test that wants to exercise a pool must be file-backed.
@@ -186,24 +186,31 @@ the 200 ms tier tells you *why* — start with the super-slow file, because it i
 the only one carrying a plan.
 
 The threshold deliberately does not catch N+1 chains: each individual link sits
-under the bar. Those are caught by the coalescers in `JournalDb` and by
-counting round-trips in tests. Tests and deep-dive captures pass
+under the bar. Counting round-trips in tests catches those chains;
+`JournalDb` coalesces adjacent entity lookups to reduce them. Deep-dive captures pass
 `Duration.zero` to surface every query.
 
 # Migrations
 
-`JournalDb` carries the only substantial migration history (45 versions). Its
-strategy, in `database_migration.dart` and `database_migration_recent.dart`:
+`JournalDb`, `SyncDatabase`, and `AgentDatabase` each have substantial migration
+histories. The journal strategy lives in `database_migration.dart` and
+`database_migration_recent.dart`:
 
-1. `onUpgrade` **takes a timestamped backup first** — `backup/db.<ts>.sqlite`
-   — unless the database is in-memory. A failed backup is logged, not fatal.
+1. `onUpgrade` takes a timestamped backup first — `backup/db.<ts>.sqlite` —
+   unless the database is in-memory. A failed backup is logged, not fatal.
 2. Version steps run in order, adding tables, columns and partial indexes.
-3. Partial index DDL lives in **top-level constants** shared by the `onUpgrade`
-   migration, the `beforeOpen` self-heal, and the migration tests, so the three
-   can never drift apart. Each string starts with `CREATE INDEX ` so callers
-   can splice in `IF NOT EXISTS` with a single `replaceFirst`.
-4. `beforeOpen` re-asserts indexes that a partially-applied migration may have
-   left missing.
+   Current index definitions may reference columns absent in historical schemas:
+   the task priority index is created only after v29 adds priority columns, even
+   for a journal upgrading from before v25.
+3. Partial index DDL lives in top-level constants used by migrations. Callers
+   can add `IF NOT EXISTS` with `replaceFirst` where needed.
+4. `beforeOpen` repairs the specific indexes named there; it does not rebuild
+   every index in the schema.
+
+Historical migration fixtures must describe the schema at their declared
+`user_version`, without future columns added merely to make current DDL pass.
+The v18 fixture in `test/database/database_test.dart` exercises the complete
+upgrade and verifies that its existing row survives with default priority.
 
 The indexes matter: `idx_journal_tasks_due_open` is keyed on the denormalized
 `due_at` column added in v41, which replaced an expression index over
@@ -212,7 +219,7 @@ The indexes matter: `idx_journal_tasks_due_open` is keyed on the denormalized
 
 # From write to UI
 
-Nothing in the UI polls. Writes announce themselves through
+Journal writes announce themselves to the UI through
 `UpdateNotifications`, which fans one write out to three streams:
 
 ```mermaid

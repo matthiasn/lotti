@@ -17,3 +17,9 @@ tags:
       tools/tutorial_videos/README.md). Not runnable under plain `flutter
       test` (no window, requires LOTTI_TUTORIAL_MANIFEST/TIMELINE env vars),
       so excluded from `make integration_test` via `--exclude-tags`.
+  filmstrip:
+    description: Deterministic filmstrip capture tests.
+  store-screenshots:
+    description: Opt-in store listing screenshot drivers.
+  skip_very_good_optimization:
+    description: Suite must execute in its own isolate.

@@ -1,12 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:path/path.dart' as path;
 
 const _outputRelativePath = 'test/.test_optimizer.dart';
-const _skipOptimizationTag = 'skip_very_good_optimization';
+const testTargetsRelativePath = 'test/.test_targets.json';
 
 /// Generates the stable optimized test entrypoint used by sharded CI.
 Future<File> generateTestOptimizer({required String packageRoot}) async {
@@ -19,10 +19,22 @@ Future<File> generateTestOptimizer({required String packageRoot}) async {
   }
 
   final testPaths = <String>[];
+  final standalonePaths = <String>[];
   for (final entity in testDirectory.listSync(recursive: true)) {
     if (entity is! File || !entity.path.endsWith('_test.dart')) continue;
     final contents = await entity.readAsString();
-    if (_hasSkipOptimizationAnnotation(contents)) continue;
+    // Library metadata belongs to a suite, not the imported main() function.
+    // Keep annotated suites intact so the test runner interprets their tags,
+    // timeouts, platform selectors, skips and retries without losing context.
+    final unit = parseString(content: contents).unit;
+    if (unit.directives.whereType<LibraryDirective>().any(
+      (directive) => directive.metadata.isNotEmpty,
+    )) {
+      standalonePaths.add(
+        path.relative(entity.path, from: packageRoot).replaceAll(r'\', '/'),
+      );
+      continue;
+    }
     testPaths.add(
       path
           .relative(entity.path, from: testDirectory.path)
@@ -30,40 +42,14 @@ Future<File> generateTestOptimizer({required String packageRoot}) async {
     );
   }
   testPaths.sort();
+  standalonePaths.sort();
 
   final output = File(path.join(packageRoot, _outputRelativePath));
   await output.writeAsString(_renderBundle(testPaths));
+  await File(path.join(packageRoot, testTargetsRelativePath)).writeAsString(
+    jsonEncode([_outputRelativePath, ...standalonePaths]),
+  );
   return output;
-}
-
-bool _hasSkipOptimizationAnnotation(String contents) {
-  final visitor = _SkipOptimizationAnnotationVisitor();
-  parseString(content: contents).unit.accept(visitor);
-  return visitor.found;
-}
-
-class _SkipOptimizationAnnotationVisitor extends RecursiveAstVisitor<void> {
-  bool found = false;
-
-  @override
-  void visitAnnotation(Annotation node) {
-    final name = node.name.toSource();
-    if (name == 'Tags' || name.endsWith('.Tags')) {
-      final visitor = _SkipOptimizationTagLiteralVisitor();
-      node.arguments?.accept(visitor);
-      found = visitor.found;
-    }
-    if (!found) super.visitAnnotation(node);
-  }
-}
-
-class _SkipOptimizationTagLiteralVisitor extends RecursiveAstVisitor<void> {
-  bool found = false;
-
-  @override
-  void visitSimpleStringLiteral(SimpleStringLiteral node) {
-    if (node.value == _skipOptimizationTag) found = true;
-  }
 }
 
 String _renderBundle(List<String> testPaths) {

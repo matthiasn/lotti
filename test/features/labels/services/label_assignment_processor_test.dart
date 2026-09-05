@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values, unnecessary_lambdas
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -17,6 +19,9 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../helpers/entity_factories.dart';
+import '../../../helpers/fallbacks.dart';
+import '../../../widget_test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Top-level private helpers used only by edge_cases group
@@ -539,44 +544,72 @@ void main() {
     test(
       'concurrent assignments to same task do not duplicate labels',
       () async {
-        when(
-          () => mockDbEdge.getLabelDefinitionById('a'),
-        ).thenAnswer((_) async => makeLabelEdge('a'));
+        registerAllFallbackValues();
+        final directory = await Directory.systemTemp.createTemp('labels_');
+        addTearDown(() => directory.delete(recursive: true));
+        await setUpTestGetIt(
+          additionalSetup: () => getIt.registerSingleton<Directory>(directory),
+        );
+        addTearDown(tearDownTestGetIt);
+        final db = JournalDb(inMemoryDatabase: true);
+        addTearDown(db.close);
+        final task = TestTaskFactory.create(id: 't1');
+        await db.upsertLabelDefinition(makeLabelEdge('a'));
+        await db.updateJournalEntity(
+          task.copyWith(meta: task.meta.copyWith(labelIds: ['a'])),
+        );
 
-        // Delay persistence to increase overlap
-        when(
-          () => mockRepoEdge.addLabels(
-            journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any(named: 'addedLabelIds'),
-          ),
-        ).thenAnswer((_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 20));
+        final persistence = MockPersistenceLogic();
+        final bothPrepared = Completer<void>();
+        final releaseWrites = Completer<void>();
+        var prepared = 0;
+        when(() => persistence.updateMetadata(any())).thenAnswer((call) async {
+          if (++prepared == 2) bothPrepared.complete();
+          await releaseWrites.future;
+          return call.positionalArguments.first as Metadata;
+        });
+        when(() => persistence.updateDbEntity(any())).thenAnswer((call) async {
+          await db.updateJournalEntity(
+            call.positionalArguments.first as JournalEntity,
+          );
           return true;
         });
+        final repository = LabelsRepository(
+          persistence,
+          db,
+          MockEntitiesCacheService(),
+          mockLoggingEdge,
+          MockUpdateNotifications(),
+        );
+        final processor = LabelAssignmentProcessor(
+          db: db,
+          repository: repository,
+          logging: mockLoggingEdge,
+        );
 
-        // Fire two assignments nearly simultaneously
-        final f1 = processorEdge.processAssignment(
+        // Both callers have a stale view without the already-persisted label.
+        // Hold both writes after the real repository has merged its metadata.
+        final f1 = processor.processAssignment(
           taskId: 't1',
           proposedIds: const ['a'],
           existingIds: const [],
         );
-        final f2 = processorEdge.processAssignment(
+        final f2 = processor.processAssignment(
           taskId: 't1',
           proposedIds: const ['a'],
           existingIds: const [],
         );
 
-        final results = await Future.wait([f1, f2]);
+        final resultsFuture = Future.wait([f1, f2]);
+        await bothPrepared.future;
+        expect(prepared, 2);
+        releaseWrites.complete();
+        final results = await resultsFuture;
         expect(results[0].assigned, ['a']);
         expect(results[1].assigned, ['a']);
-        // Repository is called for both (current behavior), but labels API
-        // remains de-duplicating internally.
-        verify(
-          () => mockRepoEdge.addLabels(
-            journalEntityId: 't1',
-            addedLabelIds: ['a'],
-          ),
-        ).called(2);
+        final persisted = await db.journalEntityById('t1');
+        expect(persisted!.meta.labelIds, ['a']);
+        expect(await db.labeledForJournal('t1').get(), hasLength(1));
       },
     );
 

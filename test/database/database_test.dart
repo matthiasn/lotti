@@ -45,15 +45,8 @@ void main() {
         final dbFile = File(path.join(migrationDir.path, 'test_v18.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        // v18 journal: NO category, project_id, or due_at columns (all added
-        // by later migrations). task_priority/task_priority_rank are included
-        // up-front: the `from < 25` step recreates `idx_journal_tasks` using
-        // the current (v42) index definition, which references
-        // `task_priority_rank`. A column-period-accurate v18 schema would make
-        // that historical step fail (the column is otherwise not added until
-        // v29), so the fixture seeds the columns to let the full early cascade
-        // run. The v29 step is idempotent via `_columnExists`, so pre-seeding
-        // is safe.
+        // Keep the v18 schema faithful: category, task priority, project_id,
+        // and due_at must all be introduced by the migration itself.
         // ignore: cascade_invocations
         sqlite
           ..execute('''
@@ -71,8 +64,6 @@ void main() {
             deleted BOOLEAN DEFAULT FALSE,
             task BOOLEAN DEFAULT FALSE,
             task_status TEXT,
-            task_priority TEXT,
-            task_priority_rank INTEGER,
             flag INTEGER DEFAULT 0,
             schema_version INTEGER DEFAULT 0
           )
@@ -173,10 +164,14 @@ void main() {
         expect(await journalHasColumn('project_id'), isTrue);
         final taskRow = await db
             .customSelect(
-              "SELECT id FROM journal WHERE id = 'mig-task'",
+              'SELECT id, serialized, task_priority, task_priority_rank '
+              "FROM journal WHERE id = 'mig-task'",
             )
             .get();
         expect(taskRow, hasLength(1));
+        expect(taskRow.single.read<String>('serialized'), '{}');
+        expect(taskRow.single.read<String>('task_priority'), 'P2');
+        expect(taskRow.single.read<int>('task_priority_rank'), 2);
       },
     );
   });
