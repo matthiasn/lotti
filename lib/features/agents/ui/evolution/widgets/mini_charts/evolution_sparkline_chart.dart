@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mini sparkline chart showing daily success rate over time.
 ///

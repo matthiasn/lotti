@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:material_ui/material_ui.dart';
 
 /// Per-row dispatcher for the journal list: [ModernJournalImageCard] for
 /// images, [ModernJournalCard] for everything else (including tasks, which

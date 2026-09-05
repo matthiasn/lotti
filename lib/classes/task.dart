@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 part 'task.freezed.dart';
 part 'task.g.dart';

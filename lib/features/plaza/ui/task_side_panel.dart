@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The task detail raised by OPEN: a panel over the world, which keeps
 /// rendering behind it. Esc or ✕ returns to the same pose.

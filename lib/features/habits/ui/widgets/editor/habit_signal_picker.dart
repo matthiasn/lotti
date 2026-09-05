@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_presentation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Every signal a habit can watch — measurables, health data types,
 /// imported workout types — searchable, multi-select, open until Done.

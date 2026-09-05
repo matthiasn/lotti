@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -48,6 +48,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (context) => TextButton(
                 onPressed: () => navigateBackFromAgent(context),
@@ -72,6 +73,7 @@ void main() {
         var popped = false;
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Builder(
               builder: (rootContext) => TextButton(
                 onPressed: () async {
@@ -167,10 +169,9 @@ void main() {
 
   group('agentBackButton', () {
     Widget buildHost({VoidCallback? onPressed}) => MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: const [Locale('en')],
       home: Scaffold(

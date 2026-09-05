@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,13 +12,16 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:photo_view/photo_view.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 const _transparentPng = <int>[
@@ -257,12 +258,11 @@ void main() {
         final subject = ProviderScope(
           overrides: [createEntryControllerOverride(image)],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
@@ -438,17 +438,17 @@ void main() {
           theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          builder: mediaQueryData == null
-              ? null
-              : (context, child) => MediaQuery(
-                  data: mediaQueryData,
-                  child: child!,
-                ),
+          builder: LegacyMaterialBridge.wrapBuilder(
+            mediaQueryData == null
+                ? null
+                : (context, child) => MediaQuery(
+                    data: mediaQueryData,
+                    child: child!,
+                  ),
+          ),
           home: HeroPhotoViewRouteWrapper(
             file: gallery == null ? imageFile : gallery[initialIndex],
             backgroundDecoration: backgroundDecoration,
@@ -507,11 +507,11 @@ void main() {
           'entry_img',
         );
 
-        expect(find.byTooltip('Download image'), findsOneWidget);
-        expect(find.byTooltip('Close'), findsOneWidget);
-        expect(find.byTooltip('Zoom In'), findsOneWidget);
-        expect(find.byTooltip('Zoom Out'), findsOneWidget);
-        expect(find.byTooltip('Actual Size'), findsOneWidget);
+        expect(findMaterialTooltip('Download image'), findsOneWidget);
+        expect(findMaterialTooltip('Close'), findsOneWidget);
+        expect(findMaterialTooltip('Zoom In'), findsOneWidget);
+        expect(findMaterialTooltip('Zoom Out'), findsOneWidget);
+        expect(findMaterialTooltip('Actual Size'), findsOneWidget);
         expect(find.text('100%'), findsOneWidget);
 
         final zoomOutButton = tester.widget<IconButton>(
@@ -543,17 +543,17 @@ void main() {
           tester.getCenter(find.byType(PhotoView)) - const Offset(100, 100);
       await tester.tapAt(canvasPoint);
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.byTooltip('Download image'), findsNothing);
-      expect(find.byTooltip('Close'), findsNothing);
+      expect(findMaterialTooltip('Download image'), findsNothing);
+      expect(findMaterialTooltip('Close'), findsNothing);
       expect(find.text('Feb 3, 2026'), findsNothing);
-      expect(find.byTooltip('Zoom In'), findsNothing);
+      expect(findMaterialTooltip('Zoom In'), findsNothing);
 
       await tester.tapAt(canvasPoint);
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.byTooltip('Download image'), findsOneWidget);
-      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(findMaterialTooltip('Download image'), findsOneWidget);
+      expect(findMaterialTooltip('Close'), findsOneWidget);
       expect(find.text('Feb 3, 2026'), findsOneWidget);
-      expect(find.byTooltip('Zoom In'), findsOneWidget);
+      expect(findMaterialTooltip('Zoom In'), findsOneWidget);
     });
 
     testWidgets('a cancelled pointer does not toggle chrome and tap recovers', (
@@ -568,12 +568,12 @@ void main() {
       await gesture.cancel();
       await tester.pump(const Duration(milliseconds: 600));
 
-      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(findMaterialTooltip('Close'), findsOneWidget);
 
       await tester.tapAt(canvasPoint);
       await tester.pump(const Duration(milliseconds: 600));
 
-      expect(find.byTooltip('Close'), findsNothing);
+      expect(findMaterialTooltip('Close'), findsNothing);
     });
 
     testWidgets('double tap zoom does not toggle viewer chrome', (
@@ -588,8 +588,8 @@ void main() {
       await tester.tap(photo);
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.byTooltip('Close'), findsOneWidget);
-      expect(find.byTooltip('Zoom In'), findsOneWidget);
+      expect(findMaterialTooltip('Close'), findsOneWidget);
+      expect(findMaterialTooltip('Zoom In'), findsOneWidget);
     });
 
     testWidgets('two-finger gesture keeps photo gestures and chrome active', (
@@ -613,7 +613,7 @@ void main() {
       await second.up();
       await tester.pump(const Duration(milliseconds: 600));
 
-      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(findMaterialTooltip('Close'), findsOneWidget);
       final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
       expect(photoView.disableGestures, isNot(isTrue));
       expect(photoView.enableRotation, isFalse);
@@ -634,7 +634,7 @@ void main() {
       await tester.pumpWidget(buildWrapper(mediaQueryData: withoutInset));
       await tester.pump();
       final controls = find.ancestor(
-        of: find.byTooltip('Download image'),
+        of: findMaterialTooltip('Download image'),
         matching: find.byType(Row),
       );
       final rightWithoutInset = tester.getTopRight(controls).dx;
@@ -720,12 +720,11 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: Builder(
@@ -776,12 +775,11 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: Builder(
@@ -994,7 +992,7 @@ void main() {
         await tester.pump();
 
         expect(calls, 1);
-        expect(find.byTooltip('Saving image'), findsOneWidget);
+        expect(findMaterialTooltip('Saving image'), findsOneWidget);
         final savingButton = tester.widget<IconButton>(
           find.widgetWithIcon(IconButton, LottiIcons.pending),
         );
@@ -1057,8 +1055,8 @@ void main() {
           await tester.pumpWidget(buildWrapper());
           await tester.pump();
 
-          expect(find.byTooltip('Previous image'), findsNothing);
-          expect(find.byTooltip('Next image'), findsNothing);
+          expect(findMaterialTooltip('Previous image'), findsNothing);
+          expect(findMaterialTooltip('Next image'), findsNothing);
           expect(find.text('1 / 1'), findsNothing);
         },
       );

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// All dashboards (active and inactive) for the settings list. The
 /// dashboards feature's own `dashboardsProvider` filters to active ones,

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_detail_showcase.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_mobile_list_detail_showcase.dart';
 import 'package:lotti/features/tasks/widgetbook/desktop_task_header_widgetbook.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookFolder buildTasksWidgetbookFolder() {

@@ -16,6 +16,23 @@ checkout. Both materialize native libraries under `build/native_assets/`;
 overlapping builds can remove a library while another test process is loading
 it. Use separate checkouts for concurrent desktop and VM runs.
 
+## Standalone Material UI
+
+Widget tests use `package:material_ui/material_ui.dart` and the shared app
+hosts install `LegacyMaterialBridge` for unmigrated dependencies. A finder or
+widget cast inspecting a Quill-owned button must use `legacy.IconButton`
+from an explicitly prefixed `package:flutter/material.dart` import; app-owned
+buttons use the modern type. The same distinction applies when inspecting
+GPT Markdown's checkbox theme. Use `findMaterialTooltip` from
+`test/test_utils/material_ui_finders.dart` for tooltips: Flutter's built-in
+finder still checks the old Tooltip type when semantics are excluded. The
+shared finder handles both libraries and keeps RawTooltip matching. Keep
+assertions on the actual rendered package widget rather than weakening them
+to a generic tree-build check.
+
+Theme and localization wiring is documented in
+[design tokens and theming](../knowledge/features/design_system/tokens-and-theming.md#standalone-material-and-legacy-dependencies).
+
 ## Shared process state
 
 The optimized CI runner executes many test files in one isolate.

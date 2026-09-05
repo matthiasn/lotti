@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum DesignSystemTabSize {
   small,

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -15,6 +14,8 @@ import 'package:lotti/features/design_system/components/progress_bars/design_sys
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -38,9 +39,13 @@ void main() {
           padding: const EdgeInsets.only(top: 47),
         ),
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           locale: locale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: DemoModeScaffold(
             gateway: gateway,
@@ -343,6 +348,7 @@ void main() {
       late BuildContext dead;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Builder(
             builder: (context) {
@@ -360,8 +366,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: DemoModeScaffold(
               sheetContext: () => dead,

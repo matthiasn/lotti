@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 import '../../mocks/mocks.dart';

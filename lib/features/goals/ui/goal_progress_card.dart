@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -35,6 +34,7 @@ import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Formats an aggregate for display at a precision the number can actually
 /// carry.

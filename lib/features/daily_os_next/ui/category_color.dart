@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Normalizes a CSS-style category color to an uppercase `RRGGBB` value.
 ///

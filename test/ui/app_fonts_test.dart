@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/ui/app_fonts.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The nine canonical [FontWeight] values, indexed 0..8 so a Glados [int]
 /// generator can select one deterministically.

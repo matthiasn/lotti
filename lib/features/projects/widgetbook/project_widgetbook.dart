@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_detail_showcase.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_list_detail_showcase.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookFolder buildProjectsWidgetbookFolder() {

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Removable chip row shown below the toolbar when at least one filter
 /// (any axis selection or search) is active.

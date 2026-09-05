@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
@@ -40,6 +39,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/utils/timezone.dart';
 import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';

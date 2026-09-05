@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/goals/service/goal_measurable_capture_service.dar
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';

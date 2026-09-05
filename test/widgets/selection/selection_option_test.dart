@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/selection/selection_option.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('SelectionOption', () {
@@ -14,6 +15,7 @@ void main() {
       Widget? selectionIndicator,
     }) {
       return MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: ThemeData.light(),
         home: Scaffold(
           body: SelectionOption(
@@ -258,6 +260,7 @@ void main() {
       testWidgets('adapts to dark theme', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: ThemeData.dark(),
             home: Scaffold(
               body: SelectionOption(
@@ -363,6 +366,7 @@ void main() {
       testWidgets('handles null callback gracefully', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: SelectionOption(
                 title: 'Test Option',

@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../test_utils/settings_header_harness.dart';
 import '../../widget_test_utils.dart';
@@ -24,6 +25,7 @@ Future<void> _pumpHeader(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       // The header reads context.designTokens (for its surface and title
       // colours); the central helper attaches the brightness-matched
       // DsTokens extension to whatever theme the test supplies.
@@ -76,6 +78,7 @@ Future<void> _pumpThemeSwitchingHeader(
     ValueListenableBuilder<ThemeMode>(
       valueListenable: mode,
       builder: (context, themeMode, _) => MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: resolveTestTheme(ThemeData.light()),
         darkTheme: resolveTestTheme(ThemeData.dark()),
         themeMode: themeMode,

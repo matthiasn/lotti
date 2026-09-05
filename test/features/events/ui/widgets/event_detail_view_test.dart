@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../test_utils.dart';
 

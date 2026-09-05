@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -7,7 +6,9 @@ import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../../widget_test_utils.dart';
 import 'ai_settings_cards_test_helpers.dart';
 
@@ -53,7 +54,7 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.byTooltip('Delete model'), findsNothing);
+        expect(findMaterialTooltip('Delete model'), findsNothing);
         expect(find.byIcon(LottiIcons.delete), findsNothing);
       },
     );
@@ -77,7 +78,7 @@ void main() {
         );
         await tester.pump();
 
-        final trash = find.byTooltip('Delete model');
+        final trash = findMaterialTooltip('Delete model');
         expect(trash, findsOneWidget);
 
         await tester.tap(trash);
@@ -141,9 +142,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('Downloading 42%'), findsOneWidget);
-      expect(find.byTooltip('Show download progress'), findsOneWidget);
+      expect(findMaterialTooltip('Show download progress'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Show download progress'));
+      await tester.tap(findMaterialTooltip('Show download progress'));
       await tester.pump();
 
       expect(installTaps, 1);
@@ -206,9 +207,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('Not installed'), findsOneWidget);
-      expect(find.byTooltip('Install model'), findsOneWidget);
+      expect(findMaterialTooltip('Install model'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Install model'));
+      await tester.tap(findMaterialTooltip('Install model'));
       await tester.pump();
 
       expect(installTaps, 1);
@@ -251,11 +252,11 @@ void main() {
         expect(find.text(statusCase.$2), findsOneWidget);
         final tooltip = statusCase.$3;
         if (tooltip == null) {
-          expect(find.byTooltip('Install model'), findsNothing);
-          expect(find.byTooltip('Show download progress'), findsNothing);
+          expect(findMaterialTooltip('Install model'), findsNothing);
+          expect(findMaterialTooltip('Show download progress'), findsNothing);
         } else {
-          expect(find.byTooltip(tooltip), findsOneWidget);
-          await tester.tap(find.byTooltip(tooltip));
+          expect(findMaterialTooltip(tooltip), findsOneWidget);
+          await tester.tap(findMaterialTooltip(tooltip));
           await tester.pump();
           expect(installTaps, 1);
         }

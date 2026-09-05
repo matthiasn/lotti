@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   Future<void> pumpShader(

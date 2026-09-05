@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Glados generator for task-status-like strings.
 extension _AnyStatus on glados.Any {

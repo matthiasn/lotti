@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +18,8 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -443,6 +444,7 @@ void main() {
     testWidgets('shows snackbar for success result', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
@@ -472,6 +474,7 @@ void main() {
     testWidgets('shows snackbar for noCategory result', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
@@ -505,6 +508,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
@@ -538,6 +542,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
@@ -571,6 +576,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:ui' show SemanticsAction;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,11 +13,13 @@ import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Canned [ConnectionProbe] so verification resolves deterministically without
@@ -512,7 +513,7 @@ void main() {
       onBack: () => backed = true,
     );
 
-    final back = find.byTooltip('Back');
+    final back = findMaterialTooltip('Back');
     expect(back, findsOneWidget);
     final semantics = tester.getSemantics(find.bySemanticsLabel('Back'));
     expect(semantics.label, 'Back');

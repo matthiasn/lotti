@@ -1,11 +1,11 @@
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

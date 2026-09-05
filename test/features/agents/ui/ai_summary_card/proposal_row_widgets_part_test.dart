@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -11,9 +10,11 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_pa
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_data/change_set_factories.dart';
 import 'test_bench.dart';
@@ -214,12 +215,12 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Confirm'));
-      await tester.tap(find.byTooltip('Reject'));
+      await tester.tap(findMaterialTooltip('Confirm'));
+      await tester.tap(findMaterialTooltip('Reject'));
       expect(taps, 0);
       final size = tester.getSize(find.byType(RowActions));
       expect(size.width, RowActions.buttonSize * 2 + 4);
-      final semantics = tester.getSemantics(find.byTooltip('Confirm'));
+      final semantics = tester.getSemantics(findMaterialTooltip('Confirm'));
       expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
       expect(semantics.flagsCollection.isButton, isTrue);
     });

@@ -15,7 +15,6 @@ library;
 
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -25,6 +24,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../test/helpers/manual_screenshot_locale.dart';
 import '../manual_screenshot_utils.dart';

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A reusable widget for displaying empty states with icon, title, and description
 class EmptyStateWidget extends StatelessWidget {

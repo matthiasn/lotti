@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -20,6 +21,7 @@ void main() {
     Future<BuildContext> pumpNested(WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           navigatorKey: rootKey,
           home: Navigator(
             key: nestedKey,

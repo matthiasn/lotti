@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

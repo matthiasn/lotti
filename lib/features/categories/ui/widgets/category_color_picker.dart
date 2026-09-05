@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Color picker for the category editor — a thin wrapper around the
 /// shared [SettingsColorPickerField], so categories and labels edit

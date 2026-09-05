@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_count_format.
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:material_ui/material_ui.dart';
 
 /// Compact incoming/outgoing sync queue counts rendered in a trailing slot
 /// (e.g. alongside Settings on the desktop navigation sidebar).

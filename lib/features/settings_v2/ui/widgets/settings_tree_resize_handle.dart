@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_width_controller.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Draggable handle that resizes the Settings tree-nav column per
 /// spec §3.1.

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/aggregation_label.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 /// Dropdown-style "add charts" entry used in the dashboard editor.

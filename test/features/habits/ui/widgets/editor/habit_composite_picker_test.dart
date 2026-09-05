@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_composite_picker.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 

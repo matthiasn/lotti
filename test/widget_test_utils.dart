@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +13,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'mocks/mocks.dart';
@@ -239,13 +239,12 @@ Widget makeTestableWidget(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,
@@ -264,13 +263,12 @@ Widget makeTestableWidget2(
   return MediaQuery(
     data: mq,
     child: MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       theme: resolveTestTheme(),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         FormBuilderLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: child,
@@ -292,13 +290,12 @@ Widget makeTestableWidgetWithScaffold(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: resolveTestTheme(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,
@@ -334,6 +331,7 @@ Widget makeTestableWidgetNoScroll(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
         navigatorObservers: navigatorObservers,
@@ -341,9 +339,7 @@ Widget makeTestableWidgetNoScroll(
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,
@@ -380,13 +376,12 @@ Widget makeTestableWidgetNoScroll(
       child: MediaQuery(
         data: mq,
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(theme),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: child,

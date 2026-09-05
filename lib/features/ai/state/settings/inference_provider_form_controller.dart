@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:material_ui/material_ui.dart';
 
 final AsyncNotifierProviderFamily<
   InferenceProviderFormController,

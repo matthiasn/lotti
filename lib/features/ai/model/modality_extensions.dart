@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Localized presentation helpers for [Modality] (text / audio / image).
 extension ModalityExtension on Modality {

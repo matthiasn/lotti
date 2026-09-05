@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/signals/habit_rule_evaluator.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One associated signal in the completion sheet: what it is, whether its
 /// rule is met today, quick-record chips for a measurable, and the two-week

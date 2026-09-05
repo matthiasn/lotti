@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -18,6 +17,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens the demo exit sheet: step 1 confirms leaving (the demo world stays
 /// saved), step 2 — reachable only when the user created something — picks

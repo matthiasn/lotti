@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_style.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   // `DsTokens` is a plain immutable value object exported by the design system,

@@ -1,7 +1,6 @@
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
@@ -23,6 +22,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile route wrapper for the shared Daily OS settings body.
 class DailyOsSettingsPage extends StatelessWidget {

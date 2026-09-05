@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The resolved look of one banner: an accent hue and its three washes —
 /// the card fill, the 1 px border, the persona-chip fill and the CTA-pill

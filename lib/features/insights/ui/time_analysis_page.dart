@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_table.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-screen time-analysis dashboard under Daily OS.
 ///

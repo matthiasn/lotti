@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The band a [Dismissible] reveals behind a row while it is dragged: a fill
 /// with the action's glyph and name at the edge the row moves away from, so

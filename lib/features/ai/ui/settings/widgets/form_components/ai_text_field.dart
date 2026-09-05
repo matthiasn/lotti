@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A styled text field component that matches the AI Settings design language.
 ///

@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detail-view summary for a survey entry: the survey's calculated scores and,
 /// when `showChart` is set, the corresponding survey chart for the entry's

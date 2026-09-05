@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A removable, category-tinted pill that shows a selected category on the
 /// label editor surfaces (the label details page and the label editor sheet).

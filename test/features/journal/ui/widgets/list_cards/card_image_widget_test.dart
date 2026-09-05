@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.d
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../../helpers/thumb_hash_fixtures.dart';

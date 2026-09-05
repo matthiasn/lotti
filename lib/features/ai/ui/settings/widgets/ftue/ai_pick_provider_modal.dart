@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Outcome of the pick-provider modal. Three terminal states the caller
 /// has to dispatch on:

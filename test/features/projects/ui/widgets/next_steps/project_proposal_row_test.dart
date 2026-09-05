@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/projects/ui/widgets/next_steps/project_proposal_row.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 import '../../../../agents/test_data/change_set_factories.dart';
 
@@ -56,8 +57,8 @@ void main() {
 
     expect(find.text('Create task: Pack fish'), findsOneWidget);
     expect(find.byType(RowActions), findsOneWidget);
-    await tester.tap(find.byTooltip('Confirm'));
-    await tester.tap(find.byTooltip('Reject'));
+    await tester.tap(findMaterialTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Reject'));
     expect(confirmed, 1);
     expect(rejected, 1);
     expect(find.byType(ResolvedTag), findsNothing);
@@ -79,8 +80,8 @@ void main() {
     );
 
     expect(tester.widget<RowActions>(find.byType(RowActions)).enabled, isFalse);
-    await tester.tap(find.byTooltip('Confirm'));
-    await tester.tap(find.byTooltip('Reject'));
+    await tester.tap(findMaterialTooltip('Confirm'));
+    await tester.tap(findMaterialTooltip('Reject'));
     expect(decided, 0);
   });
 
@@ -129,7 +130,7 @@ void main() {
     );
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.byTooltip('Confirm'), findsNothing);
+    expect(findMaterialTooltip('Confirm'), findsNothing);
   });
 
   testWidgets('a decided proposal keeps its place with the resolved tag', (

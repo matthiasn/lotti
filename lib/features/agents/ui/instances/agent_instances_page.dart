@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/agents/ui/listing/agent_listing_shell.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 const String _typeAxisId = 'type';
 const String _statusAxisId = 'status';

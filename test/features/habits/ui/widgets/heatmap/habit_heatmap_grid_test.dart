@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_grid.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -107,13 +108,13 @@ void main() {
 
   testWidgets('pre-existence days carry no tooltip', (tester) async {
     await pump(tester);
-    expect(find.byTooltip('Jun 13 · 0/0'), findsNothing);
+    expect(findMaterialTooltip('Jun 13 · 0/0'), findsNothing);
   });
 
   testWidgets('each in-range cell has a date · count tooltip', (tester) async {
     await pump(tester);
-    expect(find.byTooltip('Jun 10 · 2/2'), findsOneWidget);
-    expect(find.byTooltip('Jun 14 · 1/1'), findsOneWidget);
+    expect(findMaterialTooltip('Jun 10 · 2/2'), findsOneWidget);
+    expect(findMaterialTooltip('Jun 14 · 1/1'), findsOneWidget);
   });
 
   testWidgets('only today carries the ring border', (tester) async {

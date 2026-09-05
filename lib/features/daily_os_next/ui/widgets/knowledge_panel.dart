@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.da
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The "What I've learned" panel (ADR 0022 Decisions 9–10): the durable things
 /// the planner remembers about how the user wants to be planned, surfaced for

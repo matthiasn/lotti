@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/design_system/components/celebration/completion_b
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

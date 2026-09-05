@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+import '../../test_utils/material_ui_finders.dart';
 import '../../widget_test_utils.dart';
 
 class _TestNavigatorObserver extends NavigatorObserver {
@@ -30,6 +32,7 @@ Future<T> _buildInContext<T>(
   late T result;
   await tester.pumpWidget(
     MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       home: Builder(
         builder: (context) {
           result = build(context);
@@ -47,6 +50,7 @@ void main() {
       testWidgets('returns bottomSheet for small screens', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: MediaQuery(
               data: const MediaQueryData(size: Size(300, 600)),
               child: Builder(
@@ -69,6 +73,7 @@ void main() {
       testWidgets('returns dialog for large screens', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: MediaQuery(
               data: const MediaQueryData(
                 size: Size(WoltModalConfig.pageBreakpoint + 100, 800),
@@ -93,6 +98,7 @@ void main() {
       testWidgets('returns bottomSheet at exact breakpoint', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: MediaQuery(
               data: const MediaQueryData(
                 size: Size(WoltModalConfig.pageBreakpoint - 1, 800),
@@ -119,6 +125,7 @@ void main() {
       testWidgets('returns true for narrow screens', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: MediaQuery(
               data: const MediaQueryData(size: Size(300, 600)),
               child: Builder(
@@ -138,6 +145,7 @@ void main() {
       testWidgets('returns false for wide screens', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: MediaQuery(
               data: const MediaQueryData(
                 size: Size(WoltModalConfig.pageBreakpoint + 100, 800),
@@ -161,6 +169,7 @@ void main() {
       testWidgets('returns correct color for dark theme', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: ThemeData.dark(),
             home: Builder(
               builder: (context) {
@@ -185,6 +194,7 @@ void main() {
       testWidgets('returns correct color for light theme', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: ThemeData.light(),
             home: Builder(
               builder: (context) {
@@ -249,7 +259,10 @@ void main() {
         );
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(
-          MaterialApp(home: Scaffold(body: page.topBarTitle)),
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: Scaffold(body: page.topBarTitle),
+          ),
         );
 
         expect(
@@ -272,6 +285,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -381,6 +395,7 @@ void main() {
       testWidgets('uses padding wrapper for content', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: ThemeData.dark(),
             home: Builder(
               builder: (context) {
@@ -404,6 +419,7 @@ void main() {
       testWidgets('shows modal with basic configuration', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -431,6 +447,7 @@ void main() {
       testWidgets('shows modal with title', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -460,6 +477,7 @@ void main() {
       testWidgets('shows modal with sticky action bar', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -491,6 +509,7 @@ void main() {
         var closeCalls = 0;
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
@@ -513,7 +532,7 @@ void main() {
 
         await tester.tap(find.text('Show Modal'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('Commit changes'));
+        await tester.tap(findMaterialTooltip('Commit changes'));
         await tester.pumpAndSettle();
 
         expect(closeCalls, 1);
@@ -572,6 +591,7 @@ void main() {
       testWidgets('dismisses modal on barrier tap', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -614,6 +634,7 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               navigatorObservers: [rootObserver],
               home: MediaQuery(
                 data: const MediaQueryData(size: Size(300, 600)),
@@ -662,6 +683,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             navigatorObservers: [rootObserver],
             home: MediaQuery(
               data: const MediaQueryData(
@@ -710,6 +732,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -761,6 +784,7 @@ void main() {
       testWidgets('respects barrierDismissible setting', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -845,7 +869,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 450));
         expect(find.text('Second page'), findsOneWidget);
 
-        await tester.tap(find.byTooltip('Close'));
+        await tester.tap(findMaterialTooltip('Close'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 450));
 
@@ -899,6 +923,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -1039,7 +1064,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 450));
         expect(find.text('Closable sliver content'), findsOneWidget);
 
-        await tester.tap(find.byTooltip('Close'));
+        await tester.tap(findMaterialTooltip('Close'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 450));
 
@@ -1052,6 +1077,7 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -1085,6 +1111,7 @@ void main() {
       testWidgets('dismisses sliver modal on barrier tap', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -1126,6 +1153,7 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {
@@ -1166,6 +1194,7 @@ void main() {
       testWidgets('applies modal decorator', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             home: Scaffold(
               body: Builder(
                 builder: (context) {

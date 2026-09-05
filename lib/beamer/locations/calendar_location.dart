@@ -1,5 +1,4 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/beamer/locations/route_state_mirror.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CalendarLocation extends BeamLocation<BeamState> {
   CalendarLocation(RouteInformation super.routeInformation);

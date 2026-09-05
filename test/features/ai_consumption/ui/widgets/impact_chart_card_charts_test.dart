@@ -1,13 +1,13 @@
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card_charts.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/insights/model/insights_models.dart'
     show InsightsGranularity;
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

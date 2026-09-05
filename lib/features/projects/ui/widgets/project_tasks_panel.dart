@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -18,6 +17,7 @@ import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 /// Asks the task list to focus [taskId]: scroll to it and light it up, or

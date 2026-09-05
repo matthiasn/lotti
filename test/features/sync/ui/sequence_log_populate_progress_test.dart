@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_progress.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
 

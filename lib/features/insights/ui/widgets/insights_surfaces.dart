@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Conventional elevation for the Time Analysis dashboard in **both** themes:
 /// a darker page canvas with the cards a step lighter sitting on it.

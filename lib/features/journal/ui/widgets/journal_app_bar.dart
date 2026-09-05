@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Pinned sliver app bar for the entry detail page: an optional back button
 /// and the entry's [SaveButton] (which fades in only when there are unsaved

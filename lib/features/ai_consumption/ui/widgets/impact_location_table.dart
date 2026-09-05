@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart'
     show formatShare;
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Environmental impact by serving location.
 ///

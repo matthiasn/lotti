@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Centers [child] and caps its width at [kDetailContentMaxWidth] on wide
 /// (desktop-breakpoint) screens so list and detail content stays at one shared

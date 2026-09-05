@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -63,6 +64,7 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       // resolveTestTheme adds the DsTokens extension (the modal rows read
       // `context.designTokens`) while preserving the requested brightness.
       theme: resolveTestTheme(
@@ -281,6 +283,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: Material(
@@ -322,6 +325,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             home: Scaffold(
               body: Material(

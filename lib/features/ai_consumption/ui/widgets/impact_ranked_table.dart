@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart'
     show largestRemainderPercents;
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/logic/chart_colors.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Exhaustive per-category breakdown of the selected metric: swatch ·
 /// resolved name · formatted value · share of the period total.

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_toggle_chips.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The body of the entry `•••` menu.
 ///

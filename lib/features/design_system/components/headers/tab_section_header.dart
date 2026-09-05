@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The shared header action button used by tab headers (and their collapsed
 /// compact bars): an [IconButton] that carries the design-system "activated"

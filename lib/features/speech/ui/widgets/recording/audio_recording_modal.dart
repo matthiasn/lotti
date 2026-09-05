@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/ui/app_fonts.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Entry point for the full-screen audio recording sheet.
 class AudioRecordingModal {

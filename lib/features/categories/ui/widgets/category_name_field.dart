@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A text field widget for editing category names, rendered with the
 /// design-system text input.

@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_profile_picker_modal.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 
 AiConfigInferenceProfile _profile({
   required String id,
@@ -46,7 +47,7 @@ void main() {
       expect(find.text('Private profile'), findsOneWidget);
       expect(find.text('No data retention'), findsOneWidget);
       expect(find.text('Selected'), findsOneWidget);
-      expect(find.byTooltip('Desktop Only'), findsOneWidget);
+      expect(findMaterialTooltip('Desktop Only'), findsOneWidget);
       expect(find.text('internal-private'), findsNothing);
 
       final selectedRow = tester.widget<DesignSystemSelectionRow>(

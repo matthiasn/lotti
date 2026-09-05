@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
@@ -10,6 +9,8 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart'
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -91,6 +92,7 @@ void main() {
       Widget harness({Widget? child}) {
         return ProviderScope(
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             navigatorObservers: [spy],
             theme: ThemeData(
               useMaterial3: true,
@@ -98,9 +100,7 @@ void main() {
             ),
             localizationsDelegates: const [
               AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
@@ -121,6 +121,7 @@ void main() {
       }) {
         return ProviderScope(
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             navigatorObservers: [rootObserver],
             theme: ThemeData(
               useMaterial3: true,
@@ -128,9 +129,7 @@ void main() {
             ),
             localizationsDelegates: const [
               AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Navigator(

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/keyboard/ui/command_catalog_view.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -51,7 +52,7 @@ void main() {
     expect(find.text(messages.keyboardShortcutsTitle), findsWidgets);
     expect(find.byType(CommandCatalogView), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Close'));
+    await tester.tap(findMaterialTooltip('Close'));
     await tester.pump();
     await overlay;
     expect(find.text(messages.keyboardShortcutsTitle), findsNothing);

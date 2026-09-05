@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('module-level computed colors', () {
@@ -17,6 +18,7 @@ void main() {
       late BuildContext context;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData(brightness: brightness),
           home: Builder(
             builder: (c) {

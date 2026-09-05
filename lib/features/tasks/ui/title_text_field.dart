@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Signature for a callback receiving an optional string value, used by
 /// [TitleTextField] for its save handler.

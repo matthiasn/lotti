@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Edits the [MeasurableChoice] list of a choice-kind measurable.
 ///

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Finds the index of the segment whose value is within 0.01 of [value],
 /// or -1 when [value] is null or no segment matches.

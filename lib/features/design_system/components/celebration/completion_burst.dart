@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_burst_painters.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A short burst of particles that fly out of the completed thing and fade — the
 /// "magic check" beat. Driven by a one-shot controller resting at `1`: at

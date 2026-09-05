@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -8,7 +7,9 @@ import 'package:lotti/features/sync/ui/matrix_stats/diagnostics_panel.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_de.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -114,7 +115,7 @@ void main() {
 
     // Tapping the refresh icon re-runs the fetch and renders the new value.
     await tester.tap(
-      find.byTooltip(messages.matrixStatsRefreshDiagnosticsTooltip),
+      findMaterialTooltip(messages.matrixStatsRefreshDiagnosticsTooltip),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -190,7 +191,7 @@ void main() {
     );
     expect(find.text(german.matrixStatsLastIgnored), findsOneWidget);
     expect(
-      find.byTooltip(german.matrixStatsRefreshDiagnosticsTooltip),
+      findMaterialTooltip(german.matrixStatsRefreshDiagnosticsTooltip),
       findsOneWidget,
     );
     // The parsed diagnostic value itself is service data, not a label, so it

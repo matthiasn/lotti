@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A picture over its ThumbHash stand-in.
 ///

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The shared chrome of the app's "intelligence" panels — the task agent
 /// section on Task Details and the goal agent's read on Goal Details wear

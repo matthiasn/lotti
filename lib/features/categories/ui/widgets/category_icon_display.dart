@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Widget for displaying category icons with colored borders.
 ///

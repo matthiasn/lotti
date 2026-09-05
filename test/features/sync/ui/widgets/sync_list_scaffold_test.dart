@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -11,7 +10,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -84,10 +85,14 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
 
   await tester.pumpWidget(
     MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       // The scaffold header reads context.designTokens; the central
       // helper attaches the DsTokens extension.
       theme: resolveTestTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: useViewSize
           ? SyncListScaffold<_TestItem, _TestFilter>(
@@ -393,8 +398,12 @@ void main() {
         // Initial pump with both filters, select error
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: MediaQuery(
               data: const MediaQueryData(
@@ -445,8 +454,12 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: MediaQuery(
               data: const MediaQueryData(

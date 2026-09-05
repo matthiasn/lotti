@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/breadcrumbs/design_system_breadcrumbs.dart';
 import 'package:lotti/features/design_system/components/headers/design_system_header.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';

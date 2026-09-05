@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -19,6 +18,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/share_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// Wires a checklist entity to its [ChecklistCard] and handles all

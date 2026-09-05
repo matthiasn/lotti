@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';

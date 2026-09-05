@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The localized display label for an [EventStatus].
 String eventStatusLabel(BuildContext context, EventStatus status) =>

@@ -1,11 +1,11 @@
 import 'dart:core';
 
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Stable task identifiers for the three bundled surveys. These match the survey
 // definitions' task names and are the keys under which completions are stored

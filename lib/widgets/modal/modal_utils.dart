@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Upper bound on a create/edit form's height as a fraction of the viewport
@@ -241,7 +242,7 @@ class ModalUtils {
       context: context,
       useRootNavigator:
           useRootNavigator ?? shouldUseRootNavigatorForBottomSheet(context),
-      modalDecorator: modalDecorator,
+      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(modalDecorator),
       modalTypeBuilder: modalTypeBuilderOverride ?? modalTypeBuilder,
       pageListBuilder: (modalSheetContext) {
         return [
@@ -284,7 +285,7 @@ class ModalUtils {
     return WoltModalSheet.show<T>(
       context: context,
       useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
-      modalDecorator: modalDecorator,
+      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(modalDecorator),
       pageListBuilder: pageListBuilder,
       modalTypeBuilder: modalTypeBuilderOverride ?? modalTypeBuilder,
       pageIndexNotifier: pageIndexNotifier,
@@ -359,7 +360,7 @@ class ModalUtils {
       modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
       pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
       modalTypeBuilder: modalTypeBuilder,
-      modalDecorator: modalDecorator,
+      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(modalDecorator),
       barrierDismissible: barrierDismissible,
     );
   }

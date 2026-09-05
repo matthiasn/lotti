@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile bottom-navigation container: hosts the five-slot bar
 /// ([DesignSystemFiveSlotNavBar]) docked flush against the screen's bottom

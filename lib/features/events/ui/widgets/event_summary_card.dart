@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A dense, info-rich summary of an event for *list* contexts — the logbook and
 /// a task's linked-entries timeline — where the full photo-led `EventCard` is

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The design-system's inline message callout: a `background.level02` surface
 /// with an alert-toned hairline border and leading glyph, and high-emphasis

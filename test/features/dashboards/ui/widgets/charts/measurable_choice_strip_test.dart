@@ -1,13 +1,14 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/measurable_choice_series.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/measurable_choice_strip.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_data/test_data.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -143,7 +144,7 @@ void main() {
         expect(find.byKey(tooltipKey), findsNothing);
 
         final gesture = await hoverDay(tester, index: 0, n: days.length);
-        expect(find.byTooltip('Jul 5, 2022 · Clear'), findsOneWidget);
+        expect(findMaterialTooltip('Jul 5, 2022 · Clear'), findsOneWidget);
 
         final box = tester.getRect(find.byKey(stripKey));
         await gesture.moveTo(
@@ -156,7 +157,10 @@ void main() {
           Offset(box.left + box.width * 3.5 / days.length, box.center.dy),
         );
         await tester.pump();
-        expect(find.byTooltip('Jul 8, 2022 · Removed choice'), findsOneWidget);
+        expect(
+          findMaterialTooltip('Jul 8, 2022 · Removed choice'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -183,7 +187,7 @@ void main() {
         Offset(box.left + box.width * 2.5 / days.length, box.center.dy),
       );
       await tester.pump();
-      expect(find.byTooltip('Jul 7, 2022 · Dark'), findsOneWidget);
+      expect(findMaterialTooltip('Jul 7, 2022 · Dark'), findsOneWidget);
       await gesture.up();
     });
 

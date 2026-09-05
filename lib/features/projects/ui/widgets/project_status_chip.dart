@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Maps [ProjectStatus] to a colored [ModernStatusChip].
 ///

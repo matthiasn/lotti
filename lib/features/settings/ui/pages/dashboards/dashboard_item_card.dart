@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Renders one chart row in the dashboard editor, dispatching on the
 /// [DashboardItem] variant.

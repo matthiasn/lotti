@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 class EmptyScaffoldWithTitle extends StatelessWidget {
   const EmptyScaffoldWithTitle(

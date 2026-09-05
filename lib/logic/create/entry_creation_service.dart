@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/logic/image_import.dart' as image_import;
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Service for creating journal entries with dependency injection support.
 /// This service wraps the global entry creation functions to make them

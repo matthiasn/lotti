@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Exhaustive per-category breakdown: swatch · name · total · share ·
 /// avg/day · inline data bar.

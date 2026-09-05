@@ -1,9 +1,9 @@
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Sliver list of dashboards (filtered by the active category selection and
 /// sorted by name via [filteredSortedDashboardsProvider]), rendered as

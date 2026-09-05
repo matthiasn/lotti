@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme_constants.dart';
+import 'package:material_ui/material_ui.dart';
 
 const double inputBorderRadius = InputConstants.inputBorderRadius;
 

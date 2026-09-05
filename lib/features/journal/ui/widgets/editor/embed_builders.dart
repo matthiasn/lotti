@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lightweight builder for Quill's horizontal rule embed (type: 'divider').
 class DividerEmbedBuilder extends EmbedBuilder {

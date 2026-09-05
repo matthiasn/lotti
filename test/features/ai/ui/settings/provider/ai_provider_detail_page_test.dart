@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -26,10 +25,12 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -741,7 +742,7 @@ void main() {
         );
 
         // One visible trash affordance per owned model row.
-        final trash = find.byTooltip('Delete model');
+        final trash = findMaterialTooltip('Delete model');
         expect(trash, findsNWidgets(2));
 
         await tester.ensureVisible(trash.first);
@@ -811,7 +812,7 @@ void main() {
           profiles: const <AiConfig>[],
         );
 
-        final trash = find.byTooltip('Delete model');
+        final trash = findMaterialTooltip('Delete model');
         await tester.ensureVisible(trash);
         await tester.tap(trash);
         await tester.pump();
@@ -866,7 +867,7 @@ void main() {
         // Two `edit_outlined` icons exist on the page (AppBar pencil and the
         // Connection section's `Edit` button); target the AppBar entry by
         // its tooltip.
-        await tester.tap(find.byTooltip('Edit provider'));
+        await tester.tap(findMaterialTooltip('Edit provider'));
         // Don't pumpAndSettle — the destination page may be busy fetching;
         // a single pump is enough for the push to register with the
         // observer.
@@ -1114,7 +1115,9 @@ void main() {
           (baseUrl: 'https://api.melious.ai/v1', apiKey: 'sk-mel-test'),
         ]);
 
-        await tester.tap(find.byTooltip('Add this model to your provider'));
+        await tester.tap(
+          findMaterialTooltip('Add this model to your provider'),
+        );
         await tester.pump();
 
         final captured =
@@ -1203,7 +1206,9 @@ void main() {
           (baseUrl: 'https://api.mistral.ai/v1', apiKey: 'sk-mistral-test'),
         ]);
 
-        await tester.tap(find.byTooltip('Add this model to your provider'));
+        await tester.tap(
+          findMaterialTooltip('Add this model to your provider'),
+        );
         await tester.pump();
 
         final captured =
@@ -1270,7 +1275,7 @@ void main() {
         await tester.pump();
 
         // The added row exposes a remove affordance, not an add button.
-        final removeButton = find.byTooltip(
+        final removeButton = findMaterialTooltip(
           'Remove this model from your provider',
         );
         expect(removeButton, findsOneWidget);
@@ -1335,7 +1340,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pump();
 
-        final addButton = find.byTooltip('Add this model to your provider');
+        final addButton = findMaterialTooltip(
+          'Add this model to your provider',
+        );
         expect(addButton, findsOneWidget);
         await tester.ensureVisible(addButton);
         await tester.tap(addButton);

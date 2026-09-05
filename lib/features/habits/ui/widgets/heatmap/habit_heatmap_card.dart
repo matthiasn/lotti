@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_grid.dart
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The consistency heatmap, wrapped in the same calm card shell as the
 /// completion-rate chart: a titled, bordered surface a step lighter than the

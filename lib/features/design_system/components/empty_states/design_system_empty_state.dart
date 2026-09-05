@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The design system's one empty-state grammar: a quiet glyph, an optional
 /// `subtitle1` title, an optional `caption` hint, and an optional action.

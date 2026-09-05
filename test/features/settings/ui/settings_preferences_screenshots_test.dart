@@ -12,9 +12,7 @@
 ///   test/features/settings/ui/settings_preferences_screenshots_test.dart`
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,11 +41,14 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/target_platform.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 import '../../onboarding/state/recording_style_test_utils.dart';
@@ -91,6 +92,7 @@ Widget _app({
       child: MediaQuery(
         data: MediaQueryData(size: size),
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
@@ -98,9 +100,7 @@ Widget _app({
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           locale: manualScreenshotLocale,
@@ -297,12 +297,18 @@ void main() {
           expect(find.text(messages.settingsThemingTitle), findsWidgets);
           // The mode segments render icons; their localized labels ride the
           // tooltip + semantics, so find them by tooltip rather than text.
-          expect(find.byTooltip(messages.settingsThemingDark), findsOneWidget);
           expect(
-            find.byTooltip(messages.settingsThemingAutomatic),
+            findMaterialTooltip(messages.settingsThemingDark),
             findsOneWidget,
           );
-          expect(find.byTooltip(messages.settingsThemingLight), findsOneWidget);
+          expect(
+            findMaterialTooltip(messages.settingsThemingAutomatic),
+            findsOneWidget,
+          );
+          expect(
+            findMaterialTooltip(messages.settingsThemingLight),
+            findsOneWidget,
+          );
           final toggle = tester.widget<DsSegmentedToggle<ThemeMode>>(
             find.byType(DsSegmentedToggle<ThemeMode>),
           );

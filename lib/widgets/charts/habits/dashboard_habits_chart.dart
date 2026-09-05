@@ -1,7 +1,7 @@
 import 'dart:core';
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 class DashboardHabitsChart extends StatefulWidget {
   const DashboardHabitsChart({

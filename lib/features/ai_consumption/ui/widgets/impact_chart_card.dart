@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/model/impact_dashboard_models.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_chart_card_charts.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/insights/model/insights_models.dart'
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fixed plot height, matching the Insights chart card so the two
 /// dashboards read as siblings.

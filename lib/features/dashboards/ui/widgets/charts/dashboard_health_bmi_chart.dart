@@ -1,6 +1,5 @@
 import 'dart:core';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.da
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Header for the BMI/weight chart card. Titled "Weight" (the card actually
 /// plots weight, despite the configured BMI type's misleading display name) and

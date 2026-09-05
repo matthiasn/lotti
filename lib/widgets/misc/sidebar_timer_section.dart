@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detailed timer panel rendered from the expanded desktop sidebar activity
 /// disclosure whenever a time-recording session is active.

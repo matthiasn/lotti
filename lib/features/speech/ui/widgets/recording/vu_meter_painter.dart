@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/ui/app_fonts.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Paints the skeuomorphic analog VU meter: a labeled arc scale (with a red
 /// over-0-dB zone), the swinging needle, a held peak tick, the center pivot,

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:research_package/research_package.dart';
 
 import '../../../../../widget_test_utils.dart';

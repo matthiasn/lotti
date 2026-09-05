@@ -5,7 +5,7 @@ description: The four-group token pipeline from Figma export to a ThemeExtension
 resource: ../../../lib/features/design_system/theme
 tags: [design-system, tokens, theming, accessibility, contrast]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-28T21:20:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-05T20:20:22Z }
 stale_after: 2027-02-08
 sources:
   - id: generator
@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration
     last_modified: 2026-07-15
+  - id: legacy-bridge
+    resource: ../../../lib/themes/legacy_material_bridge.dart
+    title: Legacy Material package compatibility
+    last_modified: 2026-09-05
   - id: settings-header
     resource: ../../../lib/widgets/app_bar/settings_page_header.dart
     title: The sliver settings header — tokens read below the delegate
@@ -125,6 +129,50 @@ Everything else is lower-camel-cased with `/` and `-` treated as word breaks.
 
 That split matters: one is the clean standalone sandbox, the other is the
 integration path.
+
+## Standalone Material and legacy dependencies
+
+App widgets, theme extensions, the token generator and test hosts import
+`package:material_ui/material_ui.dart`; Cupertino widgets use
+`package:cupertino_ui/cupertino_ui.dart`. These are distinct types from the
+in-framework design libraries. The shared Flutter widgets layer remains common.
+Use `GlobalMaterialLocalizations.delegates` from Material UI alongside
+`AppLocalizations.delegate`; the SDK-generated app localization class still
+lists the in-framework delegates, so its aggregate is not the app's delegate
+list.
+
+`LegacyMaterialBridge` runs inside the MaterialApp builders, including test
+hosts. It maps the active theme and installs the old localization delegates
+for dependencies that have not migrated. `LegacyMaterialExtensions` carries
+Wolt and GPT Markdown's old extensions inside the modern theme and interpolates
+them during theme changes. The bridge is an adapter for those dependencies,
+not a second source of visual tokens.
+
+```mermaid
+flowchart TD
+  App["Material UI MaterialApp and DsTokens"] --> Bridge["LegacyMaterialBridge"]
+  Bridge --> Modern["App widgets read the Material UI theme"]
+  Bridge --> Old["Unmigrated packages read the mapped Flutter theme"]
+  Nested["Survey's local Material UI theme"] --> SurveyBridge["Scoped LegacyMaterialBridge"]
+  SurveyBridge --> Survey["research_package"]
+```
+
+Wolt routes use `LegacyMaterialBridge.modalSurface` as their modal decorator
+(or `wrapModalDecorator` to retain a caller-provided decorator). Its transparent
+modern Scaffold hosts modern controls and toasts above the legacy route. Wolt
+owns keyboard avoidance; the outer scaffold disables it to avoid double insets.
+
+Nested overrides need their own boundary: the survey bridge propagates its
+transparent background and compact type to research_package. AgentMarkdownView
+sets the legacy Markdown/checkbox theme around its renderer and supplies a
+legacy transparent Material for its checkboxes. Quill's toolbar button style
+and text-selection parameters must likewise use the types its API expects.
+Widgetbook uses the generic `ThemeAddon<ThemeData>` with the modern theme.
+
+The cached image, color picker and form builder packages use Material UI
+directly. Do not pass old ThemeData, ButtonStyle or other design-library types
+into their public APIs. Conversely, the ambient bridge cannot convert an
+argument passed to an unmigrated dependency: adapt it at that call site.
 
 ## The access API
 

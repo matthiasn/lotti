@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Generator mixing valid hex characters with `#`, whitespace and junk so
 /// every branch of [categoryColorFromHex] (trim, hash-strip, truncate,

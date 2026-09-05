@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lightweight wrapper around google_fonts to make font usage
 /// safe and deterministic in tests and constrained environments.

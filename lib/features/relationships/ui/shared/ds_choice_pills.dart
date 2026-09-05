@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A single-select row of pill chips (design plan §0.2 / §6 — kill the
 /// default `ChoiceChip` wrap grid; one horizontal row, scroll if needed,

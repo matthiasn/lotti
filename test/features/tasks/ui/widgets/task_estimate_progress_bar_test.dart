@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/tasks/ui/widgets/task_estimate_progress_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

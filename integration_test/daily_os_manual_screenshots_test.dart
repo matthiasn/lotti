@@ -14,8 +14,6 @@ library;
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -35,6 +33,8 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'manual_screenshot_utils.dart';
 
@@ -301,13 +301,12 @@ Widget _app(_PendingParseAgent agent) {
         dayAgentProvider.overrideWithValue(agent),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
         theme: DesignSystemTheme.dark(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
@@ -370,13 +369,12 @@ Widget _desktopDayApp() {
         ),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
         theme: DesignSystemTheme.dark(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: Row(

@@ -107,7 +107,7 @@ final class _DesignTokenGenerator {
       ..writeln()
       ..writeln("import 'dart:ui' show lerpDouble;")
       ..writeln()
-      ..writeln("import 'package:flutter/material.dart';")
+      ..writeln("import 'package:material_ui/material_ui.dart';")
       ..writeln()
       ..writeln(_emitRootConstants(root))
       ..writeln();

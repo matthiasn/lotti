@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -24,6 +23,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/modal/index.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// (configId, modelId, providerId) tuple pulled from a [ResolvedProfile]
 /// for one per-invocation override slot. `configId` is the resolved

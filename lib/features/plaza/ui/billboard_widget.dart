@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A photo-led plaza poster, used by billboards and static facades:
 /// one task's headline and cover, framed in its state colour.

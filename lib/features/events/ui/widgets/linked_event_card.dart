@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/events/state/event_view_mapping.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The compact, photo-led representation of an event when it appears inside
 /// another entry's linked list (e.g. a task's timeline). Resolves the event's

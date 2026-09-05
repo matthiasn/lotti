@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,10 +10,12 @@ import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/thumb_hash_fixtures.dart';
@@ -32,6 +33,7 @@ Future<void> pumpThumbnail(
     ProviderScope(
       overrides: overrides,
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         home: Scaffold(body: thumbnail),
       ),
     ),
@@ -591,6 +593,7 @@ void main() {
               createEntryControllerOverride(image),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               home: Scaffold(
                 body: CoverArtThumbnail(
                   key: key,
@@ -612,6 +615,7 @@ void main() {
               createEntryControllerOverride(image),
             ],
             child: const MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               home: Scaffold(
                 body: Text('Widget removed'),
               ),
@@ -650,6 +654,7 @@ void main() {
                 createEntryControllerOverride(image),
               ],
               child: const MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 home: Scaffold(
                   body: SizedBox(),
                 ),
@@ -703,6 +708,7 @@ void main() {
         await tester.pumpWidget(
           const ProviderScope(
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               home: Scaffold(
                 body: CoverArtThumbnail(
                   imageId: 'nonexistent',
@@ -745,6 +751,7 @@ void main() {
               createEntryControllerOverride(image),
             ],
             child: const MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               home: Scaffold(
                 body: SingleChildScrollView(
                   child: CoverArtThumbnail(

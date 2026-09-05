@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Category picker for the habit editor, rendered as a
 /// [SettingsPickerField] so it matches the design-system fields around

@@ -1,11 +1,11 @@
 import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_selection_rows.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Bottom-sheet / dialog picker for choosing which model handles one
 /// per-invocation inference run, overriding the inference profile's slot for

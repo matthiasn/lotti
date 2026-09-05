@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_constants.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_painter.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// An analog VU (Volume Unit) meter widget that displays audio levels
 /// with a traditional needle-based meter design.

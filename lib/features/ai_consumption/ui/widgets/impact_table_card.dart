@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Builds the table-specific content for an [ImpactTableCard].
 typedef ImpactTableCardChildrenBuilder =

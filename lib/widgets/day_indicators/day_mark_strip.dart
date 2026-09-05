@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A row of day squares, as the habits handover draws it: one small square
 /// per day on the page's shared column pitch, and — for a habit with a run

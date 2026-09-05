@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,10 +27,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -172,6 +173,7 @@ void main() {
         ...additionalOverrides,
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         navigatorObservers: navigatorObservers,
         theme: ThemeData(
           useMaterial3: true,
@@ -184,9 +186,7 @@ void main() {
         ),
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home:
@@ -443,7 +443,7 @@ void main() {
 
       expect(find.text('Not installed'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Install model'));
+      await tester.tap(findMaterialTooltip('Install model'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
@@ -1567,15 +1567,14 @@ void main() {
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: StatefulBuilder(
@@ -1649,15 +1648,14 @@ void main() {
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: StatefulBuilder(

@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Default-language picker for the category editor, rendered as a
 /// [SettingsPickerField] so it matches the design-system fields around

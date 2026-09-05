@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -34,6 +33,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.da
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Creates or edits a goal agent through WP5's observable-mapping controls.
 ///

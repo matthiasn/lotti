@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Section divider for the grouped habit lists ("Due now", "Later today",
 /// "Completed"). The label leads with high-emphasis subtitle weight so the

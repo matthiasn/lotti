@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The collapsible shell around the task's dated log-entry history (the
 /// linked-entries stream plus reverse links).

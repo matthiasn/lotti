@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The monogram identity chip: a letter on a tinted [fill] wash. Typography
 /// and colour only — no faces, no imagery (ADR 0058 holds even for

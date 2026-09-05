@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Sticky action bar pinned to the bottom of the task details page.
 ///

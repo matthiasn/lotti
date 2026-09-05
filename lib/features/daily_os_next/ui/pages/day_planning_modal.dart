@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
@@ -24,9 +23,11 @@ import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// What the day-planning modal opens to.
@@ -81,6 +82,7 @@ Future<DayPlanningResult?> showDayPlanningModal({
   final day = DateTime(dayDate.year, dayDate.month, dayDate.day);
 
   return WoltModalSheet.show<DayPlanningResult>(
+    modalDecorator: LegacyMaterialBridge.modalSurface,
     context: context,
     useRootNavigator: true,
     modalTypeBuilder: (modalContext) =>

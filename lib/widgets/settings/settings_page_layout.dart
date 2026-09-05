@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared layout rules for the settings definition pages (lists and
 /// detail forms), so search fields, grouped lists, form sections, and the

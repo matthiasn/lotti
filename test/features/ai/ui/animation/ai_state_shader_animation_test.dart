@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'ai_state_shader_animation_test_helpers.dart';
 
 void main() {

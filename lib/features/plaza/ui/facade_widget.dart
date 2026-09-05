@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Which range a facade is drawn for.
 enum FacadeVariant {

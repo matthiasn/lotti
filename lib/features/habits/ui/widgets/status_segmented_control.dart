@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The status filter (due / later / done / all) rendered with the shared
 /// [DsSegmentedToggle] so it speaks the same visual language as the Time

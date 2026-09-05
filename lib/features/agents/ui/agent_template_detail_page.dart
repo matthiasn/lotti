@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detail page for creating or editing an agent template.
 ///

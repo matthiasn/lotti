@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:camera/camera.dart' show CameraPreview;
 import 'package:camera_platform_interface/camera_platform_interface.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/ui/provisioned/desktop_qr_scanner.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:zxing2/qrcode.dart';
 
 import '../../../../widget_test_utils.dart';

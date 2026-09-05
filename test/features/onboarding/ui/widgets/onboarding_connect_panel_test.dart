@@ -1,13 +1,14 @@
 import 'dart:ui' show SemanticsAction;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -100,7 +101,7 @@ void main() {
       var backed = false;
       await pumpPanel(tester, onBack: () => backed = true);
 
-      final back = find.byTooltip('Back');
+      final back = findMaterialTooltip('Back');
       expect(back, findsOneWidget);
       final semantics = tester.getSemantics(find.bySemanticsLabel('Back'));
       expect(semantics.label, 'Back');

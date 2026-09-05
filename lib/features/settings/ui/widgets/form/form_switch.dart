@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// `flutter_form_builder` toggle rendered as a design-system
 /// [SettingsSwitchRow], so FormBuilder-driven definition forms share the

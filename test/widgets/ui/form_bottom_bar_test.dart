@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('FormBottomBar Tests', () {
@@ -12,6 +13,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: const SizedBox(),
             bottomNavigationBar: FormBottomBar(
@@ -48,6 +50,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: const SizedBox(),
             bottomNavigationBar: FormBottomBar(
@@ -81,6 +84,7 @@ void main() {
     testWidgets('handles empty right buttons list', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: SizedBox(),
             bottomNavigationBar: FormBottomBar(
@@ -103,6 +107,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: const SizedBox(),
             bottomNavigationBar: FormBottomBar(
@@ -143,6 +148,7 @@ void main() {
     testWidgets('has proper container styling', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           ),
@@ -194,6 +200,7 @@ void main() {
     testWidgets('renders correctly with text field', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: const TextField(),
             bottomNavigationBar: FormBottomBar(
@@ -216,6 +223,7 @@ void main() {
     testWidgets('buttons remain functional when disabled', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: SizedBox(),
             bottomNavigationBar: FormBottomBar(
@@ -244,6 +252,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData(
             appBarTheme: const AppBarTheme(elevation: elevation),
           ),
@@ -279,6 +288,7 @@ void main() {
     testWidgets('renders with bottom padding', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: MediaQuery(
             data: const MediaQueryData(
               padding: EdgeInsets.only(bottom: 34), // iPhone X style safe area
@@ -315,6 +325,7 @@ void main() {
     testWidgets('maintains button order', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: SizedBox(),
             bottomNavigationBar: FormBottomBar(

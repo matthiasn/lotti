@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
+import 'package:material_ui/material_ui.dart';
 
 class TimeRecordingIndicator extends ConsumerWidget {
   const TimeRecordingIndicator({

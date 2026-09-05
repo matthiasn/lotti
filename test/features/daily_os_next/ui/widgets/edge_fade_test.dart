@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('EdgeFade constructor contract', () {
@@ -50,6 +51,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EdgeFade(
               rampExtent: 16,
@@ -78,6 +80,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: EdgeFade(
             rampExtent: 16,
             minFraction: 0.08,

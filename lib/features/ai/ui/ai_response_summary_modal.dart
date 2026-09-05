@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 
 class AiResponseSummaryModalContent extends StatelessWidget {

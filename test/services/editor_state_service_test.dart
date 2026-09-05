@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-width destructive action row placed at the end of a settings
 /// editor form — the platform-conventional home for Delete.

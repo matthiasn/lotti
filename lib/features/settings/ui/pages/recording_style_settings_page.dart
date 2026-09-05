@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/onboarding/ui/widgets/recording_style_live_previe
 import 'package:lotti/features/onboarding/ui/widgets/recording_style_picker.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mobile / Beamer wrapper: adds the [SliverBoxAdapterPage] chrome and
 /// delegates content to [RecordingStyleSettingsBody]. The same body is

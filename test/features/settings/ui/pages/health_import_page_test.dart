@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
@@ -19,6 +18,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/date_time/datetime_field.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart'
     show PermissionHandlerPlatform;

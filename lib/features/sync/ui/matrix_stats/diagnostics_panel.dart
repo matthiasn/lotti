@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/matrix_stats/metrics_typography.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 class DiagnosticsPanel extends StatefulWidget {
   const DiagnosticsPanel({

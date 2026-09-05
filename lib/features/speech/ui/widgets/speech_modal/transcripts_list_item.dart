@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Expandable row for a single [AudioTranscript].
 ///

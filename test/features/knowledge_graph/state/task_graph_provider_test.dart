@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart' show Color, Colors;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -20,6 +19,7 @@ import 'package:lotti/features/knowledge_graph/state/task_graph_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:material_ui/material_ui.dart' show Color, Colors;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';

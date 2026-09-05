@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
 

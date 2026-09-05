@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 class GoalAgentChatPane extends ConsumerWidget {
   const GoalAgentChatPane({

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens the habit editor — for [habitId], or a new habit when null.
 ///

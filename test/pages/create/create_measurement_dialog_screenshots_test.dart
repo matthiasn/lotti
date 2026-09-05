@@ -9,8 +9,6 @@
 library;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,7 +22,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../features/daily_os_next/screenshot_harness.dart';
@@ -172,6 +172,7 @@ Future<void> _pumpDashboard(
       child: ProviderScope(
         overrides: _chartOverrides(),
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           debugShowCheckedModeBanner: false,
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
@@ -179,9 +180,7 @@ Future<void> _pumpDashboard(
           locale: manualScreenshotLocale,
           localizationsDelegates: const [
             AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(

@@ -26,7 +26,6 @@ library;
 
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -44,9 +43,11 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../test/helpers/manual_screenshot_locale.dart';
+import '../../test/test_utils/material_ui_finders.dart';
 import '../manual_screenshot_utils.dart';
 import 'tutorial_harness.dart';
 
@@ -827,7 +828,7 @@ void main() {
       final assistantButton = find
           .descendant(
             of: find.byType(TaskDetailsPage),
-            matching: find.byTooltip(
+            matching: findMaterialTooltip(
               localized(
                 en: 'Generate…',
                 de: 'Generieren…',
@@ -951,7 +952,7 @@ void main() {
       });
 
       await driver.step('scroll_prompt', () async {
-        final expandCaret = find.byTooltip(
+        final expandCaret = findMaterialTooltip(
           localized(
             en: 'Show full prompt',
             de: 'Vollständigen Prompt anzeigen',

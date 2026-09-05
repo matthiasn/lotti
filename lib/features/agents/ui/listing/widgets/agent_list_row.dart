@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Single-line dense row used inside grouped sections of any
 /// `AgentListingShell`. Pure: takes only [AgentListRowData] and renders

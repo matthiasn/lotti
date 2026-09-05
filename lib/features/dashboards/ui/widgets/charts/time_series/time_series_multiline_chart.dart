@@ -1,11 +1,11 @@
 import 'dart:core';
 
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Multi-series line chart over a date range. Unlike the single-line chart this
 /// takes already-built fl_chart [lineBarsData] (the caller styles each series —

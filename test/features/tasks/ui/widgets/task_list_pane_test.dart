@@ -1,5 +1,4 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +20,7 @@ import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_list_pane.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';

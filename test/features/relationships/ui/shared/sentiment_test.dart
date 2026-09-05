@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -12,6 +13,7 @@ void main() {
       late DsTokens tokens;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Builder(
             builder: (context) {
@@ -44,6 +46,7 @@ void main() {
       late DsTokens tokens;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Builder(
             builder: (context) {
@@ -64,6 +67,7 @@ void main() {
       late DsTokens tokens;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Builder(
             builder: (context) {
@@ -86,6 +90,7 @@ void main() {
       late DsTokens tokens;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Builder(
             builder: (context) {
@@ -110,6 +115,7 @@ void main() {
       late DsTokens tokens;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Builder(
             builder: (context) {

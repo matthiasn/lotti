@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Scroll offset at which the compact app bar surfaces the task title in
 /// its own toolbar so context stays on screen once the inline header

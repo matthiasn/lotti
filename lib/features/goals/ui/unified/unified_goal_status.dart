@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The unified Goals surface's four-pill status vocabulary (design handover
 /// "Goals, Unified" §Q2): the ONLY health words a goal card ever shows.

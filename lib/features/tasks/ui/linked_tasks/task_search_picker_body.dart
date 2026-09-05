@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Search-and-pick body shared by `LinkTaskModal` and `BlockingTaskPickerModal`:
 /// loads open tasks (bounded, non-closed), filters by FTS5 match or title

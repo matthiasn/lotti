@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens the shared task-image selection flow and returns processed images.
 ///

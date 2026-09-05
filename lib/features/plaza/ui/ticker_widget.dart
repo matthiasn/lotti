@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One period of an LED ticker band: [text] once, followed by the gap
 /// before it comes round again. Captured once; the scene scrolls the

@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('EmptyStateWidget Tests', () {
@@ -11,6 +12,7 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: icon,
@@ -37,6 +39,7 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: icon,
@@ -58,6 +61,7 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: LottiIcons.inbox,
@@ -75,6 +79,7 @@ void main() {
     testWidgets('default icon size is 48', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: LottiIcons.inbox,
@@ -93,6 +98,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: LottiIcons.folderOpen,
@@ -121,6 +127,7 @@ void main() {
     testWidgets('no container when showContainer is false', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: LottiIcons.folderOpen,
@@ -150,6 +157,7 @@ void main() {
     testWidgets('text alignment is centered', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: LottiIcons.search,
@@ -180,6 +188,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: theme,
           home: const Scaffold(
             body: EmptyStateWidget(
@@ -214,6 +223,7 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: SizedBox(
@@ -237,6 +247,7 @@ void main() {
     testWidgets('proper spacing between elements', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: EmptyStateWidget(
               icon: LottiIcons.folder,

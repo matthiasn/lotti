@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_toolbar_popover.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SearchField extends StatefulWidget {
   const SearchField({

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Conventional two-step surface elevation shared by the app's calm, card-on-
 /// canvas surfaces (Time Analysis, Habits, …): a darker page canvas with the

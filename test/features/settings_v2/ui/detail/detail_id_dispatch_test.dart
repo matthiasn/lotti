@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/ui/detail/detail_id_dispatch.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Builds a route record the way `SettingsLocation.buildPages` does on
 /// desktop: the raw path plus whatever Beamer matched into
@@ -32,6 +33,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         home: DetailIdDispatch(
           idParamKey: 'templateId',
           listenable: routes,

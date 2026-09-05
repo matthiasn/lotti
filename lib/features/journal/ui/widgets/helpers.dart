@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The shared value-line renderer for entry summaries (health, workout,
 /// measurement, habit). Each line is split on its first `": "` into a quiet

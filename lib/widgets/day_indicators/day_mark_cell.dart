@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The edge of a day square on a phone: the control-glyph tier, the
 /// smallest square two weekday letters sit inside at a comfortable size.

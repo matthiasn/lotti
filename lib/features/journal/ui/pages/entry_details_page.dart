@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +30,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/widgets/media/media_drop_target.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-screen detail view for a single journal entry, keyed by `itemId`.
 ///

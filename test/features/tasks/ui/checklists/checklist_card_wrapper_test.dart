@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -22,6 +21,7 @@ import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/services/share_service.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../test_helper.dart';

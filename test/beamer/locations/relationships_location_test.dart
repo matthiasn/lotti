@@ -1,10 +1,10 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../widget_test_utils.dart';
 

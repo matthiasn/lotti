@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -10,7 +9,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_list_item.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../../test_utils/material_ui_finders.dart';
 import '../../../../../widget_test_utils.dart';
 
 const _wideSurface = Size(800, 600);
@@ -104,7 +105,7 @@ void main() {
       await _pump(tester, conflict: conflict, surface: _wideSurface);
 
       final tooltipMessage = l10n.conflictListItemTooltipFullId(conflict.id);
-      expect(find.byTooltip(tooltipMessage), findsOneWidget);
+      expect(findMaterialTooltip(tooltipMessage), findsOneWidget);
     });
 
     testWidgets('semantics label includes status, entity, and full id', (

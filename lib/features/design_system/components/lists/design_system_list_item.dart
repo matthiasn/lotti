@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list_corners.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum DesignSystemListItemSize {
   small,

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The primary providers surfaced in the first onboarding row. MLX is
 /// deliberately excluded from the FTUE (a multi-GB download has no place in a

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/design_system/components/celebration/completion_c
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The "Try it" stage: three dummy completion controls — a Done pill, a
 /// checklist item, and a habit button — that each replay *their own* content

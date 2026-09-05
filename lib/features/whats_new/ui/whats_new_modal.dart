@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -8,10 +7,12 @@ import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_hero_banner.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_navigation_footer.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// Modal that displays "What's New" content for all unseen releases.
@@ -184,18 +185,20 @@ class WhatsNewModal {
       modalTypeBuilder: _modalTypeBuilder,
       barrierDismissible: true,
       modalBarrierColor: barrierColor,
-      modalDecorator: (child) => DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              blurRadius: 32,
-              spreadRadius: 4,
-            ),
-          ],
+      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(
+        (child) => DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 32,
+                spreadRadius: 4,
+              ),
+            ],
+          ),
+          child: child,
         ),
-        child: child,
       ),
       onModalDismissedWithDrag: () {
         unawaited(markViewedAsSeen());

@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared mapping from [ProjectStatus] to its display attributes:
 /// label, color (brightness-aware), and icon.

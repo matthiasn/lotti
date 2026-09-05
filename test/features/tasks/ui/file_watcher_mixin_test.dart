@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/platform.dart' as platform_utils;
+import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 
 void main() {
@@ -29,6 +30,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: file.path),
         ),
       );
@@ -44,6 +46,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: path),
         ),
       );
@@ -60,6 +63,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: path),
         ),
       );
@@ -87,7 +91,10 @@ void main() {
         final path = '${tempDir.path}/generated.png';
 
         await tester.pumpWidget(
-          MaterialApp(home: _TestWidget(path: path)),
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
         );
         expect(find.text('not exists'), findsOneWidget);
 
@@ -109,7 +116,10 @@ void main() {
         final path = '${tempDir.path}/never-written.png';
 
         await tester.pumpWidget(
-          MaterialApp(home: _TestWidget(path: path)),
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
         );
 
         // Exhaust the full poll budget (20 attempts * 100ms) with room to
@@ -125,6 +135,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: path),
         ),
       );
@@ -140,6 +151,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: file.path),
         ),
       );
@@ -160,6 +172,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: path),
         ),
       );
@@ -186,6 +199,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: file1.path),
         ),
       );
@@ -212,6 +226,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: _TestWidget(path: path),
         ),
       );
@@ -346,7 +361,12 @@ void main() {
         platform_utils.isTestEnv = false;
         addTearDown(() => platform_utils.isTestEnv = true);
 
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
         expect(state.fileExists, isFalse);
@@ -368,7 +388,10 @@ void main() {
         addTearDown(() => platform_utils.isTestEnv = true);
 
         await tester.pumpWidget(
-          MaterialApp(home: _TestWidget(path: file.path)),
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: file.path),
+          ),
         );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
@@ -385,7 +408,12 @@ void main() {
         platform_utils.isTestEnv = false;
         addTearDown(() => platform_utils.isTestEnv = true);
 
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
         expect(state.fileExists, isFalse);
@@ -401,7 +429,12 @@ void main() {
         platform_utils.isTestEnv = false;
         addTearDown(() => platform_utils.isTestEnv = true);
 
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
         // Parent dir does not exist → early return, no crash, fileExists = false.
@@ -420,7 +453,10 @@ void main() {
         addTearDown(() => platform_utils.isTestEnv = true);
 
         await tester.pumpWidget(
-          MaterialApp(home: _TestWidget(path: file1.path)),
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: file1.path),
+          ),
         );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
@@ -441,7 +477,12 @@ void main() {
         platform_utils.isTestEnv = false;
         addTearDown(() => platform_utils.isTestEnv = true);
 
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
         expect(state.fileExists, isFalse);
@@ -462,7 +503,12 @@ void main() {
         platform_utils.isTestEnv = false;
         addTearDown(() => platform_utils.isTestEnv = true);
 
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
         expect(state.fileExists, isFalse);
@@ -517,7 +563,12 @@ void main() {
       final path = '${tempDir.path}/downloading.webp';
 
       await withoutWatchSupport(() async {
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
         expect(state.fileExists, isFalse);
         expect(find.text('not exists'), findsOneWidget);
@@ -538,7 +589,12 @@ void main() {
       final path = '${tempDir.path}/never.webp';
 
       await withoutWatchSupport(() async {
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
         await tester.pump(const Duration(seconds: 1800));
 
         // Budget spent: a file arriving now is not noticed until a rebuild,
@@ -557,10 +613,20 @@ void main() {
       final path = '${tempDir.path}/abandoned.webp';
 
       await withoutWatchSupport(() async {
-        await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: _TestWidget(path: path),
+          ),
+        );
         await tester.pump(const Duration(seconds: 3));
 
-        await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+        await tester.pumpWidget(
+          const MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            home: SizedBox(),
+          ),
+        );
 
         // Would fail with "A Timer is still pending" otherwise.
         await tester.pump(const Duration(seconds: 3));
@@ -575,7 +641,12 @@ void main() {
 
       await IOOverrides.runZoned(
         () async {
-          await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+          await tester.pumpWidget(
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              home: _TestWidget(path: path),
+            ),
+          );
           final state = tester.state<_TestWidgetState>(
             find.byType(_TestWidget),
           );
@@ -599,7 +670,12 @@ void main() {
 
       await IOOverrides.runZoned(
         () async {
-          await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+          await tester.pumpWidget(
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              home: _TestWidget(path: path),
+            ),
+          );
           // Let the error reach the subscription.
           await tester.pump();
           final state = tester.state<_TestWidgetState>(
@@ -630,7 +706,12 @@ void main() {
 
       await IOOverrides.runZoned(
         () async {
-          await tester.pumpWidget(MaterialApp(home: _TestWidget(path: path)));
+          await tester.pumpWidget(
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              home: _TestWidget(path: path),
+            ),
+          );
           expect(cancelled, isFalse);
 
           // An error does not close a stream; a subscription left behind
@@ -663,9 +744,17 @@ void main() {
           // subscription past its own lifetime; the error must not start a
           // poll for a state that is gone.
           await tester.pumpWidget(
-            MaterialApp(home: _ForgetfulTestWidget(path: path)),
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              home: _ForgetfulTestWidget(path: path),
+            ),
           );
-          await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+          await tester.pumpWidget(
+            const MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              home: SizedBox(),
+            ),
+          );
 
           errors.addError(const FileSystemException('late error'));
           await tester.pump();

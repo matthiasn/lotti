@@ -1,12 +1,13 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'task_test_helpers.dart';
 
 void main() {

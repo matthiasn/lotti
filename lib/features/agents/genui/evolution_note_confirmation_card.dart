@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Expandable card showing a recorded evolution note.
 ///

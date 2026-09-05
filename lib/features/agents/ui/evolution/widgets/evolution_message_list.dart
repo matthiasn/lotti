@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Turns a persisted system token (`starting_session`, `session_error`, …)
 /// into localized text. The template and soul rituals emit overlapping but

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One goal banner — the agent's standing voice, rendered per the design
 /// handover (1a): the register tints the whole surface so state is legible

@@ -21,7 +21,6 @@ library;
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -43,8 +42,10 @@ import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../test/helpers/manual_screenshot_locale.dart';
+import '../../test/test_utils/material_ui_finders.dart';
 import '../manual_screenshot_utils.dart';
 import 'tutorial_harness.dart';
 
@@ -298,7 +299,7 @@ void main() {
               final nav = harness.navService;
               return 'currentPath=${nav.currentPath} '
                   'detailStack=${nav.desktopTaskDetailStack.value} '
-                  'moreButtons=${find.byTooltip(localized(
+                  'moreButtons=${findMaterialTooltip(localized(
                     en: 'More actions',
                     de: 'Weitere Aktionen',
                     fr: "Plus d'actions",
@@ -404,7 +405,7 @@ void main() {
         final assistantButton = find
             .descendant(
               of: find.byType(TaskDetailsPage),
-              matching: find.byTooltip(
+              matching: findMaterialTooltip(
                 localized(
                   en: 'Generate…',
                   de: 'Generieren…',

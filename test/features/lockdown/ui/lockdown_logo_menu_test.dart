@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/lockdown/ui/lockdown_logo_menu.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';

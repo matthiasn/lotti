@@ -1,7 +1,7 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../widget_test_utils.dart';
 

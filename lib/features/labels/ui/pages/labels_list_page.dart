@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). See `CategoriesListBody` for the polish note about the

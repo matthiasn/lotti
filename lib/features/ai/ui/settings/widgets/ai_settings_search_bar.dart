@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// AI Settings search field.
 ///

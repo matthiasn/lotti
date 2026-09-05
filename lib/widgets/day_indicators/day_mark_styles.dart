@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared fill for a measured day: the interactive hue when the day was
 /// kept — the handover's `--interactive` square — a wash of it for a partial

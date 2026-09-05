@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
 import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_card.dart';
 import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_grid.dart';
 import 'package:lotti/utils/device_region.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 

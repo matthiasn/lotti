@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Slow flowing aurora: several large soft colour blooms drift on lissajous
 /// paths and blend over the host surface, producing a calm, premium "living

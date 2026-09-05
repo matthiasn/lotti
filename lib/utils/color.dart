@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Converts CSS style color string in the form #RRGGBB or #RRGGBBAA, where AA
 // represents the alpha channel. Returns substitute color if string is invalid.

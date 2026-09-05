@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
 import 'agent_instances_list_test_helpers.dart';

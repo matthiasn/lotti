@@ -1,5 +1,4 @@
 import 'package:delta_markdown/delta_markdown.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Read-only renderer for an entry's rich text: builds a scrollable Quill
 /// editor in `readOnly` mode (capped at `maxHeight`) from the entry's stored

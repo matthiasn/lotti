@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dar
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _kMobileScreenWidth = 402.0;
 const _kMobileScreenGap = 32.0;

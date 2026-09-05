@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Default border alpha for idle picker fields — mirrors
 /// `DesignSystemTextInput`'s resting border so pickers and text inputs

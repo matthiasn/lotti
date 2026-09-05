@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.d
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 typedef SyncFilterPredicate<T> = bool Function(T item);
 

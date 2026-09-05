@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_shell.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_node_indicators.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Presentational mobile settings level — one rung of the drill-down.
 ///

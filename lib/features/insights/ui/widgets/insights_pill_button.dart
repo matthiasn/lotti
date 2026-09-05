@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The single "pick one / toggle" pill idiom for the Insights dashboard —
 /// shared by the period stepper's MTD/YTD to-date shortcuts and Compare toggle,

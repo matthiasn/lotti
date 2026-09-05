@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mixin for managing entry highlight animations and scroll-to-entry with retry logic.
 ///

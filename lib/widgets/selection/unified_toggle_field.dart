@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// AI-specific toggle field that matches the AI Settings design language
 class UnifiedAiToggleField extends StatelessWidget {

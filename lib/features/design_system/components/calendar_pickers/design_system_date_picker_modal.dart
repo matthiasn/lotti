@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:lotti/utils/first_day_of_week_picker.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The outcome of a design-system calendar modal.
 @immutable

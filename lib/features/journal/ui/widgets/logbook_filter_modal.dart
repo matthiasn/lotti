@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens the logbook filter modal: a two-page Wolt sheet with the display /
 /// entry-type / category filter sections, sharing the caller's provider

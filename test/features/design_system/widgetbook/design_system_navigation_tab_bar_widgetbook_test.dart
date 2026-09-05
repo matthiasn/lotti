@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_tab_bar_widgetbook.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'widgetbook_test_helpers.dart';
 

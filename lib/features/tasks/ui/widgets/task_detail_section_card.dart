@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Flat, list-matching surface for cards rendered on the task detail page.
 ///

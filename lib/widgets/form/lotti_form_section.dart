@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A reusable form section widget that follows the Lotti design system
 ///

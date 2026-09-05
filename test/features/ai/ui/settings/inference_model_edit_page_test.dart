@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -16,6 +14,8 @@ import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -85,6 +85,7 @@ void main() {
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: ThemeData(
           useMaterial3: true,
           extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
@@ -96,9 +97,7 @@ void main() {
         ),
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: AppCommandHost(
@@ -346,15 +345,14 @@ void main() {
               aiConfigRepositoryProvider.overrideWithValue(mockRepository),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: Builder(
@@ -429,15 +427,14 @@ void main() {
               // Pre-seed the provider id so the form is immediately valid.
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const InferenceModelEditPage(

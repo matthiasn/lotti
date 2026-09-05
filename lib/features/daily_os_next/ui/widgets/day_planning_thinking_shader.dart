@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Day-planning variant of the Task Details "AI is thinking" decoder-bars
 /// shader.

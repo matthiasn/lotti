@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Animates a strikethrough onto [text] left→right when [done] flips to true,
 /// rather than hard-swapping the line on — the small reward beat for the most

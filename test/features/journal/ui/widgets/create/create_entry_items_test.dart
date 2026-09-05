@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -37,7 +36,9 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -2199,8 +2200,12 @@ void main() {
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(
                 body: CreateTimerItem(parentId),
@@ -2271,8 +2276,12 @@ void main() {
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(
                 body: CreateTimerItem(parentId),
@@ -2328,8 +2337,12 @@ void main() {
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(
                 body: CreateAudioItem(
@@ -2402,8 +2415,12 @@ void main() {
             // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
             // theme and throws without them.
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(
                 body: CreateTextItem(
@@ -2484,8 +2501,12 @@ void main() {
             UncontrolledProviderScope(
               container: container,
               child: MaterialApp(
+                builder: LegacyMaterialBridge.builder,
                 theme: resolveTestTheme(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: const Scaffold(
                   body: CreateTextItem(taskId),

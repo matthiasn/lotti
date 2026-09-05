@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/demo/seed/demo_world_ai.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:lotti/features/demo/seed/demo_world.dart';
 

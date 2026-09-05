@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 const _category = DayAgentCategory(
@@ -159,7 +160,7 @@ void main() {
               TriageAction.drop,
               (m) => m.dailyOsNextTriageDrop,
               (label) => find.ancestor(
-                of: find.byTooltip(label),
+                of: findMaterialTooltip(label),
                 matching: find.byType(IconButton),
               ),
             ),

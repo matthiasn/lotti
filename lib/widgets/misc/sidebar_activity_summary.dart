@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Stable keys for the compact desktop activity disclosure.
 @visibleForTesting

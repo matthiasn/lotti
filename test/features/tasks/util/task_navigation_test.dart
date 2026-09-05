@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -43,6 +44,7 @@ void main() {
   }) async {
     final observer = _PushTrackingObserver();
     final app = MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       navigatorObservers: [observer],
       home: MediaQuery(
         data: MediaQueryData(size: Size(width, 800)),

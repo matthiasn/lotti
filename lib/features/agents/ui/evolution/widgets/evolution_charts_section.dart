@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/agents/ui/evolution/widgets/mini_charts/evolution
 import 'package:lotti/features/agents/ui/evolution/widgets/mini_charts/evolution_version_chart.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/mini_charts/evolution_wake_bar_chart.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A 2x2 grid of mini performance charts for the evolution dashboard.
 ///

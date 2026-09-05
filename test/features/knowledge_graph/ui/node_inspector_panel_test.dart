@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/l10n/app_localizations_es.dart';
 import 'package:lotti/l10n/app_localizations_fr.dart';
 import 'package:lotti/l10n/app_localizations_ro.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
 

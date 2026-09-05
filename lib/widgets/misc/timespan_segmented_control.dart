@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// "Pick one of N" time-span selector for the Insights dashboards and the
 /// Habits page.

@@ -1,8 +1,9 @@
 import 'dart:ui' show PictureRecorder;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Returns the *real* (private) `_WaveformBarsPainter` from the live
 /// `CustomPaint` nested under the [WaveformBars] reachable via [finder].
@@ -36,6 +37,7 @@ Future<CustomPainter> _pumpAndCapturePainter(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       theme: ThemeData(
         colorScheme: ColorScheme.light(primary: primary, secondary: secondary),
       ),
@@ -90,6 +92,7 @@ Future<(CustomPainter a, CustomPainter b)> _pumpPair(
 
   await tester.pumpWidget(
     MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       home: Scaffold(
         body: Column(
           children: [cell(const Key('a'), a), cell(const Key('b'), b)],
@@ -184,6 +187,7 @@ void main() {
       const customHeight = 100.0;
       await tester.pumpWidget(
         const MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           home: Scaffold(
             body: Center(
               child: SizedBox(
@@ -210,6 +214,7 @@ void main() {
       const customBorderRadius = 12.0;
       await tester.pumpWidget(
         MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: ThemeData(dividerColor: Colors.grey),
           home: const Scaffold(
             body: Center(

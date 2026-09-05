@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/logic/health_workout_types.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detail-view summary for a workout entry: optional per-metric charts for the
 /// workout type plus the formatted energy/duration text. Pass `showChart:

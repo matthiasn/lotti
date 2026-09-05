@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/nudge_models.dart';
@@ -9,10 +8,12 @@ import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -160,17 +161,17 @@ void main() {
   ) async {
     await pumpCard(tester);
     expect(find.byType(Dismissible), findsNothing);
-    expect(find.byTooltip('Dismiss'), findsNothing);
+    expect(findMaterialTooltip('Dismiss'), findsNothing);
     expect(find.text('Snooze'), findsOneWidget);
   });
 
   testWidgets('picking a star records the rating FOR THE ACTIVATION the '
       'user saw', (tester) async {
     await pumpCard(tester);
-    await tester.tap(find.byTooltip('Rate this banner'));
+    await tester.tap(findMaterialTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     expect(find.text('How was this banner?'), findsOneWidget);
-    await tester.tap(find.byTooltip('4'));
+    await tester.tap(findMaterialTooltip('4'));
     await tester.pumpAndSettle();
     verify(
       () => interactions.recordRating('ad-1', rating: 4, forActivation: 1),
@@ -188,9 +189,9 @@ void main() {
       ),
     ).thenAnswer((_) async => throw StateError('sync write failed'));
     await pumpCard(tester);
-    await tester.tap(find.byTooltip('Rate this banner'));
+    await tester.tap(findMaterialTooltip('Rate this banner'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('4'));
+    await tester.tap(findMaterialTooltip('4'));
     await tester.pumpAndSettle();
     expect(
       find.text("That didn't save — please try again."),
@@ -200,7 +201,7 @@ void main() {
 
   testWidgets('the Skip button records a skip', (tester) async {
     await pumpCard(tester);
-    await tester.tap(find.byTooltip('Rate this banner'));
+    await tester.tap(findMaterialTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
@@ -216,7 +217,7 @@ void main() {
   testWidgets('swiping the sheet away consumes NOTHING — the rating '
       'opportunity survives an accidental dismiss', (tester) async {
     await pumpCard(tester);
-    await tester.tap(find.byTooltip('Rate this banner'));
+    await tester.tap(findMaterialTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
@@ -243,7 +244,7 @@ void main() {
         ),
       ],
     );
-    expect(find.byTooltip('Rate this banner'), findsNothing);
+    expect(findMaterialTooltip('Rate this banner'), findsNothing);
     expect(find.text('Snooze'), findsOneWidget);
   });
 
@@ -293,7 +294,7 @@ void main() {
       'sits in a fixed slot, so Snooze does not move', (tester) async {
     await pumpCard(tester);
     final snoozeBefore = tester.getTopLeft(find.text('Snooze'));
-    expect(find.byTooltip('Rate this banner'), findsOneWidget);
+    expect(findMaterialTooltip('Rate this banner'), findsOneWidget);
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -319,7 +320,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Rate this banner'), findsNothing);
+    expect(findMaterialTooltip('Rate this banner'), findsNothing);
     expect(
       tester.getTopLeft(find.text('Snooze')),
       snoozeBefore,

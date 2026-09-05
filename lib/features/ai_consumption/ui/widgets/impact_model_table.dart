@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/logic/impact_dashboard_data.dart'
     show largestRemainderPercents;
@@ -8,6 +7,7 @@ import 'package:lotti/features/ai_consumption/ui/widgets/impact_table_card.dart'
 import 'package:lotti/features/ai_consumption/ui/widgets/series_resolver.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Exhaustive per-model breakdown of the selected metric, with unit economics.
 ///

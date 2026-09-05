@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One skill-slot row in the profile form: shows the model currently assigned
 /// to the slot ([modelId]) and opens the shared provider/model picker on tap.

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fixed chrome for the mobile settings menu surfaces (the drill-down root
 /// and the branch hubs).

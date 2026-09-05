@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai/util/mlx_audio_model_progress_store.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 import 'mlx_audio_model_download_dialog_test_helpers.dart';

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact, read-only chip for a single [LabelDefinition].
 ///

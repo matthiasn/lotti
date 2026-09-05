@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Debounce before a key edit fires a live probe. Deliberately on the slower
 /// side so a partial key mid-typing never churns through checking → invalid;

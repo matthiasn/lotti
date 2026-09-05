@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:material_ui/material_ui.dart';
 
 Color _presetToColor(LabelColorPreset preset) =>
     colorFromCssHex(preset.hex, substitute: Colors.blue);

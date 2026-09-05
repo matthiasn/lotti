@@ -1,7 +1,6 @@
 // Shutdown's right-column cards — metrics 2x2, the reflection input,
 // and the for-tomorrow note. Split out of the shutdown_page library; the
 // page imports these and reuses the shared styling helpers.
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_mo
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MetricsCard extends StatelessWidget {
   const MetricsCard({required this.metrics, super.key});

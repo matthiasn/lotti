@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Displays a list of tasks linked to a project.
 class ProjectLinkedTasksSection extends StatelessWidget {

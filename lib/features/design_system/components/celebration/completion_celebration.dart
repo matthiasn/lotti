@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_selection.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Wraps [child] with the staged completion celebration used across the app: a
 /// soft accent glow that blooms behind the content, then a burst of sparks

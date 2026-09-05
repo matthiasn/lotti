@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Minimal host that mixes in [HoverDividerIndex] and exposes its API so the
 /// mixin's fade logic and hover bookkeeping can be exercised in isolation,

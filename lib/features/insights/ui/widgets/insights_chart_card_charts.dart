@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.da
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// How many leading buckets of [data] have elapsed (start on or before today).
 /// A cumulative running total needs at least two to draw a line, so the chart

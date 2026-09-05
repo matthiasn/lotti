@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A small translucent pill rendered over a cover photo. With [dotColor] it
 /// reads as a category tag; without it, as a neutral info chip (e.g. an

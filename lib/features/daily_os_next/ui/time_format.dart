@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact duration label used across the Daily OS Next surfaces:
 /// `45m`, `2h`, `1h 20m`. Negative inputs keep a single leading sign

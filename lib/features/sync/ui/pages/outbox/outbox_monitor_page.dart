@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum _OutboxListFilter { waiting, failed, sent }
 

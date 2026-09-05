@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact taxonomy of proposal kinds used by the AI card. Drives the
 /// chip color/label, the activity-row icon, and the activity-row color.

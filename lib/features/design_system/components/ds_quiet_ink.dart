@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// An [InkWell] with every Material overlay silenced — no hover fill, no
 /// focus fill, no splash, no highlight — that instead reports its interaction

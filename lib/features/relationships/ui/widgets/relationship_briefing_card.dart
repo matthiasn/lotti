@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/features/relationships/model/relationship_health_metrics.d
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The localized label of a health band — shared by the chip and any
 /// future list surface.

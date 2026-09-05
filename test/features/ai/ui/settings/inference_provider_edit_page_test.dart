@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,6 +46,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -267,6 +267,7 @@ void main() {
         ...additionalOverrides,
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: ThemeData(
           useMaterial3: true,
           extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
@@ -278,9 +279,7 @@ void main() {
         ),
         localizationsDelegates: const [
           AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         home: AppCommandHost(
@@ -2062,15 +2061,14 @@ void main() {
               ),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(
@@ -2142,15 +2140,14 @@ void main() {
               ),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: ThemeData(
                 useMaterial3: true,
                 extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
               ),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(
@@ -2548,15 +2545,14 @@ void main() {
             ),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: ThemeData(
               useMaterial3: true,
               extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
             ),
             localizationsDelegates: const [
               AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(

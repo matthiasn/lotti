@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -26,6 +25,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
 import 'package:lotti/logic/signals/signal_needs.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Top-level habits tab: a dashboard on the calm [dsPageSurface] canvas, driven
 /// by [HabitsController].

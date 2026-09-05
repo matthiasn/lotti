@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -26,7 +25,9 @@ import 'package:lotti/features/projects/ui/widgets/project_task_list_options_she
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -215,7 +216,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byTooltip('Sort and group'));
+      await tester.tap(findMaterialTooltip('Sort and group'));
       await tester.pumpAndSettle();
       expect(find.byType(ProjectTaskListOptionsSheetContent), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('project-tasks-group-none')));
@@ -232,7 +233,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.byTooltip('Sort and group'), findsNothing);
+      expect(findMaterialTooltip('Sort and group'), findsNothing);
     });
 
     testWidgets('an agent band can light up a task in the list', (

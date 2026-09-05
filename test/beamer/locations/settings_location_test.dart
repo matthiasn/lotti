@@ -1,5 +1,4 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/database/database.dart';
@@ -57,6 +56,8 @@ import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -334,7 +335,11 @@ void main() {
       late BuildContext capturedContext;
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          builder: LegacyMaterialBridge.builder,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (ctx) {
@@ -581,7 +586,11 @@ void main() {
         );
         await tester.pumpWidget(
           MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            builder: LegacyMaterialBridge.builder,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             routeInformationParser: BeamerParser(),
             routerDelegate: delegate,
@@ -901,7 +910,11 @@ void main() {
         );
         await tester.pumpWidget(
           MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            builder: LegacyMaterialBridge.builder,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             routeInformationParser: BeamerParser(),
             routerDelegate: delegate,

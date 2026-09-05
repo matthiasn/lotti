@@ -1,6 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,6 +38,8 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -279,13 +279,12 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         theme: DesignSystemTheme.dark(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
         locale: locale,
@@ -364,8 +363,12 @@ void main() {
             projectForTaskProvider('note-1').overrideWith((ref) async => null),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: DesignSystemTheme.dark(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(
               body: DesktopTaskHeaderConnector(taskId: 'note-1'),
@@ -744,13 +747,12 @@ void main() {
       return ProviderScope(
         overrides: overrides,
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: DesignSystemTheme.dark(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: home,
@@ -947,13 +949,12 @@ void main() {
       return ProviderScope(
         overrides: overrides,
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: DesignSystemTheme.dark(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -1300,13 +1301,12 @@ void main() {
               ),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: DesignSystemTheme.dark(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 FormBuilderLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(

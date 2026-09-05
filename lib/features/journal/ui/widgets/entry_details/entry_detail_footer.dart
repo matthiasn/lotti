@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Footer below an entry's body: the timer/[DurationWidget] for text entries
 /// and — when the entry's map is toggled on — a map of its geolocation.

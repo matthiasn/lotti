@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Collapses content away — and brings it back — as a single unit.
 ///

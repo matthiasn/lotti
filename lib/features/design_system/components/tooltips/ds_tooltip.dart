@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// How long a resting pointer waits before the tooltip appears. The stock
 /// zero-wait tooltip fires the moment a cursor crosses the target, which on a

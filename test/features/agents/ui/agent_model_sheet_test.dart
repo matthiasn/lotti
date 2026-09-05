@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -16,10 +15,12 @@ import 'package:lotti/features/design_system/components/lists/design_system_grou
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
 import '../../projects/test_utils.dart';
@@ -405,7 +406,7 @@ void main() {
       await openModelPage(tester);
       await tester.tap(find.byKey(const ValueKey('agent-model-model-2')));
       await tester.pump();
-      await tester.tap(find.byTooltip('Close').last);
+      await tester.tap(findMaterialTooltip('Close').last);
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.text('Open'), findsOneWidget);
 
@@ -696,7 +697,7 @@ void main() {
     );
     await openProfilePage(tester);
     expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
-    await tester.tap(find.byTooltip('Close'));
+    await tester.tap(findMaterialTooltip('Close'));
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -711,7 +712,7 @@ void main() {
     );
     await openProfilePage(tester);
     expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back').last);
+    await tester.tap(findMaterialTooltip('Back').last);
     await tester.pumpAndSettle();
     await openModelPage(tester);
     expect(

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,11 +27,13 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../test_utils/material_ui_finders.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -1617,7 +1618,7 @@ void main() {
         find.text('Tap a node to walk · ${scenario.nodes.length} nodes'),
         findsOneWidget,
       );
-      expect(find.byTooltip('Forward'), findsOneWidget);
+      expect(findMaterialTooltip('Forward'), findsOneWidget);
     });
   });
 

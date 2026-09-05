@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The connect-success beat: a confident checkmark scales in over the shared
 /// alive backdrop, then the promise headline + a single primary CTA onward.

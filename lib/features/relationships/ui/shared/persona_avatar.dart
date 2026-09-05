@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One accent per person, stable per id (design plan §0.7). The palette is
 /// the same family the goal agents draw from: the design system's semantic

@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
 import 'package:lotti/utils/device_region.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 

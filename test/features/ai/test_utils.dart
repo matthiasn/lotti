@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -12,13 +10,14 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../widget_test_utils.dart' show resolveTestTheme;
 
-export 'package:flutter_localizations/flutter_localizations.dart';
 // Re-export commonly used imports for convenience
 export 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 export 'package:flutter_riverpod/misc.dart' show Override;
@@ -28,6 +27,7 @@ export 'package:lotti/features/ai/state/consts.dart';
 export 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart'
     show aiConfigByTypeControllerProvider;
 export 'package:lotti/l10n/app_localizations.dart';
+export 'package:material_ui/material_ui.dart' show GlobalMaterialLocalizations;
 // Re-export MockAiConfigRepository from central mocks for existing consumers
 export '../../mocks/mocks.dart' show MockAiConfigRepository;
 
@@ -248,12 +248,11 @@ class AiTestSetup {
       child: ProviderScope(
         overrides: providerOverrides,
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: child),

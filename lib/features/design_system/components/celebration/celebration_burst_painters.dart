@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_params.dart';
 import 'package:lotti/features/design_system/components/celebration/celebration_variant.dart';
 import 'package:lotti/themes/colors.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The particle field painted for a celebration burst. One concrete subclass per
 /// [CelebrationVariant]; the surrounding widget/overlay choreography is shared,

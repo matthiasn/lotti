@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/habits/model/habit_form_mapping.dart';
 import 'package:lotti/features/habits/ui/widgets/editor/habit_signal_card.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';

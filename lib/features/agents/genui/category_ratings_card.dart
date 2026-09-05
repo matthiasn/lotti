@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Stateful card that renders star ratings for each feedback category.
 class CategoryRatingsCard extends StatefulWidget {

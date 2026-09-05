@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_tool_button.dart';
 import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The Habits tab header — the calm title-plus-controls band that mirrors the
 /// Time Analysis surface: the page title on the left and, on the right, the

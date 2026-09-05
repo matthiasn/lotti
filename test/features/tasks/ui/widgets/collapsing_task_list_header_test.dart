@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados2, IntAnys, any;
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -551,8 +552,8 @@ void main() {
 
       expect(find.bySemanticsLabel('Tasks'), findsOneWidget);
       // IconButton tooltips surface to assistive tech as semantic tooltips.
-      expect(find.byTooltip('Search tasks…'), findsOneWidget);
-      expect(find.byTooltip('Filter tasks'), findsOneWidget);
+      expect(findMaterialTooltip('Search tasks…'), findsOneWidget);
+      expect(findMaterialTooltip('Filter tasks'), findsOneWidget);
       handle.dispose();
     });
 

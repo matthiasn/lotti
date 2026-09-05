@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -73,7 +74,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byTooltip('Close'));
+      await tester.tap(findMaterialTooltip('Close'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

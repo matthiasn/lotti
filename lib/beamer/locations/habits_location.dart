@@ -1,7 +1,7 @@
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/pages/habit_editor_page.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HabitsLocation extends BeamLocation<BeamState> {
   HabitsLocation(RouteInformation super.routeInformation);

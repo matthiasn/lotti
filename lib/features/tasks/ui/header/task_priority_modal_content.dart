@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Modal body for choosing a task priority.
 ///

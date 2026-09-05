@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,7 +42,9 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -4282,6 +4283,7 @@ void main() {
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               home: Focus(
                 focusNode: notifier.focusNode,
                 child: const SizedBox(),
@@ -4335,6 +4337,7 @@ void main() {
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               home: Focus(
                 focusNode: notifier.focusNode,
                 child: const SizedBox(),

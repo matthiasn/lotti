@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/agents/ui/listing/widgets/agent_list_group_sectio
 import 'package:lotti/features/agents/ui/listing/widgets/agent_list_toolbar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared right-column shell used by every agent listing page (Instances,
 /// Templates, Souls, Pending Wakes).

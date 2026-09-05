@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A row of small bars, one per day, with the last day accented — the
 /// compact "how has this signal been going" strip in the completion sheet.

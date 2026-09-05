@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/detail/default_panel.dart';
 import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Detail-pane wrapper for a selected leaf.
 ///

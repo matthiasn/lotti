@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -13,7 +12,9 @@ import 'package:lotti/features/projects/ui/model/project_task_groups.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -563,7 +564,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byTooltip('Sort and group'));
+      await tester.tap(findMaterialTooltip('Sort and group'));
       await tester.pumpAndSettle();
       expect(find.byType(ProjectTaskListOptionsSheetContent), findsOneWidget);
       expect(find.byType(DesignSystemPopoverSurface), findsNothing);
@@ -577,7 +578,7 @@ void main() {
       );
       await tester.pump();
       expect(
-        find.byTooltip('Sort and group'),
+        findMaterialTooltip('Sort and group'),
         findsNothing,
         reason: 'A read-only showcase wires no control.',
       );
@@ -600,7 +601,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byTooltip('Sort and group'));
+      await tester.tap(findMaterialTooltip('Sort and group'));
       await tester.pump();
       expect(find.byType(DesignSystemPopoverSurface), findsOneWidget);
       expect(find.byType(ProjectTaskListOptionsSheetContent), findsOneWidget);
@@ -840,7 +841,7 @@ void main() {
       await tester.pumpWidget(wrapSliver(panel()));
       await tester.pump();
       expect(find.text('Add task'), findsNothing);
-      await tester.tap(find.byTooltip('Add task'));
+      await tester.tap(findMaterialTooltip('Add task'));
       expect(requests, 2);
       expect(
         find.text('3h 40m'),
@@ -853,7 +854,7 @@ void main() {
       await tester.pump();
       expect(find.text('3h 40m'), findsNothing, reason: 'Large text compacts.');
       expect(find.text('Add task'), findsNothing);
-      expect(find.byTooltip('Add task'), findsOneWidget);
+      expect(findMaterialTooltip('Add task'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(wrapSliver(panel(adding: true), width: 900));
@@ -877,7 +878,7 @@ void main() {
         wrapSliver(ProjectTasksSliverPanel(record: record, now: now)),
       );
       await tester.pump();
-      expect(find.byTooltip('Add task'), findsNothing);
+      expect(findMaterialTooltip('Add task'), findsNothing);
       expect(find.text('Add task'), findsNothing);
     });
 

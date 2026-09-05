@@ -1,8 +1,6 @@
 import 'dart:io';
 
 import 'package:country_flags/country_flags.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill_localizations;
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,10 +37,12 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/media_file_actions.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:share_plus/share_plus.dart';
@@ -69,12 +69,11 @@ Widget _buildWithRoute({
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       theme: resolveTestTheme(),
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
@@ -1749,8 +1748,12 @@ void main() {
             createEntryControllerOverride(task),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(
               body: ModernGenerateCoverArtItem(
@@ -1782,8 +1785,12 @@ void main() {
             createEntryControllerOverride(task),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(
               body: ModernGenerateCoverArtItem(
@@ -1889,13 +1896,12 @@ void main() {
         child: MediaQuery(
           data: const MediaQueryData(size: Size(390, 844)),
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               FormBuilderLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
@@ -1937,13 +1943,12 @@ void main() {
         child: MediaQuery(
           data: const MediaQueryData(size: Size(390, 844)),
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               FormBuilderLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
@@ -2578,9 +2583,11 @@ void main() {
             entryControllerProvider('e3').overrideWith(() => controller),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
-              ...AppLocalizations.localizationsDelegates,
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
               quill_localizations.FlutterQuillLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
@@ -2618,9 +2625,11 @@ void main() {
             entryControllerProvider('e4').overrideWith(() => controller),
           ],
           child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
             localizationsDelegates: const [
-              ...AppLocalizations.localizationsDelegates,
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
               quill_localizations.FlutterQuillLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
@@ -2882,8 +2891,12 @@ Widget _wrapWithCopyApp(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
+      builder: LegacyMaterialBridge.builder,
       theme: resolveTestTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: Navigator(
         onGenerateRoute: (settings) => MaterialPageRoute(

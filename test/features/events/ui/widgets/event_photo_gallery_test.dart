@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -8,11 +7,13 @@ import 'package:lotti/features/journal/util/image_export_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -171,7 +172,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(EventPhotoGalleryViewer), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Close'));
+      await tester.tap(findMaterialTooltip('Close'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(find.byType(EventPhotoGalleryViewer), findsNothing);
@@ -191,8 +192,8 @@ void main() {
 
       expect(find.text('1 / 5'), findsOneWidget);
       expect(find.text('Jan 1, 2026'), findsOneWidget);
-      expect(find.byTooltip('Download image'), findsOneWidget);
-      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(findMaterialTooltip('Download image'), findsOneWidget);
+      expect(findMaterialTooltip('Close'), findsOneWidget);
 
       final gallery = tester.widget<PhotoViewGallery>(
         find.byType(PhotoViewGallery),
@@ -407,7 +408,7 @@ void main() {
       );
       gallery.onPageChanged!(1);
       await tester.pump();
-      await tester.tap(find.byTooltip('Download image'));
+      await tester.tap(findMaterialTooltip('Download image'));
       await tester.pump();
 
       expect(exported, ['/tmp/event-photo-1.png']);
@@ -428,16 +429,16 @@ void main() {
 
       expect(find.text('1 / 3'), findsNothing);
       expect(find.text('Jan 1, 2026'), findsNothing);
-      expect(find.byTooltip('Download image'), findsNothing);
-      expect(find.byTooltip('Close'), findsNothing);
+      expect(findMaterialTooltip('Download image'), findsNothing);
+      expect(findMaterialTooltip('Close'), findsNothing);
 
       await tester.tap(find.byType(PhotoView));
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('1 / 3'), findsOneWidget);
       expect(find.text('Jan 1, 2026'), findsOneWidget);
-      expect(find.byTooltip('Download image'), findsOneWidget);
-      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(findMaterialTooltip('Download image'), findsOneWidget);
+      expect(findMaterialTooltip('Close'), findsOneWidget);
     });
 
     testWidgets('double tap zoom leaves overlays visible', (tester) async {
@@ -454,7 +455,7 @@ void main() {
       await tester.tap(photo);
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.byTooltip('Close'), findsOneWidget);
+      expect(findMaterialTooltip('Close'), findsOneWidget);
       expect(find.text('1 / 2'), findsOneWidget);
     });
 

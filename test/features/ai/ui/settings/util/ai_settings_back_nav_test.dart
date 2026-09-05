@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Helper that wraps [child] in a [MaterialApp] + an outer route so that
 /// `Navigator.canPop` is `true` for pages mounted below the route — this
@@ -16,6 +17,7 @@ Widget _buildHost({
   required bool withOuterRoute,
 }) {
   return MaterialApp(
+    builder: LegacyMaterialBridge.builder,
     home: withOuterRoute
         ? Builder(
             builder: (context) => Scaffold(

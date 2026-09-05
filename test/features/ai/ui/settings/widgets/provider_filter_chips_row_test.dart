@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -7,6 +6,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart'
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -87,6 +88,7 @@ void main() {
           ).overrideWith(() => TestAiConfigByTypeController(mockProviders)),
         ],
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: ProviderFilterChipsRow(
@@ -98,7 +100,10 @@ void main() {
               useStyledChips: useStyledChips,
             ),
           ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       );
@@ -125,6 +130,7 @@ void main() {
             ).overrideWith((ref) async => provider),
         ],
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(),
           home: Scaffold(
             body: ProviderFilterChipsRow(
@@ -135,7 +141,10 @@ void main() {
               useStyledChips: true,
             ),
           ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       );
@@ -454,6 +463,7 @@ void main() {
               ).overrideWith((ref) async => mockProviders[2]),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               home: Scaffold(
                 body: ProviderFilterChipsRow(
@@ -462,7 +472,10 @@ void main() {
                   useStyledChips: true,
                 ),
               ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
             ),
           ),
@@ -683,6 +696,7 @@ void main() {
               ).overrideWith(LoadingTestAiConfigByTypeController.new),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               home: Scaffold(
                 body: ProviderFilterChipsRow(
@@ -690,7 +704,10 @@ void main() {
                   onChanged: (_) {},
                 ),
               ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
             ),
           ),
@@ -713,6 +730,7 @@ void main() {
               ).overrideWith(ErrorTestAiConfigByTypeController.new),
             ],
             child: MaterialApp(
+              builder: LegacyMaterialBridge.builder,
               theme: resolveTestTheme(),
               home: Scaffold(
                 body: ProviderFilterChipsRow(
@@ -720,7 +738,10 @@ void main() {
                   onChanged: (_) {},
                 ),
               ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                ...GlobalMaterialLocalizations.delegates,
+              ],
               supportedLocales: AppLocalizations.supportedLocales,
             ),
           ),

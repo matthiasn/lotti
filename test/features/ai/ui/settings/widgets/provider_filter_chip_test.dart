@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -7,6 +6,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.da
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chip.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -36,8 +37,12 @@ void main() {
           aiConfigByIdProvider('provider1').overrideWith((ref) async => config),
         ],
         child: MaterialApp(
+          builder: LegacyMaterialBridge.builder,
           theme: resolveTestTheme(theme),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProviderFilterChip(

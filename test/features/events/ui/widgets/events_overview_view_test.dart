@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_feature_card.dart';
 import 'package:lotti/features/events/ui/widgets/events_overview_view.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../test_utils.dart';
 

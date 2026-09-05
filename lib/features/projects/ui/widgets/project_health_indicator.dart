@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Renders a project's health band as a colored [ModernStatusChip], optionally
 /// followed by the agent's rationale text.

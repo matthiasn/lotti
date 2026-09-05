@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:beamer/beamer.dart';
-import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/journal_root_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/uuid.dart';
+import 'package:material_ui/material_ui.dart';
 
 class JournalLocation extends BeamLocation<BeamState> {
   JournalLocation(RouteInformation super.routeInformation);

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart' show TimeOfDay, immutable;
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:material_ui/material_ui.dart' show TimeOfDay, immutable;
 import 'package:timezone/timezone.dart' as tz;
 
 /// The editable model behind the start/end date-time editor.

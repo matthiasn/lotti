@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fixed settings header for scrollable settings pages.
 ///

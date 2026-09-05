@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/features/tasks/ui/linked_tasks/relationship_type_selector.
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Modal for retyping and/or flipping the direction of an existing typed
 /// relationship link in place (same link id), rather than deleting and

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/first_day_of_week_picker.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   // Renders the picker builder for [locale] asking for [desiredIndex], and
@@ -15,11 +15,10 @@ void main() {
     final builder = firstDayOfWeekPickerBuilder(desiredIndex);
     await tester.pumpWidget(
       MaterialApp(
+        builder: LegacyMaterialBridge.builder,
         locale: locale,
         localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: const [
           Locale('en', 'US'),

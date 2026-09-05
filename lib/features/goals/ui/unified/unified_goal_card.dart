@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -17,6 +16,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One goal on the unified Goals list (design handover "Goals, Unified"
 /// §4.2): header (persona chip · name · status pill with folded recovery

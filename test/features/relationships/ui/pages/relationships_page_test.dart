@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -17,9 +16,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 
 /// Counts pushes so a test can tell which navigator a route landed on.
@@ -252,7 +253,7 @@ void main() {
     // are the same bare glyph, which tells assistive tech nothing on its
     // own. Each carries the localized name in both channels, and states it
     // once rather than twice.
-    final labelled = find.byTooltip(label);
+    final labelled = findMaterialTooltip(label);
     expect(labelled, findsNWidgets(2));
     for (var i = 0; i < 2; i++) {
       expect(
