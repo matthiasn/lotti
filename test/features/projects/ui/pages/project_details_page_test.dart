@@ -1176,7 +1176,15 @@ void main() {
           );
           expect(content.onRefreshReport, isNotNull);
           expect(content.onCancelScheduledReportWake, isNotNull);
-          expect(content.agentActions, isA<ProjectRecommendationsPanel>());
+          final panel = content.agentActionsBuilder!(enabled: true);
+          expect(panel, isA<ProjectRecommendationsPanel>());
+          expect((panel as ProjectRecommendationsPanel).enabled, isTrue);
+          expect(
+            (content.agentActionsBuilder!(enabled: false)
+                    as ProjectRecommendationsPanel)
+                .enabled,
+            isFalse,
+          );
 
           // Invoking the wired callbacks must dispatch to the project
           // agent service for the resolved agent ID, with the cancel path

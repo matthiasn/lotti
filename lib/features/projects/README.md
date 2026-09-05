@@ -33,10 +33,14 @@ project agent is attached — a summary and health read that the agent maintains
   hidden after a project is selected and restored without losing its filters,
   search or scroll position. The embedded detail has no misleading Back action.
 - **Keeps agent output actionable.** The AI report leads the task list with
-  current next steps. Confirm or dismiss them individually, confirm all, or
-  create a project-linked task from a suggestion. Each successful analysis
-  replaces stale suggestions, and other proposed changes share the same compact
-  action list.
+  the agent's current next steps. Each step offers two labelled actions: **Add
+  task** creates a project-linked task and links the step to it, **Dismiss**
+  sets it aside; both can be undone, and a decided step stays in place with its
+  tag instead of vanishing. Bulk actions add or dismiss every open step. The
+  agent's proposed changes (a status change, a task it wants to create) sit in
+  their own band under the steps. Each successful analysis replaces the list;
+  a run that was already fully decided collapses to a one-line summary with its
+  history, and an empty run says when the agent last looked.
 
 The whole visible experience is behind a feature flag; with it off there is no
 projects tab, no category projects section, and no project chip on tasks.

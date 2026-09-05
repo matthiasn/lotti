@@ -74,7 +74,8 @@ void main() {
           ProjectMobileDetailContent(
             record: makeTestProjectRecord(),
             currentTime: DateTime(2026, 3, 28, 1, 18),
-            agentActions: const Text('Agent decisions'),
+            agentActionsBuilder: ({required enabled}) =>
+                const Text('Agent decisions'),
           ),
           size: const Size(430, 1400),
         ),
@@ -192,30 +193,35 @@ void main() {
       expect(addRequests, 0);
     });
 
-    testWidgets('hides agent proposal actions while a mutation runs', (
-      tester,
-    ) async {
-      Widget subject({required bool isSaving}) => ProjectMobileDetailContent(
-        record: makeTestProjectRecord(),
-        currentTime: DateTime(2026, 3, 28, 1, 18),
-        agentActions: const Text('Agent decisions'),
-        isSaving: isSaving,
-      );
+    testWidgets(
+      'keeps agent actions mounted but disabled while a mutation runs',
+      (
+        tester,
+      ) async {
+        Widget subject({required bool isSaving}) => ProjectMobileDetailContent(
+          record: makeTestProjectRecord(),
+          currentTime: DateTime(2026, 3, 28, 1, 18),
+          agentActionsBuilder: ({required enabled}) =>
+              Text(enabled ? 'Agent decisions' : 'Agent decisions (disabled)'),
+          isSaving: isSaving,
+        );
 
-      await tester.pumpWidget(
-        wrap(subject(isSaving: true), size: const Size(430, 1200)),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          wrap(subject(isSaving: true), size: const Size(430, 1200)),
+        );
+        await tester.pump();
 
-      expect(find.text('Agent decisions'), findsNothing);
+        expect(find.text('Agent decisions (disabled)'), findsOneWidget);
+        expect(find.text('Agent decisions'), findsNothing);
 
-      await tester.pumpWidget(
-        wrap(subject(isSaving: false), size: const Size(430, 1200)),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          wrap(subject(isSaving: false), size: const Size(430, 1200)),
+        );
+        await tester.pump();
 
-      expect(find.text('Agent decisions'), findsOneWidget);
-    });
+        expect(find.text('Agent decisions'), findsOneWidget);
+      },
+    );
 
     testWidgets('rejects a stale Add task callback after saving starts', (
       tester,

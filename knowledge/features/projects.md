@@ -334,12 +334,47 @@ run-now action and setup route as Task Details. Project health and durable
 recommendation/change-set actions remain project-owned content inside that one
 surface instead of becoming competing cards or duplicating the report in the
 editor. The AI surface appears above the task list. `ProjectRecommendationsPanel`
-combines current next steps and other pending proposals in one compact action
-band, using Task Details' `RowActions` and confirm-all button pattern. Each step
-can be confirmed, dismissed, or turned into a project-linked task. A shared busy
-guard serializes row and batch actions; failed rows remain available while
-successful rows disappear. Provider reloads retain the last displayed data.
-The replacement and migration lifecycle lives in
+renders two bands inside the card: the newest run's **recommended next steps**
+(`ProjectNextStepRow`, one per step) and the agent's **proposed changes**
+(`ProjectProposalRow`, reusing Task Details' `RowActions` rail). A step offers
+**Add task** and **Dismiss** as labelled controls; a decided step keeps its
+place with an *Added* (linking to the task), *Done* or *Dismissed* tag and an
+Undo — eight seconds for an addition, as long as the run is current for a
+dismissal. A failed creation keeps the row with Retry and the failure copy.
+Phones show three rows before "Show N more"; more than one open step adds
+**Add all as tasks** and **Dismiss all**.
+
+The band never invalidates the agent's update stream. The service notifies
+after each write, `projectNextStepsProvider` re-reads, and the row changes
+state where it stands; per-row busy and failure state plus an optimistic
+overlay cover the gap until the snapshot catches up, so a row never flickers
+through "pending". A proposal decision refreshes only
+`projectPendingChangeSetsProvider`. The card keeps the bands mounted while the
+page mutates and hands the panel `enabled: false` instead, so an in-flight
+decision keeps its row state.
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending
+  pending --> busy: Add task / Retry
+  busy --> added: task created
+  busy --> done: created without a task id
+  busy --> failed: creation refused
+  failed --> busy: Retry
+  pending --> dismissed: Dismiss
+  failed --> dismissed: Dismiss
+  added --> pending: Undo (within eight seconds)
+  dismissed --> pending: Undo
+  done --> pending: Undo
+```
+
+A run whose every step was already decided when the page opened collapses to
+`ProjectNextStepsSummary` — one line with the tally and when the agent last
+looked, plus a history disclosure — while decisions made on the page stay
+inline until the next visit. An empty run renders `ProjectNextStepsEmpty`
+with the same "last looked" age. The pure pieces (outcome mapping, tally,
+phone cap, age buckets) live in `project_next_steps_model.dart`. The
+replacement, undo and migration lifecycle lives in
 [project and event agents](agents/project-and-event-agents.md#tools-and-recommendations).
 
 **There is no aggregator object** — each surface watches the providers it needs.

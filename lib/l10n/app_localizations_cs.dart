@@ -10382,6 +10382,133 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectManageTooltip => 'Správa projektů';
 
   @override
+  String get projectNextStepAdded => 'Přidáno';
+
+  @override
+  String get projectNextStepCreateFailed =>
+      'Úkol se nepodařilo vytvořit. Aktualizuj teď, aby se načetl aktuální seznam, nebo to zkus znovu.';
+
+  @override
+  String get projectNextStepCreating => 'Vytvářím úkol…';
+
+  @override
+  String get projectNextStepDismiss => 'Zamítnout';
+
+  @override
+  String get projectNextStepDismissed => 'Zamítnuto';
+
+  @override
+  String get projectNextStepDone => 'Hotovo';
+
+  @override
+  String get projectNextStepOpenTask => 'Otevřít úkol';
+
+  @override
+  String get projectNextStepRetry => 'Zkusit znovu';
+
+  @override
+  String get projectNextStepsAddAll => 'Přidat vše jako úkoly';
+
+  @override
+  String projectNextStepsAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count dny',
+      one: 'před 1 dnem',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count h',
+      one: 'před 1 h',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsAgoJustNow => 'právě teď';
+
+  @override
+  String projectNextStepsAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count min',
+      one: 'před 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count přidáno',
+      few: '$count přidány',
+      one: '1 přidán',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDismissed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count zamítnuto',
+      few: '$count zamítnuty',
+      one: '1 zamítnut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hotovo',
+      few: '$count hotovy',
+      one: '1 hotov',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsDismissAll => 'Zamítnout vše';
+
+  @override
+  String get projectNextStepsEmpty => 'Žádné otevřené návrhy.';
+
+  @override
+  String get projectNextStepsHideHistory => 'Skrýt';
+
+  @override
+  String projectNextStepsLastLooked(String ago) {
+    return 'Naposledy zkontrolováno $ago.';
+  }
+
+  @override
+  String projectNextStepsLastRun(String summary, String ago) {
+    return 'Poslední běh: $summary · $ago';
+  }
+
+  @override
+  String get projectNextStepsShowHistory => 'Zobrazit';
+
+  @override
+  String projectNextStepsShowMore(int count) {
+    return 'Zobrazit $count dalších';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Zatím žádné propojené úkoly';
 
   @override
@@ -10399,12 +10526,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get projectPickerUpdateFailed =>
       'Projekt úkolu se nepodařilo změnit. Zkontroluj kategorii a soukromí a zkus to znovu.';
-
-  @override
-  String get projectRecommendationDismissTooltip => 'Zahodit';
-
-  @override
-  String get projectRecommendationResolveTooltip => 'Označit jako vyřešené';
 
   @override
   String get projectRecommendationsTitle => 'Doporučené další kroky';

@@ -10268,6 +10268,130 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectManageTooltip => 'Projecten beheren';
 
   @override
+  String get projectNextStepAdded => 'Toegevoegd';
+
+  @override
+  String get projectNextStepCreateFailed =>
+      'De taak kon niet worden aangemaakt. Werk nu bij om de actuele lijst te laden, of probeer het opnieuw.';
+
+  @override
+  String get projectNextStepCreating => 'Taak wordt aangemaakt…';
+
+  @override
+  String get projectNextStepDismiss => 'Afwijzen';
+
+  @override
+  String get projectNextStepDismissed => 'Afgewezen';
+
+  @override
+  String get projectNextStepDone => 'Klaar';
+
+  @override
+  String get projectNextStepOpenTask => 'Taak openen';
+
+  @override
+  String get projectNextStepRetry => 'Opnieuw proberen';
+
+  @override
+  String get projectNextStepsAddAll => 'Alles als taken toevoegen';
+
+  @override
+  String projectNextStepsAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen geleden',
+      one: '1 dag geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count u geleden',
+      one: '1 u geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsAgoJustNow => 'zojuist';
+
+  @override
+  String projectNextStepsAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min geleden',
+      one: '1 min geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count toegevoegd',
+      one: '1 toegevoegd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDismissed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count afgewezen',
+      one: '1 afgewezen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klaar',
+      one: '1 klaar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsDismissAll => 'Alles afwijzen';
+
+  @override
+  String get projectNextStepsEmpty => 'Geen open suggesties.';
+
+  @override
+  String get projectNextStepsHideHistory => 'Verbergen';
+
+  @override
+  String projectNextStepsLastLooked(String ago) {
+    return 'Laatst bekeken $ago.';
+  }
+
+  @override
+  String projectNextStepsLastRun(String summary, String ago) {
+    return 'Laatste run: $summary · $ago';
+  }
+
+  @override
+  String get projectNextStepsShowHistory => 'Tonen';
+
+  @override
+  String projectNextStepsShowMore(int count) {
+    return 'Nog $count tonen';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Nog geen taken verbonden';
 
   @override
@@ -10285,12 +10409,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get projectPickerUpdateFailed =>
       'Het project van de taak kon niet worden gewijzigd. Controleer de categorie en privacy en probeer het opnieuw.';
-
-  @override
-  String get projectRecommendationDismissTooltip => 'Ingerukt';
-
-  @override
-  String get projectRecommendationResolveTooltip => 'Markering is opgelost';
 
   @override
   String get projectRecommendationsTitle => 'Aanbevolen volgende stappen';

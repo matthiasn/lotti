@@ -165,9 +165,13 @@ class ProjectDetailsPage extends ConsumerWidget {
                   ? () => _assignProjectAgent(context, ref, record.project)
                   : null,
               agentIdentity: identity,
-              agentActions: identity == null
+              agentActionsBuilder: identity == null
                   ? null
-                  : ProjectRecommendationsPanel(projectId: projectId),
+                  : ({required enabled}) => ProjectRecommendationsPanel(
+                      projectId: projectId,
+                      enabled: enabled,
+                      onOpenTask: (taskId) => beamToNamed('/tasks/$taskId'),
+                    ),
               hasProjectAgent: identity != null || agentAsync.isLoading,
               isRefreshingReport: isRefreshingReport,
               isSaving: detailState.isSaving,

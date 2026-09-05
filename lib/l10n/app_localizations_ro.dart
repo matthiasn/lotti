@@ -10452,6 +10452,134 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectManageTooltip => 'Gestionați proiectele';
 
   @override
+  String get projectNextStepAdded => 'Adăugat';
+
+  @override
+  String get projectNextStepCreateFailed =>
+      'Sarcina nu a putut fi creată. Actualizați acum pentru a încărca lista curentă sau reîncercați.';
+
+  @override
+  String get projectNextStepCreating => 'Se creează sarcina…';
+
+  @override
+  String get projectNextStepDismiss => 'Respingeți';
+
+  @override
+  String get projectNextStepDismissed => 'Respins';
+
+  @override
+  String get projectNextStepDone => 'Finalizat';
+
+  @override
+  String get projectNextStepOpenTask => 'Deschideți sarcina';
+
+  @override
+  String get projectNextStepRetry => 'Reîncercați';
+
+  @override
+  String get projectNextStepsAddAll => 'Adăugați toate ca sarcini';
+
+  @override
+  String projectNextStepsAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count de zile',
+      few: 'acum $count zile',
+      one: 'acum 1 zi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count h',
+      one: 'acum 1 h',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsAgoJustNow => 'chiar acum';
+
+  @override
+  String projectNextStepsAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count min',
+      one: 'acum 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de adăugate',
+      few: '$count adăugate',
+      one: '1 adăugat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDismissed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de respinse',
+      few: '$count respinse',
+      one: '1 respins',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de finalizate',
+      few: '$count finalizate',
+      one: '1 finalizat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsDismissAll => 'Respingeți toate';
+
+  @override
+  String get projectNextStepsEmpty => 'Nicio sugestie deschisă.';
+
+  @override
+  String get projectNextStepsHideHistory => 'Ascundeți';
+
+  @override
+  String projectNextStepsLastLooked(String ago) {
+    return 'Ultima verificare $ago.';
+  }
+
+  @override
+  String projectNextStepsLastRun(String summary, String ago) {
+    return 'Ultima rulare: $summary · $ago';
+  }
+
+  @override
+  String get projectNextStepsShowHistory => 'Afișați';
+
+  @override
+  String projectNextStepsShowMore(int count) {
+    return 'Afișați încă $count';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Nicio sarcină asociată încă';
 
   @override
@@ -10469,12 +10597,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get projectPickerUpdateFailed =>
       'Proiectul sarcinii nu a putut fi schimbat. Verificați categoria și confidențialitatea, apoi încercați din nou.';
-
-  @override
-  String get projectRecommendationDismissTooltip => 'Respinge';
-
-  @override
-  String get projectRecommendationResolveTooltip => 'Marcați ca rezolvat';
 
   @override
   String get projectRecommendationsTitle => 'Pași următori recomandați';

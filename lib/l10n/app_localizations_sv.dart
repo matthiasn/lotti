@@ -10263,6 +10263,130 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectManageTooltip => 'Hantera projekt';
 
   @override
+  String get projectNextStepAdded => 'Tillagd';
+
+  @override
+  String get projectNextStepCreateFailed =>
+      'Uppgiften kunde inte skapas. Uppdatera nu för att läsa in den aktuella listan, eller försök igen.';
+
+  @override
+  String get projectNextStepCreating => 'Skapar uppgift…';
+
+  @override
+  String get projectNextStepDismiss => 'Avfärda';
+
+  @override
+  String get projectNextStepDismissed => 'Avfärdad';
+
+  @override
+  String get projectNextStepDone => 'Klar';
+
+  @override
+  String get projectNextStepOpenTask => 'Öppna uppgift';
+
+  @override
+  String get projectNextStepRetry => 'Försök igen';
+
+  @override
+  String get projectNextStepsAddAll => 'Lägg till alla som uppgifter';
+
+  @override
+  String projectNextStepsAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagar sedan',
+      one: '1 dag sedan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count h sedan',
+      one: '1 h sedan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsAgoJustNow => 'nyss';
+
+  @override
+  String projectNextStepsAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min sedan',
+      one: '1 min sedan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tillagda',
+      one: '1 tillagd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDismissed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avfärdade',
+      one: '1 avfärdad',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectNextStepsCountDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klara',
+      one: '1 klar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectNextStepsDismissAll => 'Avfärda alla';
+
+  @override
+  String get projectNextStepsEmpty => 'Inga öppna förslag.';
+
+  @override
+  String get projectNextStepsHideHistory => 'Dölj';
+
+  @override
+  String projectNextStepsLastLooked(String ago) {
+    return 'Senast kontrollerat $ago.';
+  }
+
+  @override
+  String projectNextStepsLastRun(String summary, String ago) {
+    return 'Senaste körning: $summary · $ago';
+  }
+
+  @override
+  String get projectNextStepsShowHistory => 'Visa';
+
+  @override
+  String projectNextStepsShowMore(int count) {
+    return 'Visa $count till';
+  }
+
+  @override
   String get projectNoLinkedTasks => 'Inga uppgifter är länkade än';
 
   @override
@@ -10280,12 +10404,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get projectPickerUpdateFailed =>
       'Det gick inte att ändra uppgiftens projekt. Kontrollera kategori och sekretess och försök igen.';
-
-  @override
-  String get projectRecommendationDismissTooltip => 'Avslut';
-
-  @override
-  String get projectRecommendationResolveTooltip => 'Mark bestämde sig';
 
   @override
   String get projectRecommendationsTitle => 'Rekommenderade nästa steg';

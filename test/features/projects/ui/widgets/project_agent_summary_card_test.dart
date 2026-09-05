@@ -142,7 +142,7 @@ void main() {
   });
 
   testWidgets(
-    'read-only report expands and suppresses actions during mutation',
+    'read-only report expands and keeps actions mounted during mutation',
     (
       tester,
     ) async {
@@ -185,7 +185,13 @@ void main() {
       expect(blockerOpens, 1);
 
       await pumpCard(mutating: true);
-      expect(find.text('Review proposed changes'), findsNothing);
+      expect(
+        find.text('Review proposed changes'),
+        findsOneWidget,
+        reason:
+            'The host disables the bands; the card must not drop them, '
+            'or an in-flight decision loses its row state.',
+      );
       await tester.tap(blocker);
       expect(blockerOpens, 1);
       expect(find.byType(TaskAgentControlsFooter), findsNothing);
