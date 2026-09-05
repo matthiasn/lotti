@@ -136,18 +136,10 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
   /// convert to terminal unresolvable markers.
   Future<List<int>> reservedSequenceCountersForHost({
     required String hostId,
-  }) async {
-    final rows =
-        await (select(syncSequenceLog)
-              ..where(
-                (t) =>
-                    t.hostId.equals(hostId) &
-                    t.status.equals(SyncSequenceStatus.reserved.index),
-              )
-              ..orderBy([(t) => OrderingTerm(expression: t.counter)]))
-            .get();
-    return [for (final row in rows) row.counter];
-  }
+  }) => _sequenceCountersForHostWithStatus(
+    hostId: hostId,
+    status: SyncSequenceStatus.reserved,
+  );
 
   /// Mark a reservation as an authoritative local burn whose outbound
   /// unresolvable marker still needs to be durably enqueued. Unlike
@@ -221,6 +213,16 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
   /// unresolvable marker still needs a durable outbound enqueue.
   Future<List<int>> burnPendingSequenceCountersForHost({
     required String hostId,
+  }) => _sequenceCountersForHostWithStatus(
+    hostId: hostId,
+    status: SyncSequenceStatus.burnPending,
+  );
+
+  /// Both audit states are sparse. Prefer sorting that indexed subset over
+  /// scanning every historical counter just to obtain counter ordering.
+  Future<List<int>> _sequenceCountersForHostWithStatus({
+    required String hostId,
+    required SyncSequenceStatus status,
   }) async {
     final rows = await customSelect(
       '''
@@ -232,7 +234,7 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
       ''',
       variables: [
         Variable.withString(hostId),
-        Variable.withInt(SyncSequenceStatus.burnPending.index),
+        Variable.withInt(status.index),
       ],
       readsFrom: {syncSequenceLog},
     ).get();

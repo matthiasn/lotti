@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+
+import 'package:clock/clock.dart';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
@@ -468,6 +471,71 @@ void main() {
       });
     });
 
+    test(
+      'captures executor boundaries before deferred query-plan reporting',
+      () async {
+        SlowQueryLoggingGate.isEnabled = true;
+        final select = Completer<List<Map<String, Object?>>>();
+        final plan = Completer<List<Map<String, Object?>>>();
+        final planStarted = Completer<void>();
+        var now = DateTime.utc(2024, 1, 1, 10);
+        when(() => mockExecutor.runSelect('SELECT 1', any())).thenAnswer(
+          (_) => select.future,
+        );
+        when(
+          () => mockExecutor.runSelect('EXPLAIN QUERY PLAN SELECT 1', any()),
+        ).thenAnswer((_) {
+          planStarted.complete();
+          return plan.future;
+        });
+        interceptor = SlowQueryInterceptor(
+          databaseName: 'test_db',
+          threshold: Duration.zero,
+          superSlowThreshold: Duration.zero,
+          reporter: reportedEntries.add,
+        );
+        await withClock(Clock(() => now), () async {
+          final operation = interceptor.runSelect(mockExecutor, 'SELECT 1', []);
+          now = DateTime.utc(2024, 1, 1, 10, 0, 3);
+          select.complete([]);
+          await planStarted.future;
+          now = DateTime.utc(2024, 1, 1, 10, 0, 9);
+          plan.complete([]);
+          await operation;
+        });
+        final entry = reportedEntries.single;
+        expect(entry.startedAt, DateTime.utc(2024, 1, 1, 10));
+        expect(entry.completedAt, DateTime.utc(2024, 1, 1, 10, 0, 3));
+        expect(entry.inFlightAtStart, 1);
+      },
+    );
+
+    test(
+      'counts overlapping executor calls and releases failed calls',
+      () async {
+        SlowQueryLoggingGate.isEnabled = true;
+        final first = Completer<List<Map<String, Object?>>>();
+        when(
+          () => mockExecutor.runSelect('SELECT 1', any()),
+        ).thenAnswer((_) => first.future);
+        when(
+          () => mockExecutor.runSelect('SELECT 2', any()),
+        ).thenAnswer((_) async => []);
+        interceptor = createInterceptor();
+        final pending = interceptor.runSelect(mockExecutor, 'SELECT 1', []);
+        final failure = expectLater(pending, throwsStateError);
+        await interceptor.runSelect(mockExecutor, 'SELECT 2', []);
+        first.completeError(StateError('synthetic failure'));
+        await failure;
+        await interceptor.runSelect(mockExecutor, 'SELECT 2', []);
+        expect(reportedEntries.map((entry) => entry.inFlightAtStart), [
+          2,
+          1,
+          1,
+        ]);
+      },
+    );
+
     group('error propagation', () {
       test('propagates executor exception and still does not report when gate '
           'is disabled', () async {
@@ -816,6 +884,37 @@ void main() {
       // Line should end with newline
       expect(content, endsWith('\n'));
     });
+
+    test(
+      'writes executor timing bounds without claiming native SQL time',
+      () async {
+        final reporter = SlowQueryInterceptor.fileReporter(
+          documentsDirectoryPath: tempDir.path,
+        );
+        reporter(
+          SlowQueryLogEntry(
+            databaseName: 'test_db',
+            operation: 'select',
+            statement: 'SELECT 1',
+            arguments: const [],
+            elapsed: const Duration(seconds: 3),
+            startedAt: DateTime.utc(2024, 1, 1, 10),
+            completedAt: DateTime.utc(2024, 1, 1, 10, 0, 3),
+            inFlightAtStart: 4,
+          ),
+        );
+        await SlowQueryInterceptor.flushPendingFileWrites();
+        final content = Directory(
+          '${tempDir.path}/logs',
+        ).listSync().whereType<File>().single.readAsStringSync();
+        expect(
+          content,
+          contains(
+            'TIMING: scope=executorAwait started=2024-01-01T10:00:00.000Z completed=2024-01-01T10:00:03.000Z inFlightAtStart=4',
+          ),
+        );
+      },
+    );
 
     test('uses custom fileStem', () async {
       final reporter = SlowQueryInterceptor.fileReporter(

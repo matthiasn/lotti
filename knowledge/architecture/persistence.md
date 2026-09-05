@@ -179,22 +179,42 @@ flowchart TD
 # Slow-query capture
 
 Every connection is wrapped in a `SlowQueryInterceptor` with a default
-threshold of **10 ms** — a fraction of the 16 ms frame budget, so anything it
-logs is already a meaningful slice of a frame. Writing is gated behind the
-logging domain in *Settings → Advanced → Logging Domains*, so the interceptor
-costs nothing until someone is investigating.
+threshold of **10 ms**. It times the awaited executor call even when logging
+is off; file writing and additional wall-clock metadata are gated behind
+*Settings → Advanced → Logging Domains*.
 
-**There is a second tier at 200 ms**, and it does more than log louder. A query
-crossing `superSlowThreshold` has its **`EXPLAIN QUERY PLAN` captured** (selects
-only) and is duplicated into a separate `super_slow_queries` file alongside the
-`slow_queries` one. So the 10 ms tier tells you *that* something is slow, while
-the 200 ms tier tells you *why* — start with the super-slow file, because it is
-the only one carrying a plan.
+The measured duration includes executor scheduling, isolate transport, waiting
+behind other work, and native SQLite execution. It is neither native SQL time
+nor UI-blocked time. The optional `TIMING` row records `scope=executorAwait`,
+`started`, `completed`, and `inFlightAtStart`. Both timestamps bracket the
+executor call, before query-plan capture. `inFlightAtStart` counts outstanding
+calls through that interceptor, including the new call; it is not the executor's
+queue depth. Correlated completion times can expose shared stalls without
+misattributing them to individual SQL statements. Wall-clock bounds can jump
+with clock changes; the duration still comes from a monotonic stopwatch.
+
+**The second tier is 200 ms.** A query crossing `superSlowThreshold` captures
+**`EXPLAIN QUERY PLAN`** (selects only) and is duplicated into the daily
+`super_slow_queries` file alongside `slow_queries`. The plan describes the SQL
+access path; it does not explain scheduler, lock, I/O, or suspend delays. The
+header timestamp is the later report time, which can include EXPLAIN latency.
+The two files contain overlapping events and must not be summed as independent
+work. Their percentiles describe only calls exceeding the logging threshold.
+
+The background factory's setup callbacks expose SQLite setup or isolate startup,
+not a per-call native timing hook. Exact queue/native attribution would need a
+worker-side executor measurement with a correlation identifier transported
+through the isolate protocol. The current metadata makes no such attribution.
 
 The threshold deliberately does not catch N+1 chains: each individual link sits
 under the bar. Counting round-trips in tests catches those chains;
 `JournalDb` coalesces adjacent entity lookups to reduce them. Deep-dive captures pass
 `Duration.zero` to surface every query.
+
+Own-host reservation and pending-burn audits select only `counter`, using the
+existing `idx_sync_sequence_log_host_status` index and sorting that sparse
+subset. This deliberately avoids SQLite choosing a host/counter history scan
+merely to satisfy ordering. The query has no new index or migration cost.
 
 # Migrations
 
@@ -367,7 +387,7 @@ undercounts the gate badly:
 |-----------|-------|
 | `_queryWithPrivateFilter` | `journal_queries`, `definitions`, `project_queries`, `links_ratings` |
 | **`privateStatuses` passed as a parameter**, so the caller decides | `task_queries`, `task_query_builders`, `task_due_queries` |
-| **Raw SQL reading the flag directly** | `insights_queries` uses a `private_flag` CTE; `data_queries` uses a direct `config_flags` subquery in `getHabitCompletionsInRange` |
+| **Raw SQL reading the flag directly** | `insights_queries` uses a `private_flag` CTE; `data_queries` uses a direct `config_flags` subquery in `getHabitCompletionRecordsInRange` |
 
 Of the ten query-bearing mixins, **nine gate on private one of these ways**. The
 exception is `_JournalDbEntityOps`, which is maintenance and write operations

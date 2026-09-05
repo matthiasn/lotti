@@ -4,10 +4,13 @@
 // `lib/database/sync_db_watermarks.dart`.
 // ignore_for_file: avoid_redundant_argument_values
 import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:drift/native.dart';
 import 'package:glados/glados.dart';
+import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 
+import 'slow_query_logging_test_utils.dart';
 import 'sync_db_test_utils.dart';
 
 /// A generated scenario for the `getCountersForHostInRange` property: the set
@@ -433,6 +436,60 @@ void main() {
           reason:
               'the partial index is already ordered by host_id/counter, so '
               'the window should not need an external sort',
+        );
+      },
+    );
+
+    test(
+      'reservation audit reads only the indexed host/status subset',
+      () async {
+        final entries = <SlowQueryLogEntry>[];
+        final database = SyncDatabase.connect(
+          DatabaseConnection(
+            NativeDatabase.memory().interceptWith(
+              SlowQueryInterceptor(
+                databaseName: 'synthetic-sync',
+                threshold: Duration.zero,
+                superSlowThreshold: Duration.zero,
+                reporter: entries.add,
+              ),
+            ),
+          ),
+        );
+        addTearDown(database.close);
+        addTearDown(resetSlowQueryLoggingGate);
+        await database.customStatement('''
+        WITH RECURSIVE numbers(n) AS (
+          SELECT 1 UNION ALL SELECT n + 1 FROM numbers WHERE n < 10000
+        )
+        INSERT INTO sync_sequence_log
+          (host_id, counter, status, created_at, updated_at)
+        SELECT 'audit-host', n, CASE WHEN n IN (11, 9000) THEN 6 ELSE 0 END,
+               1704067200, 1704067200 FROM numbers
+      ''');
+        await database.recordReservedSequenceCounter(
+          hostId: 'another-host',
+          counter: 5,
+          now: DateTime.utc(2024),
+        );
+        await database.customStatement('ANALYZE');
+        entries.clear();
+        SlowQueryLoggingGate.isEnabled = true;
+        expect(
+          await database.reservedSequenceCountersForHost(hostId: 'audit-host'),
+          [11, 9000],
+        );
+        final query = entries.singleWhere(
+          (entry) => entry.operation == 'select',
+        );
+        expect(query.formattedStatement, startsWith('SELECT counter '));
+        expect(
+          query.queryPlan!.join(' '),
+          contains(
+            'idx_sync_sequence_log_host_status (host_id=? AND status=?)',
+          ),
+          reason:
+              'Do not scan all historical counters to avoid sorting two rows.',
         );
       },
     );
