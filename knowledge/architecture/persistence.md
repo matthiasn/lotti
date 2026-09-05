@@ -506,10 +506,15 @@ rather than a read path.
 
 `test/architecture/private_visibility_gate_test.dart` is the enforcement. It
 parses every named query in `database.drift` and, with the analyzer, every
-Dart declaration under `lib/` that reads journal rows — raw SQL or
-`select(journal)` — and fails the build for any that neither references the
-`private` column, nor dispatches on the flag (`_queryWithPrivateFilter`,
-`_matchesAllPrivateStates`), nor sits in its allowlist with a reason. An
+Dart declaration under `lib/` that reads journal rows — raw SQL, or
+`select(journal)` bare or qualified — and fails the build for any that
+neither applies a filtering predicate on the column (`private IN …`, the
+`COALESCE(…private, FALSE) IN` form, `.private.isIn(`; a mere mention in a
+select list or an ORDER BY does not count), nor dispatches on the flag
+(`_queryWithPrivateFilter`, `_matchesAllPrivateStates`), nor sits in its
+allowlist with a reason. A reader whose predicate is optional (a nullable
+`privateStatuses` parameter) is a builder: it is not judged itself, and each
+of its callers must dispatch or supply the statuses on every call. An
 allowlist entry that stops being an exception fails the build too. What the
 allowlist holds:
 
