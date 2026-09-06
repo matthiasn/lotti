@@ -101,6 +101,10 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   Future<void> _logCheckIn() async {
     final pending = _pending;
     if (pending == null) return;
+    // Read before the await below: the whole minutes the offer quoted are
+    // what the log must show, and clearing the marker can cross a minute
+    // boundary, which would hand the sheet a different reading.
+    final elapsed = clock.now().difference(pending.startedAt);
 
     // Cleared before the sheet opens, not after it closes: the offer has been
     // taken up either way, and a user who opens the form and then backs out
@@ -108,9 +112,6 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     await _dismiss();
     if (!mounted) return;
 
-    // The whole minutes the offer quoted, so the log shows the duration the
-    // user was promised rather than a second, differently rounded reading.
-    final elapsed = clock.now().difference(pending.startedAt);
     await showCheckInCaptureSheet(
       context: context,
       relationshipId: pending.relationshipId,

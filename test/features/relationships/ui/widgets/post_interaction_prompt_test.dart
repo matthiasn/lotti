@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -23,6 +25,10 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
   PendingInteraction? _pending;
   int clearCount = 0;
 
+  /// When set, [clear] waits on it — so a test can let the clock move while
+  /// the marker is being cleared.
+  Completer<void>? clearGate;
+
   @override
   Future<void> remember({
     required String relationshipId,
@@ -40,6 +46,7 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
 
   @override
   Future<void> clear() async {
+    if (clearGate case final gate?) await gate.future;
     clearCount++;
     _pending = null;
   }
@@ -330,6 +337,44 @@ void main() {
         find.byType(CheckInCaptureForm),
       );
       expect(form.prefilledTime, DateTime(2026, 8, 17, 11, 30));
+      expect(form.prefilledDuration, const Duration(minutes: 11));
+    });
+
+    testWidgets('the minutes handed to the sheet are the ones the offer '
+        'quoted, even when clearing the marker crosses a minute boundary', (
+      tester,
+    ) async {
+      var current = now;
+      final store = _FakePendingInteractionStore(marker());
+      when(
+        () => repository.getRelationshipById(any()),
+      ).thenAnswer((_) async => person());
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const PostInteractionPrompt(),
+            overrides: [
+              pendingInteractionStoreProvider.overrideWithValue(store),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.textContaining('11 minutes ago'), findsOneWidget);
+
+        // Accepting clears the marker first; the clock moves on while that
+        // is in flight.
+        final gate = store.clearGate = Completer<void>();
+        await tester.tap(find.text('Log check-in'));
+        await tester.pump();
+        current = now.add(const Duration(minutes: 5));
+        gate.complete();
+        await tester.pumpAndSettle();
+      });
+
+      final form = tester.widget<CheckInCaptureForm>(
+        find.byType(CheckInCaptureForm),
+      );
       expect(form.prefilledDuration, const Duration(minutes: 11));
     });
 
