@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2]
+
+### Added
+- **Transcribe recordings directly on your device with sherpa-onnx.** Add the
+  embedded speech provider and download multilingual Whisper Tiny or Base.
+  Transcription then works without a server or internet connection, and model
+  downloads can be removed independently on each device.
+
+### Fixed
+- **"Brief me" on a person's page failed with "Could not request the
+  briefing."** The relationship agent only looked for an AI route on the
+  person themselves or on its own configuration — neither of which any screen
+  sets — and otherwise insisted on one specific cloud model. It now also uses
+  the default AI profile of the person's category, the same way a spoken
+  check-in already picks its transcription model, so a briefing works with
+  whatever profile you route that category through. A cloud provider is still
+  named for consent before the run.
+
 ## [1.1.1]
 
 ### Added

@@ -40,6 +40,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.2" date="2026-09-06">
+      <description>
+        <p>Added: transcribe recordings directly on your device with sherpa-onnx. Add the embedded speech provider and download multilingual Whisper Tiny or Base. Transcription then works without a server or internet connection, and model downloads can be removed independently on each device.</p>
+        <p>Fixed: "Brief me" on a person's page failed with "Could not request the briefing." The relationship agent only looked for an AI route on the person themselves or on its own configuration - neither of which any screen sets - and otherwise insisted on one specific cloud model. It now also uses the default AI profile of the person's category, the same way a spoken check-in already picks its transcription model, so a briefing works with whatever profile you route that category through. A cloud provider is still named for consent before the run.</p>
+      </description>
+    </release>
     <release version="1.1.1" date="2026-09-06">
       <description>
         <p>Added: a database integrity check in Settings → Advanced → Maintenance. It verifies that the journal, sync, agent, editor and search files are sound and names any that are not.</p>
