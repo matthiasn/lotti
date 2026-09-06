@@ -3,6 +3,10 @@ name: Flutter macOS Build
 on:
   pull_request:
     paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'packages/**'
+      - 'third_party/**'
       - 'macos/**'
       - '.fvmrc'
       - 'pubspec.yaml'
@@ -23,6 +27,8 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config
       - uses: subosito/flutter-action@v2
