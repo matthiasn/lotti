@@ -29,6 +29,16 @@ class DesignSystemSectionCard extends StatelessWidget {
   final EdgeInsets? padding;
   final EdgeInsets? margin;
 
+  /// The card's surface, radius and hairline as one decoration, for a
+  /// section that has to be a sliver (a lazily built list inside a card)
+  /// and so cannot be a child of this widget — `DecoratedSliver` takes the
+  /// same decoration and the two stay indistinguishable.
+  static BoxDecoration decoration(DsTokens tokens) => BoxDecoration(
+    color: tokens.colors.background.level02,
+    borderRadius: BorderRadius.circular(tokens.radii.l),
+    border: Border.all(color: tokens.colors.decorative.level01),
+  );
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -36,11 +46,7 @@ class DesignSystemSectionCard extends StatelessWidget {
     final effectivePadding = padding ?? EdgeInsets.all(tokens.spacing.step5);
 
     final decorated = DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: radius,
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
+      decoration: decoration(tokens),
       child: Material(
         type: MaterialType.transparency,
         borderRadius: radius,

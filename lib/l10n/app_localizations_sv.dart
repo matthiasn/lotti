@@ -11043,7 +11043,33 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String relationshipDueSince(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagar försenade',
+      one: '1 dag försenad',
+    );
+    return 'Försenad sedan $day · $_temp0';
+  }
+
+  @override
   String get relationshipDueToday => 'Dags i dag';
+
+  @override
+  String relationshipDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String relationshipDurationHoursMinutes(int hours, String minutes) {
+    return '$hours h $minutes';
+  }
+
+  @override
+  String relationshipDurationMinutes(int count) {
+    return '$count min';
+  }
 
   @override
   String get relationshipEditTitle => 'Redigera person';
@@ -11168,6 +11194,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String relationshipLastSpoke(String time) {
+    return 'pratade senast $time';
+  }
+
+  @override
   String get relationshipLinkContact => 'Länka kontakt';
 
   @override
@@ -11188,6 +11219,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipMoreActions => 'Fler åtgärder';
+
+  @override
   String get relationshipNameLabel => 'Namn';
 
   @override
@@ -11197,6 +11231,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipNextByDay(String day) {
     return 'nästa senast $day';
   }
+
+  @override
+  String relationshipNextDueOn(String day) {
+    return 'Nästa gång $day';
+  }
+
+  @override
+  String get relationshipNextTimeTitle => 'Nästa gång';
 
   @override
   String get relationshipNicknameLabel => 'Smeknamn';
@@ -11218,8 +11260,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipNudgesOn => 'påminnelser på';
 
   @override
-  String get relationshipPostCallBody =>
-      'Du hörde precis av dig. Vill du logga en avstämning medan det är färskt?';
+  String relationshipOnTrackCadence(String cadence) {
+    return 'I fas · $cadence';
+  }
+
+  @override
+  String get relationshipPayAttentionTo => 'Var uppmärksam på';
 
   @override
   String get relationshipPostCallConfirm => 'Logga avstämning';
@@ -11228,8 +11274,30 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipPostCallDismiss => 'Inte nu';
 
   @override
-  String relationshipPostCallTitle(String name) {
-    return 'Hur gick det med $name?';
+  String relationshipPostCallMeta(String time, int minutes) {
+    return 'började $time · cirka $minutes min';
+  }
+
+  @override
+  String relationshipPostCallOfferCall(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minuter',
+      one: '1 minut',
+    );
+    return 'Du ringde $name för $_temp0 sedan — anteckna medan det är färskt?';
+  }
+
+  @override
+  String relationshipPostCallOfferMessage(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minuter',
+      one: '1 minut',
+    );
+    return 'Du skrev till $name för $_temp0 sedan — anteckna medan det är färskt?';
   }
 
   @override
@@ -11242,6 +11310,13 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return 'Ingen kontakt $_temp0';
   }
+
+  @override
+  String get relationshipReachPrivacy =>
+      'Stannar på den här enheten · delas aldrig med AI:n';
+
+  @override
+  String get relationshipReachTitle => 'Kontakt';
 
   @override
   String get relationshipRelinkContact => 'Länka en annan kontakt';
@@ -11332,6 +11407,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipStayInTouch => 'Håll kontakten';
+
+  @override
+  String relationshipTasksLinkedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kopplade',
+      one: '1 kopplad',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipTimestampToday => 'Idag';

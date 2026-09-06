@@ -11256,7 +11256,34 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String relationshipDueSince(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile întârziere',
+      few: '$count zile întârziere',
+      one: '1 zi întârziere',
+    );
+    return 'Scadent din $day · $_temp0';
+  }
+
+  @override
   String get relationshipDueToday => 'Scadent astăzi';
+
+  @override
+  String relationshipDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String relationshipDurationHoursMinutes(int hours, String minutes) {
+    return '$hours h $minutes';
+  }
+
+  @override
+  String relationshipDurationMinutes(int count) {
+    return '$count min';
+  }
 
   @override
   String get relationshipEditTitle => 'Editați persoana';
@@ -11385,6 +11412,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String relationshipLastSpoke(String time) {
+    return 'ultima discuție $time';
+  }
+
+  @override
   String get relationshipLinkContact => 'Asociați un contact';
 
   @override
@@ -11405,6 +11437,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipMoreActions => 'Mai multe acțiuni';
+
+  @override
   String get relationshipNameLabel => 'Nume';
 
   @override
@@ -11414,6 +11449,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipNextByDay(String day) {
     return 'următorul până $day';
   }
+
+  @override
+  String relationshipNextDueOn(String day) {
+    return 'Următoarea scadență $day';
+  }
+
+  @override
+  String get relationshipNextTimeTitle => 'Data viitoare';
 
   @override
   String get relationshipNicknameLabel => 'Poreclă';
@@ -11435,8 +11478,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNudgesOn => 'memento-uri active';
 
   @override
-  String get relationshipPostCallBody =>
-      'Tocmai ați luat legătura. Doriți să notați un check-in cât este proaspăt?';
+  String relationshipOnTrackCadence(String cadence) {
+    return 'În ritm · $cadence';
+  }
+
+  @override
+  String get relationshipPayAttentionTo => 'Fiți atent la';
 
   @override
   String get relationshipPostCallConfirm => 'Notați check-in';
@@ -11445,8 +11492,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipPostCallDismiss => 'Nu acum';
 
   @override
-  String relationshipPostCallTitle(String name) {
-    return 'Cum a fost cu $name?';
+  String relationshipPostCallMeta(String time, int minutes) {
+    return 'început $time · circa $minutes min';
+  }
+
+  @override
+  String relationshipPostCallOfferCall(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes de minute',
+      few: '$minutes minute',
+      one: '1 minut',
+    );
+    return 'Ați sunat pe $name acum $_temp0 — notați cât este proaspăt?';
+  }
+
+  @override
+  String relationshipPostCallOfferMessage(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes de minute',
+      few: '$minutes minute',
+      one: '1 minut',
+    );
+    return 'I-ați scris lui $name acum $_temp0 — notați cât este proaspăt?';
   }
 
   @override
@@ -11459,6 +11530,13 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return 'Fără contact $_temp0';
   }
+
+  @override
+  String get relationshipReachPrivacy =>
+      'Rămâne pe acest dispozitiv · niciodată partajat cu AI-ul';
+
+  @override
+  String get relationshipReachTitle => 'Contact';
 
   @override
   String get relationshipRelinkContact => 'Asociați alt contact';
@@ -11551,6 +11629,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipStayInTouch => 'Menține contactul';
+
+  @override
+  String relationshipTasksLinkedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de asociate',
+      few: '$count asociate',
+      one: '1 asociată',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipTimestampToday => 'Azi';

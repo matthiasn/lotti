@@ -3,37 +3,41 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
-import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
-import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
-import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
-import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One person's page: header (name, status, importance, cadence) and the
-/// check-in log, newest first, with a log-check-in FAB. The app bar carries
-/// edit and delete actions; tapping a check-in opens it for editing.
+/// One person's page (design 2026-09-06 §2–3), a sibling of the task page:
+/// the cover-style hero with the header actions, the header block with the
+/// cadence fact and the health band as pills, then the section cards in the
+/// design's order — Briefing · Next time · Check-ins · Reach · Tasks — above
+/// the sticky action bar (Log check-in · mic · the actionable channel).
+///
+/// On the desktop split the same page fills the detail pane, with every
+/// section on one centred reading column. Deleting cascades through the
+/// repository, the agent and the reminder (the same three legs as before).
 class RelationshipDetailsPage extends ConsumerWidget {
   const RelationshipDetailsPage({required this.relationshipId, super.key});
 
@@ -115,6 +119,17 @@ class RelationshipDetailsPage extends ConsumerWidget {
     }
   }
 
+  /// Leaves the page. On a phone the page was pushed and pops; on the
+  /// desktop split it is the detail pane, and leaving means clearing the
+  /// selection so the list stands alone again.
+  void _back(BuildContext context) {
+    if (isDesktopLayout(context)) {
+      beamToNamed('/people');
+      return;
+    }
+    Navigator.of(context).maybePop();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
@@ -146,579 +161,121 @@ class RelationshipDetailsPage extends ConsumerWidget {
     final relationship = detail.relationship;
     final checkIns = detail.checkIns;
     final data = relationship.data;
+    final latest = checkIns.firstOrNull;
+    final item = (relationship: relationship, lastCheckIn: latest);
+    final categoryId = relationship.meta.categoryId;
+    final categoryName = categoryId == null
+        ? null
+        : getIt<EntitiesCacheService>().getCategoryById(categoryId)?.name;
+
+    // The standing briefing, read here as well as in the card: the header's
+    // band pill and the card's chip must agree on whether one exists.
+    final report = currentRelationshipReport(
+      ref
+          .watch(agentReportProvider(relationshipAgentIdFor(relationshipId)))
+          .value,
+    );
+    final healthBand = report == null
+        ? null
+        : relationshipHealthMetricsFromReport(report)?.band;
+    // The card renders nothing for someone not enrolled and never briefed;
+    // the gap that would follow it has to know that too.
+    final showBriefing = report != null || data.important;
+
+    final sections = <Widget>[
+      PersonHeaderBlock(
+        item: item,
+        categoryName: categoryName,
+        healthBand: healthBand,
+      ),
+      if (showBriefing) RelationshipBriefingCard(relationship: relationship),
+      if (NextTimeCard.hasContent(latest)) NextTimeCard(latest: latest),
+    ];
 
     return Scaffold(
-      // The page's primary action, so it wears the interactive accent every
-      // other create-here FAB in the app wears — Material's default
-      // `FloatingActionButton` painted it in the theme's secondary container
-      // instead, which read as a neutral pill beside the teal used for
-      // "Link task" a few rows below it.
-      floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: DesignSystemFloatingActionButton(
-          key: const ValueKey('relationship-log-check-in-fab'),
-          semanticLabel: context.messages.relationshipLogCheckIn,
-          label: context.messages.relationshipLogCheckIn,
-          icon: LottiIcons.greeting,
-          onPressed: () => showCheckInCaptureSheet(
-            context: context,
-            relationshipId: relationshipId,
-          ),
+      backgroundColor: tokens.colors.background.level01,
+      // extendBody so the glass strip's BackdropFilter has body content
+      // underneath to blur; the Scaffold reserves the bar's height as the
+      // body's bottom inset, consumed by the trailing spacer below.
+      extendBody: true,
+      bottomNavigationBar: RelationshipActionBar(
+        relationship: relationship,
+        onLogCheckIn: () => showCheckInCaptureSheet(
+          context: context,
+          relationshipId: relationshipId,
+        ),
+        onSpeak: () => showCheckInCaptureSheet(
+          context: context,
+          relationshipId: relationshipId,
+          startSpeaking: true,
         ),
       ),
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              title: Text(data.title),
-              actions: [
-                if (data.important)
-                  Icon(
-                    LottiIcons.star,
-                    color: tokens.colors.interactive.enabled,
-                  ),
-                // Renders nothing on desktop, where channels are typed by
-                // hand (plan v2 phase 7 item 2).
-                ContactLinkAction(relationship: relationship),
-                IconButton(
-                  tooltip: context.messages.relationshipEditTitle,
-                  onPressed: () => showRelationshipEditModal(
-                    context: context,
-                    relationship: relationship,
-                  ),
-                  icon: const Icon(LottiIcons.edit),
-                ),
-                IconButton(
-                  tooltip: context.messages.deleteButton,
-                  onPressed: () => _handleDelete(context, ref, relationship),
-                  icon: const Icon(LottiIcons.delete),
-                ),
-              ],
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.step5,
-                tokens.spacing.step5,
-                tokens.spacing.step5,
-                tokens.spacing.step5 +
-                    DesignSystemBottomNavigationBar.occupiedHeight(context) +
-                    tokens.spacing.step12,
+      // Builder so MediaQuery.paddingOf reads the Scaffold-modified value.
+      body: Builder(
+        builder: (context) {
+          // Every section — and the check-in log, which is a sliver and so
+          // cannot sit inside `DetailContentWidth` — on the one reading
+          // column that widget gives boxed content.
+          final insets = detailContentInsets(context);
+          final bottomInset = MediaQuery.paddingOf(context).bottom;
+          final gap = SizedBox(height: tokens.spacing.sectionGap);
+          return CustomScrollView(
+            slivers: [
+              PersonHeroAppBar(
+                relationship: relationship,
+                contentInset: insets.left,
+                onBack: () => _back(context),
+                onTalkToAgent: () =>
+                    beamToNamed('/people/$relationshipId/chat'),
+                onDelete: () => _handleDelete(context, ref, relationship),
               ),
-              // The fixed sections stay in a list delegate; the check-in log
-              // grows without bound and renders lazily in its own builder
-              // sliver (the project-detail split: fixed sections + a builder
-              // list for the unbounded part).
-              sliver: SliverMainAxisGroup(
-                slivers: [
-                  SliverList(
-                    delegate: SliverChildListDelegate([
-                      _RelationshipHeader(data: data),
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      // Above the briefing: returning from a call the user
-                      // just placed, the offer to log it is the most
-                      // time-sensitive thing on the page (plan v2 phase 7
-                      // item 5). Renders nothing the rest of the time.
-                      const PostInteractionPrompt(),
-                      // The executive briefing directly under the header —
-                      // the agent's standing voice on this page (plan v2
-                      // phase 5).
-                      RelationshipBriefingCard(relationship: relationship),
-                      if (data.contactChannels.isNotEmpty) ...[
-                        SizedBox(height: tokens.spacing.sectionGap),
-                        _SectionHeading(
-                          context.messages.relationshipContactChannelsLabel,
-                        ),
-                        SizedBox(height: tokens.spacing.step3),
-                        for (final channel in data.contactChannels)
-                          _ContactChannelRow(
-                            relationshipId: relationshipId,
-                            channel: channel,
-                          ),
-                      ],
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      _LinkedTasksSection(
+              SliverPadding(
+                padding: insets,
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    for (final section in sections) ...[section, gap],
+                    // Renders nothing until the user comes back from a
+                    // call placed on this page; then it is the most
+                    // time-sensitive thing here, directly above the log
+                    // it offers to extend.
+                    const PostInteractionPrompt(),
+                  ]),
+                ),
+              ),
+              // The log grows without bound and renders lazily in its own
+              // sliver, inside the card decoration the boxed sections wear.
+              SliverPadding(
+                padding: insets,
+                sliver: CheckInsCardSliver(
+                  checkIns: checkIns,
+                  onOpen: (checkIn) =>
+                      showCheckInEditSheet(context: context, checkIn: checkIn),
+                ),
+              ),
+              SliverPadding(
+                padding: insets,
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    gap,
+                    if (data.contactChannels.isNotEmpty) ...[
+                      ReachCard(
                         relationshipId: relationshipId,
-                        tasks: detail.linkedTasks,
-                        categoryId: relationship.meta.categoryId,
+                        channels: data.contactChannels,
                       ),
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      _SectionHeading(
-                        context.messages.relationshipCheckInsLabel,
-                      ),
-                      SizedBox(height: tokens.spacing.step3),
-                      if (checkIns.isEmpty)
-                        Text(
-                          context.messages.relationshipNoCheckIns,
-                          style: tokens.typography.styles.body.bodyMedium
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                    ]),
-                  ),
-                  if (checkIns.isNotEmpty)
-                    SliverList.separated(
-                      itemCount: checkIns.length,
-                      separatorBuilder: (_, _) =>
-                          SizedBox(height: tokens.spacing.cardItemSpacing),
-                      itemBuilder: (context, index) =>
-                          _CheckInRow(checkIn: checkIns[index]),
+                      gap,
+                    ],
+                    LinkedTasksCard(
+                      relationshipId: relationshipId,
+                      tasks: detail.linkedTasks,
+                      categoryId: categoryId,
                     ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RelationshipHeader extends StatelessWidget {
-  const _RelationshipHeader({required this.data});
-
-  final RelationshipData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final cadenceDays = data.checkInCadenceDays;
-
-    Widget chip(String label, IconData icon) => Chip(
-      avatar: Icon(icon, size: tokens.spacing.step4),
-      label: Text(label),
-      labelStyle: tokens.typography.styles.body.bodySmall.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
-      ),
-    );
-
-    return Wrap(
-      spacing: tokens.spacing.step3,
-      runSpacing: tokens.spacing.step3,
-      children: [
-        chip(
-          relationshipStatusLabel(context, data.status),
-          LottiIcons.radioUnselected,
-        ),
-        if (cadenceDays != null)
-          chip(
-            relationshipCadenceLabel(context, cadenceDays),
-            LottiIcons.refresh,
-          ),
-        if (data.nickname != null) chip(data.nickname!, LottiIcons.moodGood),
-      ],
-    );
-  }
-}
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Text(
-      title,
-      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-        color: tokens.colors.text.highEmphasis,
-      ),
-    );
-  }
-}
-
-class _ContactChannelRow extends StatelessWidget {
-  const _ContactChannelRow({
-    required this.relationshipId,
-    required this.channel,
-  });
-
-  final String relationshipId;
-  final ContactChannel channel;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final label = channel.label;
-
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        contactChannelTypeIcon(channel.type),
-        color: tokens.colors.text.mediumEmphasis,
-      ),
-      title: Text(
-        channel.value,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: tokens.colors.text.highEmphasis,
-        ),
-      ),
-      subtitle: Text(
-        label == null || label.isEmpty
-            ? contactChannelTypeLabel(context, channel.type)
-            : label,
-        style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.lowEmphasis,
-        ),
-      ),
-      // Renders nothing until the platform confirms it can service an
-      // action, and nothing at all for a channel with no launchable scheme
-      // (plan v2 phase 7 item 4).
-      trailing: ContactQuickActions(
-        relationshipId: relationshipId,
-        channel: channel,
-      ),
-    );
-  }
-}
-
-/// Tasks linked to this person, with a picker to link more and per-row
-/// unlinking (plan v2 phase 2 item 3 — `RelationshipLink` both ways).
-class _LinkedTasksSection extends ConsumerWidget {
-  const _LinkedTasksSection({
-    required this.relationshipId,
-    required this.tasks,
-    this.categoryId,
-  });
-
-  final String relationshipId;
-  final List<Task> tasks;
-
-  /// The person's category, inherited by a task created from their picker so
-  /// it lands in the same life area the person does.
-  final String? categoryId;
-
-  /// Links [taskId] to this person.
-  ///
-  /// Answers false for a write that changed no row *and* for one that threw:
-  /// both mean the link the user asked for does not exist, and the caller —
-  /// which knows whether there is still a page to say so on — decides how to
-  /// report it.
-  Future<bool> _linkTask(
-    RelationshipRepository repository,
-    String taskId,
-  ) async {
-    try {
-      return await repository.linkTask(
-        relationshipId: relationshipId,
-        taskId: taskId,
-      );
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to link task to relationship',
-        name: 'RelationshipDetailsPage',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
-  }
-
-  /// Creates a task titled after the picker's query, for the person whose
-  /// page this is.
-  ///
-  /// Answering "there is no such task yet" without leaving the page: the
-  /// picker offers this on a search that matches nothing, and feeds whatever
-  /// comes back through its own pick callback — so creating and linking stay
-  /// the one path [_pickTask] already owns, error toast and all. The one
-  /// case that path cannot serve is a picker dismissed mid-write, handled
-  /// below.
-  ///
-  /// No `linkedId`: that writes a plain link, and this page writes its own
-  /// relationship-typed edge a moment later. `inheritContextFrom` carries the
-  /// one thing that must travel — a private person's task is private too —
-  /// without leaving a second edge to unpick.
-  Future<Task?> _createTask({
-    required BuildContext pageContext,
-    required BuildContext modalContext,
-    required WidgetRef ref,
-    required String title,
-  }) async {
-    // Read before the await: persistence can outlive the sheet, and a
-    // post-gap read on a disposed ref would strand a task already written.
-    final agentService = ref.read(taskAgentServiceProvider);
-    final repository = ref.read(relationshipRepositoryProvider);
-
-    Task? created;
-    try {
-      created = await createTask(
-        title: title,
-        categoryId: categoryId,
-        inheritContextFrom: relationshipId,
-      );
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to create a task for the relationship',
-        name: 'RelationshipDetailsPage',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-    // Nothing was written. The picker stays open on the query that failed,
-    // which says more than a toast would: a snack bar raised from here is
-    // hosted by the page's messenger and renders *behind* the modal route it
-    // would be explaining.
-    if (created == null) return null;
-
-    // The same follow-up every other create flow performs, so a task created
-    // here is not the one left without its category's agent.
-    unawaited(autoAssignCategoryAgentWith(agentService, created));
-
-    if (modalContext.mounted) return created;
-
-    // Dismissed while the write was in flight. The task exists and the user
-    // asked for it to be linked, so handing back null here would leave it
-    // created, unlinked and unannounced — visible only as a stray row in the
-    // task list. Link it on the dependencies captured before the gap.
-    final linked = await _linkTask(repository, created.meta.id);
-    if (!linked && pageContext.mounted) {
-      pageContext.showToast(
-        tone: DesignSystemToastTone.error,
-        title: pageContext.messages.relationshipErrorLinkTaskFailed,
-      );
-    }
-    return null;
-  }
-
-  Future<void> _pickTask(BuildContext context, WidgetRef ref) async {
-    final repository = ref.read(relationshipRepositoryProvider);
-    final linkedIds = {for (final task in tasks) task.meta.id};
-
-    await ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.relationshipLinkTaskButton,
-      padding: EdgeInsets.zero,
-      builder: (modalContext) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Flexible(
-            child: TaskSearchPickerBody(
-              excludeIds: {relationshipId, ...linkedIds},
-              onCreateTask: (title) => _createTask(
-                pageContext: context,
-                modalContext: modalContext,
-                ref: ref,
-                title: title,
-              ),
-              onTaskSelected: (task) async {
-                final linked = await _linkTask(repository, task.meta.id);
-                if (!modalContext.mounted) return;
-                Navigator.of(modalContext).pop();
-                // `createLink` answers false when the upsert changed no row,
-                // so a silent close would read as a link that worked.
-                if (!linked && context.mounted) {
-                  context.showToast(
-                    tone: DesignSystemToastTone.error,
-                    title: context.messages.relationshipErrorLinkTaskFailed,
-                  );
-                }
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _unlinkTask(
-    BuildContext context,
-    WidgetRef ref,
-    Task task,
-  ) async {
-    final confirmed = await showConfirmationModal(
-      context: context,
-      message: context.messages.unlinkTaskConfirmNamed(
-        task.data.title.isEmpty
-            ? context.messages.taskUntitled
-            : task.data.title,
-      ),
-      confirmLabel: context.messages.unlinkTaskTitle,
-    );
-    if (!confirmed || !context.mounted) return;
-
-    try {
-      final removed = await ref
-          .read(relationshipRepositoryProvider)
-          .unlinkTask(relationshipId: relationshipId, taskId: task.meta.id);
-      if (!removed && context.mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.unlinkTaskFailedMessage,
-        );
-      }
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to unlink task from relationship',
-        name: 'RelationshipDetailsPage',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      if (context.mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.unlinkTaskFailedMessage,
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _SectionHeading(
-                context.messages.relationshipLinkedTasksLabel,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () => _pickTask(context, ref),
-              icon: const Icon(LottiIcons.link),
-              label: Text(context.messages.relationshipLinkTaskButton),
-            ),
-          ],
-        ),
-        if (tasks.isEmpty)
-          Text(
-            context.messages.relationshipNoLinkedTasks,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          )
-        else
-          for (final task in tasks)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                LottiIcons.confirmCircled,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              title: Text(
-                task.data.title.isEmpty
-                    ? context.messages.taskUntitled
-                    : task.data.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
+                    SizedBox(height: bottomInset + tokens.spacing.sectionGap),
+                  ]),
                 ),
               ),
-              subtitle: Text(
-                taskLabelFromStatusString(
-                  task.data.status.toDbString,
-                  context,
-                ),
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-              trailing: IconButton(
-                tooltip: context.messages.unlinkTaskTitle,
-                onPressed: () => _unlinkTask(context, ref, task),
-                icon: const Icon(LottiIcons.linkOff),
-              ),
-              onTap: () => beamToNamed('/tasks/${task.meta.id}'),
-            ),
-      ],
-    );
-  }
-}
-
-class _CheckInRow extends StatelessWidget {
-  const _CheckInRow({required this.checkIn});
-
-  final CheckInEntry checkIn;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final data = checkIn.data;
-    final narrative = checkIn.entryText?.plainText.trim();
-    final sentiment = data.sentiment;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => showCheckInEditSheet(context: context, checkIn: checkIn),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.cardPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    checkInInteractionIcon(data.interactionType),
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Text(
-                      checkInInteractionLabel(context, data.interactionType),
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    entryDateLabel(context, checkIn.meta.dateFrom),
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                ],
-              ),
-              if (sentiment != null) ...[
-                SizedBox(height: tokens.spacing.step3),
-                Text(
-                  checkInSentimentLabel(context, sentiment),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ],
-              if (narrative != null && narrative.isNotEmpty) ...[
-                SizedBox(height: tokens.spacing.step3),
-                Text(
-                  narrative,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ],
-              if (data.topics.isNotEmpty) ...[
-                SizedBox(height: tokens.spacing.step3),
-                // Topics are this check-in's tags, so they wear the tag
-                // pill the rest of the app spends on labels — the tight
-                // `radii.xs` corner that says "read-out, not button".
-                Wrap(
-                  spacing: tokens.spacing.step2,
-                  runSpacing: tokens.spacing.step2,
-                  children: [
-                    for (final topic in data.topics)
-                      DsPill(
-                        variant: DsPillVariant.filled,
-                        shape: DsPillShape.tag,
-                        bordered: true,
-                        label: topic,
-                        labelColor: tokens.colors.text.mediumEmphasis,
-                      ),
-                  ],
-                ),
-              ],
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -191,8 +191,9 @@ void main() {
     void Function(String? categoryId)? onLaunch,
     bool canTranscribe = true,
     bool? enableSpeechRecognition,
+    bool startSpeaking = false,
   }) => makeTestableWidgetWithScaffold(
-    const CheckInCaptureForm(relationshipId: 'rel-001'),
+    CheckInCaptureForm(relationshipId: 'rel-001', startSpeaking: startSpeaking),
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
 
@@ -1319,6 +1320,42 @@ void main() {
       );
       expect(content.linkedId, 'rel-001');
       expect(content.categoryId, 'category-7');
+    });
+  });
+
+  group('startSpeaking', () {
+    testWidgets('opens the recorder after the first frame without a tap — '
+        'the page mic means "say it", not "show me the form"', (tester) async {
+      final launches = <String?>[];
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: null,
+          transcript: null,
+          onLaunch: launches.add,
+          startSpeaking: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(launches, hasLength(1));
+      // A cancelled recording leaves the form as it was.
+      expect(find.text('How did you connect?'), findsOneWidget);
+    });
+
+    testWidgets('a form opened the ordinary way launches nothing on its own', (
+      tester,
+    ) async {
+      final launches = <String?>[];
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: null,
+          transcript: null,
+          onLaunch: launches.add,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(launches, isEmpty);
     });
   });
 }

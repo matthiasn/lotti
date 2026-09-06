@@ -4333,7 +4333,45 @@
       }
     }
   },
+  "relationshipDueSince": "En retard depuis {day} · {count, plural, =1{1 jour de retard} other{{count} jours de retard}}",
+  "@relationshipDueSince": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDueToday": "À relancer aujourd'hui",
+  "relationshipDurationHours": "{hours} h",
+  "@relationshipDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipDurationHoursMinutes": "{hours} h {minutes}",
+  "@relationshipDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDurationMinutes": "{count} min",
+  "@relationshipDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipEditTitle": "Modifier la personne",
   "relationshipErrorCreateFailed": "Impossible d'enregistrer la personne. Réessaie.",
   "relationshipErrorDeleteFailed": "Impossible de supprimer la personne. Réessaie.",
@@ -4366,6 +4404,14 @@
     "description": "Relationships redesign label."
   },
   "relationshipLastCheckInLabel": "Dernier échange {date}",
+  "relationshipLastSpoke": "dernier échange {time}",
+  "@relationshipLastSpoke": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkContact": "Associer un contact",
   "relationshipLinkedTasksLabel": "Tâches",
   "relationshipLinkTaskButton": "Lier une tâche",
@@ -4382,6 +4428,7 @@
       }
     }
   },
+  "relationshipMoreActions": "Plus d'actions",
   "relationshipNameLabel": "Nom",
   "relationshipNameRequired": "Le nom est obligatoire",
   "relationshipNextByDay": "prochain avant {day}",
@@ -4392,6 +4439,15 @@
       }
     }
   },
+  "relationshipNextDueOn": "Prochaine échéance {day}",
+  "@relationshipNextDueOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeTitle": "La prochaine fois",
   "relationshipNicknameLabel": "Surnom",
   "relationshipNoCheckIns": "Aucun échange noté — ajoute le premier après votre prochaine conversation.",
   "relationshipNoLinkedTasks": "Aucune tâche liée pour l'instant.",
@@ -4401,15 +4457,47 @@
   "@relationshipNudgesOn": {
     "description": "Relationships redesign label."
   },
-  "relationshipPostCallBody": "Tu viens de le/la contacter. Tu notes un point tant que c’est frais ?",
+  "relationshipOnTrackCadence": "Dans le rythme · {cadence}",
+  "@relationshipOnTrackCadence": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPayAttentionTo": "Faire attention à",
   "relationshipPostCallConfirm": "Noter un point",
   "relationshipPostCallDismiss": "Pas maintenant",
-  "relationshipPostCallTitle": "Comment ça s’est passé avec {name} ?",
-  "@relationshipPostCallTitle": {
+  "relationshipPostCallMeta": "commencé {time} · environ {minutes} min",
+  "@relationshipPostCallMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferCall": "Tu as appelé {name} il y a {minutes, plural, =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
+  "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
-        "type": "String",
-        "example": "Anna"
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferMessage": "Tu as écrit à {name} il y a {minutes, plural, =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
+  "@relationshipPostCallOfferMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
       }
     }
   },
@@ -4421,6 +4509,8 @@
       }
     }
   },
+  "relationshipReachPrivacy": "Reste sur cet appareil · jamais partagé avec l'IA",
+  "relationshipReachTitle": "Contacter",
   "relationshipRelinkContact": "Associer un autre contact",
   "relationshipSeeAllCheckIns": "Voir tous les échanges",
   "@relationshipSeeAllCheckIns": {
@@ -4503,6 +4593,14 @@
   "relationshipStayInTouch": "Rester en contact",
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
+  },
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 liée} other{{count} liées}}",
+  "@relationshipTasksLinkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "relationshipTimestampToday": "Aujourd'hui",
   "relationshipTimestampYesterday": "Hier",

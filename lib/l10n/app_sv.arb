@@ -4836,7 +4836,45 @@
       }
     }
   },
+  "relationshipDueSince": "Försenad sedan {day} · {count, plural, =1{1 dag försenad} other{{count} dagar försenade}}",
+  "@relationshipDueSince": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDueToday": "Dags i dag",
+  "relationshipDurationHours": "{hours} h",
+  "@relationshipDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipDurationHoursMinutes": "{hours} h {minutes}",
+  "@relationshipDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDurationMinutes": "{count} min",
+  "@relationshipDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipEditTitle": "Redigera person",
   "relationshipErrorCreateFailed": "Personen kunde inte sparas. Försök igen.",
   "relationshipErrorDeleteFailed": "Personen kunde inte tas bort. Försök igen.",
@@ -4869,6 +4907,14 @@
     "description": "Relationships redesign label."
   },
   "relationshipLastCheckInLabel": "Senaste avstämning {date}",
+  "relationshipLastSpoke": "pratade senast {time}",
+  "@relationshipLastSpoke": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkContact": "Länka kontakt",
   "relationshipLinkedTasksLabel": "Uppgifter",
   "relationshipLinkTaskButton": "Länka uppgift",
@@ -4885,6 +4931,7 @@
       }
     }
   },
+  "relationshipMoreActions": "Fler åtgärder",
   "relationshipNameLabel": "Namn",
   "relationshipNameRequired": "Namn krävs",
   "relationshipNextByDay": "nästa senast {day}",
@@ -4895,6 +4942,15 @@
       }
     }
   },
+  "relationshipNextDueOn": "Nästa gång {day}",
+  "@relationshipNextDueOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeTitle": "Nästa gång",
   "relationshipNicknameLabel": "Smeknamn",
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
   "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
@@ -4904,15 +4960,47 @@
   "@relationshipNudgesOn": {
     "description": "Relationships redesign label."
   },
-  "relationshipPostCallBody": "Du hörde precis av dig. Vill du logga en avstämning medan det är färskt?",
+  "relationshipOnTrackCadence": "I fas · {cadence}",
+  "@relationshipOnTrackCadence": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPayAttentionTo": "Var uppmärksam på",
   "relationshipPostCallConfirm": "Logga avstämning",
   "relationshipPostCallDismiss": "Inte nu",
-  "relationshipPostCallTitle": "Hur gick det med {name}?",
-  "@relationshipPostCallTitle": {
+  "relationshipPostCallMeta": "började {time} · cirka {minutes} min",
+  "@relationshipPostCallMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferCall": "Du ringde {name} för {minutes, plural, =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
+  "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
-        "type": "String",
-        "example": "Anna"
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferMessage": "Du skrev till {name} för {minutes, plural, =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
+  "@relationshipPostCallOfferMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
       }
     }
   },
@@ -4924,6 +5012,8 @@
       }
     }
   },
+  "relationshipReachPrivacy": "Stannar på den här enheten · delas aldrig med AI:n",
+  "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Länka en annan kontakt",
   "relationshipSeeAllCheckIns": "Se alla avstämningar",
   "@relationshipSeeAllCheckIns": {
@@ -5006,6 +5096,14 @@
   "relationshipStayInTouch": "Håll kontakten",
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
+  },
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 kopplad} other{{count} kopplade}}",
+  "@relationshipTasksLinkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "relationshipTimestampToday": "Idag",
   "relationshipTimestampYesterday": "Igår",

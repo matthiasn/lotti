@@ -9,7 +9,7 @@ class GlassActionButton extends StatelessWidget {
   const GlassActionButton({
     required this.child,
     required this.onTap,
-    this.size = 40,
+    this.size = defaultSize,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -21,7 +21,11 @@ class GlassActionButton extends StatelessWidget {
   /// Callback when button is tapped.
   final VoidCallback onTap;
 
-  /// Size of the glass container. Defaults to 40.
+  /// The default [size]: the touch target every glass action in an app bar
+  /// shares, so a row of them lines up.
+  static const double defaultSize = 40;
+
+  /// Size of the glass container. Defaults to [defaultSize].
   final double size;
 
   /// Accessible label for icon-only glass actions.

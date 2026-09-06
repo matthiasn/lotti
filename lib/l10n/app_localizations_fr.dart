@@ -11227,7 +11227,33 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String relationshipDueSince(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours de retard',
+      one: '1 jour de retard',
+    );
+    return 'En retard depuis $day · $_temp0';
+  }
+
+  @override
   String get relationshipDueToday => 'À relancer aujourd\'hui';
+
+  @override
+  String relationshipDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String relationshipDurationHoursMinutes(int hours, String minutes) {
+    return '$hours h $minutes';
+  }
+
+  @override
+  String relationshipDurationMinutes(int count) {
+    return '$count min';
+  }
 
   @override
   String get relationshipEditTitle => 'Modifier la personne';
@@ -11352,6 +11378,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String relationshipLastSpoke(String time) {
+    return 'dernier échange $time';
+  }
+
+  @override
   String get relationshipLinkContact => 'Associer un contact';
 
   @override
@@ -11372,6 +11403,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get relationshipMoreActions => 'Plus d\'actions';
+
+  @override
   String get relationshipNameLabel => 'Nom';
 
   @override
@@ -11381,6 +11415,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String relationshipNextByDay(String day) {
     return 'prochain avant $day';
   }
+
+  @override
+  String relationshipNextDueOn(String day) {
+    return 'Prochaine échéance $day';
+  }
+
+  @override
+  String get relationshipNextTimeTitle => 'La prochaine fois';
 
   @override
   String get relationshipNicknameLabel => 'Surnom';
@@ -11403,8 +11445,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipNudgesOn => 'rappels activés';
 
   @override
-  String get relationshipPostCallBody =>
-      'Tu viens de le/la contacter. Tu notes un point tant que c’est frais ?';
+  String relationshipOnTrackCadence(String cadence) {
+    return 'Dans le rythme · $cadence';
+  }
+
+  @override
+  String get relationshipPayAttentionTo => 'Faire attention à';
 
   @override
   String get relationshipPostCallConfirm => 'Noter un point';
@@ -11413,8 +11459,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipPostCallDismiss => 'Pas maintenant';
 
   @override
-  String relationshipPostCallTitle(String name) {
-    return 'Comment ça s’est passé avec $name ?';
+  String relationshipPostCallMeta(String time, int minutes) {
+    return 'commencé $time · environ $minutes min';
+  }
+
+  @override
+  String relationshipPostCallOfferCall(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return 'Tu as appelé $name il y a $_temp0 — on note ça tant que c\'est frais ?';
+  }
+
+  @override
+  String relationshipPostCallOfferMessage(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return 'Tu as écrit à $name il y a $_temp0 — on note ça tant que c\'est frais ?';
   }
 
   @override
@@ -11427,6 +11495,13 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return 'Aucun échange $_temp0';
   }
+
+  @override
+  String get relationshipReachPrivacy =>
+      'Reste sur cet appareil · jamais partagé avec l\'IA';
+
+  @override
+  String get relationshipReachTitle => 'Contacter';
 
   @override
   String get relationshipRelinkContact => 'Associer un autre contact';
@@ -11511,6 +11586,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get relationshipStayInTouch => 'Rester en contact';
+
+  @override
+  String relationshipTasksLinkedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count liées',
+      one: '1 liée',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipTimestampToday => 'Aujourd\'hui';

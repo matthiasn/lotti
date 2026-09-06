@@ -4333,7 +4333,45 @@
       }
     }
   },
+  "relationshipDueSince": "Scadent din {day} · {count, plural, =1{1 zi întârziere} few{{count} zile întârziere} other{{count} de zile întârziere}}",
+  "@relationshipDueSince": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDueToday": "Scadent astăzi",
+  "relationshipDurationHours": "{hours} h",
+  "@relationshipDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipDurationHoursMinutes": "{hours} h {minutes}",
+  "@relationshipDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDurationMinutes": "{count} min",
+  "@relationshipDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipEditTitle": "Editați persoana",
   "relationshipErrorCreateFailed": "Persoana nu a putut fi salvată. Încercați din nou.",
   "relationshipErrorDeleteFailed": "Persoana nu a putut fi ștearsă. Încercați din nou.",
@@ -4366,6 +4404,14 @@
     "description": "Relationships redesign label."
   },
   "relationshipLastCheckInLabel": "Ultima înregistrare {date}",
+  "relationshipLastSpoke": "ultima discuție {time}",
+  "@relationshipLastSpoke": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkContact": "Asociați un contact",
   "relationshipLinkedTasksLabel": "Sarcini",
   "relationshipLinkTaskButton": "Asociați o sarcină",
@@ -4382,6 +4428,7 @@
       }
     }
   },
+  "relationshipMoreActions": "Mai multe acțiuni",
   "relationshipNameLabel": "Nume",
   "relationshipNameRequired": "Numele este obligatoriu",
   "relationshipNextByDay": "următorul până {day}",
@@ -4392,6 +4439,15 @@
       }
     }
   },
+  "relationshipNextDueOn": "Următoarea scadență {day}",
+  "@relationshipNextDueOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeTitle": "Data viitoare",
   "relationshipNicknameLabel": "Poreclă",
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
@@ -4401,15 +4457,47 @@
   "@relationshipNudgesOn": {
     "description": "Relationships redesign label."
   },
-  "relationshipPostCallBody": "Tocmai ați luat legătura. Doriți să notați un check-in cât este proaspăt?",
+  "relationshipOnTrackCadence": "În ritm · {cadence}",
+  "@relationshipOnTrackCadence": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPayAttentionTo": "Fiți atent la",
   "relationshipPostCallConfirm": "Notați check-in",
   "relationshipPostCallDismiss": "Nu acum",
-  "relationshipPostCallTitle": "Cum a fost cu {name}?",
-  "@relationshipPostCallTitle": {
+  "relationshipPostCallMeta": "început {time} · circa {minutes} min",
+  "@relationshipPostCallMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferCall": "Ați sunat pe {name} acum {minutes, plural, =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
+  "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
-        "type": "String",
-        "example": "Anna"
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferMessage": "I-ați scris lui {name} acum {minutes, plural, =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
+  "@relationshipPostCallOfferMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
       }
     }
   },
@@ -4421,6 +4509,8 @@
       }
     }
   },
+  "relationshipReachPrivacy": "Rămâne pe acest dispozitiv · niciodată partajat cu AI-ul",
+  "relationshipReachTitle": "Contact",
   "relationshipRelinkContact": "Asociați alt contact",
   "relationshipSeeAllCheckIns": "Vezi toate înregistrările",
   "@relationshipSeeAllCheckIns": {
@@ -4503,6 +4593,14 @@
   "relationshipStayInTouch": "Menține contactul",
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
+  },
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 asociată} few{{count} asociate} other{{count} de asociate}}",
+  "@relationshipTasksLinkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "relationshipTimestampToday": "Azi",
   "relationshipTimestampYesterday": "Ieri",

@@ -38,6 +38,49 @@ String _labelForAction(BuildContext context, ContactAction action) =>
       ContactAction.email => context.messages.relationshipActionEmail,
     };
 
+/// The icon a contact action wears wherever it is offered — the channel row
+/// and the page's action bar alike.
+IconData contactActionIcon(ContactAction action) => _iconForAction(action);
+
+/// The localized label of a contact action.
+String contactActionLabel(BuildContext context, ContactAction action) =>
+    _labelForAction(context, action);
+
+/// Hands [channel] to the platform for [action] and, on success, writes the
+/// device-local pending-interaction marker the next resume turns into a
+/// pre-filled check-in offer (ADR 0041 D4). A launch the platform refuses
+/// writes nothing — there was no conversation to log — and says so.
+///
+/// Shared by the channel row's buttons and the page's action bar, so both
+/// remember a placed call the same way.
+Future<void> launchContactAction(
+  BuildContext context,
+  WidgetRef ref, {
+  required String relationshipId,
+  required ContactChannel channel,
+  required ContactAction action,
+}) async {
+  final launcher = ref.read(contactLauncherProvider);
+  final store = ref.read(pendingInteractionStoreProvider);
+  final messages = context.messages;
+
+  final launched = await launcher.launch(channel, action);
+
+  if (!launched) {
+    if (!context.mounted) return;
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: messages.relationshipActionFailed,
+    );
+    return;
+  }
+
+  await store.remember(
+    relationshipId: relationshipId,
+    interactionType: interactionTypeForAction(action),
+  );
+}
+
 /// Call / message / email buttons for one contact channel (plan v2 phase 7
 /// item 4).
 ///
@@ -101,26 +144,13 @@ class _ContactQuickActionsState extends ConsumerState<ContactQuickActions> {
     setState(() => _available = available);
   }
 
-  Future<void> _handlePressed(ContactAction action) async {
-    final launcher = ref.read(contactLauncherProvider);
-    final store = ref.read(pendingInteractionStoreProvider);
-
-    final launched = await launcher.launch(widget.channel, action);
-
-    if (!launched) {
-      if (!mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.relationshipActionFailed,
-      );
-      return;
-    }
-
-    await store.remember(
-      relationshipId: widget.relationshipId,
-      interactionType: interactionTypeForAction(action),
-    );
-  }
+  Future<void> _handlePressed(ContactAction action) => launchContactAction(
+    context,
+    ref,
+    relationshipId: widget.relationshipId,
+    channel: widget.channel,
+    action: action,
+  );
 
   @override
   Widget build(BuildContext context) {

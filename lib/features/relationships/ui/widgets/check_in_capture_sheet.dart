@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -125,6 +126,7 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
   required String relationshipId,
   CheckInInteractionType? prefilledInteractionType,
   DateTime? prefilledTime,
+  bool startSpeaking = false,
 }) {
   return ModalUtils.showSinglePageModal<CheckInEntry>(
     context: context,
@@ -133,6 +135,7 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
       relationshipId: relationshipId,
       prefilledInteractionType: prefilledInteractionType,
       prefilledTime: prefilledTime,
+      startSpeaking: startSpeaking,
     ),
   );
 }
@@ -163,6 +166,7 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
     this.initial,
     this.prefilledInteractionType,
     this.prefilledTime,
+    this.startSpeaking = false,
     super.key,
   });
 
@@ -179,6 +183,12 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
   /// Starting interaction time for a new check-in — when the call was
   /// actually placed, rather than when the user got round to logging it.
   final DateTime? prefilledTime;
+
+  /// Opens straight into a spoken check-in: the page's mic doorway, which
+  /// means "say it" rather than "show me the form". The recording sheet is
+  /// launched after the first frame; everything else about the form is
+  /// unchanged, and cancelling the recording leaves the form as it was.
+  final bool startSpeaking;
 
   @override
   ConsumerState<CheckInCaptureForm> createState() => _CheckInCaptureFormState();
@@ -233,6 +243,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _sentiment = data?.sentiment;
     _interactionTime =
         initial?.meta.dateFrom ?? widget.prefilledTime ?? clock.now();
+    if (widget.startSpeaking) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_handleSpeak());
+      });
+    }
   }
 
   @override

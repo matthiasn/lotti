@@ -127,4 +127,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     expect(tapped, 1);
   });
+
+  testWidgets('decoration() is exactly what the card paints, so a sliver host '
+      'is indistinguishable from the boxed card', (tester) async {
+    final context = await pumpCard(tester);
+
+    expect(
+      decorationOf(tester),
+      DesignSystemSectionCard.decoration(context.designTokens),
+    );
+  });
 }

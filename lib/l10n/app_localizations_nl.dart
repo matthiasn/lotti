@@ -11050,7 +11050,33 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String relationshipDueSince(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen te laat',
+      one: '1 dag te laat',
+    );
+    return 'Te laat sinds $day · $_temp0';
+  }
+
+  @override
   String get relationshipDueToday => 'Vandaag aan de beurt';
+
+  @override
+  String relationshipDurationHours(int hours) {
+    return '$hours u';
+  }
+
+  @override
+  String relationshipDurationHoursMinutes(int hours, String minutes) {
+    return '$hours u $minutes';
+  }
+
+  @override
+  String relationshipDurationMinutes(int count) {
+    return '$count min';
+  }
 
   @override
   String get relationshipEditTitle => 'Persoon bewerken';
@@ -11175,6 +11201,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String relationshipLastSpoke(String time) {
+    return 'laatst gesproken $time';
+  }
+
+  @override
   String get relationshipLinkContact => 'Contact koppelen';
 
   @override
@@ -11195,6 +11226,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipMoreActions => 'Meer acties';
+
+  @override
   String get relationshipNameLabel => 'Naam';
 
   @override
@@ -11204,6 +11238,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String relationshipNextByDay(String day) {
     return 'volgende voor $day';
   }
+
+  @override
+  String relationshipNextDueOn(String day) {
+    return 'Volgende keer $day';
+  }
+
+  @override
+  String get relationshipNextTimeTitle => 'Volgende keer';
 
   @override
   String get relationshipNicknameLabel => 'Bijnaam';
@@ -11226,8 +11268,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipNudgesOn => 'herinneringen aan';
 
   @override
-  String get relationshipPostCallBody =>
-      'Je hebt net contact gehad. Wil je een check-in vastleggen nu het nog vers is?';
+  String relationshipOnTrackCadence(String cadence) {
+    return 'Op schema · $cadence';
+  }
+
+  @override
+  String get relationshipPayAttentionTo => 'Let op';
 
   @override
   String get relationshipPostCallConfirm => 'Check-in vastleggen';
@@ -11236,8 +11282,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipPostCallDismiss => 'Niet nu';
 
   @override
-  String relationshipPostCallTitle(String name) {
-    return 'Hoe ging het met $name?';
+  String relationshipPostCallMeta(String time, int minutes) {
+    return 'begonnen $time · ongeveer $minutes min';
+  }
+
+  @override
+  String relationshipPostCallOfferCall(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minuten',
+      one: '1 minuut',
+    );
+    return 'Je hebt $name $_temp0 geleden gebeld — nu vastleggen zolang het vers is?';
+  }
+
+  @override
+  String relationshipPostCallOfferMessage(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minuten',
+      one: '1 minuut',
+    );
+    return 'Je hebt $name $_temp0 geleden geschreven — nu vastleggen zolang het vers is?';
   }
 
   @override
@@ -11250,6 +11318,13 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0 geen contact';
   }
+
+  @override
+  String get relationshipReachPrivacy =>
+      'Blijft op dit apparaat · nooit gedeeld met de AI';
+
+  @override
+  String get relationshipReachTitle => 'Bereiken';
 
   @override
   String get relationshipRelinkContact => 'Ander contact koppelen';
@@ -11334,6 +11409,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipStayInTouch => 'Contact houden';
+
+  @override
+  String relationshipTasksLinkedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gekoppeld',
+      one: '1 gekoppeld',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipTimestampToday => 'Vandaag';

@@ -18493,11 +18493,35 @@ abstract class AppLocalizations {
   /// **'Due {day}'**
   String relationshipDueDay(String day);
 
+  /// No description provided for @relationshipDueSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Due since {day} · {count, plural, =1{1 day over} other{{count} days over}}'**
+  String relationshipDueSince(String day, int count);
+
   /// No description provided for @relationshipDueToday.
   ///
   /// In en, this message translates to:
   /// **'Due today'**
   String get relationshipDueToday;
+
+  /// No description provided for @relationshipDurationHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String relationshipDurationHours(int hours);
+
+  /// No description provided for @relationshipDurationHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes}'**
+  String relationshipDurationHoursMinutes(int hours, String minutes);
+
+  /// No description provided for @relationshipDurationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String relationshipDurationMinutes(int count);
 
   /// No description provided for @relationshipEditTitle.
   ///
@@ -18673,6 +18697,12 @@ abstract class AppLocalizations {
   /// **'Last check-in {date}'**
   String relationshipLastCheckInLabel(String date);
 
+  /// No description provided for @relationshipLastSpoke.
+  ///
+  /// In en, this message translates to:
+  /// **'last spoke {time}'**
+  String relationshipLastSpoke(String time);
+
   /// Action that opens the OS contact picker to copy channels onto a person
   ///
   /// In en, this message translates to:
@@ -18709,6 +18739,12 @@ abstract class AppLocalizations {
   /// **'as of {time}'**
   String relationshipLottisReadAsOf(String time);
 
+  /// Tooltip of the person page's overflow menu (link contact, delete)
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get relationshipMoreActions;
+
   /// No description provided for @relationshipNameLabel.
   ///
   /// In en, this message translates to:
@@ -18726,6 +18762,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'next by {day}'**
   String relationshipNextByDay(String day);
+
+  /// No description provided for @relationshipNextDueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Next due {day}'**
+  String relationshipNextDueOn(String day);
+
+  /// No description provided for @relationshipNextTimeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Next time'**
+  String get relationshipNextTimeTitle;
 
   /// No description provided for @relationshipNicknameLabel.
   ///
@@ -18763,11 +18811,17 @@ abstract class AppLocalizations {
   /// **'nudges on'**
   String get relationshipNudgesOn;
 
-  /// Body of the prompt offered after returning from a call or message
+  /// No description provided for @relationshipOnTrackCadence.
   ///
   /// In en, this message translates to:
-  /// **'You reached out a moment ago. Log a check-in while it is fresh?'**
-  String get relationshipPostCallBody;
+  /// **'On track · {cadence}'**
+  String relationshipOnTrackCadence(String cadence);
+
+  /// No description provided for @relationshipPayAttentionTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay attention to'**
+  String get relationshipPayAttentionTo;
 
   /// Button that opens a pre-filled check-in from the post-call prompt
   ///
@@ -18781,17 +18835,41 @@ abstract class AppLocalizations {
   /// **'Not now'**
   String get relationshipPostCallDismiss;
 
-  /// Title of the prompt offered after returning from a call or message
+  /// No description provided for @relationshipPostCallMeta.
   ///
   /// In en, this message translates to:
-  /// **'How did it go with {name}?'**
-  String relationshipPostCallTitle(String name);
+  /// **'started {time} · about {minutes} min'**
+  String relationshipPostCallMeta(String time, int minutes);
+
+  /// No description provided for @relationshipPostCallOfferCall.
+  ///
+  /// In en, this message translates to:
+  /// **'You called {name} {minutes, plural, =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
+  String relationshipPostCallOfferCall(String name, int minutes);
+
+  /// No description provided for @relationshipPostCallOfferMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You wrote to {name} {minutes, plural, =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
+  String relationshipPostCallOfferMessage(String name, int minutes);
 
   /// No description provided for @relationshipQuietForDays.
   ///
   /// In en, this message translates to:
   /// **'Quiet for {count, plural, =1{1 day} other{{count} days}}'**
   String relationshipQuietForDays(int count);
+
+  /// No description provided for @relationshipReachPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Stays on this device · never shared with the AI'**
+  String get relationshipReachPrivacy;
+
+  /// No description provided for @relationshipReachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach'**
+  String get relationshipReachTitle;
 
   /// Menu action that replaces the OS contact a person is linked to
   ///
@@ -18916,6 +18994,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stay in touch'**
   String get relationshipStayInTouch;
+
+  /// No description provided for @relationshipTasksLinkedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 linked} other{{count} linked}}'**
+  String relationshipTasksLinkedCount(int count);
 
   /// The relative day word in a relationship timestamp, e.g. "Today 14:20".
   ///

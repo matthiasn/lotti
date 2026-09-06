@@ -34,6 +34,33 @@ String relationshipHealthBandLabel(
     context.messages.relationshipHealthStrained,
 };
 
+/// The accent a health band wears wherever it is shown as a tinted pill —
+/// the briefing card's chip and the person header's band pill alike. The
+/// band accent as text on its own tint is a contrast failure, so callers
+/// paint the label in high-emphasis ink and let the colour ride the tint.
+Color relationshipHealthBandColor(
+  DsTokens tokens,
+  RelationshipHealthBand band,
+) => switch (band) {
+  RelationshipHealthBand.thriving => tokens.colors.alert.success.defaultColor,
+  RelationshipHealthBand.steady => tokens.colors.aiCard.accent,
+  RelationshipHealthBand.needsAttention =>
+    tokens.colors.alert.warning.defaultColor,
+  RelationshipHealthBand.strained => tokens.colors.alert.error.defaultColor,
+};
+
+/// The agent's standing briefing, if [report] is one: the `current`-scope
+/// report entity that has not been deleted. Anything else — no report yet,
+/// a historical scope, a tombstone — is `null`, and the surfaces that read
+/// the briefing (the card, the header's band pill) treat that as "no
+/// briefing" together rather than each deciding differently.
+AgentReportEntity? currentRelationshipReport(Object? report) =>
+    report is AgentReportEntity &&
+        report.scope == AgentReportScopes.current &&
+        report.deletedAt == null
+    ? report
+    : null;
+
 /// The executive briefing on the person's detail page (plan v2 phase 5
 /// item 5): the latest report's health chip and TLDR, the expandable full
 /// briefing, the explicit "Brief me" trigger — with provider disclosure
@@ -149,14 +176,9 @@ class _RelationshipBriefingCardState
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
-    final reportAsync = ref.watch(agentReportProvider(_agentId));
-    final report = reportAsync.value;
-    final current =
-        report is AgentReportEntity &&
-            report.scope == AgentReportScopes.current &&
-            report.deletedAt == null
-        ? report
-        : null;
+    final current = currentRelationshipReport(
+      ref.watch(agentReportProvider(_agentId)).value,
+    );
     final health = current == null
         ? null
         : relationshipHealthMetricsFromReport(current);
@@ -177,16 +199,6 @@ class _RelationshipBriefingCardState
     final agentName = rawAgentName == widget.relationship.data.title.trim()
         ? null
         : rawAgentName;
-
-    final bandColor = switch (health?.band) {
-      RelationshipHealthBand.thriving =>
-        tokens.colors.alert.success.defaultColor,
-      RelationshipHealthBand.steady => ai.accent,
-      RelationshipHealthBand.needsAttention =>
-        tokens.colors.alert.warning.defaultColor,
-      RelationshipHealthBand.strained => tokens.colors.alert.error.defaultColor,
-      null => tokens.colors.background.level03,
-    };
 
     return DecoratedBox(
       key: const ValueKey('relationship-briefing-card'),
@@ -226,7 +238,7 @@ class _RelationshipBriefingCardState
                       key: const ValueKey('relationship-health-chip'),
                       variant: DsPillVariant.tinted,
                       shape: DsPillShape.tag,
-                      color: bandColor,
+                      color: relationshipHealthBandColor(tokens, health.band),
                       // The band accent as text on its own tint is a
                       // contrast failure; the colour identity rides the
                       // tint, as it does on the task status tag.

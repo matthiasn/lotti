@@ -11196,7 +11196,34 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipDueSince(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní po termínu',
+      few: '$count dny po termínu',
+      one: '1 den po termínu',
+    );
+    return 'Po termínu od $day · $_temp0';
+  }
+
+  @override
   String get relationshipDueToday => 'Dnes na řadě';
+
+  @override
+  String relationshipDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String relationshipDurationHoursMinutes(int hours, String minutes) {
+    return '$hours h $minutes';
+  }
+
+  @override
+  String relationshipDurationMinutes(int count) {
+    return '$count min';
+  }
 
   @override
   String get relationshipEditTitle => 'Upravit osobu';
@@ -11324,6 +11351,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipLastSpoke(String time) {
+    return 'naposledy mluvili $time';
+  }
+
+  @override
   String get relationshipLinkContact => 'Propojit kontakt';
 
   @override
@@ -11344,6 +11376,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipMoreActions => 'Další akce';
+
+  @override
   String get relationshipNameLabel => 'Jméno';
 
   @override
@@ -11353,6 +11388,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipNextByDay(String day) {
     return 'příští do $day';
   }
+
+  @override
+  String relationshipNextDueOn(String day) {
+    return 'Příště $day';
+  }
+
+  @override
+  String get relationshipNextTimeTitle => 'Příště';
 
   @override
   String get relationshipNicknameLabel => 'Přezdívka';
@@ -11374,8 +11417,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNudgesOn => 'připomínky zapnuty';
 
   @override
-  String get relationshipPostCallBody =>
-      'Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?';
+  String relationshipOnTrackCadence(String cadence) {
+    return 'V rytmu · $cadence';
+  }
+
+  @override
+  String get relationshipPayAttentionTo => 'Dávej pozor na';
 
   @override
   String get relationshipPostCallConfirm => 'Zapsat check-in';
@@ -11384,8 +11431,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipPostCallDismiss => 'Teď ne';
 
   @override
-  String relationshipPostCallTitle(String name) {
-    return 'Jak to šlo s $name?';
+  String relationshipPostCallMeta(String time, int minutes) {
+    return 'začátek $time · asi $minutes min';
+  }
+
+  @override
+  String relationshipPostCallOfferCall(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutami',
+      one: '1 minutou',
+    );
+    return 'Hovor s $name před $_temp0 — zapíšeme to, dokud je to čerstvé?';
+  }
+
+  @override
+  String relationshipPostCallOfferMessage(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutami',
+      one: '1 minutou',
+    );
+    return 'Zpráva pro $name před $_temp0 — zapíšeme to, dokud je to čerstvé?';
   }
 
   @override
@@ -11399,6 +11468,13 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0 bez kontaktu';
   }
+
+  @override
+  String get relationshipReachPrivacy =>
+      'Zůstává v tomto zařízení · nikdy se nesdílí s AI';
+
+  @override
+  String get relationshipReachTitle => 'Kontakt';
 
   @override
   String get relationshipRelinkContact => 'Propojit jiný kontakt';
@@ -11491,6 +11567,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipStayInTouch => 'Udržovat kontakt';
+
+  @override
+  String relationshipTasksLinkedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count propojených',
+      few: '$count propojené',
+      one: '1 propojený',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipTimestampToday => 'Dnes';
