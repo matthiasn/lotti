@@ -523,8 +523,9 @@ flags before calling `NavService.tapIndex`; a destination disabled while the
 sheet is open is a no-op. The per-destination stacks above continue to retain
 routes and working state. The shared modal owns dismissal and scrolling; grid
 rows size to their tallest cell so translated labels and large text can wrap.
-Settings sync counts occupy a separate line inside the tile. Support links
-remain below the grid.
+Mobile sync counts occupy the right side of the footer, with support links
+on the left below the grid. Tile content uses the `spacing.step5` horizontal
+inset; desktop sync counts remain beside Settings.
 
 ```mermaid
 stateDiagram-v2
@@ -602,7 +603,7 @@ optional status row beneath Settings to displace it. Collapsing the sidebar
 removes the band entirely — the icon-only rail is 72 px, narrower than the four
 glyphs — and the Manual stays reachable from Settings meanwhile.
 
-The actions themselves are one right-aligned group. Email is a plain envelope
+The actions themselves are one left-aligned group. Email is a plain envelope
 button with the same 44 px target, colour, tooltip and semantics as Manual,
 GitHub and Discord; its localized “Contact Us” wording remains the accessible
 name rather than visible copy. With no label competing for width, all four

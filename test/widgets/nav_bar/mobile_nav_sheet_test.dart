@@ -20,6 +20,7 @@ void main() {
     required List<MobileNavSheetItem> items,
     List<Override> overrides = const [],
     MediaQueryData? mediaQueryData,
+    Widget? footerTrailing,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -28,6 +29,7 @@ void main() {
             onPressed: () => showMobileNavSheet(
               context: context,
               items: items,
+              footerTrailing: footerTrailing,
             ),
             child: const Text('open'),
           ),
@@ -174,16 +176,16 @@ void main() {
       expect(find.byType(WoltModalSheet), findsNothing);
     });
 
-    testWidgets('keeps a trailing count below the label within its tile', (
+    testWidgets('places status beside the links below the destinations', (
       tester,
     ) async {
       await pumpAndOpenSheet(
         tester,
+        footerTrailing: const Text('42', key: Key('trailing-badge')),
         items: [
           MobileNavSheetItem(
             label: 'Settings',
             icon: const Icon(LottiIcons.settings),
-            trailing: const Text('42', key: Key('trailing-badge')),
             onSelected: () {},
           ),
           MobileNavSheetItem(
@@ -196,8 +198,10 @@ void main() {
       final badge = tester.getRect(find.byKey(const Key('trailing-badge')));
       final label = tester.getRect(find.text('Settings'));
       expect(badge.top, greaterThanOrEqualTo(label.bottom));
-      expect(badge.left, label.left);
-      expect(badge.right, lessThan(tester.getRect(find.text('Habits')).left));
+      expect(
+        badge.left,
+        greaterThan(tester.getRect(find.byType(ContactSupportRow)).right),
+      );
     });
 
     testWidgets('gives each row room to breathe, not just a tap target', (
@@ -338,37 +342,67 @@ void main() {
       );
     });
 
-    testWidgets('lays out a real sync-count trailing widget in a sheet row', (
-      tester,
-    ) async {
-      // Exercise real compact sync counts inside the tile's bounded label
-      // column, including a large inbound backlog.
-      await pumpAndOpenSheet(
-        tester,
-        overrides: [
-          journalDbProvider.overrideWithValue(
-            mockJournalDbWithSyncFlag(enabled: true),
-          ),
-          syncDatabaseProvider.overrideWithValue(mockSyncDatabaseWithCount(12)),
-          inboundQueueDepthProvider.overrideWith(
-            (_) => Stream<int>.value(18342),
-          ),
-        ],
-        items: [
-          MobileNavSheetItem(
-            label: 'Settings',
-            icon: const Icon(LottiIcons.settings),
-            trailing: const SyncQueueCounts(),
-            onSelected: () {},
-          ),
-        ],
-      );
+    for (final width in [320.0, 390.0]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets(
+          'lays out sync counts beside links at $width and scale $scale',
+          (
+            tester,
+          ) async {
+            tester.view.physicalSize = Size(width, 844);
+            tester.view.devicePixelRatio = 1;
+            addTearDown(tester.view.resetPhysicalSize);
+            addTearDown(tester.view.resetDevicePixelRatio);
+            // Real counts share a bounded footer with all four support links.
+            await pumpAndOpenSheet(
+              tester,
+              footerTrailing: const SyncQueueCounts(),
+              mediaQueryData: MediaQueryData(
+                size: Size(width, 844),
+                textScaler: TextScaler.linear(scale),
+              ),
+              overrides: [
+                journalDbProvider.overrideWithValue(
+                  mockJournalDbWithSyncFlag(enabled: true),
+                ),
+                syncDatabaseProvider.overrideWithValue(
+                  mockSyncDatabaseWithCount(12),
+                ),
+                inboundQueueDepthProvider.overrideWith(
+                  (_) => Stream<int>.value(18342),
+                ),
+              ],
+              items: [
+                MobileNavSheetItem(
+                  label: 'Settings',
+                  icon: const Icon(LottiIcons.settings),
+                  onSelected: () {},
+                ),
+              ],
+            );
 
-      expect(tester.takeException(), isNull);
-      // The gap is a narrow no-break space (U+202F), not a word space — see
-      // `syncQueueArrowGap`.
-      expect(find.text('↓\u202F18K'), findsOneWidget);
-      expect(find.text('↑\u202F12'), findsOneWidget);
-    });
+            expect(tester.takeException(), isNull);
+            // The gap is a narrow no-break space (U+202F), not a word space — see
+            // `syncQueueArrowGap`.
+            expect(find.text('↓\u202F18K'), findsOneWidget);
+            expect(find.text('↑\u202F12'), findsOneWidget);
+            final links = tester.getRect(find.byType(ContactSupportRow));
+            final counts = tester.getRect(find.byType(SyncQueueCounts));
+            expect(counts.left, greaterThanOrEqualTo(links.right));
+            expect(
+              counts.center.dy,
+              closeTo(
+                tester.getRect(find.byKey(contactSupportEmailKey)).center.dy,
+                0.01,
+              ),
+            );
+            expect(
+              counts.top,
+              greaterThan(tester.getRect(find.text('Settings')).bottom),
+            );
+          },
+        );
+      }
+    }
   });
 }

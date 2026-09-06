@@ -32,7 +32,7 @@ class DesignSystemContactAction {
   final Key? iconKey;
 }
 
-/// The support footer: one right-aligned group of glyph-only destinations.
+/// The support footer: one left-aligned group of glyph-only destinations.
 ///
 /// Both navigation surfaces host it — the desktop sidebar pins it beneath
 /// Settings, the mobile navigation sheet closes with it — so the two never drift
@@ -46,7 +46,7 @@ class DesignSystemContactAction {
 ///
 /// Every destination, including email, uses the same compact navigation target
 /// and ambient [IconTheme]. Keeping all four in one [Row] makes their spacing
-/// uniform and lets one trailing [Align] move the group as a unit. At the
+/// uniform and lets one leading [Align] move the group as a unit. At the
 /// sidebar's 200 px minimum, four 44 px targets still fit inside the band's
 /// token inset without wrapping or overflow.
 class DesignSystemContactRow extends StatelessWidget {
@@ -79,7 +79,7 @@ class DesignSystemContactRow extends StatelessWidget {
         top: tokens.spacing.step2,
       ),
       child: Align(
-        alignment: Alignment.centerRight,
+        alignment: Alignment.centerLeft,
         // Shrink-wraps vertically. Without this the band takes every pixel the
         // host offers, which on the desktop rail means swallowing the space
         // above Settings rather than sitting at the foot of it.

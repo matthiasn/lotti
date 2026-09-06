@@ -1099,12 +1099,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       return DesignSystemBottomNavigationBar(
         onNavigate: () => showMobileNavSheet(
           context: context,
+          footerTrailing: const SyncQueueCounts(),
           items: [
             for (final (i, destination) in destinations.indexed)
               MobileNavSheetItem(
                 label: destination.label,
                 icon: destination.iconBuilder(active: i == index),
-                trailing: destination.trailingBuilder?.call(active: i == index),
                 active: i == index,
                 onSelected: () {
                   final tapIndex = _currentDestinationIndex(destination.kind);

@@ -127,7 +127,7 @@ void main() {
   });
 
   group('DesignSystemContactRow layout', () {
-    testWidgets('right-aligns four uniform targets as one contiguous group', (
+    testWidgets('left-aligns four uniform targets as one contiguous group', (
       tester,
     ) async {
       await tester.pumpWidget(wrap(buildRow()));
@@ -149,8 +149,8 @@ void main() {
       }
 
       expect(
-        targets.last.right,
-        closeTo(_wideRow - dsTokensDark.spacing.step3, 0.5),
+        targets.first.left,
+        closeTo(dsTokensDark.spacing.step3, 0.5),
       );
     });
 
@@ -179,12 +179,12 @@ void main() {
       await tester.pump();
 
       final row = tester.getRect(find.byType(DesignSystemContactRow));
-      final lastAction = tester.getRect(find.byKey(discordKey));
+      final firstAction = tester.getRect(find.byKey(emailKey));
 
       // `step3`, not the rail's `step5` gutter: four 44 px targets need
       // 176 px and a step5-inset 200 px rail leaves only 168 px, so the group
       // would wrap. This is the reason the band is full-bleed at all.
-      expect(row.right - lastAction.right, dsTokensDark.spacing.step3);
+      expect(firstAction.left - row.left, dsTokensDark.spacing.step3);
     });
   });
 

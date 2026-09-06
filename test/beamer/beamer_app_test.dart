@@ -976,8 +976,7 @@ void main() {
 
         expect(find.text('Projects'), findsOneWidget);
 
-        // Sheet rows use the desktop-style trailing slot for the Settings
-        // outbox count instead of cramming the badge over the gear icon.
+        // The mobile footer carries sync counts separately from destinations.
         expect(find.byType(SyncQueueCounts), findsOneWidget);
         expect(find.byType(OutboxBadgeIcon), findsNothing);
 

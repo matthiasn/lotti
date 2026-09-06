@@ -10,17 +10,12 @@ class MobileNavSheetItem {
     required this.label,
     required this.icon,
     required this.onSelected,
-    this.trailing,
     this.active = false,
   });
 
   final String label;
   final Widget icon;
   final bool active;
-
-  /// Optional status rendered below the label, so counts do not squeeze the
-  /// destination name in a narrow grid cell (e.g. the Settings sync counts).
-  final Widget? trailing;
 
   /// Invoked after the sheet is dismissed; navigates to the destination.
   final VoidCallback onSelected;
@@ -29,10 +24,11 @@ class MobileNavSheetItem {
 /// Opens all enabled destinations in a two-column grid, in reading order.
 /// Rows grow with their content and the shared modal scrolls on short screens.
 /// Selection dismisses the sheet before navigating. Support links remain below
-/// the grid rather than taking a destination slot.
+/// the grid on the left, with optional status on the right.
 Future<void> showMobileNavSheet({
   required BuildContext context,
   required List<MobileNavSheetItem> items,
+  Widget? footerTrailing,
 }) {
   return ModalUtils.showSinglePageModal<void>(
     context: context,
@@ -68,7 +64,24 @@ Future<void> showMobileNavSheet({
               ),
             ),
           ),
-        const ContactSupportRow(),
+        Row(
+          children: [
+            const ContactSupportRow(),
+            SizedBox(width: context.designTokens.spacing.step3),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top: context.designTokens.spacing.step2,
+                  right: context.designTokens.spacing.step3,
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: footerTrailing ?? const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     ),
   );
@@ -107,7 +120,7 @@ class _DestinationTile extends StatelessWidget {
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step3,
+                horizontal: tokens.spacing.step5,
                 vertical: tokens.spacing.step4,
               ),
               child: Row(
@@ -123,20 +136,11 @@ class _DestinationTile extends StatelessWidget {
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.label,
-                          style: tokens.typography.styles.body.bodyMedium
-                              .copyWith(color: tint),
-                        ),
-                        if (item.trailing != null) ...[
-                          SizedBox(height: tokens.spacing.step1),
-                          item.trailing!,
-                        ],
-                      ],
+                    child: Text(
+                      item.label,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tint,
+                      ),
                     ),
                   ),
                 ],
