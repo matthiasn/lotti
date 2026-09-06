@@ -67,10 +67,12 @@ class AiProviderCard extends StatelessWidget {
   static AiProviderCardStatus statusFor({
     required AiConfigInferenceProvider provider,
     required int modelCount,
+    int installedEmbeddedModelCount = 0,
   }) {
     return aiProviderCardStatusFor(
       provider: provider,
       modelCount: modelCount,
+      installedEmbeddedModelCount: installedEmbeddedModelCount,
     );
   }
 
@@ -142,6 +144,11 @@ class AiProviderCard extends StatelessWidget {
                 modelCount: modelCount,
                 lastUsedLabel: lastUsedLabel,
                 onFix: onFix,
+                offlineHint:
+                    provider.inferenceProviderType ==
+                        InferenceProviderType.sherpa
+                    ? messages.sherpaModelNotInstalled
+                    : null,
               ),
             ],
           ),
@@ -209,10 +216,12 @@ class _ProviderStatusRow extends StatelessWidget {
     required this.modelCount,
     required this.lastUsedLabel,
     required this.onFix,
+    this.offlineHint,
   });
 
   final AiProviderCardStatus status;
   final int modelCount;
+  final String? offlineHint;
   final String? lastUsedLabel;
   final VoidCallback? onFix;
 
@@ -325,7 +334,7 @@ class _ProviderStatusRow extends StatelessWidget {
                   start: tokens.spacing.step3,
                 ),
                 child: Text(
-                  messages.aiProviderCardOllamaHint,
+                  offlineHint ?? messages.aiProviderCardOllamaHint,
                   textAlign: TextAlign.end,
                   style: caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,

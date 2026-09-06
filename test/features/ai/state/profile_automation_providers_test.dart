@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
@@ -42,6 +43,53 @@ void main() {
     });
 
     tearDown(() => container.dispose());
+
+    test(
+      'embedded fallback provider follows installation and removal',
+      () async {
+        final configs = MockAiConfigRepository();
+        final models = MockSherpaModelRepository();
+        final provider = AiTestDataFactory.createTestProvider(
+          type: InferenceProviderType.sherpa,
+        );
+        final model = AiTestDataFactory.createTestModel(
+          providerModelId: 'tiny',
+          inferenceProviderId: provider.id,
+          inputModalities: [Modality.audio],
+        );
+        when(
+          () => configs.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [model]);
+        when(
+          () => configs.getConfigById(provider.id),
+        ).thenAnswer((_) async => provider);
+        var installed = false;
+        when(
+          () => models.isAvailable('tiny'),
+        ).thenAnswer((_) async => installed);
+        final scoped = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(configs),
+            sherpaModelRepositoryProvider.overrideWithValue(models),
+            subjectAgentResolverProvider.overrideWithValue(
+              MockSubjectAgentResolver(),
+            ),
+            agentTemplateServiceProvider.overrideWithValue(
+              MockAgentTemplateService(),
+            ),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          ],
+        );
+        addTearDown(scoped.dispose);
+        final service = scoped.read(profileAutomationServiceProvider);
+        expect(await service.hasDirectTranscriptionFallback(), isFalse);
+        installed = true;
+        expect(await service.hasDirectTranscriptionFallback(), isTrue);
+        installed = false;
+        expect(await service.hasDirectTranscriptionFallback(), isFalse);
+        verify(() => models.isAvailable('tiny')).called(3);
+      },
+    );
 
     test(
       'profileResolverProvider wires the repo into a working resolver',

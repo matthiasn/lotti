@@ -24,6 +24,7 @@ list(APPEND FLUTTER_FFI_PLUGIN_LIST
   flutter_lame
   flutter_vodozemac
   jni
+  sherpa_onnx_linux
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

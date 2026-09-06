@@ -23,6 +23,11 @@ buildscript {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    // sherpa_onnx 1.13.7 needs the ORT 1.27 C API. Keep the Java/JNI
+    // dependency used by TTS on the same API (1.27.1 has no Maven artifact).
+    configurations.configureEach {
+        resolutionStrategy.force 'com.microsoft.onnxruntime:onnxruntime-android:1.27.0'
+    }
     
     beforeEvaluate { project ->
         project.ext.compileSdkVersion = rootProject.ext.compileSdkVersion

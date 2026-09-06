@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
+
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart'
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
+import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -29,7 +31,7 @@ import 'package:openai_dart/openai_dart.dart';
 ///
 /// Routes `generateWithAudio` to contextual chat-audio, dedicated
 /// transcription repositories (Whisper, Voxtral, OpenAI, Mistral, Melious),
-/// and oMLX; `generateWithMessages` to the
+/// oMLX, and device-local sherpa; `generateWithMessages` to the
 /// provider-specific multi-turn implementations; and `generateImage` to the
 /// Gemini/DashScope image APIs. Owns the HTTP-backed sub-repositories so
 /// [close] can dispose them.
@@ -46,6 +48,7 @@ class CloudInferenceGenerateMore {
     required this._voxtralRepository,
     required this._openAiTranscriptionRepository,
     required this._helpers,
+    required this._sherpaRepository,
   });
 
   final OllamaInferenceRepository _ollamaRepository;
@@ -59,7 +62,11 @@ class CloudInferenceGenerateMore {
   final VoxtralInferenceRepository _voxtralRepository;
   final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
   final CloudInferenceRequestHelpers _helpers;
+  final SherpaTranscriptionRepository Function() _sherpaRepository;
 
+  /// Routes audio to the selected provider. Embedded sherpa transcription does
+  /// not apply [speechDictionaryTerms] or task-context prompts: its current
+  /// Whisper bindings do not expose prompt conditioning.
   Stream<CreateChatCompletionStreamResponse> generateWithAudio(
     String prompt, {
     required String model,
@@ -78,6 +85,12 @@ class CloudInferenceGenerateMore {
     GeminiThinkingMode? geminiThinkingMode,
     InferenceImpactCollector? impactCollector,
   }) {
+    if (provider.inferenceProviderType == InferenceProviderType.sherpa) {
+      return _sherpaRepository().transcribeAudio(
+        model: model,
+        audioBase64: audioBase64,
+      );
+    }
     // For Whisper, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.whisper) {
       return _whisperRepository.transcribeAudio(
@@ -336,6 +349,10 @@ class CloudInferenceGenerateMore {
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
+    if (provider.inferenceProviderType == InferenceProviderType.sherpa) {
+      throw UnsupportedError('sherpa-onnx supports audio transcription only');
+    }
+
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
       '  model: $model\n'
@@ -522,6 +539,7 @@ class CloudInferenceGenerateMore {
       case InferenceProviderType.ollama:
       case InferenceProviderType.voxtral:
       case InferenceProviderType.whisper:
+      case InferenceProviderType.sherpa:
         throw UnsupportedError(
           'Image generation is not supported for '
           '${provider.inferenceProviderType} providers',

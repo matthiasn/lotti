@@ -43,6 +43,35 @@ void main() {
     container.dispose();
   });
 
+  test('embedded sherpa prompts remain available on mobile', () async {
+    final desktop = platform.isDesktop;
+    platform.isDesktop = false;
+    addTearDown(() => platform.isDesktop = desktop);
+    final model = AiTestDataFactory.createTestModel(
+      inferenceProviderId: 'embedded',
+    );
+    final provider = AiTestDataFactory.createTestProvider(
+      id: 'embedded',
+      type: InferenceProviderType.sherpa,
+    );
+    when(() => mockRepo.getConfigById(model.id)).thenAnswer((_) async => model);
+    when(
+      () => mockRepo.getConfigById(provider.id),
+    ).thenAnswer((_) async => provider);
+    expect(
+      await filter.isPromptAvailableOnPlatform(
+        AiTestDataFactory.createTestPrompt(defaultModelId: model.id),
+      ),
+      isTrue,
+    );
+    expect(
+      PromptCapabilityFilter.isLocalOnlyProviderType(
+        InferenceProviderType.sherpa,
+      ),
+      isTrue,
+    );
+  });
+
   group('PromptCapabilityFilter', () {
     group('isPromptAvailableOnPlatform', () {
       test(
@@ -356,6 +385,7 @@ void main() {
           InferenceProviderType.ollama,
           InferenceProviderType.omlx,
           InferenceProviderType.voxtral,
+          InferenceProviderType.sherpa,
         }.contains(providerType);
 
         expect(
@@ -805,6 +835,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('isLocalOnlyProviderType — Glados property', () {
     const localOnlyTypes = {
+      InferenceProviderType.sherpa,
       InferenceProviderType.whisper,
       InferenceProviderType.ollama,
       InferenceProviderType.omlx,

@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -163,10 +164,13 @@ void main() {
   AudioTranscriptionService buildService({
     required AiConfigRepository repo,
     MockCloudInferenceRepository? cloud,
+    MockSherpaModelRepository? embedded,
   }) {
     final container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWith((_) => repo),
+        if (embedded != null)
+          sherpaModelRepositoryProvider.overrideWithValue(embedded),
         if (cloud != null)
           cloudInferenceRepositoryProvider.overrideWith((_) => cloud),
       ],
@@ -189,6 +193,50 @@ void main() {
       event: captureAny(named: 'event'),
     ),
   ).captured.cast<AiConsumptionEvent>();
+
+  for (final installed in [false, true]) {
+    test('discovery selects sherpa only when installed ($installed)', () async {
+      final repo = isolatedRepo();
+      await repo.saveConfig(_provider(id: 'cloud'), fromSync: true);
+      await repo.saveConfig(
+        _audioModel(id: 'cloud-model', providerId: 'cloud'),
+        fromSync: true,
+      );
+      await repo.saveConfig(
+        _provider(
+          id: 'embedded',
+          type: InferenceProviderType.sherpa,
+          apiKey: '',
+          baseUrl: '',
+        ),
+        fromSync: true,
+      );
+      await repo.saveConfig(
+        _audioModel(
+          id: 'embedded-model',
+          providerId: 'embedded',
+          providerModelId: 'tiny',
+        ),
+        fromSync: true,
+      );
+      final embedded = MockSherpaModelRepository();
+      when(
+        () => embedded.isAvailable('tiny'),
+      ).thenAnswer((_) async => installed);
+      final cloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudio(cloud, ['transcript']);
+      final service = buildService(
+        repo: repo,
+        cloud: cloud,
+        embedded: embedded,
+      );
+      expect(await service.transcribe((await audioFile()).path), 'transcript');
+      expect(
+        _verifyGenerateWithAudio(cloud).model,
+        installed ? 'tiny' : 'gemini-2.5-flash',
+      );
+    });
+  }
 
   setUpAll(() async {
     registerAllFallbackValues();

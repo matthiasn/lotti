@@ -105,13 +105,13 @@ modules:
       - type: archive
         only-arches:
           - x86_64
-        url: https://github.com/microsoft/onnxruntime/releases/download/v1.22.0/onnxruntime-linux-x64-1.22.0.tgz
-        sha256: 8344d55f93d5bc5021ce342db50f62079daf39aaafb5d311a451846228be49b3
+        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.1/onnxruntime-linux-x64-1.27.1.tgz
+        sha256: 25b1ef1fea1acd210d63f8f24dc870ad6e077795ce1f54876252c6d3803c15af
       - type: archive
         only-arches:
           - aarch64
-        url: https://github.com/microsoft/onnxruntime/releases/download/v1.22.0/onnxruntime-linux-aarch64-1.22.0.tgz
-        sha256: bb76395092d150b52c7092dc6b8f2fe4d80f0f3bf0416d2f269193e347e24702
+        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.1/onnxruntime-linux-aarch64-1.27.1.tgz
+        sha256: 33c67e33d1e25b816878366ea276589a024f71f000e7ff955c4b33224d639edd
   # NOTE: No separate flutter-sdk module - Flutter is included in lotti sources for flatpak-flutter
   - name: lotti
     buildsystem: simple
@@ -139,7 +139,9 @@ modules:
         if [ "${FLATPAK_ARCH}" = "aarch64" ]; then
           arch="arm64"
         fi
-        cp -r build/linux/${arch}/release/bundle/* /app/
+        # Replace existing runtime symlinks instead of following them: the
+        # build dependency and bundled speech runtime use opposite .so aliases.
+        cp -r --remove-destination build/linux/${arch}/release/bundle/* /app/
       - chmod +x /app/lotti
       - |
         install -D linux/com.matthiasn.lotti.desktop /app/share/applications/com.matthiasn.lotti.desktop

@@ -254,9 +254,8 @@ class FlutterOnnxruntimePlugin : FlutterPlugin, MethodCallHandler {
                             "ACL" -> {
                                 ortSessionOptions.addACL(true)
                             }
-                            "ARM_NN" -> {
-                                ortSessionOptions.addArmNN(useArena)
-                            }
+                            // LOTTI FORK PATCH: ORT 1.27 removed ArmNN.
+                            // Requests for it use the unsupported-provider error below.
                             "CORE_ML" -> {
                                 ortSessionOptions.addCoreML()
                             }

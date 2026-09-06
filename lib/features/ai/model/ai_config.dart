@@ -25,6 +25,7 @@ enum InferenceProviderType {
   ollama,
   voxtral,
   whisper,
+  sherpa,
 }
 
 /// A kind of content a model can take as input or emit as output.

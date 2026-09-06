@@ -86,8 +86,21 @@ When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
   onnxruntime.xcframework/ios-arm64/onnxruntime.framework/onnxruntime | grep -A3
   LC_BUILD_VERSION`) before assuming 15.8 is still reachable — a bumped ORT can
   raise the real floor above it, which would force `ios/Podfile` up too.
-- **Linux** (`linux/CMakeLists.txt`): the `ONNXRUNTIME_ROOT_DIR` env seeding.
+- **Linux** (`linux/CMakeLists.txt`): the `ONNXRUNTIME_ROOT_DIR` env seeding
+  and separate `SYSTEM_ONNXRUNTIME` pkg-config prefix, which prevents a failed
+  lookup from clearing the application's pinned download version.
+- **Android** (`android/src/main/kotlin/com/masicai/flutteronnxruntime/FlutterOnnxruntimePlugin.kt`):
+  remove the obsolete `addArmNN` call, which is absent from the shared runtime's
+  Java API. Explicit ArmNN requests use the existing unsupported-provider error;
+  the application's CPU sessions are unaffected. Preserve the corresponding
+  Android support note on `OrtProvider.ARM_NN` and the `OrtSessionOptions.providers`
+  documentation: provider priority does not imply skipping unsupported options
+  during session creation.
 
 If the bundled ONNX Runtime **version** changes, also update the pinned binary
 URL + per-arch `sha256` in the Flathub manifest's `onnxruntime` module
 (`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`).
+
+The application overrides the Linux runtime version to match sherpa's ASR
+runtime. The shared-library packaging contract is documented in
+[embedded speech](../../knowledge/features/ai/embedded-speech.md#native-packaging).

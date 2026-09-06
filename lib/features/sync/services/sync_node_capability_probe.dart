@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:meta/meta.dart';
 
@@ -102,6 +103,7 @@ Future<bool> probeHttpReachability({
 SyncNodeCapabilityProbe makeDefaultSyncNodeCapabilityProbe({
   OllamaReachabilityProbe ollamaProbe = _defaultOllamaProbe,
   OmlxReachabilityProbe omlxProbe = _defaultOmlxProbe,
+  Future<bool> Function()? sherpaProbe,
 }) {
   return ({
     required String hostId,
@@ -110,6 +112,7 @@ SyncNodeCapabilityProbe makeDefaultSyncNodeCapabilityProbe({
     String? appVersion,
   }) async {
     final capabilities = <NodeCapability>[
+      if (await sherpaProbe?.call() ?? false) NodeCapability.sherpa,
       if (await omlxProbe(timeout: const Duration(milliseconds: 300)))
         NodeCapability.omlxLlm,
       if (await ollamaProbe(timeout: const Duration(milliseconds: 300)))
@@ -137,7 +140,9 @@ Future<SyncNodeProfile> defaultSyncNodeCapabilityProbe({
   String? displayName,
   String? appVersion,
 }) {
-  return makeDefaultSyncNodeCapabilityProbe()(
+  return makeDefaultSyncNodeCapabilityProbe(
+    sherpaProbe: probeSherpaAvailability,
+  )(
     hostId: hostId,
     now: now,
     displayName: displayName,
@@ -149,4 +154,23 @@ String _defaultDisplayName() {
   final host = Platform.localHostname;
   if (host.isNotEmpty) return host;
   return 'Lotti on ${Platform.operatingSystem}';
+}
+
+/// Advertising requires at least one verified model on this device. A synced
+/// provider configuration alone must not create an apparently ready ASR node.
+@visibleForTesting
+Future<bool> probeSherpaAvailability({
+  SherpaModelRepository Function() createRepository = SherpaModelRepository.new,
+}) async {
+  final repository = createRepository();
+  try {
+    for (final model in repository.models) {
+      if (await repository.isAvailable(model.id)) return true;
+    }
+    return false;
+  } catch (_) {
+    return false;
+  } finally {
+    repository.close();
+  }
 }

@@ -41,7 +41,7 @@ otherwise-convenient fallbacks are deliberately absent.
 
 **`SyncNodeProfile`** captures one device's vector-clock `hostId`, display name,
 platform, and advertised capabilities: `omlxLlm`, `ollamaLlm`,
-`voxtral`, `whisper`.
+`voxtral`, `whisper`, `sherpa`.
 
 Capabilities are auto-detected at startup by
 `makeDefaultSyncNodeCapabilityProbe`:
@@ -51,8 +51,16 @@ Capabilities are auto-detected at startup by
 | `omlxLlm` | The local OpenAI-compatible oMLX `/models` endpoint responds at the configured default base URL. **401/403 still counts as reachable**, because inference uses the saved provider key |
 | `ollamaLlm` | A 300 ms request to `127.0.0.1:11434/api/version` succeeds |
 | `voxtral`, `whisper` | Never auto-claimed — they need user-installed binaries the app does not manage |
+| `sherpa` | At least one device-local embedded model passes installation verification; see [embedded speech](../ai/embedded-speech.md) |
 
 **`SyncMessage.syncNodeProfile(profile)`** broadcasts the local self profile.
+`SyncNodeProfileWireConverter` keeps the original four capability tokens in
+the legacy `capabilities` field. When a newer token such as `sherpa` is present,
+the optional `capabilitiesV2` field carries the complete ordered list. Older
+peers ignore that field and retain the known capabilities; newer peers prefer
+it and ignore unknown future tokens. This conversion applies to sync envelopes;
+local profile storage continues to use the current model's JSON representation.
+
 Receivers upsert it into a `SettingsDb` directory
 (`sync_node_profile_directory`), last-write-wins by `updatedAt`.
 
@@ -61,8 +69,8 @@ Receivers upsert it into a `SettingsDb` directory
 - `broadcast()` — unconditional, called on every startup, so a peer that joined
   late, wiped settings, or missed the last event converges within a session. The
   receiver's last-write-wins upsert makes redundant re-publishes free.
-- `broadcastIfChanged()` — diff-only, called from the rename UI to suppress
-  no-op saves.
+- `broadcastIfChanged()` — diff-only, called from the rename UI and after
+  embedded model installation/removal to suppress no-op broadcasts.
 
 **`AiConfigInferenceProfile.pinnedHostId`** is a single VC host UUID. When set,
 only that device claims inbound audio for the profile. **Null means no

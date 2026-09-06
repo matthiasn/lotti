@@ -135,6 +135,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.ollama: 'ollama',
   InferenceProviderType.voxtral: 'voxtral',
   InferenceProviderType.whisper: 'whisper',
+  InferenceProviderType.sherpa: 'sherpa',
 };
 
 const _$AiConsumptionResponseTypeEnumMap = {

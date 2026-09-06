@@ -1405,6 +1405,7 @@
   "aiProviderOmlxName": "oMLX (local)",
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderSherpaName": "sherpa-onnx (on device)",
   "aiProviderTaglineAlibaba": "Qwen models · multimodal · long context",
   "aiProviderTaglineAnthropic": "Claude family · long context",
   "aiProviderTaglineGemini": "Multimodal · audio transcription",
@@ -7082,6 +7083,20 @@
   "settingsV2UnimplementedTitle": "Panel not yet implemented",
   "settingsWhatsNewSubtitle": "See the latest updates and features",
   "settingsWhatsNewTitle": "What's New",
+  "sherpaDeleteModel": "Delete downloaded model",
+  "sherpaDownloadModel": "Download ({size} MB)",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelConfigurationError": "Model downloaded, but its configuration could not be saved.",
+  "sherpaModelError": "Model operation failed. Try again.",
+  "sherpaModelInstalled": "Downloaded",
+  "sherpaModelNotInstalled": "Download a model on this device",
+  "sherpaProviderDescription": "Transcribe on this device without a server. Download a model below.",
   "sidebarActiveSectionTitle": "Activity",
   "sidebarActivityCollapseTooltip": "Collapse activity",
   "sidebarActivityExpandTooltip": "Expand activity",

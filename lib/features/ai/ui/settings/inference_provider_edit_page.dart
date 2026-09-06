@@ -256,6 +256,7 @@ class _InferenceProviderEditPageState
     required String baseUrl,
   }) {
     _connectionVerifyDebounce?.cancel();
+    if (!ProviderConfig.usesBaseUrl(providerType)) return;
     final controller = ref.read(
       connectionVerifierControllerProvider(providerType).notifier,
     );

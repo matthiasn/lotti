@@ -20,10 +20,24 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
     }
 
     AiProviderCard buildCard(AiConfigInferenceProvider provider) {
-      final modelCount = modelsByProvider[provider.id] ?? 0;
+      final isEmbedded =
+          provider.inferenceProviderType == InferenceProviderType.sherpa;
+      final installed = isEmbedded
+          ? ref.watch(sherpaInstalledModelIdsProvider).value ?? <String>{}
+          : const <String>{};
+      final modelCount = isEmbedded
+          ? models
+                .where(
+                  (model) =>
+                      model.inferenceProviderId == provider.id &&
+                      installed.contains(model.providerModelId),
+                )
+                .length
+          : modelsByProvider[provider.id] ?? 0;
       final status = AiProviderCard.statusFor(
         provider: provider,
         modelCount: modelCount,
+        installedEmbeddedModelCount: isEmbedded ? modelCount : 0,
       );
       return AiProviderCard(
         provider: provider,

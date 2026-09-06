@@ -1,6 +1,6 @@
 import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart'
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
+import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -74,6 +75,7 @@ class CloudInferenceRepository {
     );
 
     _generateMore = CloudInferenceGenerateMore(
+      sherpaRepository: () => ref.read(sherpaTranscriptionRepositoryProvider),
       ollamaRepository: ollamaRepository,
       geminiRepository: geminiRepository,
       dashScopeRepository: dashScopeRepository,

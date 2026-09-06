@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
@@ -124,6 +125,18 @@ class AudioTranscriptionService {
           })
           .toList();
 
+      for (final candidate in audioModels.toList()) {
+        final candidateProvider = allProviders.firstWhereOrNull(
+          (provider) => provider.id == candidate.inferenceProviderId,
+        );
+        if (candidateProvider?.inferenceProviderType ==
+                InferenceProviderType.sherpa &&
+            !await ref
+                .read(sherpaModelRepositoryProvider)
+                .isAvailable(candidate.providerModelId)) {
+          audioModels.remove(candidate);
+        }
+      }
       if (audioModels.isEmpty) {
         throw Exception('No audio-capable models configured');
       }
@@ -257,6 +270,15 @@ AiConfigModel _selectBatchAudioModel(
     return providersById[model.inferenceProviderId]?.inferenceProviderType ==
         type;
   }
+
+  final embedded =
+      audioModels
+          .where(
+            (model) => hasProviderType(model, InferenceProviderType.sherpa),
+          )
+          .toList()
+        ..sort((left, right) => left.name.compareTo(right.name));
+  if (embedded.isNotEmpty) return embedded.first;
 
   final mistralChatAudio = audioModels.firstWhereOrNull(
     (model) =>

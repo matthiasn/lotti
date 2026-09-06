@@ -2151,6 +2151,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSherpaName => 'sherpa-onnx (auf dem Gerät)';
+
+  @override
   String get aiProviderTaglineAlibaba =>
       'Qwen-Modelle · multimodal · langer Kontext';
 
@@ -12673,6 +12676,33 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'Was gibt\'s Neues';
+
+  @override
+  String get sherpaDeleteModel => 'Heruntergeladenes Modell löschen';
+
+  @override
+  String sherpaDownloadModel(String size) {
+    return 'Herunterladen ($size MB)';
+  }
+
+  @override
+  String get sherpaModelConfigurationError =>
+      'Das Modell wurde heruntergeladen, aber seine Konfiguration konnte nicht gespeichert werden.';
+
+  @override
+  String get sherpaModelError =>
+      'Modellaktion fehlgeschlagen. Versuch es erneut.';
+
+  @override
+  String get sherpaModelInstalled => 'Heruntergeladen';
+
+  @override
+  String get sherpaModelNotInstalled =>
+      'Lade ein Modell auf dieses Gerät herunter';
+
+  @override
+  String get sherpaProviderDescription =>
+      'Transkribiere auf diesem Gerät ohne Server. Lade unten ein Modell herunter.';
 
   @override
   String get sidebarActiveSectionTitle => 'Aktivität';

@@ -67,10 +67,12 @@ direct-build/output/
 └── cargokit/                        # Cargokit patches
 ```
 
-### ONNX Runtime (on-device TTS)
+### ONNX Runtime (on-device speech)
 
 `flutter_onnxruntime` (vendored fork under `third_party/flutter_onnxruntime`)
-powers on-device TTS. Its Linux CMake otherwise **downloads** the ONNX Runtime
+powers on-device TTS. Sherpa ASR shares its packaged runtime; see
+[embedded speech recognition](../knowledge/features/ai/embedded-speech.md#native-packaging).
+The TTS plugin’s Linux CMake otherwise **downloads** the ONNX Runtime
 binary at configure time, which fails in the offline Flathub build sandbox
 (`CMake Error … extraction directory doesn't exist`).
 

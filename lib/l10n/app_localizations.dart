@@ -3660,6 +3660,12 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
+  /// No description provided for @aiProviderSherpaName.
+  ///
+  /// In en, this message translates to:
+  /// **'sherpa-onnx (on device)'**
+  String get aiProviderSherpaName;
+
   /// No description provided for @aiProviderTaglineAlibaba.
   ///
   /// In en, this message translates to:
@@ -21192,6 +21198,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What\'s New'**
   String get settingsWhatsNewTitle;
+
+  /// No description provided for @sherpaDeleteModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete downloaded model'**
+  String get sherpaDeleteModel;
+
+  /// No description provided for @sherpaDownloadModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Download ({size} MB)'**
+  String sherpaDownloadModel(String size);
+
+  /// No description provided for @sherpaModelConfigurationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Model downloaded, but its configuration could not be saved.'**
+  String get sherpaModelConfigurationError;
+
+  /// No description provided for @sherpaModelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Model operation failed. Try again.'**
+  String get sherpaModelError;
+
+  /// No description provided for @sherpaModelInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get sherpaModelInstalled;
+
+  /// No description provided for @sherpaModelNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Download a model on this device'**
+  String get sherpaModelNotInstalled;
+
+  /// No description provided for @sherpaProviderDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe on this device without a server. Download a model below.'**
+  String get sherpaProviderDescription;
 
   /// No description provided for @sidebarActiveSectionTitle.
   ///

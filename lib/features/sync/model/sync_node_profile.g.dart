@@ -43,4 +43,5 @@ const _$NodeCapabilityEnumMap = {
   NodeCapability.ollamaLlm: 'ollamaLlm',
   NodeCapability.voxtral: 'voxtral',
   NodeCapability.whisper: 'whisper',
+  NodeCapability.sherpa: 'sherpa',
 };

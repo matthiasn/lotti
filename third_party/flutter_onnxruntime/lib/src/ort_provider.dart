@@ -12,6 +12,9 @@
 /// https://onnxruntime.ai/docs/api/java/ai/onnxruntime/OrtProvider.html
 enum OrtProvider {
   ACL,
+
+  /// Unsupported on Android with the bundled ONNX Runtime 1.27 Java API.
+  /// Requesting it rejects session creation, even when CPU follows in the list.
   ARM_NN,
   AZURE,
   CORE_ML,

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io' as io;
-
 import 'package:beamer/beamer.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:drift/drift.dart' as drift;
@@ -84,6 +83,8 @@ import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
+import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
@@ -222,6 +223,7 @@ import 'package:openai_dart/openai_dart.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart' as record;
+import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
@@ -1599,3 +1601,12 @@ class MockSupertonicTtsSession extends Mock implements SupertonicTtsSession {}
 class MockIoFile extends Mock implements io.File {}
 
 class MockIoDirectory extends Mock implements io.Directory {}
+
+class MockSherpaModelRepository extends Mock implements SherpaModelRepository {}
+
+class MockSherpaTranscriptionRepository extends Mock
+    implements SherpaTranscriptionRepository {}
+
+class MockSherpaRecognizer extends Mock implements sherpa.OfflineRecognizer {}
+
+class MockSherpaStream extends Mock implements sherpa.OfflineStream {}

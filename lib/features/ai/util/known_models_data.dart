@@ -774,3 +774,25 @@ const List<KnownModel> mistralModels = [
         'Low-latency live subtitles (~2s delay). No diarization.',
   ),
 ];
+
+/// Multilingual int8 Whisper exports for embedded, device-local transcription.
+const sherpaSpeechModels = [
+  KnownModel(
+    providerModelId: 'tiny',
+    name: 'Whisper Tiny',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    publisher: 'OpenAI',
+    description: 'OpenAI Whisper Tiny · ONNX INT8',
+  ),
+  KnownModel(
+    providerModelId: 'base',
+    name: 'Whisper Base',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    publisher: 'OpenAI',
+    description: 'OpenAI Whisper Base · ONNX INT8',
+  ),
+];

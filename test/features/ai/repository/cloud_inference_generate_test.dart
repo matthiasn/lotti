@@ -223,6 +223,41 @@ void main() {
     mistralOcrRepo.close();
   });
 
+  test(
+    'sherpa rejects text and image input without invoking an HTTP client',
+    () {
+      final provider = providerOfType(InferenceProviderType.sherpa);
+      expect(
+        () => generate.generate(
+          prompt,
+          model: 'tiny',
+          temperature: null,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          provider: provider,
+          overrideClient: client,
+        ),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => generate.generateWithImages(
+          prompt,
+          model: 'tiny',
+          temperature: null,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          images: ['image'],
+          provider: provider,
+          overrideClient: client,
+        ),
+        throwsUnsupportedError,
+      );
+      verifyNever(
+        () => client.createChatCompletionStream(request: any(named: 'request')),
+      );
+    },
+  );
+
   group('generate', () {
     test(
       'OpenAI-compatible path builds a user request and filters pings into a '

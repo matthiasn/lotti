@@ -134,6 +134,44 @@ SyncNodeProfile _roundTripProfile(SyncNodeProfile profile) =>
     );
 
 void main() {
+  group('wire capability compatibility', () {
+    const converter = SyncNodeProfileWireConverter();
+    final profile = SyncNodeProfile(
+      hostId: 'new-device',
+      displayName: 'Laptop',
+      platform: 'linux',
+      capabilities: const [NodeCapability.sherpa, NodeCapability.ollamaLlm],
+      updatedAt: DateTime.utc(2026),
+    );
+    test(
+      'legacy readers retain known capabilities while new readers recover all',
+      () {
+        final json = converter.toJson(profile);
+        expect(json['capabilities'], ['ollamaLlm']);
+        expect(json['capabilitiesV2'], ['sherpa', 'ollamaLlm']);
+        final legacy = SyncNodeProfile.fromJson(
+          {...json}..remove('capabilitiesV2'),
+        );
+        expect(legacy.hostId, profile.hostId);
+        expect(legacy.capabilities, [NodeCapability.ollamaLlm]);
+        expect(converter.fromJson(json), profile);
+      },
+    );
+    test(
+      'legacy payloads are unchanged and unknown future tokens are ignored',
+      () {
+        final legacy = profile.copyWith(capabilities: [NodeCapability.whisper]);
+        expect(converter.toJson(legacy).containsKey('capabilitiesV2'), isFalse);
+        expect(converter.fromJson(legacy.toJson()), legacy);
+        final future = {
+          ...converter.toJson(profile),
+          'capabilitiesV2': ['futureRunner', 'sherpa', 'ollamaLlm'],
+        };
+        expect(converter.fromJson(future), profile);
+      },
+    );
+  });
+
   group('SyncNodeProfile JSON round-trip', () {
     final updatedAt = DateTime.utc(2026, 3, 15, 12, 30);
 

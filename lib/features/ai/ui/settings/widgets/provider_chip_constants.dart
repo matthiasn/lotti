@@ -16,6 +16,12 @@ class ProviderChipConstants {
   /// provider colour fades slightly across the dot.
   static const double avatarGradientAlpha = 0.75;
 
+  // Reuse the existing Whisper palette for both speech runtimes.
+  static const ({Color dark, Color light}) _whisperColors = (
+    dark: Color(0xFFFF8A65),
+    light: Color(0xFFFF5722),
+  );
+
   /// Provider-specific colors that work in both light and dark themes
   static const Map<InferenceProviderType, ({Color dark, Color light})>
   providerColors = {
@@ -59,10 +65,8 @@ class ProviderChipConstants {
       dark: Color(0xFF7DD3FC),
       light: Color(0xFF0284C7), // Sky blue
     ),
-    InferenceProviderType.whisper: (
-      dark: Color(0xFFFF8A65),
-      light: Color(0xFFFF5722), // Deep Orange
-    ),
+    InferenceProviderType.whisper: _whisperColors,
+    InferenceProviderType.sherpa: _whisperColors,
     InferenceProviderType.voxtral: (
       dark: Color(0xFFFF6B6B),
       light: Color(0xFFE53935), // Red/Coral

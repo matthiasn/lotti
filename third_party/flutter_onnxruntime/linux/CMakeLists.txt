@@ -22,7 +22,14 @@ if(USE_SYSTEM_ONNXRUNTIME)
   # Try to find ONNX Runtime using pkg-config
   find_package(PkgConfig)
   if(PkgConfig_FOUND)
-    pkg_check_modules(ONNXRUNTIME onnxruntime)
+    # LOTTI FORK PATCH: pkg-config's VERSION output must not overwrite the
+    # parent application's pinned ONNXRUNTIME_VERSION (even on lookup failure).
+    pkg_check_modules(SYSTEM_ONNXRUNTIME onnxruntime)
+    set(ONNXRUNTIME_FOUND ${SYSTEM_ONNXRUNTIME_FOUND})
+    if(SYSTEM_ONNXRUNTIME_FOUND)
+      set(ONNXRUNTIME_LIBRARIES ${SYSTEM_ONNXRUNTIME_LIBRARIES})
+      set(ONNXRUNTIME_INCLUDE_DIRS ${SYSTEM_ONNXRUNTIME_INCLUDE_DIRS})
+    endif()
   endif()
 
   # If pkg-config didn't find it, try to find it manually

@@ -118,7 +118,7 @@ Map<String, dynamic> _$SyncAiConfigToJson(SyncAiConfig instance) =>
 
 SyncSyncNodeProfile _$SyncSyncNodeProfileFromJson(Map<String, dynamic> json) =>
     SyncSyncNodeProfile(
-      profile: SyncNodeProfile.fromJson(
+      profile: const SyncNodeProfileWireConverter().fromJson(
         json['profile'] as Map<String, dynamic>,
       ),
       $type: json['runtimeType'] as String?,
@@ -127,7 +127,7 @@ SyncSyncNodeProfile _$SyncSyncNodeProfileFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$SyncSyncNodeProfileToJson(
   SyncSyncNodeProfile instance,
 ) => <String, dynamic>{
-  'profile': instance.profile,
+  'profile': const SyncNodeProfileWireConverter().toJson(instance.profile),
   'runtimeType': instance.$type,
 };
 

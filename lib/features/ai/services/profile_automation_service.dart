@@ -114,7 +114,11 @@ class ProfileAutomationService {
     required this._aiConfigRepository,
     this._categoryAutomationLookup,
     this._domainLogger,
+    this.isEmbeddedModelInstalled,
   });
+
+  /// Device-local availability, required before choosing an embedded fallback.
+  final Future<bool> Function(String modelId)? isEmbeddedModelInstalled;
 
   final ProfileAutomationResolver _resolver;
   final AiConfigRepository _aiConfigRepository;
@@ -547,6 +551,12 @@ class ProfileAutomationService {
         continue;
       }
 
+      if (providerConfig.inferenceProviderType ==
+              InferenceProviderType.sherpa &&
+          !(await isEmbeddedModelInstalled?.call(model.providerModelId) ??
+              false)) {
+        continue;
+      }
       candidates.add((model: model, provider: providerConfig));
     }
 
@@ -620,6 +630,7 @@ class ProfileAutomationService {
   int _fallbackCandidateRank(_TranscriptionFallbackCandidate candidate) {
     final type = candidate.provider.inferenceProviderType;
 
+    if (type == InferenceProviderType.sherpa) return 0;
     if (type == InferenceProviderType.mistral) return 3;
     if (type == InferenceProviderType.melious) return 4;
     if (type == InferenceProviderType.openAi) return 5;

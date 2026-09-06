@@ -14,8 +14,8 @@ one.
   Mistral, Melious, Alibaba) and local ones (Ollama, oMLX, Whisper, Voxtral)
   are set up the same way. Connecting a provider automatically offers a matching
   ready-made setup, so nobody has to assemble one model slot at a time.
-- **Transcribes voice notes**, using a cloud service or a model running entirely
-  on the user's own machine.
+- **Transcribes voice notes**, using a cloud service, a local server, or
+  downloaded sherpa-onnx speech models running directly on the device.
 - **Summarises a recording in three depths** — a one-line label, a short TLDR,
   and a full organised summary — written in the context of the task the
   recording belongs to, at the moment it was summarised.

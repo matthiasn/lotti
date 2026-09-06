@@ -1,6 +1,6 @@
 import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/sherpa_models_section.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -233,6 +234,10 @@ class AvailableModelsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+
+    if (providerType == InferenceProviderType.sherpa) {
+      return SherpaModelsSection(providerId: providerId);
+    }
 
     if (ProviderConfig.supportsDynamicCatalog(providerType)) {
       return _DynamicAvailableModelsSection(providerId: providerId);

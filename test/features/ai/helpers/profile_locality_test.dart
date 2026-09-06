@@ -11,6 +11,7 @@ import '../../../mocks/mocks.dart';
 /// scenario to decide the expected `profileIsLocal` result independently of
 /// the implementation under test.
 const _localProviderTypes = <InferenceProviderType>{
+  InferenceProviderType.sherpa,
   InferenceProviderType.whisper,
   InferenceProviderType.ollama,
   InferenceProviderType.omlx,

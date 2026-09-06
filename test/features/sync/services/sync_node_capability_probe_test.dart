@@ -2,11 +2,56 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
 
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
+
 void main() {
   final now = DateTime.utc(2026, 3, 15, 12);
+
+  for (final ready in [false, true]) {
+    test('advertises sherpa only with a device-local model ($ready)', () async {
+      final probe = makeDefaultSyncNodeCapabilityProbe(
+        sherpaProbe: () async => ready,
+        ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+      );
+      final profile = await probe(hostId: 'local', now: now);
+      expect(profile.capabilities, ready ? [NodeCapability.sherpa] : isEmpty);
+    });
+  }
+
+  for (final state in ['installed', 'absent', 'unreadable']) {
+    test(
+      'sherpa availability probe handles $state and closes its repository',
+      () async {
+        final models = MockSherpaModelRepository();
+        when(() => models.models).thenReturn(sherpaModels);
+        when(() => models.isAvailable(any())).thenAnswer((_) async {
+          if (state == 'unreadable') {
+            throw const FileSystemException('unreadable');
+          }
+          return state == 'installed';
+        });
+        expect(
+          await probeSherpaAvailability(createRepository: () => models),
+          state == 'installed',
+        );
+        verify(models.close).called(1);
+        if (state == 'absent') {
+          verify(() => models.isAvailable('base')).called(1);
+        } else {
+          verifyNever(() => models.isAvailable('base'));
+        }
+      },
+    );
+  }
 
   group('makeDefaultSyncNodeCapabilityProbe', () {
     test('claims ollamaLlm when the Ollama probe succeeds', () async {

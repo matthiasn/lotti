@@ -2168,6 +2168,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSherpaName => 'sherpa-onnx (pe dispozitiv)';
+
+  @override
   String get aiProviderTaglineAlibaba =>
       'Modele Qwen · multimodal · context lung';
 
@@ -12835,6 +12838,33 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'Ce este nou';
+
+  @override
+  String get sherpaDeleteModel => 'Ștergeți modelul descărcat';
+
+  @override
+  String sherpaDownloadModel(String size) {
+    return 'Descărcare ($size MB)';
+  }
+
+  @override
+  String get sherpaModelConfigurationError =>
+      'Modelul a fost descărcat, dar configurația sa nu a putut fi salvată.';
+
+  @override
+  String get sherpaModelError =>
+      'Operațiunea asupra modelului a eșuat. Încercați din nou.';
+
+  @override
+  String get sherpaModelInstalled => 'Descărcat';
+
+  @override
+  String get sherpaModelNotInstalled =>
+      'Descărcați un model pe acest dispozitiv';
+
+  @override
+  String get sherpaProviderDescription =>
+      'Transcrieți pe acest dispozitiv fără server. Descărcați un model mai jos.';
 
   @override
   String get sidebarActiveSectionTitle => 'Activitate';
