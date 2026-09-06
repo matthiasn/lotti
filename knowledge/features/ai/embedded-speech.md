@@ -34,8 +34,9 @@ sources:
 
 `InferenceProviderType.sherpa` is an embedded ASR provider. It requires neither
 an API key nor a server URL. Its curated catalog contains multilingual int8
-Whisper Tiny and Base exports. Model files are downloaded only after the user
-presses Download in the provider's model section. Model names are upstream
+Whisper Large v3, Tiny and Base exports. Large v3 uses the full model with
+INT8 weights (about 1.78 GB of downloaded files). Model files are downloaded
+only after the user presses Download in the provider's model section. Model names are upstream
 product names; surrounding controls are localized.
 
 Text, image-input, and multi-turn chat calls reject this ASR-only provider

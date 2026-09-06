@@ -41,6 +41,28 @@ class SherpaModel {
 /// Fixed upstream revisions prevent model downloads changing beneath a build.
 const sherpaModels = [
   SherpaModel(
+    id: 'large-v3',
+    name: 'Whisper Large v3',
+    revision: '2a6507094dd6020d939d78e3f1834a1d06267fca',
+    files: [
+      SherpaModelFile(
+        'large-v3-encoder.int8.onnx',
+        766671985,
+        'd531cf17248acc43e8c09b472a0877055e770877857a5332fc1304b36534ec85',
+      ),
+      SherpaModelFile(
+        'large-v3-decoder.int8.onnx',
+        1008265203,
+        'ebc6bfd88e162a46cb3edee8a7e727e1dcbc65cabecb19e2573695e4d495e1af',
+      ),
+      SherpaModelFile(
+        'large-v3-tokens.txt',
+        816730,
+        'b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126',
+      ),
+    ],
+  ),
+  SherpaModel(
     id: 'tiny',
     name: 'Whisper Tiny',
     revision: '65176e2deb88badc814a94058666cadccc29b61c',

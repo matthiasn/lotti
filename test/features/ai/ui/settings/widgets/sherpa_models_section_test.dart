@@ -47,6 +47,32 @@ void main() {
   }
 
   testWidgets(
+    'downloads Whisper Large v3 and saves a selectable speech model',
+    (
+      tester,
+    ) async {
+      when(
+        () => models.install('large-v3', onProgress: any(named: 'onProgress')),
+      ).thenAnswer((_) async => '/large-model');
+      await pump(tester);
+      final download = find.text('Download (1776 MB)');
+      await tester.ensureVisible(download);
+      await tester.tap(download);
+      await tester.pumpAndSettle();
+      final saved =
+          verify(() => configs.saveConfig(captureAny())).captured.single
+              as AiConfigModel;
+      expect(saved.providerModelId, 'large-v3');
+      expect(saved.name, 'Whisper Large v3');
+      expect(saved.inferenceProviderId, 'sherpa-provider');
+      expect(saved.inputModalities, [Modality.audio]);
+      expect(saved.outputModalities, [Modality.text]);
+      expect(find.text('Downloaded'), findsOneWidget);
+      expect(download, findsNothing);
+    },
+  );
+
+  testWidgets(
     'downloads only on request and creates a usable model row on success',
     (tester) async {
       final finished = Completer<String>();

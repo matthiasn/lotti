@@ -778,6 +778,15 @@ const List<KnownModel> mistralModels = [
 /// Multilingual int8 Whisper exports for embedded, device-local transcription.
 const sherpaSpeechModels = [
   KnownModel(
+    providerModelId: 'large-v3',
+    name: 'Whisper Large v3',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    publisher: 'OpenAI',
+    description: 'OpenAI Whisper Large v3 · ONNX INT8',
+  ),
+  KnownModel(
     providerModelId: 'tiny',
     name: 'Whisper Tiny',
     inputModalities: [Modality.audio],
