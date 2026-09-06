@@ -7157,6 +7157,19 @@
   "settingsV2UnimplementedTitle": "Panel not yet implemented",
   "settingsWhatsNewSubtitle": "See the latest updates and features",
   "settingsWhatsNewTitle": "What's New",
+  "sherpaAllFamilies": "All families",
+  "sherpaCatalogMatches": "{count} of {total} models",
+  "@sherpaCatalogMatches": {
+    "description": "Number of search matches in the downloadable model catalog.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "sherpaDeleteModel": "Remove {model} from this device",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -7174,9 +7187,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Installed models",
   "sherpaInstallingModel": "Installing model",
+  "sherpaLanguageCantonese": "Cantonese",
+  "sherpaModelCatalogTitle": "Model catalog",
   "sherpaModelConfigurationError": "Model downloaded, but its configuration could not be saved.",
   "sherpaModelError": "Model operation failed. Try again.",
+  "sherpaModelFamily": "Model family",
   "sherpaModelInstalled": "Downloaded",
   "sherpaModelNotInstalled": "Download a model on this device",
   "sherpaModelSizeGB": "{size} GB · Multilingual",

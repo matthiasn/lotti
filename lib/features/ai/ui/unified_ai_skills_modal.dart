@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
@@ -361,8 +362,18 @@ class UnifiedAiModal {
           in providerConfigs.whereType<AiConfigInferenceProvider>())
         provider.id: provider,
     };
-    final modalityCapable = allConfigs
-        .whereType<AiConfigModel>()
+    final availableModels = modelsAvailableOnDevice(
+      models: allConfigs.whereType<AiConfigModel>(),
+      providers: providersById.values,
+      installedSherpaModelIds:
+          providersById.values.any(
+            (provider) =>
+                provider.inferenceProviderType == InferenceProviderType.sherpa,
+          )
+          ? await ref.read(sherpaInstalledModelIdsProvider.future)
+          : const {},
+    );
+    final modalityCapable = availableModels
         .where((model) => model.inputModalities.contains(config.modality))
         .where(
           (model) =>

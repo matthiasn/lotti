@@ -12838,6 +12838,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Co je nového';
 
   @override
+  String get sherpaAllFamilies => 'Všechny rodiny';
+
+  @override
+  String sherpaCatalogMatches(int count, int total) {
+    return '$count z $total modelů';
+  }
+
+  @override
   String sherpaDeleteModel(String model) {
     return 'Odebrat $model z tohoto zařízení';
   }
@@ -12851,7 +12859,16 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get sherpaInstalledModelsTitle => 'Nainstalované modely';
+
+  @override
   String get sherpaInstallingModel => 'Instalace modelu';
+
+  @override
+  String get sherpaLanguageCantonese => 'Kantonština';
+
+  @override
+  String get sherpaModelCatalogTitle => 'Katalog modelů';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12860,6 +12877,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get sherpaModelError =>
       'Operace s modelem se nezdařila. Zkus to znovu.';
+
+  @override
+  String get sherpaModelFamily => 'Rodina modelů';
 
   @override
   String get sherpaModelInstalled => 'Staženo';

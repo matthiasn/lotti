@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Embedded speech recognition
-description: Device-local sherpa-onnx model installation, background Whisper decoding, cancellation, and shared native runtime packaging.
+description: Device-local sherpa-onnx model installation, background multilingual decoding, cancellation, and shared native runtime packaging.
 resource: ../../../lib/features/ai/speech
 tags: [ai, speech, asr, sherpa, onnx, offline]
 status: stable
@@ -11,6 +11,14 @@ sources:
   - id: models
     resource: ../../../lib/features/ai/speech/sherpa_model_repository.dart
     title: Pinned model artifacts and device-local installation
+    last_modified: 2026-09-06
+  - id: catalog
+    resource: ../../../lib/features/ai/speech/sherpa_model_catalog.dart
+    title: Multilingual export manifest and native artifact roles
+    last_modified: 2026-09-06
+  - id: availability
+    resource: ../../../lib/features/ai/speech/sherpa_installed_models_provider.dart
+    title: Verified device availability and selectable model projection
     last_modified: 2026-09-06
   - id: worker
     resource: ../../../lib/features/ai/speech/sherpa_worker.dart
@@ -33,12 +41,23 @@ sources:
 # Installation and configuration
 
 `InferenceProviderType.sherpa` is an embedded ASR provider. It requires neither
-an API key nor a server URL. Its curated catalog contains multilingual int8
-Whisper Large v3, Tiny and Base exports. Large v3 uses the full model with
-INT8 weights (about 1.78 GB of downloaded files). Model files are downloaded
-only after the user presses Download in the provider's model section. Model names are upstream
-product names; surrounding controls are localized. Sherpa appears in both the
-first-run and full provider pickers, without a desktop-only restriction.
+an API key nor a server URL. Its catalog contains 22 multilingual INT8 exports:
+eight Whisper variants (Large v3, Turbo, Medium, Small, Base, Tiny, Large v2 and
+Large v1), Parakeet TDT v3, SenseVoice, two Dolphin sizes, three Omnilingual
+variants, FireRed ASR2 and ASR2 CTC, bilingual and trilingual Paraformer, WeNet
+Cantonese/Chinese/English, Qwen3 ASR and FunASR Nano. Single-language exports are
+excluded. The catalog is the source for both download manifests and known model
+configurations; each entry identifies its publisher, recognizer architecture,
+artifact roles, pinned revision, sizes and SHA-256 checksums.
+
+Model files are downloaded only after the user presses Download. Search reuses
+`AiSettingsSearchBar`, also used by Melious, and matches model identity, family,
+publisher and declared language metadata. A single family dropdown narrows the
+catalog, with a result count and localized empty state. Filtering preserves row
+state; busy operations and errors remain visible even when the query excludes
+them. Short language sets are shown explicitly. Model and family names are
+upstream product metadata; surrounding controls are localized. Sherpa appears in
+both the first-run and full provider pickers without a desktop-only restriction.
 
 The model section groups compact download actions beside model identity and
 localized download size/language metadata. Actions wrap below the metadata on
@@ -92,8 +111,19 @@ Downloads stream into `.part` files, verify size and digest, then rename into
 place. Concurrent requests for the same model share one future. Partial files
 are deleted on failure; valid completed artifacts can be reused on retry.
 Removing files preserves synced model configurations and profile references.
-Provider cards and detail headers count verified local installations, refreshed
-after downloads and removals. Both operations also republish changed sync-node
+Provider creation and startup backfill never seed sherpa catalog rows. A model
+configuration is created after a verified download, preserving existing synced
+identities. Already-installed files without a configuration offer Add model,
+which restores the provider association without downloading again. Sherpa's
+installed section has no manual model-add or configuration-only delete action;
+local file removal remains in the catalog.
+
+Provider cards, detail headers, installed sections, the Models tab and model
+selection all use verified device availability. Provider identity must be
+resolved before admitting a saved row, including while streams load in either
+order. Raw configurations remain available for profile reference mapping and
+sync; a missing local assignment is displayed as unavailable without deleting
+its stored ID. Counts and candidates refresh after downloads and removals. Both operations also republish changed sync-node
 capabilities without requiring an app restart. A failed broadcast does not undo
 the successful local file operation. If model configuration persistence fails
 after installation, the row retains its downloaded state and shows a separate
@@ -114,7 +144,7 @@ flowchart TD
   Convert --> Scratch
   Scratch --> Worker[Worker isolate initializes sherpa bindings]
   Worker --> Window[Next window, at most 28 seconds]
-  Window --> Decode[Native Whisper recognition]
+  Window --> Decode[Native family-specific recognition]
   Decode --> Chunk[Chat-compatible text chunk, no invented token usage]
   Chunk --> More{Consumer requests more?}
   More -->|Yes| Window
@@ -135,10 +165,18 @@ the active segment finishes before native resources are freed. The caller waits
 for worker exit before deleting the WAV. Force-killing the isolate would leak
 native allocations. Empty results and worker failures propagate as errors.
 
-Whisper detects language automatically and transcribes rather than translates.
-This initial adapter does not feed task context or speech-dictionary hotwords
-to the model: the upstream Dart Whisper configuration has no prompt parameter.
-It emits text, with no fabricated token usage or cloud charges.
+The adapter transcribes rather than translates. The native configuration is
+built from the catalog's artifact roles. NeMo transducers declare their model
+type explicitly; Qwen3 ASR and FunASR Nano use tokenizer directories rather than
+a tokens file. Nested tokenizer artifacts retain their upstream relative paths.
+Qwen3 ASR allows up to 512 output tokens in a 1024-token total sequence per
+window. The adapter does not currently supply task context or speech-dictionary
+hotwords. It emits text with no fabricated token usage or cloud charges.
+
+Families that require an explicitly selected spoken language (Canary and Cohere
+Transcribe) are not in this automatic-recognition catalog. Adding them requires
+a persisted language control and propagation to each recognition request; an
+English default must not masquerade as multilingual automatic detection.
 
 # Selection and sync
 

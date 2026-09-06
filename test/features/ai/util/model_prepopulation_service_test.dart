@@ -50,6 +50,20 @@ void main() {
     }
 
     group('prepopulateModelsForProvider', () {
+      test('does not seed downloadable sherpa catalog entries', () async {
+        final provider = AiConfigInferenceProvider(
+          id: 'sherpa-provider',
+          baseUrl: '',
+          apiKey: '',
+          name: 'On device',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.sherpa,
+        );
+        stubRepo(providers: [provider]);
+        expect(await service.prepopulateModelsForProvider(provider), 0);
+        verifyNever(() => mockRepository.saveConfig(any()));
+      });
+
       test(
         'backfills Qwen as a selectable Melious task-agent model',
         () async {

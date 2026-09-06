@@ -12919,6 +12919,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Ce este nou';
 
   @override
+  String get sherpaAllFamilies => 'Toate familiile';
+
+  @override
+  String sherpaCatalogMatches(int count, int total) {
+    return '$count din $total modele';
+  }
+
+  @override
   String sherpaDeleteModel(String model) {
     return 'Eliminați $model de pe acest dispozitiv';
   }
@@ -12932,7 +12940,16 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get sherpaInstalledModelsTitle => 'Modele instalate';
+
+  @override
   String get sherpaInstallingModel => 'Se instalează modelul';
+
+  @override
+  String get sherpaLanguageCantonese => 'Cantoneză';
+
+  @override
+  String get sherpaModelCatalogTitle => 'Catalog de modele';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12941,6 +12958,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get sherpaModelError =>
       'Operațiunea asupra modelului a eșuat. Încercați din nou.';
+
+  @override
+  String get sherpaModelFamily => 'Familie de modele';
 
   @override
   String get sherpaModelInstalled => 'Descărcat';

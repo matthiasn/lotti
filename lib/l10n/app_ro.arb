@@ -4982,6 +4982,8 @@
   "settingsV2UnimplementedTitle": "Panoul nu este încă implementat",
   "settingsWhatsNewSubtitle": "Vedeți cele mai recente actualizări și funcționalități",
   "settingsWhatsNewTitle": "Ce este nou",
+  "sherpaAllFamilies": "Toate familiile",
+  "sherpaCatalogMatches": "{count} din {total} modele",
   "sherpaDeleteModel": "Eliminați {model} de pe acest dispozitiv",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -4999,9 +5001,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Modele instalate",
   "sherpaInstallingModel": "Se instalează modelul",
+  "sherpaLanguageCantonese": "Cantoneză",
+  "sherpaModelCatalogTitle": "Catalog de modele",
   "sherpaModelConfigurationError": "Modelul a fost descărcat, dar configurația sa nu a putut fi salvată.",
   "sherpaModelError": "Operațiunea asupra modelului a eșuat. Încercați din nou.",
+  "sherpaModelFamily": "Familie de modele",
   "sherpaModelInstalled": "Descărcat",
   "sherpaModelNotInstalled": "Descărcați un model pe acest dispozitiv",
   "sherpaModelSizeGB": "{size} GB · Multilingv",

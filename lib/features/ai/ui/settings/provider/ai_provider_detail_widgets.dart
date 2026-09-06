@@ -21,7 +21,7 @@ import 'package:material_ui/material_ui.dart';
 /// when a profile uses this provider, and a danger-zone delete action. Wires
 /// the page-level callbacks ([onAddModel], [onEdit], etc.) down to the
 /// individual sections.
-class DetailBody extends StatelessWidget {
+class DetailBody extends ConsumerWidget {
   const DetailBody({
     required this.provider,
     required this.models,
@@ -55,8 +55,16 @@ class DetailBody extends StatelessWidget {
   final VoidCallback onRemove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final installedModels = modelsAvailableOnDevice(
+      models: models,
+      providers: [provider],
+      installedSherpaModelIds:
+          provider.inferenceProviderType == InferenceProviderType.sherpa
+          ? ref.watch(sherpaInstalledModelIdsProvider).value ?? const {}
+          : const {},
+    );
     final showsModelCatalog =
         ProviderConfig.supportsDynamicCatalog(provider.inferenceProviderType) ||
         provider.inferenceProviderType == InferenceProviderType.sherpa;
@@ -83,7 +91,7 @@ class DetailBody extends StatelessWidget {
         // before scrolling on to the searchable catalog below.
         ModelsSection(
           provider: provider,
-          models: models,
+          models: installedModels,
           onAddModel: onAddModel,
           onModelTap: onModelTap,
           onDeleteModel: onDeleteModel,

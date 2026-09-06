@@ -5517,6 +5517,8 @@
   "settingsV2UnimplementedTitle": "Panel nog niet geïmplementeerd",
   "settingsWhatsNewSubtitle": "Zie de laatste updates en functies",
   "settingsWhatsNewTitle": "Wat is er nieuw?",
+  "sherpaAllFamilies": "Alle families",
+  "sherpaCatalogMatches": "{count} van {total} modellen",
   "sherpaDeleteModel": "{model} van dit apparaat verwijderen",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -5534,9 +5536,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Geïnstalleerde modellen",
   "sherpaInstallingModel": "Model installeren",
+  "sherpaLanguageCantonese": "Kantonees",
+  "sherpaModelCatalogTitle": "Modelcatalogus",
   "sherpaModelConfigurationError": "Het model is gedownload, maar de configuratie kon niet worden opgeslagen.",
   "sherpaModelError": "Modelbewerking mislukt. Probeer het opnieuw.",
+  "sherpaModelFamily": "Modelfamilie",
   "sherpaModelInstalled": "Gedownload",
   "sherpaModelNotInstalled": "Download een model op dit apparaat",
   "sherpaModelSizeGB": "{size} GB · Meertalig",

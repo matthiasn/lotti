@@ -4,109 +4,11 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/speech/sherpa_model_catalog.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-/// One immutable, checksum-pinned artifact in an embedded speech model.
-class SherpaModelFile {
-  const SherpaModelFile(this.name, this.bytes, this.sha256);
-
-  final String name;
-  final int bytes;
-  final String sha256;
-}
-
-/// A multilingual Whisper export supported by the embedded recognizer.
-class SherpaModel {
-  const SherpaModel({
-    required this.id,
-    required this.name,
-    required this.revision,
-    required this.files,
-  });
-
-  final String id;
-  final String name;
-  final String revision;
-  final List<SherpaModelFile> files;
-
-  int get bytes => files.fold(0, (total, file) => total + file.bytes);
-
-  Uri uri(SherpaModelFile file) => Uri.parse(
-    'https://huggingface.co/csukuangfj/sherpa-onnx-whisper-$id/'
-    'resolve/$revision/${file.name}',
-  );
-}
-
-/// Fixed upstream revisions prevent model downloads changing beneath a build.
-const sherpaModels = [
-  SherpaModel(
-    id: 'large-v3',
-    name: 'Whisper Large v3',
-    revision: '2a6507094dd6020d939d78e3f1834a1d06267fca',
-    files: [
-      SherpaModelFile(
-        'large-v3-encoder.int8.onnx',
-        766671985,
-        'd531cf17248acc43e8c09b472a0877055e770877857a5332fc1304b36534ec85',
-      ),
-      SherpaModelFile(
-        'large-v3-decoder.int8.onnx',
-        1008265203,
-        'ebc6bfd88e162a46cb3edee8a7e727e1dcbc65cabecb19e2573695e4d495e1af',
-      ),
-      SherpaModelFile(
-        'large-v3-tokens.txt',
-        816730,
-        'b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126',
-      ),
-    ],
-  ),
-  SherpaModel(
-    id: 'tiny',
-    name: 'Whisper Tiny',
-    revision: '65176e2deb88badc814a94058666cadccc29b61c',
-    files: [
-      SherpaModelFile(
-        'tiny-encoder.int8.onnx',
-        12937772,
-        'd24fb083ae3b1041fc24e97971d60e280c9342201fbb67b0ab428a8b4a51a434',
-      ),
-      SherpaModelFile(
-        'tiny-decoder.int8.onnx',
-        89855401,
-        'd2fece8dd42771f1df975c6c0445770d0c292bf7547c2cae04a6c0cc57540925',
-      ),
-      SherpaModelFile(
-        'tiny-tokens.txt',
-        816730,
-        'b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126',
-      ),
-    ],
-  ),
-  SherpaModel(
-    id: 'base',
-    name: 'Whisper Base',
-    revision: 'bb53ee204431c90d314c1cc08d28d23e5b7927cc',
-    files: [
-      SherpaModelFile(
-        'base-encoder.int8.onnx',
-        29120534,
-        '0b8fb1304b6109976038efff5ace81720e00386f3ff6b54ee8c75291ca0a1e11',
-      ),
-      SherpaModelFile(
-        'base-decoder.int8.onnx',
-        130672026,
-        '9759d217388a01b3a4c7c15533201067b48ae819c4daafc8624e64b9409dc02d',
-      ),
-      SherpaModelFile(
-        'base-tokens.txt',
-        816730,
-        'b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126',
-      ),
-    ],
-  ),
-];
+export 'package:lotti/features/ai/speech/sherpa_model_catalog.dart';
 
 /// Device-local model files. Configuration sync never implies installation.
 /// Downloads are explicit, coalesced per model, and published atomically only
@@ -225,6 +127,7 @@ class SherpaModelRepository {
       await response.stream.drain<void>();
       throw HttpException('Model download failed: HTTP ${response.statusCode}');
     }
+    await destination.parent.create(recursive: true);
     final part = File('${destination.path}.part');
     try {
       final sink = part.openWrite();

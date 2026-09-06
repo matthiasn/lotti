@@ -5518,6 +5518,8 @@
   "settingsV2UnimplementedTitle": "Panel endnu ikke implementeret",
   "settingsWhatsNewSubtitle": "Se de seneste opdateringer og funktioner",
   "settingsWhatsNewTitle": "Hvad er nyt",
+  "sherpaAllFamilies": "Alle familier",
+  "sherpaCatalogMatches": "{count} af {total} modeller",
   "sherpaDeleteModel": "Fjern {model} fra denne enhed",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -5535,9 +5537,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Installerede modeller",
   "sherpaInstallingModel": "Installerer model",
+  "sherpaLanguageCantonese": "Kantonesisk",
+  "sherpaModelCatalogTitle": "Modelkatalog",
   "sherpaModelConfigurationError": "Modellen er downloadet, men dens konfiguration kunne ikke gemmes.",
   "sherpaModelError": "Modelhandlingen mislykkedes. Prøv igen.",
+  "sherpaModelFamily": "Modelfamilie",
   "sherpaModelInstalled": "Downloadet",
   "sherpaModelNotInstalled": "Download en model på denne enhed",
   "sherpaModelSizeGB": "{size} GB · Flersproget",

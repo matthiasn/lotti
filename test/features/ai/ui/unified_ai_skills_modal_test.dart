@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository;
+import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
@@ -1692,6 +1693,50 @@ void main() {
         });
       });
     }
+
+    testWidgets('transcription dispatch excludes undownloaded sherpa models', (
+      tester,
+    ) async {
+      final fx = _OverrideFixture.twoModelsPlusDecoy(
+        _transcriptionOverrideVariant,
+      );
+      final provider = fx.providers.single.copyWith(
+        inferenceProviderType: InferenceProviderType.sherpa,
+      );
+      TriggerSkillParams? captured;
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPopUpMenu(journalEntity: fx.entity, linkedFromId: null),
+          overrides: [
+            ..._baseOverrides(
+              entity: fx.entity,
+              skill: fx.skill,
+              models: fx.allModels,
+              resolver: _NullProfileResolver(),
+              configs: [...fx.allModels, provider],
+            ),
+            sherpaInstalledModelIdsProvider.overrideWith(
+              (ref) async => {fx.modelB.providerModelId},
+            ),
+            triggerSkillProvider.overrideWith((ref, params) async {
+              captured = params;
+            }),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byIcon(LottiIcons.assistant));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(captured, isNotNull);
+      expect(captured!.overrideModelId, fx.modelB.id);
+      expect(captured!.skillId, fx.skill.id);
+      expect(find.text(fx.modelA.name), findsNothing);
+    });
 
     testWidgets(
       'multi-provider override: drilling provider -> model fires the trigger '

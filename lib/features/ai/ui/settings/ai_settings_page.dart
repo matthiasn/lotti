@@ -444,6 +444,17 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     final models =
         modelsAsync.value?.whereType<AiConfigModel>().toList() ??
         const <AiConfigModel>[];
+    final availableModels = modelsAvailableOnDevice(
+      models: models,
+      providers: providers ?? const [],
+      installedSherpaModelIds:
+          (providers ?? const <AiConfigInferenceProvider>[]).any(
+            (provider) =>
+                provider.inferenceProviderType == InferenceProviderType.sherpa,
+          )
+          ? ref.watch(sherpaInstalledModelIdsProvider).value ?? const {}
+          : const {},
+    );
     final profiles =
         profilesAsync.value?.whereType<AiConfigInferenceProfile>().toList() ??
         const <AiConfigInferenceProfile>[];
@@ -468,7 +479,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             child: AiSettingsTabBar(
               tabController: _tabController,
               providerCount: 0,
-              modelCount: models.length,
+              modelCount: availableModels.length,
               profileCount: profiles.length,
               onTabChanged: _handleTabChange,
             ),
@@ -493,12 +504,12 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           child: AiSettingsTabBar(
             tabController: _tabController,
             providerCount: providers!.length,
-            modelCount: models.length,
+            modelCount: availableModels.length,
             profileCount: profiles.length,
             onTabChanged: _handleTabChange,
           ),
         ),
-      ..._buildActiveTabBody(providers!, models, profiles),
+      ..._buildActiveTabBody(providers!, models, profiles, availableModels),
     ];
   }
 
@@ -506,6 +517,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     List<AiConfigInferenceProvider> providers,
     List<AiConfigModel> models,
     List<AiConfigInferenceProfile> profiles,
+    List<AiConfigModel> availableModels,
   ) {
     switch (_filterState.activeTab) {
       case AiSettingsTab.providers:
@@ -545,7 +557,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
               },
             ),
           ),
-          _buildModelsList(models, providers),
+          _buildModelsList(availableModels, providers),
         ];
       case AiSettingsTab.profiles:
         return [_buildProfilesGrid(profiles, models, providers)];

@@ -4989,6 +4989,8 @@
   "settingsV2UnimplementedTitle": "Panel zatím není k dispozici",
   "settingsWhatsNewSubtitle": "Podívej se na nejnovější aktualizace a funkce",
   "settingsWhatsNewTitle": "Co je nového",
+  "sherpaAllFamilies": "Všechny rodiny",
+  "sherpaCatalogMatches": "{count} z {total} modelů",
   "sherpaDeleteModel": "Odebrat {model} z tohoto zařízení",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -5006,9 +5008,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Nainstalované modely",
   "sherpaInstallingModel": "Instalace modelu",
+  "sherpaLanguageCantonese": "Kantonština",
+  "sherpaModelCatalogTitle": "Katalog modelů",
   "sherpaModelConfigurationError": "Model je stažený, ale jeho konfiguraci se nepodařilo uložit.",
   "sherpaModelError": "Operace s modelem se nezdařila. Zkus to znovu.",
+  "sherpaModelFamily": "Rodina modelů",
   "sherpaModelInstalled": "Staženo",
   "sherpaModelNotInstalled": "Stáhni si model do tohoto zařízení",
   "sherpaModelSizeGB": "{size} GB · Vícejazyčný",

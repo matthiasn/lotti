@@ -36,16 +36,23 @@ class ModelsSection extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     return Section(
-      title: messages.aiProviderDetailModelsTitle(models.length),
-      trailing: DesignSystemButton(
-        label: messages.aiProviderDetailAddModelButton,
-        variant: DesignSystemButtonVariant.secondary,
-        leadingIcon: LottiIcons.add,
-        onPressed: onAddModel,
-      ),
+      title: provider.inferenceProviderType == InferenceProviderType.sherpa
+          ? messages.sherpaInstalledModelsTitle
+          : messages.aiProviderDetailModelsTitle(models.length),
+      trailing: provider.inferenceProviderType == InferenceProviderType.sherpa
+          ? null
+          : DesignSystemButton(
+              label: messages.aiProviderDetailAddModelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              leadingIcon: LottiIcons.add,
+              onPressed: onAddModel,
+            ),
       child: models.isEmpty
           ? EmptySectionCard(
-              message: messages.aiProviderDetailNoModelsMessage,
+              message:
+                  provider.inferenceProviderType == InferenceProviderType.sherpa
+                  ? messages.sherpaModelNotInstalled
+                  : messages.aiProviderDetailNoModelsMessage,
             )
           : Column(
               children: [
@@ -55,7 +62,11 @@ class ModelsSection extends StatelessWidget {
                     model: models[i],
                     providerType: provider.inferenceProviderType,
                     onTap: () => onModelTap(models[i]),
-                    onDelete: () => onDeleteModel(models[i]),
+                    onDelete:
+                        provider.inferenceProviderType ==
+                            InferenceProviderType.sherpa
+                        ? null
+                        : () => onDeleteModel(models[i]),
                   ),
                 ],
               ],
