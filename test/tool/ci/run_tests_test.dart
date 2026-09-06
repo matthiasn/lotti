@@ -6,9 +6,20 @@ import 'package:path/path.dart' as path;
 import '../../../tool/ci/run_tests.dart';
 
 void main() {
-  for (final status in [0, 17]) {
+  for (final (arguments, excluded, status) in [
+    (['--exclude-tags', 'glados || performance', '--shard-index=3'], true, 0),
+    (['--exclude-tags= performance || eval-live '], true, 17),
+    (['--exclude-tags', 'glados', '--exclude-tags=performance'], true, 0),
+    (['--tags', 'performance'], false, 0),
+    (['--tags=glados'], false, 0),
+    (['--exclude-tags', 'performance && slow'], false, 0),
+    (['--exclude-tags', '!slow'], false, 0),
+    (['--exclude-tags', '(performance || slow)'], false, 0),
+    (['--exclude-tags'], false, 17),
+    (['--', '--exclude-tags=performance'], false, 17),
+  ]) {
     test(
-      'forwards all suites and selectors, preserving exit status $status',
+      'selects suites for $arguments and preserves exit status $status',
       () async {
         final root = await Directory.systemTemp.createTemp('test_runner_');
         addTearDown(() => root.delete(recursive: true));
@@ -18,6 +29,10 @@ void main() {
         ).writeAsString('void main() {}');
         await File(path.join(root.path, 'test/tagged_test.dart')).writeAsString(
           "@Tags(['performance'])\nlibrary;\nvoid main() {}",
+        );
+        await File(path.join(root.path, 'test/mixed_test.dart')).writeAsString(
+          '@Timeout(Duration(minutes: 2))\nlibrary;\n'
+          "void main() { test('property', () {}, tags: 'glados'); }",
         );
         // A process double records argv and its working directory; no Flutter
         // suite is launched recursively from this test.
@@ -31,7 +46,7 @@ exit $status
         final permissions = await Process.run('chmod', ['+x', executable.path]);
         expect(permissions.exitCode, 0);
         final result = await runTestSuites(
-          ['--exclude-tags', 'glados || performance', '--shard-index=3'],
+          arguments,
           packageRoot: root.path,
           flutterExecutable: executable.path,
         );
@@ -40,11 +55,10 @@ exit $status
           await File(path.join(root.path, 'arguments.txt')).readAsLines(),
           [
             'test',
-            '--exclude-tags',
-            'glados || performance',
-            '--shard-index=3',
+            ...arguments,
             'test/.test_optimizer.dart',
-            'test/tagged_test.dart',
+            'test/mixed_test.dart',
+            if (!excluded) 'test/tagged_test.dart',
           ],
         );
         expect(

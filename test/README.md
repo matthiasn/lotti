@@ -533,7 +533,7 @@ The `tags` argument is a passthrough to `package:test`'s `test()`. It works the 
 ### Why the tag matters for CI
 
 CI runs two parallel test lanes — a ten-shard standard matrix plus a Glados job — followed by a final Codecov status job gated on both:
-- **Unit & Widget Tests** — ten deterministic shards, excluding `glados` and `performance`.
+- **Unit & Widget Tests** — ten deterministic shards, excluding `glados`, `performance`, and opt-in `eval-live` suites.
 - **Glados Property Tests** — tagged property tests with separate coverage.
 - **Performance Budgets** — tagged stopwatch tests, scheduled weekly and available through workflow dispatch. Deterministic query-count gates stay in the standard lane.
 
@@ -542,6 +542,14 @@ plus `test/.test_targets.json`. A suite with library metadata (`@Tags`,
 `@Timeout`, `@TestOn`, `@Skip`, and other annotations) runs as a standalone file
 so the test runner receives the original metadata. Opting out of optimization
 never opts out of execution. Both generated files are ignored by Git.
+
+Before compilation, the runner omits suites whose literal library `@Tags`
+match a positive `--exclude-tags` disjunction (for example,
+`glados || performance || eval-live`). Other expressions and unknown metadata
+are left to Flutter. Include selectors never prune suites: an untagged library
+can still contain tagged tests. Mixed suites keep running, including the label
+query-count checks and the celebration rendering assertions. CI excludes live
+model evaluations in every lane; run those explicitly using their env gates.
 
 Codecov merges all ten standard shards and the Glados report; the final status
 job runs after all eleven uploads succeed. The performance lane does not upload
@@ -558,7 +566,7 @@ declaration order. This changes test ordering, not Glados's generated inputs.
 ### Local commands
 
 Use targeted files during development. These broader targets are for explicitly
-requested suite runs:
+requested suite runs. These Make targets exclude opt-in live-model evaluations:
 
 ```bash
 make test_standard      # excludes glados and performance; resets coverage/
@@ -573,7 +581,7 @@ make test               # unit, widget and property tests; excludes performance
 To reproduce one standard CI shard without replacing an existing coverage report:
 
 ```bash
-fvm dart run tool/ci/run_tests.dart --exclude-tags 'glados || performance' \
+fvm dart run tool/ci/run_tests.dart --exclude-tags 'glados || performance || eval-live' \
   --total-shards=10 --shard-index=0 --test-randomize-ordering-seed=0 --no-pub
 ```
 

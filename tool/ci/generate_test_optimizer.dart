@@ -9,7 +9,10 @@ const _outputRelativePath = 'test/.test_optimizer.dart';
 const testTargetsRelativePath = 'test/.test_targets.json';
 
 /// Generates the stable optimized test entrypoint used by sharded CI.
-Future<File> generateTestOptimizer({required String packageRoot}) async {
+Future<File> generateTestOptimizer({
+  required String packageRoot,
+  Set<String> excludedSuiteTags = const {},
+}) async {
   final testDirectory = Directory(path.join(packageRoot, 'test'));
   if (!testDirectory.existsSync()) {
     throw FileSystemException(
@@ -26,10 +29,15 @@ Future<File> generateTestOptimizer({required String packageRoot}) async {
     // Library metadata belongs to a suite, not the imported main() function.
     // Keep annotated suites intact so the test runner interprets their tags,
     // timeouts, platform selectors, skips and retries without losing context.
-    final unit = parseString(content: contents).unit;
-    if (unit.directives.whereType<LibraryDirective>().any(
-      (directive) => directive.metadata.isNotEmpty,
+    final libraries = parseString(
+      content: contents,
+    ).unit.directives.whereType<LibraryDirective>();
+    if (libraries.any(
+      (directive) => _isExcluded(directive, excludedSuiteTags),
     )) {
+      continue;
+    }
+    if (libraries.any((directive) => directive.metadata.isNotEmpty)) {
       standalonePaths.add(
         path.relative(entity.path, from: packageRoot).replaceAll(r'\', '/'),
       );
@@ -50,6 +58,24 @@ Future<File> generateTestOptimizer({required String packageRoot}) async {
     jsonEncode([_outputRelativePath, ...standalonePaths]),
   );
   return output;
+}
+
+// Only inherited literal tags can prove that every test is excluded. Unknown
+// constants and per-test tags stay with Flutter's own discovery/filtering.
+bool _isExcluded(LibraryDirective library, Set<String> excludedTags) {
+  for (final annotation in library.metadata) {
+    if (annotation.name.name.split('.').last != 'Tags') continue;
+    final arguments = annotation.arguments?.arguments;
+    if (arguments == null || arguments.length != 1) continue;
+    final tags = arguments.single;
+    if (tags is! ListLiteral) continue;
+    if (tags.elements.whereType<StringLiteral>().any(
+      (tag) => excludedTags.contains(tag.stringValue),
+    )) {
+      return true;
+    }
+  }
+  return false;
 }
 
 String _renderBundle(List<String> testPaths) {

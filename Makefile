@@ -34,21 +34,21 @@ MANUAL_MEDIA_DIR ?= $(abspath build/manual_media)
 
 .PHONY: test
 test:
-	$(DART_CMD) run tool/ci/run_tests.dart --coverage --exclude-tags performance
+	$(DART_CMD) run tool/ci/run_tests.dart --coverage --exclude-tags "performance || eval-live"
 
 .PHONY: test_standard
 test_standard:
 	rm -rf coverage
-	$(DART_CMD) run tool/ci/run_tests.dart --coverage --exclude-tags "glados || performance"
+	$(DART_CMD) run tool/ci/run_tests.dart --coverage --exclude-tags "glados || performance || eval-live"
 
 .PHONY: test_glados
 test_glados:
 	rm -rf coverage
-	$(DART_CMD) run tool/ci/run_tests.dart --coverage --tags glados
+	$(DART_CMD) run tool/ci/run_tests.dart --coverage --tags glados --exclude-tags eval-live
 
 .PHONY: test_performance test_policy_check
 test_performance:
-	$(DART_CMD) run tool/ci/run_tests.dart --tags performance
+	$(DART_CMD) run tool/ci/run_tests.dart --tags performance --exclude-tags eval-live
 
 test_policy_check:
 	$(DART_CMD) run tool/ci/check_test_tags.dart
@@ -113,7 +113,7 @@ junit_test:
 .PHONY: slow_tests
 slow_tests: deps
 	@mkdir -p reports
-	$(DART_CMD) run tool/ci/run_tests.dart --exclude-tags performance --file-reporter json:reports/tests.json
+	$(DART_CMD) run tool/ci/run_tests.dart --exclude-tags "performance || eval-live" --file-reporter json:reports/tests.json
 	$(DART_CMD) run test/tool/analyze_test_timings.dart reports/tests.json $(THRESH)
 
 .PHONY: junit_upload

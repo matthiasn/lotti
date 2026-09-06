@@ -71,7 +71,7 @@ jobs:
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
           dart run tool/ci/run_tests.dart \
             --coverage \
-            --exclude-tags 'glados || performance' \
+            --exclude-tags 'glados || performance || eval-live' \
             --total-shards=10 \
             --shard-index=${{ matrix.shard_index }} \
             --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
@@ -122,6 +122,7 @@ jobs:
           mkdir -p reports
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
           dart run tool/ci/run_tests.dart --coverage --tags glados --no-pub \
+            --exclude-tags 'eval-live' \
             --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
             --file-reporter=json:reports/tests.json
       - name: Summarize test results
@@ -169,6 +170,7 @@ jobs:
           mkdir -p reports
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
           dart run tool/ci/run_tests.dart --tags performance --no-pub \
+            --exclude-tags 'eval-live' \
             --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
             --file-reporter=json:reports/tests.json
       - name: Summarize test results
