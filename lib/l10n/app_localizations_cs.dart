@@ -11040,7 +11040,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipAddChannelButton => 'Přidat kontakt';
 
   @override
-  String get relationshipAgentBriefNow => 'Briefing teď';
+  String get relationshipAgentBriefNow => 'Vytvořit briefing teď';
 
   @override
   String relationshipAgentCall(String name) {
@@ -11085,20 +11085,20 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Zatím žádný briefing. „Briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
       few:
-          'Zatím žádný briefing. „Briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
       one:
-          'Zatím žádný briefing. „Briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.',
       zero:
-          'Zatím žádný briefing. „Briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.',
+          'Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.',
     );
     return '$_temp0';
   }
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Vypnuto ji drží úplně mimo AI.';
+    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Do té doby se nic neděje samo; AI použije jen to, co spustíš ty, třeba chat nebo nadiktovaný check-in.';
   }
 
   @override

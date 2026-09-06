@@ -10940,18 +10940,18 @@ class AppLocalizationsNl extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Nog geen briefing. „Nu briefen“ schrijft er een op basis van je $count check-ins; het ziet nooit telefoonnummer of e-mail.',
+          'Nog geen briefing. „Nu briefen“ schrijft er een op basis van je $count check-ins; het ziet nooit het telefoonnummer of het e-mailadres.',
       one:
-          'Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit telefoonnummer of e-mail.',
+          'Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit het telefoonnummer of het e-mailadres.',
       zero:
-          'Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit telefoonnummer of e-mail.',
+          'Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit het telefoonnummer of het e-mailadres.',
     );
     return '$_temp0';
   }
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markeer $name als belangrijk voor een briefing, een seintje als het even geleden is, en een chat. Uit houdt de persoon helemaal buiten de AI.';
+    return 'Markeer $name als belangrijk voor een briefing, een seintje als het even geleden is, en een chat. Tot die tijd gebeurt er niets vanzelf; alleen wat je zelf start, zoals een chat of een ingesproken check-in, gebruikt de AI.';
   }
 
   @override

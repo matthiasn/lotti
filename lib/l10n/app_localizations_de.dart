@@ -11000,7 +11000,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markiere $name als wichtig, um ein Briefing, Erinnerungen nach längerer Funkstille und einen Chat zu bekommen. Aus hält die Person komplett aus der KI heraus.';
+    return 'Markiere $name als wichtig, um ein Briefing, Erinnerungen nach längerer Funkstille und einen Chat zu bekommen. Bis dahin läuft nichts von selbst; KI nutzt nur, was du selbst anstößt, etwa ein Chat oder ein diktierter Check-in.';
   }
 
   @override

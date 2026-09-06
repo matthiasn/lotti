@@ -4256,7 +4256,7 @@
   "relationshipAgentNextLook": "Prochain regard {day}",
   "relationshipAgentNoAgent": "aucun agent pour cette personne",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Pas encore de briefing. « Briefer maintenant » en rédige un dès que tu as consigné un check-in ; il ne voit jamais le numéro ni l'e-mail.} =1{Pas encore de briefing. « Briefer maintenant » en rédige un à partir de ton check-in ; il ne voit jamais le numéro ni l'e-mail.} other{Pas encore de briefing. « Briefer maintenant » en rédige un à partir de tes {count} check-ins ; il ne voit jamais le numéro ni l'e-mail.}}",
-  "relationshipAgentNotEnrolledBody": "Marque {name} comme important·e pour recevoir un briefing, des rappels quand ça fait un moment, et un chat. Désactivé, la personne reste entièrement hors de l'IA.",
+  "relationshipAgentNotEnrolledBody": "Marque {name} comme important·e pour recevoir un briefing, des rappels quand ça fait un moment, et un chat. D'ici là, rien ne tourne tout seul ; seul ce que tu lances toi-même, comme un chat ou un check-in dicté, utilise l'IA.",
   "relationshipAgentOutOfDateNewCheckIn": "Obsolète · nouveau check-in {day}",
   "relationshipAgentPausedBody": "Les briefings sont en pause tant que cette personne est en sommeil ou archivée.",
   "relationshipAgentReading": "{count, plural, =0{Lecture de la personne…} =1{Lecture de 1 check-in…} other{Lecture de {count} check-ins…}}",

@@ -11128,7 +11128,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marque $name comme important·e pour recevoir un briefing, des rappels quand ça fait un moment, et un chat. Désactivé, la personne reste entièrement hors de l\'IA.';
+    return 'Marque $name comme important·e pour recevoir un briefing, des rappels quand ça fait un moment, et un chat. D\'ici là, rien ne tourne tout seul ; seul ce que tu lances toi-même, comme un chat ou un check-in dicté, utilise l\'IA.';
   }
 
   @override

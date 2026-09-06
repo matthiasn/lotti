@@ -10932,7 +10932,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markér $name som vigtig for at få en briefing, påmindelser når der er gået et stykke tid, og en chat. Fra holder personen helt ude af AI.';
+    return 'Markér $name som vigtig for at få en briefing, påmindelser når der er gået et stykke tid, og en chat. Indtil da sker der intet af sig selv; kun det, du selv starter, som en chat eller et dikteret check-in, bruger AI.';
   }
 
   @override

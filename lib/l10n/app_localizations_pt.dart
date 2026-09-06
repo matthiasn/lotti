@@ -10981,7 +10981,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipAddChannelButton => 'Adicionar meio de contato';
 
   @override
-  String get relationshipAgentBriefNow => 'Briefing agora';
+  String get relationshipAgentBriefNow => 'Criar briefing agora';
 
   @override
   String relationshipAgentCall(String name) {
@@ -11026,18 +11026,18 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Ainda sem briefing. „Briefing agora“ escreve um a partir dos teus $count check-ins; nunca vê o telefone nem o e-mail.',
+          'Ainda sem briefing. „Criar briefing agora“ escreve um a partir dos teus $count check-ins; nunca vê o telefone nem o e-mail.',
       one:
-          'Ainda sem briefing. „Briefing agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.',
+          'Ainda sem briefing. „Criar briefing agora“ escreve um a partir do teu check-in; nunca vê o telefone nem o e-mail.',
       zero:
-          'Ainda sem briefing. „Briefing agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.',
+          'Ainda sem briefing. „Criar briefing agora“ escreve um assim que registares um check-in; nunca vê o telefone nem o e-mail.',
     );
     return '$_temp0';
   }
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marca $name como importante para receber um briefing, lembretes quando já passou algum tempo e um chat. Desligado mantém a pessoa totalmente fora da IA.';
+    return 'Marca $name como importante para receber um briefing, lembretes quando já passou algum tempo e um chat. Até lá nada corre sozinho; só o que tu inicias, como um chat ou um check-in ditado, usa a IA.';
   }
 
   @override
