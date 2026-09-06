@@ -4373,19 +4373,12 @@
       }
     }
   },
+  "relationshipDueToday": "Pendiente hoy",
   "relationshipEditTitle": "Editar persona",
   "relationshipErrorCreateFailed": "No se pudo guardar la persona. Inténtalo de nuevo.",
   "relationshipErrorDeleteFailed": "No se pudo eliminar la persona. Inténtalo de nuevo.",
   "relationshipErrorLinkTaskFailed": "No se pudo vincular la tarea. Inténtalo de nuevo.",
   "relationshipErrorUpdateFailed": "No se pudieron guardar los cambios. Inténtalo de nuevo.",
-  "relationshipFirstDue": "primer plazo {day}",
-  "@relationshipFirstDue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipHealthNeedsAttention": "Necesita atención",
   "relationshipHealthSteady": "Estable",
   "relationshipHealthStrained": "Tensa",
@@ -4510,6 +4503,39 @@
   "relationshipStatusArchived": "Archivada",
   "relationshipStatusDormant": "En reposo",
   "relationshipStatusFieldLabel": "Estado",
+  "relationshipStatusLineAdded": "Recién añadido · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Recién añadido · {cadence} · primer plazo {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Mantener el contacto",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

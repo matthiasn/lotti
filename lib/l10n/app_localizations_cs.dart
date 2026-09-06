@@ -11262,6 +11262,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipDueToday => 'Dnes na řadě';
+
+  @override
   String get relationshipEditTitle => 'Upravit osobu';
 
   @override
@@ -11279,11 +11282,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Změny se nepodařilo uložit. Zkus to prosím znovu.';
-
-  @override
-  String relationshipFirstDue(String day) {
-    return 'poprvé $day';
-  }
 
   @override
   String get relationshipHealthNeedsAttention => 'Vyžaduje pozornost';
@@ -11527,6 +11525,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stav';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Právě přidáno · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Právě přidáno · $cadence · poprvé $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Udržovat kontakt';

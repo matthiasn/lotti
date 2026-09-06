@@ -189,12 +189,18 @@ void main() {
           PeopleCadencePillKind.archived => PeopleListGroup.notEnrolled,
         };
         expect(group, expectedGroup, reason: item.relationship.id);
+        // Due ON the due day counts as due — the runtime's rule.
         if (pill.kind == PeopleCadencePillKind.overdue) {
-          expect(pill.daysOver, greaterThan(0));
+          expect(pill.daysOver, greaterThanOrEqualTo(0));
         } else {
           expect(pill.daysOver, 0);
         }
         expect(pill.dueAt != null, pill.kind == PeopleCadencePillKind.dueSoon);
+        // A person who is not enrolled has no deadline in any form.
+        if (group == PeopleListGroup.notEnrolled) {
+          expect(peopleDueDateOf(item, now: _now), isNull);
+          expect(peopleOverdueDaysOf(item, now: _now), isNull);
+        }
       }
     }, tags: 'glados');
 
@@ -256,6 +262,18 @@ void main() {
       expect(pill.daysOver, 1);
     });
 
+    test('the due day itself already counts as due — the runtime marks the '
+        'cadence due once the day is no longer before the due day, and the '
+        'list must agree with the nudge it sends', () {
+      // Weekly, contacted seven days ago (plus an hour): due today.
+      final item = person(daysAgo: 7);
+      final pill = peopleCadencePillOf(item, now: _now);
+      expect(pill.kind, PeopleCadencePillKind.overdue);
+      expect(pill.daysOver, 0);
+      expect(peopleListGroupOf(item, now: _now), PeopleListGroup.due);
+      expect(peopleSummaryOf([item], now: _now).dueNow, 1);
+    });
+
     test('due seven days out is still "due soon"; eight is on track', () {
       // Weekly cadence, contacted today → due in seven days.
       expect(
@@ -282,19 +300,38 @@ void main() {
       );
     });
 
-    test('enrolled without a cadence is on track, never due', () {
+    test('an enrolled person without a stored cadence follows the runtime '
+        'default (ADR 0039 Decision 2) instead of being on track forever', () {
+      // Tracking since 1 Jun with no cadence set: the runtime applies the
+      // 30-day default, so by 13 Aug the cadence has lapsed — as the nudge
+      // the runtime would send says.
       expect(
-        peopleCadencePillOf(person(cadenceDays: null), now: _now).kind,
+        effectiveCadenceDaysOf(person(cadenceDays: null).relationship),
+        30,
+      );
+      final pill = peopleCadencePillOf(person(cadenceDays: null), now: _now);
+      expect(pill.kind, PeopleCadencePillKind.overdue);
+      expect(
+        pill.daysOver,
+        _now.difference(_trackingStart.add(const Duration(days: 30))).inDays,
+      );
+      // Contacted this morning, the default keeps them on track for a month.
+      expect(
+        peopleCadencePillOf(
+          person(cadenceDays: null, daysAgo: 0),
+          now: _now,
+        ).kind,
         PeopleCadencePillKind.onTrack,
       );
     });
 
-    test('not important is not enrolled, whatever the cadence says', () {
-      final pill = peopleCadencePillOf(
-        person(important: false, daysAgo: 40),
-        now: _now,
-      );
+    test('not important is not enrolled, whatever the cadence says — and '
+        'carries no deadline, because the runtime schedules none', () {
+      final item = person(important: false, daysAgo: 40);
+      final pill = peopleCadencePillOf(item, now: _now);
       expect(pill.kind, PeopleCadencePillKind.notEnrolled);
+      expect(effectiveCadenceDaysOf(item.relationship), isNull);
+      expect(peopleDueDateOf(item, now: _now), isNull);
     });
 
     test('an important but dormant or archived person is kept, not nurtured '

@@ -4380,19 +4380,12 @@
       }
     }
   },
+  "relationshipDueToday": "Dnes na řadě",
   "relationshipEditTitle": "Upravit osobu",
   "relationshipErrorCreateFailed": "Osobu se nepodařilo uložit. Zkus to prosím znovu.",
   "relationshipErrorDeleteFailed": "Osobu se nepodařilo smazat. Zkus to prosím znovu.",
   "relationshipErrorLinkTaskFailed": "Úkol se nepodařilo propojit. Zkus to prosím znovu.",
   "relationshipErrorUpdateFailed": "Změny se nepodařilo uložit. Zkus to prosím znovu.",
-  "relationshipFirstDue": "poprvé {day}",
-  "@relationshipFirstDue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipHealthNeedsAttention": "Vyžaduje pozornost",
   "relationshipHealthSteady": "Stabilní",
   "relationshipHealthStrained": "Napjatý",
@@ -4517,6 +4510,39 @@
   "relationshipStatusArchived": "Archivované",
   "relationshipStatusDormant": "Spící",
   "relationshipStatusFieldLabel": "Stav",
+  "relationshipStatusLineAdded": "Právě přidáno · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Právě přidáno · {cadence} · poprvé {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Udržovat kontakt",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

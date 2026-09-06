@@ -107,30 +107,36 @@ class PeopleListRow extends StatelessWidget {
   }
 }
 
-/// The row's status line: the last contact (`Call · Today 12:44`) or `Just
-/// added`, then the cadence, then — for a person not yet contacted — when the
-/// first check-in falls due.
+/// The row's status line: the last contact (`Call · Today 12:44 · Weekly`)
+/// or `Just added · Monthly · first due Sun 16 Aug`. Each line is one
+/// catalog message, so a locale can reorder its parts.
+///
+/// The cadence named is the one the runtime applies: an enrolled person
+/// without a stored cadence reads as the production default, not as "no
+/// cadence"; a person who is not enrolled reads their stored setting and is
+/// never given a first-due day, because the runtime schedules none for them.
 String peopleStatusLineOf(BuildContext context, RelationshipListItem item) {
   final messages = context.messages;
+  final relationship = item.relationship;
   final cadence = relationshipCadenceLabel(
     context,
-    item.relationship.data.checkInCadenceDays,
+    effectiveCadenceDaysOf(relationship) ??
+        relationship.data.checkInCadenceDays,
   );
   final last = item.lastCheckIn;
   if (last != null) {
-    return [
+    return messages.relationshipStatusLineContacted(
       checkInInteractionLabel(context, last.data.interactionType),
       relationshipTimestampLabelOf(context, last.meta.dateFrom),
       cadence,
-    ].join(' · ');
+    );
   }
   final firstDue = peopleDueDateOf(item);
-  return [
-    messages.relationshipJustAdded,
+  if (firstDue == null) return messages.relationshipStatusLineAdded(cadence);
+  return messages.relationshipStatusLineAddedFirstDue(
     cadence,
-    if (firstDue != null)
-      messages.relationshipFirstDue(relationshipDayLabelOf(context, firstDue)),
-  ].join(' · ');
+    relationshipDayLabelOf(context, firstDue),
+  );
 }
 
 /// The truthful cadence pill: warning-tinted `{n} days over` when the cadence
@@ -146,6 +152,8 @@ class PeopleCadencePillWidget extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final label = switch (pill.kind) {
+      PeopleCadencePillKind.overdue when pill.daysOver == 0 =>
+        messages.relationshipDueToday,
       PeopleCadencePillKind.overdue => messages.relationshipDaysOver(
         pill.daysOver,
       ),

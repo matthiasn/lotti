@@ -4373,19 +4373,12 @@
       }
     }
   },
+  "relationshipDueToday": "À relancer aujourd'hui",
   "relationshipEditTitle": "Modifier la personne",
   "relationshipErrorCreateFailed": "Impossible d'enregistrer la personne. Réessaie.",
   "relationshipErrorDeleteFailed": "Impossible de supprimer la personne. Réessaie.",
   "relationshipErrorLinkTaskFailed": "Impossible de lier la tâche. Réessaie.",
   "relationshipErrorUpdateFailed": "Impossible d'enregistrer les modifications. Réessaie.",
-  "relationshipFirstDue": "première échéance {day}",
-  "@relationshipFirstDue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipHealthNeedsAttention": "A besoin d'attention",
   "relationshipHealthSteady": "Stable",
   "relationshipHealthStrained": "Tendue",
@@ -4510,6 +4503,39 @@
   "relationshipStatusArchived": "Archivée",
   "relationshipStatusDormant": "En veille",
   "relationshipStatusFieldLabel": "Statut",
+  "relationshipStatusLineAdded": "Ajouté à l'instant · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Ajouté à l'instant · {cadence} · première échéance {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Rester en contact",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

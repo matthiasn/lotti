@@ -4875,19 +4875,12 @@
       }
     }
   },
+  "relationshipDueToday": "Vandaag aan de beurt",
   "relationshipEditTitle": "Persoon bewerken",
   "relationshipErrorCreateFailed": "Kon de persoon niet opslaan. Probeer het opnieuw.",
   "relationshipErrorDeleteFailed": "Kon de persoon niet verwijderen. Probeer het opnieuw.",
   "relationshipErrorLinkTaskFailed": "Kon de taak niet koppelen. Probeer het opnieuw.",
   "relationshipErrorUpdateFailed": "Kon de wijzigingen niet opslaan. Probeer het opnieuw.",
-  "relationshipFirstDue": "eerste keer {day}",
-  "@relationshipFirstDue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipHealthNeedsAttention": "Vraagt aandacht",
   "relationshipHealthSteady": "Stabiel",
   "relationshipHealthStrained": "Gespannen",
@@ -5012,6 +5005,39 @@
   "relationshipStatusArchived": "Gearchiveerd",
   "relationshipStatusDormant": "Sluimerend",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStatusLineAdded": "Net toegevoegd · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Net toegevoegd · {cadence} · eerste keer {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Contact houden",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

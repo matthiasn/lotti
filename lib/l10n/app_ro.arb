@@ -4373,19 +4373,12 @@
       }
     }
   },
+  "relationshipDueToday": "Scadent astăzi",
   "relationshipEditTitle": "Editați persoana",
   "relationshipErrorCreateFailed": "Persoana nu a putut fi salvată. Încercați din nou.",
   "relationshipErrorDeleteFailed": "Persoana nu a putut fi ștearsă. Încercați din nou.",
   "relationshipErrorLinkTaskFailed": "Sarcina nu a putut fi asociată. Încercați din nou.",
   "relationshipErrorUpdateFailed": "Modificările nu au putut fi salvate. Încercați din nou.",
-  "relationshipFirstDue": "prima scadență {day}",
-  "@relationshipFirstDue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipHealthNeedsAttention": "Necesită atenție",
   "relationshipHealthSteady": "Stabilă",
   "relationshipHealthStrained": "Tensionată",
@@ -4510,6 +4503,39 @@
   "relationshipStatusArchived": "Arhivată",
   "relationshipStatusDormant": "Inactivă",
   "relationshipStatusFieldLabel": "Stare",
+  "relationshipStatusLineAdded": "Adăugat acum · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Adăugat acum · {cadence} · prima scadență {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Menținerea contactului",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

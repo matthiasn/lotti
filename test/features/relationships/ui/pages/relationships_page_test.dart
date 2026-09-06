@@ -1,13 +1,17 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
@@ -317,7 +321,9 @@ void main() {
       expect(find.byIcon(LottiIconsFilled.star), findsNothing);
       // The status line is the last contact — what, when, cadence — in mono,
       // never "Tracking since …".
-      expect(find.text('Call · Yesterday 18:00 · No cadence'), findsOneWidget);
+      // Anna is enrolled without a stored cadence: the line names the
+      // runtime's monthly default, never "No cadence".
+      expect(find.text('Call · Yesterday 18:00 · Monthly'), findsOneWidget);
       // Ben has no check-in: "Just added", then the cadence.
       final context = tester.element(find.byType(RelationshipsPage));
       expect(
@@ -637,6 +643,94 @@ void main() {
         findsNothing,
       );
       expect(find.byType(RelationshipDetailsPage), findsNothing);
+    });
+
+    testWidgets('the labelled Add person button opens the create form', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => crew());
+
+      await pumpDesktop(tester);
+      await tester.tap(find.byKey(const ValueKey('people-add-person-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Name'), findsOneWidget);
+      expect(find.text('Status'), findsNothing);
+    });
+
+    testWidgets('dragging the divider widens the list pane', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => crew());
+
+      await pumpDesktop(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(RelationshipsPage)),
+      );
+      expect(
+        container.read(paneWidthControllerProvider).listPaneWidth,
+        defaultListPaneWidth,
+      );
+
+      await tester.drag(find.byType(ResizableDivider), const Offset(40, 0));
+      await tester.pump();
+
+      expect(
+        container.read(paneWidthControllerProvider).listPaneWidth,
+        defaultListPaneWidth + 40,
+      );
+      // Let the persist debounce fire so no timer leaks past the test.
+      await tester.pump(persistDebounce);
+    });
+
+    testWidgets('with a person selected the list can fold away and come '
+        'back through the show-list-pane button', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => crew());
+      final anna = crew().firstWhere((i) => i.relationship.id == 'rel-anna');
+      when(
+        () => mockRepository.getRelationshipById('rel-anna'),
+      ).thenAnswer((_) async => anna.relationship);
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-anna'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getLinkedTasks('rel-anna'),
+      ).thenAnswer((_) async => []);
+      selected.value = 'rel-anna';
+
+      await pumpDesktop(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(RelationshipsPage)),
+      );
+      // The split's controller is exposed to its descendants; the detail
+      // page is one.
+      ListDetailFocusTraversal.maybeOf(
+        tester.element(find.byType(RelationshipDetailsPage)),
+      )!.hideListPane();
+      await tester.pumpAndSettle();
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isTrue,
+      );
+      expect(find.byType(ResizableDivider), findsNothing);
+      expect(
+        find.byKey(const ValueKey('people-show-list-pane')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('people-show-list-pane')));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isFalse,
+      );
+      expect(find.byType(ResizableDivider), findsOneWidget);
+      // Let the persist debounce fire so no timer leaks past the test.
+      await tester.pump(persistDebounce);
     });
 
     testWidgets('the selected person fills the detail pane and wears the '

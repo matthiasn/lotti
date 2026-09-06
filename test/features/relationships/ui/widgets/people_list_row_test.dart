@@ -136,10 +136,29 @@ void main() {
       expect(find.text('On track'), findsOneWidget);
     });
 
-    testWidgets('enrolled without a cadence is still on track', (tester) async {
-      await pump(tester, item(cadenceDays: null));
-      expect(find.text('On track'), findsOneWidget);
+    testWidgets('due today says so, in the warning tint', (tester) async {
+      // Weekly, last contact a week ago this morning → due today.
+      await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 6, 9)));
+      expect(find.text('Due today'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('people-row-pill-overdue')),
+        findsOneWidget,
+      );
     });
+
+    testWidgets(
+      'an enrolled person without a stored cadence follows the '
+      "runtime's monthly default — the line names it, the pill counts by it",
+      (tester) async {
+        // Tracking since 1 Jul, contacted 3 Aug: monthly default → due 2 Sep.
+        await pump(
+          tester,
+          item(cadenceDays: null, lastCheckInAt: DateTime(2026, 8, 3, 9)),
+        );
+        expect(find.text('Call · Mon 3 Aug 09:00 · Monthly'), findsOneWidget);
+        expect(find.text('On track'), findsOneWidget);
+      },
+    );
 
     testWidgets('not important: not enrolled, whatever the cadence says', (
       tester,
@@ -150,6 +169,15 @@ void main() {
       );
       expect(find.text('Not enrolled'), findsOneWidget);
       expect(find.textContaining('days over'), findsNothing);
+      // The stored setting is still what the line names.
+      expect(find.text('Call · Mon 3 Aug 09:00 · Weekly'), findsOneWidget);
+    });
+
+    testWidgets('a person who is not enrolled is never given a first-due '
+        'day — the runtime schedules none for them', (tester) async {
+      await pump(tester, item(important: false, cadenceDays: 30));
+      expect(find.text('Just added · Monthly'), findsOneWidget);
+      expect(find.textContaining('first due'), findsNothing);
     });
 
     testWidgets('dormant and archived name their status', (tester) async {

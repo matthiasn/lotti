@@ -11166,6 +11166,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get relationshipDueToday => 'Heute fällig';
+
+  @override
   String get relationshipEditTitle => 'Person bearbeiten';
 
   @override
@@ -11183,11 +11186,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Änderungen konnten nicht gespeichert werden. Bitte versuch es erneut.';
-
-  @override
-  String relationshipFirstDue(String day) {
-    return 'erstmals fällig $day';
-  }
 
   @override
   String get relationshipHealthNeedsAttention => 'Braucht Aufmerksamkeit';
@@ -11427,6 +11425,25 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Gerade hinzugefügt · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Gerade hinzugefügt · $cadence · erstmals fällig $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Kontakt halten';

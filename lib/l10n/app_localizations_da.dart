@@ -11097,6 +11097,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get relationshipDueToday => 'Skal kontaktes i dag';
+
+  @override
   String get relationshipEditTitle => 'Redigér person';
 
   @override
@@ -11114,11 +11117,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Ændringerne kunne ikke gemmes. Prøv igen.';
-
-  @override
-  String relationshipFirstDue(String day) {
-    return 'første gang $day';
-  }
 
   @override
   String get relationshipHealthNeedsAttention => 'Kræver opmærksomhed';
@@ -11357,6 +11355,25 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Lige tilføjet · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Lige tilføjet · $cadence · første gang $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Holde kontakten';

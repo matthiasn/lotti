@@ -4876,19 +4876,12 @@
       }
     }
   },
+  "relationshipDueToday": "Skal kontaktes i dag",
   "relationshipEditTitle": "Redigér person",
   "relationshipErrorCreateFailed": "Personen kunne ikke gemmes. Prøv igen.",
   "relationshipErrorDeleteFailed": "Personen kunne ikke slettes. Prøv igen.",
   "relationshipErrorLinkTaskFailed": "Opgaven kunne ikke tilknyttes. Prøv igen.",
   "relationshipErrorUpdateFailed": "Ændringerne kunne ikke gemmes. Prøv igen.",
-  "relationshipFirstDue": "første gang {day}",
-  "@relationshipFirstDue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipHealthNeedsAttention": "Kræver opmærksomhed",
   "relationshipHealthSteady": "Stabil",
   "relationshipHealthStrained": "Anstrengt",
@@ -5013,6 +5006,39 @@
   "relationshipStatusArchived": "Arkiveret",
   "relationshipStatusDormant": "Hvilende",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStatusLineAdded": "Lige tilføjet · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Lige tilføjet · {cadence} · første gang {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Holde kontakten",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

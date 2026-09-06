@@ -11323,6 +11323,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipDueToday => 'Scadent astăzi';
+
+  @override
   String get relationshipEditTitle => 'Editați persoana';
 
   @override
@@ -11340,11 +11343,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Modificările nu au putut fi salvate. Încercați din nou.';
-
-  @override
-  String relationshipFirstDue(String day) {
-    return 'prima scadență $day';
-  }
 
   @override
   String get relationshipHealthNeedsAttention => 'Necesită atenție';
@@ -11588,6 +11586,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stare';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Adăugat acum · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Adăugat acum · $cadence · prima scadență $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Menținerea contactului';

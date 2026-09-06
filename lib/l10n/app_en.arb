@@ -6413,19 +6413,12 @@
       }
     }
   },
+  "relationshipDueToday": "Due today",
   "relationshipEditTitle": "Edit person",
   "relationshipErrorCreateFailed": "Could not save this person. Please try again.",
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
-  "relationshipFirstDue": "first due {day}",
-  "@relationshipFirstDue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipHealthNeedsAttention": "Needs attention",
   "relationshipHealthSteady": "Steady",
   "relationshipHealthStrained": "Strained",
@@ -6636,6 +6629,39 @@
   "relationshipStatusArchived": "Archived",
   "relationshipStatusDormant": "Dormant",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStatusLineAdded": "Just added · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Just added · {cadence} · first due {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Staying in touch",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

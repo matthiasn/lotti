@@ -1,6 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 
 /// The three bands of the People list, in display order (design 2026-09-06
@@ -11,13 +12,15 @@ enum PeopleListGroup { due, onTrack, notEnrolled }
 /// What the trailing pill on a People row says — a *truthful* read of the
 /// cadence (HANDOVER P5: an overdue person must never read as "Due Sun").
 enum PeopleCadencePillKind {
-  /// Cadence lapsed: `{n} days over`, warning tint.
+  /// Cadence lapsed — `{n} days over`, or `Due today` on the due day itself
+  /// — warning tint.
   overdue,
 
   /// Due within the coming week: `Due {weekday}`.
   dueSoon,
 
-  /// Enrolled and fine, or enrolled with no cadence set.
+  /// Enrolled and fine (an enrolled person always has a cadence — the
+  /// runtime's default stands in for an unset one).
   onTrack,
 
   /// Active but not important — the agent is not watching.
@@ -34,7 +37,8 @@ enum PeopleCadencePillKind {
 typedef PeopleCadencePill = ({
   PeopleCadencePillKind kind,
 
-  /// Whole days over for the `overdue` kind; zero otherwise.
+  /// Whole days over for the `overdue` kind (zero on the due day itself);
+  /// zero for every other kind.
   int daysOver,
 
   /// The due date for the `dueSoon` kind; null otherwise.
@@ -49,7 +53,7 @@ typedef PeopleListSection = ({
 
 /// The numbers the summary card above the list shows.
 typedef PeopleSummary = ({
-  /// Enrolled people whose cadence has lapsed.
+  /// Enrolled people whose cadence has lapsed, the due day included.
   int dueNow,
 
   /// People the agent watches: important *and* active.
@@ -76,29 +80,42 @@ bool isEnrolled(RelationshipEntry relationship) =>
     relationship.data.important &&
     relationship.data.status is RelationshipActive;
 
-/// Whole days the cadence is over (positive) or still ahead (negative), or
-/// null when the person has no cadence.
+/// The cadence the runtime actually applies to this person: the stored
+/// value, or the production default when an enrolled person has none set
+/// (ADR 0039 Decision 2 — the same substitution the deterministic tier
+/// makes, so the list never says "on track" to someone the agent is about
+/// to nudge). Null for a person who is not enrolled: the runtime clears
+/// their reminders rather than scheduling any, so they have no due date.
+int? effectiveCadenceDaysOf(RelationshipEntry relationship) {
+  if (!isEnrolled(relationship)) return null;
+  return relationship.data.checkInCadenceDays ?? relationshipDefaultCadenceDays;
+}
+
+/// Whole days the cadence is over (positive), zero on the due day itself,
+/// negative while still ahead — or null for a person who is not enrolled.
 int? peopleOverdueDaysOf(RelationshipListItem item, {DateTime? now}) =>
     cadenceOverdueDays(
       lastCheckInAt: item.lastCheckInAt,
       trackingStartedAt: item.relationship.meta.dateFrom,
-      cadenceDays: item.relationship.data.checkInCadenceDays,
+      cadenceDays: effectiveCadenceDaysOf(item.relationship),
       now: now,
     );
 
-/// When the cadence lapses, or null without a cadence.
+/// When the cadence lapses, or null for a person who is not enrolled.
 DateTime? peopleDueDateOf(RelationshipListItem item, {DateTime? now}) =>
     cadenceDueDate(
       lastCheckInAt: item.lastCheckInAt,
       trackingStartedAt: item.relationship.meta.dateFrom,
-      cadenceDays: item.relationship.data.checkInCadenceDays,
+      cadenceDays: effectiveCadenceDaysOf(item.relationship),
       now: now,
     );
 
-/// The band a row belongs to.
+/// The band a row belongs to. Due *on* the due day, not only after it — the
+/// runtime marks the cadence due once the current day is no longer before
+/// the due day, and the list must agree with the nudge it sends.
 PeopleListGroup peopleListGroupOf(RelationshipListItem item, {DateTime? now}) {
   if (!isEnrolled(item.relationship)) return PeopleListGroup.notEnrolled;
-  return (peopleOverdueDaysOf(item, now: now) ?? 0) > 0
+  return (peopleOverdueDaysOf(item, now: now) ?? -1) >= 0
       ? PeopleListGroup.due
       : PeopleListGroup.onTrack;
 }
@@ -117,11 +134,9 @@ PeopleCadencePill peopleCadencePillOf(
     };
     return (kind: kind, daysOver: 0, dueAt: null);
   }
-  final overdue = peopleOverdueDaysOf(item, now: now);
-  if (overdue == null) {
-    return (kind: PeopleCadencePillKind.onTrack, daysOver: 0, dueAt: null);
-  }
-  if (overdue > 0) {
+  // Enrolled: the effective cadence is never null, so neither is this.
+  final overdue = peopleOverdueDaysOf(item, now: now)!;
+  if (overdue >= 0) {
     return (
       kind: PeopleCadencePillKind.overdue,
       daysOver: overdue,
@@ -182,7 +197,7 @@ PeopleSummary peopleSummaryOf(
     }
     enrolled++;
     final overdue = peopleOverdueDaysOf(item, now: now);
-    if (overdue != null && overdue > 0) {
+    if (overdue != null && overdue >= 0) {
       dueNow++;
       continue;
     }

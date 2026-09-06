@@ -18607,6 +18607,12 @@ abstract class AppLocalizations {
   /// **'Due {day}'**
   String relationshipDueDay(String day);
 
+  /// No description provided for @relationshipDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get relationshipDueToday;
+
   /// No description provided for @relationshipEditTitle.
   ///
   /// In en, this message translates to:
@@ -18636,12 +18642,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save the changes. Please try again.'**
   String get relationshipErrorUpdateFailed;
-
-  /// No description provided for @relationshipFirstDue.
-  ///
-  /// In en, this message translates to:
-  /// **'first due {day}'**
-  String relationshipFirstDue(String day);
 
   /// No description provided for @relationshipHealthNeedsAttention.
   ///
@@ -18996,6 +18996,28 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get relationshipStatusFieldLabel;
+
+  /// No description provided for @relationshipStatusLineAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Just added · {cadence}'**
+  String relationshipStatusLineAdded(String cadence);
+
+  /// No description provided for @relationshipStatusLineAddedFirstDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Just added · {cadence} · first due {day}'**
+  String relationshipStatusLineAddedFirstDue(String cadence, String day);
+
+  /// No description provided for @relationshipStatusLineContacted.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} · {time} · {cadence}'**
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  );
 
   /// Relationships redesign label.
   ///
