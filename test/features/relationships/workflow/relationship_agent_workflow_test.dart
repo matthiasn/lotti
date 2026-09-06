@@ -209,6 +209,9 @@ void main() {
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
+    // No state row unless a test seeds one: the outcome stamp then has
+    // nothing to write, which keeps every older test's upsert list intact.
+    when(() => repository.getAgentState(any())).thenAnswer((_) async => null);
     when(
       () =>
           relationshipRepository.getRelationshipByIdUnfiltered(relationshipId),
@@ -1939,6 +1942,128 @@ void main() {
         conversationRepository.deletedConversationIds,
         contains('test-conv-id'),
       );
+    });
+  });
+  group('the wake outcome on the state row', () {
+    AgentStateEntity stateRow({int failures = 0}) =>
+        AgentDomainEntity.agentState(
+              id: '$agentId:state',
+              agentId: agentId,
+              slots: const AgentSlots(),
+              updatedAt: testDate,
+              vectorClock: null,
+              consecutiveFailureCount: failures,
+            )
+            as AgentStateEntity;
+
+    void succeedingModel() {
+      stubGlmResolution();
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async {
+            await strategy!.processToolCalls(
+              toolCalls: [
+                toolCall(
+                  RelationshipAgentToolNames.updateRelationshipReport,
+                  briefingArgs(),
+                ),
+              ],
+              manager: conversationManager,
+            );
+            return const InferenceUsage(inputTokens: 100);
+          };
+    }
+
+    void explodingModel() {
+      stubGlmResolution();
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async => throw Exception('provider exploded');
+    }
+
+    AgentStateEntity stamped() => upserts.whereType<AgentStateEntity>().single;
+
+    test(
+      'a successful wake stamps lastWakeAt and clears the failure streak',
+      () async {
+        when(
+          () => repository.getAgentState(agentId),
+        ).thenAnswer((_) async => stateRow(failures: 2));
+        succeedingModel();
+
+        final result = await run(
+          tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+        );
+
+        expect(result.success, isTrue);
+        expect(stamped().consecutiveFailureCount, 0);
+        expect(stamped().lastWakeAt, now);
+      },
+    );
+
+    test('a failed wake stamps lastWakeAt and bumps the failure streak — the '
+        "person page's card reads both to show failed", () async {
+      when(
+        () => repository.getAgentState(agentId),
+      ).thenAnswer((_) async => stateRow(failures: 2));
+      explodingModel();
+
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
+
+      expect(result.success, isFalse);
+      expect(stamped().consecutiveFailureCount, 3);
+      expect(stamped().lastWakeAt, now);
+    });
+
+    test('no state row means nothing to stamp', () async {
+      explodingModel();
+
+      await run(tokens: {relationshipEscalationWorkspaceKey('2026-08-08')});
+
+      expect(upserts.whereType<AgentStateEntity>(), isEmpty);
+    });
+
+    test('a stamp that fails to write is contained — the wake keeps its own '
+        'verdict', () async {
+      when(
+        () => repository.getAgentState(agentId),
+      ).thenAnswer((_) async => stateRow());
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        final entity =
+            invocation.positionalArguments.first as AgentDomainEntity;
+        if (entity is AgentStateEntity) throw StateError('state locked');
+        upserts.add(entity);
+      });
+      succeedingModel();
+
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
+
+      expect(result.success, isTrue);
+      expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
     });
   });
 }

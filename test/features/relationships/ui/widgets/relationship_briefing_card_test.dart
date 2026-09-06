@@ -443,6 +443,45 @@ void main() {
       expect(saved.meta.id, relationshipId);
     });
 
+    testWidgets('Mark important also mints the agent, the way the edit form '
+        'does — otherwise nothing proactive ever starts', (tester) async {
+      when(
+        () => agentService.ensureAgentForRelationship(any()),
+      ).thenAnswer((_) async => makeTestIdentity(agentId: agentId));
+      await pump(tester, entry: relationship(important: false));
+
+      await tester.tap(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      await tester.pumpAndSettle();
+
+      final ensured =
+          verify(
+                () => agentService.ensureAgentForRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(ensured.data.important, isTrue);
+    });
+
+    testWidgets('a failed agent creation never fails the save the user '
+        'watched succeed', (tester) async {
+      when(
+        () => agentService.ensureAgentForRelationship(any()),
+      ).thenThrow(StateError('agent db closed'));
+      await pump(tester, entry: relationship(important: false));
+
+      await tester.tap(
+        find.byKey(const ValueKey('relationship-agent-mark-important')),
+      );
+      await tester.pumpAndSettle();
+
+      verify(() => repository.updateRelationship(any())).called(1);
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsNothing,
+      );
+    });
+
     testWidgets('a rejected save says so', (tester) async {
       when(
         () => repository.updateRelationship(any()),
@@ -721,6 +760,55 @@ void main() {
       final update = tester.widget<DesignSystemButton>(briefMe);
       expect(update.label, 'Update now');
       expect(update.variant, DesignSystemButtonVariant.secondary);
+    });
+
+    testWidgets('the "as of" line moves on its own once the displayed bucket '
+        'changes — a briefing is not "just now" for hours', (tester) async {
+      var current = now;
+      final written = now.subtract(const Duration(seconds: 58));
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            RelationshipBriefingCard(
+              relationship: relationship(),
+              checkIns: onTrackCheckIns,
+            ),
+            overrides: [
+              agentReportProvider(agentId).overrideWith(
+                (ref) async => report(createdAt: written),
+              ),
+              agentStateProvider(agentId).overrideWith((ref) async => null),
+              agentIsRunningProvider(
+                agentId,
+              ).overrideWith((ref) => Stream.value(false)),
+              agentIdentityProvider(agentId).overrideWith((ref) async => null),
+              taskAgentResolvedSetupProvider(
+                agentId,
+              ).overrideWith((ref) async => resolvedSetup()),
+              agentTokenUsageSummariesProvider(
+                agentId,
+              ).overrideWith((ref) async => const []),
+              relationshipAgentServiceProvider.overrideWithValue(agentService),
+              relationshipBriefingDisclosureProvider(
+                relationshipId,
+              ).overrideWith((ref) async => null),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+              contactLauncherProvider.overrideWithValue(
+                _FakeContactLauncher(launchable: const {}),
+              ),
+              pendingInteractionStoreProvider.overrideWithValue(store),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('as of just now'), findsOneWidget);
+
+        // Nobody rebuilds the card; the clock crosses the minute.
+        current = now.add(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 5));
+
+        expect(find.text('as of 1 min ago'), findsOneWidget);
+      });
     });
 
     testWidgets('no cost pill without usage', (tester) async {

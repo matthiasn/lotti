@@ -174,12 +174,30 @@ class _RelationshipBriefingCardState
   ReachableChannel? _reachable;
   int _resolution = 0;
 
+  /// Re-renders the "as of" meta when its displayed bucket next changes:
+  /// computed only at build, a briefing rendered "just now" would keep that
+  /// label for hours. One wake per visible change, not a per-second tick.
+  Timer? _ageTick;
+
   String get _agentId => relationshipAgentIdFor(widget.relationship.meta.id);
 
   @override
   void initState() {
     super.initState();
     unawaited(_resolveReachable());
+  }
+
+  @override
+  void dispose() {
+    _ageTick?.cancel();
+    super.dispose();
+  }
+
+  void _armAgeTick(DateTime writtenAt) {
+    _ageTick?.cancel();
+    _ageTick = Timer(untilNextAgeBucket(clock.now().difference(writtenAt)), () {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -274,21 +292,37 @@ class _RelationshipBriefingCardState
   }
 
   /// The consent switch, from the card: marking the person important is
-  /// what creates their agent (ADR 0039).
+  /// what creates their agent (ADR 0059 Decision 2), so the save is followed
+  /// by the same lazy-create call the edit form makes — fire-and-forget with
+  /// contained failure, because agent wiring must never fail the save the
+  /// user just watched succeed. Both services are read before the await:
+  /// the agent is minted after this widget may be gone.
   Future<void> _markImportant() async {
     if (_marking) return;
     final messages = context.messages;
+    final repository = ref.read(relationshipRepositoryProvider);
+    final agentService = ref.read(relationshipAgentServiceProvider);
     setState(() => _marking = true);
     try {
       final relationship = widget.relationship;
-      final saved = await ref
-          .read(relationshipRepositoryProvider)
-          .updateRelationship(
-            relationship.copyWith(
-              data: relationship.data.copyWith(important: true),
-            ),
-          );
-      if (!saved && mounted) {
+      final enrolled = relationship.copyWith(
+        data: relationship.data.copyWith(important: true),
+      );
+      final saved = await repository.updateRelationship(enrolled);
+      if (saved) {
+        unawaited(() async {
+          try {
+            await agentService.ensureAgentForRelationship(enrolled);
+          } catch (error, stackTrace) {
+            developer.log(
+              'Failed to ensure relationship agent',
+              name: 'RelationshipBriefingCard',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }
+        }());
+      } else if (mounted) {
         context.showToast(
           tone: DesignSystemToastTone.error,
           title: messages.relationshipErrorUpdateFailed,
@@ -366,6 +400,11 @@ class _RelationshipBriefingCardState
     final health = report == null
         ? null
         : relationshipHealthMetricsFromReport(report);
+    if (report != null) {
+      _armAgeTick(report.createdAt);
+    } else {
+      _ageTick?.cancel();
+    }
     final setup = ref.watch(taskAgentResolvedSetupProvider(agentId)).value;
     final provenance = report == null
         ? null

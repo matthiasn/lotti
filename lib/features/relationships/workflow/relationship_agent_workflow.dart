@@ -601,6 +601,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         }
       }
 
+      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: true);
       return WakeResult(success: true, reportUpdated: reportHeadAdvanced);
     } catch (error, stackTrace) {
       _domainLogger?.error(
@@ -610,6 +611,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
         message: 'relationship Phase B wake failed',
         stackTrace: stackTrace,
       );
+      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: false);
       if (recordConsumption) {
         await finalizeCarrierlessAgentAttribution(
           runKey: runKey,
@@ -953,6 +955,41 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   /// The ORIGINAL trigger tokens are forwarded verbatim — the baseline
   /// token carries the pre-transition cadence status, which a re-derivation
   /// after Phase A's register write can no longer reconstruct.
+  /// Stamps the wake on the agent's state row: `lastWakeAt` either way, and
+  /// the failure streak reset on success or bumped on failure — the two
+  /// facts the person page's agent card reads to show *failed* with the
+  /// reason and the fix, and the internals' Stats tab reads as the last
+  /// wake. Contained: a state write that fails is logged and never changes
+  /// the wake's own verdict. No state row (the agent is mid-creation) means
+  /// nothing to stamp.
+  Future<void> _stampWakeOutcome({
+    required String agentId,
+    required DateTime now,
+    required bool succeeded,
+  }) async {
+    try {
+      await _syncService.runInTransaction(() async {
+        final state = await _repository.getAgentState(agentId);
+        if (state == null) return;
+        await _syncService.upsertEntity(
+          state.copyWith(
+            lastWakeAt: now,
+            updatedAt: now,
+            consecutiveFailureCount: succeeded
+                ? 0
+                : state.consecutiveFailureCount + 1,
+          ),
+        );
+      });
+    } catch (error, stackTrace) {
+      logError(
+        'failed to stamp the wake outcome on the agent state',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   /// Contained: a failed re-arm is logged, never masks the original error.
   Future<void> _rearmEscalation(
     String agentId,

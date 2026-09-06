@@ -609,6 +609,17 @@ stateDiagram-v2
   OutOfDate --> NotEnrolled: important off, dormant, archived
 ```
 
+Two runtime details keep the faces honest. Every relationship wake now
+stamps its state row (`_stampWakeOutcome` in the workflow): `lastWakeAt`
+either way, and `consecutiveFailureCount` reset on success or bumped on
+failure — before this, no relationship wake ever wrote either, so the failed
+face could never appear and the internals' Stats tab never knew the last
+wake. And the card arms one timer at the next minute/hour/day boundary of the
+briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
+just now" does not stay on screen for hours. *Mark important* on the plain
+card also mints the agent through `ensureAgentForRelationship`, the same
+lazy-create call the edit form makes.
+
 Three things the card deliberately does not have. The chat entry lives in the
 page's hero. There is no *Automatic updates* switch, because the relationship
 runtime never reads `AgentConfig.automaticUpdatesEnabled` — offering the

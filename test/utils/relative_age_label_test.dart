@@ -35,4 +35,45 @@ void main() {
     expect(relativeAgoLabel(messages, const Duration(days: 1)), '1 day ago');
     expect(relativeAgoLabel(messages, const Duration(days: 12)), '12 days ago');
   });
+
+  group('untilNextAgeBucket', () {
+    test('within the first hour, the next minute boundary plus a second', () {
+      expect(
+        untilNextAgeBucket(const Duration(seconds: 58)),
+        const Duration(seconds: 3),
+      );
+      expect(
+        untilNextAgeBucket(const Duration(minutes: 3, seconds: 10)),
+        const Duration(seconds: 51),
+      );
+    });
+
+    test('within the first day, the next hour boundary', () {
+      expect(
+        untilNextAgeBucket(const Duration(hours: 1, minutes: 59)),
+        const Duration(seconds: 61),
+      );
+    });
+
+    test('from a day on, the next day boundary', () {
+      expect(
+        untilNextAgeBucket(const Duration(days: 2, hours: 23)),
+        const Duration(hours: 1, seconds: 1),
+      );
+    });
+
+    test('the wait always lands in the next bucket', () {
+      for (final age in [
+        const Duration(seconds: 1),
+        const Duration(seconds: 59),
+        const Duration(minutes: 59, seconds: 59),
+        const Duration(hours: 5),
+        const Duration(days: 1),
+      ]) {
+        final before = relativeAgoLabel(messages, age);
+        final after = relativeAgoLabel(messages, age + untilNextAgeBucket(age));
+        expect(after, isNot(before), reason: '$age');
+      }
+    });
+  });
 }

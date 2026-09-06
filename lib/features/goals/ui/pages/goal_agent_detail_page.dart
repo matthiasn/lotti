@@ -1355,18 +1355,12 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
 
   void _armAgeTick(DateTime generatedAt) {
     _ageTick?.cancel();
-    final age = clock.now().difference(generatedAt);
-    final Duration untilNextBucket;
-    if (age.inHours < 1) {
-      untilNextBucket = Duration(seconds: 60 - (age.inSeconds % 60) + 1);
-    } else if (age.inDays < 1) {
-      untilNextBucket = Duration(seconds: 3600 - (age.inSeconds % 3600) + 1);
-    } else {
-      untilNextBucket = Duration(seconds: 86400 - (age.inSeconds % 86400) + 1);
-    }
-    _ageTick = Timer(untilNextBucket, () {
-      if (mounted) setState(() {});
-    });
+    _ageTick = Timer(
+      untilNextAgeBucket(clock.now().difference(generatedAt)),
+      () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   Future<void> _updateAutomaticUpdates(bool enabled) async {
