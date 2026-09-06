@@ -4971,7 +4971,7 @@
   "relationshipPayAttentionTo": "Vær opmærksom på",
   "relationshipPostCallConfirm": "Log tjek-ind",
   "relationshipPostCallDismiss": "Ikke nu",
-  "relationshipPostCallMeta": "startede kl. {time} · cirka {minutes} min",
+  "relationshipPostCallMeta": "startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

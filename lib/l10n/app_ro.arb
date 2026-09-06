@@ -4468,7 +4468,7 @@
   "relationshipPayAttentionTo": "Fiți atent la",
   "relationshipPostCallConfirm": "Notați check-in",
   "relationshipPostCallDismiss": "Nu acum",
-  "relationshipPostCallMeta": "început la {time} · circa {minutes} min",
+  "relationshipPostCallMeta": "început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

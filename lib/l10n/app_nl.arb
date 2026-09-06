@@ -4970,7 +4970,7 @@
   "relationshipPayAttentionTo": "Let op",
   "relationshipPostCallConfirm": "Check-in vastleggen",
   "relationshipPostCallDismiss": "Niet nu",
-  "relationshipPostCallMeta": "begonnen om {time} · ongeveer {minutes} min",
+  "relationshipPostCallMeta": "begonnen om {time} · {minutes, plural, =0{minder dan een minuut} =1{ongeveer 1 min} other{ongeveer {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

@@ -18838,7 +18838,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipPostCallMeta.
   ///
   /// In en, this message translates to:
-  /// **'started {time} · about {minutes} min'**
+  /// **'started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}'**
   String relationshipPostCallMeta(String time, int minutes);
 
   /// No description provided for @relationshipPostCallOfferCall.

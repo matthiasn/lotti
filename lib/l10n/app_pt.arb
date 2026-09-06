@@ -4970,7 +4970,7 @@
   "relationshipPayAttentionTo": "Prestar atenção a",
   "relationshipPostCallConfirm": "Registar check-in",
   "relationshipPostCallDismiss": "Agora não",
-  "relationshipPostCallMeta": "começou às {time} · cerca de {minutes} min",
+  "relationshipPostCallMeta": "começou às {time} · {minutes, plural, =0{menos de um minuto} =1{cerca de 1 min} other{cerca de {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

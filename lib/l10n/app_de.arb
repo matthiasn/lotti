@@ -4468,7 +4468,7 @@
   "relationshipPayAttentionTo": "Darauf achten",
   "relationshipPostCallConfirm": "Check-in festhalten",
   "relationshipPostCallDismiss": "Jetzt nicht",
-  "relationshipPostCallMeta": "begonnen um {time} · etwa {minutes} Min.",
+  "relationshipPostCallMeta": "begonnen um {time} · {minutes, plural, =0{unter einer Minute} =1{etwa 1 Min.} other{etwa {minutes} Min.}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

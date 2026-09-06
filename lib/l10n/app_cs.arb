@@ -4475,7 +4475,7 @@
   "relationshipPayAttentionTo": "Dávej pozor na",
   "relationshipPostCallConfirm": "Zapsat check-in",
   "relationshipPostCallDismiss": "Teď ne",
-  "relationshipPostCallMeta": "začátek v {time} · asi {minutes} min",
+  "relationshipPostCallMeta": "začátek v {time} · {minutes, plural, =0{necelá minuta} =1{asi 1 min} other{asi {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

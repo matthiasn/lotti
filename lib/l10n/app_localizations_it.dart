@@ -11406,7 +11406,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'Inizio: $time · circa $minutes min';
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'circa $minutes min',
+      one: 'circa 1 min',
+      zero: 'meno di un minuto',
+    );
+    return 'Inizio: $time · $_temp0';
   }
 
   @override

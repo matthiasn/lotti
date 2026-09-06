@@ -4971,7 +4971,7 @@
   "relationshipPayAttentionTo": "Fai attenzione a",
   "relationshipPostCallConfirm": "Annota check-in",
   "relationshipPostCallDismiss": "Non ora",
-  "relationshipPostCallMeta": "Inizio: {time} · circa {minutes} min",
+  "relationshipPostCallMeta": "Inizio: {time} · {minutes, plural, =0{meno di un minuto} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

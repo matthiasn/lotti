@@ -11432,7 +11432,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'začátek v $time · asi $minutes min';
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'asi $minutes min',
+      one: 'asi 1 min',
+      zero: 'necelá minuta',
+    );
+    return 'začátek v $time · $_temp0';
   }
 
   @override

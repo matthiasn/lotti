@@ -6590,7 +6590,7 @@
   "@relationshipPostCallDismiss": {
     "description": "Button that dismisses the post-call prompt without a trace"
   },
-  "relationshipPostCallMeta": "started {time} · about {minutes} min",
+  "relationshipPostCallMeta": "started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

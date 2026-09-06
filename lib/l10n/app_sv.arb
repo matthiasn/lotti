@@ -4971,7 +4971,7 @@
   "relationshipPayAttentionTo": "Var uppmärksam på",
   "relationshipPostCallConfirm": "Logga avstämning",
   "relationshipPostCallDismiss": "Inte nu",
-  "relationshipPostCallMeta": "började kl. {time} · cirka {minutes} min",
+  "relationshipPostCallMeta": "började kl. {time} · {minutes, plural, =0{under en minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {

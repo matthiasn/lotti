@@ -178,6 +178,19 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.text('started 11:40 · under a minute'), findsOneWidget);
+    });
+
+    testWidgets('a single minute reads in the singular on the meta line too', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        pending: marker(startedAt: DateTime(2026, 8, 17, 11, 40)),
+        resolves: person(),
+      );
+
+      expect(find.text('started 11:40 · about 1 min'), findsOneWidget);
     });
 
     testWidgets('a message reads as writing, not calling', (tester) async {
