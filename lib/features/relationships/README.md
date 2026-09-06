@@ -50,9 +50,8 @@ the `enable_relationships` flag):
   briefing renders as Markdown and its "Read more" and "Open agent
   internals" behave exactly as they do on a task ("Brief me" names the cloud
   provider first, per ADR 0037) — and `/people/<id>/chat`
-  opens the per-person agent chat. The briefing's model comes from the
-  person's own profile, else the default profile of their category, else the
-  validated default model. Banners surface through the
+  opens the per-person agent chat. A briefing runs on the AI profile of the
+  person's category unless the person has one of their own. Banners surface through the
   kind-agnostic channel (`lib/features/nudges/`), tapping through to the
   person.
 

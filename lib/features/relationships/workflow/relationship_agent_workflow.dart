@@ -88,34 +88,46 @@ typedef RelationshipModelResolution = ({
 /// agent, and the validated default is one specific cloud model — a user
 /// whose category routes everything else through their own profile was
 /// left with no route at all, and the card reported only "could not request
-/// the briefing". A dangling id at any step falls through to the next; the
-/// lookup is optional so callers without a category source keep the
-/// two-step chain.
+/// the briefing". A dangling id at any step falls through to the next. The
+/// category lookup runs only once the explicit profiles have failed to
+/// resolve — it is a database read, and a transient failure there must not
+/// take down a route the person or the agent already pins. The lookup is
+/// optional so callers without a category source keep the two-step chain.
 Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   required RelationshipEntry? relationship,
   required AgentIdentityEntity? agentIdentity,
   required AiConfigRepository aiConfigRepository,
   CategoryProfileLookup? categoryProfileLookup,
 }) async {
-  final categoryId = relationship?.meta.categoryId;
-  final candidateProfileIds = <String>{
-    ?relationship?.data.profileId,
-    ?agentIdentity?.config.profileId,
-    if (categoryId != null && categoryProfileLookup != null)
-      ?await categoryProfileLookup(categoryId),
-  };
   final profileResolver = ProfileResolver(
     aiConfigRepository: aiConfigRepository,
   );
-  for (final profileId in candidateProfileIds) {
+  Future<RelationshipModelResolution?> viaProfile(String profileId) async {
     final profile = await profileResolver.resolveByProfileId(profileId);
-    if (profile != null) {
-      return (
-        modelId: profile.thinkingModelId,
-        provider: profile.thinkingProvider,
-        geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
-        profileId: profileId,
-      );
+    if (profile == null) return null;
+    return (
+      modelId: profile.thinkingModelId,
+      provider: profile.thinkingProvider,
+      geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
+      profileId: profileId,
+    );
+  }
+
+  final explicitProfileIds = <String>{
+    ?relationship?.data.profileId,
+    ?agentIdentity?.config.profileId,
+  };
+  for (final profileId in explicitProfileIds) {
+    final resolved = await viaProfile(profileId);
+    if (resolved != null) return resolved;
+  }
+  final categoryId = relationship?.meta.categoryId;
+  if (categoryId != null && categoryProfileLookup != null) {
+    final categoryProfileId = await categoryProfileLookup(categoryId);
+    if (categoryProfileId != null &&
+        !explicitProfileIds.contains(categoryProfileId)) {
+      final resolved = await viaProfile(categoryProfileId);
+      if (resolved != null) return resolved;
     }
   }
   final direct = await resolveInferenceProviderWithModel(

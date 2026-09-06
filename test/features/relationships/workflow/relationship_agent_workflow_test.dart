@@ -1647,6 +1647,29 @@ void main() {
       expect(resolved?.provider.id, 'melious-provider');
     });
 
+    test('an explicit profile resolves before the category lookup runs — a '
+        'failing category read cannot take down a pinned route', () async {
+      stubGlmResolution();
+      when(() => aiConfigRepository.getConfigById('profile-1')).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Mine',
+          createdAt: DateTime(2026),
+          thinkingModelId: 'model-glm',
+        ),
+      );
+
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: personInCategory(profileId: 'profile-1'),
+        agentIdentity: identity(),
+        aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: (_) async =>
+            throw StateError('the category read failed'),
+      );
+
+      expect(resolved?.profileId, 'profile-1');
+    });
+
     test('a person without a category never consults the lookup', () async {
       stubGlmResolution();
 
