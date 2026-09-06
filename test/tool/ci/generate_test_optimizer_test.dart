@@ -113,6 +113,7 @@ void main() {
     final directory = Directory(path.join(root.path, 'test'))..createSync();
     final fixtures = {
       'excluded': "@test.Tags(['eval-live'])\nlibrary;",
+      'excluded_set': "@Tags({'eval-live'})\nlibrary;",
       'unknown': '@Tags(suiteTags)\nlibrary;',
       'conditional': "@Tags([if (enabled) 'eval-live'])\nlibrary;",
       'other': "@Tags(['other'])\nlibrary;",
@@ -132,6 +133,7 @@ void main() {
     );
     final contents = await output.readAsString();
     expect(contents, isNot(contains('excluded_test.dart')));
+    expect(contents, isNot(contains('excluded_set_test.dart')));
     for (final name in ['bare', 'fixture', 'plain']) {
       expect(contents, contains("import '${name}_test.dart'"));
     }

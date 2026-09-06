@@ -67,9 +67,12 @@ bool _isExcluded(LibraryDirective library, Set<String> excludedTags) {
     if (annotation.name.name.split('.').last != 'Tags') continue;
     final arguments = annotation.arguments?.arguments;
     if (arguments == null || arguments.length != 1) continue;
-    final tags = arguments.single;
-    if (tags is! ListLiteral) continue;
-    if (tags.elements.whereType<StringLiteral>().any(
+    final elements = switch (arguments.single) {
+      ListLiteral(:final elements) => elements,
+      SetOrMapLiteral(:final elements) => elements,
+      _ => const <CollectionElement>[],
+    };
+    if (elements.whereType<StringLiteral>().any(
       (tag) => excludedTags.contains(tag.stringValue),
     )) {
       return true;
