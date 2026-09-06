@@ -102,7 +102,7 @@ class AiPickProviderModal extends StatefulWidget {
 
   /// Default tile lineup matching the design: Melious.ai (RECOMMENDED) →
   /// Mistral → Gemini → Alibaba (NEW) → OpenAI → Anthropic (NEW) →
-  /// oMLX (DESKTOP ONLY) → Ollama (DESKTOP ONLY) → Voxtral
+  /// sherpa-onnx (ON DEVICE) → oMLX (DESKTOP ONLY) → Ollama (DESKTOP ONLY) → Voxtral
   /// (DESKTOP ONLY). Hosted providers land before the local options so the
   /// desktop providers stay last in the list. Exposed as a static so
   /// tests can re-use the same spec the modal ships with without instantiating
@@ -124,6 +124,7 @@ class AiPickProviderModal extends StatefulWidget {
           providerType: InferenceProviderType.anthropic,
           badge: AiPickProviderBadge.newcomer,
         ),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.sherpa),
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.omlx,
           badge: AiPickProviderBadge.desktopOnly,
@@ -156,7 +157,6 @@ class AiPickProviderModal extends StatefulWidget {
           providerType: InferenceProviderType.nebiusAiStudio,
         ),
         AiPickProviderTileSpec(providerType: InferenceProviderType.openRouter),
-        AiPickProviderTileSpec(providerType: InferenceProviderType.sherpa),
         AiPickProviderTileSpec(providerType: InferenceProviderType.whisper),
       ];
 

@@ -28,7 +28,6 @@ void main() {
           InferenceProviderType.genericOpenAi,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.openRouter,
-          InferenceProviderType.sherpa,
           InferenceProviderType.whisper,
         ]);
         // Every enum value is present exactly once — guard against
@@ -46,7 +45,6 @@ void main() {
           InferenceProviderType.genericOpenAi,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.openRouter,
-          InferenceProviderType.sherpa,
           InferenceProviderType.whisper,
         };
         for (final spec in AiPickProviderModal.allTypesTiles.where(

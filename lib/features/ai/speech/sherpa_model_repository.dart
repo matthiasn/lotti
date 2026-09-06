@@ -41,6 +41,28 @@ class SherpaModel {
 /// Fixed upstream revisions prevent model downloads changing beneath a build.
 const sherpaModels = [
   SherpaModel(
+    id: 'large-v3',
+    name: 'Whisper Large v3',
+    revision: '2a6507094dd6020d939d78e3f1834a1d06267fca',
+    files: [
+      SherpaModelFile(
+        'large-v3-encoder.int8.onnx',
+        766671985,
+        'd531cf17248acc43e8c09b472a0877055e770877857a5332fc1304b36534ec85',
+      ),
+      SherpaModelFile(
+        'large-v3-decoder.int8.onnx',
+        1008265203,
+        'ebc6bfd88e162a46cb3edee8a7e727e1dcbc65cabecb19e2573695e4d495e1af',
+      ),
+      SherpaModelFile(
+        'large-v3-tokens.txt',
+        816730,
+        'b34b360dbb493e781e479794586d661700670d65564001f23024971d1f2fa126',
+      ),
+    ],
+  ),
+  SherpaModel(
     id: 'tiny',
     name: 'Whisper Tiny',
     revision: '65176e2deb88badc814a94058666cadccc29b61c',
@@ -101,6 +123,7 @@ class SherpaModelRepository {
   final Future<Directory> Function() _supportDirectory;
   final List<SherpaModel> models;
   final _downloads = <String, Future<String>>{};
+  final _verifiedFiles = <String, ({FileStat stat, Future<bool> result})>{};
 
   SherpaModel model(String id) => models.firstWhere(
     (model) => model.id == id,
@@ -118,14 +141,39 @@ class SherpaModelRepository {
   Future<bool> isAvailable(String id) async =>
       models.any((model) => model.id == id) && await isInstalled(id);
 
+  /// Hash each file once per process, then probe its size and timestamps.
+  /// Changed files are verified again; installs and removals invalidate the cache.
   Future<bool> isInstalled(String id) async {
     final spec = model(id);
     final directory = await modelDirectory(id);
     for (final artifact in spec.files) {
       final file = File(p.join(directory, artifact.name));
-      if (!await _matches(file, artifact)) return false;
+      if (!await _isVerified(file, artifact)) return false;
     }
     return true;
+  }
+
+  Future<bool> _isVerified(File file, SherpaModelFile artifact) async {
+    final stat = file.statSync();
+    if (stat.type != FileSystemEntityType.file || stat.size != artifact.bytes) {
+      _verifiedFiles.remove(file.path);
+      return false;
+    }
+    final cached = _verifiedFiles[file.path];
+    if (cached != null &&
+        cached.stat.size == stat.size &&
+        cached.stat.modified == stat.modified &&
+        cached.stat.changed == stat.changed) {
+      return cached.result;
+    }
+    final result = _matches(file, artifact);
+    _verifiedFiles[file.path] = (stat: stat, result: result);
+    try {
+      return await result;
+    } catch (_) {
+      _verifiedFiles.remove(file.path);
+      rethrow;
+    }
   }
 
   Future<bool> _matches(File file, SherpaModelFile artifact) async =>
@@ -144,6 +192,7 @@ class SherpaModelRepository {
 
   Future<String> _install(String id, void Function(double)? onProgress) async {
     final spec = model(id);
+    _verifiedFiles.clear();
     final directory = await modelDirectory(id);
     await Directory(directory).create(recursive: true);
     var completed = 0;
@@ -154,6 +203,11 @@ class SherpaModelRepository {
           onProgress?.call((completed + received) / spec.bytes);
         });
       }
+      // Installation already checked the digest; routine discovery can reuse it.
+      _verifiedFiles[file.path] = (
+        stat: file.statSync(),
+        result: Future.value(true),
+      );
       completed += artifact.bytes;
       onProgress?.call(completed / spec.bytes);
     }
@@ -201,6 +255,7 @@ class SherpaModelRepository {
     if (_downloads.containsKey(id)) {
       throw StateError('Cannot remove a model while it is downloading');
     }
+    _verifiedFiles.clear();
     final directory = Directory(await modelDirectory(id));
     if (directory.existsSync()) await directory.delete(recursive: true);
   }

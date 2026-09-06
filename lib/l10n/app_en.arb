@@ -7157,20 +7157,45 @@
   "settingsV2UnimplementedTitle": "Panel not yet implemented",
   "settingsWhatsNewSubtitle": "See the latest updates and features",
   "settingsWhatsNewTitle": "What's New",
-  "sherpaDeleteModel": "Delete downloaded model",
-  "sherpaDownloadModel": "Download ({size} MB)",
+  "sherpaDeleteModel": "Remove {model} from this device",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Download",
+  "sherpaDownloadModel": "Download {model}",
   "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Installing model",
+  "sherpaModelConfigurationError": "Model downloaded, but its configuration could not be saved.",
+  "sherpaModelError": "Model operation failed. Try again.",
+  "sherpaModelInstalled": "Downloaded",
+  "sherpaModelNotInstalled": "Download a model on this device",
+  "sherpaModelSizeGB": "{size} GB · Multilingual",
+  "@sherpaModelSizeGB": {
     "placeholders": {
       "size": {
         "type": "String"
       }
     }
   },
-  "sherpaModelConfigurationError": "Model downloaded, but its configuration could not be saved.",
-  "sherpaModelError": "Model operation failed. Try again.",
-  "sherpaModelInstalled": "Downloaded",
-  "sherpaModelNotInstalled": "Download a model on this device",
-  "sherpaProviderDescription": "Transcribe on this device without a server. Download a model below.",
+  "sherpaModelSizeMB": "{size} MB · Multilingual",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transcribe on this device without a server. Download a model, then select it in your inference profile.",
   "sidebarActiveSectionTitle": "Activity",
   "sidebarActivityCollapseTooltip": "Collapse activity",
   "sidebarActivityExpandTooltip": "Expand activity",

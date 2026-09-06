@@ -21284,14 +21284,26 @@ abstract class AppLocalizations {
   /// No description provided for @sherpaDeleteModel.
   ///
   /// In en, this message translates to:
-  /// **'Delete downloaded model'**
-  String get sherpaDeleteModel;
+  /// **'Remove {model} from this device'**
+  String sherpaDeleteModel(String model);
+
+  /// No description provided for @sherpaDownloadAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get sherpaDownloadAction;
 
   /// No description provided for @sherpaDownloadModel.
   ///
   /// In en, this message translates to:
-  /// **'Download ({size} MB)'**
-  String sherpaDownloadModel(String size);
+  /// **'Download {model}'**
+  String sherpaDownloadModel(String model);
+
+  /// No description provided for @sherpaInstallingModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing model'**
+  String get sherpaInstallingModel;
 
   /// No description provided for @sherpaModelConfigurationError.
   ///
@@ -21317,10 +21329,22 @@ abstract class AppLocalizations {
   /// **'Download a model on this device'**
   String get sherpaModelNotInstalled;
 
+  /// No description provided for @sherpaModelSizeGB.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} GB · Multilingual'**
+  String sherpaModelSizeGB(String size);
+
+  /// No description provided for @sherpaModelSizeMB.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB · Multilingual'**
+  String sherpaModelSizeMB(String size);
+
   /// No description provided for @sherpaProviderDescription.
   ///
   /// In en, this message translates to:
-  /// **'Transcribe on this device without a server. Download a model below.'**
+  /// **'Transcribe on this device without a server. Download a model, then select it in your inference profile.'**
   String get sherpaProviderDescription;
 
   /// No description provided for @sidebarActiveSectionTitle.

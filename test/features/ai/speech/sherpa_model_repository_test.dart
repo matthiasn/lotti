@@ -59,6 +59,18 @@ void main() {
     return repo;
   }
 
+  MockIoFile trackedFile(File file) {
+    final tracked = MockIoFile();
+    when(() => tracked.path).thenReturn(file.path);
+    when(tracked.statSync).thenAnswer((_) => file.statSync());
+    when(tracked.existsSync).thenAnswer((_) => file.existsSync());
+    when(tracked.length).thenAnswer((_) => file.length());
+    when(
+      tracked.openRead,
+    ).thenAnswer((_) => Stream.value(file.readAsBytesSync()));
+    return tracked;
+  }
+
   test(
     'publishes verified files, reports progress, and reuses installation',
     () async {
@@ -134,6 +146,86 @@ void main() {
     await repo.install('tiny');
     expect(await File(p.join(path, 'model.onnx')).readAsBytes(), data);
   });
+
+  test(
+    'readiness hashes unchanged files once and rechecks modified files',
+    () async {
+      final repo = repository(
+        MockClient((_) async => http.Response.bytes(data, 200)),
+      );
+      final path = await repo.modelDirectory('tiny');
+      final file = File(p.join(path, 'model.onnx'));
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(data);
+      await file.setLastModified(DateTime.utc(2026));
+      final tracked = trackedFile(file);
+      await IOOverrides.runZoned(() async {
+        expect(
+          await Future.wait([
+            repo.isInstalled('tiny'),
+            repo.isAvailable('tiny'),
+          ]),
+          [true, true],
+        );
+        expect(await repo.isInstalled('tiny'), isTrue);
+        verify(tracked.openRead).called(1);
+        await file.writeAsBytes(List.filled(data.length, 0));
+        await file.setLastModified(DateTime.utc(2026, 2));
+        expect(await repo.isAvailable('tiny'), isFalse);
+        verify(tracked.openRead).called(1);
+        await file.delete();
+        expect(await repo.isInstalled('tiny'), isFalse);
+        verifyNever(tracked.openRead);
+      }, createFile: (_) => tracked);
+    },
+  );
+
+  test(
+    'installation seeds verification and removal invalidates readiness',
+    () async {
+      final repo = repository(
+        MockClient((_) async => http.Response.bytes(data, 200)),
+      );
+      final path = await repo.install('tiny');
+      final file = File(p.join(path, 'model.onnx'));
+      final tracked = trackedFile(file);
+      await IOOverrides.runZoned(() async {
+        expect(await repo.isAvailable('tiny'), isTrue);
+        verifyNever(tracked.openRead);
+      }, createFile: (_) => tracked);
+      await repo.remove('tiny');
+      expect(await repo.isAvailable('tiny'), isFalse);
+      await repo.install('tiny');
+      expect(await repo.isAvailable('tiny'), isTrue);
+    },
+  );
+
+  test(
+    'failed verification can be retried without caching the IO error',
+    () async {
+      final repo = repository(
+        MockClient((_) async => http.Response.bytes(data, 200)),
+      );
+      final file = File(
+        p.join(await repo.modelDirectory('tiny'), 'model.onnx'),
+      );
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(data);
+      final tracked = trackedFile(file);
+      when(
+        tracked.openRead,
+      ).thenAnswer((_) => Stream.error(const FileSystemException('busy')));
+      await IOOverrides.runZoned(() async {
+        await expectLater(
+          repo.isAvailable('tiny'),
+          throwsA(isA<FileSystemException>()),
+        );
+        when(tracked.openRead).thenAnswer((_) => Stream.value(data));
+        expect(await repo.isAvailable('tiny'), isTrue);
+        verify(tracked.openRead).called(2);
+      }, createFile: (_) => tracked);
+    },
+  );
 
   test('concurrent installs share one download', () async {
     final response = Completer<http.Response>();

@@ -12691,12 +12691,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Wat is er nieuw?';
 
   @override
-  String get sherpaDeleteModel => 'Gedownload model verwijderen';
+  String sherpaDeleteModel(String model) {
+    return '$model van dit apparaat verwijderen';
+  }
 
   @override
-  String sherpaDownloadModel(String size) {
-    return 'Downloaden ($size MB)';
+  String get sherpaDownloadAction => 'Downloaden';
+
+  @override
+  String sherpaDownloadModel(String model) {
+    return '$model downloaden';
   }
+
+  @override
+  String get sherpaInstallingModel => 'Model installeren';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12712,8 +12720,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sherpaModelNotInstalled => 'Download een model op dit apparaat';
 
   @override
+  String sherpaModelSizeGB(String size) {
+    return '$size GB · Meertalig';
+  }
+
+  @override
+  String sherpaModelSizeMB(String size) {
+    return '$size MB · Meertalig';
+  }
+
+  @override
   String get sherpaProviderDescription =>
-      'Transcribeer op dit apparaat zonder server. Download hieronder een model.';
+      'Transcribeer op dit apparaat zonder server. Download een model en selecteer het vervolgens in je inferentieprofiel.';
 
   @override
   String get sidebarActiveSectionTitle => 'Activiteit';

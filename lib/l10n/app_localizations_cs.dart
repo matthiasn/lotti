@@ -12838,12 +12838,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Co je nového';
 
   @override
-  String get sherpaDeleteModel => 'Smazat stažený model';
+  String sherpaDeleteModel(String model) {
+    return 'Odebrat $model z tohoto zařízení';
+  }
 
   @override
-  String sherpaDownloadModel(String size) {
-    return 'Stáhnout ($size MB)';
+  String get sherpaDownloadAction => 'Stáhnout';
+
+  @override
+  String sherpaDownloadModel(String model) {
+    return 'Stáhnout $model';
   }
+
+  @override
+  String get sherpaInstallingModel => 'Instalace modelu';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12860,8 +12868,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sherpaModelNotInstalled => 'Stáhni si model do tohoto zařízení';
 
   @override
+  String sherpaModelSizeGB(String size) {
+    return '$size GB · Vícejazyčný';
+  }
+
+  @override
+  String sherpaModelSizeMB(String size) {
+    return '$size MB · Vícejazyčný';
+  }
+
+  @override
   String get sherpaProviderDescription =>
-      'Přepisuj na tomto zařízení bez serveru. Stáhni si níže uvedený model.';
+      'Přepisuj na tomto zařízení bez serveru. Stáhni model a pak ho vyber ve svém inferenčním profilu.';
 
   @override
   String get sidebarActiveSectionTitle => 'Aktivita';

@@ -5518,13 +5518,45 @@
   "settingsV2UnimplementedTitle": "Panelen har ännu inte implementerats",
   "settingsWhatsNewSubtitle": "Se de senaste uppdateringarna och funktionerna",
   "settingsWhatsNewTitle": "Vad är nytt",
-  "sherpaDeleteModel": "Ta bort nedladdad modell",
-  "sherpaDownloadModel": "Ladda ner ({size} MB)",
+  "sherpaDeleteModel": "Ta bort {model} från den här enheten",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Ladda ner",
+  "sherpaDownloadModel": "Ladda ner {model}",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Installerar modell",
   "sherpaModelConfigurationError": "Modellen har laddats ner, men dess konfiguration kunde inte sparas.",
   "sherpaModelError": "Modellåtgärden misslyckades. Försök igen.",
   "sherpaModelInstalled": "Nedladdad",
   "sherpaModelNotInstalled": "Ladda ner en modell på den här enheten",
-  "sherpaProviderDescription": "Transkribera på den här enheten utan server. Ladda ner en modell nedan.",
+  "sherpaModelSizeGB": "{size} GB · Flerspråkig",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Flerspråkig",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transkribera på den här enheten utan server. Ladda ner en modell och välj den sedan i din inferensprofil.",
   "sidebarActiveSectionTitle": "Verksamhet",
   "sidebarActivityCollapseTooltip": "Kollapsaktivitet",
   "sidebarActivityExpandTooltip": "Utöka verksamheten",
