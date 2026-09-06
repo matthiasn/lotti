@@ -10876,7 +10876,103 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipAddChannelButton => 'Tilføj kontaktoplysning';
 
   @override
-  String get relationshipAsk => 'Spørg';
+  String get relationshipAgentBriefNow => 'Brief nu';
+
+  @override
+  String relationshipAgentCall(String name) {
+    return 'Ring til $name';
+  }
+
+  @override
+  String relationshipAgentFailed(String time) {
+    return 'Mislykkedes · $time';
+  }
+
+  @override
+  String get relationshipAgentFailedBody =>
+      'Den seneste briefing-kørsel mislykkedes. Detaljer findes under fanen Aktivitet.';
+
+  @override
+  String get relationshipAgentFailedNoModel =>
+      'Der er ikke sat en model op til briefinger. Vælg en under AI-indstillinger › Agenter. Detaljer findes under fanen Aktivitet.';
+
+  @override
+  String get relationshipAgentFailedPlain => 'Mislykkedes';
+
+  @override
+  String relationshipAgentLastRunFailed(String time) {
+    return 'seneste kørsel mislykkedes · $time';
+  }
+
+  @override
+  String get relationshipAgentMarkImportant => 'Markér som vigtig';
+
+  @override
+  String relationshipAgentNextLook(String day) {
+    return 'Næste kig $day';
+  }
+
+  @override
+  String get relationshipAgentNoAgent => 'ingen agent for denne person';
+
+  @override
+  String relationshipAgentNoBriefingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ingen briefing endnu. „Brief nu“ skriver en ud fra dine $count check-ins; den ser aldrig telefonnummer eller e-mail.',
+      one:
+          'Ingen briefing endnu. „Brief nu“ skriver en ud fra dit check-in; den ser aldrig telefonnummer eller e-mail.',
+      zero:
+          'Ingen briefing endnu. „Brief nu“ skriver en, når du har logget et check-in; den ser aldrig telefonnummer eller e-mail.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipAgentNotEnrolledBody(String name) {
+    return 'Markér $name som vigtig for at få en briefing, påmindelser når der er gået et stykke tid, og en chat. Fra holder personen helt ude af AI.';
+  }
+
+  @override
+  String relationshipAgentOutOfDateNewCheckIn(String day) {
+    return 'Forældet · nyt check-in $day';
+  }
+
+  @override
+  String get relationshipAgentPausedBody =>
+      'Briefinger holder pause, mens denne person er i dvale eller arkiveret.';
+
+  @override
+  String relationshipAgentReading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Læser $count check-ins…',
+      one: 'Læser 1 check-in…',
+      zero: 'Læser personen…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipAgentRunning => 'Kører';
+
+  @override
+  String relationshipAgentRunningSince(String time) {
+    return 'Kører · startet $time';
+  }
+
+  @override
+  String get relationshipAgentTryAgain => 'Prøv igen';
+
+  @override
+  String get relationshipAgentWatching =>
+      'agenten holder øje · ingen kørsel endnu';
+
+  @override
+  String get relationshipAgentWriting => 'skriver briefingen…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
@@ -10897,10 +10993,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get relationshipBriefingEmpty =>
-      'Ingen briefing endnu — Opdater mig laver en ud fra dine check-ins.';
-
-  @override
   String get relationshipBriefingRequested =>
       'Briefing bestilt — den vises her om lidt.';
 
@@ -10910,12 +11002,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipBriefingTitle => 'Briefing';
-
-  @override
-  String get relationshipBriefMeAgain => 'Brief igen';
-
-  @override
-  String get relationshipBriefMeButton => 'Opdater mig';
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -10961,11 +11047,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen agent endnu — markér først personen som vigtig.';
 
   @override
-  String relationshipCheckedInLabel(String date) {
-    return 'Check-in $date';
-  }
-
-  @override
   String get relationshipCheckInReminderBody =>
       'Et godt tidspunkt at tage kontakt.';
 
@@ -10976,11 +11057,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';
-
-  @override
-  String relationshipCheckInTitle(String name) {
-    return 'Check-in · $name';
-  }
 
   @override
   String get relationshipContactCardAction => 'Kontaktkort';
@@ -11177,11 +11253,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipJustAdded => 'Netop tilføjet';
 
   @override
-  String relationshipLastCheckInLabel(String date) {
-    return 'Seneste check-in $date';
-  }
-
-  @override
   String relationshipLastSpoke(String time) {
     return 'sidst talt $time';
   }
@@ -11199,14 +11270,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipLogCheckIn => 'Registrér check-in';
 
   @override
-  String get relationshipLottisRead => 'Lottis vurdering';
-
-  @override
-  String relationshipLottisReadAsOf(String time) {
-    return 'kl. $time';
-  }
-
-  @override
   String get relationshipMoreActions => 'Flere handlinger';
 
   @override
@@ -11214,11 +11277,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipNameRequired => 'Navn er påkrævet';
-
-  @override
-  String relationshipNextByDay(String day) {
-    return 'næste senest $day';
-  }
 
   @override
   String relationshipNextDueOn(String day) {
@@ -11243,9 +11301,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';
-
-  @override
-  String get relationshipNudgesOn => 'påmindelser til';
 
   @override
   String relationshipOnTrackCadence(String cadence) {
@@ -11298,17 +11353,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String relationshipQuietForDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'i $count dage',
-      one: 'i 1 dag',
-    );
-    return 'Ingen kontakt $_temp0';
-  }
-
-  @override
   String get relationshipReachPrivacy =>
       'Bliver på denne enhed · deles aldrig med AI\'en';
 
@@ -11317,9 +11361,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipRelinkContact => 'Tilknyt en anden kontakt';
-
-  @override
-  String get relationshipSeeAllCheckIns => 'Se alle check-ins';
 
   @override
   String get relationshipsEmptyState =>
@@ -11392,12 +11433,6 @@ class AppLocalizationsDa extends AppLocalizations {
   ) {
     return '$type · $time · $cadence';
   }
-
-  @override
-  String get relationshipStayingInTouch => 'Holde kontakten';
-
-  @override
-  String get relationshipStayInTouch => 'Hold kontakten';
 
   @override
   String relationshipTasksLinkedCount(int count) {

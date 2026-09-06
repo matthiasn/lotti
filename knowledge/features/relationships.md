@@ -575,6 +575,65 @@ carrying that name — so the header suppresses the subtitle when the two are
 equal. A name that has diverged is still shown: there it carries information
 the app bar does not.
 
+## The relationship agent card
+
+The card on the person page (design 2026-09-06 §4) is the same AI panel as
+the task agent's section and the goal agent's read — `aiCardDecoration`,
+`TldrHeader` (tapping it opens the internals), `TldrBody` for the prose — in
+one of seven faces. The face is a pure function of the runtime's own signals,
+[`relationshipAgentCardStateOf`](../../lib/features/relationships/ui/widgets/relationship_briefing_card.dart),
+so the decision is a table rather than a widget tree:
+
+| Face | When | Header meta · body · footer |
+|---|---|---|
+| Not enrolled | not `important`, or dormant/archived | plain section card, no sparkle · what *important* turns on · **Mark important** (or the status word while paused) |
+| No briefing | enrolled, no current report | `agent watching · no run yet` · how many check-ins *Brief now* would read, and that it never sees a channel · `Next look {day}` · **Brief now** |
+| Running | `agentIsRunningProvider` | `writing the briefing…` · `Reading N check-ins…` · `Running · started HH:mm` |
+| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `last run failed · HH:mm` · the reason, with the fix as the action: **Choose a model** when no route resolves, **Try again** otherwise |
+| Current | report, not stale | `as of {ago} · {tokens} tokens` · TL;DR + Read more · `Up to date` · **Update now** |
+| Out of date | `AgentStateEntity.isReportStale` | same meta · body · `Out of date · new check-in {day}` in warning · **Update now** |
+| Due | any briefing face while the cadence is lapsed | the cadence pill turns warning · footer becomes *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's) |
+
+```mermaid
+stateDiagram-v2
+  [*] --> NotEnrolled
+  NotEnrolled --> NoBriefing: Mark important (agent created)
+  NoBriefing --> Running: Brief now / wake
+  Running --> Current: report written
+  Running --> Failed: wake failed
+  Failed --> Running: Try again / Choose a model, then wake
+  Current --> OutOfDate: check-in newer than the report (reportStaleAt)
+  OutOfDate --> Running: Update now / refresh wake
+  Current --> Running: Update now
+  Current --> NotEnrolled: important off, dormant, archived
+  OutOfDate --> NotEnrolled: important off, dormant, archived
+```
+
+Two runtime details keep the faces honest. Every relationship wake now
+stamps its state row (`_stampWakeOutcome` in the workflow): `lastWakeAt`
+either way, and `consecutiveFailureCount` reset on success or bumped on
+failure — before this, no relationship wake ever wrote either, so the failed
+face could never appear and the internals' Stats tab never knew the last
+wake. And the card arms one timer at the next minute/hour/day boundary of the
+briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
+just now" does not stay on screen for hours. *Mark important* on the plain
+card also mints the agent through `ensureAgentForRelationship`, the same
+lazy-create call the edit form makes.
+
+Three things the card deliberately does not have. The chat entry lives in the
+page's hero. There is no *Automatic updates* switch, because the relationship
+runtime never reads `AgentConfig.automaticUpdatesEnabled` — offering the
+switch would lie. And the suggestions band from the design waits for the
+agent tools that would fill it (schedule a call, create a task; see the plan)
+— the generic change-set ledger is keyed by task, and a band with no producer
+would be untestable theatre.
+
+The pills are the header block's own: [`relationshipCadencePill`](../../lib/features/relationships/ui/widgets/person_header.dart)
+renders the list model's cadence fact under a per-host key prefix, and the
+health band pill shares `relationshipHealthBandColor`. The cost pill sums
+`agentTokenUsageSummariesProvider`; the "as of" meta uses the shared
+[`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
+
 # Voice check-ins (plan v2 phase 6)
 
 The capture sheet's "Speak check-in" records through the shared recording

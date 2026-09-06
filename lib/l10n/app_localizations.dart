@@ -18265,11 +18265,125 @@ abstract class AppLocalizations {
   /// **'Add channel'**
   String get relationshipAddChannelButton;
 
-  /// Relationships redesign label.
+  /// No description provided for @relationshipAgentBriefNow.
   ///
   /// In en, this message translates to:
-  /// **'Ask'**
-  String get relationshipAsk;
+  /// **'Brief now'**
+  String get relationshipAgentBriefNow;
+
+  /// No description provided for @relationshipAgentCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call {name}'**
+  String relationshipAgentCall(String name);
+
+  /// No description provided for @relationshipAgentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed · {time}'**
+  String relationshipAgentFailed(String time);
+
+  /// No description provided for @relationshipAgentFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The last briefing run failed. Details are in the Activity tab.'**
+  String get relationshipAgentFailedBody;
+
+  /// No description provided for @relationshipAgentFailedNoModel.
+  ///
+  /// In en, this message translates to:
+  /// **'No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.'**
+  String get relationshipAgentFailedNoModel;
+
+  /// No description provided for @relationshipAgentFailedPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get relationshipAgentFailedPlain;
+
+  /// No description provided for @relationshipAgentLastRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'last run failed · {time}'**
+  String relationshipAgentLastRunFailed(String time);
+
+  /// No description provided for @relationshipAgentMarkImportant.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark important'**
+  String get relationshipAgentMarkImportant;
+
+  /// No description provided for @relationshipAgentNextLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Next look {day}'**
+  String relationshipAgentNextLook(String day);
+
+  /// No description provided for @relationshipAgentNoAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'no agent for this person'**
+  String get relationshipAgentNoAgent;
+
+  /// No description provided for @relationshipAgentNoBriefingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}'**
+  String relationshipAgentNoBriefingBody(int count);
+
+  /// No description provided for @relationshipAgentNotEnrolledBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Off keeps them out of AI entirely.'**
+  String relationshipAgentNotEnrolledBody(String name);
+
+  /// No description provided for @relationshipAgentOutOfDateNewCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of date · new check-in {day}'**
+  String relationshipAgentOutOfDateNewCheckIn(String day);
+
+  /// No description provided for @relationshipAgentPausedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefings pause while this person is dormant or archived.'**
+  String get relationshipAgentPausedBody;
+
+  /// No description provided for @relationshipAgentReading.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Reading the person…} =1{Reading 1 check-in…} other{Reading {count} check-ins…}}'**
+  String relationshipAgentReading(int count);
+
+  /// No description provided for @relationshipAgentRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get relationshipAgentRunning;
+
+  /// No description provided for @relationshipAgentRunningSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Running · started {time}'**
+  String relationshipAgentRunningSince(String time);
+
+  /// No description provided for @relationshipAgentTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get relationshipAgentTryAgain;
+
+  /// No description provided for @relationshipAgentWatching.
+  ///
+  /// In en, this message translates to:
+  /// **'agent watching · no run yet'**
+  String get relationshipAgentWatching;
+
+  /// No description provided for @relationshipAgentWriting.
+  ///
+  /// In en, this message translates to:
+  /// **'writing the briefing…'**
+  String get relationshipAgentWriting;
 
   /// Accessibility label of one relationship nudge banner; personName is the person's name.
   ///
@@ -18295,12 +18409,6 @@ abstract class AppLocalizations {
   /// **'Send to {provider}?'**
   String relationshipBriefingDisclosureTitle(String provider);
 
-  /// No description provided for @relationshipBriefingEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No briefing yet — Brief me prepares one from your check-ins.'**
-  String get relationshipBriefingEmpty;
-
   /// No description provided for @relationshipBriefingRequested.
   ///
   /// In en, this message translates to:
@@ -18318,18 +18426,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Briefing'**
   String get relationshipBriefingTitle;
-
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'Brief me again'**
-  String get relationshipBriefMeAgain;
-
-  /// No description provided for @relationshipBriefMeButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Brief me'**
-  String get relationshipBriefMeButton;
 
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
@@ -18397,12 +18493,6 @@ abstract class AppLocalizations {
   /// **'No agent yet — mark this person as important first.'**
   String get relationshipChatUnavailable;
 
-  /// No description provided for @relationshipCheckedInLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Checked in {date}'**
-  String relationshipCheckedInLabel(String date);
-
   /// No description provided for @relationshipCheckInReminderBody.
   ///
   /// In en, this message translates to:
@@ -18420,12 +18510,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check-ins'**
   String get relationshipCheckInsLabel;
-
-  /// No description provided for @relationshipCheckInTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Check in · {name}'**
-  String relationshipCheckInTitle(String name);
 
   /// Relationships redesign label.
   ///
@@ -18691,12 +18775,6 @@ abstract class AppLocalizations {
   /// **'Just added'**
   String get relationshipJustAdded;
 
-  /// No description provided for @relationshipLastCheckInLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Last check-in {date}'**
-  String relationshipLastCheckInLabel(String date);
-
   /// No description provided for @relationshipLastSpoke.
   ///
   /// In en, this message translates to:
@@ -18727,18 +18805,6 @@ abstract class AppLocalizations {
   /// **'Log check-in'**
   String get relationshipLogCheckIn;
 
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'Lotti\'s read'**
-  String get relationshipLottisRead;
-
-  /// No description provided for @relationshipLottisReadAsOf.
-  ///
-  /// In en, this message translates to:
-  /// **'as of {time}'**
-  String relationshipLottisReadAsOf(String time);
-
   /// Tooltip of the person page's overflow menu (link contact, delete)
   ///
   /// In en, this message translates to:
@@ -18756,12 +18822,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A name is required'**
   String get relationshipNameRequired;
-
-  /// No description provided for @relationshipNextByDay.
-  ///
-  /// In en, this message translates to:
-  /// **'next by {day}'**
-  String relationshipNextByDay(String day);
 
   /// No description provided for @relationshipNextDueOn.
   ///
@@ -18805,12 +18865,6 @@ abstract class AppLocalizations {
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
 
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'nudges on'**
-  String get relationshipNudgesOn;
-
   /// No description provided for @relationshipOnTrackCadence.
   ///
   /// In en, this message translates to:
@@ -18853,12 +18907,6 @@ abstract class AppLocalizations {
   /// **'You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
   String relationshipPostCallOfferMessage(String name, int minutes);
 
-  /// No description provided for @relationshipQuietForDays.
-  ///
-  /// In en, this message translates to:
-  /// **'Quiet for {count, plural, =1{1 day} other{{count} days}}'**
-  String relationshipQuietForDays(int count);
-
   /// No description provided for @relationshipReachPrivacy.
   ///
   /// In en, this message translates to:
@@ -18876,12 +18924,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link a different contact'**
   String get relationshipRelinkContact;
-
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'See all check-ins'**
-  String get relationshipSeeAllCheckIns;
 
   /// No description provided for @relationshipsEmptyState.
   ///
@@ -18982,18 +19024,6 @@ abstract class AppLocalizations {
     String time,
     String cadence,
   );
-
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'Staying in touch'**
-  String get relationshipStayingInTouch;
-
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'Stay in touch'**
-  String get relationshipStayInTouch;
 
   /// No description provided for @relationshipTasksLinkedCount.
   ///

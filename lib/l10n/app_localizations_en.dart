@@ -10824,7 +10824,102 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipAddChannelButton => 'Add channel';
 
   @override
-  String get relationshipAsk => 'Ask';
+  String get relationshipAgentBriefNow => 'Brief now';
+
+  @override
+  String relationshipAgentCall(String name) {
+    return 'Call $name';
+  }
+
+  @override
+  String relationshipAgentFailed(String time) {
+    return 'Failed · $time';
+  }
+
+  @override
+  String get relationshipAgentFailedBody =>
+      'The last briefing run failed. Details are in the Activity tab.';
+
+  @override
+  String get relationshipAgentFailedNoModel =>
+      'No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.';
+
+  @override
+  String get relationshipAgentFailedPlain => 'Failed';
+
+  @override
+  String relationshipAgentLastRunFailed(String time) {
+    return 'last run failed · $time';
+  }
+
+  @override
+  String get relationshipAgentMarkImportant => 'Mark important';
+
+  @override
+  String relationshipAgentNextLook(String day) {
+    return 'Next look $day';
+  }
+
+  @override
+  String get relationshipAgentNoAgent => 'no agent for this person';
+
+  @override
+  String relationshipAgentNoBriefingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'No briefing yet. Brief now writes one from your $count check-ins; it never sees the phone number or email.',
+      one:
+          'No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.',
+      zero:
+          'No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipAgentNotEnrolledBody(String name) {
+    return 'Mark $name as important to get a briefing, nudges when it has been a while, and a chat. Off keeps them out of AI entirely.';
+  }
+
+  @override
+  String relationshipAgentOutOfDateNewCheckIn(String day) {
+    return 'Out of date · new check-in $day';
+  }
+
+  @override
+  String get relationshipAgentPausedBody =>
+      'Briefings pause while this person is dormant or archived.';
+
+  @override
+  String relationshipAgentReading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Reading $count check-ins…',
+      one: 'Reading 1 check-in…',
+      zero: 'Reading the person…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipAgentRunning => 'Running';
+
+  @override
+  String relationshipAgentRunningSince(String time) {
+    return 'Running · started $time';
+  }
+
+  @override
+  String get relationshipAgentTryAgain => 'Try again';
+
+  @override
+  String get relationshipAgentWatching => 'agent watching · no run yet';
+
+  @override
+  String get relationshipAgentWriting => 'writing the briefing…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
@@ -10845,10 +10940,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipBriefingEmpty =>
-      'No briefing yet — Brief me prepares one from your check-ins.';
-
-  @override
   String get relationshipBriefingRequested =>
       'Briefing requested — it will appear here shortly.';
 
@@ -10858,12 +10949,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipBriefingTitle => 'Briefing';
-
-  @override
-  String get relationshipBriefMeAgain => 'Brief me again';
-
-  @override
-  String get relationshipBriefMeButton => 'Brief me';
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -10909,11 +10994,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'No agent yet — mark this person as important first.';
 
   @override
-  String relationshipCheckedInLabel(String date) {
-    return 'Checked in $date';
-  }
-
-  @override
   String get relationshipCheckInReminderBody => 'A good moment to reach out.';
 
   @override
@@ -10923,11 +11003,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';
-
-  @override
-  String relationshipCheckInTitle(String name) {
-    return 'Check in · $name';
-  }
 
   @override
   String get relationshipContactCardAction => 'Contact card';
@@ -11121,11 +11196,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipJustAdded => 'Just added';
 
   @override
-  String relationshipLastCheckInLabel(String date) {
-    return 'Last check-in $date';
-  }
-
-  @override
   String relationshipLastSpoke(String time) {
     return 'last spoke $time';
   }
@@ -11143,14 +11213,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipLogCheckIn => 'Log check-in';
 
   @override
-  String get relationshipLottisRead => 'Lotti\'s read';
-
-  @override
-  String relationshipLottisReadAsOf(String time) {
-    return 'as of $time';
-  }
-
-  @override
   String get relationshipMoreActions => 'More actions';
 
   @override
@@ -11158,11 +11220,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipNameRequired => 'A name is required';
-
-  @override
-  String relationshipNextByDay(String day) {
-    return 'next by $day';
-  }
 
   @override
   String relationshipNextDueOn(String day) {
@@ -11187,9 +11244,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'This person is no longer tracked.';
-
-  @override
-  String get relationshipNudgesOn => 'nudges on';
 
   @override
   String relationshipOnTrackCadence(String cadence) {
@@ -11242,17 +11296,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String relationshipQuietForDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count days',
-      one: '1 day',
-    );
-    return 'Quiet for $_temp0';
-  }
-
-  @override
   String get relationshipReachPrivacy =>
       'Stays on this device · never shared with the AI';
 
@@ -11261,9 +11304,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipRelinkContact => 'Link a different contact';
-
-  @override
-  String get relationshipSeeAllCheckIns => 'See all check-ins';
 
   @override
   String get relationshipsEmptyState =>
@@ -11336,12 +11376,6 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$type · $time · $cadence';
   }
-
-  @override
-  String get relationshipStayingInTouch => 'Staying in touch';
-
-  @override
-  String get relationshipStayInTouch => 'Stay in touch';
 
   @override
   String relationshipTasksLinkedCount(int count) {
@@ -15110,27 +15144,11 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get outboxMonitorRetry => 'retry';
 
   @override
-  String get relationshipAsk => 'Ask';
-
-  @override
-  String get relationshipBriefMeAgain => 'Brief me again';
-
-  @override
   String get relationshipCadenceNudgeNote =>
       'Choosing a cadence turns on check-in nudges.';
 
   @override
   String get relationshipCadenceOnTrack => 'On track';
-
-  @override
-  String relationshipCheckedInLabel(String date) {
-    return 'Checked in $date';
-  }
-
-  @override
-  String relationshipCheckInTitle(String name) {
-    return 'Check in · $name';
-  }
 
   @override
   String get relationshipContactCardAction => 'Contact card';
@@ -15142,42 +15160,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get relationshipJustAdded => 'Just added';
-
-  @override
-  String get relationshipLottisRead => 'Lotti\'s read';
-
-  @override
-  String relationshipLottisReadAsOf(String time) {
-    return 'as of $time';
-  }
-
-  @override
-  String relationshipNextByDay(String day) {
-    return 'next by $day';
-  }
-
-  @override
-  String get relationshipNudgesOn => 'nudges on';
-
-  @override
-  String relationshipQuietForDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count days',
-      one: '1 day',
-    );
-    return 'Quiet for $_temp0';
-  }
-
-  @override
-  String get relationshipSeeAllCheckIns => 'See all check-ins';
-
-  @override
-  String get relationshipStayingInTouch => 'Staying in touch';
-
-  @override
-  String get relationshipStayInTouch => 'Stay in touch';
 
   @override
   String get saveLabel => 'Save';

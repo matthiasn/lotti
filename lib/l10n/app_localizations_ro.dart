@@ -11099,7 +11099,106 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipAddChannelButton => 'Adăugați o modalitate de contact';
 
   @override
-  String get relationshipAsk => 'Întreabă';
+  String get relationshipAgentBriefNow => 'Briefing acum';
+
+  @override
+  String relationshipAgentCall(String name) {
+    return 'Sunați pe $name';
+  }
+
+  @override
+  String relationshipAgentFailed(String time) {
+    return 'Eșuat · $time';
+  }
+
+  @override
+  String get relationshipAgentFailedBody =>
+      'Ultima rulare a briefingului a eșuat. Detaliile sunt în fila Activitate.';
+
+  @override
+  String get relationshipAgentFailedNoModel =>
+      'Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.';
+
+  @override
+  String get relationshipAgentFailedPlain => 'Eșuat';
+
+  @override
+  String relationshipAgentLastRunFailed(String time) {
+    return 'ultima rulare a eșuat · $time';
+  }
+
+  @override
+  String get relationshipAgentMarkImportant => 'Marchează ca important';
+
+  @override
+  String relationshipAgentNextLook(String day) {
+    return 'Următoarea privire $day';
+  }
+
+  @override
+  String get relationshipAgentNoAgent => 'niciun agent pentru această persoană';
+
+  @override
+  String relationshipAgentNoBriefingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Niciun briefing încă. „Briefing acum“ scrie unul din cele $count de check-in-uri; nu vede niciodată telefonul sau e-mailul.',
+      few:
+          'Niciun briefing încă. „Briefing acum“ scrie unul din cele $count check-in-uri; nu vede niciodată telefonul sau e-mailul.',
+      one:
+          'Niciun briefing încă. „Briefing acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.',
+      zero:
+          'Niciun briefing încă. „Briefing acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipAgentNotEnrolledBody(String name) {
+    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat. Dezactivat, persoana rămâne complet în afara AI.';
+  }
+
+  @override
+  String relationshipAgentOutOfDateNewCheckIn(String day) {
+    return 'Depășit · check-in nou $day';
+  }
+
+  @override
+  String get relationshipAgentPausedBody =>
+      'Briefingurile sunt în pauză cât timp această persoană este inactivă sau arhivată.';
+
+  @override
+  String relationshipAgentReading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Citește $count de check-in-uri…',
+      few: 'Citește $count check-in-uri…',
+      one: 'Citește 1 check-in…',
+      zero: 'Citește persoana…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipAgentRunning => 'În curs';
+
+  @override
+  String relationshipAgentRunningSince(String time) {
+    return 'În curs · pornit la $time';
+  }
+
+  @override
+  String get relationshipAgentTryAgain => 'Încercați din nou';
+
+  @override
+  String get relationshipAgentWatching =>
+      'agentul urmărește · nicio rulare încă';
+
+  @override
+  String get relationshipAgentWriting => 'scrie briefingul…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
@@ -11120,10 +11219,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipBriefingEmpty =>
-      'Niciun rezumat încă — Pune-mă la curent pregătește unul din check-inurile dvs.';
-
-  @override
   String get relationshipBriefingRequested =>
       'Rezumat solicitat — va apărea aici în curând.';
 
@@ -11133,12 +11228,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipBriefingTitle => 'Rezumat';
-
-  @override
-  String get relationshipBriefMeAgain => 'Pune-mă la curent din nou';
-
-  @override
-  String get relationshipBriefMeButton => 'Pune-mă la curent';
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -11185,11 +11274,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun agent încă — marcați mai întâi această persoană ca importantă.';
 
   @override
-  String relationshipCheckedInLabel(String date) {
-    return 'Înregistrare $date';
-  }
-
-  @override
   String get relationshipCheckInReminderBody =>
       'Un moment bun pentru a lua legătura.';
 
@@ -11200,11 +11284,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipCheckInsLabel => 'Înregistrări';
-
-  @override
-  String relationshipCheckInTitle(String name) {
-    return 'Înregistrare · $name';
-  }
 
   @override
   String get relationshipContactCardAction => 'Card de contact';
@@ -11407,11 +11486,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipJustAdded => 'Adăugat recent';
 
   @override
-  String relationshipLastCheckInLabel(String date) {
-    return 'Ultima înregistrare $date';
-  }
-
-  @override
   String relationshipLastSpoke(String time) {
     return 'ultima discuție $time';
   }
@@ -11429,14 +11503,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipLogCheckIn => 'Înregistrați un contact';
 
   @override
-  String get relationshipLottisRead => 'Părerea Lotti';
-
-  @override
-  String relationshipLottisReadAsOf(String time) {
-    return 'la $time';
-  }
-
-  @override
   String get relationshipMoreActions => 'Mai multe acțiuni';
 
   @override
@@ -11444,11 +11510,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipNameRequired => 'Numele este obligatoriu';
-
-  @override
-  String relationshipNextByDay(String day) {
-    return 'următorul până $day';
-  }
 
   @override
   String relationshipNextDueOn(String day) {
@@ -11473,9 +11534,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
-
-  @override
-  String get relationshipNudgesOn => 'memento-uri active';
 
   @override
   String relationshipOnTrackCadence(String cadence) {
@@ -11530,17 +11588,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relationshipQuietForDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'de $count zile',
-      one: 'de 1 zi',
-    );
-    return 'Fără contact $_temp0';
-  }
-
-  @override
   String get relationshipReachPrivacy =>
       'Rămâne pe acest dispozitiv · niciodată partajat cu AI-ul';
 
@@ -11549,9 +11596,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipRelinkContact => 'Asociați alt contact';
-
-  @override
-  String get relationshipSeeAllCheckIns => 'Vezi toate înregistrările';
 
   @override
   String get relationshipsEmptyState =>
@@ -11632,12 +11676,6 @@ class AppLocalizationsRo extends AppLocalizations {
   ) {
     return '$type · $time · $cadence';
   }
-
-  @override
-  String get relationshipStayingInTouch => 'Menținerea contactului';
-
-  @override
-  String get relationshipStayInTouch => 'Menține contactul';
 
   @override
   String relationshipTasksLinkedCount(int count) {

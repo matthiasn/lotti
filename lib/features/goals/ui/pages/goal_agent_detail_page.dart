@@ -47,9 +47,9 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/relative_age_label.dart';
 import 'package:lotti/widgets/day_indicators/day_track.dart';
 import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -1355,18 +1355,12 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
 
   void _armAgeTick(DateTime generatedAt) {
     _ageTick?.cancel();
-    final age = clock.now().difference(generatedAt);
-    final Duration untilNextBucket;
-    if (age.inHours < 1) {
-      untilNextBucket = Duration(seconds: 60 - (age.inSeconds % 60) + 1);
-    } else if (age.inDays < 1) {
-      untilNextBucket = Duration(seconds: 3600 - (age.inSeconds % 3600) + 1);
-    } else {
-      untilNextBucket = Duration(seconds: 86400 - (age.inSeconds % 86400) + 1);
-    }
-    _ageTick = Timer(untilNextBucket, () {
-      if (mounted) setState(() {});
-    });
+    _ageTick = Timer(
+      untilNextAgeBucket(clock.now().difference(generatedAt)),
+      () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   Future<void> _updateAutomaticUpdates(bool enabled) async {
@@ -1439,7 +1433,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
       _ageTick?.cancel();
     } else {
       freshness = messages.goalDetailReadAsOf(
-        _relativeAgo(messages, clock.now().difference(generatedAt)),
+        relativeAgoLabel(messages, clock.now().difference(generatedAt)),
       );
       _armAgeTick(generatedAt);
     }
@@ -1632,16 +1626,6 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
       ),
     );
   }
-}
-
-/// "as of …" bucketing for the read's generation timestamp. Reuses the
-/// generic relative-age catalog entries (minute/hour/day granularity) so no
-/// parallel vocabulary drifts per language.
-String _relativeAgo(AppLocalizations messages, Duration age) {
-  if (age.inMinutes < 1) return messages.conflictBannerAgoJustNow;
-  if (age.inHours < 1) return messages.conflictBannerAgoMinutes(age.inMinutes);
-  if (age.inDays < 1) return messages.conflictBannerAgoHours(age.inHours);
-  return messages.conflictBannerAgoDays(age.inDays);
 }
 
 /// The §4b "About this agent" expander: the plumbing — lifetime cost pills

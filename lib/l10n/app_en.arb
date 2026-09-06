@@ -6235,10 +6235,89 @@
     "description": "Tooltip on the button that opens a message composer"
   },
   "relationshipAddChannelButton": "Add channel",
-  "relationshipAsk": "Ask",
-  "@relationshipAsk": {
-    "description": "Relationships redesign label."
+  "relationshipAgentBriefNow": "Brief now",
+  "relationshipAgentCall": "Call {name}",
+  "@relationshipAgentCall": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
+  "relationshipAgentFailed": "Failed · {time}",
+  "@relationshipAgentFailed": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAgentFailedBody": "The last briefing run failed. Details are in the Activity tab.",
+  "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
+  "relationshipAgentFailedPlain": "Failed",
+  "relationshipAgentLastRunFailed": "last run failed · {time}",
+  "@relationshipAgentLastRunFailed": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAgentMarkImportant": "Mark important",
+  "relationshipAgentNextLook": "Next look {day}",
+  "@relationshipAgentNextLook": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAgentNoAgent": "no agent for this person",
+  "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}",
+  "@relationshipAgentNoBriefingBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Off keeps them out of AI entirely.",
+  "@relationshipAgentNotEnrolledBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAgentOutOfDateNewCheckIn": "Out of date · new check-in {day}",
+  "@relationshipAgentOutOfDateNewCheckIn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAgentPausedBody": "Briefings pause while this person is dormant or archived.",
+  "relationshipAgentReading": "{count, plural, =0{Reading the person…} =1{Reading 1 check-in…} other{Reading {count} check-ins…}}",
+  "@relationshipAgentReading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipAgentRunning": "Running",
+  "relationshipAgentRunningSince": "Running · started {time}",
+  "@relationshipAgentRunningSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAgentTryAgain": "Try again",
+  "relationshipAgentWatching": "agent watching · no run yet",
+  "relationshipAgentWriting": "writing the briefing…",
   "relationshipBannerSemanticLabel": "Relationship banner for {personName}",
   "@relationshipBannerSemanticLabel": {
     "description": "Accessibility label of one relationship nudge banner; personName is the person's name.",
@@ -6267,15 +6346,9 @@
       }
     }
   },
-  "relationshipBriefingEmpty": "No briefing yet — Brief me prepares one from your check-ins.",
   "relationshipBriefingRequested": "Briefing requested — it will appear here shortly.",
   "relationshipBriefingRequestFailed": "Could not request the briefing.",
   "relationshipBriefingTitle": "Briefing",
-  "relationshipBriefMeAgain": "Brief me again",
-  "@relationshipBriefMeAgain": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipBriefMeButton": "Brief me",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
   "@relationshipCadenceEveryNDays": {
     "placeholders": {
@@ -6300,14 +6373,6 @@
   "relationshipCadenceWeekly": "Weekly",
   "relationshipChatTooltip": "Chat about this person",
   "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
-  "relationshipCheckedInLabel": "Checked in {date}",
-  "@relationshipCheckedInLabel": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipCheckInReminderBody": "A good moment to reach out.",
   "relationshipCheckInReminderTitle": "Check in with {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -6318,14 +6383,6 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
-  "relationshipCheckInTitle": "Check in · {name}",
-  "@relationshipCheckInTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipContactCardAction": "Contact card",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."
@@ -6506,14 +6563,6 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
-  "relationshipLastCheckInLabel": "Last check-in {date}",
-  "@relationshipLastCheckInLabel": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipLastSpoke": "last spoke {time}",
   "@relationshipLastSpoke": {
     "placeholders": {
@@ -6529,32 +6578,12 @@
   "relationshipLinkedTasksLabel": "Tasks",
   "relationshipLinkTaskButton": "Link task",
   "relationshipLogCheckIn": "Log check-in",
-  "relationshipLottisRead": "Lotti's read",
-  "@relationshipLottisRead": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipLottisReadAsOf": "as of {time}",
-  "@relationshipLottisReadAsOf": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipMoreActions": "More actions",
   "@relationshipMoreActions": {
     "description": "Tooltip of the person page's overflow menu (link contact, delete)"
   },
   "relationshipNameLabel": "Name",
   "relationshipNameRequired": "A name is required",
-  "relationshipNextByDay": "next by {day}",
-  "@relationshipNextByDay": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipNextDueOn": "Next due {day}",
   "@relationshipNextDueOn": {
     "placeholders": {
@@ -6569,10 +6598,6 @@
   "relationshipNoLinkedTasks": "No tasks linked yet.",
   "relationshipNotEnrolled": "Not enrolled",
   "relationshipNotFound": "This person is no longer tracked.",
-  "relationshipNudgesOn": "nudges on",
-  "@relationshipNudgesOn": {
-    "description": "Relationships redesign label."
-  },
   "relationshipOnTrackCadence": "On track · {cadence}",
   "@relationshipOnTrackCadence": {
     "placeholders": {
@@ -6623,23 +6648,11 @@
       }
     }
   },
-  "relationshipQuietForDays": "Quiet for {count, plural, =1{1 day} other{{count} days}}",
-  "@relationshipQuietForDays": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "relationshipReachPrivacy": "Stays on this device · never shared with the AI",
   "relationshipReachTitle": "Reach",
   "relationshipRelinkContact": "Link a different contact",
   "@relationshipRelinkContact": {
     "description": "Menu action that replaces the OS contact a person is linked to"
-  },
-  "relationshipSeeAllCheckIns": "See all check-ins",
-  "@relationshipSeeAllCheckIns": {
-    "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsGroupDue": "Due",
@@ -6710,14 +6723,6 @@
         "type": "String"
       }
     }
-  },
-  "relationshipStayingInTouch": "Staying in touch",
-  "@relationshipStayingInTouch": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipStayInTouch": "Stay in touch",
-  "@relationshipStayInTouch": {
-    "description": "Relationships redesign label."
   },
   "relationshipTasksLinkedCount": "{count, plural, =1{1 linked} other{{count} linked}}",
   "@relationshipTasksLinkedCount": {

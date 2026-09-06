@@ -4245,23 +4245,33 @@
   "relationshipActionFailed": "Rien sur cet appareil ne peut ouvrir ça",
   "relationshipActionMessage": "Message",
   "relationshipAddChannelButton": "Ajouter un moyen de contact",
-  "relationshipAsk": "Demander",
-  "@relationshipAsk": {
-    "description": "Relationships redesign label."
-  },
+  "relationshipAgentBriefNow": "Briefer maintenant",
+  "relationshipAgentCall": "Appeler {name}",
+  "relationshipAgentFailed": "Échec · {time}",
+  "relationshipAgentFailedBody": "La dernière exécution du briefing a échoué. Les détails sont dans l'onglet Activité.",
+  "relationshipAgentFailedNoModel": "Aucun modèle n'est configuré pour les briefings. Choisis-en un dans Réglages IA › Agents. Les détails sont dans l'onglet Activité.",
+  "relationshipAgentFailedPlain": "Échec",
+  "relationshipAgentLastRunFailed": "dernière exécution échouée · {time}",
+  "relationshipAgentMarkImportant": "Marquer comme important",
+  "relationshipAgentNextLook": "Prochain regard {day}",
+  "relationshipAgentNoAgent": "aucun agent pour cette personne",
+  "relationshipAgentNoBriefingBody": "{count, plural, =0{Pas encore de briefing. « Briefer maintenant » en rédige un dès que tu as consigné un check-in ; il ne voit jamais le numéro ni l'e-mail.} =1{Pas encore de briefing. « Briefer maintenant » en rédige un à partir de ton check-in ; il ne voit jamais le numéro ni l'e-mail.} other{Pas encore de briefing. « Briefer maintenant » en rédige un à partir de tes {count} check-ins ; il ne voit jamais le numéro ni l'e-mail.}}",
+  "relationshipAgentNotEnrolledBody": "Marque {name} comme important·e pour recevoir un briefing, des rappels quand ça fait un moment, et un chat. Désactivé, la personne reste entièrement hors de l'IA.",
+  "relationshipAgentOutOfDateNewCheckIn": "Obsolète · nouveau check-in {day}",
+  "relationshipAgentPausedBody": "Les briefings sont en pause tant que cette personne est en sommeil ou archivée.",
+  "relationshipAgentReading": "{count, plural, =0{Lecture de la personne…} =1{Lecture de 1 check-in…} other{Lecture de {count} check-ins…}}",
+  "relationshipAgentRunning": "En cours",
+  "relationshipAgentRunningSince": "En cours · lancé à {time}",
+  "relationshipAgentTryAgain": "Réessayer",
+  "relationshipAgentWatching": "l'agent veille · aucune exécution",
+  "relationshipAgentWriting": "rédige le briefing…",
   "relationshipBannerSemanticLabel": "Bannière de relation pour {personName}",
   "relationshipBriefingDisclosureBody": "Le briefing est généré par {provider}. Les notes sur cette personne y seront envoyées pour traitement.",
   "relationshipBriefingDisclosureConfirm": "Continuer",
   "relationshipBriefingDisclosureTitle": "Envoyer à {provider} ?",
-  "relationshipBriefingEmpty": "Pas encore de briefing — Briefe-moi en prépare un à partir de tes échanges.",
   "relationshipBriefingRequested": "Briefing demandé — il apparaîtra ici sous peu.",
   "relationshipBriefingRequestFailed": "Impossible de demander le briefing.",
   "relationshipBriefingTitle": "Briefing",
-  "relationshipBriefMeAgain": "Briefe-moi à nouveau",
-  "@relationshipBriefMeAgain": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipBriefMeButton": "Briefe-moi",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Chaque jour} other{Tous les {days} jours}}",
   "relationshipCadenceFortnightly": "Toutes les deux semaines",
   "relationshipCadenceLabel": "Rythme de contact",
@@ -4279,14 +4289,6 @@
   "relationshipCadenceWeekly": "Chaque semaine",
   "relationshipChatTooltip": "Discuter de cette personne",
   "relationshipChatUnavailable": "Pas encore d'agent — marque d'abord cette personne comme importante.",
-  "relationshipCheckedInLabel": "Échange {date}",
-  "@relationshipCheckedInLabel": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipCheckInReminderBody": "Un bon moment pour reprendre contact.",
   "relationshipCheckInReminderTitle": "Prendre des nouvelles de {name} ?",
   "@relationshipCheckInReminderTitle": {
@@ -4297,14 +4299,6 @@
     }
   },
   "relationshipCheckInsLabel": "Échanges",
-  "relationshipCheckInTitle": "Échange · {name}",
-  "@relationshipCheckInTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipContactCardAction": "Carte de contact",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."
@@ -4403,7 +4397,6 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
-  "relationshipLastCheckInLabel": "Dernier échange {date}",
   "relationshipLastSpoke": "dernier échange {time}",
   "@relationshipLastSpoke": {
     "placeholders": {
@@ -4416,29 +4409,9 @@
   "relationshipLinkedTasksLabel": "Tâches",
   "relationshipLinkTaskButton": "Lier une tâche",
   "relationshipLogCheckIn": "Noter un échange",
-  "relationshipLottisRead": "Lotti dit",
-  "@relationshipLottisRead": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipLottisReadAsOf": "à {time}",
-  "@relationshipLottisReadAsOf": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipMoreActions": "Plus d'actions",
   "relationshipNameLabel": "Nom",
   "relationshipNameRequired": "Le nom est obligatoire",
-  "relationshipNextByDay": "prochain avant {day}",
-  "@relationshipNextByDay": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipNextDueOn": "Prochaine échéance {day}",
   "@relationshipNextDueOn": {
     "placeholders": {
@@ -4453,10 +4426,6 @@
   "relationshipNoLinkedTasks": "Aucune tâche liée pour l'instant.",
   "relationshipNotEnrolled": "Non suivie",
   "relationshipNotFound": "Cette personne n'est plus dans ta liste.",
-  "relationshipNudgesOn": "rappels activés",
-  "@relationshipNudgesOn": {
-    "description": "Relationships redesign label."
-  },
   "relationshipOnTrackCadence": "Dans le rythme · {cadence}",
   "@relationshipOnTrackCadence": {
     "placeholders": {
@@ -4501,21 +4470,9 @@
       }
     }
   },
-  "relationshipQuietForDays": "Aucun échange {count, plural, =1{depuis 1 jour} other{depuis {count} jours}}",
-  "@relationshipQuietForDays": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "relationshipReachPrivacy": "Reste sur cet appareil · jamais partagé avec l'IA",
   "relationshipReachTitle": "Contacter",
   "relationshipRelinkContact": "Associer un autre contact",
-  "relationshipSeeAllCheckIns": "Voir tous les échanges",
-  "@relationshipSeeAllCheckIns": {
-    "description": "Relationships redesign label."
-  },
   "relationshipsEmptyState": "Ajoute les personnes dont tu veux rester proche.",
   "relationshipsGroupDue": "À relancer",
   "relationshipsPageTitle": "Proches",
@@ -4585,14 +4542,6 @@
         "type": "String"
       }
     }
-  },
-  "relationshipStayingInTouch": "Rester en contact",
-  "@relationshipStayingInTouch": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipStayInTouch": "Rester en contact",
-  "@relationshipStayInTouch": {
-    "description": "Relationships redesign label."
   },
   "relationshipTasksLinkedCount": "{count, plural, =1{1 liée} other{{count} liées}}",
   "@relationshipTasksLinkedCount": {
