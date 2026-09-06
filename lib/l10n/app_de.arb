@@ -4355,6 +4355,14 @@
   "relationshipContactMissing": "Dieser Kontakt ist nicht auf diesem Gerät",
   "relationshipContactNoChanges": "Nichts Neues zu übernehmen",
   "relationshipCreateTitle": "Person hinzufügen",
+  "relationshipDaysOver": "{count, plural, =1{1 Tag drüber} other{{count} Tage drüber}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Auch alle Check-ins werden gelöscht. Das lässt sich nicht rückgängig machen.",
   "relationshipDeleteConfirmTitle": "{name} löschen?",
   "relationshipDueDay": "Fällig {day}",
@@ -4370,6 +4378,14 @@
   "relationshipErrorDeleteFailed": "Person konnte nicht gelöscht werden. Bitte versuch es erneut.",
   "relationshipErrorLinkTaskFailed": "Aufgabe konnte nicht verknüpft werden. Bitte versuch es erneut.",
   "relationshipErrorUpdateFailed": "Änderungen konnten nicht gespeichert werden. Bitte versuch es erneut.",
+  "relationshipFirstDue": "erstmals fällig {day}",
+  "@relationshipFirstDue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipHealthNeedsAttention": "Braucht Aufmerksamkeit",
   "relationshipHealthSteady": "Stabil",
   "relationshipHealthStrained": "Angespannt",
@@ -4426,6 +4442,7 @@
   "relationshipNicknameLabel": "Spitzname",
   "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",
   "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
+  "relationshipNotEnrolled": "Nicht betreut",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
   "relationshipNudgesOn": "Erinnerungen an",
   "@relationshipNudgesOn": {
@@ -4457,7 +4474,38 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Füge die Menschen hinzu, denen du nah bleiben willst.",
+  "relationshipsGroupDue": "Fällig",
   "relationshipsPageTitle": "Menschen",
+  "relationshipsSelectPersonHint": "Wähle eine Person, um ihre Seite zu sehen.",
+  "relationshipsSummaryDueNow": "Jetzt fällig",
+  "relationshipsSummaryEnrolled": "/ {count} betreut",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Als Nächstes fällig: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Niemand fällig",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 Person nicht betreut} other{{count} Personen nicht betreut}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Aktiv",
   "relationshipStatusArchived": "Archiviert",
   "relationshipStatusDormant": "Ruhend",

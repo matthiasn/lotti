@@ -4355,6 +4355,14 @@
   "relationshipContactMissing": "Acel contact nu se află pe acest dispozitiv",
   "relationshipContactNoChanges": "Nu este nimic nou de copiat",
   "relationshipCreateTitle": "Adăugați o persoană",
+  "relationshipDaysOver": "{count, plural, =1{1 zi întârziere} few{{count} zile întârziere} other{{count} de zile întârziere}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.",
   "relationshipDeleteConfirmTitle": "Ștergeți {name}?",
   "relationshipDueDay": "Până {day}",
@@ -4370,6 +4378,14 @@
   "relationshipErrorDeleteFailed": "Persoana nu a putut fi ștearsă. Încercați din nou.",
   "relationshipErrorLinkTaskFailed": "Sarcina nu a putut fi asociată. Încercați din nou.",
   "relationshipErrorUpdateFailed": "Modificările nu au putut fi salvate. Încercați din nou.",
+  "relationshipFirstDue": "prima scadență {day}",
+  "@relationshipFirstDue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipHealthNeedsAttention": "Necesită atenție",
   "relationshipHealthSteady": "Stabilă",
   "relationshipHealthStrained": "Tensionată",
@@ -4426,6 +4442,7 @@
   "relationshipNicknameLabel": "Poreclă",
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
+  "relationshipNotEnrolled": "Neurmărit",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
   "relationshipNudgesOn": "memento-uri active",
   "@relationshipNudgesOn": {
@@ -4457,7 +4474,38 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
+  "relationshipsGroupDue": "Scadente",
   "relationshipsPageTitle": "Persoane",
+  "relationshipsSelectPersonHint": "Selectați o persoană pentru a-i vedea pagina.",
+  "relationshipsSummaryDueNow": "Scadente acum",
+  "relationshipsSummaryEnrolled": "/ {count} urmărite",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Următorul: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Nimeni scadent",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persoană neurmărită} few{{count} persoane neurmărite} other{{count} de persoane neurmărite}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Activă",
   "relationshipStatusArchived": "Arhivată",
   "relationshipStatusDormant": "Inactivă",

@@ -245,6 +245,12 @@ class NavService {
   );
   final ValueNotifier<String?> desktopSelectedProjectId =
       ValueNotifier<String?>(null);
+
+  /// Desktop split-pane People selection — the person whose page fills the
+  /// right pane, or `null` for the empty state. Written exclusively by
+  /// `RelationshipsLocation` from the URL, like the projects slot.
+  final ValueNotifier<String?> desktopSelectedRelationshipId =
+      ValueNotifier<String?>(null);
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
 
@@ -952,6 +958,7 @@ class NavService {
     desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
+    desktopSelectedRelationshipId.dispose();
     desktopSelectedDashboardId.dispose();
     desktopSelectedEntryId.dispose();
     desktopSelectedEntryLinkedFromId.dispose();

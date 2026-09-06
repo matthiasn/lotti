@@ -11270,6 +11270,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipCreateTitle => 'Ajouter une personne';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours de retard',
+      one: '1 jour de retard',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Tous ses échanges seront aussi supprimés. Cette action est irréversible.';
 
@@ -11301,6 +11312,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Impossible d\'enregistrer les modifications. Réessaie.';
+
+  @override
+  String relationshipFirstDue(String day) {
+    return 'première échéance $day';
+  }
 
   @override
   String get relationshipHealthNeedsAttention => 'A besoin d\'attention';
@@ -11447,6 +11463,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Aucune tâche liée pour l\'instant.';
 
   @override
+  String get relationshipNotEnrolled => 'Non suivi';
+
+  @override
   String get relationshipNotFound =>
       'Cette personne n\'est plus dans ta liste.';
 
@@ -11490,7 +11509,41 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajoute les personnes dont tu veux rester proche.';
 
   @override
+  String get relationshipsGroupDue => 'À relancer';
+
+  @override
   String get relationshipsPageTitle => 'Proches';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Choisis une personne pour voir sa page.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'À relancer maintenant';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count suivis';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Prochaine échéance $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Personne à relancer';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personnes non suivies',
+      one: '1 personne non suivie',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Active';

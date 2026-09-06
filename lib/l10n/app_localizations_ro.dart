@@ -11297,6 +11297,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCreateTitle => 'Adăugați o persoană';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile întârziere',
+      few: '$count zile întârziere',
+      one: '1 zi întârziere',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.';
 
@@ -11328,6 +11340,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Modificările nu au putut fi salvate. Încercați din nou.';
+
+  @override
+  String relationshipFirstDue(String day) {
+    return 'prima scadență $day';
+  }
 
   @override
   String get relationshipHealthNeedsAttention => 'Necesită atenție';
@@ -11478,6 +11495,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nicio sarcină asociată încă.';
 
   @override
+  String get relationshipNotEnrolled => 'Neurmărit';
+
+  @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
 
   @override
@@ -11520,7 +11540,42 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adăugați persoanele de care doriți să rămâneți aproape.';
 
   @override
+  String get relationshipsGroupDue => 'Scadente';
+
+  @override
   String get relationshipsPageTitle => 'Persoane';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Selectați o persoană pentru a-i vedea pagina.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Scadente acum';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count urmărite';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Următorul: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Nimeni scadent';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de persoane neurmărite',
+      few: '$count persoane neurmărite',
+      one: '1 persoană neurmărită',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Activă';

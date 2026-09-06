@@ -11236,6 +11236,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCreateTitle => 'Přidat osobu';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní po termínu',
+      few: '$count dny po termínu',
+      one: '1 den po termínu',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.';
 
@@ -11267,6 +11279,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Změny se nepodařilo uložit. Zkus to prosím znovu.';
+
+  @override
+  String relationshipFirstDue(String day) {
+    return 'poprvé $day';
+  }
 
   @override
   String get relationshipHealthNeedsAttention => 'Vyžaduje pozornost';
@@ -11416,6 +11433,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Zatím žádné propojené úkoly.';
 
   @override
+  String get relationshipNotEnrolled => 'Nesledováno';
+
+  @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
 
   @override
@@ -11459,7 +11479,42 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přidej lidi, se kterými chceš zůstat v kontaktu.';
 
   @override
+  String get relationshipsGroupDue => 'Na řadě';
+
+  @override
   String get relationshipsPageTitle => 'Lidé';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Vyber osobu a zobrazí se její stránka.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Teď na řadě';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count sledovaných';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Další: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Nikdo nečeká';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count osob nesledováno',
+      few: '$count osoby nesledovány',
+      one: '1 osoba nesledována',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Aktivní';

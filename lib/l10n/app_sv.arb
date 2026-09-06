@@ -4858,6 +4858,14 @@
   "relationshipContactMissing": "Den kontakten finns inte på den här enheten",
   "relationshipContactNoChanges": "Inget nytt att kopiera",
   "relationshipCreateTitle": "Lägg till person",
+  "relationshipDaysOver": "{count, plural, =1{1 dag försenad} other{{count} dagar försenade}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Alla avstämningar tas också bort. Det går inte att ångra.",
   "relationshipDeleteConfirmTitle": "Ta bort {name}?",
   "relationshipDueDay": "Senast {day}",
@@ -4873,6 +4881,14 @@
   "relationshipErrorDeleteFailed": "Personen kunde inte tas bort. Försök igen.",
   "relationshipErrorLinkTaskFailed": "Uppgiften kunde inte länkas. Försök igen.",
   "relationshipErrorUpdateFailed": "Ändringarna kunde inte sparas. Försök igen.",
+  "relationshipFirstDue": "första gången {day}",
+  "@relationshipFirstDue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipHealthNeedsAttention": "Behöver uppmärksamhet",
   "relationshipHealthSteady": "Stabil",
   "relationshipHealthStrained": "Ansträngd",
@@ -4929,6 +4945,7 @@
   "relationshipNicknameLabel": "Smeknamn",
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
   "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
+  "relationshipNotEnrolled": "Följs inte",
   "relationshipNotFound": "Den här personen följs inte längre.",
   "relationshipNudgesOn": "påminnelser på",
   "@relationshipNudgesOn": {
@@ -4960,7 +4977,38 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Lägg till människorna du vill hålla kontakten med.",
+  "relationshipsGroupDue": "Dags",
   "relationshipsPageTitle": "Personer",
+  "relationshipsSelectPersonHint": "Välj en person för att se deras sida.",
+  "relationshipsSummaryDueNow": "Dags nu",
+  "relationshipsSummaryEnrolled": "/ {count} följda",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Nästa: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Ingen väntar",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person följs inte} other{{count} personer följs inte}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Aktiv",
   "relationshipStatusArchived": "Arkiverad",
   "relationshipStatusDormant": "Vilande",

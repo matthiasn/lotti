@@ -4362,6 +4362,14 @@
   "relationshipContactMissing": "Tento kontakt v tomto zařízení není",
   "relationshipContactNoChanges": "Není co nového zkopírovat",
   "relationshipCreateTitle": "Přidat osobu",
+  "relationshipDaysOver": "{count, plural, =1{1 den po termínu} few{{count} dny po termínu} other{{count} dní po termínu}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.",
   "relationshipDeleteConfirmTitle": "Smazat {name}?",
   "relationshipDueDay": "Do {day}",
@@ -4377,6 +4385,14 @@
   "relationshipErrorDeleteFailed": "Osobu se nepodařilo smazat. Zkus to prosím znovu.",
   "relationshipErrorLinkTaskFailed": "Úkol se nepodařilo propojit. Zkus to prosím znovu.",
   "relationshipErrorUpdateFailed": "Změny se nepodařilo uložit. Zkus to prosím znovu.",
+  "relationshipFirstDue": "poprvé {day}",
+  "@relationshipFirstDue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipHealthNeedsAttention": "Vyžaduje pozornost",
   "relationshipHealthSteady": "Stabilní",
   "relationshipHealthStrained": "Napjatý",
@@ -4433,6 +4449,7 @@
   "relationshipNicknameLabel": "Přezdívka",
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
+  "relationshipNotEnrolled": "Nesledováno",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
   "relationshipNudgesOn": "připomínky zapnuty",
   "@relationshipNudgesOn": {
@@ -4464,7 +4481,38 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
+  "relationshipsGroupDue": "Na řadě",
   "relationshipsPageTitle": "Lidé",
+  "relationshipsSelectPersonHint": "Vyber osobu a zobrazí se její stránka.",
+  "relationshipsSummaryDueNow": "Teď na řadě",
+  "relationshipsSummaryEnrolled": "/ {count} sledovaných",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Další: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Nikdo nečeká",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 osoba nesledována} few{{count} osoby nesledovány} other{{count} osob nesledováno}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Aktivní",
   "relationshipStatusArchived": "Archivované",
   "relationshipStatusDormant": "Spící",

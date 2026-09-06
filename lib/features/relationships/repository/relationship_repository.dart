@@ -17,8 +17,16 @@ import 'package:lotti/utils/consts.dart';
 /// (null when no check-in exists yet).
 typedef RelationshipListItem = ({
   RelationshipEntry relationship,
-  DateTime? lastCheckInAt,
+
+  /// The newest check-in, so the list can say what the last contact was
+  /// (`Call · Today 12:44`), not only when.
+  CheckInEntry? lastCheckIn,
 });
+
+/// The instant of the newest check-in, or null for a person without one.
+extension RelationshipListItemRecency on RelationshipListItem {
+  DateTime? get lastCheckInAt => lastCheckIn?.meta.dateFrom;
+}
 
 /// Repository for relationship and check-in CRUD (ADR 0038).
 ///
@@ -78,13 +86,13 @@ class RelationshipRepository {
     return entity is RelationshipEntry ? entity : null;
   }
 
-  /// Returns all non-deleted relationships with their latest check-in time,
+  /// Returns all non-deleted relationships with their newest check-in,
   /// most recently interacted-with first (plan v2 phase 2). People without a
   /// check-in yet sort by tracking start instead, so a freshly added person
   /// starts at the top rather than the bottom.
   Future<List<RelationshipListItem>> getRelationshipsByRecency() async {
     final relationships = await _journalDb.getRelationships();
-    final latestByRelationship = await _journalDb.latestCheckInTimes();
+    final latestByRelationship = await _journalDb.latestCheckIns();
 
     DateTime recency(RelationshipListItem item) =>
         item.lastCheckInAt ?? item.relationship.meta.dateFrom;
@@ -93,7 +101,7 @@ class RelationshipRepository {
       for (final relationship in relationships)
         (
           relationship: relationship,
-          lastCheckInAt: latestByRelationship[relationship.id],
+          lastCheckIn: latestByRelationship[relationship.id],
         ),
     ]..sort((a, b) => recency(b).compareTo(recency(a)));
   }

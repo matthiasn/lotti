@@ -3,14 +3,19 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
+import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
+import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -26,7 +31,6 @@ import '../../../../widget_test_utils.dart';
 /// Counts pushes so a test can tell which navigator a route landed on.
 class _RecordingNavigatorObserver extends NavigatorObserver {
   int pushes = 0;
-
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     // The observer sees the host route itself; only later pushes count.
@@ -40,19 +44,14 @@ class _RecordingNavigatorObserver extends NavigatorObserver {
 class _SupportedContactsService implements ContactsService {
   @override
   bool get isSupported => true;
-
   @override
   Future<ContactsAccess> requestReadAccess() async => ContactsAccess.denied;
-
   @override
   Future<ImportedContact?> pickSingle() async => null;
-
   @override
   Future<List<ImportedContact>> readAll() async => const [];
-
   @override
   Future<ImportedContact?> readById(String id) async => null;
-
   @override
   Future<void> openSystemSettings() async {}
 }
@@ -69,6 +68,8 @@ void main() {
     bool important = false,
     int? cadenceDays,
     DateTime? lastCheckInAt,
+    CheckInInteractionType lastType = CheckInInteractionType.call,
+    RelationshipStatus? status,
   }) => (
     relationship: RelationshipEntry(
       meta: Metadata(
@@ -82,14 +83,27 @@ void main() {
         title: title,
         important: important,
         checkInCadenceDays: cadenceDays,
-        status: RelationshipStatus.active(
-          id: 'status-$id',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
+        status:
+            status ??
+            RelationshipStatus.active(
+              id: 'status-$id',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
       ),
     ),
-    lastCheckInAt: lastCheckInAt,
+    lastCheckIn: lastCheckInAt == null
+        ? null
+        : CheckInEntry(
+            meta: Metadata(
+              id: 'check-$id',
+              createdAt: lastCheckInAt,
+              updatedAt: lastCheckInAt,
+              dateFrom: lastCheckInAt,
+              dateTo: lastCheckInAt,
+            ),
+            data: CheckInData(relationshipId: id, interactionType: lastType),
+          ),
   );
 
   setUp(() {
@@ -294,21 +308,22 @@ void main() {
       expect(find.text('Ben'), findsOneWidget);
       // Persona avatars replace the bare person icon.
       expect(find.byType(PersonaAvatar), findsNWidgets(2));
-      // Exactly one star: Anna is important, Ben is not. The star is inline
-      // with the name (11px), not a trailing app-bar icon.
-      expect(find.byIcon(LottiIconsFilled.star), findsOneWidget);
-      // The status line is the last meaningful event, mono — "Checked in …",
-      // never "Tracking since …" (design plan §0.8).
-      final context = tester.element(find.byType(RelationshipsPage));
+      // Exactly one sparkle: Anna is important, Ben is not (the star is
+      // gone — it read as a toggle it was not).
       expect(
-        find.text(
-          context.messages.relationshipCheckedInLabel('Yesterday 18:00'),
-        ),
+        find.byKey(const ValueKey('people-row-important')),
         findsOneWidget,
       );
-      // Ben has no check-in: the quiet-streak caption (here 0 days → "Just
-      // added"), never "Tracking since …".
-      expect(find.text(context.messages.relationshipJustAdded), findsOneWidget);
+      expect(find.byIcon(LottiIconsFilled.star), findsNothing);
+      // The status line is the last contact — what, when, cadence — in mono,
+      // never "Tracking since …".
+      expect(find.text('Call · Yesterday 18:00 · No cadence'), findsOneWidget);
+      // Ben has no check-in: "Just added", then the cadence.
+      final context = tester.element(find.byType(RelationshipsPage));
+      expect(
+        find.text('${context.messages.relationshipJustAdded} · No cadence'),
+        findsOneWidget,
+      );
       expect(
         find.text('Add the people you want to stay close to.'),
         findsNothing,
@@ -438,53 +453,103 @@ void main() {
     expect(find.byIcon(LottiIcons.add), findsNWidgets(2));
   });
 
-  testWidgets('sorts due people ahead of on-track people', (tester) async {
-    // Anna: due (last check-in 10 days ago, weekly cadence).
-    // Ben:  on track (last check-in today, weekly cadence).
-    when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
-      (_) async => [
-        item(
-          'rel-ben',
-          title: 'Ben',
-          cadenceDays: 7,
-          lastCheckInAt: DateTime(2026, 8, 13, 9),
-        ),
-        item(
-          'rel-anna',
-          title: 'Anna',
-          cadenceDays: 7,
-          lastCheckInAt: DateTime(2026, 8, 3, 9),
-        ),
-      ],
-    );
+  /// Five people across the three bands, seen on Thursday 13 Aug 10:30:
+  /// Anna lapsed (weekly, last contact 3 Aug → due Mon 10 Aug, 3 days over),
+  /// Ben due within the week (weekly, contacted this morning → Thu 20 Aug),
+  /// Cara on track (monthly, 1 Aug → 31 Aug), Dan not important, Eve
+  /// important but dormant.
+  List<RelationshipListItem> crew() => [
+    item(
+      'rel-dan',
+      title: 'Dan',
+      lastCheckInAt: DateTime(2026, 8, 12, 18),
+      lastType: CheckInInteractionType.inPerson,
+    ),
+    item(
+      'rel-cara',
+      title: 'Cara',
+      important: true,
+      cadenceDays: 30,
+      lastCheckInAt: DateTime(2026, 8, 1, 9),
+    ),
+    item(
+      'rel-ben',
+      title: 'Ben',
+      important: true,
+      cadenceDays: 7,
+      lastCheckInAt: DateTime(2026, 8, 13, 9),
+    ),
+    item(
+      'rel-anna',
+      title: 'Anna',
+      important: true,
+      cadenceDays: 7,
+      lastCheckInAt: DateTime(2026, 8, 3, 9),
+    ),
+    item(
+      'rel-eve',
+      title: 'Eve',
+      important: true,
+      cadenceDays: 7,
+      status: RelationshipStatus.dormant(
+        id: 'status-eve',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+    ),
+  ];
+
+  testWidgets('bands the list Due · On track · Not enrolled with counts, '
+      'lapsed first, and every pill tells the truth', (tester) async {
+    when(
+      () => mockRepository.getRelationshipsByRecency(),
+    ).thenAnswer((_) async => crew());
 
     await withClock(Clock.fixed(testDate), () async {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
     });
 
-    // Anna (due) renders above Ben (on track).
-    expect(find.text('Anna'), findsOneWidget);
-    expect(find.text('Ben'), findsOneWidget);
-    // The due pill is the warning-tinted "Due {day}" label.
-    final context = tester.element(find.byType(RelationshipsPage));
-    // Anna's last check-in was 2026-08-03; +7 days of cadence is
-    // 2026-08-10, a Monday.
-    final dueLabel = find.text(
-      context.messages.relationshipDueDay('Mon'),
-    );
-    expect(dueLabel, findsOneWidget);
-    expect(
-      find.text(context.messages.relationshipCadenceOnTrack),
-      findsOneWidget,
-    );
-    // Anna's row sits above Ben's: her text is found first in the column.
-    final annaCenter = tester.getCenter(find.text('Anna'));
-    final benCenter = tester.getCenter(find.text('Ben'));
-    expect(annaCenter.dy, lessThan(benCenter.dy));
+    expect(find.text('Due · 1'), findsOneWidget);
+    expect(find.text('On track · 2'), findsOneWidget);
+    expect(find.text('Not enrolled · 2'), findsOneWidget);
+
+    // Never "Due Mon" for a lapse that happened last Monday (P5).
+    expect(find.text('3 days over'), findsOneWidget);
+    expect(find.text('Due Mon'), findsNothing);
+    expect(find.text('Due Thu'), findsOneWidget);
+    expect(find.text('On track'), findsOneWidget);
+    expect(find.text('Not enrolled'), findsOneWidget);
+    expect(find.text('Dormant'), findsOneWidget);
+
+    double y(String name) => tester.getCenter(find.text(name)).dy;
+    expect(y('Anna'), lessThan(y('Ben')));
+    expect(y('Ben'), lessThan(y('Cara')));
+    expect(y('Cara'), lessThan(y('Dan')));
+    expect(y('Cara'), lessThan(y('Eve')));
   });
 
-  testWidgets('a person with no cadence shows no cadence pill', (tester) async {
+  testWidgets('the summary card counts the bands and names who lapses next', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.getRelationshipsByRecency(),
+    ).thenAnswer((_) async => crew());
+
+    await withClock(Clock.fixed(testDate), () async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+    });
+
+    expect(find.byType(PeopleSummaryCard), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('/ 3 enrolled'), findsOneWidget);
+    expect(find.text('Next due Ben · Thu 20 Aug'), findsOneWidget);
+    expect(find.text('2 people not enrolled'), findsOneWidget);
+  });
+
+  testWidgets('a person who is not important reads Not enrolled, with no '
+      'cadence claim', (tester) async {
     when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
       (_) async => [item('rel-1', title: 'Anna')],
     );
@@ -493,11 +558,119 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Anna'), findsOneWidget);
-    final context = tester.element(find.byType(RelationshipsPage));
-    expect(
-      find.text(context.messages.relationshipCadenceOnTrack),
-      findsNothing,
-    );
+    expect(find.text('Not enrolled · 1'), findsOneWidget);
+    expect(find.text('Not enrolled'), findsOneWidget);
+    expect(find.text('On track'), findsNothing);
+    expect(find.byType(PeopleSummaryCard), findsOneWidget);
+  });
+
+  group('desktop split', () {
+    late MockNavService navService;
+    late ValueNotifier<String?> selected;
+
+    setUp(() {
+      navService = MockNavService();
+      selected = ValueNotifier<String?>(null);
+      when(() => navService.isDesktopMode).thenReturn(true);
+      when(
+        () => navService.desktopSelectedRelationshipId,
+      ).thenReturn(selected);
+      final settingsDb = MockSettingsDb();
+      when(
+        () => settingsDb.itemsByKeys(any()),
+      ).thenAnswer((_) async => <String, String?>{});
+      when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+      getIt
+        ..registerSingleton<NavService>(navService)
+        ..registerSingleton<SettingsDb>(settingsDb);
+    });
+
+    tearDown(() async {
+      selected.dispose();
+      await getIt.unregister<NavService>();
+      await getIt.unregister<SettingsDb>();
+    });
+
+    Future<void> pumpDesktop(WidgetTester tester) async {
+      tester.view
+        ..physicalSize = const Size(1280, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await withClock(Clock.fixed(testDate), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const RelationshipsPage(),
+            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+            overrides: [
+              relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+      });
+    }
+
+    testWidgets('with no selection the list pane sits beside the empty state, '
+        'and the add affordance is a labelled button', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => crew());
+
+      await pumpDesktop(tester);
+
+      expect(find.text('Anna'), findsOneWidget);
+      final context = tester.element(find.byType(RelationshipsPage));
+      expect(
+        find.text(context.messages.relationshipsSelectPersonHint),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('people-add-person-button')),
+        findsOneWidget,
+      );
+      // The phone's bare add circle is gone on desktop.
+      expect(
+        findMaterialTooltip(context.messages.relationshipCreateTitle),
+        findsNothing,
+      );
+      expect(find.byType(RelationshipDetailsPage), findsNothing);
+    });
+
+    testWidgets('the selected person fills the detail pane and wears the '
+        'selected wash on the list', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => crew());
+      final anna = crew().firstWhere((i) => i.relationship.id == 'rel-anna');
+      when(
+        () => mockRepository.getRelationshipById('rel-anna'),
+      ).thenAnswer((_) async => anna.relationship);
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-anna'),
+      ).thenAnswer((_) async => [anna.lastCheckIn!]);
+      when(
+        () => mockRepository.getLinkedTasks('rel-anna'),
+      ).thenAnswer((_) async => []);
+      selected.value = 'rel-anna';
+
+      await pumpDesktop(tester);
+
+      expect(find.byType(RelationshipDetailsPage), findsOneWidget);
+      // The page's own app bar names the person, so the name appears twice:
+      // once on the list, once on the page.
+      expect(find.text('Anna'), findsNWidgets(2));
+      final selectedRow = tester.widget<PeopleListRow>(
+        find.byKey(const ValueKey('people-row-rel-anna')),
+      );
+      final otherRow = tester.widget<PeopleListRow>(
+        find.byKey(const ValueKey('people-row-rel-ben')),
+      );
+      expect(selectedRow.selected, isTrue);
+      expect(otherRow.selected, isFalse);
+    });
   });
 }
 

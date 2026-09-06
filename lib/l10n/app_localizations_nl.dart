@@ -11091,6 +11091,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCreateTitle => 'Persoon toevoegen';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen te laat',
+      one: '1 dag te laat',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Ook alle check-ins worden verwijderd. Dit kan niet ongedaan worden gemaakt.';
 
@@ -11122,6 +11133,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipErrorUpdateFailed =>
       'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
+
+  @override
+  String relationshipFirstDue(String day) {
+    return 'eerste keer $day';
+  }
 
   @override
   String get relationshipHealthNeedsAttention => 'Vraagt aandacht';
@@ -11268,6 +11284,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nog geen gekoppelde taken.';
 
   @override
+  String get relationshipNotEnrolled => 'Niet gevolgd';
+
+  @override
   String get relationshipNotFound =>
       'Deze persoon staat niet meer in je lijst.';
 
@@ -11311,7 +11330,41 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voeg de mensen toe met wie je dichtbij wilt blijven.';
 
   @override
+  String get relationshipsGroupDue => 'Aan de beurt';
+
+  @override
   String get relationshipsPageTitle => 'Mensen';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Kies iemand om de pagina te zien.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Nu aan de beurt';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count gevolgd';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Volgende: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Niemand aan de beurt';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personen niet gevolgd',
+      one: '1 persoon niet gevolgd',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Actief';

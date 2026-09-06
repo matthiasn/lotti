@@ -4,12 +4,34 @@ import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
   group('RelationshipsLocation', () {
+    late MockNavService navService;
+    late ValueNotifier<String?> selected;
+
+    setUp(() {
+      navService = MockNavService();
+      selected = ValueNotifier<String?>(null);
+      when(() => navService.isDesktopMode).thenReturn(false);
+      when(
+        () => navService.desktopSelectedRelationshipId,
+      ).thenReturn(selected);
+      getIt.registerSingleton<NavService>(navService);
+    });
+
+    tearDown(() async {
+      selected.dispose();
+      await getIt.unregister<NavService>();
+    });
+
     // buildPages resolves localized page titles, so it needs a real,
     // localization-carrying context rather than a mock.
     Future<BuildContext> localizedContext(WidgetTester tester) async {
@@ -95,6 +117,43 @@ void main() {
         pages.map((page) => page.child),
         isNot(contains(isA<RelationshipChatPage>())),
       );
+    });
+
+    group('on desktop', () {
+      setUp(() => when(() => navService.isDesktopMode).thenReturn(true));
+
+      testWidgets('mirrors the person id into the split-pane selection and '
+          'pushes no detail page', (tester) async {
+        final context = await localizedContext(tester);
+
+        final pages = pagesFor(context, '/people/rel-1');
+
+        expect(pages, hasLength(1));
+        expect(pages.single.child, isA<RelationshipsPage>());
+        expect(selected.value, 'rel-1');
+      });
+
+      testWidgets('the bare list route clears the selection', (tester) async {
+        selected.value = 'rel-1';
+        final context = await localizedContext(tester);
+
+        pagesFor(context, '/people');
+
+        expect(selected.value, isNull);
+      });
+
+      testWidgets('the chat still stacks as its own page above the list', (
+        tester,
+      ) async {
+        final context = await localizedContext(tester);
+
+        final pages = pagesFor(context, '/people/rel-1/chat');
+
+        expect(pages, hasLength(2));
+        expect(pages[0].child, isA<RelationshipsPage>());
+        expect(pages[1].child, isA<RelationshipChatPage>());
+        expect(selected.value, 'rel-1');
+      });
     });
   });
 }

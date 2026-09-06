@@ -4355,6 +4355,14 @@
   "relationshipContactMissing": "Ese contacto no está en este dispositivo",
   "relationshipContactNoChanges": "Nada nuevo que copiar",
   "relationshipCreateTitle": "Añadir persona",
+  "relationshipDaysOver": "{count, plural, =1{1 día de retraso} other{{count} días de retraso}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "También se eliminarán todos sus registros. Esta acción no se puede deshacer.",
   "relationshipDeleteConfirmTitle": "¿Eliminar a {name}?",
   "relationshipDueDay": "Tope {day}",
@@ -4370,6 +4378,14 @@
   "relationshipErrorDeleteFailed": "No se pudo eliminar la persona. Inténtalo de nuevo.",
   "relationshipErrorLinkTaskFailed": "No se pudo vincular la tarea. Inténtalo de nuevo.",
   "relationshipErrorUpdateFailed": "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+  "relationshipFirstDue": "primer plazo {day}",
+  "@relationshipFirstDue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipHealthNeedsAttention": "Necesita atención",
   "relationshipHealthSteady": "Estable",
   "relationshipHealthStrained": "Tensa",
@@ -4426,6 +4442,7 @@
   "relationshipNicknameLabel": "Apodo",
   "relationshipNoCheckIns": "Aún no hay registros: añade uno tras vuestra próxima conversación.",
   "relationshipNoLinkedTasks": "Aún no hay tareas vinculadas.",
+  "relationshipNotEnrolled": "Sin seguimiento",
   "relationshipNotFound": "Esta persona ya no está en tu lista.",
   "relationshipNudgesOn": "avisos activos",
   "@relationshipNudgesOn": {
@@ -4457,7 +4474,38 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Añade a las personas de las que quieres estar cerca.",
+  "relationshipsGroupDue": "Pendientes",
   "relationshipsPageTitle": "Personas",
+  "relationshipsSelectPersonHint": "Elige a alguien para ver su página.",
+  "relationshipsSummaryDueNow": "Pendientes ahora",
+  "relationshipsSummaryEnrolled": "/ {count} en seguimiento",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Próximo: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Nadie pendiente",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persona sin seguimiento} other{{count} personas sin seguimiento}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Activa",
   "relationshipStatusArchived": "Archivada",
   "relationshipStatusDormant": "En reposo",

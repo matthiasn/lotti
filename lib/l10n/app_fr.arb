@@ -4355,6 +4355,14 @@
   "relationshipContactMissing": "Ce contact n’est pas sur cet appareil",
   "relationshipContactNoChanges": "Rien de nouveau à copier",
   "relationshipCreateTitle": "Ajouter une personne",
+  "relationshipDaysOver": "{count, plural, =1{1 jour de retard} other{{count} jours de retard}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Tous ses échanges seront aussi supprimés. Cette action est irréversible.",
   "relationshipDeleteConfirmTitle": "Supprimer {name} ?",
   "relationshipDueDay": "À relancer {day}",
@@ -4370,6 +4378,14 @@
   "relationshipErrorDeleteFailed": "Impossible de supprimer la personne. Réessaie.",
   "relationshipErrorLinkTaskFailed": "Impossible de lier la tâche. Réessaie.",
   "relationshipErrorUpdateFailed": "Impossible d'enregistrer les modifications. Réessaie.",
+  "relationshipFirstDue": "première échéance {day}",
+  "@relationshipFirstDue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipHealthNeedsAttention": "A besoin d'attention",
   "relationshipHealthSteady": "Stable",
   "relationshipHealthStrained": "Tendue",
@@ -4426,6 +4442,7 @@
   "relationshipNicknameLabel": "Surnom",
   "relationshipNoCheckIns": "Aucun échange noté — ajoute le premier après votre prochaine conversation.",
   "relationshipNoLinkedTasks": "Aucune tâche liée pour l'instant.",
+  "relationshipNotEnrolled": "Non suivi",
   "relationshipNotFound": "Cette personne n'est plus dans ta liste.",
   "relationshipNudgesOn": "rappels activés",
   "@relationshipNudgesOn": {
@@ -4457,7 +4474,38 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Ajoute les personnes dont tu veux rester proche.",
+  "relationshipsGroupDue": "À relancer",
   "relationshipsPageTitle": "Proches",
+  "relationshipsSelectPersonHint": "Choisis une personne pour voir sa page.",
+  "relationshipsSummaryDueNow": "À relancer maintenant",
+  "relationshipsSummaryEnrolled": "/ {count} suivis",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Prochaine échéance {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Personne à relancer",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 personne non suivie} other{{count} personnes non suivies}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Active",
   "relationshipStatusArchived": "Archivée",
   "relationshipStatusDormant": "En veille",

@@ -75,6 +75,49 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
     };
   }
 
+  /// The newest non-deleted check-in per relationship id: the
+  /// [latestCheckInTimes] aggregate resolved to its rows in ONE further
+  /// query — the ids and the instants as `IN` lists, the exact pair kept on
+  /// the raw row — so the People list can say what the last contact was
+  /// without a per-person query. Respects the private-entry filter for the
+  /// same reason the aggregate does.
+  Future<Map<String, CheckInEntry>> latestCheckIns() async {
+    final times = await latestCheckInTimes();
+    if (times.isEmpty) return const {};
+    final ids = times.keys.toList(growable: false);
+    final instants = times.values.toSet().toList(growable: false);
+
+    Future<List<JournalDbEntity>> run({List<bool>? privateStatuses}) {
+      return (select(journal)..where((t) {
+            var predicate =
+                t.type.equals('CheckIn') &
+                t.deleted.equals(false) &
+                t.subtype.isIn(ids) &
+                t.dateFrom.isIn(instants);
+            if (privateStatuses != null) {
+              predicate = predicate & t.private.isIn(privateStatuses);
+            }
+            return predicate;
+          }))
+          .get();
+    }
+
+    final rows = await _queryWithPrivateFilter(
+      allPrivate: run,
+      filtered: (statuses) => run(privateStatuses: statuses),
+    );
+    final latest = <String, CheckInEntry>{};
+    for (final row in rows) {
+      final id = row.subtype;
+      if (id == null || latest.containsKey(id) || times[id] != row.dateFrom) {
+        continue;
+      }
+      final entity = fromDbEntity(row);
+      if (entity is CheckInEntry) latest[id] = entity;
+    }
+    return latest;
+  }
+
   /// The live tasks among [ids], for resolving a relationship's linked
   /// tasks. Relationship → check-in and relationship → task links share the
   /// `RelationshipLink` type, so the caller cannot tell them apart from the
