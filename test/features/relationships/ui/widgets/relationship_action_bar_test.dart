@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -23,9 +25,16 @@ class _FakeContactLauncher implements ContactLauncher {
   final bool launchSucceeds;
   final List<(ContactChannel, ContactAction)> launched = [];
 
+  /// When set, every availability answer waits on it — so a test can hold a
+  /// resolution open while the widget's channels change under it.
+  Completer<void>? gate;
+
   @override
-  Future<bool> canLaunch(ContactChannel channel, ContactAction action) async =>
-      launchable.contains(action) && contactChannelUri(channel, action) != null;
+  Future<bool> canLaunch(ContactChannel channel, ContactAction action) async {
+    if (gate case final gate?) await gate.future;
+    return launchable.contains(action) &&
+        contactChannelUri(channel, action) != null;
+  }
 
   @override
   Future<bool> launch(ContactChannel channel, ContactAction action) async {
@@ -220,6 +229,47 @@ void main() {
         find.text('Nothing on this device can open that'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('a resolution that started before the channels changed is '
+        'discarded, so a removed channel can never be offered', (
+      tester,
+    ) async {
+      final launcher = _FakeContactLauncher(
+        launchable: const {ContactAction.call, ContactAction.email},
+      );
+      Widget bar(List<ContactChannel> channels) =>
+          makeTestableWidgetWithScaffold(
+            RelationshipActionBar(
+              relationship: person(channels),
+              onLogCheckIn: () {},
+              onSpeak: () {},
+            ),
+            overrides: [
+              contactLauncherProvider.overrideWithValue(launcher),
+              pendingInteractionStoreProvider.overrideWithValue(store),
+            ],
+          );
+
+      // The first resolution (mobile → call) is held open...
+      final first = Completer<void>();
+      launcher.gate = first;
+      await tester.pumpWidget(bar(const [mobile]));
+      await tester.pump();
+
+      // ...while the person loses the number; the second resolution runs
+      // unhindered and lands first.
+      launcher.gate = null;
+      await tester.pumpWidget(bar(const []));
+      await tester.pumpAndSettle();
+      expect(channelButton, findsNothing);
+
+      // The stale answer arrives last and must be ignored.
+      first.complete();
+      await tester.pumpAndSettle();
+
+      expect(channelButton, findsNothing);
+      expect(find.byIcon(LottiIcons.call), findsNothing);
     });
 
     testWidgets('re-resolves when the channels change under it', (

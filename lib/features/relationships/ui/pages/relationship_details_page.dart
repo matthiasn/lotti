@@ -210,13 +210,19 @@ class RelationshipDetailsPage extends ConsumerWidget {
           startSpeaking: true,
         ),
       ),
-      // Builder so MediaQuery.paddingOf reads the Scaffold-modified value.
-      body: Builder(
-        builder: (context) {
+      // A LayoutBuilder for two reasons: MediaQuery.paddingOf below it reads
+      // the Scaffold-modified value, and the column is centred within the
+      // width this page actually has — the detail pane on the desktop split,
+      // not the window.
+      body: LayoutBuilder(
+        builder: (context, constraints) {
           // Every section — and the check-in log, which is a sliver and so
           // cannot sit inside `DetailContentWidth` — on the one reading
           // column that widget gives boxed content.
-          final insets = detailContentInsets(context);
+          final insets = detailContentInsets(
+            context,
+            availableWidth: constraints.maxWidth,
+          );
           final bottomInset = MediaQuery.paddingOf(context).bottom;
           final gap = SizedBox(height: tokens.spacing.sectionGap);
           return CustomScrollView(

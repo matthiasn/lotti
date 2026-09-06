@@ -160,6 +160,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
     ).thenAnswer(
       (invocation) async => createdEntry(
@@ -259,6 +260,7 @@ void main() {
         data: captureAny(named: 'data'),
         entryText: captureAny(named: 'entryText'),
         dateFrom: captureAny(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
     ).captured;
     return (
@@ -368,6 +370,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
     ).thenAnswer((_) async => null);
 
@@ -400,6 +403,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
     ).thenThrow(Exception('db gone'));
 
@@ -430,6 +434,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
     );
   });
@@ -645,6 +650,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -667,6 +673,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
         ),
       ).thenThrow(Exception('db locked'));
 
@@ -1243,6 +1250,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
         ),
       ).called(1);
     });
@@ -1356,6 +1364,104 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(launches, isEmpty);
+    });
+  });
+
+  group('duration', () {
+    testWidgets('a prefilled duration is persisted as the end time, so the '
+        'log shows what the post-call offer promised', (tester) async {
+      setTestSurfaceSize(tester, const Size(1000, 1400));
+      final startedAt = DateTime(2026, 8, 13, 12, 33);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CheckInCaptureForm(
+            relationshipId: 'rel-001',
+            prefilledTime: startedAt,
+            prefilledDuration: const Duration(minutes: 11),
+          ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final captured = verify(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: captureAny(named: 'dateFrom'),
+          dateTo: captureAny(named: 'dateTo'),
+        ),
+      ).captured;
+      expect(captured[0], startedAt);
+      expect(captured[1], startedAt.add(const Duration(minutes: 11)));
+    });
+
+    testWidgets('a check-in with no known duration saves a zero-length one', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(1000, 1400));
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final captured = verify(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: captureAny(named: 'dateFrom'),
+          dateTo: captureAny(named: 'dateTo'),
+        ),
+      ).captured;
+      expect(captured[1], captured[0]);
+    });
+
+    testWidgets('editing keeps the existing length when nothing about the '
+        'time changes', (tester) async {
+      setTestSurfaceSize(tester, const Size(1000, 1400));
+      final from = DateTime(2026, 8, 13, 12, 33);
+      final existing = CheckInEntry(
+        meta: Metadata(
+          id: 'check-1',
+          createdAt: from,
+          updatedAt: from,
+          dateFrom: from,
+          dateTo: from.add(const Duration(minutes: 35)),
+        ),
+        data: const CheckInData(
+          relationshipId: 'rel-001',
+          interactionType: CheckInInteractionType.videoCall,
+        ),
+      );
+      when(
+        () => mockRepository.updateCheckIn(any()),
+      ).thenAnswer((_) async => true);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CheckInCaptureForm(relationshipId: 'rel-001', initial: existing),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final updated =
+          verify(
+                () => mockRepository.updateCheckIn(captureAny()),
+              ).captured.single
+              as CheckInEntry;
+      expect(updated.meta.dateFrom, from);
+      expect(updated.meta.dateTo, from.add(const Duration(minutes: 35)));
     });
   });
 }

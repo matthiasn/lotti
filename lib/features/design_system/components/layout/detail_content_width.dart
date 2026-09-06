@@ -19,19 +19,31 @@ class DetailContentWidth extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) =>
-      Padding(padding: detailContentInsets(context), child: child);
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Padding(
+      padding: detailContentInsets(
+        context,
+        availableWidth: constraints.maxWidth,
+      ),
+      child: child,
+    ),
+  );
 }
 
 /// The horizontal insets [DetailContentWidth] applies: the standard content
 /// gutter plus, on a desktop-breakpoint screen, the centring that caps the
-/// content at [kDetailContentMaxWidth]. Exposed for slivers and bars that
-/// have to share the column but cannot be a child of that widget.
-EdgeInsets detailContentInsets(BuildContext context) {
+/// content at [kDetailContentMaxWidth] within [availableWidth] — the width
+/// the caller actually has, which inside a list/detail split is the detail
+/// pane and not the window. Exposed for slivers and bars that have to share
+/// the column but cannot be children of that widget.
+EdgeInsets detailContentInsets(
+  BuildContext context, {
+  required double availableWidth,
+}) {
   final tokens = context.designTokens;
-  final width = MediaQuery.sizeOf(context).width;
-  final overflow = width - kDetailContentMaxWidth;
-  final centring = width >= kDesktopBreakpoint && overflow > 0
+  final desktop = MediaQuery.sizeOf(context).width >= kDesktopBreakpoint;
+  final overflow = availableWidth - kDetailContentMaxWidth;
+  final centring = desktop && overflow.isFinite && overflow > 0
       ? overflow / 2
       : 0.0;
   return EdgeInsets.symmetric(horizontal: tokens.spacing.step5 + centring);

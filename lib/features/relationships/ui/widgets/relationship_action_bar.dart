@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -49,6 +50,10 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
   /// launchable, which renders the bar with two controls.
   ReachableChannel? _reachable;
 
+  /// Bumped per resolution so one that started before the channels changed
+  /// cannot land after the newer one and offer a channel that is gone.
+  int _resolution = 0;
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +70,7 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
   }
 
   Future<void> _resolveReachable() async {
+    final generation = ++_resolution;
     final launcher = ref.read(contactLauncherProvider);
     ReachableChannel? found;
     for (final channel in widget.relationship.data.contactChannels) {
@@ -76,7 +82,7 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
       }
       if (found != null) break;
     }
-    if (!mounted) return;
+    if (!mounted || generation != _resolution) return;
     setState(() => _reachable = found);
   }
 
@@ -90,56 +96,73 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
     // controls sit above it (the task bar's rule) and on the page's reading
     // column, so a desktop window does not stretch the pill across it.
     final safeBottomInset = MediaQuery.paddingOf(context).bottom;
-    final column = detailContentInsets(context);
 
     return DesignSystemGlassStrip(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          column.left,
-          spacing.step4,
-          column.right,
-          spacing.step4 + safeBottomInset,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: DsGlassPill(
-                key: const ValueKey('person-action-log-check-in'),
-                label: messages.relationshipLogCheckIn,
-                icon: LottiIcons.greeting,
-                expand: true,
-                fillColor: tokens.colors.interactive.enabled,
-                foregroundColor: tokens.colors.text.onInteractiveAlert,
-                onTap: widget.onLogCheckIn,
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final column = detailContentInsets(
+            context,
+            availableWidth: constraints.maxWidth,
+          );
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              column.left,
+              spacing.step4,
+              column.right,
+              spacing.step4 + safeBottomInset,
             ),
-            SizedBox(width: spacing.step4),
-            DsGlassRoundButton(
-              key: const ValueKey('person-action-speak'),
-              icon: LottiIcons.mic,
-              semanticLabel: messages.checkInSpeakButton,
-              onPressed: widget.onSpeak,
-            ),
-            if (reachable != null) ...[
-              SizedBox(width: spacing.step4),
-              DsGlassRoundButton(
-                key: const ValueKey('person-action-channel'),
-                icon: contactActionIcon(reachable.action),
-                semanticLabel: contactActionLabel(context, reachable.action),
-                onPressed: () => unawaited(
-                  launchContactAction(
-                    context,
-                    ref,
-                    relationshipId: widget.relationship.id,
-                    channel: reachable.channel,
-                    action: reachable.action,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
+            child: _controls(context, tokens, messages, reachable),
+          );
+        },
       ),
+    );
+  }
+
+  Widget _controls(
+    BuildContext context,
+    DsTokens tokens,
+    AppLocalizations messages,
+    ReachableChannel? reachable,
+  ) {
+    final spacing = tokens.spacing;
+    return Row(
+      children: [
+        Expanded(
+          child: DsGlassPill(
+            key: const ValueKey('person-action-log-check-in'),
+            label: messages.relationshipLogCheckIn,
+            icon: LottiIcons.greeting,
+            expand: true,
+            fillColor: tokens.colors.interactive.enabled,
+            foregroundColor: tokens.colors.text.onInteractiveAlert,
+            onTap: widget.onLogCheckIn,
+          ),
+        ),
+        SizedBox(width: spacing.step4),
+        DsGlassRoundButton(
+          key: const ValueKey('person-action-speak'),
+          icon: LottiIcons.mic,
+          semanticLabel: messages.checkInSpeakButton,
+          onPressed: widget.onSpeak,
+        ),
+        if (reachable != null) ...[
+          SizedBox(width: spacing.step4),
+          DsGlassRoundButton(
+            key: const ValueKey('person-action-channel'),
+            icon: contactActionIcon(reachable.action),
+            semanticLabel: contactActionLabel(context, reachable.action),
+            onPressed: () => unawaited(
+              launchContactAction(
+                context,
+                ref,
+                relationshipId: widget.relationship.id,
+                channel: reachable.channel,
+                action: reachable.action,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

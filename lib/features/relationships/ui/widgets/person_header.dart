@@ -314,13 +314,15 @@ class PersonMenuButton extends ConsumerWidget {
 
     Widget item(IconData icon, String label, {Color? color}) => Row(
       children: [
-        Icon(icon, color: color),
+        Icon(icon, color: color ?? ink),
         SizedBox(width: tokens.spacing.step3),
         Expanded(
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: color == null ? null : TextStyle(color: color),
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: color ?? ink,
+            ),
           ),
         ),
       ],

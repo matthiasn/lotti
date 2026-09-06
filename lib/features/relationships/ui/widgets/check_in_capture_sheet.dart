@@ -126,6 +126,7 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
   required String relationshipId,
   CheckInInteractionType? prefilledInteractionType,
   DateTime? prefilledTime,
+  Duration? prefilledDuration,
   bool startSpeaking = false,
 }) {
   return ModalUtils.showSinglePageModal<CheckInEntry>(
@@ -135,6 +136,7 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
       relationshipId: relationshipId,
       prefilledInteractionType: prefilledInteractionType,
       prefilledTime: prefilledTime,
+      prefilledDuration: prefilledDuration,
       startSpeaking: startSpeaking,
     ),
   );
@@ -166,6 +168,7 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
     this.initial,
     this.prefilledInteractionType,
     this.prefilledTime,
+    this.prefilledDuration,
     this.startSpeaking = false,
     super.key,
   });
@@ -183,6 +186,13 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
   /// Starting interaction time for a new check-in — when the call was
   /// actually placed, rather than when the user got round to logging it.
   final DateTime? prefilledTime;
+
+  /// How long the interaction lasted, when the caller already knows — the
+  /// post-call offer's elapsed time. Persisted as the check-in's end time
+  /// (`dateTo − dateFrom` is the duration; no schema change), so the
+  /// duration the offer quoted is the one the log shows. Ignored while
+  /// editing, where the existing check-in's own length is kept.
+  final Duration? prefilledDuration;
 
   /// Opens straight into a spoken check-in: the page's mic doorway, which
   /// means "say it" rather than "show me the form". The recording sheet is
@@ -202,6 +212,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   late CheckInInteractionType _interactionType;
   late CheckInSentiment? _sentiment;
   late DateTime _interactionTime;
+
+  /// The check-in's length; zero means "no duration". Kept across a change
+  /// of the start time so editing when a call began does not erase how
+  /// long it ran.
+  late Duration _duration;
   bool _isSaving = false;
   bool _isTranscribing = false;
 
@@ -217,6 +232,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   ProviderSubscription<String?>? _transcriptFailureSubscription;
 
   bool get _isEditing => widget.initial != null;
+
+  /// An existing check-in's length, or null when there is none to keep.
+  static Duration? _lengthOf(CheckInEntry? entry) {
+    if (entry == null) return null;
+    return entry.meta.dateTo.difference(entry.meta.dateFrom);
+  }
 
   @override
   void initState() {
@@ -243,6 +264,9 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _sentiment = data?.sentiment;
     _interactionTime =
         initial?.meta.dateFrom ?? widget.prefilledTime ?? clock.now();
+    final length =
+        _lengthOf(initial) ?? widget.prefilledDuration ?? Duration.zero;
+    _duration = length.isNegative ? Duration.zero : length;
     if (widget.startSpeaking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_handleSpeak());
@@ -440,7 +464,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           entryText: entryText,
           meta: initial.meta.copyWith(
             dateFrom: _interactionTime,
-            dateTo: _interactionTime,
+            dateTo: _interactionTime.add(_duration),
           ),
         );
         final success = await repository.updateCheckIn(updated);
@@ -458,6 +482,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           data: data,
           entryText: entryText,
           dateFrom: _interactionTime,
+          dateTo: _interactionTime.add(_duration),
         );
         if (!mounted) return;
         if (created != null) {

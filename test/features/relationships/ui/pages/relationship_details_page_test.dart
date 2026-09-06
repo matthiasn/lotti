@@ -849,6 +849,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
     ).thenAnswer((_) async => checkIn('check-new'));
 
@@ -877,6 +878,7 @@ void main() {
                 data: captureAny(named: 'data'),
                 entryText: any(named: 'entryText'),
                 dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
               ),
             ).captured.single
             as CheckInData;

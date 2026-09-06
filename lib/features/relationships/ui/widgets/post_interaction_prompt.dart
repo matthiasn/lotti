@@ -108,11 +108,15 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     await _dismiss();
     if (!mounted) return;
 
+    // The whole minutes the offer quoted, so the log shows the duration the
+    // user was promised rather than a second, differently rounded reading.
+    final elapsed = clock.now().difference(pending.startedAt);
     await showCheckInCaptureSheet(
       context: context,
       relationshipId: pending.relationshipId,
       prefilledInteractionType: pending.interactionType,
       prefilledTime: pending.startedAt,
+      prefilledDuration: Duration(minutes: elapsed.inMinutes),
     );
   }
 

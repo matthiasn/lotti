@@ -250,6 +250,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Link contact'), findsNothing);
+      // Destructive ink on the body token — not an ad hoc TextStyle.
+      final tokens = tester.element(find.text('Delete')).designTokens;
+      final style = tester.widget<Text>(find.text('Delete')).style!;
+      expect(style.color, tokens.colors.alert.error.ink);
+      expect(
+        style.fontSize,
+        tokens.typography.styles.body.bodyMedium.fontSize,
+      );
 
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();

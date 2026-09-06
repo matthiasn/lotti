@@ -6,6 +6,7 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -296,6 +297,22 @@ void main() {
             'the sheet must open on what actually happened, not on the '
             'in-person default',
       );
+    });
+
+    testWidgets('hands the elapsed minutes to the sheet as the duration, so '
+        'the saved check-in shows what the offer promised', (tester) async {
+      await pump(tester, pending: marker(), resolves: person());
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.tap(find.text('Log check-in'));
+        await tester.pumpAndSettle();
+      });
+
+      final form = tester.widget<CheckInCaptureForm>(
+        find.byType(CheckInCaptureForm),
+      );
+      expect(form.prefilledTime, DateTime(2026, 8, 17, 11, 30));
+      expect(form.prefilledDuration, const Duration(minutes: 11));
     });
 
     testWidgets('carries a message interaction through instead of a call', (

@@ -219,8 +219,11 @@ under it — the task page's shape, on purpose:
 Every section, the check-in sliver and the action bar sit on
 `detailContentInsets` — the rule `DetailContentWidth` itself is built on: the
 content gutter plus, on a desktop-wide window, the centring that caps the
-column at `kDetailContentMaxWidth`. Exposed as a function because a sliver
-and a `bottomNavigationBar` cannot be children of that widget.
+column at `kDetailContentMaxWidth` **within the width the caller has**. Both
+the page and the bar measure that with a `LayoutBuilder`, because on the
+split the detail pane is narrower than the window and centring on the window
+would over-inset it. Exposed as a function because a sliver and a
+`bottomNavigationBar` cannot be children of that widget.
 
 The [action bar](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart)
 resolves its third control once when built: the first channel, in the
@@ -872,8 +875,11 @@ deleted, or hidden while private entries are off, produces no prompt, because
 naming them would leak that they exist. The offer names its evidence — the
 channel, how many minutes ago, when it started and about how long it has been
 (`You called Pip 11 minutes ago — log it while it is fresh?` · `started
-12:33 · about 11 min`) — so it reads as "log the call you just had", and the
-minutes it quotes are the ones the capture sheet will prefill.
+12:33 · about 11 min`) — so it reads as "log the call you just had". The
+minutes it quotes travel into the capture sheet as `prefilledDuration` and
+are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
+change), so the log's row shows the duration the offer promised; editing a
+check-in keeps its length when the start time moves.
 
 ```mermaid
 stateDiagram-v2
