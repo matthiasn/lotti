@@ -27,6 +27,7 @@ final Provider<RelationshipToolDispatcher> relationshipToolDispatcherProvider =
         persistenceLogic: getIt<PersistenceLogic>(),
         entitiesCacheService: getIt<EntitiesCacheService>(),
         taskAgentService: ref.watch(taskAgentServiceProvider),
+        journalDb: ref.watch(journalDbProvider),
       ),
     );
 

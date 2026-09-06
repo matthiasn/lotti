@@ -142,16 +142,16 @@ void main() {
     );
   });
   test(
-    'a failed delete restores the relationship link and refuses undo',
+    'a failed delete preserves the original link and refuses undo',
     () async {
       removeSucceeds = false;
       expect(await service.undo(confirmed, 0), isFalse);
-      verify(
-        () => relationships.linkTask(
+      verifyNever(
+        () => relationships.unlinkTask(
           relationshipId: set.taskId,
           taskId: testTask.id,
         ),
-      ).called(1);
+      );
     },
   );
   test('rejection makes no journal mutation', () async {
@@ -183,24 +183,24 @@ void main() {
   });
 
   test(
-    'an edit during unlink refuses deletion and restores the link',
+    'an edit during validation refuses deletion without touching the link',
     () async {
       var reads = 0;
       when(() => db.journalEntityById(testTask.id)).thenAnswer(
         (_) async => reads++ == 0
             ? testTask
             : testTask.copyWith(
-                data: testTask.data.copyWith(title: 'Edited during unlink'),
+                data: testTask.data.copyWith(title: 'Edited during validation'),
               ),
       );
       expect(await service.undo(confirmed, 0), isFalse);
       expect(removed, isEmpty);
-      verify(
-        () => relationships.linkTask(
+      verifyNever(
+        () => relationships.unlinkTask(
           relationshipId: set.taskId,
           taskId: testTask.id,
         ),
-      ).called(1);
+      );
     },
   );
 
@@ -286,16 +286,33 @@ void main() {
     verifyNever(() => db.journalEntityById(any()));
   });
 
-  test('a refused unlink never deletes the still-linked task', () async {
-    when(
-      () => relationships.unlinkTask(
-        relationshipId: set.taskId,
-        taskId: testTask.id,
-      ),
-    ).thenAnswer((_) async => false);
-    expect(await service.undo(confirmed, 0), isFalse);
-    expect(removed, isEmpty);
-  });
+  for (final throws in [false, true]) {
+    test(
+      'failed link cleanup leaves only a tombstoned task (throws: $throws)',
+      () async {
+        when(
+          () => relationships.unlinkTask(
+            relationshipId: set.taskId,
+            taskId: testTask.id,
+          ),
+        ).thenAnswer((_) async {
+          expect(removed, [
+            testTask,
+          ], reason: 'only unlink after the task is safely removed');
+          if (throws) throw StateError('link write failed');
+          return false;
+        });
+        expect(await service.undo(confirmed, 0), isTrue);
+        expect(removed, [testTask]);
+        verifyNever(
+          () => relationships.linkTask(
+            relationshipId: set.taskId,
+            taskId: testTask.id,
+          ),
+        );
+      },
+    );
+  }
 
   test(
     'a missing decision disables undo and a successful creation keeps a local receipt',
@@ -322,4 +339,26 @@ void main() {
       isNull,
     );
   });
+
+  for (final reverse in [false, true]) {
+    test(
+      'the original relationship link permits undo in either direction (reverse: $reverse)',
+      () async {
+        when(() => db.linksForEntryIdsBidirectional({testTask.id})).thenAnswer(
+          (_) async => [
+            EntryLink.relationship(
+              id: 'relationship-link',
+              fromId: reverse ? testTask.id : set.taskId,
+              toId: reverse ? set.taskId : testTask.id,
+              createdAt: testTask.meta.createdAt,
+              updatedAt: testTask.meta.createdAt,
+              vectorClock: null,
+            ),
+          ],
+        );
+        expect(await service.undo(confirmed, 0), isTrue);
+        expect(removed, [testTask]);
+      },
+    );
+  }
 }

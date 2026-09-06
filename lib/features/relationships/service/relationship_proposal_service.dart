@@ -150,7 +150,8 @@ class RelationshipProposalService {
   }
 
   /// Reopens a rejection, or removes an untouched task and its relationship
-  /// link. A changed task is never overwritten by an old receipt.
+  /// link, in that order. Failed cleanup can leave a link to a tombstoned task;
+  /// failed deletion always preserves the live link. Changed tasks are refused.
   Future<bool> undo(ChangeSetEntity set, int index) async {
     final key = _key(set.id, index);
     if (set.agentId != relationshipAgentIdFor(set.taskId) || !_busy.add(key)) {
@@ -181,23 +182,35 @@ class RelationshipProposalService {
               await _hasAdditionalLinks(original.id, fresh.taskId)) {
             return false;
           }
-          final unlinked = await relationshipRepository.unlinkTask(
-            relationshipId: fresh.taskId,
-            taskId: original.id,
-          );
-          if (!unlinked) return false;
           final latest = await journalDb.journalEntityById(original.id);
-          if (latest == original &&
-              !await _hasAdditionalLinks(original.id, fresh.taskId) &&
-              await taskRemover(current)) {
-            return true;
+          if (latest != original ||
+              await _hasAdditionalLinks(original.id, fresh.taskId) ||
+              !await taskRemover(current)) {
+            return false;
           }
-          // A refused delete must leave the still-live task linked as before.
-          await relationshipRepository.linkTask(
-            relationshipId: fresh.taskId,
-            taskId: original.id,
-          );
-          return false;
+          // A refused deletion must never detach a live task. Once tombstoned,
+          // a leftover link is invisible to relationship task queries and is
+          // safe to clean up independently.
+          try {
+            final unlinked = await relationshipRepository.unlinkTask(
+              relationshipId: fresh.taskId,
+              taskId: original.id,
+            );
+            if (!unlinked) {
+              developer.log(
+                'Task removed; relationship link cleanup was refused',
+                name: 'RelationshipProposalService',
+              );
+            }
+          } catch (error, stackTrace) {
+            developer.log(
+              'Task removed; relationship link cleanup failed',
+              name: 'RelationshipProposalService',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }
+          return true;
         },
       );
       if (reopened) _receipts.remove(key);

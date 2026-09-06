@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -5,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -34,12 +36,14 @@ class RelationshipToolDispatcher {
     required this.persistenceLogic,
     required this.entitiesCacheService,
     required this.taskAgentService,
+    required this.journalDb,
   });
 
   final RelationshipRepository relationshipRepository;
   final PersistenceLogic persistenceLogic;
   final EntitiesCacheService entitiesCacheService;
   final TaskAgentService taskAgentService;
+  final JournalDb journalDb;
 
   Future<ToolExecutionResult> dispatch(
     String toolName,
@@ -79,6 +83,37 @@ class RelationshipToolDispatcher {
         permanent: true,
       );
     }
+    // One journal identity per evidence-backed commitment, independent of
+    // device-local creation timestamps or status UUIDs. Retrying or syncing
+    // concurrent confirmations cannot produce a second task row.
+    final taskId = const Uuid().v5(
+      Namespace.nil.value,
+      jsonEncode([
+        'relationship-task',
+        relationshipId,
+        args['sourceCheckInId'],
+        (args['title'] as String).trim(),
+        quote,
+      ]),
+    );
+    final existing = await journalDb.journalEntityById(taskId);
+    if (existing != null && !existing.isDeleted) {
+      if (existing is! Task) {
+        return _failure('Task identity is unavailable', permanent: true);
+      }
+      final linked = await relationshipRepository.linkTask(
+        relationshipId: relationshipId,
+        taskId: taskId,
+      );
+      // Do not mint an undo receipt from a task a peer may already have edited.
+      return linked
+          ? ToolExecutionResult(
+              success: true,
+              output: 'Task already exists',
+              mutatedEntityId: taskId,
+            )
+          : _failure('Existing task linking failed');
+    }
     final now = clock.now();
     final categoryId = person.meta.categoryId;
     final category = categoryId == null
@@ -86,29 +121,56 @@ class RelationshipToolDispatcher {
         : entitiesCacheService.getCategoryById(categoryId);
     final description = args['description'] as String;
     final evidenceUrl = 'lotti://journal/${evidence.id}';
-    final task = await persistenceLogic.createTaskEntry(
-      data: TaskData(
-        title: (args['title'] as String).trim(),
-        status: TaskStatus.open(
-          id: const Uuid().v4(),
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
-        dateFrom: now,
-        dateTo: now,
-        statusHistory: const [],
-        profileId: category?.defaultProfileId,
-        due: args['dueDate'] == null
-            ? null
-            : DateTime.parse(args['dueDate'] as String),
+    final data = TaskData(
+      title: (args['title'] as String).trim(),
+      status: TaskStatus.open(
+        id: const Uuid().v4(),
+        createdAt: now,
+        utcOffset: now.timeZoneOffset.inMinutes,
       ),
-      entryText: EntryText(
-        plainText: '$description\n\nlotti://journal/${evidence.id}',
-        markdown: '$description\n\n[$evidenceUrl]($evidenceUrl)',
-      ),
-      categoryId: categoryId,
-      private: person.meta.private == true || evidence.meta.private == true,
+      dateFrom: now,
+      dateTo: now,
+      statusHistory: const [],
+      profileId: category?.defaultProfileId,
+      due: args['dueDate'] == null
+          ? null
+          : DateTime.parse(args['dueDate'] as String),
     );
+    final entryText = EntryText(
+      plainText: '$description\n\nlotti://journal/${evidence.id}',
+      markdown: '$description\n\n[$evidenceUrl]($evidenceUrl)',
+    );
+    final private =
+        person.meta.private == true || evidence.meta.private == true;
+    final Task? task;
+    if (existing is Task && existing.isDeleted) {
+      // Undo retains a tombstone. A new confirmation restores the same identity
+      // with a clock descended from that tombstone, so peers accept the restore.
+      final restored = Task(
+        meta: await persistenceLogic.updateMetadata(
+          existing.meta.copyWith(
+            deletedAt: null,
+            categoryId: categoryId,
+            private: private,
+          ),
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: data,
+        entryText: entryText,
+      );
+      task = await persistenceLogic.updateDbEntity(restored) == true
+          ? restored
+          : null;
+    } else {
+      task = await persistenceLogic.createTaskEntry(
+        id: taskId,
+        data: data,
+        entryText: entryText,
+        categoryId: categoryId,
+        private: private,
+      );
+    }
     if (task == null) return _failure('Task creation failed');
     var linked = false;
     try {

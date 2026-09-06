@@ -302,6 +302,7 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     return null;
   }
 
+  /// Builds a task with an optional stable [id] and preserves the insert verdict.
   Future<Task?> createTaskEntryImpl({
     required TaskData data,
     required EntryText entryText,
@@ -309,24 +310,23 @@ class PersistenceCreateOps extends PersistenceCollaboratorBase {
     String? categoryId,
     List<String>? labelIds,
     bool? private,
+    String? id,
   }) async {
     try {
+      final metadata = await logic.createMetadata(
+        dateFrom: data.dateFrom,
+        dateTo: data.dateTo,
+        uuidV5Input: json.encode(data),
+        categoryId: categoryId,
+        labelIds: labelIds,
+        starred: false,
+        private: private,
+      );
       final task = Task(
         data: data,
         entryText: entryText,
-        meta: await logic.createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: json.encode(data),
-          categoryId: categoryId,
-          labelIds: labelIds,
-          starred: false,
-          // Only a link-free creation context supplies this: with a
-          // `linkedId`, `createDbEntity` copies privacy off the linked entity
-          // instead. Without either, a task created from a private parent
-          // persists as public.
-          private: private,
-        ),
+        // With a linked parent, createDbEntity applies the parent's privacy.
+        meta: id == null ? metadata : metadata.copyWith(id: id),
       );
 
       // The write's own verdict, not just the absence of a throw.

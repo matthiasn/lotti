@@ -1,19 +1,31 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 import '../../agents/test_data/change_set_factories.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
   test(
     'reads the relationship scope and deduplicates pending proposals',
     () async {
@@ -138,4 +150,93 @@ void main() {
       },
     );
   }
+
+  test(
+    'provider wiring records a rejection in the relationship ledger',
+    () async {
+      final repository = MockAgentRepository();
+      final sync = MockAgentSyncService();
+      final persistence = MockPersistenceLogic();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<PersistenceLogic>(persistence)
+            ..registerSingleton<EntitiesCacheService>(
+              MockEntitiesCacheService(),
+            );
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      final set = makeTestChangeSet(
+        agentId: relationshipAgentIdFor('person'),
+        taskId: 'person',
+        items: const [
+          ChangeItem(
+            toolName: 'create_and_link_task',
+            args: {'title': 'Pack fish'},
+            humanSummary: 'Create task: Pack fish',
+          ),
+        ],
+      );
+      when(() => sync.repository).thenReturn(repository);
+      when(() => repository.getEntity(set.id)).thenAnswer((_) async => set);
+      when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentSyncServiceProvider.overrideWithValue(sync),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
+          relationshipRepositoryProvider.overrideWithValue(
+            MockRelationshipRepository(),
+          ),
+          journalDbProvider.overrideWithValue(MockJournalDb()),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+        ],
+      );
+      addTearDown(container.dispose);
+      expect(
+        await container
+            .read(relationshipProposalServiceProvider)
+            .reject(set, 0),
+        isTrue,
+      );
+      final writes = verify(() => sync.upsertEntity(captureAny())).captured;
+      final decision = writes.whereType<ChangeDecisionEntity>().single;
+      expect(decision.agentId, set.agentId);
+      expect(decision.taskId, 'person');
+      expect(decision.verdict, ChangeDecisionVerdict.rejected);
+      expect(
+        writes.whereType<ChangeSetEntity>().last.items.single.status,
+        ChangeItemStatus.rejected,
+      );
+      verifyNever(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'disposing highlights cancels pending expiry and repeated highlights reset it',
+    () {
+      fakeAsync((async) {
+        final container = ProviderContainer();
+        final highlighter = container.read(
+          relationshipTaskHighlightProvider.notifier,
+        )..highlight('task');
+        async.elapse(const Duration(seconds: 2));
+        highlighter.highlight('task');
+        async.elapse(const Duration(seconds: 2));
+        expect(container.read(relationshipTaskHighlightProvider), {'task'});
+        expect(async.nonPeriodicTimerCount, 1);
+        container.dispose();
+        expect(async.nonPeriodicTimerCount, 0);
+      });
+    },
+  );
 }

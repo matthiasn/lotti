@@ -43,17 +43,21 @@ void main() {
   late MockPersistenceLogic persistence;
   late MockEntitiesCacheService cache;
   late MockTaskAgentService agents;
+  late MockJournalDb db;
   late RelationshipToolDispatcher dispatcher;
   setUp(() {
     relationships = MockRelationshipRepository();
     persistence = MockPersistenceLogic();
     cache = MockEntitiesCacheService();
     agents = MockTaskAgentService();
+    db = MockJournalDb();
+    when(() => db.journalEntityById(any())).thenAnswer((_) async => null);
     dispatcher = RelationshipToolDispatcher(
       relationshipRepository: relationships,
       persistenceLogic: persistence,
       entitiesCacheService: cache,
       taskAgentService: agents,
+      journalDb: db,
     );
     when(
       () => relationships.getRelationshipById(person.id),
@@ -64,6 +68,7 @@ void main() {
     when(() => cache.getCategoryById('category')).thenReturn(null);
     when(
       () => persistence.createTaskEntry(
+        id: any(named: 'id'),
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
@@ -94,6 +99,7 @@ void main() {
       expect((result as RelationshipTaskCreationResult).task, task);
       final captured = verify(
         () => persistence.createTaskEntry(
+          id: any(named: 'id'),
           data: captureAny(named: 'data'),
           entryText: captureAny(named: 'entryText'),
           categoryId: 'category',
@@ -200,6 +206,7 @@ void main() {
       );
       verifyNever(
         () => persistence.createTaskEntry(
+          id: any(named: 'id'),
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
@@ -248,6 +255,7 @@ void main() {
       final data =
           verify(
                 () => persistence.createTaskEntry(
+                  id: any(named: 'id'),
                   data: captureAny(named: 'data'),
                   entryText: any(named: 'entryText'),
                   categoryId: 'category',
@@ -280,6 +288,7 @@ void main() {
     expect(result.nonRetryable, isTrue);
     verifyNever(
       () => persistence.createTaskEntry(
+        id: any(named: 'id'),
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
@@ -323,6 +332,7 @@ void main() {
     }
     verifyNever(
       () => persistence.createTaskEntry(
+        id: any(named: 'id'),
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
@@ -336,6 +346,7 @@ void main() {
     () async {
       when(
         () => persistence.createTaskEntry(
+          id: any(named: 'id'),
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
@@ -391,6 +402,7 @@ void main() {
       );
       final captured = verify(
         () => persistence.createTaskEntry(
+          id: any(named: 'id'),
           data: captureAny(named: 'data'),
           entryText: captureAny(named: 'entryText'),
           categoryId: 'category',
@@ -402,6 +414,220 @@ void main() {
         (captured[1] as EntryText).markdown,
         contains('(lotti://journal/${evidence.id})'),
       );
+    },
+  );
+
+  test(
+    'two independent devices create the same task identity despite different clocks',
+    () async {
+      final other = RelationshipToolDispatcher(
+        relationshipRepository: relationships,
+        persistenceLogic: persistence,
+        entitiesCacheService: cache,
+        taskAgentService: agents,
+        journalDb: db,
+      );
+      expect(
+        (await withClock(
+          Clock.fixed(now),
+          () => dispatcher.dispatch('create_and_link_task', args, person.id),
+        )).success,
+        isTrue,
+      );
+      expect(
+        (await withClock(
+          Clock.fixed(now.add(const Duration(hours: 2))),
+          () => other.dispatch('create_and_link_task', Map.of(args), person.id),
+        )).success,
+        isTrue,
+      );
+      final captures = verify(
+        () => persistence.createTaskEntry(
+          id: captureAny(named: 'id'),
+          data: captureAny(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
+        ),
+      ).captured;
+      final ids = captures.whereType<String>().toList();
+      final payloads = captures.whereType<TaskData>().toList();
+      expect(ids.first, isNotEmpty);
+      expect(ids.first, ids.last);
+      expect(payloads.first.dateFrom, now);
+      expect(
+        payloads.last.dateFrom,
+        now.add(const Duration(hours: 2)),
+      );
+    },
+  );
+
+  for (final linked in [true, false]) {
+    test(
+      'an existing peer task is never overwritten or made undoable (linked: $linked)',
+      () async {
+        when(() => db.journalEntityById(any())).thenAnswer(
+          (invocation) async => task.copyWith(
+            meta: task.meta.copyWith(
+              id: invocation.positionalArguments.first as String,
+            ),
+            data: task.data.copyWith(title: 'Already edited by a peer'),
+          ),
+        );
+        when(
+          () => relationships.linkTask(
+            relationshipId: person.id,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => linked);
+        final result = await dispatcher.dispatch(
+          'create_and_link_task',
+          args,
+          person.id,
+        );
+        expect(result.success, linked);
+        expect(result, isNot(isA<RelationshipTaskCreationResult>()));
+        verifyNever(
+          () => persistence.createTaskEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
+          ),
+        );
+        verifyNever(() => persistence.updateDbEntity(any()));
+      },
+    );
+  }
+
+  for (final saved in [true, false]) {
+    test(
+      'confirmation after undo restores the tombstoned identity (saved: $saved)',
+      () async {
+        String? identity;
+        when(() => db.journalEntityById(any())).thenAnswer((invocation) async {
+          identity = invocation.positionalArguments.first as String;
+          return task.copyWith(
+            meta: task.meta.copyWith(id: identity!, deletedAt: now),
+          );
+        });
+        when(
+          () => persistence.updateMetadata(
+            any(),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.first as Metadata,
+        );
+        when(
+          () => persistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => saved);
+        when(
+          () => relationships.linkTask(
+            relationshipId: person.id,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => true);
+        final result = await dispatcher.dispatch(
+          'create_and_link_task',
+          args,
+          person.id,
+        );
+        expect(result.success, saved);
+        final restored =
+            verify(
+                  () => persistence.updateDbEntity(captureAny()),
+                ).captured.single
+                as Task;
+        expect(restored.id, identity);
+        expect(restored.meta.deletedAt, isNull);
+        expect(restored.data.title, args['title']);
+        if (saved) {
+          expect((result as RelationshipTaskCreationResult).task, restored);
+        } else {
+          verifyNever(
+            () => relationships.linkTask(
+              relationshipId: person.id,
+              taskId: any(named: 'taskId'),
+            ),
+          );
+        }
+        verifyNever(
+          () => persistence.createTaskEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            private: any(named: 'private'),
+          ),
+        );
+      },
+    );
+  }
+
+  test('a non-task identity collision refuses creation', () async {
+    when(() => db.journalEntityById(any())).thenAnswer((_) async => person);
+    final result = await dispatcher.dispatch(
+      'create_and_link_task',
+      args,
+      person.id,
+    );
+    expect(result.success, isFalse);
+    expect(result.nonRetryable, isTrue);
+    verifyNever(
+      () => persistence.createTaskEntry(
+        id: any(named: 'id'),
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+        private: any(named: 'private'),
+      ),
+    );
+  });
+
+  test(
+    'a failed default agent assignment keeps the successfully linked task',
+    () async {
+      when(() => cache.getCategoryById('category')).thenReturn(
+        CategoryDefinition(
+          id: 'category',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Penguin crew',
+          vectorClock: null,
+          private: false,
+          active: true,
+          defaultProfileId: 'profile',
+          defaultTemplateId: 'template',
+        ),
+      );
+      when(
+        () => agents.createTaskAgent(
+          taskId: task.id,
+          templateId: 'template',
+          profileId: 'profile',
+          setupOrigin: AgentInferenceSetupOrigin.categorySnapshot,
+          setupOriginEntityId: 'category',
+          allowedCategoryIds: {'category'},
+          awaitContent: true,
+          automaticUpdatesEnabled: any(named: 'automaticUpdatesEnabled'),
+        ),
+      ).thenThrow(StateError('agent unavailable'));
+      final result = await dispatcher.dispatch(
+        'create_and_link_task',
+        args,
+        person.id,
+      );
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, task.id);
+      verify(
+        () =>
+            relationships.linkTask(relationshipId: person.id, taskId: task.id),
+      ).called(1);
+      verifyNever(() => persistence.updateDbEntity(any()));
     },
   );
 }

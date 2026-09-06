@@ -123,6 +123,8 @@ class PersistenceLogic implements PersistenceLogicContract {
     comment: comment,
   );
 
+  /// Creates a task, optionally using a stable [id] supplied by its caller.
+  /// Existing identities are never overwritten by this insert-only path.
   Future<Task?> createTaskEntry({
     required TaskData data,
     required EntryText entryText,
@@ -130,6 +132,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     String? categoryId,
     List<String>? labelIds,
     bool? private,
+    String? id,
   }) => _entries.createTaskEntry(
     data: data,
     entryText: entryText,
@@ -137,6 +140,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     categoryId: categoryId,
     labelIds: labelIds,
     private: private,
+    id: id,
   );
 
   Future<AiResponseEntry?> createAiResponseEntry({
@@ -245,6 +249,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     String? categoryId,
     List<String>? labelIds,
     bool? private,
+    String? id,
   }) => _create.createTaskEntryImpl(
     data: data,
     entryText: entryText,
@@ -252,6 +257,7 @@ class PersistenceLogic implements PersistenceLogicContract {
     categoryId: categoryId,
     labelIds: labelIds,
     private: private,
+    id: id,
   );
 
   @override

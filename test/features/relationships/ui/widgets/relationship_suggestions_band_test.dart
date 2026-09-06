@@ -7,6 +7,7 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -321,4 +322,109 @@ void main() {
       verify(() => service.undoById(row.changeSet.id, 0)).called(1);
     },
   );
+
+  testWidgets(
+    'bulk confirmation highlights each created task and removes its row',
+    (tester) async {
+      final rows = [proposal(0), proposal(1)];
+      when(() => service.confirm(any(), any())).thenAnswer((invocation) async {
+        final set = invocation.positionalArguments.first as ChangeSetEntity;
+        return ToolExecutionResult(
+          success: true,
+          output: 'Created',
+          mutatedEntityId: 'task-${set.id}',
+        );
+      });
+      var snapshot = RelationshipProposalSnapshot(
+        suggestions: UnifiedSuggestionList(open: rows, activity: const []),
+      );
+      await pump(tester, () => snapshot);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(RelationshipSuggestionsBand)),
+      );
+      await tester.tap(find.text('Confirm all'));
+      await tester.pump();
+      expect(container.read(relationshipTaskHighlightProvider), {
+        'task-set-0',
+        'task-set-1',
+      });
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('Commitment 0'), findsNothing);
+      expect(find.textContaining('Commitment 1'), findsNothing);
+      snapshot = const RelationshipProposalSnapshot.empty();
+      container.invalidate(relationshipSuggestionListProvider('person'));
+      await tester.pump();
+      await tester.pump();
+      verify(() => service.confirm(rows[0].changeSet, 0)).called(1);
+      verify(() => service.confirm(rows[1].changeSet, 0)).called(1);
+      await tester.pump(const Duration(seconds: 2));
+    },
+  );
+
+  testWidgets('a rejected task proposal disappears without creating a task', (
+    tester,
+  ) async {
+    final row = proposal(0);
+    when(() => service.reject(row.changeSet, 0)).thenAnswer((_) async => true);
+    await pump(
+      tester,
+      () => RelationshipProposalSnapshot(
+        suggestions: UnifiedSuggestionList(open: [row], activity: const []),
+      ),
+    );
+    await tester.tap(find.byIcon(LottiIcons.close).first);
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.textContaining('Commitment 0'), findsNothing);
+    verify(() => service.reject(row.changeSet, 0)).called(1);
+    verifyNever(() => service.confirm(any(), any()));
+  });
+
+  for (final throws in [false, true]) {
+    testWidgets(
+      'refused undo keeps handled history and explains failure (throws: $throws)',
+      (tester) async {
+        final row = proposal(0);
+        final entry = LedgerEntry(
+          changeSetId: row.changeSet.id,
+          itemIndex: 0,
+          toolName: row.item.toolName,
+          args: {...row.item.args, 'dueDate': '2026-09-09'},
+          humanSummary: row.item.humanSummary,
+          fingerprint: row.fingerprint,
+          status: ChangeItemStatus.rejected,
+          createdAt: row.changeSet.createdAt,
+        );
+        when(() => service.undoById(row.changeSet.id, 0)).thenAnswer((_) async {
+          if (throws) throw StateError('write failed');
+          return false;
+        });
+        await pump(
+          tester,
+          () => RelationshipProposalSnapshot(
+            suggestions: UnifiedSuggestionList(
+              open: const [],
+              activity: [entry],
+            ),
+          ),
+          showHistory: true,
+        );
+        await tester.tap(find.textContaining('History'));
+        await tester.pumpAndSettle();
+        expect(find.text('Due: Sep 9, 2026'), findsOneWidget);
+        await tester.tap(find.text('Undo'));
+        await tester.pump();
+        expect(
+          find.text('Could not undo. The task may have changed.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Commitment 0'), findsOneWidget);
+        verify(() => service.undoById(row.changeSet.id, 0)).called(1);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  }
 }
