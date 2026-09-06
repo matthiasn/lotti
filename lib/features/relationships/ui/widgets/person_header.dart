@@ -479,63 +479,7 @@ List<Widget> personHeaderPills(
   final messages = context.messages;
   final pill = peopleCadencePillOf(item);
   final quiet = tokens.colors.text.mediumEmphasis;
-  final pills = <Widget>[];
-
-  switch (pill.kind) {
-    case PeopleCadencePillKind.overdue:
-      pills.add(
-        DsPill(
-          key: const ValueKey('person-pill-due'),
-          variant: DsPillVariant.tinted,
-          shape: DsPillShape.tag,
-          color: tokens.colors.alert.warning.defaultColor,
-          labelColor: tokens.colors.text.highEmphasis,
-          label: messages.relationshipDueSince(
-            relationshipWeekdayLabelOf(
-              context,
-              peopleDueDateOf(item)!,
-            ),
-            pill.daysOver,
-          ),
-        ),
-      );
-    case PeopleCadencePillKind.dueSoon || PeopleCadencePillKind.onTrack:
-      pills.add(
-        DsPill(
-          key: const ValueKey('person-pill-cadence'),
-          variant: DsPillVariant.filled,
-          shape: DsPillShape.tag,
-          leading: Icon(LottiIcons.confirm, size: IconSizes.s, color: quiet),
-          labelColor: quiet,
-          // The effective cadence, not the stored one: an enrolled person
-          // with no cadence set is on the runtime's default, and the pill
-          // says which rhythm actually governs the due date.
-          label: messages.relationshipOnTrackCadence(
-            relationshipCadenceLabel(
-              context,
-              effectiveCadenceDaysOf(item.relationship),
-            ),
-          ),
-        ),
-      );
-    case PeopleCadencePillKind.notEnrolled ||
-        PeopleCadencePillKind.dormant ||
-        PeopleCadencePillKind.archived:
-      pills.add(
-        DsPill(
-          key: const ValueKey('person-pill-status'),
-          variant: DsPillVariant.filled,
-          shape: DsPillShape.tag,
-          labelColor: quiet,
-          label: switch (pill.kind) {
-            PeopleCadencePillKind.dormant => messages.relationshipStatusDormant,
-            PeopleCadencePillKind.archived =>
-              messages.relationshipStatusArchived,
-            _ => messages.relationshipNotEnrolled,
-          },
-        ),
-      );
-  }
+  final pills = <Widget>[relationshipCadencePill(context, item)];
 
   if (healthBand != null) {
     pills.add(
@@ -568,4 +512,64 @@ List<Widget> personHeaderPills(
     );
   }
   return pills;
+}
+
+/// The cadence fact as one pill, from the list model's own rules so the
+/// header, the agent card and the list never disagree about *due*: a
+/// warning-tinted `Due since {day} · {n} days over` when lapsed, `On track ·
+/// {cadence}` (the **effective** cadence, i.e. the runtime default when none
+/// is set) while enrolled, and the status word for everyone else.
+///
+/// Keyed per kind (`<keyPrefix>-due` / `-cadence` / `-status`) so a test can
+/// say which fact it expects rather than which text; the header and the
+/// agent card show the same pill under different prefixes.
+Widget relationshipCadencePill(
+  BuildContext context,
+  RelationshipListItem item, {
+  String keyPrefix = 'person-pill',
+}) {
+  final tokens = context.designTokens;
+  final messages = context.messages;
+  final pill = peopleCadencePillOf(item);
+  final quiet = tokens.colors.text.mediumEmphasis;
+
+  return switch (pill.kind) {
+    PeopleCadencePillKind.overdue => DsPill(
+      key: ValueKey('$keyPrefix-due'),
+      variant: DsPillVariant.tinted,
+      shape: DsPillShape.tag,
+      color: tokens.colors.alert.warning.defaultColor,
+      labelColor: tokens.colors.text.highEmphasis,
+      label: messages.relationshipDueSince(
+        relationshipWeekdayLabelOf(context, peopleDueDateOf(item)!),
+        pill.daysOver,
+      ),
+    ),
+    PeopleCadencePillKind.dueSoon || PeopleCadencePillKind.onTrack => DsPill(
+      key: ValueKey('$keyPrefix-cadence'),
+      variant: DsPillVariant.filled,
+      shape: DsPillShape.tag,
+      leading: Icon(LottiIcons.confirm, size: IconSizes.s, color: quiet),
+      labelColor: quiet,
+      label: messages.relationshipOnTrackCadence(
+        relationshipCadenceLabel(
+          context,
+          effectiveCadenceDaysOf(item.relationship),
+        ),
+      ),
+    ),
+    PeopleCadencePillKind.notEnrolled ||
+    PeopleCadencePillKind.dormant ||
+    PeopleCadencePillKind.archived => DsPill(
+      key: ValueKey('$keyPrefix-status'),
+      variant: DsPillVariant.filled,
+      shape: DsPillShape.tag,
+      labelColor: quiet,
+      label: switch (pill.kind) {
+        PeopleCadencePillKind.dormant => messages.relationshipStatusDormant,
+        PeopleCadencePillKind.archived => messages.relationshipStatusArchived,
+        _ => messages.relationshipNotEnrolled,
+      },
+    ),
+  };
 }

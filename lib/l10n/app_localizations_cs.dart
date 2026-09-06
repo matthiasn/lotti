@@ -11040,7 +11040,102 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipAddChannelButton => 'Přidat kontakt';
 
   @override
-  String get relationshipAsk => 'Zeptat';
+  String get relationshipAgentBriefNow => 'Briefing teď';
+
+  @override
+  String relationshipAgentCall(String name) {
+    return 'Zavolat $name';
+  }
+
+  @override
+  String relationshipAgentFailed(String time) {
+    return 'Selhalo · $time';
+  }
+
+  @override
+  String get relationshipAgentFailedBody =>
+      'Poslední běh briefingu selhal. Podrobnosti najdeš na kartě Aktivita.';
+
+  @override
+  String get relationshipAgentFailedNoModel =>
+      'Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.';
+
+  @override
+  String relationshipAgentLastRunFailed(String time) {
+    return 'poslední běh selhal · $time';
+  }
+
+  @override
+  String get relationshipAgentMarkImportant => 'Označit jako důležité';
+
+  @override
+  String relationshipAgentNextLook(String day) {
+    return 'Další pohled $day';
+  }
+
+  @override
+  String get relationshipAgentNoAgent => 'žádný agent pro tuto osobu';
+
+  @override
+  String relationshipAgentNoBriefingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Zatím žádný briefing. „Briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
+      few:
+          'Zatím žádný briefing. „Briefing teď“ ho napíše z tvých $count check-inů; telefon ani e-mail nikdy nevidí.',
+      one:
+          'Zatím žádný briefing. „Briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.',
+      zero:
+          'Zatím žádný briefing. „Briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipAgentNotEnrolledBody(String name) {
+    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Vypnuto ji drží úplně mimo AI.';
+  }
+
+  @override
+  String relationshipAgentOutOfDateNewCheckIn(String day) {
+    return 'Zastaralé · nový check-in $day';
+  }
+
+  @override
+  String get relationshipAgentPausedBody =>
+      'Briefingy se pozastaví, dokud je tato osoba neaktivní nebo archivovaná.';
+
+  @override
+  String relationshipAgentReading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Čte $count check-inů…',
+      few: 'Čte $count check-iny…',
+      one: 'Čte 1 check-in…',
+      zero: 'Čte osobu…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipAgentRunning => 'Běží';
+
+  @override
+  String relationshipAgentRunningSince(String time) {
+    return 'Běží · spuštěno $time';
+  }
+
+  @override
+  String get relationshipAgentTryAgain => 'Zkusit znovu';
+
+  @override
+  String get relationshipAgentWatching => 'agent sleduje · zatím žádný běh';
+
+  @override
+  String get relationshipAgentWriting => 'píše briefing…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
@@ -11061,10 +11156,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipBriefingEmpty =>
-      'Zatím žádný briefing — Shrň mi to ho připraví z tvých check-inů.';
-
-  @override
   String get relationshipBriefingRequested =>
       'Briefing vyžádán — za chvíli se tu objeví.';
 
@@ -11074,12 +11165,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipBriefingTitle => 'Briefing';
-
-  @override
-  String get relationshipBriefMeAgain => 'Shrnout znovu';
-
-  @override
-  String get relationshipBriefMeButton => 'Shrň mi to';
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -11126,11 +11211,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
 
   @override
-  String relationshipCheckedInLabel(String date) {
-    return 'Záznam $date';
-  }
-
-  @override
   String get relationshipCheckInReminderBody => 'Dobrá chvíle se ozvat.';
 
   @override
@@ -11140,11 +11220,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipCheckInsLabel => 'Záznamy kontaktů';
-
-  @override
-  String relationshipCheckInTitle(String name) {
-    return 'Záznam · $name';
-  }
 
   @override
   String get relationshipContactCardAction => 'Vizitka';
@@ -11346,11 +11421,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipJustAdded => 'Právě přidáno';
 
   @override
-  String relationshipLastCheckInLabel(String date) {
-    return 'Poslední záznam $date';
-  }
-
-  @override
   String relationshipLastSpoke(String time) {
     return 'naposledy mluvili $time';
   }
@@ -11368,14 +11438,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipLogCheckIn => 'Zaznamenat kontakt';
 
   @override
-  String get relationshipLottisRead => 'Lottiho odhad';
-
-  @override
-  String relationshipLottisReadAsOf(String time) {
-    return 'k $time';
-  }
-
-  @override
   String get relationshipMoreActions => 'Další akce';
 
   @override
@@ -11383,11 +11445,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipNameRequired => 'Jméno je povinné';
-
-  @override
-  String relationshipNextByDay(String day) {
-    return 'příští do $day';
-  }
 
   @override
   String relationshipNextDueOn(String day) {
@@ -11412,9 +11469,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
-
-  @override
-  String get relationshipNudgesOn => 'připomínky zapnuty';
 
   @override
   String relationshipOnTrackCadence(String cadence) {
@@ -11467,18 +11521,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String relationshipQuietForDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dní',
-      few: '$count dny',
-      one: '1 den',
-    );
-    return '$_temp0 bez kontaktu';
-  }
-
-  @override
   String get relationshipReachPrivacy =>
       'Zůstává v tomto zařízení · nikdy se nesdílí s AI';
 
@@ -11487,9 +11529,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipRelinkContact => 'Propojit jiný kontakt';
-
-  @override
-  String get relationshipSeeAllCheckIns => 'Zobrazit všechny záznamy';
 
   @override
   String get relationshipsEmptyState =>
@@ -11570,12 +11609,6 @@ class AppLocalizationsCs extends AppLocalizations {
   ) {
     return '$type · $time · $cadence';
   }
-
-  @override
-  String get relationshipStayingInTouch => 'Udržovat kontakt';
-
-  @override
-  String get relationshipStayInTouch => 'Udržovat kontakt';
 
   @override
   String relationshipTasksLinkedCount(int count) {

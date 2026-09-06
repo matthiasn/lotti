@@ -56,12 +56,16 @@ the `enable_relationships` flag):
   (plan v2 phase 5): a lapsed cadence, a check-in newer than the current
   briefing, a chat message, or an explicit "Brief me" triggers one AI run
   that writes an executive briefing (with a health band) and at most one
-  check-in banner. The detail page mounts the briefing card — the *same* AI
-  panel as the task agent's section and the goal agent's read, so the
-  briefing renders as Markdown and its "Read more" and "Open agent
-  internals" behave exactly as they do on a task ("Brief me" names the cloud
-  provider first, per ADR 0037) — and `/people/<id>/chat`
-  opens the per-person agent chat. A briefing runs on the AI profile of the
+  check-in banner. The person page mounts the relationship agent's card —
+  the *same* AI panel as the task agent's section and the goal agent's read,
+  so the briefing renders as Markdown and "Read more" and "Open agent
+  internals" behave exactly as they do on a task — in one of seven faces:
+  not enrolled (a plain card with *Mark important*), no briefing yet (*Brief
+  now*, which names the cloud provider first, per ADR 0037), running,
+  failed (the reason, with *Choose a model* or *Try again* as the fix),
+  current (*Update now*, the cost so far, the model row), out of date, and
+  due (*Log check-in* · *Call*). `/people/<id>/chat`
+  opens the per-person agent chat from the page's hero. A briefing runs on the AI profile of the
   person's category unless the person has one of their own. Banners surface through the
   kind-agnostic channel (`lib/features/nudges/`), tapping through to the
   person.

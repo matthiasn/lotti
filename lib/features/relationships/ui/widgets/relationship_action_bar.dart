@@ -3,21 +3,15 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
-import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-
-/// A contact channel paired with the one action the platform will service
-/// for it — what the action bar's third control launches.
-typedef ReachableChannel = ({ContactChannel channel, ContactAction action});
 
 /// The person page's sticky bottom bar (design 2026-09-06 §2–3), replacing
 /// the floating button: *Log check-in* · mic · the platform's actionable
@@ -76,17 +70,10 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
 
   Future<void> _resolveReachable() async {
     final generation = ++_resolution;
-    final launcher = ref.read(contactLauncherProvider);
-    ReachableChannel? found;
-    for (final channel in widget.relationship.data.contactChannels) {
-      for (final action in contactActionsFor(channel.type)) {
-        if (await launcher.canLaunch(channel, action)) {
-          found = (channel: channel, action: action);
-          break;
-        }
-      }
-      if (found != null) break;
-    }
+    final found = await firstReachableChannel(
+      ref.read(contactLauncherProvider),
+      widget.relationship.data.contactChannels,
+    );
     if (!mounted || generation != _resolution) return;
     setState(() => _reachable = found);
   }

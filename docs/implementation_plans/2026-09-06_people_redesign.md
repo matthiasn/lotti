@@ -57,10 +57,13 @@ People list gains grouping, a summary card and truthful pills.
 ### C · Relationship agent card
 - States: not enrolled (Mark important), enrolled without briefing (Next look · Brief
   now), thinking, current (cost pill, freshness, controls footer with Update now,
-  automatic updates, model row), out of date, failed (reason inline, Choose a model),
-  due (Log check-in · Call).
-- Suggestions band over the generic change-set ledger, hidden while empty; the agent
-  tools that would fill it (schedule a call, create a task) are a separate project.
+  model row), out of date, failed (reason inline, Choose a model), due (Log check-in ·
+  Call).
+- Left out, on purpose: the *Automatic updates* switch (the relationship runtime does
+  not read the flag, so the switch would lie), *Cancel* on a running wake (no cancel
+  API exists for a running wake), and the suggestions band — the generic change-set
+  ledger is keyed by task and nothing produces relationship proposals yet; it comes
+  with the agent tools (schedule a call, create a task), a separate project.
 
 ### D · Check-in capture with duration
 - Order: how it felt → what you talked about (+ Speak instead) → when and how long

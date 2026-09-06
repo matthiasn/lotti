@@ -178,17 +178,15 @@ class RelationshipDetailsPage extends ConsumerWidget {
     final healthBand = report == null
         ? null
         : relationshipHealthMetricsFromReport(report)?.band;
-    // The card renders nothing for someone not enrolled and never briefed;
-    // the gap that would follow it has to know that too.
-    final showBriefing = report != null || data.important;
-
     final sections = <Widget>[
       PersonHeaderBlock(
         item: item,
         categoryName: categoryName,
         healthBand: healthBand,
       ),
-      if (showBriefing) RelationshipBriefingCard(relationship: relationship),
+      // Always present: an unenrolled person gets the card that explains
+      // what *important* turns on, with the switch as its action.
+      RelationshipBriefingCard(relationship: relationship, checkIns: checkIns),
       if (NextTimeCard.hasContent(latest)) NextTimeCard(latest: latest),
     ];
 

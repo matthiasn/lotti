@@ -1,22 +1,42 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
+import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/relative_age_label.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The localized label of a health band — shared by the chip and any
@@ -61,25 +81,82 @@ AgentReportEntity? currentRelationshipReport(Object? report) =>
     ? report
     : null;
 
-/// The executive briefing on the person's detail page (plan v2 phase 5
-/// item 5): the latest report's health chip and TLDR, the expandable full
-/// briefing, the explicit "Brief me" trigger — with provider disclosure
-/// when the resolved route is not local (ADR 0037) — and the chat entry.
+/// What the relationship agent card shows (design 2026-09-06 §4): one of
+/// seven faces, decided once per build from the runtime's own signals.
+enum RelationshipAgentCardState {
+  /// Not important, or dormant/archived: no agent watches this person.
+  notEnrolled,
+
+  /// Enrolled, the agent has never written a briefing.
+  noBriefing,
+
+  /// A wake is running right now.
+  running,
+
+  /// The last wake failed and nothing newer succeeded.
+  failed,
+
+  /// The briefing is fresh.
+  current,
+
+  /// Evidence arrived after the briefing was written.
+  outOfDate,
+}
+
+/// The card's state from the runtime's signals. Pure, so the decision is
+/// testable as a table: running beats everything but enrolment, a failure
+/// counts only while it is newer than the briefing, and staleness needs a
+/// briefing to be stale.
+RelationshipAgentCardState relationshipAgentCardStateOf({
+  required bool enrolled,
+  required bool isRunning,
+  required AgentReportEntity? report,
+  required AgentStateEntity? state,
+}) {
+  if (!enrolled) return RelationshipAgentCardState.notEnrolled;
+  if (isRunning) return RelationshipAgentCardState.running;
+  final failures = state?.consecutiveFailureCount ?? 0;
+  final lastWake = state?.lastWakeAt;
+  final failedSinceReport =
+      failures > 0 &&
+      (report == null ||
+          (lastWake != null && lastWake.isAfter(report.createdAt)));
+  if (failedSinceReport) return RelationshipAgentCardState.failed;
+  if (report == null) return RelationshipAgentCardState.noBriefing;
+  if (state?.isReportStale ?? false) {
+    return RelationshipAgentCardState.outOfDate;
+  }
+  return RelationshipAgentCardState.current;
+}
+
+/// The relationship agent's card on the person's page (plan v2 phase 5,
+/// design 2026-09-06 §4): the same AI panel as the task agent's section and
+/// the goal agent's read — [aiCardDecoration] chrome, [TldrHeader] identity
+/// (tapping it opens the agent internals), [TldrBody] for the briefing prose
+/// — with the cadence fact and the health band as pills, and a footer that
+/// says what the agent is doing and offers the one thing to do about it:
+/// *Brief now* before the first briefing, *Update now* when it is current or
+/// out of date, *Choose a model* or *Try again* after a failure, and *Log
+/// check-in* · *Call* while the cadence is lapsed. An unenrolled person gets
+/// a plain card explaining what *important* turns on, with the switch as
+/// the action.
 ///
-/// It is the SAME panel as the task agent's section on Task Details and the
-/// goal agent's read: [aiCardDecoration] chrome, [TldrHeader] identity
-/// (tapping it opens the agent internals), and [TldrBody] for the report
-/// prose — which means the briefing renders as Markdown rather than as the
-/// raw asterisks and hashes the model wrote, and its Read more is the same
-/// control, in the same place, as the one on a task.
-///
-/// Renders nothing while the person is not important and no briefing
-/// exists yet: the `important` flag is the consent switch, and an inert
-/// card would advertise a feature the person is not enrolled in.
+/// The chat entry lives in the page's hero, not here. Automatic updates are
+/// not offered as a switch because the relationship runtime does not read
+/// that flag; the model row opens the same setup sheet as on a task.
 class RelationshipBriefingCard extends ConsumerStatefulWidget {
-  const RelationshipBriefingCard({required this.relationship, super.key});
+  const RelationshipBriefingCard({
+    required this.relationship,
+    required this.checkIns,
+    super.key,
+  });
 
   final RelationshipEntry relationship;
+
+  /// Newest first. The latest one drives the cadence pill and names the day
+  /// of the "new check-in" that made a briefing out of date; the count feeds
+  /// the empty and running states.
+  final List<CheckInEntry> checkIns;
 
   @override
   ConsumerState<RelationshipBriefingCard> createState() =>
@@ -90,8 +167,41 @@ class _RelationshipBriefingCardState
     extends ConsumerState<RelationshipBriefingCard> {
   bool _expanded = false;
   bool _requesting = false;
+  bool _marking = false;
+
+  /// The channel the due state's *Call* offers, resolved like the action
+  /// bar's; null until asked and when nothing is launchable.
+  ReachableChannel? _reachable;
+  int _resolution = 0;
 
   String get _agentId => relationshipAgentIdFor(widget.relationship.meta.id);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_resolveReachable());
+  }
+
+  @override
+  void didUpdateWidget(RelationshipBriefingCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!listEquals(
+      oldWidget.relationship.data.contactChannels,
+      widget.relationship.data.contactChannels,
+    )) {
+      unawaited(_resolveReachable());
+    }
+  }
+
+  Future<void> _resolveReachable() async {
+    final generation = ++_resolution;
+    final found = await firstReachableChannel(
+      ref.read(contactLauncherProvider),
+      widget.relationship.data.contactChannels,
+    );
+    if (!mounted || generation != _resolution) return;
+    setState(() => _reachable = found);
+  }
 
   void _openInternals(String? agentName) {
     Navigator.of(context).push(
@@ -103,6 +213,8 @@ class _RelationshipBriefingCardState
     );
   }
 
+  /// Asks for a briefing: the first one, an update, or a retry after a
+  /// failure — one path, one trigger token.
   Future<void> _briefMe() async {
     if (_requesting) return;
     final messages = context.messages;
@@ -150,17 +262,7 @@ class _RelationshipBriefingCardState
         tone: DesignSystemToastTone.success,
         title: messages.relationshipBriefingRequested,
       );
-    } catch (error, stackTrace) {
-      // The toast is generic on purpose (the card has no inline error
-      // state yet); the reason — most often "no inference provider
-      // resolves" — must at least reach the log, or the failure is
-      // undiagnosable from a device.
-      developer.log(
-        'Failed to request a briefing',
-        name: 'RelationshipBriefingCard',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    } catch (_) {
       if (!mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.error,
@@ -171,181 +273,705 @@ class _RelationshipBriefingCardState
     }
   }
 
+  /// The consent switch, from the card: marking the person important is
+  /// what creates their agent (ADR 0039).
+  Future<void> _markImportant() async {
+    if (_marking) return;
+    final messages = context.messages;
+    setState(() => _marking = true);
+    try {
+      final relationship = widget.relationship;
+      final saved = await ref
+          .read(relationshipRepositoryProvider)
+          .updateRelationship(
+            relationship.copyWith(
+              data: relationship.data.copyWith(important: true),
+            ),
+          );
+      if (!saved && mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: messages.relationshipErrorUpdateFailed,
+        );
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to mark the person important',
+        name: 'RelationshipBriefingCard',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: messages.relationshipErrorUpdateFailed,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _marking = false);
+    }
+  }
+
+  Future<void> _logCheckIn() => showCheckInCaptureSheet(
+    context: context,
+    relationshipId: widget.relationship.meta.id,
+  );
+
+  Future<void> _call() {
+    final reachable = _reachable;
+    if (reachable == null) return Future.value();
+    return launchContactAction(
+      context,
+      ref,
+      relationshipId: widget.relationship.meta.id,
+      channel: reachable.channel,
+      action: reachable.action,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final relationship = widget.relationship;
+    final data = relationship.data;
+    final item = (
+      relationship: relationship,
+      lastCheckIn: widget.checkIns.firstOrNull,
+    );
+    final enrolled = isEnrolled(relationship);
+    final agentId = _agentId;
+
+    final report = currentRelationshipReport(
+      ref.watch(agentReportProvider(agentId)).value,
+    );
+    final state = ref
+        .watch(agentStateProvider(agentId))
+        .value
+        ?.mapOrNull(agentState: (value) => value);
+    final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
+    final cardState = relationshipAgentCardStateOf(
+      enrolled: enrolled,
+      isRunning: isRunning,
+      report: report,
+      state: state,
+    );
+
+    if (cardState == RelationshipAgentCardState.notEnrolled) {
+      return _NotEnrolledCard(
+        item: item,
+        marking: _marking,
+        onMarkImportant: data.important ? null : _markImportant,
+      );
+    }
+
+    final health = report == null
+        ? null
+        : relationshipHealthMetricsFromReport(report);
+    final setup = ref.watch(taskAgentResolvedSetupProvider(agentId)).value;
+    final provenance = report == null
+        ? null
+        : ReportInferenceProvenance.tryRead(report.provenance);
+    final identityData = TaskAgentModelIdentityViewData.fromResolution(
+      setup: setup,
+      reportProvenance: provenance,
+      hasReport: report != null,
+    );
+    final modelMissing =
+        identityData.presentation == TaskAgentIdentityPresentation.disabled ||
+        identityData.presentation == TaskAgentIdentityPresentation.broken;
+    final usage = ref.watch(agentTokenUsageSummariesProvider(agentId)).value;
+    final totalTokens =
+        usage?.fold<int>(0, (sum, summary) => sum + summary.totalTokens) ?? 0;
+    final identity = ref.watch(agentIdentityProvider(agentId)).value;
+    // The relationship agent is NAMED after the person it watches, and this
+    // card sits under a hero already carrying that name — so the internals
+    // panel gets the name, and the header's subtitle line says what the
+    // agent is doing instead.
+    final agentName = identity is AgentIdentityEntity
+        ? identity.displayName.trim()
+        : null;
+    final overdue =
+        peopleCadencePillOf(item).kind == PeopleCadencePillKind.overdue;
+
+    return _AgentCard(
+      state: cardState,
+      item: item,
+      checkInCount: widget.checkIns.length,
+      report: report,
+      agentState: state,
+      health: health,
+      totalTokens: totalTokens,
+      identityData: identityData,
+      modelMissing: modelMissing,
+      overdue: overdue,
+      reachable: _reachable,
+      expanded: _expanded,
+      requesting: _requesting,
+      onToggleExpanded: () => setState(() => _expanded = !_expanded),
+      onOpenInternals: () => _openInternals(agentName),
+      onBrief: _requesting ? null : _briefMe,
+      onChooseModel: () => AgentModelSheet.show(
+        context: context,
+        entityId: relationship.meta.id,
+        agentId: agentId,
+      ),
+      onLogCheckIn: _logCheckIn,
+      onCall: _reachable == null ? null : _call,
+    );
+  }
+}
+
+/// The plain card for a person without an agent: what *important* turns
+/// on, and the switch as the action. No AI chrome — nothing here is the
+/// agent's.
+class _NotEnrolledCard extends StatelessWidget {
+  const _NotEnrolledCard({
+    required this.item,
+    required this.marking,
+    required this.onMarkImportant,
+  });
+
+  final RelationshipListItem item;
+  final bool marking;
+
+  /// Null while the person is important but dormant or archived: the
+  /// switch is already on, and the card says why nothing happens instead.
+  final VoidCallback? onMarkImportant;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
     final messages = context.messages;
-    final current = currentRelationshipReport(
-      ref.watch(agentReportProvider(_agentId)).value,
-    );
-    final health = current == null
-        ? null
-        : relationshipHealthMetricsFromReport(current);
+    final data = item.relationship.data;
+    final paused = onMarkImportant == null;
 
-    if (current == null && !widget.relationship.data.important) {
-      return const SizedBox.shrink();
-    }
-
-    final identity = ref.watch(agentIdentityProvider(_agentId)).value;
-    // The relationship agent is NAMED after the person it watches, and this
-    // card sits under an app bar already carrying that name — printing it
-    // again as the card's subtitle says nothing and reads as a duplicate.
-    // A name that has diverged (a synced rename not yet applied) is still
-    // worth showing, so the check is equality, not the kind.
-    final rawAgentName = identity is AgentIdentityEntity
-        ? identity.displayName.trim()
-        : null;
-    final agentName = rawAgentName == widget.relationship.data.title.trim()
-        ? null
-        : rawAgentName;
-
-    return DecoratedBox(
+    return DesignSystemSectionCard(
       key: const ValueKey('relationship-briefing-card'),
-      // The chrome every AI panel shares — see [aiCardDecoration].
-      decoration: aiCardDecoration(context),
-      child: ClipRRect(
-        borderRadius: aiCardRadius(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TldrHeader(
-              title: messages.relationshipBriefingTitle,
-              agentName: agentName,
-              onAgentTap: () => _openInternals(agentName),
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.cardPadding,
+              tokens.spacing.step4,
+              tokens.spacing.cardPadding,
+              0,
             ),
-            // Deliberately NOT in the header's trailing rail, where the
-            // goal card keeps its meta: that rail is capped at half the
-            // header, and a band label is a two-word verdict that a longer
-            // locale or a raised text scale pushes past the cap — measured,
-            // "Braucht Aufmerksamkeit" already ellipsizes on a 320 px phone
-            // at 1.0x. Truncating the card's headline judgement to make
-            // room for the title is the wrong trade, so the pill takes the
-            // full content width above the prose it qualifies.
-            if (health != null)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.cardPadding,
-                  0,
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.step3,
-                ),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Tooltip(
-                    message: health.rationale,
-                    child: DsPill(
-                      key: const ValueKey('relationship-health-chip'),
-                      variant: DsPillVariant.tinted,
-                      shape: DsPillShape.tag,
-                      color: relationshipHealthBandColor(tokens, health.band),
-                      // The band accent as text on its own tint is a
-                      // contrast failure; the colour identity rides the
-                      // tint, as it does on the task status tag.
-                      labelColor: tokens.colors.text.highEmphasis,
-                      label: relationshipHealthBandLabel(
-                        context,
-                        health.band,
-                      ),
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  width: tokens.spacing.step8,
+                  height: tokens.spacing.step8,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: tokens.colors.background.level03,
+                    borderRadius: BorderRadius.circular(tokens.radii.m),
+                  ),
+                  child: Icon(
+                    LottiIcons.people,
+                    size: tokens.spacing.step6,
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
-              ),
-            Padding(
-              // No bottom inset: TldrBody's disclosure row carries the
-              // trailing optical gap inside its tap target, and supplies an
-              // explicit one when it renders no row at all.
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.cardPadding,
-              ),
-              child: current == null
-                  ? Padding(
-                      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-                      child: Text(
-                        messages.relationshipBriefingEmpty,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: ai.metaText,
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        messages.relationshipBriefingTitle,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(color: tokens.colors.text.highEmphasis),
+                      ),
+                      Text(
+                        messages.relationshipAgentNoAgent,
+                        key: const ValueKey('relationship-agent-subtitle'),
+                        style: relationshipTimestampStyle(
+                          tokens,
+                          color: tokens.colors.text.lowEmphasis,
                         ),
                       ),
-                    )
-                  : TldrBody(
-                      key: const ValueKey('relationship-briefing-body'),
-                      disclosureKey: const ValueKey(
-                        'relationship-briefing-expand',
-                      ),
-                      tldr: resolveReportTldr(current),
-                      expanded: _expanded,
-                      additionalReport: resolveReportAdditional(current),
-                      onToggle: () => setState(() => _expanded = !_expanded),
-                      onOpenInternals: () => _openInternals(agentName),
-                    ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            _BriefingActionsFooter(
-              onChat: () => beamToNamed(
-                '/people/${widget.relationship.meta.id}/chat',
-              ),
-              onBriefMe: _requesting ? null : _briefMe,
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.cardPadding,
+              tokens.spacing.step3,
+              tokens.spacing.cardPadding,
+              tokens.spacing.step4,
             ),
-          ],
-        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                relationshipCadencePill(
+                  context,
+                  item,
+                  keyPrefix: 'relationship-agent-pill',
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                Text(
+                  paused
+                      ? messages.relationshipAgentPausedBody
+                      : messages.relationshipAgentNotEnrolledBody(
+                          data.nickname ?? data.title,
+                        ),
+                  key: const ValueKey('relationship-agent-body'),
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _AgentCardFooter(
+            status: _StatusLine(
+              icon: LottiIcons.info,
+              label: paused
+                  ? relationshipStatusLabel(context, data.status)
+                  : messages.relationshipNotEnrolled,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            action: paused
+                ? null
+                : DesignSystemButton(
+                    key: const ValueKey('relationship-agent-mark-important'),
+                    label: messages.relationshipAgentMarkImportant,
+                    isLoading: marking,
+                    onPressed: marking ? null : onMarkImportant,
+                  ),
+            plain: true,
+          ),
+        ],
       ),
     );
   }
 }
 
-/// The card's quiet controls band — the same wash and hairline the task
-/// card's footer wears, holding the two things this panel can do: open the
-/// per-person chat, and ask for a fresh briefing.
-class _BriefingActionsFooter extends StatelessWidget {
-  const _BriefingActionsFooter({
-    required this.onChat,
-    required this.onBriefMe,
+/// The AI card for an enrolled person, in one of its five agent-owned
+/// states.
+class _AgentCard extends StatelessWidget {
+  const _AgentCard({
+    required this.state,
+    required this.item,
+    required this.checkInCount,
+    required this.report,
+    required this.agentState,
+    required this.health,
+    required this.totalTokens,
+    required this.identityData,
+    required this.modelMissing,
+    required this.overdue,
+    required this.reachable,
+    required this.expanded,
+    required this.requesting,
+    required this.onToggleExpanded,
+    required this.onOpenInternals,
+    required this.onBrief,
+    required this.onChooseModel,
+    required this.onLogCheckIn,
+    required this.onCall,
   });
 
-  final VoidCallback onChat;
-  final VoidCallback? onBriefMe;
+  final RelationshipAgentCardState state;
+  final RelationshipListItem item;
+  final int checkInCount;
+  final AgentReportEntity? report;
+  final AgentStateEntity? agentState;
+  final RelationshipHealthMetrics? health;
+  final int totalTokens;
+  final TaskAgentModelIdentityViewData identityData;
+  final bool modelMissing;
+  final bool overdue;
+  final ReachableChannel? reachable;
+  final bool expanded;
+  final bool requesting;
+  final VoidCallback onToggleExpanded;
+  final VoidCallback onOpenInternals;
+  final VoidCallback? onBrief;
+  final VoidCallback onChooseModel;
+  final VoidCallback onLogCheckIn;
+  final VoidCallback? onCall;
+
+  /// The header's meta line: what the agent is doing, or when the briefing
+  /// was written and what it has cost so far.
+  String _subtitle(BuildContext context, AppLocalizations messages) {
+    final lastWake = agentState?.lastWakeAt;
+    return switch (state) {
+      RelationshipAgentCardState.noBriefing =>
+        messages.relationshipAgentWatching,
+      RelationshipAgentCardState.running => messages.relationshipAgentWriting,
+      RelationshipAgentCardState.failed =>
+        lastWake == null
+            ? messages.relationshipAgentFailedBody
+            : messages.relationshipAgentLastRunFailed(
+                relationshipTimeLabel(lastWake),
+              ),
+      RelationshipAgentCardState.current ||
+      RelationshipAgentCardState.outOfDate => [
+        messages.goalDetailReadAsOf(
+          relativeAgoLabel(
+            messages,
+            clock.now().difference(report!.createdAt),
+          ),
+        ),
+        if (totalTokens > 0)
+          messages.agentConversationTokenCount(
+            NumberFormat.compact(
+              locale: Localizations.localeOf(context).toString(),
+            ).format(totalTokens),
+          ),
+      ].join(' · '),
+      RelationshipAgentCardState.notEnrolled => '',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
+    final current = report;
+    final name =
+        item.relationship.data.nickname ?? item.relationship.data.title;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: ai.footerWash,
-        border: Border(top: BorderSide(color: ai.borderSoft)),
+    final pills = <Widget>[
+      relationshipCadencePill(
+        context,
+        item,
+        keyPrefix: 'relationship-agent-pill',
       ),
-      // `cardPadding` horizontally so the primary action's trailing edge
-      // lands in the same column as the header title and the report prose;
-      // the icon button brings its own optical inset on top of that.
+      if (health case final health?)
+        Tooltip(
+          message: health.rationale,
+          child: DsPill(
+            key: const ValueKey('relationship-health-chip'),
+            variant: DsPillVariant.tinted,
+            shape: DsPillShape.tag,
+            color: relationshipHealthBandColor(tokens, health.band),
+            // The band accent as text on its own tint is a contrast
+            // failure; the colour identity rides the tint, as it does on
+            // the task status tag.
+            labelColor: tokens.colors.text.highEmphasis,
+            label: relationshipHealthBandLabel(context, health.band),
+          ),
+        ),
+    ];
+
+    final body = switch (state) {
+      RelationshipAgentCardState.noBriefing => Text(
+        messages.relationshipAgentNoBriefingBody(checkInCount),
+        key: const ValueKey('relationship-agent-body'),
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: ai.metaText,
+        ),
+      ),
+      RelationshipAgentCardState.running => Text(
+        messages.relationshipAgentReading(checkInCount),
+        key: const ValueKey('relationship-agent-body'),
+        style: tokens.typography.styles.body.bodyMedium.copyWith(
+          color: ai.accent,
+        ),
+      ),
+      RelationshipAgentCardState.failed => Text(
+        modelMissing
+            ? messages.relationshipAgentFailedNoModel
+            : messages.relationshipAgentFailedBody,
+        key: const ValueKey('relationship-agent-body'),
+        style: tokens.typography.styles.body.bodyMedium.copyWith(
+          color: tokens.colors.text.highEmphasis,
+        ),
+      ),
+      RelationshipAgentCardState.current ||
+      RelationshipAgentCardState.outOfDate => TldrBody(
+        key: const ValueKey('relationship-briefing-body'),
+        disclosureKey: const ValueKey('relationship-briefing-expand'),
+        tldr: resolveReportTldr(current),
+        expanded: expanded,
+        additionalReport: resolveReportAdditional(current),
+        onToggle: onToggleExpanded,
+        onOpenInternals: onOpenInternals,
+      ),
+      RelationshipAgentCardState.notEnrolled => const SizedBox.shrink(),
+    };
+
+    final due = peopleDueDateOf(item);
+    final latest = item.lastCheckIn;
+    final lastWake = agentState?.lastWakeAt;
+    final ({_StatusLine? status, Widget? leading, Widget? action}) footer =
+        switch (state) {
+          RelationshipAgentCardState.noBriefing => (
+            leading: null,
+            status: due == null
+                ? null
+                : _StatusLine(
+                    icon: LottiIcons.timer,
+                    label: messages.relationshipAgentNextLook(
+                      relationshipDayLabelOf(context, due),
+                    ),
+                    color: ai.metaText,
+                  ),
+            action: DesignSystemButton(
+              key: const ValueKey('relationship-brief-me'),
+              label: messages.relationshipAgentBriefNow,
+              onPressed: onBrief,
+            ),
+          ),
+          RelationshipAgentCardState.running => (
+            leading: null,
+            status: _StatusLine(
+              icon: LottiIcons.refresh,
+              label: lastWake == null
+                  ? messages.relationshipAgentRunning
+                  : messages.relationshipAgentRunningSince(
+                      relationshipTimeLabel(lastWake),
+                    ),
+              color: ai.accent,
+            ),
+            action: null,
+          ),
+          RelationshipAgentCardState.failed => (
+            leading: null,
+            status: _StatusLine(
+              icon: LottiIcons.error,
+              label: lastWake == null
+                  ? messages.commonError
+                  : messages.relationshipAgentFailed(
+                      relationshipTimeLabel(lastWake),
+                    ),
+              color: tokens.colors.alert.error.defaultColor,
+            ),
+            action: modelMissing
+                ? DesignSystemButton(
+                    key: const ValueKey('relationship-agent-choose-model'),
+                    label: messages.inferenceProfileChooseModelTitle,
+                    onPressed: onChooseModel,
+                  )
+                : DesignSystemButton(
+                    key: const ValueKey('relationship-brief-me'),
+                    label: messages.relationshipAgentTryAgain,
+                    onPressed: onBrief,
+                  ),
+          ),
+          RelationshipAgentCardState.current when overdue => (
+            status: null,
+            leading: DesignSystemButton(
+              key: const ValueKey('relationship-agent-log-check-in'),
+              label: messages.relationshipLogCheckIn,
+              leadingIcon: LottiIcons.greeting,
+              variant: DesignSystemButtonVariant.tertiary,
+              onPressed: onLogCheckIn,
+            ),
+            action: onCall == null
+                ? DesignSystemButton(
+                    key: const ValueKey(
+                      'relationship-agent-log-check-in-primary',
+                    ),
+                    label: messages.relationshipLogCheckIn,
+                    onPressed: onLogCheckIn,
+                  )
+                : DesignSystemButton(
+                    key: const ValueKey('relationship-agent-call'),
+                    label: messages.relationshipAgentCall(name),
+                    leadingIcon: contactActionIcon(reachable!.action),
+                    onPressed: onCall,
+                  ),
+          ),
+          RelationshipAgentCardState.current => (
+            leading: null,
+            status: _StatusLine(
+              icon: LottiIcons.confirm,
+              label: messages.taskAgentStatusUpToDate,
+              color: ai.metaText,
+            ),
+            action: DesignSystemButton(
+              key: const ValueKey('relationship-brief-me'),
+              label: messages.taskAgentUpdateNow,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: onBrief,
+            ),
+          ),
+          RelationshipAgentCardState.outOfDate => (
+            leading: null,
+            status: _StatusLine(
+              icon: LottiIcons.warning,
+              label: latest == null
+                  ? messages.taskAgentStatusOutOfDate
+                  : messages.relationshipAgentOutOfDateNewCheckIn(
+                      relationshipDayLabelOf(context, latest.meta.dateFrom),
+                    ),
+              color: tokens.colors.alert.warning.defaultColor,
+            ),
+            action: DesignSystemButton(
+              key: const ValueKey('relationship-brief-me'),
+              label: messages.taskAgentUpdateNow,
+              onPressed: onBrief,
+            ),
+          ),
+          RelationshipAgentCardState.notEnrolled => (
+            status: null,
+            leading: null,
+            action: null,
+          ),
+        };
+
+    return AgentSummaryCardSurface(
+      key: const ValueKey('relationship-briefing-card'),
+      children: [
+        TldrHeader(
+          title: messages.relationshipBriefingTitle,
+          agentName: _subtitle(context, messages),
+          onAgentTap: onOpenInternals,
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.cardPadding,
+            0,
+            tokens.spacing.cardPadding,
+            tokens.spacing.step3,
+          ),
+          child: Wrap(
+            spacing: tokens.spacing.step2,
+            runSpacing: tokens.spacing.step2,
+            children: pills,
+          ),
+        ),
+        Padding(
+          // No bottom inset under TldrBody: its disclosure row carries the
+          // trailing gap inside its tap target. The plain-text bodies bring
+          // one of their own.
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.cardPadding,
+            0,
+            tokens.spacing.cardPadding,
+            body is TldrBody ? 0 : tokens.spacing.step4,
+          ),
+          child: body,
+        ),
+        _AgentCardFooter(
+          status: footer.status,
+          leading: footer.leading,
+          action: footer.action,
+          identity: TaskAgentIdentityRegion(
+            data: identityData,
+            onSetupTap: onChooseModel,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One line of the footer: an icon, a label, a tone.
+class _StatusLine {
+  const _StatusLine({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+}
+
+/// The card's quiet controls band — the task card's footer grammar: the
+/// status on the leading edge, the one action on the trailing rail, the
+/// model identity row below. Its wash and top hairline are the container;
+/// nothing inside draws a second fill.
+class _AgentCardFooter extends StatelessWidget {
+  const _AgentCardFooter({
+    required this.status,
+    required this.action,
+    this.leading,
+    this.identity,
+    this.plain = false,
+  });
+
+  final _StatusLine? status;
+
+  /// A control on the leading edge instead of a status — the due state's
+  /// quiet *Log check-in* beside its primary *Call*.
+  final Widget? leading;
+  final Widget? action;
+  final Widget? identity;
+
+  /// The unenrolled card is not an AI surface: its band is the section
+  /// card's own tint rather than the AI footer wash.
+  final bool plain;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    final status = this.status;
+
+    Widget statusWidget(_StatusLine line) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(line.icon, size: IconSizes.s, color: line.color),
+        SizedBox(width: tokens.spacing.step2),
+        Flexible(
+          child: Text(
+            line.label,
+            key: const ValueKey('relationship-agent-status'),
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: line.color,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    // The plain band is a faint neutral wash over the card surface — the
+    // tint alpha the tone-tinted fills use, in ink rather than an accent —
+    // so it reads as the footer of a quiet card, not as a raised block.
+    final plainWash = Color.alphaBlend(
+      tokens.colors.text.highEmphasis.withValues(alpha: SurfaceAlphas.tint),
+      tokens.colors.background.level02,
+    );
+    return Container(
+      key: const ValueKey('relationship-agent-footer'),
+      decoration: BoxDecoration(
+        color: plain ? plainWash : ai.footerWash,
+        border: Border(
+          top: BorderSide(
+            color: plain ? tokens.colors.decorative.level01 : ai.borderSoft,
+          ),
+        ),
+      ),
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.cardPadding,
         vertical: tokens.spacing.step2,
       ),
-      // Both controls sit together on the trailing edge, the way they did
-      // in the header this band replaced: a lone icon at the far left read
-      // as orphaned once the card grew to desktop width.
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            key: const ValueKey('relationship-chat-button'),
-            tooltip: messages.relationshipChatTooltip,
-            onPressed: onChat,
-            icon: Icon(
-              LottiIcons.chat,
-              size: tokens.spacing.step5,
-              color: ai.metaText,
+          if (status != null || leading != null || action != null)
+            ConstrainedBox(
+              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: status == null
+                          ? (leading ?? const SizedBox.shrink())
+                          : statusWidget(status),
+                    ),
+                  ),
+                  if (action != null) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    action!,
+                  ],
+                ],
+              ),
             ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          DesignSystemButton(
-            key: const ValueKey('relationship-brief-me'),
-            label: messages.relationshipBriefMeButton,
-            size: DesignSystemButtonSize.dense,
-            onPressed: onBriefMe,
-          ),
+          ?identity,
         ],
       ),
     );

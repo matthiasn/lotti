@@ -299,4 +299,56 @@ void main() {
       expect(find.byIcon(LottiIcons.sms), findsOneWidget);
     });
   });
+
+  group('firstReachableChannel', () {
+    const mobile = ContactChannel(
+      type: ContactChannelType.mobile,
+      value: '+15550109999',
+    );
+    const email = ContactChannel(
+      type: ContactChannelType.email,
+      value: 'pip@example.com',
+    );
+
+    test('nothing for a person without channels', () async {
+      expect(await firstReachableChannel(launcher, const []), isNull);
+    });
+
+    test('nothing when the platform can open none of them', () async {
+      final none = _FakeContactLauncher(launchable: const {});
+      expect(await firstReachableChannel(none, const [mobile, email]), isNull);
+    });
+
+    test("the first channel in the person's own order that opens — a call "
+        'on a phone', () async {
+      final found = await firstReachableChannel(launcher, const [
+        mobile,
+        email,
+      ]);
+      expect(found, (channel: mobile, action: ContactAction.call));
+    });
+
+    test('skips channels the platform cannot open — email on a desktop with '
+        'no dialer', () async {
+      final desktop = _FakeContactLauncher(
+        launchable: const {ContactAction.email},
+      );
+      final found = await firstReachableChannel(desktop, const [
+        mobile,
+        email,
+      ]);
+      expect(found, (channel: email, action: ContactAction.email));
+    });
+
+    test(
+      'a mobile with no dialer but a messenger offers the message',
+      () async {
+        final messenger = _FakeContactLauncher(
+          launchable: const {ContactAction.message},
+        );
+        final found = await firstReachableChannel(messenger, const [mobile]);
+        expect(found, (channel: mobile, action: ContactAction.message));
+      },
+    );
+  });
 }

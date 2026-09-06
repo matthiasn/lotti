@@ -4747,23 +4747,32 @@
   "relationshipActionFailed": "Niets op dit apparaat kan dat openen",
   "relationshipActionMessage": "Bericht",
   "relationshipAddChannelButton": "Contactgegeven toevoegen",
-  "relationshipAsk": "Vraag",
-  "@relationshipAsk": {
-    "description": "Relationships redesign label."
-  },
+  "relationshipAgentBriefNow": "Nu briefen",
+  "relationshipAgentCall": "{name} bellen",
+  "relationshipAgentFailed": "Mislukt · {time}",
+  "relationshipAgentFailedBody": "De laatste briefing-run is mislukt. Details staan op het tabblad Activiteit.",
+  "relationshipAgentFailedNoModel": "Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.",
+  "relationshipAgentLastRunFailed": "laatste run mislukt · {time}",
+  "relationshipAgentMarkImportant": "Als belangrijk markeren",
+  "relationshipAgentNextLook": "Volgende blik {day}",
+  "relationshipAgentNoAgent": "geen agent voor deze persoon",
+  "relationshipAgentNoBriefingBody": "{count, plural, =0{Nog geen briefing. „Nu briefen“ schrijft er een zodra je een check-in hebt gelogd; het ziet nooit telefoonnummer of e-mail.} =1{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je check-in; het ziet nooit telefoonnummer of e-mail.} other{Nog geen briefing. „Nu briefen“ schrijft er een op basis van je {count} check-ins; het ziet nooit telefoonnummer of e-mail.}}",
+  "relationshipAgentNotEnrolledBody": "Markeer {name} als belangrijk voor een briefing, een seintje als het even geleden is, en een chat. Uit houdt de persoon helemaal buiten de AI.",
+  "relationshipAgentOutOfDateNewCheckIn": "Verouderd · nieuwe check-in {day}",
+  "relationshipAgentPausedBody": "Briefings pauzeren zolang deze persoon slapend of gearchiveerd is.",
+  "relationshipAgentReading": "{count, plural, =0{Leest de persoon…} =1{Leest 1 check-in…} other{Leest {count} check-ins…}}",
+  "relationshipAgentRunning": "Bezig",
+  "relationshipAgentRunningSince": "Bezig · gestart {time}",
+  "relationshipAgentTryAgain": "Opnieuw proberen",
+  "relationshipAgentWatching": "agent houdt het bij · nog geen run",
+  "relationshipAgentWriting": "schrijft de briefing…",
   "relationshipBannerSemanticLabel": "Relatiebanner voor {personName}",
   "relationshipBriefingDisclosureBody": "De briefing draait op {provider}. Notities over deze persoon worden daarheen gestuurd voor verwerking.",
   "relationshipBriefingDisclosureConfirm": "Doorgaan",
   "relationshipBriefingDisclosureTitle": "Naar {provider} sturen?",
-  "relationshipBriefingEmpty": "Nog geen briefing — Praat me bij maakt er een van je check-ins.",
   "relationshipBriefingRequested": "Briefing aangevraagd — verschijnt hier zo.",
   "relationshipBriefingRequestFailed": "Kon de briefing niet aanvragen.",
   "relationshipBriefingTitle": "Briefing",
-  "relationshipBriefMeAgain": "Opnieuw vatten",
-  "@relationshipBriefMeAgain": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipBriefMeButton": "Praat me bij",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Elke dag} other{Elke {days} dagen}}",
   "relationshipCadenceFortnightly": "Om de twee weken",
   "relationshipCadenceLabel": "Contactritme",
@@ -4781,14 +4790,6 @@
   "relationshipCadenceWeekly": "Wekelijks",
   "relationshipChatTooltip": "Chat over deze persoon",
   "relationshipChatUnavailable": "Nog geen agent — markeer deze persoon eerst als belangrijk.",
-  "relationshipCheckedInLabel": "Check-in {date}",
-  "@relationshipCheckedInLabel": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipCheckInReminderBody": "Een goed moment om contact op te nemen.",
   "relationshipCheckInReminderTitle": "Even contact met {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -4799,14 +4800,6 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
-  "relationshipCheckInTitle": "Check-in · {name}",
-  "@relationshipCheckInTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipContactCardAction": "Contactkaart",
   "@relationshipContactCardAction": {
     "description": "Relationships redesign label."
@@ -4905,7 +4898,6 @@
   "@relationshipJustAdded": {
     "description": "Relationships redesign label."
   },
-  "relationshipLastCheckInLabel": "Laatste check-in {date}",
   "relationshipLastSpoke": "laatst gesproken {time}",
   "@relationshipLastSpoke": {
     "placeholders": {
@@ -4918,29 +4910,9 @@
   "relationshipLinkedTasksLabel": "Taken",
   "relationshipLinkTaskButton": "Taak koppelen",
   "relationshipLogCheckIn": "Check-in vastleggen",
-  "relationshipLottisRead": "Lotti's inschatting",
-  "@relationshipLottisRead": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipLottisReadAsOf": "van {time}",
-  "@relationshipLottisReadAsOf": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipMoreActions": "Meer acties",
   "relationshipNameLabel": "Naam",
   "relationshipNameRequired": "Een naam is verplicht",
-  "relationshipNextByDay": "volgende voor {day}",
-  "@relationshipNextByDay": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipNextDueOn": "Volgende keer {day}",
   "@relationshipNextDueOn": {
     "placeholders": {
@@ -4955,10 +4927,6 @@
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
   "relationshipNotEnrolled": "Niet gevolgd",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
-  "relationshipNudgesOn": "herinneringen aan",
-  "@relationshipNudgesOn": {
-    "description": "Relationships redesign label."
-  },
   "relationshipOnTrackCadence": "Op schema · {cadence}",
   "@relationshipOnTrackCadence": {
     "placeholders": {
@@ -5003,21 +4971,9 @@
       }
     }
   },
-  "relationshipQuietForDays": "{count, plural, =1{1 dag} other{{count} dagen}} geen contact",
-  "@relationshipQuietForDays": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "relationshipReachPrivacy": "Blijft op dit apparaat · nooit gedeeld met de AI",
   "relationshipReachTitle": "Contact",
   "relationshipRelinkContact": "Ander contact koppelen",
-  "relationshipSeeAllCheckIns": "Alle check-ins bekijken",
-  "@relationshipSeeAllCheckIns": {
-    "description": "Relationships redesign label."
-  },
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
   "relationshipsGroupDue": "Aan de beurt",
   "relationshipsPageTitle": "Mensen",
@@ -5087,14 +5043,6 @@
         "type": "String"
       }
     }
-  },
-  "relationshipStayingInTouch": "Contact houden",
-  "@relationshipStayingInTouch": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipStayInTouch": "Contact houden",
-  "@relationshipStayInTouch": {
-    "description": "Relationships redesign label."
   },
   "relationshipTasksLinkedCount": "{count, plural, =1{1 gekoppeld} other{{count} gekoppeld}}",
   "@relationshipTasksLinkedCount": {

@@ -46,6 +46,29 @@ IconData contactActionIcon(ContactAction action) => _iconForAction(action);
 String contactActionLabel(BuildContext context, ContactAction action) =>
     _labelForAction(context, action);
 
+/// A contact channel paired with the one action the platform will service
+/// for it — what a "call them" control launches.
+typedef ReachableChannel = ({ContactChannel channel, ContactAction action});
+
+/// The first channel, in the person's own order, that the platform can
+/// actually open, paired with that action — a call on a phone, email on a
+/// desktop with a mail client, `null` where neither exists. Shared by the
+/// page's action bar and the agent card's due state, so both offer the same
+/// channel.
+Future<ReachableChannel?> firstReachableChannel(
+  ContactLauncher launcher,
+  List<ContactChannel> channels,
+) async {
+  for (final channel in channels) {
+    for (final action in contactActionsFor(channel.type)) {
+      if (await launcher.canLaunch(channel, action)) {
+        return (channel: channel, action: action);
+      }
+    }
+  }
+  return null;
+}
+
 /// Hands [channel] to the platform for [action] and, on success, writes the
 /// device-local pending-interaction marker the next resume turns into a
 /// pre-filled check-in offer (ADR 0041 D4). A launch the platform refuses
