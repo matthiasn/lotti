@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4]
+
+### Added
+
+- **Turn check-in commitments into linked tasks.** Your relationship agent can
+  suggest tasks on a person's card and in chat, with the source check-in and
+  any proposed due date visible before confirmation. Review suggestions
+  individually or together, see their history, and undo task creation while
+  the task is still unchanged.
+
+### Changed
+
+- **Logging a check-in is quicker, and it now has a length.** The sheet asks
+  how it felt first, then what you talked about (or *Speak instead*), then
+  when and how long: the interaction type, a *Started* date and time, and a
+  duration picked from the lengths you log most, or spun on the wheel. Topics
+  and next-time notes fold away under *More*, and Save stays pinned at the
+  bottom. After a call, the sheet opens with the channel, start time and
+  elapsed minutes already filled in, and the check-in row shows the duration.
+- **Editing a person is now three cards: who they are, whether they are
+  important, and how to reach them.** Save stays pinned so it is always
+  reachable, the category shows as a colour dot, and how often to be nudged
+  appears only once someone is marked important. Where the device has an
+  address book, contact details can be pulled in from it without leaving the
+  form.
+- **Reviewing imported contacts now says how many people you picked**, and
+  reminds you their numbers stay on this device. Each person's nudge cadence
+  appears as soon as you mark them important.
+- **The chat with a person's agent has a header naming the agent and what it
+  can see** — your check-ins, never their phone number or email. On a wide
+  window the chat now opens beside the people list instead of covering it,
+  with a way into the agent's internals.
+
 ## [1.1.3]
 
 ### Added
