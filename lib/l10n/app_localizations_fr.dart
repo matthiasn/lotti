@@ -3103,7 +3103,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Supprimer cet échange ? Cette action est irréversible.';
 
   @override
-  String get checkInDone => 'Terminé';
+  String get checkInDurationHint =>
+      'Touche la durée pour ouvrir la molette. Un message n’en a généralement pas.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Touche une durée pour l’enregistrer, ou fais tourner la molette.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Régler la durée sur $label';
+  }
 
   @override
   String get checkInEditTitle => 'Modifier l\'échange';
@@ -3115,12 +3125,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Impossible de supprimer l\'échange. Réessaie.';
-
-  @override
-  String get checkInHowDidItFeel => 'Comment ça s’est passé ?';
-
-  @override
-  String get checkInHowDidYouConnect => 'Comment avez-vous échangé ?';
 
   @override
   String get checkInInteractionCall => 'Appel';
@@ -3141,13 +3145,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Visio';
 
   @override
+  String get checkInMoreCaption => 'Sujets · la prochaine fois · à éviter';
+
+  @override
+  String get checkInMoreSection => 'Plus';
+
+  @override
+  String get checkInNarrativeHint => 'Une ligne suffit…';
+
+  @override
   String get checkInNarrativeLabel => 'De quoi avez-vous parlé ?';
+
+  @override
+  String get checkInNoDuration => 'Sans durée';
 
   @override
   String get checkInPayAttentionLabel => 'La prochaine fois, fais attention à';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · PRÉPARÉ CE MATIN';
+  String get checkInSaveButton => 'Enregistrer le check-in';
 
   @override
   String get checkInSentimentDelightful => 'Merveilleux';
@@ -3165,10 +3181,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutre';
 
   @override
+  String get checkInSentimentOptional =>
+      'Facultatif. Jamais rempli par l’agent.';
+
+  @override
   String get checkInSentimentStrained => 'Tendu';
 
   @override
+  String get checkInSourceCall =>
+      'D’après l’appel que tu as passé depuis cette page. Tout est modifiable.';
+
+  @override
+  String get checkInSourceMessage =>
+      'D’après le message que tu as envoyé depuis cette page. Tout est modifiable.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'environ $minutes min',
+      one: 'environ 1 min',
+      zero: 'moins d’une minute',
+    );
+    return '$type · commencé à $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Dicter l\'échange';
+
+  @override
+  String get checkInSpeakInstead => 'Plutôt le dire';
+
+  @override
+  String get checkInStartedLabel => 'Commencé';
 
   @override
   String get checkInTopicsHint =>
@@ -3189,7 +3235,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'La transcription n\'est pas configurée pour cette personne. Ajoute un modèle audio et active l\'inférence automatique pour sa catégorie, ou écris l\'échange.';
 
   @override
-  String get checkInWriteInstead => 'Écrire plutôt';
+  String get checkInWhenAndHowLong => 'Quand et combien de temps';
 
   @override
   String get checklistAddItem => 'Ajouter un nouvel élément';

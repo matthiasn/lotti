@@ -1867,40 +1867,61 @@
   "checkInAvoidLabel": "Better to avoid",
   "checkInDateLabel": "When?",
   "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
-  "checkInDone": "Done",
-  "@checkInDone": {
-    "description": "Relationships redesign label."
+  "checkInDurationHint": "Tap duration to open the wheel. A message usually has none.",
+  "checkInDurationQuickPickHint": "Tap a length to save it, or spin the wheel.",
+  "checkInDurationSemanticsLabel": "Set duration to {label}",
+  "@checkInDurationSemanticsLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
   },
   "checkInEditTitle": "Edit check-in",
   "checkInErrorCreateFailed": "Could not save the check-in. Please try again.",
   "checkInErrorDeleteFailed": "Could not delete the check-in. Please try again.",
-  "checkInHowDidItFeel": "How did it feel?",
-  "@checkInHowDidItFeel": {
-    "description": "Relationships redesign label."
-  },
-  "checkInHowDidYouConnect": "How did you connect?",
-  "@checkInHowDidYouConnect": {
-    "description": "Relationships redesign label."
-  },
   "checkInInteractionCall": "Call",
   "checkInInteractionInPerson": "In person",
   "checkInInteractionLabel": "How did you connect?",
   "checkInInteractionMessage": "Message",
   "checkInInteractionOther": "Other",
   "checkInInteractionVideoCall": "Video call",
+  "checkInMoreCaption": "Topics · next time · avoid",
+  "checkInMoreSection": "More",
+  "checkInNarrativeHint": "One line is enough…",
   "checkInNarrativeLabel": "What did you talk about?",
+  "checkInNoDuration": "No duration",
   "checkInPayAttentionLabel": "Next time, pay attention to",
-  "checkInPreparedOverline": "✦ LOTTI · PREPARED THIS MORNING",
+  "checkInSaveButton": "Save check-in",
   "checkInSentimentDelightful": "Delightful",
   "checkInSentimentDifficult": "Difficult",
   "checkInSentimentGood": "Good",
   "checkInSentimentLabel": "How did it feel?",
   "checkInSentimentNeutral": "Neutral",
+  "checkInSentimentOptional": "Optional. Never filled in by the agent.",
   "checkInSentimentStrained": "Strained",
+  "checkInSourceCall": "From the call you placed from this page. Everything is editable.",
+  "checkInSourceMessage": "From the message you sent from this page. Everything is editable.",
+  "checkInSourceMeta": "{type} · started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}",
+  "@checkInSourceMeta": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "checkInSpeakButton": "Speak check-in",
   "@checkInSpeakButton": {
     "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
   },
+  "checkInSpeakInstead": "Speak instead",
+  "checkInStartedLabel": "Started",
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
   "checkInTranscribingLabel": "Transcribing…",
@@ -1915,10 +1936,7 @@
   "@checkInTranscriptUnavailable": {
     "description": "Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category."
   },
-  "checkInWriteInstead": "Write instead",
-  "@checkInWriteInstead": {
-    "description": "Relationships redesign label."
-  },
+  "checkInWhenAndHowLong": "When and how long",
   "checklistAddItem": "Add a new item",
   "checklistAiConfidenceLabel": "Confidence: {level}",
   "@checklistAiConfidenceLabel": {

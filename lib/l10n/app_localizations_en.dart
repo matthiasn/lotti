@@ -3044,7 +3044,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delete this check-in? This cannot be undone.';
 
   @override
-  String get checkInDone => 'Done';
+  String get checkInDurationHint =>
+      'Tap duration to open the wheel. A message usually has none.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Tap a length to save it, or spin the wheel.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Set duration to $label';
+  }
 
   @override
   String get checkInEditTitle => 'Edit check-in';
@@ -3056,12 +3066,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Could not delete the check-in. Please try again.';
-
-  @override
-  String get checkInHowDidItFeel => 'How did it feel?';
-
-  @override
-  String get checkInHowDidYouConnect => 'How did you connect?';
 
   @override
   String get checkInInteractionCall => 'Call';
@@ -3082,13 +3086,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Video call';
 
   @override
+  String get checkInMoreCaption => 'Topics · next time · avoid';
+
+  @override
+  String get checkInMoreSection => 'More';
+
+  @override
+  String get checkInNarrativeHint => 'One line is enough…';
+
+  @override
   String get checkInNarrativeLabel => 'What did you talk about?';
+
+  @override
+  String get checkInNoDuration => 'No duration';
 
   @override
   String get checkInPayAttentionLabel => 'Next time, pay attention to';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · PREPARED THIS MORNING';
+  String get checkInSaveButton => 'Save check-in';
 
   @override
   String get checkInSentimentDelightful => 'Delightful';
@@ -3106,10 +3122,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutral';
 
   @override
+  String get checkInSentimentOptional =>
+      'Optional. Never filled in by the agent.';
+
+  @override
   String get checkInSentimentStrained => 'Strained';
 
   @override
+  String get checkInSourceCall =>
+      'From the call you placed from this page. Everything is editable.';
+
+  @override
+  String get checkInSourceMessage =>
+      'From the message you sent from this page. Everything is editable.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'about $minutes min',
+      one: 'about 1 min',
+      zero: 'under a minute',
+    );
+    return '$type · started $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Speak check-in';
+
+  @override
+  String get checkInSpeakInstead => 'Speak instead';
+
+  @override
+  String get checkInStartedLabel => 'Started';
 
   @override
   String get checkInTopicsHint => 'Comma-separated, e.g. work, travel';
@@ -3129,7 +3175,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.';
 
   @override
-  String get checkInWriteInstead => 'Write instead';
+  String get checkInWhenAndHowLong => 'When and how long';
 
   @override
   String get checklistAddItem => 'Add a new item';
@@ -14704,21 +14750,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get categoryFavoriteDescription => 'Mark this category as a favourite';
-
-  @override
-  String get checkInDone => 'Done';
-
-  @override
-  String get checkInHowDidItFeel => 'How did it feel?';
-
-  @override
-  String get checkInHowDidYouConnect => 'How did you connect?';
-
-  @override
-  String get checkInPreparedOverline => '✦ LOTTI · PREPARED THIS MORNING';
-
-  @override
-  String get checkInWriteInstead => 'Write instead';
 
   @override
   String get colorLabel => 'Colour';

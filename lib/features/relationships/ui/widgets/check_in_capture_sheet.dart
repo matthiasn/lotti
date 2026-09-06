@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -9,16 +10,20 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_time_picker.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -95,6 +100,34 @@ final checkInRecorderLauncherProvider = Provider<CheckInRecorderLauncher>(
   name: 'checkInRecorderLauncherProvider',
 );
 
+/// What the modal's pinned action bar needs from the form inside it: the
+/// save and delete intents and whether they are currently allowed. The form
+/// publishes after every state change; the bar listens. The form still
+/// draws its own action row when it has no handle, so it stays usable on a
+/// plain page and in a plain test.
+class CheckInFormHandle extends ChangeNotifier {
+  Future<void> Function()? _save;
+  Future<void> Function()? _delete;
+  bool _canSave = false;
+
+  bool get canSave => _canSave;
+  bool get canDelete => _delete != null;
+
+  Future<void> save() => _save?.call() ?? Future.value();
+  Future<void> delete() => _delete?.call() ?? Future.value();
+
+  void publish({
+    required Future<void> Function()? save,
+    required Future<void> Function()? delete,
+    required bool canSave,
+  }) {
+    _save = save;
+    _delete = delete;
+    _canSave = canSave;
+    notifyListeners();
+  }
+}
+
 /// Folds a fresh [transcript] into whatever the narrative field already holds.
 ///
 /// Speaking never destroys typing. A transcript arriving on top of text the
@@ -129,16 +162,32 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
   Duration? prefilledDuration,
   bool startSpeaking = false,
 }) {
+  final handle = CheckInFormHandle();
   return ModalUtils.showSinglePageModal<CheckInEntry>(
     context: context,
     title: context.messages.relationshipLogCheckIn,
+    padding: _formPadding(context),
+    stickyActionBarBuilder: (_) => CheckInStickyActions(handle: handle),
     builder: (modalContext) => CheckInCaptureForm(
       relationshipId: relationshipId,
       prefilledInteractionType: prefilledInteractionType,
       prefilledTime: prefilledTime,
       prefilledDuration: prefilledDuration,
       startSpeaking: startSpeaking,
+      handle: handle,
     ),
+  );
+}
+
+/// Room under the form for the pinned action bar, so the last field can
+/// scroll fully above it.
+EdgeInsets _formPadding(BuildContext context) {
+  final tokens = context.designTokens;
+  return EdgeInsets.fromLTRB(
+    tokens.spacing.step5,
+    tokens.spacing.step4,
+    tokens.spacing.step5,
+    tokens.spacing.step11 + tokens.spacing.step6,
   );
 }
 
@@ -148,23 +197,80 @@ Future<CheckInEntry?> showCheckInEditSheet({
   required BuildContext context,
   required CheckInEntry checkIn,
 }) {
+  final handle = CheckInFormHandle();
   return ModalUtils.showSinglePageModal<CheckInEntry>(
     context: context,
     title: context.messages.checkInEditTitle,
+    padding: _formPadding(context),
+    stickyActionBarBuilder: (_) => CheckInStickyActions(handle: handle),
     builder: (modalContext) => CheckInCaptureForm(
       relationshipId: checkIn.data.relationshipId,
       initial: checkIn,
+      handle: handle,
     ),
   );
 }
 
-/// The check-in capture form: interaction type, date, optional sentiment
-/// (explicit user judgment — never pre-filled), topics, narrative, and the
-/// "next time" guidance fields. Persists through [RelationshipRepository].
+/// The modal's pinned actions (design 2026-09-06 §5): *Save check-in*
+/// reachable without scrolling, Cancel beside it, and — while editing —
+/// delete at the bottom-left, the desktop dialog's corner. Reads the form
+/// through its [handle].
+class CheckInStickyActions extends StatelessWidget {
+  const CheckInStickyActions({required this.handle, super.key});
+
+  final CheckInFormHandle handle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return ListenableBuilder(
+      listenable: handle,
+      builder: (context, _) => DesignSystemModalActionBar(
+        glass: true,
+        padding: EdgeInsets.all(tokens.spacing.step5),
+        secondary: [
+          if (handle.canDelete)
+            IconButton(
+              key: const ValueKey('check-in-delete'),
+              tooltip: messages.deleteButton,
+              onPressed: handle.delete,
+              icon: Icon(
+                LottiIcons.delete,
+                color: tokens.colors.alert.error.ink,
+              ),
+            ),
+          DesignSystemButton(
+            key: const ValueKey('check-in-cancel'),
+            label: messages.cancelButton,
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.large,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+        primary: DesignSystemButton(
+          key: const ValueKey('check-in-save'),
+          label: messages.checkInSaveButton,
+          size: DesignSystemButtonSize.large,
+          fullWidth: true,
+          onPressed: handle.canSave ? handle.save : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// The check-in capture form (design 2026-09-06 §5), in the order the
+/// design argued for: how it felt (optional sentiment — explicit user
+/// judgment, never pre-filled), what you talked about (narrative, or *Speak
+/// instead*), when and how long (type · started · duration), then topics and
+/// the "next time" guidance folded under *More*. Persists through
+/// [RelationshipRepository].
 /// With [initial] set it edits that check-in instead, and offers deletion.
 class CheckInCaptureForm extends ConsumerStatefulWidget {
   const CheckInCaptureForm({
     required this.relationshipId,
+    required this.handle,
     this.initial,
     this.prefilledInteractionType,
     this.prefilledTime,
@@ -200,6 +306,12 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
   /// unchanged, and cancelling the recording leaves the form as it was.
   final bool startSpeaking;
 
+  /// When set, the form's actions live in the modal's pinned bar and the
+  /// form publishes to it instead of drawing its own action row.
+  /// The pinned bar's view of this form — its only way out: the form has
+  /// no inline actions.
+  final CheckInFormHandle handle;
+
   @override
   ConsumerState<CheckInCaptureForm> createState() => _CheckInCaptureFormState();
 }
@@ -217,6 +329,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// of the start time so editing when a call began does not erase how
   /// long it ran.
   late Duration _duration;
+
+  /// The *More* section (topics · next time · avoid), folded by default;
+  /// open from the start when a check-in being edited already has any of it.
+  late bool _moreOpen;
   bool _isSaving = false;
   bool _isTranscribing = false;
 
@@ -273,6 +389,10 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final length =
         _lengthOf(initial) ?? widget.prefilledDuration ?? Duration.zero;
     _duration = length.isNegative ? Duration.zero : length;
+    _moreOpen =
+        _topicsController.text.isNotEmpty ||
+        _payAttentionController.text.isNotEmpty ||
+        _avoidController.text.isNotEmpty;
     if (widget.startSpeaking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_handleSpeak());
@@ -297,20 +417,35 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       .where((topic) => topic.isNotEmpty)
       .toList();
 
-  Future<void> _pickDate() async {
+  /// The pinned bar reads the form through its handle; publish after the
+  /// frame so a listener never rebuilds while this widget is still building.
+  void _publish() {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.handle.publish(
+        save: _handleSave,
+        delete: _isEditing ? _handleDelete : null,
+        canSave: !_isSaving && !_isTranscribing,
+      );
+    });
+  }
+
+  /// *Started*: the day, then the time, as two design-system pickers — a
+  /// check-in edited to another day keeps its time of day, and one edited
+  /// to another time keeps its day.
+  Future<void> _pickStart() async {
+    final messages = context.messages;
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final result = await showDesignSystemDatePicker(
       context: context,
-      title: context.messages.checkInDateLabel,
+      title: messages.checkInStartedLabel,
       initialDate: _interactionTime,
       firstDate: DateTime(today.year - 50),
       lastDate: today,
     );
     final picked = result?.date;
     if (!mounted || picked == null) return;
-    // Keep the existing time of day — the picker is date-only, and a
-    // check-in edited to another day shouldn't jump to midnight.
     setState(() {
       _interactionTime = DateTime(
         picked.year,
@@ -320,6 +455,52 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         _interactionTime.minute,
       );
     });
+    final time = await _pickTime();
+    if (!mounted || time == null) return;
+    setState(() {
+      _interactionTime = DateTime(
+        _interactionTime.year,
+        _interactionTime.month,
+        _interactionTime.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  Future<TimeOfDay?> _pickTime() {
+    var chosen = TimeOfDay.fromDateTime(_interactionTime);
+    return ModalUtils.showSinglePageModal<TimeOfDay>(
+      context: context,
+      title: context.messages.checkInStartedLabel,
+      builder: (modalContext) => DesignSystemTimePicker(
+        key: const ValueKey('check-in-time-picker'),
+        initialTime: chosen,
+        onTimeChanged: (time) => chosen = time,
+      ),
+      stickyActionBarBuilder: (modalContext) => DesignSystemModalActionBar(
+        glass: true,
+        padding: EdgeInsets.all(modalContext.designTokens.spacing.step5),
+        primary: DesignSystemButton(
+          key: const ValueKey('check-in-time-done'),
+          label: modalContext.messages.doneButton,
+          leadingIcon: LottiIcons.confirm,
+          size: DesignSystemButtonSize.large,
+          fullWidth: true,
+          onPressed: () => Navigator.of(modalContext).pop(chosen),
+        ),
+      ),
+    );
+  }
+
+  /// *Duration*: the wheel behind the tile. Zero is "no duration".
+  Future<void> _pickDuration() async {
+    final picked = await showCheckInDurationPicker(
+      context: context,
+      initialDuration: _duration,
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _duration = picked);
   }
 
   /// Records a spoken check-in and prefills the narrative with its transcript.
@@ -575,20 +756,51 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     }
   }
 
+  /// `Now · 12:46` while the start is this very minute, otherwise the day
+  /// and the time — what the *Started* tile reads.
+  String _startedLabel(BuildContext context) {
+    final now = clock.now();
+    final sameMinute =
+        _interactionTime.year == now.year &&
+        _interactionTime.month == now.month &&
+        _interactionTime.day == now.day &&
+        _interactionTime.hour == now.hour &&
+        _interactionTime.minute == now.minute;
+    final day = sameMinute
+        ? context.messages.journalDateNowButton
+        : relationshipDayLabelOf(context, _interactionTime);
+    return '$day · ${relationshipTimeLabel(_interactionTime)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final tokens = context.designTokens;
+    _publish();
 
     Widget sectionLabel(String text) => Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
       child: Text(
         text,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
+        style: tokens.typography.styles.subtitle.subtitle2.copyWith(
           color: tokens.colors.text.highEmphasis,
         ),
       ),
     );
+    Widget caption(String text) => Text(
+      text,
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.lowEmphasis,
+      ),
+    );
+
+    final prefilledFrom =
+        !_isEditing &&
+            widget.prefilledInteractionType != null &&
+            widget.prefilledTime != null &&
+            widget.prefilledDuration != null
+        ? widget.prefilledInteractionType
+        : null;
 
     // One scrollable, not two. The modal page already scrolls its child and
     // adds a top bar, padding and the bottom safe area on top of it, so a
@@ -600,63 +812,43 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        sectionLabel(messages.checkInInteractionLabel),
-        Wrap(
-          spacing: tokens.spacing.step3,
-          runSpacing: tokens.spacing.step3,
-          children: [
-            for (final type in CheckInInteractionType.values)
-              ChoiceChip(
-                label: Text(checkInInteractionLabel(context, type)),
-                selected: _interactionType == type,
-                onSelected: (_) => setState(() => _interactionType = type),
-              ),
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        InkWell(
-          onTap: _pickDate,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          child: InputDecorator(
-            decoration: InputDecoration(
-              labelText: messages.checkInDateLabel,
-              prefixIcon: const Icon(LottiIcons.today),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(tokens.radii.s),
-              ),
-            ),
-            child: Text(
-              _interactionTime.ymd,
-              style: tokens.typography.styles.body.bodyLarge.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
-            ),
+        // Where the numbers came from (design §5): the offer's channel, start
+        // and elapsed time, and that every one of them is editable.
+        if (prefilledFrom != null) ...[
+          _SourceStrip(
+            type: prefilledFrom,
+            startedAt: widget.prefilledTime!,
+            duration: widget.prefilledDuration!,
           ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.step5),
+        ],
         sectionLabel(messages.checkInSentimentLabel),
         Wrap(
           spacing: tokens.spacing.step3,
           runSpacing: tokens.spacing.step3,
           children: [
             for (final sentiment in CheckInSentiment.values)
-              ChoiceChip(
-                label: Text(
-                  checkInSentimentLabel(context, sentiment),
-                ),
+              DesignSystemChip(
+                key: ValueKey('check-in-sentiment-${sentiment.name}'),
+                label: checkInSentimentLabel(context, sentiment),
                 selected: _sentiment == sentiment,
+                size: DesignSystemChipSize.touch,
                 // Tapping the selected sentiment clears it again —
                 // sentiment is optional, never forced.
-                onSelected: (_) => setState(
+                onPressed: () => setState(
                   () => _sentiment = _sentiment == sentiment ? null : sentiment,
                 ),
               ),
           ],
         ),
-        SizedBox(height: tokens.spacing.step5),
+        SizedBox(height: tokens.spacing.step3),
+        caption(messages.checkInSentimentOptional),
+        SizedBox(height: tokens.spacing.step6),
+        sectionLabel(messages.checkInNarrativeLabel),
         LottiTextField(
+          key: const ValueKey('check-in-narrative'),
           controller: _narrativeController,
-          labelText: messages.checkInNarrativeLabel,
+          hintText: messages.checkInNarrativeHint,
           maxLines: 4,
           textCapitalization: TextCapitalization.sentences,
         ),
@@ -667,7 +859,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             key: const Key('check_in_speak_button'),
             label: _isTranscribing
                 ? messages.checkInTranscribingLabel
-                : messages.checkInSpeakButton,
+                : messages.checkInSpeakInstead,
             variant: DesignSystemButtonVariant.outlined,
             leadingIcon: LottiIcons.mic,
             isLoading: _isTranscribing,
@@ -676,57 +868,277 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 : _handleSpeak,
           ),
         ),
-        SizedBox(height: tokens.spacing.step5),
-        LottiTextField(
-          controller: _topicsController,
-          labelText: messages.checkInTopicsLabel,
-          hintText: messages.checkInTopicsHint,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        LottiTextField(
-          controller: _payAttentionController,
-          labelText: messages.checkInPayAttentionLabel,
-          textCapitalization: TextCapitalization.sentences,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        LottiTextField(
-          controller: _avoidController,
-          labelText: messages.checkInAvoidLabel,
-          textCapitalization: TextCapitalization.sentences,
-        ),
         SizedBox(height: tokens.spacing.step6),
-        Row(
+        sectionLabel(messages.checkInWhenAndHowLong),
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step3,
           children: [
-            if (_isEditing)
-              IconButton(
-                tooltip: messages.deleteButton,
-                onPressed: _isSaving ? null : _handleDelete,
-                icon: Icon(
-                  LottiIcons.delete,
-                  color: Theme.of(context).colorScheme.error,
+            for (final type in CheckInInteractionType.values)
+              DesignSystemChip(
+                key: ValueKey('check-in-type-${type.name}'),
+                label: checkInInteractionLabel(context, type),
+                selected: _interactionType == type,
+                size: DesignSystemChipSize.touch,
+                onPressed: () => setState(() => _interactionType = type),
+              ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        // IntrinsicHeight, so the two tiles match heights inside the modal's
+        // unbounded scroll view — a stretch there has no height to take.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _ValueTile(
+                  key: const ValueKey('check-in-started'),
+                  label: messages.checkInStartedLabel,
+                  value: _startedLabel(context),
+                  onTap: _pickStart,
                 ),
               ),
-            const Spacer(),
-            DesignSystemButton(
-              label: messages.cancelButton,
-              variant: DesignSystemButtonVariant.secondary,
-              onPressed: () => Navigator.of(context).pop(),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: _ValueTile(
+                  key: const ValueKey('check-in-duration'),
+                  label: messages.journalDurationLabel,
+                  value: checkInDurationLabel(context, _duration),
+                  muted: _duration == Duration.zero,
+                  trailing: LottiIcons.chevronDown,
+                  onTap: _pickDuration,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_duration == Duration.zero) ...[
+          SizedBox(height: tokens.spacing.step3),
+          caption(messages.checkInDurationHint),
+        ],
+        SizedBox(height: tokens.spacing.step6),
+        _MoreHeader(
+          open: _moreOpen,
+          onToggle: () => setState(() => _moreOpen = !_moreOpen),
+        ),
+        if (_moreOpen) ...[
+          SizedBox(height: tokens.spacing.step4),
+          LottiTextField(
+            key: const ValueKey('check-in-topics'),
+            controller: _topicsController,
+            labelText: messages.checkInTopicsLabel,
+            hintText: messages.checkInTopicsHint,
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          LottiTextField(
+            key: const ValueKey('check-in-pay-attention'),
+            controller: _payAttentionController,
+            labelText: messages.checkInPayAttentionLabel,
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          LottiTextField(
+            key: const ValueKey('check-in-avoid'),
+            controller: _avoidController,
+            labelText: messages.checkInAvoidLabel,
+            textCapitalization: TextCapitalization.sentences,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The prefilled sheet's first line: which channel, when it started and how
+/// long it has been, then the sentence that says where those came from.
+class _SourceStrip extends StatelessWidget {
+  const _SourceStrip({
+    required this.type,
+    required this.startedAt,
+    required this.duration,
+  });
+
+  final CheckInInteractionType type;
+  final DateTime startedAt;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final accent = tokens.colors.interactive.enabled;
+    return Container(
+      key: const ValueKey('check-in-source-strip'),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          accent.withValues(alpha: SurfaceAlphas.tint),
+          tokens.colors.background.level02,
+        ),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(
+          color: accent.withValues(alpha: SurfaceAlphas.washChip),
+        ),
+      ),
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(checkInInteractionIcon(type), size: IconSizes.s, color: accent),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  messages.checkInSourceMeta(
+                    checkInInteractionLabel(context, type),
+                    relationshipTimeLabel(startedAt),
+                    duration.inMinutes,
+                  ),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  type == CheckInInteractionType.call
+                      ? messages.checkInSourceCall
+                      : messages.checkInSourceMessage,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: tokens.spacing.step4),
-            DesignSystemButton(
-              // Held while a transcript is in flight: saving would pop the
-              // sheet and drop the words the user is waiting for, with the
-              // saved check-in silently missing its narrative.
-              label: messages.saveButton,
-              onPressed: _isSaving || _isTranscribing ? null : _handleSave,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A tappable tile with a caption over a mono value — *Started* and
+/// *Duration*.
+class _ValueTile extends StatelessWidget {
+  const _ValueTile({
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.trailing,
+    this.muted = false,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+  final IconData? trailing;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Material(
+      color: tokens.colors.background.level03,
+      borderRadius: BorderRadius.circular(tokens.radii.m),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.step4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: relationshipTimestampStyle(
+                        tokens,
+                        color: muted
+                            ? tokens.colors.text.lowEmphasis
+                            : tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing case final trailing?)
+                Icon(
+                  trailing,
+                  size: IconSizes.s,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The *More* row: the section name, what it holds, and the chevron.
+class _MoreHeader extends StatelessWidget {
+  const _MoreHeader({required this.open, required this.onToggle});
+
+  final bool open;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return InkWell(
+      key: const ValueKey('check-in-more'),
+      onTap: onToggle,
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+        child: Row(
+          children: [
+            Text(
+              messages.checkInMoreSection,
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            // Flexible, so a narrow phone or large text trims the caption
+            // rather than pushing the chevron off the row.
+            if (!open)
+              Expanded(
+                child: Text(
+                  messages.checkInMoreCaption,
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              )
+            else
+              const Spacer(),
+            SizedBox(width: tokens.spacing.step2),
+            Icon(
+              open ? LottiIcons.chevronUp : LottiIcons.chevronDown,
+              size: IconSizes.s,
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ],
         ),
-        // Breathing room under the action row, so the last control clears the
-        // sheet's bottom edge (and the home indicator) instead of sitting
-        // flush against it once the content has been scrolled to the end.
-        SizedBox(height: tokens.spacing.step6),
-      ],
+      ),
     );
   }
 }

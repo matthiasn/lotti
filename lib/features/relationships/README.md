@@ -43,9 +43,13 @@ the `enable_relationships` flag):
   check-in*, a mic that opens the capture sheet already recording, and the
   first channel the platform can open. The add/edit person modal (name, nickname, importance,
   cadence presets, status, and the manual contact-channel editor — desktop
-  parity per ADR 0041 §2), and the check-in capture sheet (interaction
-  type, date, user-set sentiment — never AI-filled, ADR 0038 — topics,
-  narrative, next-time guidance; editable and deletable afterwards).
+  parity per ADR 0041 §2), and the check-in capture sheet: how it felt
+  (user-set sentiment — never AI-filled, ADR 0038), what you talked about
+  (or *Speak instead*), when and how long (interaction type, a *Started*
+  date and time, a duration picked from the lengths you log most or spun on
+  the wheel), and topics plus next-time guidance folded under *More*, with
+  Save pinned; after a call the sheet opens prefilled from the offer.
+  Check-ins are editable and deletable afterwards.
 
 - `runtime/` + `service/` + `state/` — the **relationship agent's
   deterministic tier** (plan v2 phase 4, ADR 0059): marking a person

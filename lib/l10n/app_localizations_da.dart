@@ -3059,7 +3059,17 @@ class AppLocalizationsDa extends AppLocalizations {
       'Slet dette check-in? Det kan ikke fortrydes.';
 
   @override
-  String get checkInDone => 'Færdig';
+  String get checkInDurationHint =>
+      'Tryk på varigheden for at åbne hjulet. En besked har som regel ingen.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Tryk på en længde for at gemme den, eller drej hjulet.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Sæt varigheden til $label';
+  }
 
   @override
   String get checkInEditTitle => 'Redigér check-in';
@@ -3071,12 +3081,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Check-in kunne ikke slettes. Prøv igen.';
-
-  @override
-  String get checkInHowDidItFeel => 'Hvordan føltes det?';
-
-  @override
-  String get checkInHowDidYouConnect => 'Hvordan havde I kontakt?';
 
   @override
   String get checkInInteractionCall => 'Opkald';
@@ -3097,13 +3101,25 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videoopkald';
 
   @override
+  String get checkInMoreCaption => 'Emner · næste gang · undgå';
+
+  @override
+  String get checkInMoreSection => 'Mere';
+
+  @override
+  String get checkInNarrativeHint => 'Én linje er nok…';
+
+  @override
   String get checkInNarrativeLabel => 'Hvad talte I om?';
+
+  @override
+  String get checkInNoDuration => 'Ingen varighed';
 
   @override
   String get checkInPayAttentionLabel => 'Næste gang: vær opmærksom på';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · FORBEREDT I MORGES';
+  String get checkInSaveButton => 'Gem check-in';
 
   @override
   String get checkInSentimentDelightful => 'Skønt';
@@ -3121,10 +3137,40 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutralt';
 
   @override
+  String get checkInSentimentOptional =>
+      'Valgfrit. Udfyldes aldrig af agenten.';
+
+  @override
   String get checkInSentimentStrained => 'Anstrengt';
 
   @override
+  String get checkInSourceCall =>
+      'Fra det opkald, du startede fra denne side. Alt kan redigeres.';
+
+  @override
+  String get checkInSourceMessage =>
+      'Fra den besked, du sendte fra denne side. Alt kan redigeres.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'cirka $minutes min',
+      one: 'cirka 1 min',
+      zero: 'under et minut',
+    );
+    return '$type · startede kl. $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Indtal check-in';
+
+  @override
+  String get checkInSpeakInstead => 'Sig det i stedet';
+
+  @override
+  String get checkInStartedLabel => 'Startet';
 
   @override
   String get checkInTopicsHint => 'Kommasepareret, f.eks. arbejde, rejser';
@@ -3144,7 +3190,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Transskription er ikke sat op for denne person. Tilføj en lydmodel og slå automatisk inferens til for deres kategori, eller skriv check-in selv.';
 
   @override
-  String get checkInWriteInstead => 'Skriv i stedet';
+  String get checkInWhenAndHowLong => 'Hvornår og hvor længe';
 
   @override
   String get checklistAddItem => 'Tilføj en ny genstand';

@@ -81,6 +81,10 @@ class _FixedRecorderController extends AudioRecorderController {
 }
 
 void main() {
+  // The form is a full scroll: give the scaffold a viewport that holds it,
+  // the way the modal page does, so nothing overflows or lands off-screen.
+  const tallForm = MediaQueryData(size: Size(1000, 2400));
+
   group('mergeCheckInNarrative', () {
     test('uses the transcript when the field is empty', () {
       expect(
@@ -149,6 +153,15 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
+    // The redesigned form is a full scroll — sentiment, narrative, when and
+    // how long, More — and the default 800x600 surface leaves its lower half
+    // unbuilt, where a tap lands on nothing.
+    TestWidgetsFlutterBinding.instance.platformDispatcher.views.single
+      ..physicalSize = const Size(1000, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.single.reset,
+    );
     mockRepository = MockRelationshipRepository();
     // The speak flow reads the person to scope the recording to their
     // category; every other flow ignores it.
@@ -176,8 +189,35 @@ void main() {
         meta: testRelationship.meta.copyWith(categoryId: categoryId),
       );
 
+  /// Opens the folded *More* section so topics, next time and avoid exist.
+  Future<void> openMore(WidgetTester tester) async {
+    if (find.byKey(const ValueKey('check-in-topics')).evaluate().isNotEmpty) {
+      return;
+    }
+    await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
+    await tester.tap(find.byKey(const ValueKey('check-in-more')));
+    await tester.pumpAndSettle();
+  }
+
+  /// The form the way the modal hosts it: scrolling, with the pinned bar it
+  /// publishes to underneath — the form itself carries no actions.
+  Widget withBar(CheckInCaptureForm Function(CheckInFormHandle handle) form) {
+    final handle = CheckInFormHandle();
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          form(handle),
+          CheckInStickyActions(handle: handle),
+        ],
+      ),
+    );
+  }
+
   Widget buildForm() => makeTestableWidgetWithScaffold(
-    const CheckInCaptureForm(relationshipId: 'rel-001'),
+    withBar(
+      (handle) => CheckInCaptureForm(relationshipId: 'rel-001', handle: handle),
+    ),
+    mediaQueryData: tallForm,
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
     ],
@@ -194,7 +234,14 @@ void main() {
     bool? enableSpeechRecognition,
     bool startSpeaking = false,
   }) => makeTestableWidgetWithScaffold(
-    CheckInCaptureForm(relationshipId: 'rel-001', startSpeaking: startSpeaking),
+    withBar(
+      (handle) => CheckInCaptureForm(
+        relationshipId: 'rel-001',
+        startSpeaking: startSpeaking,
+        handle: handle,
+      ),
+    ),
+    mediaQueryData: tallForm,
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
 
@@ -244,10 +291,14 @@ void main() {
   );
 
   Widget buildEditForm() => makeTestableWidgetWithScaffold(
-    CheckInCaptureForm(
-      relationshipId: 'rel-001',
-      initial: existing(),
+    withBar(
+      (handle) => CheckInCaptureForm(
+        relationshipId: 'rel-001',
+        initial: existing(),
+        handle: handle,
+      ),
     ),
+    mediaQueryData: tallForm,
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
     ],
@@ -285,18 +336,27 @@ void main() {
 
       // Field order: narrative, topics, pay attention, avoid.
       await tester.enterText(
-        find.byType(TextField).at(0),
+        find.byKey(const ValueKey('check-in-narrative')),
         'Talked about the interview.',
       );
+      await openMore(tester);
       await tester.enterText(
-        find.byType(TextField).at(1),
+        find.byKey(const ValueKey('check-in-topics')),
         ' job search ,vacation , ',
       );
-      await tester.enterText(find.byType(TextField).at(2), 'Interview result');
-      await tester.enterText(find.byType(TextField).at(3), 'Inheritance');
+      await openMore(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('check-in-pay-attention')),
+        'Interview result',
+      );
+      await openMore(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('check-in-avoid')),
+        'Inheritance',
+      );
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       final saved = capturedSave();
@@ -316,8 +376,8 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    await tester.ensureVisible(find.text('Save check-in'));
+    await tester.tap(find.text('Save check-in'));
     await tester.pumpAndSettle();
 
     final saved = capturedSave();
@@ -340,8 +400,8 @@ void main() {
     await tester.tap(find.text('Good'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    await tester.ensureVisible(find.text('Save check-in'));
+    await tester.tap(find.text('Save check-in'));
     await tester.pumpAndSettle();
 
     expect(capturedSave().data.sentiment, isNull);
@@ -354,8 +414,8 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
     });
 
@@ -376,8 +436,8 @@ void main() {
 
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    await tester.ensureVisible(find.text('Save check-in'));
+    await tester.tap(find.text('Save check-in'));
     await tester.pumpAndSettle();
 
     expect(
@@ -386,11 +446,11 @@ void main() {
     );
     // Still editable, and Save is armed again — a retry does not need the
     // sheet reopened.
-    expect(find.text('How did you connect?'), findsOneWidget);
+    expect(find.text('When and how long'), findsOneWidget);
     expect(
       tester
           .widget<DesignSystemButton>(
-            find.widgetWithText(DesignSystemButton, 'Save'),
+            find.widgetWithText(DesignSystemButton, 'Save check-in'),
           )
           .onPressed,
       isNotNull,
@@ -409,22 +469,25 @@ void main() {
 
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    await tester.ensureVisible(find.text('Save check-in'));
+    await tester.tap(find.text('Save check-in'));
     await tester.pumpAndSettle();
 
     expect(
       find.text('Could not save the check-in. Please try again.'),
       findsOneWidget,
     );
-    expect(find.text('How did you connect?'), findsOneWidget);
+    expect(find.text('When and how long'), findsOneWidget);
   });
 
   testWidgets('Cancel closes without saving anything', (tester) async {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).at(0), 'Typed but discarded');
+    await tester.enterText(
+      find.byKey(const ValueKey('check-in-narrative')),
+      'Typed but discarded',
+    );
     await tester.ensureVisible(find.text('Cancel'));
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
@@ -462,13 +525,13 @@ void main() {
           find.widgetWithText(TextField, 'Job interview'),
           findsOneWidget,
         );
-        expect(find.text('2026-08-10'), findsOneWidget);
+        expect(find.textContaining('10 Aug'), findsOneWidget);
 
         await tester.ensureVisible(find.text('Neutral'));
         await tester.tap(find.text('Neutral'));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Save'));
-        await tester.tap(find.text('Save'));
+        await tester.ensureVisible(find.text('Save check-in'));
+        await tester.tap(find.text('Save check-in'));
         await tester.pumpAndSettle();
 
         final updated =
@@ -487,20 +550,22 @@ void main() {
       },
     );
 
-    testWidgets('tapping the date field opens the date picker', (
+    testWidgets('tapping the Started tile opens the date picker', (
       tester,
     ) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      // One 'When?' before (the field label)…
-      expect(find.text('When?'), findsOneWidget);
-      await tester.ensureVisible(find.text('2026-08-10'));
-      await tester.tap(find.text('2026-08-10'));
+      // One 'Started' before (the tile's caption)…
+      expect(find.text('Started'), findsOneWidget);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('check-in-started')),
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-started')));
       await tester.pumpAndSettle();
 
       // …and a second one as the picker modal's title once it is open.
-      expect(find.text('When?'), findsNWidgets(2));
+      expect(find.text('Started'), findsNWidgets(2));
     });
 
     testWidgets('delete asks for confirmation, then deletes and closes', (
@@ -595,9 +660,12 @@ void main() {
 
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).at(0), 'Edited narrative');
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.enterText(
+        find.byKey(const ValueKey('check-in-narrative')),
+        'Edited narrative',
+      );
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       expect(
@@ -616,20 +684,23 @@ void main() {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('2026-08-10'));
-      await tester.tap(find.text('2026-08-10'));
+      await tester.ensureVisible(find.textContaining('10 Aug'));
+      await tester.tap(find.textContaining('10 Aug'));
       await tester.pumpAndSettle();
 
-      // Pick the 6th in the open month grid, then confirm.
+      // Pick the 6th in the open month grid, then confirm; the time picker
+      // follows, and Done keeps the time it opened on.
       await tester.tap(find.text('6'));
       await tester.pump();
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
+      await tester.pumpAndSettle();
 
-      expect(find.text('2026-08-06'), findsOneWidget);
+      expect(find.textContaining('6 Aug'), findsOneWidget);
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       final updated =
@@ -637,7 +708,7 @@ void main() {
                 () => mockRepository.updateCheckIn(captureAny()),
               ).captured.single
               as CheckInEntry;
-      // The day moved; 19:45 survived, because the picker is date-only.
+      // The day moved; 19:45 survived: the time picker was confirmed as is.
       expect(updated.meta.dateFrom, DateTime(2026, 8, 6, 19, 45));
       expect(updated.meta.dateTo, DateTime(2026, 8, 6, 19, 45));
     });
@@ -657,8 +728,8 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       expect(
@@ -680,8 +751,8 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       expect(
@@ -698,8 +769,8 @@ void main() {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       expect(
@@ -755,8 +826,8 @@ void main() {
 
   group('speak check-in', () {
     Finder speakButton() => find.byKey(const Key('check_in_speak_button'));
-    Finder narrativeField() => find.ancestor(
-      of: find.text('What did you talk about?'),
+    Finder narrativeField() => find.descendant(
+      of: find.byKey(const ValueKey('check-in-narrative')),
       matching: find.byType(TextField),
     );
 
@@ -768,7 +839,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(speakButton(), findsOne);
-      expect(find.text('Speak check-in'), findsOne);
+      expect(find.text('Speak instead'), findsOne);
     });
 
     // The bug this guards: with no audio model — or a person filed under no
@@ -887,12 +958,12 @@ void main() {
       await tester.pump();
 
       expect(find.text('Transcribing…'), findsOne);
-      expect(find.text('Speak check-in'), findsNothing);
+      expect(find.text('Speak instead'), findsNothing);
 
       gate.complete('Arrived at last.');
       await tester.pumpAndSettle();
 
-      expect(find.text('Speak check-in'), findsOne);
+      expect(find.text('Speak instead'), findsOne);
       expect(narrativeText(tester), 'Arrived at last.');
     });
 
@@ -931,7 +1002,7 @@ void main() {
         findsOne,
       );
       expect(narrativeText(tester), 'Typed only.');
-      expect(find.text('Speak check-in'), findsOne);
+      expect(find.text('Speak instead'), findsOne);
     });
 
     // The HTTP 503 case. A failed run writes no transcript, so the wait alone
@@ -1115,7 +1186,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final saveButton = find.widgetWithText(DesignSystemButton, 'Save');
+      final saveButton = find.widgetWithText(
+        DesignSystemButton,
+        'Save check-in',
+      );
       expect(
         tester.widget<DesignSystemButton>(saveButton).onPressed,
         isNotNull,
@@ -1124,6 +1198,8 @@ void main() {
 
       await tester.ensureVisible(speakButton());
       await tester.tap(speakButton());
+      // One frame for the form to publish, one for the pinned bar to read it.
+      await tester.pump();
       await tester.pump();
 
       expect(tester.widget<DesignSystemButton>(saveButton).onPressed, isNull);
@@ -1203,48 +1279,25 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // The bug: the form capped itself at 90% of the SCREEN while the modal
-    // page added a top bar, padding and the safe area on top, so the action
-    // row sat below the viewport — and the form's own scroll view consumed
-    // every drag, so the page's scroll never moved and Save could not be
-    // reached at all. Dismissing was the only way out, which discards.
-    testWidgets('dragging over the form reaches the save action', (
+    // The design pins Save (2026-09-06 §5): it lives in the modal's sticky
+    // action bar, reachable before any scrolling — and an earlier bug, a form
+    // capping itself at 90% of the screen so the action row sat below the
+    // fold with no way to reach it, cannot come back through this path.
+    testWidgets('Save is pinned and reachable without scrolling', (
       tester,
     ) async {
       await openSheet(tester);
-
-      final save = find.widgetWithText(DesignSystemButton, 'Save');
+      final save = find.byKey(const ValueKey('check-in-save'));
       final viewportBottom =
           tester.view.physicalSize.height / tester.view.devicePixelRatio;
-
-      expect(
-        tester.getTopLeft(save).dy,
-        greaterThan(viewportBottom),
-        reason: 'precondition: the action row starts below the fold',
-      );
-
-      // Drag over the form the way a user scrolls the sheet — NOT a
-      // programmatic scroll of a hand-picked Scrollable, which moves the page
-      // even when a real drag cannot reach it. A form owning its own scroll
-      // view consumes these, the page never moves, and Save stays off screen.
-      for (var i = 0; i < 5; i++) {
-        await tester.drag(
-          find.byType(CheckInCaptureForm),
-          const Offset(0, -400),
-          warnIfMissed: false,
-        );
-        await tester.pumpAndSettle();
-      }
-
+      expect(save, findsOneWidget);
       expect(
         tester.getBottomLeft(save).dy,
         lessThanOrEqualTo(viewportBottom),
-        reason: 'Save is on screen once the user has scrolled to the end',
+        reason: 'the pinned bar sits inside the viewport from the start',
       );
-
       await tester.tap(save);
       await tester.pumpAndSettle();
-
       verify(
         () => mockRepository.createCheckIn(
           data: any(named: 'data'),
@@ -1253,6 +1306,25 @@ void main() {
           dateTo: any(named: 'dateTo'),
         ),
       ).called(1);
+    });
+
+    testWidgets('Cancel in the pinned bar closes without saving', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      verifyNever(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+        ),
+      );
     });
 
     // The shape that caused it: the form adding a second scroll view inside
@@ -1347,7 +1419,7 @@ void main() {
 
       expect(launches, hasLength(1));
       // A cancelled recording leaves the form as it was.
-      expect(find.text('How did you connect?'), findsOneWidget);
+      expect(find.text('When and how long'), findsOneWidget);
     });
 
     testWidgets("a Speak press during the automatic launch's pre-flight does "
@@ -1369,7 +1441,7 @@ void main() {
       );
       await tester.pump();
 
-      final speak = find.widgetWithText(DesignSystemButton, 'Speak check-in');
+      final speak = find.widgetWithText(DesignSystemButton, 'Speak instead');
       expect(
         tester.widget<DesignSystemButton>(speak).onPressed,
         isNull,
@@ -1411,19 +1483,23 @@ void main() {
       final startedAt = DateTime(2026, 8, 13, 12, 33);
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          CheckInCaptureForm(
-            relationshipId: 'rel-001',
-            prefilledTime: startedAt,
-            prefilledDuration: const Duration(minutes: 11),
+          withBar(
+            (handle) => CheckInCaptureForm(
+              relationshipId: 'rel-001',
+              prefilledTime: startedAt,
+              prefilledDuration: const Duration(minutes: 11),
+              handle: handle,
+            ),
           ),
+          mediaQueryData: tallForm,
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
           ],
         ),
       );
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       final captured = verify(
@@ -1444,8 +1520,8 @@ void main() {
       setTestSurfaceSize(tester, const Size(1000, 1400));
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       final captured = verify(
@@ -1481,15 +1557,22 @@ void main() {
       ).thenAnswer((_) async => true);
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          CheckInCaptureForm(relationshipId: 'rel-001', initial: existing),
+          withBar(
+            (handle) => CheckInCaptureForm(
+              relationshipId: 'rel-001',
+              initial: existing,
+              handle: handle,
+            ),
+          ),
+          mediaQueryData: tallForm,
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
           ],
         ),
       );
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
       await tester.pumpAndSettle();
 
       final updated =

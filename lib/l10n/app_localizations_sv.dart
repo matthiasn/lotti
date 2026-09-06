@@ -3068,7 +3068,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort den här avstämningen? Det går inte att ångra.';
 
   @override
-  String get checkInDone => 'Klart';
+  String get checkInDurationHint =>
+      'Tryck på längden för att öppna hjulet. Ett meddelande har oftast ingen.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Tryck på en längd för att spara den, eller snurra på hjulet.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Sätt längden till $label';
+  }
 
   @override
   String get checkInEditTitle => 'Redigera avstämning';
@@ -3080,12 +3090,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Avstämningen kunde inte tas bort. Försök igen.';
-
-  @override
-  String get checkInHowDidItFeel => 'Hur kändes det?';
-
-  @override
-  String get checkInHowDidYouConnect => 'Hur hade ni kontakt?';
 
   @override
   String get checkInInteractionCall => 'Samtal';
@@ -3106,13 +3110,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videosamtal';
 
   @override
+  String get checkInMoreCaption => 'Ämnen · nästa gång · undvik';
+
+  @override
+  String get checkInMoreSection => 'Mer';
+
+  @override
+  String get checkInNarrativeHint => 'En rad räcker…';
+
+  @override
   String get checkInNarrativeLabel => 'Vad pratade ni om?';
+
+  @override
+  String get checkInNoDuration => 'Ingen längd';
 
   @override
   String get checkInPayAttentionLabel => 'Nästa gång: var uppmärksam på';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · FÖRBEREDD I MORSE';
+  String get checkInSaveButton => 'Spara avstämning';
 
   @override
   String get checkInSentimentDelightful => 'Underbart';
@@ -3130,10 +3146,39 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutralt';
 
   @override
+  String get checkInSentimentOptional => 'Valfritt. Fylls aldrig i av agenten.';
+
+  @override
   String get checkInSentimentStrained => 'Ansträngt';
 
   @override
+  String get checkInSourceCall =>
+      'Från samtalet du ringde från den här sidan. Allt går att ändra.';
+
+  @override
+  String get checkInSourceMessage =>
+      'Från meddelandet du skickade från den här sidan. Allt går att ändra.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'cirka $minutes min',
+      one: 'cirka 1 min',
+      zero: 'under en minut',
+    );
+    return '$type · började kl. $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Tala in avstämning';
+
+  @override
+  String get checkInSpeakInstead => 'Säg det i stället';
+
+  @override
+  String get checkInStartedLabel => 'Startade';
 
   @override
   String get checkInTopicsHint => 'Kommaseparerade, t.ex. jobb, resor';
@@ -3153,7 +3198,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Transkription är inte uppsatt för den här personen. Lägg till en ljudmodell och slå på automatisk inferens för deras kategori, eller skriv avstämningen.';
 
   @override
-  String get checkInWriteInstead => 'Skriv istället';
+  String get checkInWhenAndHowLong => 'När och hur länge';
 
   @override
   String get checklistAddItem => 'Lägg till ett nytt föremål';
