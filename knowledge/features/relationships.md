@@ -707,7 +707,8 @@ A live task found under that identity is linked without overwriting it or
 creating a fresh undo receipt from potentially edited data. Reconfirmation
 after undo restores the tombstoned identity with a vector clock descended
 from the tombstone. An active, visible relationship link in either direction
-turns a duplicate link refusal into success without a new undo receipt.
+turns a duplicate refusal or a thrown post-write error into success without a
+new undo receipt.
 
 [`relationship_proposal_service.dart`](../../lib/features/relationships/service/relationship_proposal_service.dart)
 wraps the generic confirmation service. The exact creation snapshot is stored

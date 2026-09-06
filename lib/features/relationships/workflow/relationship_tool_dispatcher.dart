@@ -102,10 +102,7 @@ class RelationshipToolDispatcher {
       if (existing is! Task) {
         return _failure('Task identity is unavailable', permanent: true);
       }
-      final linked = await relationshipRepository.linkTask(
-        relationshipId: relationshipId,
-        taskId: taskId,
-      );
+      final linked = await _tryLinkTask(taskId, relationshipId);
       // Do not mint an undo receipt from a task a peer may already have edited.
       return (linked || await _hasRelationshipLink(taskId, relationshipId))
           ? ToolExecutionResult(
@@ -186,17 +183,14 @@ class RelationshipToolDispatcher {
           current.data.status is RelationshipActive &&
           current.meta.categoryId == categoryId &&
           current.meta.private == person.meta.private) {
-        linked = await relationshipRepository.linkTask(
-          relationshipId: relationshipId,
-          taskId: task.id,
-        );
+        linked = await _tryLinkTask(task.id, relationshipId);
         if (!linked) {
           alreadyLinked = await _hasRelationshipLink(task.id, relationshipId);
           linked = alreadyLinked;
         }
       }
     } catch (_) {
-      // The same compensation applies to rejected and throwing link writes.
+      // If validation or reconciliation fails, compensation is still guarded.
     }
     if (!linked) {
       final rolledBack = await removeTask(task);
@@ -229,6 +223,19 @@ class RelationshipToolDispatcher {
       );
     }
     return RelationshipTaskCreationResult(task);
+  }
+
+  /// A link may commit before post-write work throws. Both callers reconcile
+  /// the stored link after a false result, without issuing another undo receipt.
+  Future<bool> _tryLinkTask(String taskId, String personId) async {
+    try {
+      return await relationshipRepository.linkTask(
+        relationshipId: personId,
+        taskId: taskId,
+      );
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> _hasRelationshipLink(String taskId, String personId) async {

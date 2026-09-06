@@ -730,7 +730,7 @@ void main() {
   }
 
   test(
-    'a throwing link write preserves a peer-linked task during compensation',
+    'a throwing link write reconciles its committed link without an undo receipt',
     () async {
       when(
         () =>
@@ -746,9 +746,15 @@ void main() {
         args,
         person.id,
       );
-      expect(result.success, isFalse);
-      expect(result.nonRetryable, isTrue);
-      expect(result.errorMessage, contains('rollback failed'));
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, task.id);
+      expect(result, isNot(isA<RelationshipTaskCreationResult>()));
+      verifyNever(
+        () => persistence.updateMetadata(
+          any(),
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      );
     },
   );
 
