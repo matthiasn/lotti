@@ -13,16 +13,28 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
 
   final VoidCallback onNavigate;
 
-  /// Height of the small, padded design-system button plus safe-area spacing.
+  /// Height of the large, padded design-system button plus safe-area spacing.
   /// Shared with the shell so recordings and page actions clear the launcher.
   static double barHeight(BuildContext context) {
     final tokens = context.designTokens;
-    final labelHeight = MediaQuery.textScalerOf(
-      context,
-    ).scale(tokens.typography.lineHeight.subtitle2).ceilToDouble();
+    final labelPainter = TextPainter(
+      text: TextSpan(
+        text: context.messages.navTabTitleNavigate,
+        style: tokens.typography.styles.subtitle.subtitle1,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final labelHeight = math.max(
+      labelPainter.height,
+      tokens.typography.lineHeight.subtitle1,
+    );
+    labelPainter.dispose();
     return math.max(
           TapTargets.minimum,
-          labelHeight + tokens.spacing.step3 * 2,
+          labelHeight + tokens.spacing.step4 * 2,
         ) +
         tokens.spacing.step2 +
         _bottomPadding(context);
@@ -30,7 +42,7 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
 
   static double _bottomPadding(BuildContext context) => math.max(
     MediaQuery.paddingOf(context).bottom,
-    context.designTokens.spacing.step3,
+    context.designTokens.spacing.step6,
   );
 
   /// Page clearance for the visible launcher and shell-owned recording row.
@@ -56,12 +68,26 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
       ),
       child: Center(
         heightFactor: 1,
-        child: DesignSystemButton(
-          label: context.messages.navTabTitleNavigate,
-          onPressed: onNavigate,
-          leadingIcon: LottiIcons.menu,
-          variant: DesignSystemButtonVariant.secondary,
-          tapTargetSize: MaterialTapTargetSize.padded,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(tokens.radii.xl),
+            boxShadow: DsShadows.floatingSurface,
+          ),
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(tokens.radii.xl),
+              border: Border.all(color: tokens.colors.decorative.level01),
+            ),
+            child: DesignSystemButton(
+              label: context.messages.navTabTitleNavigate,
+              onPressed: onNavigate,
+              leadingIcon: LottiIcons.menu,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
+              tapTargetSize: MaterialTapTargetSize.padded,
+            ),
+          ),
         ),
       ),
     );

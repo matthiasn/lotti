@@ -547,9 +547,11 @@ contract:
   settings route helpers keep that decision tied to router state rather than
   widget timing.
 - `DesignSystemBottomNavigationBar.barHeight(context)` owns launcher clearance.
-  It scales the small design-system button's label line, includes its minimum
-  padded touch target, and clears the full system bottom inset on both platforms.
-  The surrounding overlay is transparent; the button is centered.
+  It measures the large design-system button's localized label with the current
+  text scaler, includes its minimum padded touch target, and clears the full
+  system bottom inset on both platforms. The centered pill uses the secondary
+  button fill, a decorative hairline and the shared floating-surface shadow;
+  the surrounding overlay is transparent.
 
 
 # Accessibility is enforced at construction

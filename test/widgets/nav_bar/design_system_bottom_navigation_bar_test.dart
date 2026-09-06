@@ -123,7 +123,7 @@ void main() {
         final expectedAbsorbed = withInset.padding.bottom;
         expect(
           withInsetHeight - withoutInsetHeight,
-          moreOrLessEquals(expectedAbsorbed - dsTokensLight.spacing.step3),
+          moreOrLessEquals(expectedAbsorbed - dsTokensLight.spacing.step6),
         );
       },
       variant: const TargetPlatformVariant({
