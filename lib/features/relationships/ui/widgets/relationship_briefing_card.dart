@@ -737,9 +737,9 @@ class _AgentCard extends StatelessWidget {
         onOpenInternals: onOpenInternals,
       ),
       // Unreachable by construction, see _subtitle.
-
-      RelationshipAgentCardState.notEnrolled =>
-        const SizedBox.shrink(), // coverage:ignore-line
+      // coverage:ignore-start
+      RelationshipAgentCardState.notEnrolled => const SizedBox.shrink(),
+      // coverage:ignore-end
     };
 
     final due = peopleDueDateOf(item);
@@ -856,13 +856,13 @@ class _AgentCard extends StatelessWidget {
             ),
           ),
           // Unreachable by construction, see _subtitle.
-
+          // coverage:ignore-start
           RelationshipAgentCardState.notEnrolled => (
-            // coverage:ignore-line
             status: null,
             leading: null,
             action: null,
           ),
+          // coverage:ignore-end
         };
 
     return AgentSummaryCardSurface(
