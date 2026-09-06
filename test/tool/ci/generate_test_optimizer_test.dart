@@ -151,6 +151,78 @@ void main() {
     );
   });
 
+  test(
+    'partitions every suite exactly once before rendering imports',
+    () async {
+      final root = Directory.systemTemp.createTempSync('test_shards_');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final directory = Directory(path.join(root.path, 'test'))..createSync();
+      final names = <String>[];
+      for (var i = 0; i < 12; i++) {
+        final name = 'suite_${i}_test.dart';
+        names.add(name);
+        File(path.join(directory.path, name)).writeAsStringSync(
+          '${i.isEven ? "@Timeout(Duration(minutes: 2))\nlibrary;" : ""}\n'
+          '// ${'x' * (100 + i * 30)}\nvoid main() {}',
+        );
+      }
+      final seen = <String>[];
+      final rendered = <String>[];
+      for (var shard = 0; shard < 3; shard++) {
+        final output = await generateTestOptimizer(
+          packageRoot: root.path,
+          totalShards: 3,
+          shardIndex: shard,
+        );
+        final bundle = output.readAsStringSync();
+        final targets =
+            (jsonDecode(
+                      File(
+                        path.join(root.path, testTargetsRelativePath),
+                      ).readAsStringSync(),
+                    )
+                    as List<dynamic>)
+                .cast<String>();
+        final assigned = names
+            .where(
+              (name) =>
+                  bundle.contains("import '$name'") ||
+                  targets.contains('test/$name'),
+            )
+            .toList();
+        expect(assigned, isNotEmpty);
+        expect(assigned.length, lessThan(names.length));
+        for (final name in assigned) {
+          final annotated = int.parse(name.split('_')[1]).isEven;
+          expect(targets.contains('test/$name'), annotated);
+          expect(bundle.contains("import '$name'"), !annotated);
+        }
+        seen.addAll(assigned);
+        rendered.add(bundle);
+      }
+      expect(seen, unorderedEquals(names));
+      final again = await generateTestOptimizer(
+        packageRoot: root.path,
+        totalShards: 3,
+        shardIndex: 1,
+      );
+      expect(again.readAsStringSync(), rendered[1]);
+    },
+  );
+
+  for (final (total, index) in [(0, 0), (2, -1), (2, 2)]) {
+    test('rejects invalid shard $index of $total', () async {
+      await expectLater(
+        generateTestOptimizer(
+          packageRoot: '.',
+          totalShards: total,
+          shardIndex: index,
+        ),
+        throwsArgumentError,
+      );
+    });
+  }
+
   test('fails clearly when the package has no test directory', () async {
     final root = Directory.systemTemp.createTempSync('test_optimizer_');
     addTearDown(() => root.deleteSync(recursive: true));
