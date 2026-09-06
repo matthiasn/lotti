@@ -1,12 +1,16 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A single mobile navigation launcher. The transparent surrounding area leaves
+/// A single mobile navigation launcher on backdrop-blurred glass.
+/// The transparent surrounding area leaves
 /// the page visible; the shell owns the recording indicators above the button.
 class DesignSystemBottomNavigationBar extends StatelessWidget {
   const DesignSystemBottomNavigationBar({required this.onNavigate, super.key});
@@ -73,19 +77,37 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radii.xl),
             boxShadow: DsShadows.floatingSurface,
           ),
-          child: DecoratedBox(
-            position: DecorationPosition.foreground,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(tokens.radii.xl),
-              border: Border.all(color: tokens.colors.decorative.level01),
-            ),
-            child: DesignSystemButton(
-              label: context.messages.navTabTitleNavigate,
-              onPressed: onNavigate,
-              leadingIcon: LottiIcons.menu,
-              variant: DesignSystemButtonVariant.secondary,
-              size: DesignSystemButtonSize.large,
-              tapTargetSize: MaterialTapTargetSize.padded,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(tokens.radii.xl),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(
+                sigmaX: DesignSystemGlassStrip.blurSigma,
+                sigmaY: DesignSystemGlassStrip.blurSigma,
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: DesignSystemGlassStrip.overlayColors(tokens),
+                  ),
+                ),
+                child: DecoratedBox(
+                  position: DecorationPosition.foreground,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(tokens.radii.xl),
+                    border: dsGlassChipBorder(tokens),
+                  ),
+                  child: DesignSystemButton(
+                    label: context.messages.navTabTitleNavigate,
+                    onPressed: onNavigate,
+                    leadingIcon: LottiIcons.menu,
+                    variant: DesignSystemButtonVariant.secondary,
+                    size: DesignSystemButtonSize.large,
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                  ),
+                ),
+              ),
             ),
           ),
         ),

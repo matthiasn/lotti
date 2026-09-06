@@ -549,9 +549,10 @@ contract:
 - `DesignSystemBottomNavigationBar.barHeight(context)` owns launcher clearance.
   It measures the large design-system button's localized label with the current
   text scaler, includes its minimum padded touch target, and clears the full
-  system bottom inset on both platforms. The centered pill uses the secondary
-  button fill, a decorative hairline and the shared floating-surface shadow;
-  the surrounding overlay is transparent.
+  system bottom inset on both platforms. The centered pill blurs content behind
+  its clipped silhouette using the
+  existing glass-strip blur and theme-aware scrim, with the shared glass-chip
+  outline and floating-surface shadow. Its surrounding overlay is transparent.
 
 
 # Accessibility is enforced at construction
