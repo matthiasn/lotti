@@ -5178,11 +5178,23 @@ abstract class AppLocalizations {
   /// **'Delete this check-in? This cannot be undone.'**
   String get checkInDeleteConfirmMessage;
 
-  /// Relationships redesign label.
+  /// No description provided for @checkInDurationHint.
   ///
   /// In en, this message translates to:
-  /// **'Done'**
-  String get checkInDone;
+  /// **'Tap duration to open the wheel. A message usually has none.'**
+  String get checkInDurationHint;
+
+  /// No description provided for @checkInDurationQuickPickHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a length to save it, or spin the wheel.'**
+  String get checkInDurationQuickPickHint;
+
+  /// No description provided for @checkInDurationSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set duration to {label}'**
+  String checkInDurationSemanticsLabel(String label);
 
   /// No description provided for @checkInEditTitle.
   ///
@@ -5201,18 +5213,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete the check-in. Please try again.'**
   String get checkInErrorDeleteFailed;
-
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'How did it feel?'**
-  String get checkInHowDidItFeel;
-
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'How did you connect?'**
-  String get checkInHowDidYouConnect;
 
   /// No description provided for @checkInInteractionCall.
   ///
@@ -5250,11 +5250,35 @@ abstract class AppLocalizations {
   /// **'Video call'**
   String get checkInInteractionVideoCall;
 
+  /// No description provided for @checkInMoreCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics · next time · avoid'**
+  String get checkInMoreCaption;
+
+  /// No description provided for @checkInMoreSection.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get checkInMoreSection;
+
+  /// No description provided for @checkInNarrativeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One line is enough…'**
+  String get checkInNarrativeHint;
+
   /// No description provided for @checkInNarrativeLabel.
   ///
   /// In en, this message translates to:
   /// **'What did you talk about?'**
   String get checkInNarrativeLabel;
+
+  /// No description provided for @checkInNoDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'No duration'**
+  String get checkInNoDuration;
 
   /// No description provided for @checkInPayAttentionLabel.
   ///
@@ -5262,11 +5286,11 @@ abstract class AppLocalizations {
   /// **'Next time, pay attention to'**
   String get checkInPayAttentionLabel;
 
-  /// No description provided for @checkInPreparedOverline.
+  /// No description provided for @checkInSaveButton.
   ///
   /// In en, this message translates to:
-  /// **'✦ LOTTI · PREPARED THIS MORNING'**
-  String get checkInPreparedOverline;
+  /// **'Save check-in'**
+  String get checkInSaveButton;
 
   /// No description provided for @checkInSentimentDelightful.
   ///
@@ -5298,17 +5322,53 @@ abstract class AppLocalizations {
   /// **'Neutral'**
   String get checkInSentimentNeutral;
 
+  /// No description provided for @checkInSentimentOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Never filled in by the agent.'**
+  String get checkInSentimentOptional;
+
   /// No description provided for @checkInSentimentStrained.
   ///
   /// In en, this message translates to:
   /// **'Strained'**
   String get checkInSentimentStrained;
 
+  /// No description provided for @checkInSourceCall.
+  ///
+  /// In en, this message translates to:
+  /// **'From the call you placed from this page. Everything is editable.'**
+  String get checkInSourceCall;
+
+  /// No description provided for @checkInSourceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'From the message you sent from this page. Everything is editable.'**
+  String get checkInSourceMessage;
+
+  /// No description provided for @checkInSourceMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} · started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}'**
+  String checkInSourceMeta(String type, String time, int minutes);
+
   /// Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript.
   ///
   /// In en, this message translates to:
   /// **'Speak check-in'**
   String get checkInSpeakButton;
+
+  /// No description provided for @checkInSpeakInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak instead'**
+  String get checkInSpeakInstead;
+
+  /// No description provided for @checkInStartedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get checkInStartedLabel;
 
   /// No description provided for @checkInTopicsHint.
   ///
@@ -5340,11 +5400,11 @@ abstract class AppLocalizations {
   /// **'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.'**
   String get checkInTranscriptUnavailable;
 
-  /// Relationships redesign label.
+  /// No description provided for @checkInWhenAndHowLong.
   ///
   /// In en, this message translates to:
-  /// **'Write instead'**
-  String get checkInWriteInstead;
+  /// **'When and how long'**
+  String get checkInWhenAndHowLong;
 
   /// No description provided for @checklistAddItem.
   ///

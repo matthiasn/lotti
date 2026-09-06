@@ -3100,7 +3100,17 @@ class AppLocalizationsCs extends AppLocalizations {
       'Smazat tento záznam? Tohle nelze vrátit zpět.';
 
   @override
-  String get checkInDone => 'Hotovo';
+  String get checkInDurationHint =>
+      'Klepni na délku a otevře se kolečko. Zpráva obvykle žádnou nemá.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Klepni na délku a uloží se, nebo otoč kolečkem.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Nastavit délku na $label';
+  }
 
   @override
   String get checkInEditTitle => 'Upravit záznam';
@@ -3112,12 +3122,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Záznam se nepodařilo smazat. Zkus to prosím znovu.';
-
-  @override
-  String get checkInHowDidItFeel => 'Jaké to bylo?';
-
-  @override
-  String get checkInHowDidYouConnect => 'Jak proběhl kontakt?';
 
   @override
   String get checkInInteractionCall => 'Hovor';
@@ -3138,13 +3142,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videohovor';
 
   @override
+  String get checkInMoreCaption => 'Témata · příště · vyhnout se';
+
+  @override
+  String get checkInMoreSection => 'Více';
+
+  @override
+  String get checkInNarrativeHint => 'Stačí jeden řádek…';
+
+  @override
   String get checkInNarrativeLabel => 'O čem jste mluvili?';
+
+  @override
+  String get checkInNoDuration => 'Bez délky';
 
   @override
   String get checkInPayAttentionLabel => 'Příště se zaměřit na';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · PŘIPRAVENO DNES RÁNO';
+  String get checkInSaveButton => 'Uložit check-in';
 
   @override
   String get checkInSentimentDelightful => 'Skvělé';
@@ -3162,10 +3178,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutrální';
 
   @override
+  String get checkInSentimentOptional =>
+      'Volitelné. Agent to nikdy nevyplňuje.';
+
+  @override
   String get checkInSentimentStrained => 'Napjaté';
 
   @override
+  String get checkInSourceCall =>
+      'Z hovoru, který jsi zahájil/a z této stránky. Vše jde upravit.';
+
+  @override
+  String get checkInSourceMessage =>
+      'Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'asi $minutes min',
+      one: 'asi 1 min',
+      zero: 'necelá minuta',
+    );
+    return '$type · začátek v $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Namluvit kontakt';
+
+  @override
+  String get checkInSpeakInstead => 'Raději namluvit';
+
+  @override
+  String get checkInStartedLabel => 'Začátek';
 
   @override
   String get checkInTopicsHint => 'Oddělená čárkami, např. práce, cestování';
@@ -3185,7 +3231,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.';
 
   @override
-  String get checkInWriteInstead => 'Spíše psát';
+  String get checkInWhenAndHowLong => 'Kdy a jak dlouho';
 
   @override
   String get checklistAddItem => 'Přidat novou položku';

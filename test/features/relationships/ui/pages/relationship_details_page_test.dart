@@ -864,11 +864,11 @@ void main() {
     await tester.pumpAndSettle();
 
     // Create mode, titled for logging rather than editing.
-    expect(find.text('How did you connect?'), findsOneWidget);
+    expect(find.text('When and how long'), findsOneWidget);
     expect(find.text('Edit check-in'), findsNothing);
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
+    // The pinned bar: reachable without scrolling.
+    await tester.tap(find.byKey(const ValueKey('check-in-save')));
     await tester.pumpAndSettle();
 
     // The sheet saved against this page's relationship, not some other id.

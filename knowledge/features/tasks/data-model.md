@@ -92,9 +92,11 @@ edits through `showEstimatePicker`:
 - **Absolute due-date text** is formatted with `DateFormat.yMMMd` in the active
   Flutter locale. The persisted value remains a locale-neutral `DateTime` while a
   German, Czech or other localized surface gets its own calendar wording.
-- **Estimates** use `DesignSystemDurationWheel` in the same token-backed frame
-  and shared glass footer. The draft commits only when Done confirms a *changed*
-  duration; Clear resets a non-zero estimate.
+- **Estimates** use the shared duration picker (`showDurationPicker` in the
+  design system: the quick-pick row over `DesignSystemDurationWheel`, in the
+  same token-backed frame and glass footer; a check-in's length is the other
+  host). The draft commits only when Done confirms a *changed* duration; Clear
+  resets a non-zero estimate; a chip commits and closes.
 
 Both use the responsive modal contract — bottom sheet on narrow layouts, dialog
 on wide — with the same surface colour inside the subtle frame in light and dark.

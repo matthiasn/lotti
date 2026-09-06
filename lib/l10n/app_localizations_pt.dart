@@ -3088,7 +3088,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'Excluir este registro? Isso não pode ser desfeito.';
 
   @override
-  String get checkInDone => 'Pronto';
+  String get checkInDurationHint =>
+      'Toca na duração para abrir a roda. Uma mensagem normalmente não tem.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Toca numa duração para a guardar, ou roda a roda.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Definir a duração para $label';
+  }
 
   @override
   String get checkInEditTitle => 'Editar registro';
@@ -3100,12 +3110,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Não foi possível excluir o registro. Tente novamente.';
-
-  @override
-  String get checkInHowDidItFeel => 'Como você se sentiu?';
-
-  @override
-  String get checkInHowDidYouConnect => 'Como foi o contato?';
 
   @override
   String get checkInInteractionCall => 'Ligação';
@@ -3126,13 +3130,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videochamada';
 
   @override
+  String get checkInMoreCaption => 'Temas · da próxima vez · a evitar';
+
+  @override
+  String get checkInMoreSection => 'Mais';
+
+  @override
+  String get checkInNarrativeHint => 'Uma linha chega…';
+
+  @override
   String get checkInNarrativeLabel => 'Sobre o que vocês conversaram?';
+
+  @override
+  String get checkInNoDuration => 'Sem duração';
 
   @override
   String get checkInPayAttentionLabel => 'Na próxima vez, preste atenção em';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · PREPARADO ESTA MANHÃ';
+  String get checkInSaveButton => 'Guardar check-in';
 
   @override
   String get checkInSentimentDelightful => 'Maravilhoso';
@@ -3150,10 +3166,40 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutro';
 
   @override
+  String get checkInSentimentOptional =>
+      'Opcional. Nunca é preenchido pelo agente.';
+
+  @override
   String get checkInSentimentStrained => 'Tenso';
 
   @override
+  String get checkInSourceCall =>
+      'Da chamada que fizeste a partir desta página. Tudo é editável.';
+
+  @override
+  String get checkInSourceMessage =>
+      'Da mensagem que enviaste a partir desta página. Tudo é editável.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'cerca de $minutes min',
+      one: 'cerca de 1 min',
+      zero: 'menos de um minuto',
+    );
+    return '$type · começou às $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Ditar o contato';
+
+  @override
+  String get checkInSpeakInstead => 'Prefiro falar';
+
+  @override
+  String get checkInStartedLabel => 'Começou';
 
   @override
   String get checkInTopicsHint =>
@@ -3174,7 +3220,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'A transcrição não está configurada para esta pessoa. Adicione um modelo de áudio e ative a inferência automática na categoria dela, ou escreva o registro.';
 
   @override
-  String get checkInWriteInstead => 'Escrever antes';
+  String get checkInWhenAndHowLong => 'Quando e quanto tempo';
 
   @override
   String get checklistAddItem => 'Adicionar um novo item';

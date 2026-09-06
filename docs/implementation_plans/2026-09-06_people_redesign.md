@@ -72,6 +72,11 @@ People list gains grouping, a summary card and truthful pills.
   wheel positions none · 5 · 10 · 15 · 20 · 30 · 45 min · 1 h · 1 h 30 · 2 h · 3 h ·
   Custom; ranked by the user's own picks (estimate precedent).
 - Desktop dialog with delete bottom-left. Check-in rows show the duration.
+- Delivered as: the wheel positions are a ranked chip ladder over a free
+  wheel (*Custom* is the wheel itself); the picker and its chips moved into
+  the design system, and the task estimate picker became its other host;
+  Delete sits in the pinned bar's secondary slot, bottom-left on the desktop
+  dialog; the form has no inline actions — the pinned bar is its only exit.
 
 ### E · Form, import, chat
 - Edit person in three cards (Who · Important + cadence · How to reach them), category

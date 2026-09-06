@@ -3069,7 +3069,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze check-in verwijderen? Dit kan niet ongedaan worden gemaakt.';
 
   @override
-  String get checkInDone => 'Klaar';
+  String get checkInDurationHint =>
+      'Tik op de duur om het wiel te openen. Een bericht heeft er meestal geen.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Tik op een duur om die te bewaren, of draai aan het wiel.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Duur instellen op $label';
+  }
 
   @override
   String get checkInEditTitle => 'Check-in bewerken';
@@ -3081,12 +3091,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Kon de check-in niet verwijderen. Probeer het opnieuw.';
-
-  @override
-  String get checkInHowDidItFeel => 'Hoe voelde het?';
-
-  @override
-  String get checkInHowDidYouConnect => 'Hoe was het contact?';
 
   @override
   String get checkInInteractionCall => 'Telefoontje';
@@ -3107,13 +3111,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videogesprek';
 
   @override
+  String get checkInMoreCaption => 'Onderwerpen · volgende keer · vermijden';
+
+  @override
+  String get checkInMoreSection => 'Meer';
+
+  @override
+  String get checkInNarrativeHint => 'Eén regel is genoeg…';
+
+  @override
   String get checkInNarrativeLabel => 'Waar hebben jullie het over gehad?';
+
+  @override
+  String get checkInNoDuration => 'Geen duur';
 
   @override
   String get checkInPayAttentionLabel => 'Let de volgende keer op';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · VANOCHTEND VOORBEREID';
+  String get checkInSaveButton => 'Check-in opslaan';
 
   @override
   String get checkInSentimentDelightful => 'Heerlijk';
@@ -3131,10 +3147,40 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutraal';
 
   @override
+  String get checkInSentimentOptional =>
+      'Optioneel. Wordt nooit door de agent ingevuld.';
+
+  @override
   String get checkInSentimentStrained => 'Gespannen';
 
   @override
+  String get checkInSourceCall =>
+      'Van het gesprek dat je vanaf deze pagina begon. Alles is aan te passen.';
+
+  @override
+  String get checkInSourceMessage =>
+      'Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'ongeveer $minutes min',
+      one: 'ongeveer 1 min',
+      zero: 'minder dan een minuut',
+    );
+    return '$type · begonnen om $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Check-in inspreken';
+
+  @override
+  String get checkInSpeakInstead => 'Liever inspreken';
+
+  @override
+  String get checkInStartedLabel => 'Begonnen';
 
   @override
   String get checkInTopicsHint => 'Kommagescheiden, bijv. werk, reizen';
@@ -3154,7 +3200,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Transcriptie is niet ingesteld voor deze persoon. Voeg een audiomodel toe en zet automatische inferentie aan voor hun categorie, of typ de check-in.';
 
   @override
-  String get checkInWriteInstead => 'Liever schrijven';
+  String get checkInWhenAndHowLong => 'Wanneer en hoe lang';
 
   @override
   String get checklistAddItem => 'Een nieuw item toevoegen';

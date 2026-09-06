@@ -175,6 +175,56 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
       ..orderBy([(t) => OrderingTerm.desc(t.dateFrom)]);
   }
 
+  /// The check-in lengths this user actually logs, most frequent first (ties
+  /// shortest first), among live check-ins since [since] — the duration
+  /// picker's quick picks (the task-estimate precedent). A length is
+  /// `dateTo − dateFrom` in whole minutes; zero-length check-ins (no duration
+  /// recorded) do not count. Respects the private-entry filter, so a hidden
+  /// person's habits never rank a suggestion.
+  ///
+  /// Grouped in Dart rather than SQL: the window holds a few hundred rows at
+  /// most, and the two timestamps are plain columns the browse index already
+  /// narrows on.
+  Future<List<Duration>> getRankedCheckInDurations({
+    required DateTime since,
+    required int limit,
+  }) async {
+    if (limit <= 0) return const <Duration>[];
+
+    Future<List<JournalDbEntity>> run({List<bool>? privateStatuses}) {
+      return (select(journal)..where((t) {
+            var predicate =
+                t.type.equals('CheckIn') &
+                t.deleted.equals(false) &
+                t.dateFrom.isBiggerOrEqualValue(since);
+            if (privateStatuses != null) {
+              predicate = predicate & t.private.isIn(privateStatuses);
+            }
+            return predicate;
+          }))
+          .get();
+    }
+
+    final rows = await _queryWithPrivateFilter(
+      allPrivate: run,
+      filtered: (statuses) => run(privateStatuses: statuses),
+    );
+    final uses = <int, int>{};
+    for (final row in rows) {
+      final minutes = row.dateTo.difference(row.dateFrom).inMinutes;
+      if (minutes <= 0) continue;
+      uses.update(minutes, (count) => count + 1, ifAbsent: () => 1);
+    }
+    final ranked = uses.keys.toList()
+      ..sort((a, b) {
+        final byUses = uses[b]!.compareTo(uses[a]!);
+        return byUses != 0 ? byUses : a.compareTo(b);
+      });
+    return [
+      for (final minutes in ranked.take(limit)) Duration(minutes: minutes),
+    ];
+  }
+
   SimpleSelectStatement<Journal, JournalDbEntity> _checkInRows(
     String relationshipId, {
     List<bool>? privateStatuses,

@@ -24,6 +24,22 @@ sources:
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
     title: The People list's bands, pills and summary — pure logic
     last_modified: 2026-09-06
+  - id: capture-sheet
+    resource: ../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart
+    title: The check-in capture sheet, its form handle and pinned actions
+    last_modified: 2026-09-06
+  - id: duration-picker
+    resource: ../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart
+    title: The check-in duration picker — ranked chips over the shared wheel
+    last_modified: 2026-09-06
+  - id: duration-ranking
+    resource: ../../lib/features/relationships/state/check_in_duration_suggestions_controller.dart
+    title: checkInDurationSuggestionsControllerProvider
+    last_modified: 2026-09-06
+  - id: shared-duration-picker
+    resource: ../../lib/features/design_system/components/time_pickers/duration_picker_modal.dart
+    title: showDurationPicker — the design-system duration modal both hosts share
+    last_modified: 2026-09-06
   - id: adr-0038
     resource: ../../docs/adr/0038-relationship-domain-model.md
     title: ADR 0038 — Relationship domain model
@@ -634,6 +650,57 @@ renders the list model's cadence fact under a per-host key prefix, and the
 health band pill shares `relationshipHealthBandColor`. The cost pill sums
 `agentTokenUsageSummariesProvider`; the "as of" meta uses the shared
 [`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
+
+## The check-in capture sheet
+
+`showCheckInCaptureSheet` and `showCheckInEditSheet` ([check_in_capture_sheet.dart](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart))
+open one form (design 2026-09-06 §5) in the responsive modal — a bottom sheet
+on a phone, a dialog on desktop — in the order the design argued for: how it
+felt (the sentiment chips, optional) → what you talked about (the narrative,
+with *Speak instead* beside it) → when and how long (the type chips, a
+*Started* tile and a *Duration* tile) → *More*, folded, for the topics and the
+two next-time fields; it opens unfolded when the check-in being edited already
+carries any of them. Save is pinned. The form has no actions of its own: after
+each frame it publishes `save`, `delete` and `canSave` through a
+`CheckInFormHandle` (a `ChangeNotifier`), and `CheckInStickyActions` in the
+modal's sticky bar renders from it — Save held while a save or a transcript is
+in flight, Delete only while editing, bottom-left on the desktop dialog.
+
+```mermaid
+sequenceDiagram
+  participant F as CheckInCaptureForm
+  participant H as CheckInFormHandle
+  participant B as CheckInStickyActions
+  F->>H: publish(save, delete, canSave) — post-frame
+  H-->>B: notifyListeners
+  B->>H: save() / delete() on tap
+  H->>F: the published callback runs
+```
+
+*Started* opens the date picker, then the time picker; the tile reads
+`Now · HH:mm` while the value is the current minute and the relative day plus
+the time otherwise. *Duration* opens `showCheckInDurationPicker`
+([check_in_duration_picker.dart](../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart)):
+ranked quick picks over the shared wheel, *Clear* meaning no duration. The
+ranking ([`checkInDurationSuggestionsControllerProvider`](../../lib/features/relationships/state/check_in_duration_suggestions_controller.dart))
+reads `getRankedCheckInDurations` — `dateTo − dateFrom` in whole minutes over
+the last 90 days, private check-ins excluded while private entries are
+hidden, most-used first and ties shortest first — tops a thin ranking up from
+the design's positions (5 · 10 · 15 · 20 · 30 · 45 min · 1 h · 1 h 30 · 2 h ·
+3 h) without repeating a value, and sorts the six chips shortest-first; the
+wheel is the design's *Custom*. The length persists as the end time (no
+schema change), which is what the log row shows. Opened from the post-call
+offer, the sheet is prefilled with the type, the start time and the elapsed
+minutes, and a source strip above the sentiment row names them —
+`Call · 12:33 · about 11 min` — followed by the sentence saying where they
+came from.
+
+The picker is design-system property: [`showDurationPicker`](../../lib/features/design_system/components/time_pickers/duration_picker_modal.dart)
+and [`DurationQuickPickChips`](../../lib/features/design_system/components/chips/duration_quick_pick_chips.dart)
+carry the shape — a host-named title, host-worded chips, Done committing a
+*changed* wheel, Clear committing zero, a chip popping before it writes — and
+the task estimate picker is the other host (see the
+[tasks data model](tasks/data-model.md#pickers)).
 
 # Voice check-ins (plan v2 phase 6)
 

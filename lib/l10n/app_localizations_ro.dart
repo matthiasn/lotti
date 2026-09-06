@@ -3110,7 +3110,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ștergeți această înregistrare? Acțiunea nu poate fi anulată.';
 
   @override
-  String get checkInDone => 'Gata';
+  String get checkInDurationHint =>
+      'Atingeți durata pentru a deschide rotița. Un mesaj de obicei nu are.';
+
+  @override
+  String get checkInDurationQuickPickHint =>
+      'Atingeți o durată pentru a o salva sau rotiți rotița.';
+
+  @override
+  String checkInDurationSemanticsLabel(String label) {
+    return 'Setați durata la $label';
+  }
 
   @override
   String get checkInEditTitle => 'Editați înregistrarea';
@@ -3122,12 +3132,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Înregistrarea nu a putut fi ștearsă. Încercați din nou.';
-
-  @override
-  String get checkInHowDidItFeel => 'Cum a fost?';
-
-  @override
-  String get checkInHowDidYouConnect => 'Cum a fost contactul?';
 
   @override
   String get checkInInteractionCall => 'Apel';
@@ -3148,13 +3152,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Apel video';
 
   @override
+  String get checkInMoreCaption => 'Subiecte · data viitoare · de evitat';
+
+  @override
+  String get checkInMoreSection => 'Mai mult';
+
+  @override
+  String get checkInNarrativeHint => 'O linie este de ajuns…';
+
+  @override
   String get checkInNarrativeLabel => 'Despre ce ați vorbit?';
+
+  @override
+  String get checkInNoDuration => 'Fără durată';
 
   @override
   String get checkInPayAttentionLabel => 'Data viitoare, acordați atenție la';
 
   @override
-  String get checkInPreparedOverline => '✦ LOTTI · PREGĂTIT AZI-DIMINEAȚĂ';
+  String get checkInSaveButton => 'Salvați check-in-ul';
 
   @override
   String get checkInSentimentDelightful => 'Minunat';
@@ -3172,10 +3188,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInSentimentNeutral => 'Neutru';
 
   @override
+  String get checkInSentimentOptional =>
+      'Opțional. Agentul nu completează niciodată.';
+
+  @override
   String get checkInSentimentStrained => 'Tensionat';
 
   @override
+  String get checkInSourceCall =>
+      'Din apelul pe care l-ați făcut de pe această pagină. Totul se poate edita.';
+
+  @override
+  String get checkInSourceMessage =>
+      'Din mesajul pe care l-ați trimis de pe această pagină. Totul se poate edita.';
+
+  @override
+  String checkInSourceMeta(String type, String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'circa $minutes min',
+      one: 'circa 1 min',
+      zero: 'sub un minut',
+    );
+    return '$type · început la $time · $_temp0';
+  }
+
+  @override
   String get checkInSpeakButton => 'Dictați contactul';
+
+  @override
+  String get checkInSpeakInstead => 'Vorbiți în schimb';
+
+  @override
+  String get checkInStartedLabel => 'Început';
 
   @override
   String get checkInTopicsHint =>
@@ -3196,7 +3242,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Transcrierea nu este configurată pentru această persoană. Adăugați un model audio și activați inferența automată pentru categoria sa, sau scrieți contactul.';
 
   @override
-  String get checkInWriteInstead => 'Scrie în schimb';
+  String get checkInWhenAndHowLong => 'Când și cât timp';
 
   @override
   String get checklistAddItem => 'Adăugați un element nou';

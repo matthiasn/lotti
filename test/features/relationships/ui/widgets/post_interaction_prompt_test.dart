@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
@@ -323,13 +324,13 @@ void main() {
       await tester.pumpAndSettle();
 
       final selected = tester
-          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+          .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
           .where((chip) => chip.selected)
           .toList();
 
       expect(selected, hasLength(1));
       expect(
-        ((selected.single.label) as Text).data,
+        selected.single.label,
         'Call',
         reason:
             'the sheet must open on what actually happened, not on the '
@@ -404,10 +405,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final selected = tester
-          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+          .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
           .firstWhere((chip) => chip.selected);
 
-      expect(((selected.label) as Text).data, 'Message');
+      expect(selected.label, 'Message');
     });
 
     testWidgets('leaves sentiment unset — the user judges how it felt, '
@@ -417,7 +418,7 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
-      // Interaction and sentiment both render as ChoiceChips, so the
+      // Interaction and sentiment both render as DesignSystemChips, so the
       // sentiment row is identified by its labels rather than its type.
       const sentimentLabels = {
         'Delightful',
@@ -426,11 +427,12 @@ void main() {
         'Strained',
         'Difficult',
       };
-      List<ChoiceChip> chips() =>
-          tester.widgetList<ChoiceChip>(find.byType(ChoiceChip)).toList();
+      List<DesignSystemChip> chips() => tester
+          .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
+          .toList();
 
       expect(
-        chips().map((chip) => (chip.label as Text).data).toSet(),
+        chips().map((chip) => chip.label).toSet(),
         containsAll(sentimentLabels),
         reason:
             'guards the assertion below: the sentiment chips must '
@@ -439,7 +441,7 @@ void main() {
 
       final selectedLabels = chips()
           .where((chip) => chip.selected)
-          .map((chip) => (chip.label as Text).data)
+          .map((chip) => chip.label)
           .toSet();
 
       expect(selectedLabels.intersection(sentimentLabels), isEmpty);

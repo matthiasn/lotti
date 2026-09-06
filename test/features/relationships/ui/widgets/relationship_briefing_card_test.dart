@@ -1060,7 +1060,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('How did you connect?'), findsOneWidget);
+      expect(find.text('When and how long'), findsOneWidget);
     });
 
     testWidgets('without a launchable channel, Log check-in is the primary', (
