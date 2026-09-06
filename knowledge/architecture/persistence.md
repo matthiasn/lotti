@@ -269,6 +269,35 @@ existing `idx_sync_sequence_log_host_status` index and sorting that sparse
 subset. This deliberately avoids SQLite choosing a host/counter history scan
 merely to satisfy ordering. The query has no new index or migration cost.
 
+# Conditional journal writes
+
+`PersistenceLogic.updateDbEntity` forwards an optional read-only `precondition`
+to `JournalDb.updateJournalEntity`. The callback runs inside the same journal
+transaction as vector-clock comparison and the entity write. It may read this
+journal’s rows and links, but must not perform external work or mutations.
+A false result returns `overwritePrevented` without changing the row, conflicts,
+labels or JSON sidecar. The persistence facade burns the unused clock reservation
+and returns before search indexing, notifications, badges, and sync publication.
+Those publication steps also skip other refused updates.
+
+```mermaid
+flowchart TD
+  Request[Update entity] --> Transaction[Journal transaction]
+  Transaction --> Guard{Precondition holds or absent?}
+  Guard -->|No| Refuse[Return overwritePrevented]
+  Guard -->|Yes| Compare[Compare vector clocks and apply write]
+  Compare --> Applied{Write applied?}
+  Applied -->|No| RefuseWrite[Return skip reason]
+  Applied -->|Yes| Commit[Commit then publish JSON sidecar]
+  Refuse --> Burn[Burn unused clock reservation]
+  RefuseWrite --> Burn
+  Commit --> Publish[Record sequence, notify, index, enqueue sync]
+```
+
+This is a local database condition, not a distributed lease. The relationship
+proposal deletion policy built on it is documented in
+[Relationships](../features/relationships.md#deferred-task-suggestions).
+
 # Migrations
 
 `JournalDb`, `SyncDatabase`, and `AgentDatabase` each have substantial migration

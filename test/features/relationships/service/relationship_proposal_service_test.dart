@@ -57,7 +57,8 @@ void main() {
       syncService: sync,
       journalDb: db,
       relationshipRepository: relationships,
-      taskRemover: (task) async {
+      taskRemover: (task, {allowedRelationshipId}) async {
+        expect(allowedRelationshipId, set.taskId);
         removed.add(task);
         return removeSucceeds;
       },
@@ -358,6 +359,91 @@ void main() {
         );
         expect(await service.undo(confirmed, 0), isTrue);
         expect(removed, [testTask]);
+      },
+    );
+  }
+  for (final lateNote in [false, true]) {
+    test(
+      'undo transaction preserves a late note but allows its own link (lateNote=$lateNote)',
+      () async {
+        final persistence = MockPersistenceLogic();
+        final links = <EntryLink>[
+          EntryLink.relationship(
+            id: 'person-task',
+            fromId: set.taskId,
+            toId: testTask.id,
+            createdAt: testTask.meta.createdAt,
+            updatedAt: testTask.meta.updatedAt,
+            vectorClock: null,
+          ),
+        ];
+        var tombstoned = false;
+        when(
+          () => db.linksForEntryIdsBidirectional({testTask.id}),
+        ).thenAnswer((_) async => links);
+        when(
+          () => persistence.updateMetadata(
+            testTask.meta,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async {
+          if (lateNote) {
+            links.add(
+              EntryLink.basic(
+                id: 'late-note',
+                fromId: testTask.id,
+                toId: 'new-note',
+                createdAt: testTask.meta.createdAt,
+                updatedAt: testTask.meta.updatedAt,
+                vectorClock: null,
+              ),
+            );
+          }
+          return testTask.meta.copyWith(deletedAt: testTask.meta.updatedAt);
+        });
+        when(
+          () => persistence.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        ).thenAnswer((call) async {
+          final guard =
+              call.namedArguments[#precondition] as Future<bool> Function()?;
+          return tombstoned = guard == null || await guard();
+        });
+        final dispatcher = RelationshipToolDispatcher(
+          relationshipRepository: relationships,
+          persistenceLogic: persistence,
+          entitiesCacheService: MockEntitiesCacheService(),
+          taskAgentService: MockTaskAgentService(),
+          journalDb: db,
+        );
+        service = RelationshipProposalService(
+          confirmation: confirmation,
+          repository: repository,
+          syncService: sync,
+          journalDb: db,
+          relationshipRepository: relationships,
+          taskRemover: dispatcher.removeTask,
+        );
+        expect(await service.undo(confirmed, 0), !lateNote);
+        expect(tombstoned, !lateNote);
+        if (lateNote) {
+          verifyNever(
+            () => relationships.unlinkTask(
+              relationshipId: set.taskId,
+              taskId: testTask.id,
+            ),
+          );
+          expect(await service.receipt(confirmed, 0), testTask);
+        } else {
+          verify(
+            () => relationships.unlinkTask(
+              relationshipId: set.taskId,
+              taskId: testTask.id,
+            ),
+          ).called(1);
+        }
       },
     );
   }

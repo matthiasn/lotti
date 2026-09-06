@@ -32,7 +32,8 @@ class RelationshipProposalService {
   final AgentSyncService syncService;
   final JournalDb journalDb;
   final RelationshipRepository relationshipRepository;
-  final Future<bool> Function(Task) taskRemover;
+  final Future<bool> Function(Task, {String? allowedRelationshipId})
+  taskRemover;
   final _busy = <String>{};
   final _receipts = <String, Task>{};
   static const receiptKey = '_relationshipTaskReceipt';
@@ -185,7 +186,10 @@ class RelationshipProposalService {
           final latest = await journalDb.journalEntityById(original.id);
           if (latest != original ||
               await _hasAdditionalLinks(original.id, fresh.taskId) ||
-              !await taskRemover(current)) {
+              !await taskRemover(
+                current,
+                allowedRelationshipId: fresh.taskId,
+              )) {
             return false;
           }
           // A refused deletion must never detach a live task. Once tombstoned,

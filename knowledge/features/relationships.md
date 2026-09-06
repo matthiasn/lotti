@@ -695,8 +695,9 @@ stateDiagram-v2
 is the only apply path. It rechecks visible evidence, its quoted narrative,
 and current consent; creates a task with the person's category, inherited
 privacy (also preserving private evidence), evidence link and proposed due
-date; then links it to the person. A link failure tombstones the new task;
-a failed compensation is non-retryable to avoid duplicate creation. The shared
+date; then links it to the person. A link failure tombstones the new task only
+if it is unchanged and has no live links. A refused compensation is
+non-retryable, preserving tasks already edited or linked by another writer. The shared
 category-default assignment helper provisions its task agent. The task has a
 stable UUID derived from the person, source check-in, title and quoted
 commitment, so the same synced proposal confirmed on two devices converges on
@@ -705,15 +706,22 @@ this explicit identity and preserves its existing insert-only write contract.
 A live task found under that identity is linked without overwriting it or
 creating a fresh undo receipt from potentially edited data. Reconfirmation
 after undo restores the tombstoned identity with a vector clock descended
-from the tombstone.
+from the tombstone. An active, visible relationship link in either direction
+turns a duplicate link refusal into success without a new undo receipt.
 
 [`relationship_proposal_service.dart`](../../lib/features/relationships/service/relationship_proposal_service.dart)
 wraps the generic confirmation service. The exact creation snapshot is stored
 under `_relationshipTaskReceipt` on the user decision's args, leaving immutable
 proposal args and fingerprints unchanged. It supplies the durable task
 navigation destination and guards undo against task edits. Undo checks the
-task and additional journal links twice, tombstones the untouched task, then
-cleans up its relationship link. A refused deletion leaves the live task
+task and additional journal links before removal. The dispatcher repeats the
+exact snapshot and allowed-link checks inside the journal write transaction,
+then tombstones the untouched task; the service cleans up its relationship
+link afterward. Undo allows only the originating person’s relationship links;
+compensation allows no live links, including hidden links. Link changes do not
+advance the task’s vector clock, so clock comparison alone cannot guard this
+operation. This protects local writes and peer changes already received, not
+changes still offline on another device. A refused deletion leaves the live task
 linked. Failed link cleanup is logged and leaves only a link to a tombstoned
 task, which relationship task queries exclude; it does not undo the successful
 deletion or reopen an unsafe compensation path.

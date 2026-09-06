@@ -753,6 +753,68 @@ void main() {
 
     group('Write-path atomicity -', () {
       test(
+        'refused precondition preserves the stored row and JSON sidecar',
+        () async {
+          final entry = createJournalEntryWithVclock(
+            const VectorClock({'a': 1}),
+            id: 'guarded',
+          );
+          await db!.updateJournalEntity(entry);
+          final file = File(entityPath(entry, getIt<Directory>()));
+          final before = await file.readAsString();
+          final updated = entry.copyWith(
+            meta: entry.meta.copyWith(
+              vectorClock: const VectorClock({'a': 2}),
+              deletedAt: DateTime(2026, 9, 6),
+            ),
+          );
+          final result = await db!.updateJournalEntity(
+            updated,
+            precondition: () async => false,
+          );
+          expect(result.applied, isFalse);
+          expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
+          expect(await db!.journalEntityById(entry.id), entry);
+          expect(await file.readAsString(), before);
+          expect(await db!.conflictById(entry.id), isNull);
+        },
+      );
+
+      test('precondition reads and write share one transaction', () async {
+        final entry = createJournalEntryWithVclock(
+          const VectorClock({'a': 1}),
+          id: 'guard-race',
+        );
+        await db!.updateJournalEntity(entry);
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        final updated = entry.copyWith(
+          meta: entry.meta.copyWith(vectorClock: const VectorClock({'a': 3})),
+        );
+        final deletion = db!.updateJournalEntity(
+          updated,
+          precondition: () async {
+            entered.complete();
+            await release.future;
+            return await db!.journalEntityById(entry.id) == entry;
+          },
+        );
+        await entered.future;
+        final competing = db!.updateJournalEntity(
+          entry.copyWith(
+            meta: entry.meta.copyWith(vectorClock: const VectorClock({'a': 2})),
+          ),
+        );
+        release.complete();
+        expect((await deletion).applied, isTrue);
+        expect(
+          (await competing).skipReason,
+          JournalUpdateSkipReason.olderOrEqual,
+        );
+        expect(await db!.journalEntityById(entry.id), updated);
+      });
+
+      test(
         'concurrent writes of the same id are serialised: the second sees '
         'the first and records a conflict instead of overwriting it',
         () async {

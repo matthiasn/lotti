@@ -144,6 +144,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
     bool enqueueSync = true,
     bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
+    Future<bool> Function()? precondition,
   }) async {
     try {
       return await vectorClockService.withVcScope<bool?>(
@@ -151,6 +152,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
           final updateResult = await journalDb.updateJournalEntity(
             journalEntity,
             overrideComparison: overrideComparison,
+            precondition: precondition,
           );
           final applied = updateResult.applied;
 
@@ -164,16 +166,15 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
               journalEntity.meta.vectorClock,
               reason: 'updateDbEntity write rejected id=${journalEntity.id}',
             );
+            return false;
           }
 
-          if (applied) {
-            await recordJournalSequence(
-              journalEntity,
-              subDomain: 'updateDbEntity.recordSent',
-            );
-          }
+          await recordJournalSequence(
+            journalEntity,
+            subDomain: 'updateDbEntity.recordSent',
+          );
 
-          if (applied && beforeNotify != null) {
+          if (beforeNotify != null) {
             try {
               await beforeNotify();
             } catch (exception, stackTrace) {
@@ -219,7 +220,7 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
             removePrevious: true,
           );
 
-          if (enqueueSync && applied) {
+          if (enqueueSync) {
             try {
               await outboxService.enqueueMessage(
                 SyncMessage.journalEntity(

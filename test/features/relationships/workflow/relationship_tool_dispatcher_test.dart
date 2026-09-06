@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -51,7 +52,12 @@ void main() {
     cache = MockEntitiesCacheService();
     agents = MockTaskAgentService();
     db = MockJournalDb();
-    when(() => db.journalEntityById(any())).thenAnswer((_) async => null);
+    when(() => db.journalEntityById(any())).thenAnswer(
+      (call) async => call.positionalArguments.single == task.id ? task : null,
+    );
+    when(
+      () => db.linksForEntryIdsBidirectional(any()),
+    ).thenAnswer((_) async => []);
     dispatcher = RelationshipToolDispatcher(
       relationshipRepository: relationships,
       persistenceLogic: persistence,
@@ -84,7 +90,16 @@ void main() {
         deletedAt: any(named: 'deletedAt'),
       ),
     ).thenAnswer((_) async => task.meta.copyWith(deletedAt: now));
-    when(() => persistence.updateDbEntity(any())).thenAnswer((_) async => true);
+    when(
+      () => persistence.updateDbEntity(
+        any(),
+        precondition: any(named: 'precondition'),
+      ),
+    ).thenAnswer((call) async {
+      final guard =
+          call.namedArguments[#precondition] as Future<bool> Function()?;
+      return guard == null || await guard();
+    });
   });
 
   test(
@@ -144,7 +159,10 @@ void main() {
         expect(result.nonRetryable, isFalse);
         final deleted =
             verify(
-                  () => persistence.updateDbEntity(captureAny()),
+                  () => persistence.updateDbEntity(
+                    captureAny(),
+                    precondition: any(named: 'precondition'),
+                  ),
                 ).captured.single
                 as Task;
         expect(deleted.meta.deletedAt, now);
@@ -160,7 +178,10 @@ void main() {
             relationships.linkTask(relationshipId: person.id, taskId: task.id),
       ).thenAnswer((_) async => false);
       when(
-        () => persistence.updateDbEntity(any()),
+        () => persistence.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).thenAnswer((_) async => false);
       final result = await dispatcher.dispatch(
         'create_and_link_task',
@@ -316,7 +337,12 @@ void main() {
         () =>
             relationships.linkTask(relationshipId: person.id, taskId: task.id),
       );
-      verify(() => persistence.updateDbEntity(any())).called(1);
+      verify(
+        () => persistence.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      ).called(1);
     },
   );
 
@@ -371,7 +397,10 @@ void main() {
     'metadata failures and refused tombstone writes refuse compensation',
     () async {
       when(
-        () => persistence.updateDbEntity(any()),
+        () => persistence.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
       ).thenAnswer((_) async => null);
       expect(await dispatcher.removeTask(task), isFalse);
       when(
@@ -496,7 +525,12 @@ void main() {
             private: any(named: 'private'),
           ),
         );
-        verifyNever(() => persistence.updateDbEntity(any()));
+        verifyNever(
+          () => persistence.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
+        );
       },
     );
   }
@@ -523,7 +557,10 @@ void main() {
               invocation.positionalArguments.first as Metadata,
         );
         when(
-          () => persistence.updateDbEntity(any()),
+          () => persistence.updateDbEntity(
+            any(),
+            precondition: any(named: 'precondition'),
+          ),
         ).thenAnswer((_) async => saved);
         when(
           () => relationships.linkTask(
@@ -539,7 +576,10 @@ void main() {
         expect(result.success, saved);
         final restored =
             verify(
-                  () => persistence.updateDbEntity(captureAny()),
+                  () => persistence.updateDbEntity(
+                    captureAny(),
+                    precondition: any(named: 'precondition'),
+                  ),
                 ).captured.single
                 as Task;
         expect(restored.id, identity);
@@ -627,7 +667,127 @@ void main() {
         () =>
             relationships.linkTask(relationshipId: person.id, taskId: task.id),
       ).called(1);
-      verifyNever(() => persistence.updateDbEntity(any()));
+      verifyNever(
+        () => persistence.updateDbEntity(
+          any(),
+          precondition: any(named: 'precondition'),
+        ),
+      );
     },
   );
+  EntryLink personLink({
+    String? from,
+    String? to,
+    bool hidden = false,
+    bool deleted = false,
+  }) => EntryLink.relationship(
+    id: 'peer-link',
+    fromId: from ?? person.id,
+    toId: to ?? task.id,
+    createdAt: now,
+    updatedAt: now,
+    vectorClock: null,
+    hidden: hidden,
+    deletedAt: deleted ? now : null,
+  );
+
+  for (final reverse in [false, true]) {
+    test(
+      'duplicate relationship link is success without an undo receipt (reverse=$reverse)',
+      () async {
+        when(
+          () => relationships.linkTask(
+            relationshipId: person.id,
+            taskId: task.id,
+          ),
+        ).thenAnswer((_) async {
+          when(() => db.linksForEntryIdsBidirectional({task.id})).thenAnswer(
+            (_) async => [
+              personLink(
+                from: reverse ? task.id : person.id,
+                to: reverse ? person.id : task.id,
+              ),
+            ],
+          );
+          return false;
+        });
+        final result = await dispatcher.dispatch(
+          'create_and_link_task',
+          args,
+          person.id,
+        );
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, task.id);
+        expect(result, isNot(isA<RelationshipTaskCreationResult>()));
+        verifyNever(
+          () => persistence.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        );
+      },
+    );
+  }
+
+  test(
+    'a throwing link write preserves a peer-linked task during compensation',
+    () async {
+      when(
+        () =>
+            relationships.linkTask(relationshipId: person.id, taskId: task.id),
+      ).thenAnswer((_) async {
+        when(
+          () => db.linksForEntryIdsBidirectional({task.id}),
+        ).thenAnswer((_) async => [personLink()]);
+        throw StateError('local link failure');
+      });
+      final result = await dispatcher.dispatch(
+        'create_and_link_task',
+        args,
+        person.id,
+      );
+      expect(result.success, isFalse);
+      expect(result.nonRetryable, isTrue);
+      expect(result.errorMessage, contains('rollback failed'));
+    },
+  );
+
+  for (final (name, link, personId, allowed) in [
+    ('peer', personLink(), null, false),
+    ('hidden', personLink(hidden: true), null, false),
+    ('other person', personLink(from: 'other-person'), person.id, false),
+    ('reverse', personLink(from: task.id, to: person.id), person.id, true),
+    ('deleted link', personLink(deleted: true), null, true),
+  ]) {
+    test('transactional removal guard handles $name', () async {
+      when(
+        () => db.linksForEntryIdsBidirectional({task.id}),
+      ).thenAnswer((_) async => [link]);
+      expect(
+        await dispatcher.removeTask(task, allowedRelationshipId: personId),
+        allowed,
+      );
+    });
+  }
+
+  for (final (name, current) in [
+    ('edit', task.copyWith(data: task.data.copyWith(title: 'Edited by user'))),
+    ('missing', null),
+    ('deleted', task.copyWith(meta: task.meta.copyWith(deletedAt: now))),
+  ]) {
+    test('transactional removal guard refuses a $name snapshot', () async {
+      when(
+        () => persistence.updateMetadata(
+          task.meta,
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer((_) async {
+        when(
+          () => db.journalEntityById(task.id),
+        ).thenAnswer((_) async => current);
+        return task.meta.copyWith(deletedAt: now);
+      });
+      expect(await dispatcher.removeTask(task), isFalse);
+    });
+  }
 }
