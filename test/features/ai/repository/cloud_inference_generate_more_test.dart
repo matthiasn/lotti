@@ -88,6 +88,23 @@ void main() {
     );
   }
 
+  test('sherpa rejects chat history rather than selecting the HTTP route', () {
+    expect(
+      () => generateMore.generateWithMessages(
+        messages: [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('private prompt'),
+          ),
+        ],
+        model: 'tiny',
+        temperature: null,
+        provider: providerOfType(InferenceProviderType.sherpa),
+      ),
+      throwsUnsupportedError,
+    );
+    verifyNever(() => httpClient.send(any()));
+  });
+
   test('sherpa audio routes to the embedded runner without HTTP', () async {
     const chunk = CreateChatCompletionStreamResponse(
       id: 'embedded',

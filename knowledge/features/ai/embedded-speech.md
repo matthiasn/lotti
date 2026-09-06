@@ -38,6 +38,10 @@ Whisper Tiny and Base exports. Model files are downloaded only after the user
 presses Download in the provider's model section. Model names are upstream
 product names; surrounding controls are localized.
 
+Text, image-input, and multi-turn chat calls reject this ASR-only provider
+before constructing an HTTP client, including when stale configuration carries
+an old server URL.
+
 Configuration rows sync normally; downloaded files do not. Files live below
 application support in `sherpa_models/<model>/<revision>/`. The manifest pins
 Hugging Face revisions, byte lengths, and SHA-256 digests. Unknown model ids

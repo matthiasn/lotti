@@ -346,6 +346,10 @@ class CloudInferenceGenerateMore {
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
+    if (provider.inferenceProviderType == InferenceProviderType.sherpa) {
+      throw UnsupportedError('sherpa-onnx supports audio transcription only');
+    }
+
     developer.log(
       'CloudInferenceRepository.generateWithMessages called with:\n'
       '  model: $model\n'
