@@ -11375,7 +11375,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipStatusLineAddedFirstDue(String cadence, String day) {
-    return 'Nyss tillagd · $cadence · första gången $day';
+    return 'Nyss tillagd · $cadence · första gången senast $day';
   }
 
   @override

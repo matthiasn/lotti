@@ -4511,7 +4511,7 @@
       }
     }
   },
-  "relationshipStatusLineAddedFirstDue": "Gerade hinzugefügt · {cadence} · erstmals fällig {day}",
+  "relationshipStatusLineAddedFirstDue": "Gerade hinzugefügt · {cadence} · erstmals fällig am {day}",
   "@relationshipStatusLineAddedFirstDue": {
     "placeholders": {
       "cadence": {

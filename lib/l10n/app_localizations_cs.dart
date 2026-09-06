@@ -11533,7 +11533,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipStatusLineAddedFirstDue(String cadence, String day) {
-    return 'Právě přidáno · $cadence · poprvé $day';
+    return 'Právě přidáno · $cadence · poprvé do $day';
   }
 
   @override

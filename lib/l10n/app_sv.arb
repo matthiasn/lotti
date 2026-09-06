@@ -5014,7 +5014,7 @@
       }
     }
   },
-  "relationshipStatusLineAddedFirstDue": "Nyss tillagd · {cadence} · första gången {day}",
+  "relationshipStatusLineAddedFirstDue": "Nyss tillagd · {cadence} · första gången senast {day}",
   "@relationshipStatusLineAddedFirstDue": {
     "placeholders": {
       "cadence": {

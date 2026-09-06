@@ -11433,7 +11433,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String relationshipStatusLineAddedFirstDue(String cadence, String day) {
-    return 'Gerade hinzugefügt · $cadence · erstmals fällig $day';
+    return 'Gerade hinzugefügt · $cadence · erstmals fällig am $day';
   }
 
   @override

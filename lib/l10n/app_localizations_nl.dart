@@ -11383,7 +11383,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipStatusLineAddedFirstDue(String cadence, String day) {
-    return 'Net toegevoegd · $cadence · eerste keer $day';
+    return 'Net toegevoegd · $cadence · eerste keer voor $day';
   }
 
   @override

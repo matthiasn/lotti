@@ -4518,7 +4518,7 @@
       }
     }
   },
-  "relationshipStatusLineAddedFirstDue": "Právě přidáno · {cadence} · poprvé {day}",
+  "relationshipStatusLineAddedFirstDue": "Právě přidáno · {cadence} · poprvé do {day}",
   "@relationshipStatusLineAddedFirstDue": {
     "placeholders": {
       "cadence": {

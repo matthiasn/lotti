@@ -5013,7 +5013,7 @@
       }
     }
   },
-  "relationshipStatusLineAddedFirstDue": "Net toegevoegd · {cadence} · eerste keer {day}",
+  "relationshipStatusLineAddedFirstDue": "Net toegevoegd · {cadence} · eerste keer voor {day}",
   "@relationshipStatusLineAddedFirstDue": {
     "placeholders": {
       "cadence": {

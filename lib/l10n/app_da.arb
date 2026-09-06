@@ -5014,7 +5014,7 @@
       }
     }
   },
-  "relationshipStatusLineAddedFirstDue": "Lige tilføjet · {cadence} · første gang {day}",
+  "relationshipStatusLineAddedFirstDue": "Lige tilføjet · {cadence} · første gang senest {day}",
   "@relationshipStatusLineAddedFirstDue": {
     "placeholders": {
       "cadence": {

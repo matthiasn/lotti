@@ -11363,7 +11363,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipStatusLineAddedFirstDue(String cadence, String day) {
-    return 'Lige tilføjet · $cadence · første gang $day';
+    return 'Lige tilføjet · $cadence · første gang senest $day';
   }
 
   @override
