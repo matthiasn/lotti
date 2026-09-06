@@ -48,12 +48,16 @@ abstract class PersistenceLogicContract {
     bool linkCollapsed = false,
   });
 
+  /// Updates an entity, optionally guarded by read-only journal queries in
+  /// [precondition] executed inside the write transaction. A refused write
+  /// publishes no notifications, search-index updates, or sync payload.
   Future<bool?> updateDbEntity(
     JournalEntity journalEntity, {
     String? linkedId,
     bool enqueueSync = true,
     bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
+    Future<bool> Function()? precondition,
   });
 
   void addGeolocation(String journalEntityId);

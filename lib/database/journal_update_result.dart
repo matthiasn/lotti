@@ -6,7 +6,8 @@ enum JournalUpdateSkipReason {
   /// Update could not be applied because of a concurrent conflict.
   conflict,
 
-  /// Update was withheld because overwrite was disabled.
+  /// Update was withheld because overwrite was disabled or a caller’s
+  /// transactional write precondition refused it.
   overwritePrevented,
 
   /// The expected base entity was missing (e.g., pruned or never replicated).

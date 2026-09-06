@@ -346,12 +346,14 @@ class PersistenceLogic implements PersistenceLogicContract {
     bool enqueueSync = true,
     bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
+    Future<bool> Function()? precondition,
   }) => _updates.updateDbEntity(
     journalEntity,
     linkedId: linkedId,
     enqueueSync: enqueueSync,
     overrideComparison: overrideComparison,
     beforeNotify: beforeNotify,
+    precondition: precondition,
   );
 
   // --- Entry-update builders (PersistenceUpdateOps) ------------------------

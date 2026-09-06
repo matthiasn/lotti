@@ -293,6 +293,7 @@ class TestPersistenceLogic extends PersistenceLogic {
     bool enqueueSync = true,
     bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
+    Future<bool> Function()? precondition,
   }) async {
     lastUpdateDbEntity = journalEntity;
     if (updateDbEntityHandler != null) {
@@ -310,6 +311,7 @@ class TestPersistenceLogic extends PersistenceLogic {
       enqueueSync: enqueueSync,
       overrideComparison: overrideComparison,
       beforeNotify: beforeNotify,
+      precondition: precondition,
     );
   }
 }
@@ -2849,6 +2851,57 @@ void main() {
       },
     );
 
+    test(
+      'refused write precondition burns the clock without publishing deletion',
+      () async {
+        final entry = buildEntry();
+        Future<bool> precondition() async => false;
+        when(
+          () => journalDb.updateJournalEntity(
+            entry,
+            // ignore: avoid_redundant_argument_values
+            overrideComparison: false,
+            precondition: precondition,
+          ),
+        ).thenAnswer(
+          (_) async => JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.overwritePrevented,
+          ),
+        );
+        var notified = false;
+        expect(
+          await logic.updateDbEntity(
+            entry,
+            precondition: precondition,
+            beforeNotify: () async {
+              notified = true;
+            },
+          ),
+          isFalse,
+        );
+        verify(
+          () => journalDb.updateJournalEntity(
+            entry,
+            // ignore: avoid_redundant_argument_values
+            overrideComparison: false,
+            precondition: precondition,
+          ),
+        ).called(1);
+        verify(
+          () => vectorClockService.burnUnboundVectorClock(
+            entry.meta.vectorClock,
+            reason: any(named: 'reason'),
+          ),
+        ).called(1);
+        expect(notified, isFalse);
+        verifyNever(() => updateNotifications.notify(any()));
+        verifyNever(() => updateNotifications.notifyUiOnly(any()));
+        verifyNever(() => fts5Db.insertText(any(), removePrevious: true));
+        verifyNever(notificationService.updateBadge);
+        verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+      },
+    );
+
     test('updateDbEntity returns false when update skipped', () async {
       stubUpdateResult(
         JournalUpdateResult.skipped(
@@ -2952,6 +3005,14 @@ void main() {
         );
 
         expect(result, scenario.applied, reason: '$scenario');
+
+        if (!scenario.applied) {
+          verifyNever(() => updateNotifications.notify(any()));
+          verifyNever(() => fts5Db.insertText(any(), removePrevious: true));
+          verifyNever(notificationService.updateBadge);
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+          return;
+        }
 
         final notificationIds =
             verify(

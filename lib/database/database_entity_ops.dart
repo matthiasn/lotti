@@ -106,6 +106,11 @@ mixin _JournalDbEntityOps
   /// check and the write. A caller that already holds a transaction (the
   /// sync inbound handler) simply nests this one.
   ///
+  /// [precondition], when supplied, runs inside that same transaction before
+  /// any write. It must only read this journal database, without side effects
+  /// or external awaits. Use direct queries, not readers that coalesce calls
+  /// across transaction zones. Returning false leaves the row and sidecar untouched.
+  ///
   /// The JSON sidecar is written **after** the transaction commits: it is
   /// the sync payload, so it must never describe a row that rolled back,
   /// and writing it inside the transaction would hold the journal writer
@@ -115,6 +120,7 @@ mixin _JournalDbEntityOps
     JournalEntity updated, {
     bool overrideComparison = false,
     bool overwrite = true,
+    Future<bool> Function()? precondition,
   }) async {
     final dbEntity = toDbEntity(updated).copyWith(
       updatedAt: clock.now(),
@@ -126,6 +132,11 @@ mixin _JournalDbEntityOps
       JournalUpdateSkipReason? skipReason;
       var rowsWritten = 0;
 
+      if (precondition != null && !await precondition()) {
+        return JournalUpdateResult.skipped(
+          reason: JournalUpdateSkipReason.overwritePrevented,
+        );
+      }
       final existingDbEntity = await entityById(dbEntity.id);
 
       if (existingDbEntity != null && !overwrite) {

@@ -143,6 +143,7 @@ class _TestPersistenceLogic extends PersistenceLogic {
     bool enqueueSync = true,
     bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
+    Future<bool> Function()? precondition,
   }) async {
     _lastSaved = journalEntity;
     await beforeNotify?.call();

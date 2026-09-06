@@ -45,6 +45,7 @@ class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
     bool enqueueSync = true,
     bool overrideComparison = false,
     Future<void> Function()? beforeNotify,
+    Future<bool> Function()? precondition,
   }) async {
     if (journalEntity is Task && journalEntity.meta.deletedAt != null) {
       if (commitBeforeFailure) {
@@ -58,6 +59,7 @@ class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
       enqueueSync: enqueueSync,
       overrideComparison: overrideComparison,
       beforeNotify: beforeNotify,
+      precondition: precondition,
     );
   }
 }

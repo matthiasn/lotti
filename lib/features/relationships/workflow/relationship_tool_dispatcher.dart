@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -101,12 +103,9 @@ class RelationshipToolDispatcher {
       if (existing is! Task) {
         return _failure('Task identity is unavailable', permanent: true);
       }
-      final linked = await relationshipRepository.linkTask(
-        relationshipId: relationshipId,
-        taskId: taskId,
-      );
+      final linked = await _tryLinkTask(taskId, relationshipId);
       // Do not mint an undo receipt from a task a peer may already have edited.
-      return linked
+      return (linked || await _hasRelationshipLink(taskId, relationshipId))
           ? ToolExecutionResult(
               success: true,
               output: 'Task already exists',
@@ -173,6 +172,7 @@ class RelationshipToolDispatcher {
     }
     if (task == null) return _failure('Task creation failed');
     var linked = false;
+    var alreadyLinked = false;
     try {
       // A deleted person must not gain a task while an async create was running.
       final current = await relationshipRepository.getRelationshipById(
@@ -184,13 +184,14 @@ class RelationshipToolDispatcher {
           current.data.status is RelationshipActive &&
           current.meta.categoryId == categoryId &&
           current.meta.private == person.meta.private) {
-        linked = await relationshipRepository.linkTask(
-          relationshipId: relationshipId,
-          taskId: task.id,
-        );
+        linked = await _tryLinkTask(task.id, relationshipId);
+        if (!linked) {
+          alreadyLinked = await _hasRelationshipLink(task.id, relationshipId);
+          linked = alreadyLinked;
+        }
       }
     } catch (_) {
-      // The same compensation applies to rejected and throwing link writes.
+      // If validation or reconciliation fails, compensation is still guarded.
     }
     if (!linked) {
       final rolledBack = await removeTask(task);
@@ -199,6 +200,14 @@ class RelationshipToolDispatcher {
             ? 'Task linking failed; creation rolled back'
             : 'Task linking failed and rollback failed',
         permanent: !rolledBack,
+      );
+    }
+    if (alreadyLinked) {
+      // The peer's confirmation owns this task. Do not issue a local undo receipt.
+      return ToolExecutionResult(
+        success: true,
+        output: 'Task already exists',
+        mutatedEntityId: task.id,
       );
     }
     final assignment = await assignCategoryDefaultTaskAgent(
@@ -217,14 +226,64 @@ class RelationshipToolDispatcher {
     return RelationshipTaskCreationResult(task);
   }
 
-  /// Tombstones a task for compensation or a guarded proposal undo.
-  Future<bool> removeTask(Task task) async {
+  /// A link may commit before post-write work throws. Both callers reconcile
+  /// the stored link after a false result, without issuing another undo receipt.
+  Future<bool> _tryLinkTask(String taskId, String personId) async {
+    try {
+      return await relationshipRepository.linkTask(
+        relationshipId: personId,
+        taskId: taskId,
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _hasRelationshipLink(String taskId, String personId) async {
+    final links = await journalDb.linksForEntryIdsBidirectional({taskId});
+    return links.any(
+      (link) =>
+          link.deletedAt == null &&
+          link.hidden != true &&
+          _isPersonLink(link, taskId, personId),
+    );
+  }
+
+  static bool _isPersonLink(EntryLink link, String taskId, String? personId) =>
+      link is RelationshipLink &&
+      ((link.fromId == personId && link.toId == taskId) ||
+          (link.fromId == taskId && link.toId == personId));
+
+  /// Tombstones only the unchanged snapshot, checking links in the journal write
+  /// transaction. Compensation permits no live links; undo may retain only the
+  /// originating person's relationship links until its subsequent cleanup.
+  Future<bool> removeTask(Task task, {String? allowedRelationshipId}) async {
     try {
       final meta = await persistenceLogic.updateMetadata(
         task.meta,
         deletedAt: clock.now(),
       );
-      return await persistenceLogic.updateDbEntity(task.copyWith(meta: meta)) ??
+      return await persistenceLogic.updateDbEntity(
+            task.copyWith(meta: meta),
+            precondition: () async {
+              // The public lookup coalesces callers across transaction zones.
+              // Read directly so this snapshot belongs to the write transaction.
+              final current = await journalDb.entityById(task.id);
+              if (task.isDeleted ||
+                  current == null ||
+                  fromDbEntity(current) != task) {
+                return false;
+              }
+              final links = await journalDb.linksForEntryIdsBidirectional({
+                task.id,
+              });
+              return !links.any(
+                (link) =>
+                    link.deletedAt == null &&
+                    !_isPersonLink(link, task.id, allowedRelationshipId),
+              );
+            },
+          ) ??
           false;
     } catch (_) {
       return false;
