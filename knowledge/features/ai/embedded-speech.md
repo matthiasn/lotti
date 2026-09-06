@@ -128,3 +128,7 @@ TTS's Java/JNI dependency to the published 1.27.0 artifact (there is no 1.27.1
 Maven artifact), sharing the compatible 1.27 API with sherpa's runtime. Duplicate
 `libonnxruntime.so` inputs are merged into one packaged library. Apple's sherpa
 frameworks hide their internal ORT symbols.
+
+Flatpak copies the bundle with `--remove-destination`: its build-time ORT
+installation links `.so` to `.so.1`, while the bundle links `.so.1` to `.so`.
+Following existing destination links during the copy would create a cycle.

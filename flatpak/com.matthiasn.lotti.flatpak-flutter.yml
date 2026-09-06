@@ -139,7 +139,9 @@ modules:
         if [ "${FLATPAK_ARCH}" = "aarch64" ]; then
           arch="arm64"
         fi
-        cp -r build/linux/${arch}/release/bundle/* /app/
+        # Replace existing runtime symlinks instead of following them: the
+        # build dependency and bundled speech runtime use opposite .so aliases.
+        cp -r --remove-destination build/linux/${arch}/release/bundle/* /app/
       - chmod +x /app/lotti
       - |
         install -D linux/com.matthiasn.lotti.desktop /app/share/applications/com.matthiasn.lotti.desktop
