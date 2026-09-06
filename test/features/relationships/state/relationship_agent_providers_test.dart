@@ -645,6 +645,9 @@ void main() {
       );
 
       await expectLater(disclosure(), throwsStateError);
+      // The shared stubs make every route fail, so the throw alone would
+      // pass without the category branch ever running: prove it ran.
+      verify(() => journalDb.getCategoryById('cat-1')).called(1);
     });
 
     test('a dangling profile id falls through to the default cloud model '
