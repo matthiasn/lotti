@@ -4263,7 +4263,7 @@
   "relationshipAgentNextLook": "Další pohled {day}",
   "relationshipAgentNoAgent": "žádný agent pro tuto osobu",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše, jakmile zaznamenáš check-in; telefon ani e-mail nikdy nevidí.} =1{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvého check-inu; telefon ani e-mail nikdy nevidí.} few{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.} other{Zatím žádný briefing. „Vytvořit briefing teď“ ho napíše z tvých {count} check-inů; telefon ani e-mail nikdy nevidí.}}",
-  "relationshipAgentNotEnrolledBody": "Označ {name} jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Do té doby se nic neděje samo; AI použije jen chat, který spustíš ty.",
+  "relationshipAgentNotEnrolledBody": "Označ {name} jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Do té doby se nic neděje samo; AI použije jen to, co spustíš ty, třeba chat nebo nadiktovaný check-in.",
   "relationshipAgentOutOfDateNewCheckIn": "Zastaralé · nový check-in {day}",
   "relationshipAgentPausedBody": "Briefingy se pozastaví, dokud je tato osoba neaktivní nebo archivovaná.",
   "relationshipAgentReading": "{count, plural, =0{Čte osobu…} =1{Čte 1 check-in…} few{Čte {count} check-iny…} other{Čte {count} check-inů…}}",

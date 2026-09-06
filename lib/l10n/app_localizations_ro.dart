@@ -11157,7 +11157,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat. Până atunci nimic nu rulează de la sine; doar un chat pe care îl porniți dumneavoastră folosește AI.';
+    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat. Până atunci nimic nu rulează de la sine; doar ceea ce porniți dumneavoastră, precum un chat sau un check-in dictat, folosește AI.';
   }
 
   @override

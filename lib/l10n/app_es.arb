@@ -4256,7 +4256,7 @@
   "relationshipAgentNextLook": "Próximo vistazo {day}",
   "relationshipAgentNoAgent": "sin agente para esta persona",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Aún no hay briefing. „Crear briefing ahora“ escribe uno en cuanto registres un check-in; nunca ve el teléfono ni el correo.} =1{Aún no hay briefing. „Crear briefing ahora“ escribe uno a partir de tu check-in; nunca ve el teléfono ni el correo.} other{Aún no hay briefing. „Crear briefing ahora“ escribe uno a partir de tus {count} check-ins; nunca ve el teléfono ni el correo.}}",
-  "relationshipAgentNotEnrolledBody": "Marca a {name} como importante para recibir un briefing, avisos cuando pase tiempo sin contacto y un chat. Hasta entonces nada se ejecuta solo; solo un chat que inicies tú usa la IA.",
+  "relationshipAgentNotEnrolledBody": "Marca a {name} como importante para recibir un briefing, avisos cuando pase tiempo sin contacto y un chat. Hasta entonces nada se ejecuta solo; solo lo que inicies tú, como un chat o un check-in dictado, usa la IA.",
   "relationshipAgentOutOfDateNewCheckIn": "Desactualizado · nuevo check-in {day}",
   "relationshipAgentPausedBody": "Los briefings se pausan mientras esta persona esté inactiva o archivada.",
   "relationshipAgentReading": "{count, plural, =0{Leyendo a la persona…} =1{Leyendo 1 check-in…} other{Leyendo {count} check-ins…}}",

@@ -10880,7 +10880,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Mark $name as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only a chat you start uses AI.';
+    return 'Mark $name as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only what you start yourself, like a chat or a dictated check-in, uses AI.';
   }
 
   @override

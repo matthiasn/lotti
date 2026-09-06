@@ -11098,7 +11098,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Do té doby se nic neděje samo; AI použije jen chat, který spustíš ty.';
+    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Do té doby se nic neděje samo; AI použije jen to, co spustíš ty, třeba chat nebo nadiktovaný check-in.';
   }
 
   @override

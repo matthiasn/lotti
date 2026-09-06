@@ -4759,7 +4759,7 @@
   "relationshipAgentNextLook": "Nästa titt {day}",
   "relationshipAgentNoAgent": "ingen agent för den här personen",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ingen briefing än. „Briefa nu“ skriver en så fort du loggat en avstämning; den ser aldrig telefonnummer eller e-post.} =1{Ingen briefing än. „Briefa nu“ skriver en utifrån din avstämning; den ser aldrig telefonnummer eller e-post.} other{Ingen briefing än. „Briefa nu“ skriver en utifrån dina {count} avstämningar; den ser aldrig telefonnummer eller e-post.}}",
-  "relationshipAgentNotEnrolledBody": "Markera {name} som viktig för att få en briefing, påminnelser när det gått ett tag och en chatt. Tills dess körs inget av sig självt; bara en chatt du själv startar använder AI.",
+  "relationshipAgentNotEnrolledBody": "Markera {name} som viktig för att få en briefing, påminnelser när det gått ett tag och en chatt. Tills dess körs inget av sig självt; bara det du själv startar, som en chatt eller en dikterad avstämning, använder AI.",
   "relationshipAgentOutOfDateNewCheckIn": "Inaktuell · ny avstämning {day}",
   "relationshipAgentPausedBody": "Briefingar pausas så länge personen är vilande eller arkiverad.",
   "relationshipAgentReading": "{count, plural, =0{Läser personen…} =1{Läser 1 avstämning…} other{Läser {count} avstämningar…}}",

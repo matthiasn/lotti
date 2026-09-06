@@ -10951,7 +10951,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markeer $name als belangrijk voor een briefing, een seintje als het even geleden is, en een chat. Tot die tijd gebeurt er niets vanzelf; alleen een chat die je zelf start gebruikt de AI.';
+    return 'Markeer $name als belangrijk voor een briefing, een seintje als het even geleden is, en een chat. Tot die tijd gebeurt er niets vanzelf; alleen wat je zelf start, zoals een chat of een ingesproken check-in, gebruikt de AI.';
   }
 
   @override

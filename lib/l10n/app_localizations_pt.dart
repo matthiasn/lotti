@@ -11037,7 +11037,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marca $name como importante para receber um briefing, lembretes quando já passou algum tempo e um chat. Até lá nada corre sozinho; só um chat que tu inicias usa a IA.';
+    return 'Marca $name como importante para receber um briefing, lembretes quando já passou algum tempo e um chat. Até lá nada corre sozinho; só o que tu inicias, como um chat ou um check-in ditado, usa a IA.';
   }
 
   @override

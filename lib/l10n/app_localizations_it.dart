@@ -11074,7 +11074,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Segna $name come importante per ricevere un briefing, promemoria quando è passato un po\' di tempo e una chat. Fino ad allora nulla parte da solo; solo una chat che avvii tu usa l\'IA.';
+    return 'Segna $name come importante per ricevere un briefing, promemoria quando è passato un po\' di tempo e una chat. Fino ad allora nulla parte da solo; solo ciò che avvii tu, come una chat o un check-in dettato, usa l\'IA.';
   }
 
   @override
