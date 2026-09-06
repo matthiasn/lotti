@@ -65,13 +65,23 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
+      - name: Cache native build hooks
+        uses: actions/cache@v4
+        with:
+          # flutter_scene writes generated shaders into its package directory
+          # as well as hook output directories; restore them together.
+          path: |
+            .dart_tool/hooks_runner
+            ~/.pub-cache/hosted/pub.dev/flutter_scene-*
+          key: ${{ runner.os }}-${{ runner.arch }}-test-hooks-v1-${{ hashFiles('.fvmrc', 'pubspec.yaml', 'pubspec.lock') }}
       - name: Run Flutter tests (standard)
         run: |
           mkdir -p reports
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
-          dart run tool/ci/run_tests.dart \
+          dart ${{ matrix.shard_index == 0 && '--verbose' || '' }} run tool/ci/run_tests.dart \
+            ${{ matrix.shard_index == 0 && '--verbose' || '' }} \
             --coverage \
-            --exclude-tags 'glados || performance' \
+            --exclude-tags 'glados || performance || eval-live' \
             --total-shards=10 \
             --shard-index=${{ matrix.shard_index }} \
             --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
@@ -117,11 +127,21 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
+      - name: Cache native build hooks
+        uses: actions/cache@v4
+        with:
+          # flutter_scene writes generated shaders into its package directory
+          # as well as hook output directories; restore them together.
+          path: |
+            .dart_tool/hooks_runner
+            ~/.pub-cache/hosted/pub.dev/flutter_scene-*
+          key: ${{ runner.os }}-${{ runner.arch }}-test-hooks-v1-${{ hashFiles('.fvmrc', 'pubspec.yaml', 'pubspec.lock') }}
       - name: Run Flutter tests (glados)
         run: |
           mkdir -p reports
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
           dart run tool/ci/run_tests.dart --coverage --tags glados --no-pub \
+            --exclude-tags 'eval-live' \
             --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
             --file-reporter=json:reports/tests.json
       - name: Summarize test results
@@ -164,11 +184,21 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
+      - name: Cache native build hooks
+        uses: actions/cache@v4
+        with:
+          # flutter_scene writes generated shaders into its package directory
+          # as well as hook output directories; restore them together.
+          path: |
+            .dart_tool/hooks_runner
+            ~/.pub-cache/hosted/pub.dev/flutter_scene-*
+          key: ${{ runner.os }}-${{ runner.arch }}-test-hooks-v1-${{ hashFiles('.fvmrc', 'pubspec.yaml', 'pubspec.lock') }}
       - name: Run Flutter tests (performance)
         run: |
           mkdir -p reports
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
           dart run tool/ci/run_tests.dart --tags performance --no-pub \
+            --exclude-tags 'eval-live' \
             --test-randomize-ordering-seed="$TEST_ORDER_SEED" \
             --file-reporter=json:reports/tests.json
       - name: Summarize test results

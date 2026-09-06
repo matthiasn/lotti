@@ -107,6 +107,50 @@ void main() {
     },
   );
 
+  test('excludes only suites with inherited matching literal tags', () async {
+    final root = Directory.systemTemp.createTempSync('test_optimizer_');
+    addTearDown(() => root.deleteSync(recursive: true));
+    final directory = Directory(path.join(root.path, 'test'))..createSync();
+    final fixtures = {
+      'excluded': "@test.Tags(['eval-live'])\nlibrary;",
+      'excluded_set': "@Tags({'eval-live'})\nlibrary;",
+      'unknown': '@Tags(suiteTags)\nlibrary;',
+      'conditional': "@Tags([if (enabled) 'eval-live'])\nlibrary;",
+      'other': "@Tags(['other'])\nlibrary;",
+      'mixed': '@Timeout(Duration(minutes: 2))\nlibrary;',
+      'bare': 'library;',
+      'fixture': "const fixture = \"@Tags(['eval-live']) library;\";",
+      'plain': '',
+    };
+    for (final entry in fixtures.entries) {
+      File(
+        path.join(directory.path, '${entry.key}_test.dart'),
+      ).writeAsStringSync('${entry.value}\nvoid main() {}');
+    }
+    final output = await generateTestOptimizer(
+      packageRoot: root.path,
+      excludedSuiteTags: {'eval-live'},
+    );
+    final contents = await output.readAsString();
+    expect(contents, isNot(contains('excluded_test.dart')));
+    expect(contents, isNot(contains('excluded_set_test.dart')));
+    for (final name in ['bare', 'fixture', 'plain']) {
+      expect(contents, contains("import '${name}_test.dart'"));
+    }
+    expect(
+      jsonDecode(
+        File(path.join(root.path, testTargetsRelativePath)).readAsStringSync(),
+      ),
+      [
+        'test/.test_optimizer.dart',
+        'test/conditional_test.dart',
+        'test/mixed_test.dart',
+        'test/other_test.dart',
+        'test/unknown_test.dart',
+      ],
+    );
+  });
+
   test('fails clearly when the package has no test directory', () async {
     final root = Directory.systemTemp.createTempSync('test_optimizer_');
     addTearDown(() => root.deleteSync(recursive: true));
