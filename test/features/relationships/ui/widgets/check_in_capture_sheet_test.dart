@@ -597,6 +597,43 @@ void main() {
       expect(updated.meta.dateFrom, DateTime(2026, 8, 10, 8, 15));
     });
 
+    testWidgets("a time later than now on today's date is clamped to the "
+        'current minute — a check-in cannot start in the future', (
+      tester,
+    ) async {
+      final fixedNow = DateTime(2026, 8, 13, 10, 30);
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(buildForm());
+        await tester.pumpAndSettle();
+        expect(find.textContaining('10:30'), findsOneWidget);
+
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('check-in-started')),
+        );
+        await tester.tap(find.byKey(const ValueKey('check-in-started')));
+        await tester.pumpAndSettle();
+        // Keep today; then ask for a quarter to midnight.
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+        tester
+            .widget<DesignSystemTimePicker>(
+              find.byKey(const ValueKey('check-in-time-picker')),
+            )
+            .onTimeChanged(const TimeOfDay(hour: 23, minute: 45));
+        await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('23:45'), findsNothing);
+        expect(find.textContaining('10:30'), findsOneWidget);
+
+        await tester.ensureVisible(find.text('Save check-in'));
+        await tester.tap(find.text('Save check-in'));
+        await tester.pumpAndSettle();
+      });
+
+      expect(capturedSave().dateFrom, fixedNow);
+    });
+
     testWidgets('tapping the Started tile opens the date picker', (
       tester,
     ) async {

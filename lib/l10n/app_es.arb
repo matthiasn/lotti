@@ -1351,7 +1351,7 @@
   "checkInAvoidLabel": "Mejor evitar",
   "checkInDateLabel": "¿Cuándo?",
   "checkInDeleteConfirmMessage": "¿Eliminar este registro? Esta acción no se puede deshacer.",
-  "checkInDurationHint": "Toca la duración para abrir la rueda. Un mensaje normalmente no tiene.",
+  "checkInDurationHint": "Toca la duración para abrir la rueda. Los mensajes normalmente no tienen duración.",
   "checkInDurationQuickPickHint": "Toca una duración para guardarla o gira la rueda.",
   "checkInDurationSemanticsLabel": "Poner la duración en {label}",
   "checkInEditTitle": "Editar registro",
@@ -1388,7 +1388,7 @@
   "checkInTranscribingLabel": "Transcribiendo…",
   "checkInTranscriptFailed": "No llegó ninguna transcripción. Puedes escribirlo tú.",
   "checkInTranscriptUnavailable": "La transcripción no está configurada para esta persona. Añade un modelo de audio y activa la inferencia automática en su categoría, o escribe el registro.",
-  "checkInWhenAndHowLong": "Cuándo y cuánto",
+  "checkInWhenAndHowLong": "Cuándo y cuánto tiempo",
   "checklistAddItem": "Agregar un nuevo elemento",
   "checklistAiConfidenceLabel": "Confianza: {level}",
   "@checklistAiConfidenceLabel": {

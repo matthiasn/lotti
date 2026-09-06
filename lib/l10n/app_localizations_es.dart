@@ -3100,7 +3100,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get checkInDurationHint =>
-      'Toca la duración para abrir la rueda. Un mensaje normalmente no tiene.';
+      'Toca la duración para abrir la rueda. Los mensajes normalmente no tienen duración.';
 
   @override
   String get checkInDurationQuickPickHint =>
@@ -3230,7 +3230,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'La transcripción no está configurada para esta persona. Añade un modelo de audio y activa la inferencia automática en su categoría, o escribe el registro.';
 
   @override
-  String get checkInWhenAndHowLong => 'Cuándo y cuánto';
+  String get checkInWhenAndHowLong => 'Cuándo y cuánto tiempo';
 
   @override
   String get checklistAddItem => 'Agregar un nuevo elemento';

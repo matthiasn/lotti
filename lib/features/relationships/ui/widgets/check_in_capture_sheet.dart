@@ -447,25 +447,44 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final picked = result?.date;
     if (!mounted || picked == null) return;
     setState(() {
-      _interactionTime = DateTime(
-        picked.year,
-        picked.month,
-        picked.day,
-        _interactionTime.hour,
-        _interactionTime.minute,
+      _interactionTime = _notAfterNow(
+        DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _interactionTime.hour,
+          _interactionTime.minute,
+        ),
       );
     });
     final time = await _pickTime();
     if (!mounted || time == null) return;
     setState(() {
-      _interactionTime = DateTime(
-        _interactionTime.year,
-        _interactionTime.month,
-        _interactionTime.day,
-        time.hour,
-        time.minute,
+      _interactionTime = _notAfterNow(
+        DateTime(
+          _interactionTime.year,
+          _interactionTime.month,
+          _interactionTime.day,
+          time.hour,
+          time.minute,
+        ),
       );
     });
+  }
+
+  /// A check-in started in the past by definition: the date picker stops at
+  /// today, and this stops today's time of day at the current minute, so a
+  /// future start can never become the person's "last contact".
+  static DateTime _notAfterNow(DateTime candidate) {
+    final now = clock.now();
+    final nowMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+    );
+    return candidate.isAfter(nowMinute) ? nowMinute : candidate;
   }
 
   Future<TimeOfDay?> _pickTime() {
