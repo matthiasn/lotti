@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
@@ -567,9 +566,6 @@ void main() {
             dateTo: DateTime(2024, 3, 15),
           ),
         );
-        // Signals when the import pipeline reaches persistence, letting the
-        // test await the fire-and-forget drop deterministically (no delays).
-        final createDbEntityCalled = Completer<void>();
         when(
           () => mockPersistenceLogic.createDbEntity(
             any(that: isA<JournalImage>()),
@@ -577,12 +573,7 @@ void main() {
             shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
             enqueueSync: any(named: 'enqueueSync'),
           ),
-        ).thenAnswer((_) async {
-          if (!createDbEntityCalled.isCompleted) {
-            createDbEntityCalled.complete();
-          }
-          return true;
-        });
+        ).thenAnswer((_) async => true);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -599,11 +590,11 @@ void main() {
         );
         final dropTarget = tester.widget<MediaDropTarget>(dropTargetFinder);
 
-        // onFiles forwards to handleDroppedMediaFiles (fire-and-forget). The
+        // onFiles returns the complete handleDroppedMediaFiles future. The
         // pipeline performs real file IO (creating the temp source, copying it
         // into the assets dir), so everything that touches dart:io must run
         // inside runAsync; under the test's fake-async zone real IO never
-        // completes. Await the persistence seam being reached deterministically.
+        // completes. Await the import itself before asserting or tearing down.
         await tester.runAsync(() async {
           final tempDir = await Directory.systemTemp.createTemp(
             'entry_details_drop_',
@@ -612,14 +603,7 @@ void main() {
           final imageFile = File(p.join(tempDir.path, 'dropped.png'));
           await imageFile.writeAsBytes(List<int>.filled(64, 0));
 
-          unawaited(dropTarget.onFiles([XFile(imageFile.path)]));
-
-          // Yield to the event loop (not just microtasks) so the real file
-          // copy and the async persistence chain can run to completion. Bounded
-          // so a genuine failure surfaces instead of hanging.
-          for (var i = 0; i < 100 && !createDbEntityCalled.isCompleted; i++) {
-            await Future<void>(() {});
-          }
+          await dropTarget.onFiles([XFile(imageFile.path)]);
         });
 
         // The dropped file's entry is created and linked to the open entry.
