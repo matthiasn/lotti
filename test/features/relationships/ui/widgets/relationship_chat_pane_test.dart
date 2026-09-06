@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -203,10 +205,56 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AgentChatView), findsNothing);
-    expect(find.byType(RelationshipChatHeader), findsNothing);
     expect(
       find.text('No agent yet — mark this person as important first.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('keeps the way back while the agent is resolving and when it '
+      'turns out not to exist', (tester) async {
+    // On the phone route the header holds the only back control, so a chat
+    // that never resolves must not be a screen the user is stuck on.
+    final identityCompleter = Completer<AgentIdentityEntity>();
+    var backs = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: RelationshipChatPane(
+            relationshipId: relationshipId,
+            onBack: () => backs++,
+            showInternalsAction: true,
+          ),
+        ),
+        overrides: [
+          agentIdentityProvider(
+            agentId,
+          ).overrideWith((ref) => identityCompleter.future),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('person-chat-back')));
+    await tester.pump();
+    expect(backs, 1);
+    expect(
+      find.byKey(const ValueKey('person-chat-internals')),
+      findsNothing,
+      reason: 'there is no agent to inspect yet',
+    );
+
+    // And once it resolves to someone else's agent, the way back survives.
+    identityCompleter.complete(identity(kind: AgentKinds.goalAgent));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('No agent yet — mark this person as important first.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('person-chat-back')));
+    await tester.pump();
+    expect(backs, 2);
   });
 }

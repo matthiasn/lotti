@@ -266,7 +266,7 @@ void main() {
       // The subtitle says how many people this decision is about, and where
       // their numbers stay.
       expect(
-        find.text('1 selected · numbers stay on this device'),
+        find.text('1 person selected · numbers stay on this device'),
         findsOneWidget,
       );
       // The switch explains itself without claiming that leaving it off

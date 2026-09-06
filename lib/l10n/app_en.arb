@@ -6582,7 +6582,7 @@
       }
     }
   },
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 selected · numbers stay on this device} other{{count} selected · numbers stay on this device}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 person selected · numbers stay on this device} other{{count} people selected · numbers stay on this device}}",
   "@relationshipImportReviewSubtitle": {
     "description": "Subtitle of the contact import review step, naming how many contacts were chosen",
     "placeholders": {

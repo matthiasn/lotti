@@ -11292,7 +11292,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get relationshipFormReachTitle => 'So erreichst du sie';
+  String get relationshipFormReachTitle => 'Kontaktmöglichkeiten';
 
   @override
   String get relationshipFormWhoTitle => 'Wer';
@@ -11384,8 +11384,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ausgewählt · Nummern bleiben auf diesem Gerät',
-      one: '1 ausgewählt · Nummern bleiben auf diesem Gerät',
+      other: '$count Personen ausgewählt · Nummern bleiben auf diesem Gerät',
+      one: '1 Person ausgewählt · Nummern bleiben auf diesem Gerät',
     );
     return '$_temp0';
   }

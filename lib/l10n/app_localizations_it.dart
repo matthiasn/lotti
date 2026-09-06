@@ -11358,11 +11358,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipFormImportantBody =>
-      'Attiva un briefing, promemoria e una chat. Le note dei contatti vanno all\'agente; i recapiti mai.';
+      'Attiva un briefing, promemoria e una chat. Le note su questa persona vanno all\'agente; i recapiti mai.';
 
   @override
   String relationshipFormImportantBodyNamed(String name) {
-    return 'Attiva un briefing, promemoria e una chat per $name. Le note dei contatti vanno all\'agente; i recapiti mai.';
+    return 'Attiva un briefing, promemoria e una chat per $name. Le note su questa persona vanno all\'agente; i recapiti mai.';
   }
 
   @override
@@ -11459,8 +11459,9 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count selezionati · i numeri restano su questo dispositivo',
-      one: '1 selezionato · i numeri restano su questo dispositivo',
+      other:
+          '$count persone selezionate · i numeri restano su questo dispositivo',
+      one: '1 persona selezionata · i numeri restano su questo dispositivo',
     );
     return '$_temp0';
   }

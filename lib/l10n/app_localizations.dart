@@ -18856,7 +18856,7 @@ abstract class AppLocalizations {
   /// Subtitle of the contact import review step, naming how many contacts were chosen
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 selected · numbers stay on this device} other{{count} selected · numbers stay on this device}}'**
+  /// **'{count, plural, =1{1 person selected · numbers stay on this device} other{{count} people selected · numbers stay on this device}}'**
   String relationshipImportReviewSubtitle(int count);
 
   /// Title of the import review step, where importance and cadence are set

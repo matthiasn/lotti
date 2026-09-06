@@ -11512,8 +11512,9 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sélectionnés · les numéros restent sur cet appareil',
-      one: '1 sélectionné · les numéros restent sur cet appareil',
+      other:
+          '$count personnes sélectionnées · les numéros restent sur cet appareil',
+      one: '1 personne sélectionnée · les numéros restent sur cet appareil',
     );
     return '$_temp0';
   }

@@ -11260,7 +11260,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipChatAgentSubtitle =>
-      'Zná tvá setkání, ne kontaktní údaje';
+      'Zná tvé check-iny, ne kontaktní údaje';
 
   @override
   String relationshipChatAgentTitle(String name) {
@@ -11385,11 +11385,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipFormImportantBody =>
-      'Zapne briefing, připomínky a chat. Poznámky ze setkání jdou agentovi, kontaktní údaje nikdy.';
+      'Zapne briefing, připomínky a chat. Poznámky z check-inů jdou agentovi, kontaktní údaje nikdy.';
 
   @override
   String relationshipFormImportantBodyNamed(String name) {
-    return 'Zapne briefing, připomínky a chat pro osobu $name. Poznámky ze setkání jdou agentovi, kontaktní údaje nikdy.';
+    return 'Zapne briefing, připomínky a chat pro osobu $name. Poznámky z check-inů jdou agentovi, kontaktní údaje nikdy.';
   }
 
   @override
@@ -11488,8 +11488,9 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count vybraných · čísla zůstanou v tomto zařízení',
-      one: '1 vybraný · čísla zůstanou v tomto zařízení',
+      other: '$count vybraných osob · čísla zůstanou v tomto zařízení',
+      few: '$count vybrané osoby · čísla zůstanou v tomto zařízení',
+      one: '1 vybraná osoba · čísla zůstanou v tomto zařízení',
     );
     return '$_temp0';
   }

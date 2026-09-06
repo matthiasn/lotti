@@ -11227,11 +11227,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipFormImportantBody =>
-      'Slår på en briefing, påminnelser och en chatt. Anteckningar från avstämningar går till agenten, kontaktvägar aldrig.';
+      'Slår på en briefing, påminnelser och en chatt. Anteckningar från avstämningar går till agenten, men kontaktvägar skickas aldrig dit.';
 
   @override
   String relationshipFormImportantBodyNamed(String name) {
-    return 'Slår på en briefing, påminnelser och en chatt för $name. Anteckningar från avstämningar går till agenten, kontaktvägar aldrig.';
+    return 'Slår på en briefing, påminnelser och en chatt för $name. Anteckningar från avstämningar går till agenten, men kontaktvägar skickas aldrig dit.';
   }
 
   @override
@@ -11327,8 +11327,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count valda · numren stannar på den här enheten',
-      one: '1 vald · numren stannar på den här enheten',
+      other: '$count personer valda · numren stannar på den här enheten',
+      one: '1 person vald · numren stannar på den här enheten',
     );
     return '$_temp0';
   }

@@ -51,6 +51,39 @@ class RelationshipChatPane extends ConsumerWidget {
         ? identity.displayName
         : context.messages.relationshipChatTooltip;
 
+    // The header renders in every state, because on the phone route it holds
+    // the only way back — a chat whose agent is still resolving, or turns out
+    // not to exist, must not be a screen the user is stuck on. Only the body
+    // below it varies. Its internals action needs a resolved agent, so it
+    // appears with one.
+    return Column(
+      children: [
+        RelationshipChatHeader(
+          agentId: agentId,
+          agentName: name,
+          onBack: onBack,
+          showInternalsAction: showInternalsAction && isActive,
+        ),
+        Expanded(
+          child: _body(context, ref, agentId: agentId, name: name),
+        ),
+      ],
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    WidgetRef ref, {
+    required String agentId,
+    required String name,
+  }) {
+    final identityAsync = ref.watch(agentIdentityProvider(agentId));
+    final identity = identityAsync.value;
+    final isActive =
+        identity is AgentIdentityEntity &&
+        identity.kind == AgentKinds.relationshipAgent &&
+        identity.lifecycle == AgentLifecycle.active;
+
     if (!identityAsync.hasValue && !identityAsync.hasError) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -62,28 +95,15 @@ class RelationshipChatPane extends ConsumerWidget {
     final controller = ref.read(
       relationshipChatControllerProvider(agentId).notifier,
     );
-
-    return Column(
-      children: [
-        RelationshipChatHeader(
-          agentId: agentId,
-          agentName: name,
-          onBack: onBack,
-          showInternalsAction: showInternalsAction,
-        ),
-        Expanded(
-          child: AgentChatView(
-            agentId: agentId,
-            agentName: name,
-            draft: composer.draft,
-            isSending: composer.isSending,
-            hasFailedTurn: composer.failedMessage != null,
-            onDraftChanged: controller.updateDraft,
-            onSend: controller.send,
-            onRetry: controller.retry,
-          ),
-        ),
-      ],
+    return AgentChatView(
+      agentId: agentId,
+      agentName: name,
+      draft: composer.draft,
+      isSending: composer.isSending,
+      hasFailedTurn: composer.failedMessage != null,
+      onDraftChanged: controller.updateDraft,
+      onSend: controller.send,
+      onRetry: controller.retry,
     );
   }
 }

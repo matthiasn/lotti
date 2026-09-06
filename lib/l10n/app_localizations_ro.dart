@@ -11320,7 +11320,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipChatAgentSubtitle =>
-      'Cunoaște întâlnirile dvs., nu canalele de contact';
+      'Cunoaște check-in-urile dvs., nu canalele de contact';
 
   @override
   String relationshipChatAgentTitle(String name) {
@@ -11446,11 +11446,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipFormImportantBody =>
-      'Activează un briefing, memento-uri și un chat. Notele întâlnirilor ajung la agent; canalele de contact niciodată.';
+      'Activează un briefing, memento-uri și un chat. Notele din check-in-uri ajung la agent; canalele de contact niciodată.';
 
   @override
   String relationshipFormImportantBodyNamed(String name) {
-    return 'Activează un briefing, memento-uri și un chat pentru $name. Notele întâlnirilor ajung la agent; canalele de contact niciodată.';
+    return 'Activează un briefing, memento-uri și un chat pentru $name. Notele din check-in-uri ajung la agent; canalele de contact niciodată.';
   }
 
   @override
@@ -11550,8 +11550,10 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count selectate · numerele rămân pe acest dispozitiv',
-      one: '1 selectat · numerele rămân pe acest dispozitiv',
+      other:
+          '$count de persoane selectate · numerele rămân pe acest dispozitiv',
+      few: '$count persoane selectate · numerele rămân pe acest dispozitiv',
+      one: '1 persoană selectată · numerele rămân pe acest dispozitiv',
     );
     return '$_temp0';
   }

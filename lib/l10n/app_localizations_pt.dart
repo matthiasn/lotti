@@ -11420,8 +11420,8 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count selecionados · os números ficam neste dispositivo',
-      one: '1 selecionado · os números ficam neste dispositivo',
+      other: '$count pessoas selecionadas · os números ficam neste dispositivo',
+      one: '1 pessoa selecionada · os números ficam neste dispositivo',
     );
     return '$_temp0';
   }
