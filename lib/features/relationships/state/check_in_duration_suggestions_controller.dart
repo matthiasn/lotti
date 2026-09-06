@@ -27,8 +27,16 @@ const kCheckInDurationPositions = <Duration>[
   Duration(hours: 3),
 ];
 
-final checkInDurationSuggestionsControllerProvider =
-    AsyncNotifierProvider<CheckInDurationSuggestionsController, List<Duration>>(
+/// Auto-disposed, with a five-minute keep-alive from the notifier: a
+/// reopened picker is instant, and a check-in logged, edited or deleted
+/// since is ranked into the next one instead of never — a kept-alive
+/// provider would serve the first ranking for the container's whole life.
+final AsyncNotifierProvider<
+  CheckInDurationSuggestionsController,
+  List<Duration>
+>
+checkInDurationSuggestionsControllerProvider =
+    AsyncNotifierProvider.autoDispose(
       CheckInDurationSuggestionsController.new,
       name: 'checkInDurationSuggestionsControllerProvider',
     );

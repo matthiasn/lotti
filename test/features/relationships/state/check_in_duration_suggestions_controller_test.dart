@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -140,18 +142,58 @@ void main() {
       stubRanked(const [Duration(minutes: 11)]);
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      // The listener keeps the auto-disposed row alive, and resolves the
+      // moment a re-derived ranking lands — no timer, no scheduler turn.
+      final rederived = Completer<List<Duration>>();
       final sub = container.listen(
         checkInDurationSuggestionsControllerProvider,
-        (_, _) {},
+        (_, next) {
+          final value = next.value;
+          if (value != null &&
+              value.contains(const Duration(minutes: 42)) &&
+              !rederived.isCompleted) {
+            rederived.complete(value);
+          }
+        },
       );
       addTearDown(sub.close);
-      await read(container);
+      expect(await read(container), contains(const Duration(minutes: 11)));
       stubRanked(const [Duration(minutes: 42)]);
 
       privateFlips.add(false);
-      await Future<void>.delayed(Duration.zero);
 
-      expect(await read(container), contains(const Duration(minutes: 42)));
+      expect(await rederived.future, contains(const Duration(minutes: 42)));
+      expect(
+        await read(container),
+        isNot(contains(const Duration(minutes: 11))),
+        reason: 'the hidden ranking is gone, not merely shadowed',
+      );
+    });
+
+    test('a row nobody listens to is dropped once its keep-alive lapses, so '
+        'a later picker re-ranks instead of serving the first ranking for '
+        'ever', () {
+      stubRanked(const [Duration(minutes: 11)]);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      fakeAsync((async) {
+        List<Duration>? first;
+        read(container).then((value) => first = value);
+        async.flushMicrotasks();
+        expect(first, contains(const Duration(minutes: 11)));
+
+        stubRanked(const [Duration(minutes: 42)]);
+        async
+          ..elapse(dashboardCacheDuration + const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        List<Duration>? second;
+        read(container).then((value) => second = value);
+        async.flushMicrotasks();
+        expect(second, contains(const Duration(minutes: 42)));
+        expect(second, isNot(contains(const Duration(minutes: 11))));
+      });
     });
   });
 }
