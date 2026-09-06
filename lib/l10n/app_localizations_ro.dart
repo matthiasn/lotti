@@ -12840,12 +12840,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Ce este nou';
 
   @override
-  String get sherpaDeleteModel => 'Ștergeți modelul descărcat';
+  String sherpaDeleteModel(String model) {
+    return 'Eliminați $model de pe acest dispozitiv';
+  }
 
   @override
-  String sherpaDownloadModel(String size) {
-    return 'Descărcare ($size MB)';
+  String get sherpaDownloadAction => 'Descărcați';
+
+  @override
+  String sherpaDownloadModel(String model) {
+    return 'Descărcați $model';
   }
+
+  @override
+  String get sherpaInstallingModel => 'Se instalează modelul';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12863,8 +12871,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Descărcați un model pe acest dispozitiv';
 
   @override
+  String sherpaModelSizeGB(String size) {
+    return '$size GB · Multilingv';
+  }
+
+  @override
+  String sherpaModelSizeMB(String size) {
+    return '$size MB · Multilingv';
+  }
+
+  @override
   String get sherpaProviderDescription =>
-      'Transcrieți pe acest dispozitiv fără server. Descărcați un model mai jos.';
+      'Transcrieți pe acest dispozitiv fără un server. Descărcați un model, apoi selectați-l în profilul dumneavoastră de inferență.';
 
   @override
   String get sidebarActiveSectionTitle => 'Activitate';

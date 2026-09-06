@@ -37,7 +37,28 @@ an API key nor a server URL. Its curated catalog contains multilingual int8
 Whisper Large v3, Tiny and Base exports. Large v3 uses the full model with
 INT8 weights (about 1.78 GB of downloaded files). Model files are downloaded
 only after the user presses Download in the provider's model section. Model names are upstream
-product names; surrounding controls are localized.
+product names; surrounding controls are localized. Sherpa appears in both the
+first-run and full provider pickers, without a desktop-only restriction.
+
+The model section groups compact download actions beside model identity and
+localized download size/language metadata. Actions wrap below the metadata on
+narrow screens. Installation shows a named progress bar and percentage; removal
+has its own busy action. Downloaded status describes device files, while inference
+profiles select the model to use.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Installing: download
+  Installing --> Idle: success or error
+  Idle --> Removing: remove local files
+  Removing --> Idle: success or error
+  Idle --> Configuring: retry configuration
+  Configuring --> Idle: success or error
+```
+
+While an operation runs, that model's other actions are disabled. A failed
+removal preserves any outstanding configuration error and its retry action.
 
 Text, image-input, and multi-turn chat calls reject this ASR-only provider
 before constructing an HTTP client, including when stale configuration carries
@@ -46,7 +67,15 @@ an old server URL.
 Configuration rows sync normally; downloaded files do not. Files live below
 application support in `sherpa_models/<model>/<revision>/`. The manifest pins
 Hugging Face revisions, byte lengths, and SHA-256 digests. Unknown model ids
-cannot become paths or download URLs. Availability probes treat unknown synced
+cannot become paths or download URLs. Installation verifies every artifact's
+checksum. Readiness checks cache verification in memory against each file's size,
+modification time and change time; unchanged files need only a metadata probe.
+Concurrent cold probes share verification, and a successful installation seeds
+the cache without reading the published weights again. Changed files are hashed
+again, missing files are unavailable, and install/remove invalidate cached
+verification. A fresh process verifies existing files once. This cache avoids
+repeated gigabyte-scale reads during settings, discovery and transcription; it
+is not protection against modifications that preserve all cached metadata. Availability probes treat unknown synced
 ids as unavailable; explicit installation rejects them.
 
 ```mermaid
@@ -68,7 +97,9 @@ after downloads and removals. Both operations also republish changed sync-node
 capabilities without requiring an app restart. A failed broadcast does not undo
 the successful local file operation. If model configuration persistence fails
 after installation, the row retains its downloaded state and shows a separate
-configuration error; deletion remains available.
+configuration error. Retry saves only the missing configuration, reusing verified
+files and preserving existing model identities and edits. During retry, the Retry
+button stays busy and removal is disabled; deletion remains available afterward.
 Removing a model during its download is rejected.
 
 # Runtime flow

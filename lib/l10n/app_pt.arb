@@ -5443,13 +5443,45 @@
   "settingsV2UnimplementedTitle": "Painel ainda não implementado",
   "settingsWhatsNewSubtitle": "Veja as últimas atualizações e recursos",
   "settingsWhatsNewTitle": "Novidades",
-  "sherpaDeleteModel": "Eliminar o modelo descarregado",
-  "sherpaDownloadModel": "Descarregar ({size} MB)",
+  "sherpaDeleteModel": "Remover {model} deste dispositivo",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Baixar",
+  "sherpaDownloadModel": "Baixar {model}",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Instalando modelo",
   "sherpaModelConfigurationError": "O modelo foi descarregado, mas não foi possível guardar a sua configuração.",
   "sherpaModelError": "A operação do modelo falhou. Tenta novamente.",
   "sherpaModelInstalled": "Descarregado",
   "sherpaModelNotInstalled": "Transfere um modelo para este dispositivo",
-  "sherpaProviderDescription": "Transcreve neste dispositivo sem um servidor. Descarrega um modelo abaixo.",
+  "sherpaModelSizeGB": "{size} GB · Multilíngue",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Multilíngue",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transcreva neste dispositivo sem servidor. Baixe um modelo e selecione-o no seu perfil de inferência.",
   "sidebarActiveSectionTitle": "Atividade",
   "sidebarActivityCollapseTooltip": "Recolher atividade",
   "sidebarActivityExpandTooltip": "Expandir atividade",

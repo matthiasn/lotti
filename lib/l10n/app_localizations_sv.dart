@@ -12608,12 +12608,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Vad är nytt';
 
   @override
-  String get sherpaDeleteModel => 'Ta bort nedladdad modell';
+  String sherpaDeleteModel(String model) {
+    return 'Ta bort $model från den här enheten';
+  }
 
   @override
-  String sherpaDownloadModel(String size) {
-    return 'Ladda ner ($size MB)';
+  String get sherpaDownloadAction => 'Ladda ner';
+
+  @override
+  String sherpaDownloadModel(String model) {
+    return 'Ladda ner $model';
   }
+
+  @override
+  String get sherpaInstallingModel => 'Installerar modell';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12630,8 +12638,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ladda ner en modell på den här enheten';
 
   @override
+  String sherpaModelSizeGB(String size) {
+    return '$size GB · Flerspråkig';
+  }
+
+  @override
+  String sherpaModelSizeMB(String size) {
+    return '$size MB · Flerspråkig';
+  }
+
+  @override
   String get sherpaProviderDescription =>
-      'Transkribera på den här enheten utan server. Ladda ner en modell nedan.';
+      'Transkribera på den här enheten utan server. Ladda ner en modell och välj den sedan i din inferensprofil.';
 
   @override
   String get sidebarActiveSectionTitle => 'Verksamhet';

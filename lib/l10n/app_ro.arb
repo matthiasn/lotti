@@ -4908,13 +4908,45 @@
   "settingsV2UnimplementedTitle": "Panoul nu este încă implementat",
   "settingsWhatsNewSubtitle": "Vedeți cele mai recente actualizări și funcționalități",
   "settingsWhatsNewTitle": "Ce este nou",
-  "sherpaDeleteModel": "Ștergeți modelul descărcat",
-  "sherpaDownloadModel": "Descărcare ({size} MB)",
+  "sherpaDeleteModel": "Eliminați {model} de pe acest dispozitiv",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Descărcați",
+  "sherpaDownloadModel": "Descărcați {model}",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Se instalează modelul",
   "sherpaModelConfigurationError": "Modelul a fost descărcat, dar configurația sa nu a putut fi salvată.",
   "sherpaModelError": "Operațiunea asupra modelului a eșuat. Încercați din nou.",
   "sherpaModelInstalled": "Descărcat",
   "sherpaModelNotInstalled": "Descărcați un model pe acest dispozitiv",
-  "sherpaProviderDescription": "Transcrieți pe acest dispozitiv fără server. Descărcați un model mai jos.",
+  "sherpaModelSizeGB": "{size} GB · Multilingv",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Multilingv",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transcrieți pe acest dispozitiv fără un server. Descărcați un model, apoi selectați-l în profilul dumneavoastră de inferență.",
   "sidebarActiveSectionTitle": "Activitate",
   "sidebarActivityCollapseTooltip": "Restrângeți activitatea",
   "sidebarActivityExpandTooltip": "Extindeți activitatea",

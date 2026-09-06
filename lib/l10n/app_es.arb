@@ -4908,13 +4908,45 @@
   "settingsV2UnimplementedTitle": "Panel aún no disponible",
   "settingsWhatsNewSubtitle": "Mira las últimas actualizaciones y funciones",
   "settingsWhatsNewTitle": "Novedades",
-  "sherpaDeleteModel": "Eliminar el modelo descargado",
-  "sherpaDownloadModel": "Descargar ({size} MB)",
+  "sherpaDeleteModel": "Eliminar {model} de este dispositivo",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Descargar",
+  "sherpaDownloadModel": "Descargar {model}",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Instalando modelo",
   "sherpaModelConfigurationError": "El modelo se ha descargado, pero no se ha podido guardar su configuración.",
   "sherpaModelError": "La operación del modelo falló. Inténtalo de nuevo.",
   "sherpaModelInstalled": "Descargado",
   "sherpaModelNotInstalled": "Descarga un modelo en este dispositivo",
-  "sherpaProviderDescription": "Transcribe en este dispositivo sin servidor. Descarga un modelo abajo.",
+  "sherpaModelSizeGB": "{size} GB · Multilingüe",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Multilingüe",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transcribe en este dispositivo sin servidor. Descarga un modelo y selecciónalo en tu perfil de inferencia.",
   "sidebarActiveSectionTitle": "Actividad",
   "sidebarActivityCollapseTooltip": "Contraer actividad",
   "sidebarActivityExpandTooltip": "Expandir actividad",

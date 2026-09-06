@@ -4915,13 +4915,45 @@
   "settingsV2UnimplementedTitle": "Panel zatím není k dispozici",
   "settingsWhatsNewSubtitle": "Podívej se na nejnovější aktualizace a funkce",
   "settingsWhatsNewTitle": "Co je nového",
-  "sherpaDeleteModel": "Smazat stažený model",
-  "sherpaDownloadModel": "Stáhnout ({size} MB)",
+  "sherpaDeleteModel": "Odebrat {model} z tohoto zařízení",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Stáhnout",
+  "sherpaDownloadModel": "Stáhnout {model}",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Instalace modelu",
   "sherpaModelConfigurationError": "Model je stažený, ale jeho konfiguraci se nepodařilo uložit.",
   "sherpaModelError": "Operace s modelem se nezdařila. Zkus to znovu.",
   "sherpaModelInstalled": "Staženo",
   "sherpaModelNotInstalled": "Stáhni si model do tohoto zařízení",
-  "sherpaProviderDescription": "Přepisuj na tomto zařízení bez serveru. Stáhni si níže uvedený model.",
+  "sherpaModelSizeGB": "{size} GB · Vícejazyčný",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Vícejazyčný",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Přepisuj na tomto zařízení bez serveru. Stáhni model a pak ho vyber ve svém inferenčním profilu.",
   "sidebarActiveSectionTitle": "Aktivita",
   "sidebarActivityCollapseTooltip": "Sbalit aktivitu",
   "sidebarActivityExpandTooltip": "Rozbalit aktivitu",

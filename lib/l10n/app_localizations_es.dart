@@ -12771,12 +12771,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Novedades';
 
   @override
-  String get sherpaDeleteModel => 'Eliminar el modelo descargado';
+  String sherpaDeleteModel(String model) {
+    return 'Eliminar $model de este dispositivo';
+  }
 
   @override
-  String sherpaDownloadModel(String size) {
-    return 'Descargar ($size MB)';
+  String get sherpaDownloadAction => 'Descargar';
+
+  @override
+  String sherpaDownloadModel(String model) {
+    return 'Descargar $model';
   }
+
+  @override
+  String get sherpaInstallingModel => 'Instalando modelo';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12794,8 +12802,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Descarga un modelo en este dispositivo';
 
   @override
+  String sherpaModelSizeGB(String size) {
+    return '$size GB · Multilingüe';
+  }
+
+  @override
+  String sherpaModelSizeMB(String size) {
+    return '$size MB · Multilingüe';
+  }
+
+  @override
   String get sherpaProviderDescription =>
-      'Transcribe en este dispositivo sin servidor. Descarga un modelo abajo.';
+      'Transcribe en este dispositivo sin servidor. Descarga un modelo y selecciónalo en tu perfil de inferencia.';
 
   @override
   String get sidebarActiveSectionTitle => 'Actividad';

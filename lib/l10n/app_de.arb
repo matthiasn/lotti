@@ -4908,13 +4908,45 @@
   "settingsV2UnimplementedTitle": "Bereich noch nicht verfügbar",
   "settingsWhatsNewSubtitle": "Sieh dir die neuesten Neuigkeiten und Funktionen an",
   "settingsWhatsNewTitle": "Was gibt's Neues",
-  "sherpaDeleteModel": "Heruntergeladenes Modell löschen",
-  "sherpaDownloadModel": "Herunterladen ({size} MB)",
+  "sherpaDeleteModel": "{model} von diesem Gerät entfernen",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Herunterladen",
+  "sherpaDownloadModel": "{model} herunterladen",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Modell wird installiert",
   "sherpaModelConfigurationError": "Das Modell wurde heruntergeladen, aber seine Konfiguration konnte nicht gespeichert werden.",
   "sherpaModelError": "Modellaktion fehlgeschlagen. Versuch es erneut.",
   "sherpaModelInstalled": "Heruntergeladen",
   "sherpaModelNotInstalled": "Lade ein Modell auf dieses Gerät herunter",
-  "sherpaProviderDescription": "Transkribiere auf diesem Gerät ohne Server. Lade unten ein Modell herunter.",
+  "sherpaModelSizeGB": "{size} GB · Mehrsprachig",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Mehrsprachig",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transkribiere auf diesem Gerät ohne Server. Lade ein Modell herunter und wähle es dann in deinem Inferenzprofil aus.",
   "sidebarActiveSectionTitle": "Aktivität",
   "sidebarActivityCollapseTooltip": "Aktivität einklappen",
   "sidebarActivityExpandTooltip": "Aktivität ausklappen",

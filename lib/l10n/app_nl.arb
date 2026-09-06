@@ -5443,13 +5443,45 @@
   "settingsV2UnimplementedTitle": "Panel nog niet geïmplementeerd",
   "settingsWhatsNewSubtitle": "Zie de laatste updates en functies",
   "settingsWhatsNewTitle": "Wat is er nieuw?",
-  "sherpaDeleteModel": "Gedownload model verwijderen",
-  "sherpaDownloadModel": "Downloaden ({size} MB)",
+  "sherpaDeleteModel": "{model} van dit apparaat verwijderen",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Downloaden",
+  "sherpaDownloadModel": "{model} downloaden",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Model installeren",
   "sherpaModelConfigurationError": "Het model is gedownload, maar de configuratie kon niet worden opgeslagen.",
   "sherpaModelError": "Modelbewerking mislukt. Probeer het opnieuw.",
   "sherpaModelInstalled": "Gedownload",
   "sherpaModelNotInstalled": "Download een model op dit apparaat",
-  "sherpaProviderDescription": "Transcribeer op dit apparaat zonder server. Download hieronder een model.",
+  "sherpaModelSizeGB": "{size} GB · Meertalig",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Meertalig",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transcribeer op dit apparaat zonder server. Download een model en selecteer het vervolgens in je inferentieprofiel.",
   "sidebarActiveSectionTitle": "Activiteit",
   "sidebarActivityCollapseTooltip": "Inklappen",
   "sidebarActivityExpandTooltip": "Activiteiten uitbreiden",

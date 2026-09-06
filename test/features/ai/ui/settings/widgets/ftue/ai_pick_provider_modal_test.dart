@@ -12,7 +12,7 @@ void main() {
   group('AiPickProviderModal.defaultTiles — static spec', () {
     test(
       'lineup matches the design: '
-      'Melious → Mistral → Gemini → Alibaba → OpenAI → Anthropic → oMLX → Ollama → Voxtral',
+      'Melious → Mistral → Gemini → Alibaba → OpenAI → Anthropic → sherpa-onnx → oMLX → Ollama → Voxtral',
       () {
         expect(
           AiPickProviderModal.defaultTiles.map((t) => t.providerType).toList(),
@@ -23,6 +23,7 @@ void main() {
             InferenceProviderType.alibaba,
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
+            InferenceProviderType.sherpa,
             InferenceProviderType.omlx,
             InferenceProviderType.ollama,
             InferenceProviderType.voxtral,
@@ -233,49 +234,60 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Continue carries the LATEST radio selection — proves the modal '
-      'forwards the picked tile, not the seeded one',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1100));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-        AiPickProviderResult? captured;
-        await tester.pumpWidget(
-          makeTestableWidget(
-            Builder(
-              builder: (ctx) => Center(
-                child: TextButton(
-                  onPressed: () async {
-                    captured = await Navigator.of(ctx).push(
-                      MaterialPageRoute<AiPickProviderResult>(
-                        builder: (_) => const AiPickProviderModal(
-                          tiles: AiPickProviderModal.defaultTiles,
-                          initialSelection: InferenceProviderType.gemini,
+    for (final providerType in [
+      InferenceProviderType.anthropic,
+      InferenceProviderType.sherpa,
+    ]) {
+      testWidgets(
+        'Continue carries the LATEST radio selection — proves the modal '
+        'forwards the picked tile, not the seeded one ($providerType)',
+        (tester) async {
+          await tester.binding.setSurfaceSize(const Size(800, 1100));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          AiPickProviderResult? captured;
+          await tester.pumpWidget(
+            makeTestableWidget(
+              Builder(
+                builder: (ctx) => Center(
+                  child: TextButton(
+                    onPressed: () async {
+                      captured = await Navigator.of(ctx).push(
+                        MaterialPageRoute<AiPickProviderResult>(
+                          builder: (_) => const AiPickProviderModal(
+                            tiles: AiPickProviderModal.defaultTiles,
+                            initialSelection: InferenceProviderType.gemini,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  child: const Text('open'),
+                      );
+                    },
+                    child: const Text('open'),
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        await tester.tap(find.text('open'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-        final messages = hL10n(tester);
-        // Pick Anthropic.
-        await tester.tap(find.text(messages.aiProviderAnthropicName));
-        await tester.pump();
-        await tester.tap(find.text(messages.aiPickProviderContinueButton));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          await tester.tap(find.text('open'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          final messages = hL10n(tester);
+          // Pick the requested provider, including embedded ASR before FTUE dismissal.
+          await tester.tap(
+            find.text(
+              providerType == InferenceProviderType.sherpa
+                  ? messages.aiProviderSherpaName
+                  : messages.aiProviderAnthropicName,
+            ),
+          );
+          await tester.pump();
+          await tester.tap(find.text(messages.aiPickProviderContinueButton));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
-        expect(captured!.providerType, InferenceProviderType.anthropic);
-      },
-    );
+          expect(captured!.providerType, providerType);
+        },
+      );
+    }
 
     testWidgets(
       "Don't show again pops with the dontShowAgain sentinel — no "

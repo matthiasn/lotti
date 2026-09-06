@@ -5444,13 +5444,45 @@
   "settingsV2UnimplementedTitle": "Panel endnu ikke implementeret",
   "settingsWhatsNewSubtitle": "Se de seneste opdateringer og funktioner",
   "settingsWhatsNewTitle": "Hvad er nyt",
-  "sherpaDeleteModel": "Slet downloadet model",
-  "sherpaDownloadModel": "Download ({size} MB)",
+  "sherpaDeleteModel": "Fjern {model} fra denne enhed",
+  "@sherpaDeleteModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaDownloadAction": "Download",
+  "sherpaDownloadModel": "Download {model}",
+  "@sherpaDownloadModel": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaInstallingModel": "Installerer model",
   "sherpaModelConfigurationError": "Modellen er downloadet, men dens konfiguration kunne ikke gemmes.",
   "sherpaModelError": "Modelhandlingen mislykkedes. Prøv igen.",
   "sherpaModelInstalled": "Downloadet",
   "sherpaModelNotInstalled": "Download en model på denne enhed",
-  "sherpaProviderDescription": "Transskriber på denne enhed uden en server. Download en model nedenfor.",
+  "sherpaModelSizeGB": "{size} GB · Flersproget",
+  "@sherpaModelSizeGB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaModelSizeMB": "{size} MB · Flersproget",
+  "@sherpaModelSizeMB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "sherpaProviderDescription": "Transskriber på denne enhed uden en server. Download en model, og vælg den derefter i din inferensprofil.",
   "sidebarActiveSectionTitle": "Aktivitet",
   "sidebarActivityCollapseTooltip": "Kollapsaktivitet",
   "sidebarActivityExpandTooltip": "Udvid aktiviteten",
