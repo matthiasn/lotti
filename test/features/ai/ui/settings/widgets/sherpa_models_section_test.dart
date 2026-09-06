@@ -161,6 +161,68 @@ void main() {
     },
   );
 
+  for (final readFails in [false, true]) {
+    testWidgets(
+      'restores installed configuration after read failure: $readFails',
+      (tester) async {
+        when(() => models.isInstalled('tiny')).thenAnswer((_) async => true);
+        final existing = AiConfig.model(
+          id: 'existing-tiny',
+          name: 'Whisper Tiny',
+          providerModelId: 'tiny',
+          inferenceProviderId: 'sherpa-provider',
+          createdAt: DateTime.utc(2026),
+          inputModalities: [Modality.audio],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        );
+        if (readFails) {
+          when(
+            () => configs.getConfigsByType(AiConfigType.model),
+          ).thenThrow(StateError('read failed'));
+        } else {
+          when(
+            () => configs.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [existing]);
+        }
+        await pump(tester);
+        final row = find.byKey(const ValueKey('sherpa-model-tiny'));
+        expect(
+          find.descendant(of: row, matching: find.text('Downloaded')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: row, matching: find.text('Add model')),
+          findsNothing,
+        );
+        if (readFails) {
+          final retry = find.descendant(
+            of: row,
+            matching: find.widgetWithText(DesignSystemButton, 'Retry'),
+          );
+          expect(retry, findsOneWidget);
+          when(
+            () => configs.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [existing]);
+          await tester.ensureVisible(retry);
+          await tester.tap(retry);
+          await tester.pumpAndSettle();
+          expect(retry, findsNothing);
+          expect(
+            find.text(
+              'Model downloaded, but its configuration could not be saved.',
+            ),
+            findsNothing,
+          );
+        }
+        verifyNever(() => configs.saveConfig(any()));
+        verifyNever(
+          () => models.install(any(), onProgress: any(named: 'onProgress')),
+        );
+      },
+    );
+  }
+
   testWidgets('keeps an active download alive across catalog searches', (
     tester,
   ) async {
