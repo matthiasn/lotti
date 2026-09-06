@@ -12848,6 +12848,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Modelul a fost descărcat, dar configurația sa nu a putut fi salvată.';
+
+  @override
   String get sherpaModelError =>
       'Operațiunea asupra modelului a eșuat. Încercați din nou.';
 

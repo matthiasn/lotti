@@ -21211,6 +21211,12 @@ abstract class AppLocalizations {
   /// **'Download ({size} MB)'**
   String sherpaDownloadModel(String size);
 
+  /// No description provided for @sherpaModelConfigurationError.
+  ///
+  /// In en, this message translates to:
+  /// **'Model downloaded, but its configuration could not be saved.'**
+  String get sherpaModelConfigurationError;
+
   /// No description provided for @sherpaModelError.
   ///
   /// In en, this message translates to:

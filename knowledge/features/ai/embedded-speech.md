@@ -65,7 +65,9 @@ Removing files preserves synced model configurations and profile references.
 Provider cards and detail headers count verified local installations, refreshed
 after downloads and removals. Both operations also republish changed sync-node
 capabilities without requiring an app restart. A failed broadcast does not undo
-the successful local file operation.
+the successful local file operation. If model configuration persistence fails
+after installation, the row retains its downloaded state and shows a separate
+configuration error; deletion remains available.
 Removing a model during its download is rejected.
 
 # Runtime flow

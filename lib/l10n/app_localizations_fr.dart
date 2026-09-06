@@ -12824,6 +12824,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Le modèle a été téléchargé, mais sa configuration n’a pas pu être enregistrée.';
+
+  @override
   String get sherpaModelError =>
       'L’opération sur le modèle a échoué. Réessaie.';
 

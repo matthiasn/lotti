@@ -12616,6 +12616,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Modellen har laddats ner, men dess konfiguration kunde inte sparas.';
+
+  @override
   String get sherpaModelError => 'Modellåtgärden misslyckades. Försök igen.';
 
   @override

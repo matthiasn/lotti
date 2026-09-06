@@ -111,8 +111,14 @@ class OrtSessionOptions {
   final int? intraOpNumThreads;
   // Sets the number of threads used to parallelize the execution of the graph (across nodes)
   final int? interOpNumThreads;
-  // set a list of providers, if one provider is not available, ORT will fallback to the next provider in the list
-  // for example: [OrtProvider.CUDA, OrtProvider.CPU]
+
+  /// Execution providers in priority order, for example CUDA followed by CPU.
+  /// Fallback applies to execution between supported providers; it does not
+  /// guarantee that an unavailable or unsupported provider is skipped during
+  /// session creation. Use OnnxRuntime.getAvailableProviders to discover the
+  /// runtime's providers and request only providers supported by the platform
+  /// plugin. Android rejects ARM_NN with INVALID_PROVIDER, including when CPU
+  /// follows it in this list.
   final List<OrtProvider>? providers;
   // arena allocator for memory management, default is true
   final bool? useArena;

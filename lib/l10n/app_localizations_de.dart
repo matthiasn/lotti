@@ -12686,6 +12686,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Das Modell wurde heruntergeladen, aber seine Konfiguration konnte nicht gespeichert werden.';
+
+  @override
   String get sherpaModelError =>
       'Modellaktion fehlgeschlagen. Versuch es erneut.';
 

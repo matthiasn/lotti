@@ -123,6 +123,52 @@ void main() {
     },
   );
 
+  for (final failRead in [true, false]) {
+    testWidgets(
+      'configuration failure keeps installed files visible ($failRead)',
+      (
+        tester,
+      ) async {
+        when(
+          () => models.install('tiny', onProgress: any(named: 'onProgress')),
+        ).thenAnswer((_) async => '/model');
+        if (failRead) {
+          when(
+            () => configs.getConfigsByType(AiConfigType.model),
+          ).thenThrow(StateError('configuration read failed'));
+        } else {
+          when(
+            () => configs.saveConfig(any()),
+          ).thenThrow(StateError('configuration save failed'));
+        }
+        when(() => models.remove('tiny')).thenAnswer((_) async {});
+        await pump(tester);
+        await tester.tap(find.text('Download (104 MB)'));
+        await tester.pumpAndSettle();
+        expect(find.text('Downloaded'), findsOneWidget);
+        expect(find.text('Download (104 MB)'), findsNothing);
+        expect(find.text('Model operation failed. Try again.'), findsNothing);
+        expect(
+          find.text(
+            'Model downloaded, but its configuration could not be saved.',
+          ),
+          findsOneWidget,
+        );
+        verify(() => broadcaster.broadcastIfChanged()).called(1);
+        await tester.tap(find.text('Delete downloaded model'));
+        await tester.pumpAndSettle();
+        verify(() => models.remove('tiny')).called(1);
+        expect(find.text('Download (104 MB)'), findsOneWidget);
+        expect(
+          find.text(
+            'Model downloaded, but its configuration could not be saved.',
+          ),
+          findsNothing,
+        );
+      },
+    );
+  }
+
   testWidgets('redownload preserves existing model identity and user edits', (
     tester,
   ) async {

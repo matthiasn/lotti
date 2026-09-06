@@ -12723,6 +12723,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'O modelo foi descarregado, mas não foi possível guardar a sua configuração.';
+
+  @override
   String get sherpaModelError =>
       'A operação do modelo falhou. Tenta novamente.';
 

@@ -12529,6 +12529,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Model downloaded, but its configuration could not be saved.';
+
+  @override
   String get sherpaModelError => 'Model operation failed. Try again.';
 
   @override

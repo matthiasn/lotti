@@ -4910,6 +4910,7 @@
   "settingsWhatsNewTitle": "Quoi de neuf",
   "sherpaDeleteModel": "Supprimer le modèle téléchargé",
   "sherpaDownloadModel": "Télécharger ({size} Mo)",
+  "sherpaModelConfigurationError": "Le modèle a été téléchargé, mais sa configuration n’a pas pu être enregistrée.",
   "sherpaModelError": "L’opération sur le modèle a échoué. Réessaie.",
   "sherpaModelInstalled": "Téléchargé",
   "sherpaModelNotInstalled": "Télécharge un modèle sur cet appareil",

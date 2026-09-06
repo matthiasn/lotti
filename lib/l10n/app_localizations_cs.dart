@@ -12767,6 +12767,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Model je stažený, ale jeho konfiguraci se nepodařilo uložit.';
+
+  @override
   String get sherpaModelError =>
       'Operace s modelem se nezdařila. Zkus to znovu.';
 

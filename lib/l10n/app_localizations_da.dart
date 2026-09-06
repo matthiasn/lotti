@@ -12604,6 +12604,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Modellen er downloadet, men dens konfiguration kunne ikke gemmes.';
+
+  @override
   String get sherpaModelError => 'Modelhandlingen mislykkedes. Prøv igen.';
 
   @override

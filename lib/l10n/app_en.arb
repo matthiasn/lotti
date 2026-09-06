@@ -7092,6 +7092,7 @@
       }
     }
   },
+  "sherpaModelConfigurationError": "Model downloaded, but its configuration could not be saved.",
   "sherpaModelError": "Model operation failed. Try again.",
   "sherpaModelInstalled": "Downloaded",
   "sherpaModelNotInstalled": "Download a model on this device",

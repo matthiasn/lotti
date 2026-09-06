@@ -50,6 +50,7 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
   late Future<bool> _installed;
   double? _progress;
   bool _failed = false;
+  bool _configurationFailed = false;
 
   @override
   void initState() {
@@ -67,6 +68,7 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
     setState(() {
       _progress = 0;
       _failed = false;
+      _configurationFailed = false;
     });
     try {
       await models.install(
@@ -75,32 +77,36 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
           if (mounted) setState(() => _progress = progress);
         },
       );
-      await _modelsChanged(container);
-      // A synced row may already exist. Re-create only a missing/deleted row,
-      // so downloading does not rewrite its profile references or user edits.
-      final existing = await configs.getConfigsByType(AiConfigType.model);
-      if (!existing.whereType<AiConfigModel>().any(
-        (model) =>
-            model.inferenceProviderId == widget.providerId &&
-            model.providerModelId == widget.model.id,
-      )) {
-        final known = sherpaSpeechModels.firstWhere(
-          (model) => model.providerModelId == widget.model.id,
-        );
-        await configs.saveConfig(
-          known.toAiConfigModel(
-            id: generateModelId(
-              widget.providerId,
-              widget.model.id,
-            ),
-            inferenceProviderId: widget.providerId,
-          ),
-        );
-      }
       if (mounted) {
         setState(() {
           _installed = Future.value(true);
         });
+      }
+      await _modelsChanged(container);
+      try {
+        // A synced row may already exist. Re-create only a missing/deleted row,
+        // so downloading does not rewrite its profile references or user edits.
+        final existing = await configs.getConfigsByType(AiConfigType.model);
+        if (!existing.whereType<AiConfigModel>().any(
+          (model) =>
+              model.inferenceProviderId == widget.providerId &&
+              model.providerModelId == widget.model.id,
+        )) {
+          final known = sherpaSpeechModels.firstWhere(
+            (model) => model.providerModelId == widget.model.id,
+          );
+          await configs.saveConfig(
+            known.toAiConfigModel(
+              id: generateModelId(
+                widget.providerId,
+                widget.model.id,
+              ),
+              inferenceProviderId: widget.providerId,
+            ),
+          );
+        }
+      } catch (_) {
+        if (mounted) setState(() => _configurationFailed = true);
       }
     } catch (_) {
       if (mounted) setState(() => _failed = true);
@@ -130,6 +136,7 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
     setState(() {
       _progress = 0;
       _failed = false;
+      _configurationFailed = false;
     });
     try {
       await models.remove(widget.model.id);
@@ -182,6 +189,13 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
                 (widget.model.bytes / 1000000).ceil().toString(),
               ),
               onPressed: _download,
+            ),
+          if (_configurationFailed)
+            Text(
+              messages.sherpaModelConfigurationError,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.alert.error.ink,
+              ),
             ),
           if (_failed || snapshot.hasError)
             Text(

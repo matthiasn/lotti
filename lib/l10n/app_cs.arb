@@ -4917,6 +4917,7 @@
   "settingsWhatsNewTitle": "Co je nového",
   "sherpaDeleteModel": "Smazat stažený model",
   "sherpaDownloadModel": "Stáhnout ({size} MB)",
+  "sherpaModelConfigurationError": "Model je stažený, ale jeho konfiguraci se nepodařilo uložit.",
   "sherpaModelError": "Operace s modelem se nezdařila. Zkus to znovu.",
   "sherpaModelInstalled": "Staženo",
   "sherpaModelNotInstalled": "Stáhni si model do tohoto zařízení",

@@ -5446,6 +5446,7 @@
   "settingsWhatsNewTitle": "Che cosa è nuovo",
   "sherpaDeleteModel": "Elimina il modello scaricato",
   "sherpaDownloadModel": "Scarica ({size} MB)",
+  "sherpaModelConfigurationError": "Il modello è stato scaricato, ma non è stato possibile salvare la sua configurazione.",
   "sherpaModelError": "Operazione sul modello non riuscita. Riprova.",
   "sherpaModelInstalled": "Scaricato",
   "sherpaModelNotInstalled": "Scarica un modello su questo dispositivo",

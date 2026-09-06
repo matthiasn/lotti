@@ -5445,6 +5445,7 @@
   "settingsWhatsNewTitle": "Wat is er nieuw?",
   "sherpaDeleteModel": "Gedownload model verwijderen",
   "sherpaDownloadModel": "Downloaden ({size} MB)",
+  "sherpaModelConfigurationError": "Het model is gedownload, maar de configuratie kon niet worden opgeslagen.",
   "sherpaModelError": "Modelbewerking mislukt. Probeer het opnieuw.",
   "sherpaModelInstalled": "Gedownload",
   "sherpaModelNotInstalled": "Download een model op dit apparaat",

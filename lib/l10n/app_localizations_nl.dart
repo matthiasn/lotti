@@ -12629,6 +12629,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Het model is gedownload, maar de configuratie kon niet worden opgeslagen.';
+
+  @override
   String get sherpaModelError => 'Modelbewerking mislukt. Probeer het opnieuw.';
 
   @override

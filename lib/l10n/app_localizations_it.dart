@@ -12770,6 +12770,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get sherpaModelConfigurationError =>
+      'Il modello è stato scaricato, ma non è stato possibile salvare la sua configurazione.';
+
+  @override
   String get sherpaModelError =>
       'Operazione sul modello non riuscita. Riprova.';
 

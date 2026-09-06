@@ -5446,6 +5446,7 @@
   "settingsWhatsNewTitle": "Hvad er nyt",
   "sherpaDeleteModel": "Slet downloadet model",
   "sherpaDownloadModel": "Download ({size} MB)",
+  "sherpaModelConfigurationError": "Modellen er downloadet, men dens konfiguration kunne ikke gemmes.",
   "sherpaModelError": "Modelhandlingen mislykkedes. Prøv igen.",
   "sherpaModelInstalled": "Downloadet",
   "sherpaModelNotInstalled": "Download en model på denne enhed",

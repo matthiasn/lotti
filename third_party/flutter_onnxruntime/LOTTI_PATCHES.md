@@ -92,7 +92,10 @@ When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
 - **Android** (`android/src/main/kotlin/com/masicai/flutteronnxruntime/FlutterOnnxruntimePlugin.kt`):
   remove the obsolete `addArmNN` call, which is absent from the shared runtime's
   Java API. Explicit ArmNN requests use the existing unsupported-provider error;
-  the application's CPU sessions are unaffected.
+  the application's CPU sessions are unaffected. Preserve the corresponding
+  Android support note on `OrtProvider.ARM_NN` and the `OrtSessionOptions.providers`
+  documentation: provider priority does not imply skipping unsupported options
+  during session creation.
 
 If the bundled ONNX Runtime **version** changes, also update the pinned binary
 URL + per-arch `sha256` in the Flathub manifest's `onnxruntime` module
