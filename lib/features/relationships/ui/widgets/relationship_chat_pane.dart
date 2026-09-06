@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/state/relationship_chat_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -118,65 +119,72 @@ class RelationshipChatHeader extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step4),
-        child: Row(
-          children: [
-            if (onBack != null) ...[
-              IconButton(
-                key: const ValueKey('person-chat-back'),
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: onBack,
-                icon: const Icon(LottiIcons.back),
+        child: LayoutBuilder(
+          builder: (context, constraints) => Row(
+            children: [
+              if (onBack != null) ...[
+                IconButton(
+                  key: const ValueKey('person-chat-back'),
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  onPressed: onBack,
+                  icon: const Icon(LottiIcons.back),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+              ],
+              Container(
+                width: tokens.spacing.step8,
+                height: tokens.spacing.step8,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tokens.colors.aiCard.accentSoft,
+                  borderRadius: BorderRadius.circular(tokens.radii.m),
+                  border: Border.all(color: tokens.colors.aiCard.border),
+                ),
+                child: Icon(
+                  LottiIcons.aiSpark,
+                  size: tokens.spacing.step6,
+                  color: tokens.colors.aiCard.accent,
+                ),
               ),
-              SizedBox(width: tokens.spacing.step2),
-            ],
-            Container(
-              width: tokens.spacing.step8,
-              height: tokens.spacing.step8,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: tokens.colors.aiCard.accentSoft,
-                borderRadius: BorderRadius.circular(tokens.radii.m),
-                border: Border.all(color: tokens.colors.aiCard.border),
-              ),
-              child: Icon(
-                LottiIcons.aiSpark,
-                size: tokens.spacing.step6,
-                color: tokens.colors.aiCard.accent,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    messages.relationshipChatAgentTitle(agentName),
-                    key: const ValueKey('person-chat-title'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    messages.relationshipChatAgentSubtitle,
-                    key: const ValueKey('person-chat-subtitle'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (showInternalsAction) ...[
               SizedBox(width: tokens.spacing.step3),
-              _InternalsAction(agentId: agentId, agentName: agentName),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      messages.relationshipChatAgentTitle(agentName),
+                      key: const ValueKey('person-chat-title'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                          ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      messages.relationshipChatAgentSubtitle,
+                      key: const ValueKey('person-chat-subtitle'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (showInternalsAction) ...[
+                SizedBox(width: tokens.spacing.step3),
+                _InternalsAction(
+                  agentId: agentId,
+                  agentName: agentName,
+                  headerWidth: constraints.maxWidth,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -185,18 +193,28 @@ class RelationshipChatHeader extends StatelessWidget {
 
 /// The way into the agent internals from the chat header.
 ///
-/// Labelled where there is room for a word (the desktop detail pane, which
-/// has no other entry point) and a bare icon on a phone, where the label
-/// would crowd out the agent's own name. One action either way — a menu for
-/// a single item would be a click the user does not owe us.
+/// Labelled where there is room for a word and a bare icon where there is
+/// not, at [kPageHeaderFoldWidth] — the same width at which every other page
+/// header folds its tools off the title line. The measure is the HEADER's,
+/// taken from [headerWidth], not the window's: in the desktop split the chat
+/// sits in a pane the sidebar and the resizable people list have already
+/// eaten into, so a window-wide reading would label the button while the
+/// header itself was phone-narrow.
+///
+/// One action either way — a menu for a single item would be a click the
+/// user does not owe us.
 class _InternalsAction extends StatelessWidget {
-  const _InternalsAction({required this.agentId, required this.agentName});
-
-  /// Below this width the header shows the icon alone.
-  static const double _labelledFrom = 520;
+  const _InternalsAction({
+    required this.agentId,
+    required this.agentName,
+    required this.headerWidth,
+  });
 
   final String agentId;
   final String agentName;
+
+  /// The width the header itself was laid out in.
+  final double headerWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -209,8 +227,7 @@ class _InternalsAction extends StatelessWidget {
       ),
     );
 
-    final labelled = MediaQuery.sizeOf(context).width >= _labelledFrom;
-    return labelled
+    return headerWidth >= kPageHeaderFoldWidth
         ? DesignSystemButton(
             key: const ValueKey('person-chat-internals'),
             label: messages.aiInternalsTitle,

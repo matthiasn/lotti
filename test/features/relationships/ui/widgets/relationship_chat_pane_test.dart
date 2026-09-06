@@ -46,10 +46,17 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
-          body: RelationshipChatPane(
-            relationshipId: relationshipId,
-            onBack: onBack,
-            showInternalsAction: showInternalsAction,
+          // Width is what the header actually gets laid out in, which is the
+          // measure the action reads — not the window's.
+          body: Center(
+            child: SizedBox(
+              width: size.width,
+              child: RelationshipChatPane(
+                relationshipId: relationshipId,
+                onBack: onBack,
+                showInternalsAction: showInternalsAction,
+              ),
+            ),
           ),
         ),
         mediaQueryData: MediaQueryData(size: size),
@@ -111,7 +118,7 @@ void main() {
     await pumpPane(
       tester,
       showInternalsAction: true,
-      size: const Size(1200, 800),
+      size: const Size(760, 800),
     );
 
     expect(
@@ -120,10 +127,61 @@ void main() {
     );
   });
 
+  testWidgets("the label follows the header's own width, not the window's "
+      '— a wide window can still hold a narrow pane', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        // A desktop-sized window whose chat pane is phone-narrow, which is
+        // what the People split produces once the list pane is widened.
+        Scaffold(
+          body: Row(
+            children: [
+              const Expanded(flex: 3, child: SizedBox()),
+              SizedBox(
+                width: 360,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: RelationshipChatPane(
+                        relationshipId: relationshipId,
+                        onBack: () {},
+                        showInternalsAction: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        overrides: [
+          agentIdentityProvider(
+            agentId,
+          ).overrideWith((ref) async => identity()),
+          agentChatProjectionProvider(
+            agentId,
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.widgetWithText(DesignSystemButton, 'Agent internals'),
+      findsNothing,
+      reason: 'the header is narrow even though the window is not',
+    );
+    expect(
+      find.byKey(const ValueKey('person-chat-internals')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('without the action there is no way in from the header', (
     tester,
   ) async {
-    await pumpPane(tester, size: const Size(1200, 800));
+    await pumpPane(tester, size: const Size(760, 800));
 
     expect(find.byKey(const ValueKey('person-chat-internals')), findsNothing);
   });

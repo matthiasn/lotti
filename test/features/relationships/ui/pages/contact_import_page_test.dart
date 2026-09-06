@@ -279,6 +279,37 @@ void main() {
       );
     });
 
+    testWidgets('each importance switch names the person it decides about, '
+        'so several in a list are told apart', (tester) async {
+      service.contacts = [
+        contact('c1', 'Ivo Brine'),
+        contact('c2', 'Tula Krillwright'),
+      ];
+      await pump(tester);
+      await tester.tap(find.text('Ivo Brine'));
+      await tester.tap(find.text('Tula Krillwright'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Review 2'));
+      await tester.pumpAndSettle();
+
+      final switchFinder = find.byType(Switch);
+      expect(
+        tester.getSemantics(switchFinder.first).label,
+        contains('Ivo Brine'),
+      );
+      expect(
+        tester.getSemantics(switchFinder.last).label,
+        contains('Tula Krillwright'),
+      );
+
+      // The label toggles the switch it belongs to, not its neighbour.
+      await tester.tap(find.text('Important').first);
+      await tester.pumpAndSettle();
+      final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+      expect(switches.first.value, isTrue);
+      expect(switches.last.value, isFalse);
+    });
+
     testWidgets('hides the cadence until a person is marked important — a '
         'cadence on an unimportant person is never evaluated', (tester) async {
       await advanceToReview(tester);

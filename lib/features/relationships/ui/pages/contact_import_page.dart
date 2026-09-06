@@ -293,24 +293,39 @@ class _ReviewStep extends ConsumerWidget {
                 ],
               ),
               SizedBox(height: tokens.spacing.step4),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      messages.relationshipImportantLabel,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                  ),
-                  Switch(
-                    value: draft.important,
-                    onChanged: (value) => controller.setImportant(
+              // Named for the person it decides about: several of these
+              // switches sit in one list, and "on" alone would not say whose
+              // importance just changed.
+              MergeSemantics(
+                child: Semantics(
+                  label: '${messages.relationshipImportantLabel} · $name',
+                  child: InkWell(
+                    onTap: () => controller.setImportant(
                       contactId: draft.contact.id,
-                      important: value,
+                      important: !draft.important,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            messages.relationshipImportantLabel,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                          ),
+                        ),
+                        Switch(
+                          value: draft.important,
+                          onChanged: (value) => controller.setImportant(
+                            contactId: draft.contact.id,
+                            important: value,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
               SizedBox(height: tokens.spacing.step1),
               Text(

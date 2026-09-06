@@ -476,6 +476,22 @@ void main() {
   );
 
   group('the three cards (design 2026-09-06 §6)', () {
+    testWidgets('the Important switch is one labelled control, not a switch '
+        'sitting near a word', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      // A screen reader reaching the control hears what it changes, and the
+      // label toggles it.
+      final semantics = tester.getSemantics(find.byType(Switch));
+      expect(semantics.label, contains('Important'));
+
+      await tester.tap(find.text('Important'));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    });
+
     testWidgets('groups the form as Who · Important · How to reach them', (
       tester,
     ) async {
@@ -634,6 +650,52 @@ void main() {
       );
     });
 
+    testWidgets('judges sameness the way the model does, so a formatted '
+        'number and its bare form are one channel', (tester) async {
+      contactsService
+        ..supported = true
+        ..picked = (
+          id: 'os-1',
+          displayName: 'Ada Lovelace',
+          channels: const [
+            // The same number the user typed, punctuated differently, plus an
+            // email that reads like the number's digits but is another type.
+            ContactChannel(
+              type: ContactChannelType.mobile,
+              value: '+1 (555) 010-9999',
+            ),
+            ContactChannel(
+              type: ContactChannelType.email,
+              value: 'ada@example.com',
+            ),
+          ],
+        );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(2), '+15550109999');
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('+1 (555) 010-9999'),
+        findsNothing,
+        reason: 'the punctuated form is the number already typed',
+      );
+      expect(find.text('ada@example.com'), findsOneWidget);
+    });
+
     testWidgets('adds nothing when the contact only repeats what is already '
         'typed', (tester) async {
       contactsService
@@ -654,6 +716,10 @@ void main() {
       await tester.enterText(find.byType(TextField).at(2), '+1 555');
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pump();
       await tester.tap(
         find.byKey(const ValueKey('person-form-add-from-contacts')),
       );

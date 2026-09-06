@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
@@ -499,10 +500,15 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     final picked = await service.pickSingle();
     if (picked == null || !mounted) return;
 
-    final known = _editedChannels.map((channel) => channel.value).toSet();
-    final added = picked.channels.where(
-      (channel) => !known.contains(channel.value),
+    // Sameness is the model's own rule (type plus a normalized value), so a
+    // typed `+1 (555) 010-9999` and the book's `+15550109999` are one channel,
+    // and a phone and an email that happen to read alike are not.
+    final existing = _editedChannels;
+    final merged = mergeContactChannels(
+      existing: existing,
+      incoming: picked.channels,
     );
+    final added = merged.skip(existing.length);
     if (added.isEmpty) {
       if (mounted) {
         context.showToast(
@@ -595,20 +601,29 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      messages.relationshipImportantLabel,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(color: tokens.colors.text.highEmphasis),
-                    ),
+              // One labelled control, not a label sitting near a switch: a
+              // screen reader reads "Important" with the switch's state, and
+              // the label itself toggles.
+              MergeSemantics(
+                child: InkWell(
+                  onTap: () => setState(() => _important = !_important),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          messages.relationshipImportantLabel,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(color: tokens.colors.text.highEmphasis),
+                        ),
+                      ),
+                      Switch(
+                        value: _important,
+                        onChanged: (value) =>
+                            setState(() => _important = value),
+                      ),
+                    ],
                   ),
-                  Switch(
-                    value: _important,
-                    onChanged: (value) => setState(() => _important = value),
-                  ),
-                ],
+                ),
               ),
               gap(tokens.spacing.step1),
               // Follows the name field as it is typed, so the sentence names
