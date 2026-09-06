@@ -19,23 +19,36 @@ class DetailContentWidth extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => Padding(
-      padding: detailContentInsets(
-        context,
-        availableWidth: constraints.maxWidth,
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxWidth = screenWidth >= kDesktopBreakpoint
+        ? kDetailContentMaxWidth
+        : double.infinity;
+    // Center + ConstrainedBox, not a LayoutBuilder: a `SliverFillRemaining`
+    // asks its child for an intrinsic height, which a LayoutBuilder cannot
+    // answer — and loose constraints let a shrink-wrapping child sit
+    // centred in the column rather than being stretched across it.
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: context.designTokens.spacing.step5,
+          ),
+          child: child,
+        ),
       ),
-      child: child,
-    ),
-  );
+    );
+  }
 }
 
-/// The horizontal insets [DetailContentWidth] applies: the standard content
-/// gutter plus, on a desktop-breakpoint screen, the centring that caps the
-/// content at [kDetailContentMaxWidth] within [availableWidth] — the width
-/// the caller actually has, which inside a list/detail split is the detail
-/// pane and not the window. Exposed for slivers and bars that have to share
-/// the column but cannot be children of that widget.
+/// The same geometry as [DetailContentWidth], as insets: the standard
+/// content gutter plus, on a desktop-breakpoint screen, the centring that
+/// caps the content at [kDetailContentMaxWidth] within [availableWidth] —
+/// the width the caller actually has, which inside a list/detail split is
+/// the detail pane and not the window. For slivers and bars that have to
+/// share the column but cannot be children of that widget; they measure
+/// the width themselves.
 EdgeInsets detailContentInsets(
   BuildContext context, {
   required double availableWidth,

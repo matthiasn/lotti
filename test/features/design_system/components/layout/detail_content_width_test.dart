@@ -25,8 +25,14 @@ void main() {
             child: Builder(
               builder: (context) {
                 captured = context;
+                // Loose constraints inside the column: the child says how
+                // wide it wants to be, and this one wants the whole measure.
                 return const DetailContentWidth(
-                  child: SizedBox(key: ValueKey('content'), height: 10),
+                  child: SizedBox(
+                    key: ValueKey('content'),
+                    width: double.infinity,
+                    height: 10,
+                  ),
                 );
               },
             ),
