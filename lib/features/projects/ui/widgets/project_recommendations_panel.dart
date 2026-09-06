@@ -26,12 +26,13 @@ import 'package:material_ui/material_ui.dart';
 /// its own heading because they ask different questions — advice the user
 /// may turn into a task, versus a mutation the user authorises.
 ///
-/// Every decision leaves its row in place with a tag; nothing is removed on
-/// tap and nothing on the page is invalidated by hand. The service notifies
-/// the agent's update stream, the snapshot provider re-reads, and the row
-/// changes state where it stands. A run whose every step was already decided
-/// when the page opened collapses to a one-line summary with a history
-/// disclosure; decisions made while the page is open stay inline.
+/// Adding a task leaves the step's row in place with a tag, so the task it
+/// created stays linked from where it was decided. **Dismissing takes the step
+/// off the list at once** — dismissed is dismissed — and the step lives on only
+/// in the band's history, which is where the dismissal can be undone. Nothing
+/// on the page is invalidated by hand: the service notifies the agent's update
+/// stream, the snapshot provider re-reads, and the rows follow. Once no step is
+/// open the band collapses to a one-line summary over the same history.
 class ProjectRecommendationsPanel extends ConsumerStatefulWidget {
   const ProjectRecommendationsPanel({
     required this.projectId,
@@ -75,15 +76,21 @@ class _ProjectRecommendationsPanelState
   /// need cleaning up).
   final _failures = <String, ({bool retryable, String? message})>{};
 
-  /// Row states the user just produced, shown until the snapshot catches up
-  /// so a decided row never flickers back through "pending".
-  final _optimistic = <String, ProjectNextStepRowState>{};
+  /// Outcomes the user just produced, applied until the snapshot catches up
+  /// so a decided step never flickers back through "pending".
+  final _optimistic = <String, ProjectNextStepOutcome>{};
   final _undoDeadlines = <String, DateTime>{};
   final _undoTimers = <String, Timer>{};
 
   /// Task ids created this session, so "Open task" works before the snapshot
   /// carries the id.
   final _createdTasks = <String, String>{};
+
+  /// Whether the history of already-decided steps is disclosed under the open
+  /// rows. Independent of [_historyOpen], which belongs to the collapsed
+  /// summary.
+  bool _openHistoryDisclosed = false;
+
   final _busyProposals = <String>{};
 
   /// Proposals decided this session, kept visible with their tag after the
@@ -111,15 +118,10 @@ class _ProjectRecommendationsPanelState
 
   // ---------------------------------------------------------------- steps --
 
-  ProjectNextStepRowState _rowState(ProjectRecommendationEntity step) {
-    if (_busySteps.contains(step.id)) return ProjectNextStepRowState.busy;
-    if (_failures.containsKey(step.id)) return ProjectNextStepRowState.failed;
-    final durable = switch (projectNextStepOutcome(step)) {
-      ProjectNextStepOutcome.pending => ProjectNextStepRowState.pending,
-      ProjectNextStepOutcome.added => ProjectNextStepRowState.added,
-      ProjectNextStepOutcome.done => ProjectNextStepRowState.done,
-      ProjectNextStepOutcome.dismissed => ProjectNextStepRowState.dismissed,
-    };
+  /// The step's durable outcome, with the decision the user just made laid
+  /// over it until the snapshot carries that decision itself.
+  ProjectNextStepOutcome _outcome(ProjectRecommendationEntity step) {
+    final durable = projectNextStepOutcome(step);
     final optimistic = _optimistic[step.id];
     if (optimistic == null) return durable;
     if (optimistic == durable) {
@@ -130,10 +132,28 @@ class _ProjectRecommendationsPanelState
     return optimistic;
   }
 
+  /// A dismissed step is off the list the moment it is dismissed; it is
+  /// reachable — and undoable — only through the history.
+  bool _isDismissed(ProjectRecommendationEntity step) =>
+      _outcome(step) == ProjectNextStepOutcome.dismissed;
+
+  ProjectNextStepRowState _rowState(ProjectRecommendationEntity step) {
+    if (_busySteps.contains(step.id)) return ProjectNextStepRowState.busy;
+    if (_failures.containsKey(step.id)) return ProjectNextStepRowState.failed;
+    return switch (_outcome(step)) {
+      ProjectNextStepOutcome.pending => ProjectNextStepRowState.pending,
+      ProjectNextStepOutcome.added => ProjectNextStepRowState.added,
+      // A dismissed step never reaches a row, and a superseded one reads as
+      // decided, like the model says.
+      ProjectNextStepOutcome.done ||
+      ProjectNextStepOutcome.dismissed => ProjectNextStepRowState.done,
+    };
+  }
+
   bool _canUndo(ProjectRecommendationEntity step, ProjectNextStepRowState s) {
     if (!widget.enabled) return false;
     return switch (s) {
-      ProjectNextStepRowState.dismissed || ProjectNextStepRowState.done => true,
+      ProjectNextStepRowState.done => true,
       ProjectNextStepRowState.added =>
         _undoDeadlines[step.id]?.isAfter(_now) ?? false,
       ProjectNextStepRowState.pending ||
@@ -166,8 +186,8 @@ class _ProjectRecommendationsPanelState
       if (result.success) {
         final taskId = result.mutatedEntityId;
         _optimistic[step.id] = taskId == null
-            ? ProjectNextStepRowState.done
-            : ProjectNextStepRowState.added;
+            ? ProjectNextStepOutcome.done
+            : ProjectNextStepOutcome.added;
         if (taskId != null) {
           _createdTasks[step.id] = taskId;
           widget.onTaskCreated?.call(taskId);
@@ -206,7 +226,7 @@ class _ProjectRecommendationsPanelState
       () => ref
           .read(projectRecommendationServiceProvider)
           .dismissRecommendation(step.id),
-      settled: ProjectNextStepRowState.dismissed,
+      settled: ProjectNextStepOutcome.dismissed,
     );
   }
 
@@ -216,7 +236,7 @@ class _ProjectRecommendationsPanelState
       () => ref
           .read(projectRecommendationServiceProvider)
           .restoreRecommendation(step.id),
-      settled: ProjectNextStepRowState.pending,
+      settled: ProjectNextStepOutcome.pending,
       // Only a successful restore forfeits the undo window and the task
       // link; a refused undo leaves the row exactly as it was.
       onSuccess: () {
@@ -230,7 +250,7 @@ class _ProjectRecommendationsPanelState
   Future<void> _transition(
     ProjectRecommendationEntity step,
     Future<bool> Function() run, {
-    required ProjectNextStepRowState settled,
+    required ProjectNextStepOutcome settled,
     VoidCallback? onSuccess,
   }) async {
     if (_busySteps.contains(step.id)) return;
@@ -393,7 +413,9 @@ class _ProjectRecommendationsPanelState
         ? const <ProjectRecommendationEntity>[]
         : snapshot.steps
               .where(
-                (step) => _rowState(step) == ProjectNextStepRowState.pending,
+                (step) =>
+                    !_isDismissed(step) &&
+                    _rowState(step) == ProjectNextStepRowState.pending,
               )
               .toList();
 
@@ -492,7 +514,7 @@ class _ProjectRecommendationsPanelState
     final tokens = context.designTokens;
     final messages = context.messages;
     final steps = snapshot.steps;
-    final tally = ProjectNextStepsTally.of(steps);
+    final tally = ProjectNextStepsTally.of(steps, outcomeOf: _outcome);
 
     if (!_collapseDecided || _collapseRun != snapshot.runCreatedAt) {
       _collapseDecided = true;
@@ -500,7 +522,14 @@ class _ProjectRecommendationsPanelState
       _collapsed = tally.allDecided;
       _showAllSteps = false;
       _historyOpen = false;
+      _openHistoryDisclosed = false;
     }
+    // Restoring a step from the history reopens the run. The latch above is
+    // only re-evaluated when the run changes, so without this an Undo on a
+    // run that was already decided when the page opened would leave the
+    // summary standing and the restored step reading as passive history with
+    // no Add task or Dismiss until the user left and came back.
+    if (_collapsed && tally.pending > 0) _collapsed = false;
 
     if (steps.isEmpty) {
       return ProjectNextStepsEmpty(
@@ -508,21 +537,34 @@ class _ProjectRecommendationsPanelState
         now: now,
       );
     }
-    if (_collapsed) {
+
+    // A dismissal removes its step from the band at once, so the list the user
+    // reads is the run minus everything they threw away.
+    final listed = steps.where((step) => !_isDismissed(step)).toList();
+    final decided = steps
+        .where((step) => _outcome(step) != ProjectNextStepOutcome.pending)
+        .toList();
+
+    if (_collapsed || listed.isEmpty) {
       return ProjectNextStepsSummary(
         steps: steps,
         runCreatedAt: snapshot.runCreatedAt,
         now: now,
         historyOpen: _historyOpen,
         onToggleHistory: () => setState(() => _historyOpen = !_historyOpen),
+        onUndo: widget.enabled && !_bulkBusy
+            ? (step) => unawaited(_undo(step))
+            : null,
+        busyStepIds: _busySteps,
+        outcomeOf: _outcome,
       );
     }
 
     final phone =
         MediaQuery.sizeOf(context).width < ProjectNextStepRow.wideBreakpoint;
     final visible = visibleProjectNextSteps(
-      steps,
-      cap: phone ? ProjectRecommendationsPanel.phoneStepCap : steps.length,
+      listed,
+      cap: phone ? ProjectRecommendationsPanel.phoneStepCap : listed.length,
       showAll: _showAllSteps,
     );
 
@@ -558,21 +600,56 @@ class _ProjectRecommendationsPanelState
               },
             ),
           ),
-        if (visible.length < steps.length)
+        if (visible.length < listed.length)
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: DesignSystemInlineAction(
               onTap: () => setState(() => _showAllSteps = true),
               semanticsLabel: messages.projectNextStepsShowMore(
-                steps.length - visible.length,
+                listed.length - visible.length,
               ),
               label: messages.projectNextStepsShowMore(
-                steps.length - visible.length,
+                listed.length - visible.length,
               ),
               leadingIcon: LottiIcons.chevronDown,
               ink: tokens.colors.interactive.enabled,
             ),
           ),
+        // With steps still open the band has no summary line to hang the
+        // history off, so it carries its own disclosure — the only route back
+        // to a dismissal.
+        if (decided.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step2),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: IntrinsicWidth(
+              child: DesignSystemInlineAction(
+                onTap: () => setState(
+                  () => _openHistoryDisclosed = !_openHistoryDisclosed,
+                ),
+                semanticsLabel: _openHistoryDisclosed
+                    ? messages.projectNextStepsHideHistory
+                    : messages.projectNextStepsShowHistory,
+                label: _openHistoryDisclosed
+                    ? messages.projectNextStepsHideHistory
+                    : messages.projectNextStepsShowHistory,
+                leadingIcon: _openHistoryDisclosed
+                    ? LottiIcons.chevronUp
+                    : LottiIcons.chevronDown,
+                ink: tokens.colors.interactive.enabled,
+              ),
+            ),
+          ),
+          if (_openHistoryDisclosed)
+            ProjectNextStepsHistory(
+              steps: decided,
+              onUndo: widget.enabled && !_bulkBusy
+                  ? (step) => unawaited(_undo(step))
+                  : null,
+              busyStepIds: _busySteps,
+              outcomeOf: _outcome,
+            ),
+        ],
         if (pending.length > 1) ...[
           SizedBox(height: tokens.spacing.step2),
           Wrap(

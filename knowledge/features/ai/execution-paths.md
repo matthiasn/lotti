@@ -369,6 +369,14 @@ badges. In the nested tree the cards collapse binarily, so long analyses (full
 OCR) start fully collapsed to a Show more/Show less toggle plus the attribution
 pill, while short summaries stay visible.
 
+The body goes through `AgentMarkdownView`, so an analysis nested in an image or
+audio entry card sits at the editor's own `body.bodySmall` measure with the
+editor's heading mapping, instead of inheriting whatever the ambient theme
+would hand raw `GptMarkdown` — a nested analysis must not read louder than the
+entry text it belongs to. The collapsed TLDR takes the same measure. The card's
+inset is one spacing step tighter than a top-level card's for the same reason:
+it is a subordinate surface inside a card, not a page section.
+
 `fetchAiResponsesForImages` resolves them in bulk for task context:
 `AiInputRepository.generate` nests them per image log entry as
 `aiResponses: [{model, generatedAt, text}]`, and the agent capture path emits one

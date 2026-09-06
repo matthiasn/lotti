@@ -412,52 +412,67 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
         // ellipsis.
         final showDuration = !compact;
         final addTaskEnabled = !isAddingTask && isAddTaskEnabled;
+        final taskCount = record.highlightedTaskSummaries.length;
+        // One tight `Expanded` owns all the slack, so the actions sit flush
+        // against the right edge. A `Spacer` beside loose `Flexible`s used to
+        // split the free space three ways instead, leaving the sort control
+        // and Add task stranded mid-row with unused space after them.
+        // Every element shares the row's default centre line.
         return Row(
           children: [
-            Flexible(
-              child: Semantics(
-                header: true,
-                child: Text(
-                  messages.projectShowcaseProjectTasksTab,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: ShowcasePalette.highText(context),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            CountDotBadge(count: record.highlightedTaskSummaries.length),
-            if (showDuration) ...[
-              SizedBox(width: tokens.spacing.step2),
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LottiIcons.timer,
-                      size: tokens.typography.lineHeight.caption,
-                      color: ShowcasePalette.timeGreen(context),
-                    ),
-                    SizedBox(width: tokens.spacing.step1),
-                    Flexible(
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Semantics(
+                      header: true,
                       child: Text(
-                        showcaseFormatDuration(
-                          record.highlightedTasksTotalDuration,
-                        ),
+                        messages.projectShowcaseProjectTasksTab,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: ShowcasePalette.timeGreen(context),
-                        ),
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: ShowcasePalette.highText(context),
+                            ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  CountDotBadge(
+                    count: taskCount,
+                    semanticsLabel: messages.projectTasksGroupCount(taskCount),
+                  ),
+                ],
               ),
+            ),
+            // The total estimate reads as a value belonging to the list, not
+            // as part of the heading, so it joins the trailing rail with the
+            // controls rather than trailing the count badge.
+            if (showDuration) ...[
+              SizedBox(width: tokens.spacing.step3),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LottiIcons.timer,
+                    size: tokens.typography.lineHeight.caption,
+                    color: ShowcasePalette.timeGreen(context),
+                  ),
+                  SizedBox(width: tokens.spacing.step1),
+                  Text(
+                    showcaseFormatDuration(
+                      record.highlightedTasksTotalDuration,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: ShowcasePalette.timeGreen(context),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(width: tokens.spacing.step2),
             ],
-            const Spacer(),
             if (onOptionsChanged case final onChanged?)
               if (MediaQuery.sizeOf(context).width >= kDesktopBreakpoint)
                 DesignSystemPopoverAnchor(
@@ -555,6 +570,7 @@ class _ProjectTaskGroupHeader extends StatelessWidget {
       color: ShowcasePalette.lowText(context),
     );
     final duration = group.totalDuration;
+    final border = ShowcasePalette.border(context);
     return Semantics(
       button: true,
       expanded: expanded,
@@ -566,8 +582,18 @@ class _ProjectTaskGroupHeader extends StatelessWidget {
             decoration: BoxDecoration(
               // Opaque: the header stays pinned while rows scroll beneath it.
               color: ShowcasePalette.surface(context),
+              border: Border(bottom: BorderSide(color: border)),
+            ),
+            // The panel's outline is painted *behind* the slivers by the
+            // enclosing `DecoratedSliver`, so the opaque full-width fill above
+            // would erase the card's left and right hairlines wherever a group
+            // starts. The header repaints them over itself — as a foreground
+            // decoration, which paints without insetting the row's content the
+            // way a border side in [decoration] would.
+            foregroundDecoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: ShowcasePalette.border(context)),
+                left: BorderSide(color: border),
+                right: BorderSide(color: border),
               ),
             ),
             padding: EdgeInsets.symmetric(

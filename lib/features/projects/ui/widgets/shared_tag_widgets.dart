@@ -502,29 +502,51 @@ class TaskStatePill extends StatelessWidget {
   }
 }
 
-/// A circular badge with a count, used in panel headers.
+/// A pill badge with a count, used in panel headers.
+///
+/// A one- or two-digit count still reads as the round dot; a longer one grows
+/// the pill sideways instead of clipping the number, which is what made a
+/// three-digit task count render as its first two digits, off-centre. The
+/// digits stay centred on both axes at every width, and [semanticsLabel]
+/// gives the bare number a meaning for screen readers.
 class CountDotBadge extends StatelessWidget {
-  const CountDotBadge({required this.count, super.key});
+  const CountDotBadge({required this.count, this.semanticsLabel, super.key});
 
   final int count;
+
+  /// Spoken instead of the bare digits — the count alone says nothing about
+  /// what is being counted.
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final diameter = tokens.spacing.step5 + tokens.spacing.step1;
 
-    return Container(
-      width: tokens.spacing.step5 + tokens.spacing.step1,
-      height: tokens.spacing.step5 + tokens.spacing.step1,
-      decoration: BoxDecoration(
-        color: ShowcasePalette.infoBlue(context),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        '$count',
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: ShowcasePalette.tagText(context),
-          fontFeatures: numericBadgeFontFeatures,
+    return Semantics(
+      label: semanticsLabel,
+      excludeSemantics: semanticsLabel != null,
+      child: Container(
+        constraints: BoxConstraints(minWidth: diameter, minHeight: diameter),
+        decoration: ShapeDecoration(
+          color: ShowcasePalette.infoBlue(context),
+          shape: const StadiumBorder(),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step1),
+        // Centres the digits inside the minimum box without letting the badge
+        // expand to whatever room the header happens to offer — which is what
+        // a `Container.alignment` would do here.
+        child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: Text(
+            '$count',
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: ShowcasePalette.tagText(context),
+              fontFeatures: numericBadgeFontFeatures,
+            ),
+          ),
         ),
       ),
     );

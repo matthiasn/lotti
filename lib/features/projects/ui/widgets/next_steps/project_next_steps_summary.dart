@@ -22,10 +22,12 @@ String formatProjectNextStepsAge(AppLocalizations messages, Duration elapsed) {
   };
 }
 
-/// The one-line stand-in for a run whose every step has been decided: what
-/// happened, when the agent last looked, and a disclosure to the per-step
-/// history. Replaces the full row list only once the user comes back to the
-/// page; the decisions they just made stay inline until then.
+/// The one-line stand-in for a run with nothing left open: what happened, when
+/// the agent last looked, and a disclosure to the per-step history.
+///
+/// The band reaches this state as soon as no step is still open — because the
+/// run was already decided when the page opened, or because the user has just
+/// dismissed or added the last of them.
 class ProjectNextStepsSummary extends StatelessWidget {
   const ProjectNextStepsSummary({
     required this.steps,
@@ -33,6 +35,9 @@ class ProjectNextStepsSummary extends StatelessWidget {
     required this.now,
     required this.historyOpen,
     required this.onToggleHistory,
+    this.onUndo,
+    this.busyStepIds = const <String>{},
+    this.outcomeOf = projectNextStepOutcome,
     super.key,
   });
 
@@ -42,12 +47,22 @@ class ProjectNextStepsSummary extends StatelessWidget {
   final bool historyOpen;
   final VoidCallback onToggleHistory;
 
+  /// Puts a dismissed step back on the open list. Omitted where the history
+  /// is read-only.
+  final ValueChanged<ProjectRecommendationEntity>? onUndo;
+
+  /// Steps whose undo is in flight; their control shows as busy.
+  final Set<String> busyStepIds;
+
+  /// How each step's outcome is read — see [ProjectNextStepOutcomeReader].
+  final ProjectNextStepOutcomeReader outcomeOf;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
-    final tally = ProjectNextStepsTally.of(steps);
+    final tally = ProjectNextStepsTally.of(steps, outcomeOf: outcomeOf);
     final parts = [
       if (tally.added > 0) messages.projectNextStepsCountAdded(tally.added),
       if (tally.done > 0) messages.projectNextStepsCountDone(tally.done),
@@ -103,24 +118,83 @@ class ProjectNextStepsSummary extends StatelessWidget {
         ),
         if (historyOpen) ...[
           SizedBox(height: tokens.spacing.step2),
-          for (final step in steps) _HistoryRow(step: step),
+          ProjectNextStepsHistory(
+            steps: steps,
+            onUndo: onUndo,
+            busyStepIds: busyStepIds,
+            outcomeOf: outcomeOf,
+          ),
         ],
       ],
     );
   }
 }
 
+/// The per-step record of a run: one quiet row per step with the outcome it
+/// ended in, and — for a step the user dismissed — the Undo that puts it back
+/// on the open list.
+///
+/// Dismissing removes a step from the band immediately, so this list is the
+/// only place a dismissal can be taken back. It is shown both under the
+/// one-line summary of a finished run and, while open steps remain, behind
+/// the band's own history disclosure.
+class ProjectNextStepsHistory extends StatelessWidget {
+  const ProjectNextStepsHistory({
+    required this.steps,
+    this.onUndo,
+    this.busyStepIds = const <String>{},
+    this.outcomeOf = projectNextStepOutcome,
+    super.key,
+  });
+
+  final List<ProjectRecommendationEntity> steps;
+  final ValueChanged<ProjectRecommendationEntity>? onUndo;
+  final Set<String> busyStepIds;
+
+  /// How each step's outcome is read — see [ProjectNextStepOutcomeReader].
+  final ProjectNextStepOutcomeReader outcomeOf;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final step in steps)
+          _HistoryRow(
+            key: ValueKey('project-next-step-history-${step.id}'),
+            step: step,
+            outcome: outcomeOf(step),
+            onUndo: onUndo == null ? null : () => onUndo!(step),
+            busy: busyStepIds.contains(step.id),
+          ),
+      ],
+    );
+  }
+}
+
 class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.step});
+  const _HistoryRow({
+    required this.step,
+    required this.outcome,
+    this.onUndo,
+    this.busy = false,
+    super.key,
+  });
 
   final ProjectRecommendationEntity step;
+  final ProjectNextStepOutcome outcome;
+
+  /// Offered only on a dismissed step — the one outcome this list can undo.
+  final VoidCallback? onUndo;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
-    final (icon, color, tag) = switch (projectNextStepOutcome(step)) {
+    final (icon, color, tag) = switch (outcome) {
       ProjectNextStepOutcome.added => (
         LottiIcons.confirm,
         ai.accent,
@@ -171,6 +245,19 @@ class _HistoryRow extends StatelessWidget {
                 color: ai.metaText,
               ),
             ),
+            if (onUndo != null &&
+                outcome == ProjectNextStepOutcome.dismissed) ...[
+              SizedBox(width: tokens.spacing.step3),
+              IntrinsicWidth(
+                child: DesignSystemInlineAction(
+                  onTap: busy ? null : onUndo,
+                  semanticsLabel: messages.designSystemUndoLabel,
+                  label: messages.designSystemUndoLabel,
+                  leadingIcon: LottiIcons.undo,
+                  ink: tokens.colors.interactive.enabled,
+                ),
+              ),
+            ],
           ],
         ),
       ),

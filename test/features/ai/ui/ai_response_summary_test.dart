@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
@@ -438,10 +439,11 @@ Style: isometric digital art. --ar 16:9
           'The placard confirms the sardine pod docks on 05.10.2026 at '
           '14:30 UTC at the orbital penguin habitat.';
 
-      AiResponseEntry buildResponse(String text) =>
+      AiResponseEntry buildResponse(String text, {String? tldr}) =>
           testAiResponseEntry.copyWith(
             data: testAiResponseEntry.data.copyWith(
               response: text,
+              tldr: tldr,
               type: AiResponseType.imageAnalysis,
             ),
           );
@@ -451,12 +453,13 @@ Style: isometric digital art. --ar 16:9
         required String text,
         bool collapsible = false,
         bool fadeOut = false,
+        String? tldr,
       }) {
         return tester.pumpWidget(
           WidgetTestBench(
             child: SingleChildScrollView(
               child: AiResponseSummary(
-                buildResponse(text),
+                buildResponse(text, tldr: tldr),
                 fadeOut: fadeOut,
                 collapsible: collapsible,
               ),
@@ -479,6 +482,69 @@ Style: isometric digital art. --ar 16:9
         );
         return container.decoration! as BoxDecoration;
       }
+
+      Container card(WidgetTester tester) => tester.widget<Container>(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.decoration is BoxDecoration &&
+              (w.decoration! as BoxDecoration).color ==
+                  dsTokensLight.colors.aiCard.background.withValues(
+                    alpha: 0.5,
+                  ),
+        ),
+      );
+
+      testWidgets(
+        'the body sits at the editor measure, never louder than the entry '
+        'text it belongs to',
+        (tester) async {
+          await pumpSummary(tester, text: shortSummaryText);
+
+          final body = tester.widget<AgentMarkdownView>(
+            find.byType(AgentMarkdownView),
+          );
+          final editorBody = dsTokensLight.typography.styles.body.bodySmall;
+          expect(
+            body.style?.fontSize,
+            editorBody.fontSize,
+            reason:
+                'An analysis nested in an entry card reads at the same size '
+                'as the entry text editor, not larger.',
+          );
+          expect(body.style?.color, dsTokensLight.colors.aiCard.bodyText);
+        },
+      );
+
+      testWidgets('a collapsed TLDR reads at the same measure as the body', (
+        tester,
+      ) async {
+        await pumpSummary(
+          tester,
+          text: longOcrText,
+          collapsible: true,
+          tldr: 'The short version.',
+        );
+
+        final tldr = tester.widget<Text>(find.text('The short version.'));
+        expect(
+          tldr.style?.fontSize,
+          dsTokensLight.typography.styles.body.bodySmall.fontSize,
+        );
+      });
+
+      testWidgets('the nested card spends a tighter inset than a top-level '
+          'card', (tester) async {
+        await pumpSummary(tester, text: shortSummaryText);
+
+        expect(
+          card(tester).padding,
+          EdgeInsets.all(dsTokensLight.spacing.step4),
+          reason:
+              'A surface nested inside an entry card should not spend a full '
+              'card inset of its own.',
+        );
+      });
 
       testWidgets(
         'renders the tinted aiCard surface: background fill, soft accent '

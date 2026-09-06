@@ -176,6 +176,19 @@ the accent ink. The pattern it serves never removes the row: `confirmDismiss`
 fires the action and returns `false`, and the row snaps back to show its
 new state.
 
+`DesignSystemSwipeActions` (same directory) is that pattern as one wrapper.
+A row hands it a `DesignSystemSwipeAction` per direction — palette, glyph,
+label, callback — and it owns everything else: the `Dismissible`, the
+direction derived from which sides were wired, the shared threshold, the clip
+to the row's radius, and the `confirmDismiss` that always returns `false`.
+Give it neither direction and it returns the child untouched, which is how a
+decided or disabled row opts out without swallowing drag gestures. It also
+absorbs a `Dismissible` sharp edge: a secondary background is rejected without
+a primary one, so a one-direction row hands the same band to both slots and
+lets `direction` keep the unused one out of reach. The project AI card's next
+steps and proposal rows are the adopters, which is what makes the same drag
+mean the same thing there as on a task page.
+
 `DesignSystemFloatingActionButton` is circular and icon-only by default and
 takes its `semanticLabel` for assistive technology. Passing a `label` extends
 it into a worded pill: same height, same token background and radius, growing

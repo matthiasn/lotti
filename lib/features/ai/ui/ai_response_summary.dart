@@ -1,5 +1,5 @@
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
@@ -8,7 +8,6 @@ import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -34,6 +33,11 @@ const _fadeOutPreviewMaxHeight = 200.0;
 /// cards, but without their accent-blended fill and badges — so a response
 /// nested inside an entry card reads as recognizably AI-generated content
 /// without becoming a second elevated card.
+///
+/// The body renders through [AgentMarkdownView], so an analysis sits at the
+/// same `body.bodySmall` measure as the entry text it belongs to rather than
+/// shouting over it, and the card's inset is one step tighter than a top-level
+/// card's — it is a nested surface, not a page section.
 ///
 /// Prompt-generation responses short-circuit to [GeneratedPromptCard].
 ///
@@ -176,16 +180,14 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       );
     }
 
-    final ai = context.designTokens.colors.aiCard;
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: ai.bodyText,
+    );
 
-    final content = DefaultTextStyle.merge(
-      style: TextStyle(color: ai.bodyText),
-      child: SelectionArea(
-        child: GptMarkdown(
-          aiResponse.data.response,
-          onLinkTap: handleMarkdownLinkTap,
-        ),
-      ),
+    final content = SelectionArea(
+      child: AgentMarkdownView(aiResponse.data.response, style: bodyStyle),
     );
 
     final responseContent = GestureDetector(
@@ -212,10 +214,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     if (!isCollapsed) {
       body = responseContent;
     } else if (tldr != null) {
-      body = DefaultTextStyle.merge(
-        style: TextStyle(color: ai.bodyText),
-        child: SelectionArea(child: Text(tldr)),
-      );
+      body = SelectionArea(child: Text(tldr, style: bodyStyle));
     } else {
       body = null;
     }
@@ -229,7 +228,9 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(color: ai.borderSoft),
       ),
-      padding: const EdgeInsets.all(AppTheme.cardPadding),
+      // One step tighter than a top-level card: this surface is nested inside
+      // an entry card and should not spend a full card inset on its own.
+      padding: EdgeInsets.all(tokens.spacing.step4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

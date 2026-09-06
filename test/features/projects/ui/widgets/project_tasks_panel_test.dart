@@ -12,6 +12,8 @@ import 'package:lotti/features/projects/ui/model/project_task_groups.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_tag_widgets.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_utils/material_ui_finders.dart';
@@ -421,6 +423,168 @@ void main() {
       expect(find.text('3'), findsOneWidget, reason: 'count badge');
       expect(find.text('3h 40m'), findsOneWidget, reason: 'total estimate');
     });
+
+    testWidgets(
+      'the header reads title, count, then a trailing rail flush to the right',
+      (tester) async {
+        await tester.pumpWidget(
+          wrapSliver(
+            ProjectTasksSliverPanel(
+              record: record,
+              now: now,
+              onOptionsChanged: (_) {},
+              onAddTask: () {},
+            ),
+            width: 900,
+          ),
+        );
+        await tester.pump();
+
+        final header = tester.getRect(find.text('Project Tasks'));
+        final badge = tester.getRect(find.byType(CountDotBadge));
+        final duration = tester.getRect(find.text('3h 40m'));
+        final sort = tester.getRect(find.byIcon(LottiIcons.sort));
+        final addTask = tester.getRect(find.text('Add task'));
+
+        // The count belongs to the heading it counts; the estimate is a value
+        // of the list and joins the controls in the trailing rail.
+        expect(badge.left, greaterThan(header.right));
+        expect(duration.left, greaterThan(badge.right));
+        expect(sort.left, greaterThan(duration.right));
+        expect(
+          addTask.left,
+          greaterThan(sort.right),
+          reason: 'Sort sits with the actions, immediately before Add task.',
+        );
+
+        // A `Spacer` beside loose `Flexible`s used to split the free space
+        // three ways, stranding the controls mid-row with slack behind them.
+        final panel = tester.getRect(find.byType(CustomScrollView));
+        expect(
+          panel.right - tester.getRect(find.byType(DesignSystemButton)).right,
+          lessThan(40),
+          reason: 'The actions end at the card edge, not somewhere before it.',
+        );
+        expect(
+          badge.left - header.right,
+          lessThan(40),
+          reason: 'The badge stays beside its heading, not adrift from it.',
+        );
+      },
+    );
+
+    testWidgets('every header element is centred on one another', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: record,
+            now: now,
+            onOptionsChanged: (_) {},
+            onAddTask: () {},
+          ),
+          width: 900,
+        ),
+      );
+      await tester.pump();
+
+      final centre = tester.getRect(find.text('Project Tasks')).center.dy;
+      for (final finder in [
+        find.byType(CountDotBadge),
+        find.text('3h 40m'),
+        // The rows carry a timer glyph too; the header's is the first built.
+        find.byIcon(LottiIcons.timer).first,
+        find.byIcon(LottiIcons.sort),
+        find.text('Add task'),
+      ]) {
+        expect(
+          tester.getRect(finder).center.dy,
+          closeTo(centre, 1.5),
+          reason: 'Header elements share one vertical centre.',
+        );
+      }
+    });
+
+    testWidgets(
+      'a pinned group header repaints the card outline it paints over',
+      (tester) async {
+        await tester.pumpWidget(
+          wrapSliver(ProjectTasksSliverPanel(record: record, now: now)),
+        );
+        await tester.pump();
+
+        // The panel's outline is painted behind the slivers, so the header's
+        // opaque full-width fill would erase the card's left and right
+        // hairlines wherever a group starts. It has to carry them itself.
+        final header = find.byKey(
+          const ValueKey('project-task-group-month:2026-9'),
+        );
+        expect(header, findsOneWidget);
+        final decorated = tester.widget<Container>(
+          find.descendant(of: header, matching: find.byType(Container)).first,
+        );
+        final sides =
+            (decorated.foregroundDecoration! as BoxDecoration).border!
+                as Border;
+        final border = ShowcasePalette.border(
+          tester.element(find.text('September 2026')),
+        );
+        expect(sides.left.color, border);
+        expect(sides.right.color, border);
+        expect(sides.left.width, BorderWidths.hairline);
+        expect(
+          sides.top,
+          BorderSide.none,
+          reason: 'Only the sides are missing; the top would double a divider.',
+        );
+
+        // The hairlines only land on the card's own outline if the header
+        // spans the panel edge to edge.
+        final panel = tester.getRect(find.byType(CustomScrollView));
+        final headerRect = tester.getRect(header);
+        expect(headerRect.left, closeTo(panel.left, 0.01));
+        expect(headerRect.right, closeTo(panel.right, 0.01));
+
+        // Carried as a foreground decoration, the sides paint over the fill
+        // without insetting the row's content the way a border side in
+        // `decoration` would.
+        expect(
+          (decorated.decoration! as BoxDecoration).border,
+          isA<Border>().having(
+            (b) => b.left,
+            'left',
+            BorderSide.none,
+          ),
+          reason: 'The laid-out border stays the bottom rule only.',
+        );
+      },
+    );
+
+    testWidgets(
+      'the compact header drops the estimate and shrinks Add task to a glyph',
+      (tester) async {
+        await tester.pumpWidget(
+          wrapSliver(
+            ProjectTasksSliverPanel(
+              record: record,
+              now: now,
+              onOptionsChanged: (_) {},
+              onAddTask: () {},
+            ),
+            width: 360,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('3h 40m'), findsNothing);
+        expect(find.text('Add task'), findsNothing);
+        expect(find.text('Project Tasks'), findsOneWidget);
+        expect(find.byType(CountDotBadge), findsOneWidget);
+        expect(find.byIcon(LottiIcons.add), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
       'groups by creation month, newest first, and folds done tasks',

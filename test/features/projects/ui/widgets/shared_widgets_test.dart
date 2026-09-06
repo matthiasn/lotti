@@ -487,6 +487,84 @@ void main() {
 
       expect(find.text('7'), findsOneWidget);
     });
+
+    testWidgets(
+      'a three-digit count renders whole and centred instead of being clipped '
+      'by a fixed circle',
+      (tester) async {
+        // The badge used to be a fixed 18pt circle, so a project with 153
+        // tasks read as "15" — the third digit fell outside the box, and what
+        // was left sat off-centre. The pill has to grow instead.
+        Future<Rect> badgeRect(int count) async {
+          await tester.pumpWidget(
+            wrap(
+              Align(
+                alignment: Alignment.topLeft,
+                child: CountDotBadge(count: count),
+              ),
+            ),
+          );
+          await tester.pump();
+          return tester.getRect(find.byType(CountDotBadge));
+        }
+
+        final oneDigit = await badgeRect(7);
+        final threeDigits = await badgeRect(153);
+        expect(
+          threeDigits.width,
+          greaterThan(oneDigit.width),
+          reason:
+              'A fixed-diameter circle would clip "153" to "15"; the pill has '
+              'to make room for the digits it is given.',
+        );
+
+        final label = tester.getRect(find.text('153'));
+        expect(
+          label.width,
+          lessThanOrEqualTo(threeDigits.width),
+          reason: 'The whole number has to fit inside the badge.',
+        );
+        expect(label.center.dx, closeTo(threeDigits.center.dx, 0.5));
+        expect(label.center.dy, closeTo(threeDigits.center.dy, 0.5));
+      },
+    );
+
+    testWidgets('a short count keeps the round dot', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const Align(
+            alignment: Alignment.topLeft,
+            child: CountDotBadge(count: 7),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final badge = tester.getSize(find.byType(CountDotBadge));
+      expect(
+        badge.width,
+        badge.height,
+        reason: 'One digit still reads as a circle, not a stretched pill.',
+      );
+    });
+
+    testWidgets('the bare number is given a meaning for screen readers', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        wrap(const CountDotBadge(count: 4, semanticsLabel: '4 tasks')),
+      );
+      await tester.pump();
+
+      expect(find.bySemanticsLabel('4 tasks'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('4'),
+        findsNothing,
+        reason: 'The digits alone are excluded once they have a label.',
+      );
+      handle.dispose();
+    });
   });
 
   group('NoResultsPane', () {
