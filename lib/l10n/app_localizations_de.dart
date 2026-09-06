@@ -11145,8 +11145,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Tage drüber',
-      one: '1 Tag drüber',
+      other: '$count Tage überfällig',
+      one: '1 Tag überfällig',
     );
     return '$_temp0';
   }
@@ -11332,7 +11332,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Noch keine Aufgaben verknüpft.';
 
   @override
-  String get relationshipNotEnrolled => 'Nicht betreut';
+  String get relationshipNotEnrolled => 'Nicht im Blick';
 
   @override
   String get relationshipNotFound =>
@@ -11392,7 +11392,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count betreut';
+    return '/ $count im Blick';
   }
 
   @override
@@ -11408,8 +11408,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Personen nicht betreut',
-      one: '1 Person nicht betreut',
+      other: '$count Personen nicht im Blick',
+      one: '1 Person nicht im Blick',
     );
     return '$_temp0';
   }

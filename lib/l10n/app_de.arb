@@ -4355,7 +4355,7 @@
   "relationshipContactMissing": "Dieser Kontakt ist nicht auf diesem Gerät",
   "relationshipContactNoChanges": "Nichts Neues zu übernehmen",
   "relationshipCreateTitle": "Person hinzufügen",
-  "relationshipDaysOver": "{count, plural, =1{1 Tag drüber} other{{count} Tage drüber}}",
+  "relationshipDaysOver": "{count, plural, =1{1 Tag überfällig} other{{count} Tage überfällig}}",
   "@relationshipDaysOver": {
     "placeholders": {
       "count": {
@@ -4435,7 +4435,7 @@
   "relationshipNicknameLabel": "Spitzname",
   "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",
   "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
-  "relationshipNotEnrolled": "Nicht betreut",
+  "relationshipNotEnrolled": "Nicht im Blick",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
   "relationshipNudgesOn": "Erinnerungen an",
   "@relationshipNudgesOn": {
@@ -4471,7 +4471,7 @@
   "relationshipsPageTitle": "Menschen",
   "relationshipsSelectPersonHint": "Wähle eine Person, um ihre Seite zu sehen.",
   "relationshipsSummaryDueNow": "Jetzt fällig",
-  "relationshipsSummaryEnrolled": "/ {count} betreut",
+  "relationshipsSummaryEnrolled": "/ {count} im Blick",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4491,7 +4491,7 @@
     }
   },
   "relationshipsSummaryNoneDue": "Niemand fällig",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 Person nicht betreut} other{{count} Personen nicht betreut}}",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 Person nicht im Blick} other{{count} Personen nicht im Blick}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

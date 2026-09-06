@@ -11461,7 +11461,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Aucune tâche liée pour l\'instant.';
 
   @override
-  String get relationshipNotEnrolled => 'Non suivi';
+  String get relationshipNotEnrolled => 'Non suivie';
 
   @override
   String get relationshipNotFound =>
@@ -11521,7 +11521,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count suivis';
+    return '/ $count suivies';
   }
 
   @override

@@ -80,7 +80,8 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
   /// query — the ids and the instants as `IN` lists, the exact pair kept on
   /// the raw row — so the People list can say what the last contact was
   /// without a per-person query. Respects the private-entry filter for the
-  /// same reason the aggregate does.
+  /// same reason the aggregate does. Two rows on the same instant resolve
+  /// to the lowest id, so the answer is stable across loads.
   Future<Map<String, CheckInEntry>> latestCheckIns() async {
     final times = await latestCheckInTimes();
     if (times.isEmpty) return const {};
@@ -88,17 +89,27 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
     final instants = times.values.toSet().toList(growable: false);
 
     Future<List<JournalDbEntity>> run({List<bool>? privateStatuses}) {
-      return (select(journal)..where((t) {
-            var predicate =
-                t.type.equals('CheckIn') &
-                t.deleted.equals(false) &
-                t.subtype.isIn(ids) &
-                t.dateFrom.isIn(instants);
-            if (privateStatuses != null) {
-              predicate = predicate & t.private.isIn(privateStatuses);
-            }
-            return predicate;
-          }))
+      return (select(journal)
+            ..where((t) {
+              var predicate =
+                  t.type.equals('CheckIn') &
+                  t.deleted.equals(false) &
+                  t.subtype.isIn(ids) &
+                  t.dateFrom.isIn(instants);
+              if (privateStatuses != null) {
+                predicate = predicate & t.private.isIn(privateStatuses);
+              }
+              return predicate;
+            })
+            // Two check-ins stamped to the same instant (a call and the
+            // message that followed it) tie on the aggregate. Without an
+            // order, whichever row SQLite happens to return first would win
+            // and the People row could show a different interaction on the
+            // next load; the id breaks the tie the same way every time.
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.dateFrom),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
           .get();
     }
 

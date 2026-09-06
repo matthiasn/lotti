@@ -4478,7 +4478,7 @@
   "relationshipsPageTitle": "Lidé",
   "relationshipsSelectPersonHint": "Vyber osobu a zobrazí se její stránka.",
   "relationshipsSummaryDueNow": "Teď na řadě",
-  "relationshipsSummaryEnrolled": "/ {count} sledovaných",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 sledovaná} few{/ {count} sledované} other{/ {count} sledovaných}}",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4497,8 +4497,8 @@
       }
     }
   },
-  "relationshipsSummaryNoneDue": "Nikdo nečeká",
-  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 osoba nesledována} few{{count} osoby nesledovány} other{{count} osob nesledováno}}",
+  "relationshipsSummaryNoneDue": "Nikdo není na řadě",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 nesledovaná osoba} few{{count} nesledované osoby} other{{count} nesledovaných osob}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
       "count": {

@@ -4973,7 +4973,7 @@
   "relationshipsPageTitle": "Pessoas",
   "relationshipsSelectPersonHint": "Escolhe uma pessoa para ver a página dela.",
   "relationshipsSummaryDueNow": "Pendentes agora",
-  "relationshipsSummaryEnrolled": "/ {count} acompanhados",
+  "relationshipsSummaryEnrolled": "/ {count} em acompanhamento",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4981,7 +4981,7 @@
       }
     }
   },
-  "relationshipsSummaryNextDue": "Próximo: {name} · {day}",
+  "relationshipsSummaryNextDue": "A seguir: {name} · {day}",
   "@relationshipsSummaryNextDue": {
     "placeholders": {
       "name": {

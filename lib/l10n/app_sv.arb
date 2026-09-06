@@ -4858,7 +4858,7 @@
   "relationshipContactMissing": "Den kontakten finns inte på den här enheten",
   "relationshipContactNoChanges": "Inget nytt att kopiera",
   "relationshipCreateTitle": "Lägg till person",
-  "relationshipDaysOver": "{count, plural, =1{1 dag försenad} other{{count} dagar försenade}}",
+  "relationshipDaysOver": "{count, plural, =1{försenad med 1 dag} other{försenad med {count} dagar}}",
   "@relationshipDaysOver": {
     "placeholders": {
       "count": {
@@ -4974,7 +4974,7 @@
   "relationshipsPageTitle": "Personer",
   "relationshipsSelectPersonHint": "Välj en person för att se deras sida.",
   "relationshipsSummaryDueNow": "Dags nu",
-  "relationshipsSummaryEnrolled": "/ {count} följda",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 följd} other{/ {count} följda}}",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {

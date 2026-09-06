@@ -11492,7 +11492,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
-    return 'Próximo: $name · $day';
+    return 'Siguiente: $name · $day';
   }
 
   @override
@@ -11528,7 +11528,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String relationshipStatusLineAddedFirstDue(String cadence, String day) {
-    return 'Recién añadido · $cadence · primer plazo $day';
+    return 'Recién añadido · $cadence · vence por primera vez el $day';
   }
 
   @override

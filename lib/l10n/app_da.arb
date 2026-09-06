@@ -4858,7 +4858,7 @@
   "relationshipContactMissing": "Den kontakt findes ikke på denne enhed",
   "relationshipContactNoChanges": "Intet nyt at kopiere",
   "relationshipCreateTitle": "Tilføj person",
-  "relationshipDaysOver": "{count, plural, =1{1 dag over tid} other{{count} dage over tid}}",
+  "relationshipDaysOver": "{count, plural, =1{1 dag forsinket} other{{count} dage forsinket}}",
   "@relationshipDaysOver": {
     "placeholders": {
       "count": {

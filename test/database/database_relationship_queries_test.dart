@@ -67,11 +67,12 @@ void main() {
     required DateTime at,
     bool private = false,
     DateTime? deletedAt,
+    CheckInInteractionType interactionType = CheckInInteractionType.call,
   }) => JournalEntity.checkIn(
     meta: meta(id, dateFrom: at, private: private, deletedAt: deletedAt),
     data: CheckInData(
       relationshipId: relationshipId,
-      interactionType: CheckInInteractionType.call,
+      interactionType: interactionType,
     ),
   );
 
@@ -371,6 +372,38 @@ void main() {
           hidden.map((id, entry) => MapEntry(id, entry.meta.id)),
           {'rel-a': 'a-new', 'rel-b': 'b-public', 'rel-c': 'c-same-instant'},
         );
+      },
+    );
+
+    test(
+      'latestCheckIns breaks a same-instant tie by id, so the interaction a '
+      'People row shows does not change between loads',
+      () async {
+        final at = baseTime.add(const Duration(days: 3));
+        // The message is inserted first so that natural (insertion) order
+        // and id order disagree — only a deterministic ORDER BY picks the
+        // call both times.
+        await db!.updateJournalEntity(
+          checkIn(
+            'd-2-message',
+            relationshipId: 'rel-d',
+            at: at,
+            interactionType: CheckInInteractionType.message,
+          ),
+        );
+        await db!.updateJournalEntity(
+          checkIn('d-1-call', relationshipId: 'rel-d', at: at),
+        );
+
+        final first = await db!.latestCheckIns();
+        final again = await db!.latestCheckIns();
+
+        expect(first['rel-d']!.meta.id, 'd-1-call');
+        expect(
+          first['rel-d']!.data.interactionType,
+          CheckInInteractionType.call,
+        );
+        expect(again['rel-d']!.meta.id, 'd-1-call');
       },
     );
 

@@ -4435,7 +4435,7 @@
   "relationshipNicknameLabel": "Surnom",
   "relationshipNoCheckIns": "Aucun échange noté — ajoute le premier après votre prochaine conversation.",
   "relationshipNoLinkedTasks": "Aucune tâche liée pour l'instant.",
-  "relationshipNotEnrolled": "Non suivi",
+  "relationshipNotEnrolled": "Non suivie",
   "relationshipNotFound": "Cette personne n'est plus dans ta liste.",
   "relationshipNudgesOn": "rappels activés",
   "@relationshipNudgesOn": {
@@ -4471,7 +4471,7 @@
   "relationshipsPageTitle": "Proches",
   "relationshipsSelectPersonHint": "Choisis une personne pour voir sa page.",
   "relationshipsSummaryDueNow": "À relancer maintenant",
-  "relationshipsSummaryEnrolled": "/ {count} suivis",
+  "relationshipsSummaryEnrolled": "/ {count} suivies",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {

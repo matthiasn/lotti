@@ -4479,7 +4479,7 @@
       }
     }
   },
-  "relationshipsSummaryNextDue": "Próximo: {name} · {day}",
+  "relationshipsSummaryNextDue": "Siguiente: {name} · {day}",
   "@relationshipsSummaryNextDue": {
     "placeholders": {
       "name": {
@@ -4511,7 +4511,7 @@
       }
     }
   },
-  "relationshipStatusLineAddedFirstDue": "Recién añadido · {cadence} · primer plazo {day}",
+  "relationshipStatusLineAddedFirstDue": "Recién añadido · {cadence} · vence por primera vez el {day}",
   "@relationshipStatusLineAddedFirstDue": {
     "placeholders": {
       "cadence": {

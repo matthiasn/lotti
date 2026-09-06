@@ -11076,8 +11076,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dage over tid',
-      one: '1 dag over tid',
+      other: '$count dage forsinket',
+      one: '1 dag forsinket',
     );
     return '$_temp0';
   }

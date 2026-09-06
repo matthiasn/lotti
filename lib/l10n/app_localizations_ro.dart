@@ -11301,9 +11301,9 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de zile întârziere',
-      few: '$count zile întârziere',
-      one: '1 zi întârziere',
+      other: '$count de zile de întârziere',
+      few: '$count zile de întârziere',
+      one: '1 zi de întârziere',
     );
     return '$_temp0';
   }
@@ -11493,7 +11493,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nicio sarcină asociată încă.';
 
   @override
-  String get relationshipNotEnrolled => 'Neurmărit';
+  String get relationshipNotEnrolled => 'Neurmărită';
 
   @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
@@ -11552,16 +11552,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count urmărite';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '/ $count de urmărite',
+      few: '/ $count urmărite',
+      one: '/ 1 urmărită',
+    );
+    return '$_temp0';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
-    return 'Următorul: $name · $day';
+    return 'Urmează: $name · $day';
   }
 
   @override
-  String get relationshipsSummaryNoneDue => 'Nimeni scadent';
+  String get relationshipsSummaryNoneDue => 'Nimeni nu este scadent';
 
   @override
   String relationshipsSummaryNotEnrolled(int count) {

@@ -11491,7 +11491,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count sledovaných';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '/ $count sledovaných',
+      few: '/ $count sledované',
+      one: '/ 1 sledovaná',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11500,16 +11507,16 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipsSummaryNoneDue => 'Nikdo nečeká';
+  String get relationshipsSummaryNoneDue => 'Nikdo není na řadě';
 
   @override
   String relationshipsSummaryNotEnrolled(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count osob nesledováno',
-      few: '$count osoby nesledovány',
-      one: '1 osoba nesledována',
+      other: '$count nesledovaných osob',
+      few: '$count nesledované osoby',
+      one: '1 nesledovaná osoba',
     );
     return '$_temp0';
   }

@@ -11088,8 +11088,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dagar försenade',
-      one: '1 dag försenad',
+      other: 'försenad med $count dagar',
+      one: 'försenad med 1 dag',
     );
     return '$_temp0';
   }
@@ -11334,7 +11334,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count följda';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '/ $count följda',
+      one: '/ 1 följd',
+    );
+    return '$_temp0';
   }
 
   @override

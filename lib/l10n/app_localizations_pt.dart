@@ -11427,12 +11427,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count acompanhados';
+    return '/ $count em acompanhamento';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
-    return 'Próximo: $name · $day';
+    return 'A seguir: $name · $day';
   }
 
   @override

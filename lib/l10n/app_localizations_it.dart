@@ -11408,7 +11408,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nessuna attività collegata.';
 
   @override
-  String get relationshipNotEnrolled => 'Non seguito';
+  String get relationshipNotEnrolled => 'Non seguita';
 
   @override
   String get relationshipNotFound =>
@@ -11468,12 +11468,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipsSummaryEnrolled(int count) {
-    return '/ $count seguiti';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '/ $count seguite',
+      one: '/ 1 seguita',
+    );
+    return '$_temp0';
   }
 
   @override
   String relationshipsSummaryNextDue(String name, String day) {
-    return 'Prossimo: $name · $day';
+    return 'Prossima scadenza: $name · $day';
   }
 
   @override

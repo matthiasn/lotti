@@ -4938,7 +4938,7 @@
   "relationshipNicknameLabel": "Soprannome",
   "relationshipNoCheckIns": "Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.",
   "relationshipNoLinkedTasks": "Nessuna attività collegata.",
-  "relationshipNotEnrolled": "Non seguito",
+  "relationshipNotEnrolled": "Non seguita",
   "relationshipNotFound": "Questa persona non è più nella tua lista.",
   "relationshipNudgesOn": "promemoria attivi",
   "@relationshipNudgesOn": {
@@ -4974,7 +4974,7 @@
   "relationshipsPageTitle": "Persone",
   "relationshipsSelectPersonHint": "Scegli una persona per vedere la sua pagina.",
   "relationshipsSummaryDueNow": "Da sentire ora",
-  "relationshipsSummaryEnrolled": "/ {count} seguiti",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 seguita} other{/ {count} seguite}}",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4982,7 +4982,7 @@
       }
     }
   },
-  "relationshipsSummaryNextDue": "Prossimo: {name} · {day}",
+  "relationshipsSummaryNextDue": "Prossima scadenza: {name} · {day}",
   "@relationshipsSummaryNextDue": {
     "placeholders": {
       "name": {

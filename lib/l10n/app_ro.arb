@@ -4355,7 +4355,7 @@
   "relationshipContactMissing": "Acel contact nu se află pe acest dispozitiv",
   "relationshipContactNoChanges": "Nu este nimic nou de copiat",
   "relationshipCreateTitle": "Adăugați o persoană",
-  "relationshipDaysOver": "{count, plural, =1{1 zi întârziere} few{{count} zile întârziere} other{{count} de zile întârziere}}",
+  "relationshipDaysOver": "{count, plural, =1{1 zi de întârziere} few{{count} zile de întârziere} other{{count} de zile de întârziere}}",
   "@relationshipDaysOver": {
     "placeholders": {
       "count": {
@@ -4435,7 +4435,7 @@
   "relationshipNicknameLabel": "Poreclă",
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
-  "relationshipNotEnrolled": "Neurmărit",
+  "relationshipNotEnrolled": "Neurmărită",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
   "relationshipNudgesOn": "memento-uri active",
   "@relationshipNudgesOn": {
@@ -4471,7 +4471,7 @@
   "relationshipsPageTitle": "Persoane",
   "relationshipsSelectPersonHint": "Selectați o persoană pentru a-i vedea pagina.",
   "relationshipsSummaryDueNow": "Scadente acum",
-  "relationshipsSummaryEnrolled": "/ {count} urmărite",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 urmărită} few{/ {count} urmărite} other{/ {count} de urmărite}}",
   "@relationshipsSummaryEnrolled": {
     "placeholders": {
       "count": {
@@ -4479,7 +4479,7 @@
       }
     }
   },
-  "relationshipsSummaryNextDue": "Următorul: {name} · {day}",
+  "relationshipsSummaryNextDue": "Urmează: {name} · {day}",
   "@relationshipsSummaryNextDue": {
     "placeholders": {
       "name": {
@@ -4490,7 +4490,7 @@
       }
     }
   },
-  "relationshipsSummaryNoneDue": "Nimeni scadent",
+  "relationshipsSummaryNoneDue": "Nimeni nu este scadent",
   "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persoană neurmărită} few{{count} persoane neurmărite} other{{count} de persoane neurmărite}}",
   "@relationshipsSummaryNotEnrolled": {
     "placeholders": {
