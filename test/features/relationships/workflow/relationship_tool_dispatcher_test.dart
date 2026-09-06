@@ -310,4 +310,98 @@ void main() {
       verify(() => persistence.updateDbEntity(any())).called(1);
     },
   );
+
+  test('unknown tools and malformed proposals cannot create a task', () async {
+    for (final input in [
+      ('unknown', args),
+      ('create_and_link_task', <String, dynamic>{}),
+      ('create_and_link_task', {...args, 'dueDate': '2026-02-30'}),
+    ]) {
+      final result = await dispatcher.dispatch(input.$1, input.$2, person.id);
+      expect(result.success, isFalse);
+      expect(result.nonRetryable, isTrue);
+    }
+    verifyNever(
+      () => persistence.createTaskEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+        private: any(named: 'private'),
+      ),
+    );
+  });
+
+  test(
+    'refused creation stays retryable and never attempts a relationship link',
+    () async {
+      when(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
+        ),
+      ).thenAnswer((_) async => null);
+      final result = await dispatcher.dispatch(
+        'create_and_link_task',
+        args,
+        person.id,
+      );
+      expect(result.success, isFalse);
+      expect(result.nonRetryable, isFalse);
+      verifyNever(
+        () =>
+            relationships.linkTask(relationshipId: person.id, taskId: task.id),
+      );
+    },
+  );
+
+  test(
+    'metadata failures and refused tombstone writes refuse compensation',
+    () async {
+      when(
+        () => persistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => null);
+      expect(await dispatcher.removeTask(task), isFalse);
+      when(
+        () => persistence.updateMetadata(
+          task.meta,
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenThrow(StateError('database unavailable'));
+      expect(await dispatcher.removeTask(task), isFalse);
+    },
+  );
+
+  test(
+    'private evidence keeps a public person’s task private, and no due date stays absent',
+    () async {
+      when(() => relationships.getRelationshipById(person.id)).thenAnswer(
+        (_) async =>
+            person.copyWith(meta: person.meta.copyWith(private: false)),
+      );
+      final input = {...args}..remove('dueDate');
+      expect(
+        (await dispatcher.dispatch(
+          'create_and_link_task',
+          input,
+          person.id,
+        )).success,
+        isTrue,
+      );
+      final captured = verify(
+        () => persistence.createTaskEntry(
+          data: captureAny(named: 'data'),
+          entryText: captureAny(named: 'entryText'),
+          categoryId: 'category',
+          private: true,
+        ),
+      ).captured;
+      expect((captured[0] as TaskData).due, isNull);
+      expect(
+        (captured[1] as EntryText).markdown,
+        contains('(lotti://journal/${evidence.id})'),
+      );
+    },
+  );
 }

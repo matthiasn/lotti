@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
 import 'package:mocktail/mocktail.dart';
@@ -236,4 +239,87 @@ void main() {
       );
     },
   );
+
+  test(
+    'an in-flight confirmation locks out duplicate confirm, reject and undo',
+    () async {
+      final pending = Completer<ToolExecutionResult>();
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) => pending.future);
+      final first = service.confirm(set, 0);
+      expect((await service.confirm(set, 0)).success, isFalse);
+      expect(await service.reject(set, 0), isFalse);
+      expect(await service.undo(set, 0), isFalse);
+      pending.complete(
+        const ToolExecutionResult(success: false, output: 'retry'),
+      );
+      expect((await first).success, isFalse);
+      when(() => confirmation.rejectItem(set, 0)).thenAnswer((_) async => true);
+      expect(await service.reject(set, 0), isTrue);
+      verify(() => confirmation.confirmItem(set, 0)).called(1);
+    },
+  );
+
+  test(
+    'missing, malformed and still-pending history cannot be undone',
+    () async {
+      when(() => repository.getEntity('missing')).thenAnswer((_) async => null);
+      expect(await service.undoById('missing', 0), isFalse);
+      expect(await service.undo(set, -1), isFalse);
+      expect(await service.undo(set, 10), isFalse);
+      when(() => repository.getEntity(set.id)).thenAnswer((_) async => set);
+      expect(await service.undoById(set.id, 0), isFalse);
+      when(() => repository.getEntity(set.id)).thenAnswer((_) async => null);
+      expect(await service.undo(set, 0), isFalse);
+      expect(removed, isEmpty);
+    },
+  );
+
+  test('undo rejection reopens without touching journal tasks', () async {
+    final rejected = set.copyWith(
+      items: [set.items.single.copyWith(status: ChangeItemStatus.rejected)],
+    );
+    when(() => repository.getEntity(set.id)).thenAnswer((_) async => rejected);
+    expect(await service.undoById(set.id, 0), isTrue);
+    verify(() => confirmation.reopenItem(rejected, 0)).called(1);
+    verifyNever(() => db.journalEntityById(any()));
+  });
+
+  test('a refused unlink never deletes the still-linked task', () async {
+    when(
+      () => relationships.unlinkTask(
+        relationshipId: set.taskId,
+        taskId: testTask.id,
+      ),
+    ).thenAnswer((_) async => false);
+    expect(await service.undo(confirmed, 0), isFalse);
+    expect(removed, isEmpty);
+  });
+
+  test(
+    'a missing decision disables undo and a successful creation keeps a local receipt',
+    () async {
+      when(
+        () => repository.getEntitiesByAgentId(
+          set.agentId,
+          type: AgentEntityTypes.changeDecision,
+        ),
+      ).thenAnswer((_) async => []);
+      expect(await service.undo(confirmed, 0), isFalse);
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) async => RelationshipTaskCreationResult(testTask));
+      expect((await service.confirm(set, 0)).success, isTrue);
+      expect(service.cachedReceipt(set.id, 0), testTask);
+      verifyNever(() => sync.upsertEntity(any()));
+    },
+  );
+
+  test('a non-task receipt cannot enable task deletion', () {
+    expect(
+      RelationshipProposalService.decodeReceipt(testRelationship.toJson()),
+      isNull,
+    );
+  });
 }
