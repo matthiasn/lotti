@@ -70,6 +70,7 @@ jobs:
           mkdir -p reports
           echo "Ordering seed: $TEST_ORDER_SEED" | tee reports/seed.txt
           dart run tool/ci/run_tests.dart \
+            ${{ matrix.shard_index == 0 && '--verbose' || '' }} \
             --coverage \
             --exclude-tags 'glados || performance || eval-live' \
             --total-shards=10 \

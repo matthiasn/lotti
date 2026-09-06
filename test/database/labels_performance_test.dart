@@ -1,8 +1,5 @@
 // ignore_for_file: avoid_redundant_argument_values
 
-@Timeout(Duration(minutes: 2))
-library;
-
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -17,6 +14,9 @@ import 'package:lotti/get_it.dart';
 import '../widget_test_utils.dart';
 
 void main() {
+  // Test-level timeouts survive optimized imports without requiring another
+  // compilation of this suite and its application dependencies.
+  const timeout = Timeout(Duration(minutes: 2));
   late JournalDb db;
   late Directory directory;
 
@@ -120,6 +120,7 @@ void main() {
       );
     },
     tags: 'performance',
+    timeout: timeout,
   );
 
   // intentionally giving more time because of anemic GitHub Actions test runner
@@ -154,6 +155,7 @@ void main() {
       expect(labeled, hasLength(1));
     },
     tags: 'performance',
+    timeout: timeout,
   );
 
   for (final size in [10, 100, 1000]) {
@@ -192,7 +194,7 @@ void main() {
         reason:
             'One privacy flag lookup and one task query, independent of results',
       );
-    });
+    }, timeout: timeout);
   }
 
   test(
@@ -231,6 +233,7 @@ void main() {
       expect(labelIds, isNot(contains('label-2')));
     },
     tags: 'performance',
+    timeout: timeout,
   );
 
   test(
@@ -259,6 +262,7 @@ void main() {
       expect(stopwatch.elapsedMilliseconds, lessThan(250));
     },
     tags: 'performance',
+    timeout: timeout,
   );
 
   test(
@@ -320,6 +324,7 @@ void main() {
       expect(stopwatch.elapsedMilliseconds, lessThan(300));
     },
     tags: 'performance',
+    timeout: timeout,
   );
 
   test(
@@ -345,6 +350,7 @@ void main() {
       expect(labeled, hasLength(labelCount));
     },
     tags: 'performance',
+    timeout: timeout,
   );
 }
 

@@ -542,6 +542,10 @@ plus `test/.test_targets.json`. A suite with library metadata (`@Tags`,
 `@Timeout`, `@TestOn`, `@Skip`, and other annotations) runs as a standalone file
 so the test runner receives the original metadata. Opting out of optimization
 never opts out of execution. Both generated files are ignored by Git.
+For a shared timeout that does not require isolation, pass a common
+`Timeout` to each test (as in `database/labels_performance_test.dart`).
+Test-level timeouts survive both standalone and bundled execution without
+forcing another compilation.
 
 Before compilation, the runner omits suites whose literal library `@Tags`
 match a positive `--exclude-tags` disjunction (for example,
@@ -557,7 +561,9 @@ coverage. Every unit/property/performance job uploads its JSON event report and
 ordering seed even on failure, and summarizes failures, skips, incomplete tests,
 and durations measured from each test's start to completion. The timing tool is
 `test/tool/analyze_test_timings.dart`; concurrent completion gaps are not test
-durations.
+durations. The runner logs target-preparation time; the first standard shard
+also enables Flutter's verbose phase timings to distinguish compilation,
+execution, and coverage collection from suite-loading time.
 
 The weekly run shuffles test order using its recorded workflow run number as the
 seed. Workflow dispatch accepts a `seed` to reproduce the order; `0` keeps

@@ -11,6 +11,8 @@ Future<int> runTestSuites(
   required String packageRoot,
   required String flutterExecutable,
 }) async {
+  stdout.writeln('Preparing test targets...');
+  final preparation = Stopwatch()..start();
   await generateTestOptimizer(
     packageRoot: packageRoot,
     excludedSuiteTags: _excludedSuiteTags(arguments),
@@ -23,6 +25,11 @@ Future<int> runTestSuites(
               )
               as List<dynamic>)
           .cast<String>();
+  preparation.stop();
+  stdout.writeln(
+    'Prepared ${targets.length} test targets in '
+    '${preparation.elapsedMilliseconds} ms; starting Flutter.',
+  );
   final process = await Process.start(
     flutterExecutable,
     ['test', ...arguments, ...targets],
