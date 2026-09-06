@@ -11283,7 +11283,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'begonnen $time · ongeveer $minutes min';
+    return 'begonnen om $time · ongeveer $minutes min';
   }
 
   @override
@@ -11293,6 +11293,7 @@ class AppLocalizationsNl extends AppLocalizations {
       locale: localeName,
       other: '$minutes minuten',
       one: '1 minuut',
+      zero: 'minder dan een minuut',
     );
     return 'Je hebt $name $_temp0 geleden gebeld — nu vastleggen zolang het vers is?';
   }
@@ -11304,6 +11305,7 @@ class AppLocalizationsNl extends AppLocalizations {
       locale: localeName,
       other: '$minutes minuten',
       one: '1 minuut',
+      zero: 'minder dan een minuut',
     );
     return 'Je hebt $name $_temp0 geleden geschreven — nu vastleggen zolang het vers is?';
   }
@@ -11324,7 +11326,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Blijft op dit apparaat · nooit gedeeld met de AI';
 
   @override
-  String get relationshipReachTitle => 'Bereiken';
+  String get relationshipReachTitle => 'Contact';
 
   @override
   String get relationshipRelinkContact => 'Ander contact koppelen';

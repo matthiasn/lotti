@@ -4970,7 +4970,7 @@
   "relationshipPayAttentionTo": "Let op",
   "relationshipPostCallConfirm": "Check-in vastleggen",
   "relationshipPostCallDismiss": "Niet nu",
-  "relationshipPostCallMeta": "begonnen {time} · ongeveer {minutes} min",
+  "relationshipPostCallMeta": "begonnen om {time} · ongeveer {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4981,7 +4981,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Je hebt {name} {minutes, plural, =1{1 minuut} other{{minutes} minuten}} geleden gebeld — nu vastleggen zolang het vers is?",
+  "relationshipPostCallOfferCall": "Je hebt {name} {minutes, plural, =0{minder dan een minuut} =1{1 minuut} other{{minutes} minuten}} geleden gebeld — nu vastleggen zolang het vers is?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4992,7 +4992,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Je hebt {name} {minutes, plural, =1{1 minuut} other{{minutes} minuten}} geleden geschreven — nu vastleggen zolang het vers is?",
+  "relationshipPostCallOfferMessage": "Je hebt {name} {minutes, plural, =0{minder dan een minuut} =1{1 minuut} other{{minutes} minuten}} geleden geschreven — nu vastleggen zolang het vers is?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {
@@ -5012,7 +5012,7 @@
     }
   },
   "relationshipReachPrivacy": "Blijft op dit apparaat · nooit gedeeld met de AI",
-  "relationshipReachTitle": "Bereiken",
+  "relationshipReachTitle": "Contact",
   "relationshipRelinkContact": "Ander contact koppelen",
   "relationshipSeeAllCheckIns": "Alle check-ins bekijken",
   "@relationshipSeeAllCheckIns": {

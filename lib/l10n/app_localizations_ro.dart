@@ -11260,9 +11260,9 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de zile întârziere',
-      few: '$count zile întârziere',
-      one: '1 zi întârziere',
+      other: '$count de zile de întârziere',
+      few: '$count zile de întârziere',
+      one: '1 zi de întârziere',
     );
     return 'Scadent din $day · $_temp0';
   }
@@ -11493,7 +11493,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'început $time · circa $minutes min';
+    return 'început la $time · circa $minutes min';
   }
 
   @override
@@ -11504,6 +11504,7 @@ class AppLocalizationsRo extends AppLocalizations {
       other: '$minutes de minute',
       few: '$minutes minute',
       one: '1 minut',
+      zero: 'mai puțin de un minut',
     );
     return 'Ați sunat pe $name acum $_temp0 — notați cât este proaspăt?';
   }
@@ -11516,6 +11517,7 @@ class AppLocalizationsRo extends AppLocalizations {
       other: '$minutes de minute',
       few: '$minutes minute',
       one: '1 minut',
+      zero: 'mai puțin de un minut',
     );
     return 'I-ați scris lui $name acum $_temp0 — notați cât este proaspăt?';
   }

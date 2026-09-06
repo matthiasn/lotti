@@ -11217,6 +11217,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutes',
       one: '1 minute',
+      zero: 'less than a minute',
     );
     return 'You called $name $_temp0 ago — log it while it is fresh?';
   }
@@ -11228,6 +11229,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutes',
       one: '1 minute',
+      zero: 'less than a minute',
     );
     return 'You wrote to $name $_temp0 ago — log it while it is fresh?';
   }

@@ -11460,7 +11460,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'commencé $time · environ $minutes min';
+    return 'commencé à $time · environ $minutes min';
   }
 
   @override
@@ -11470,6 +11470,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutes',
       one: '1 minute',
+      zero: 'moins d\'une minute',
     );
     return 'Tu as appelé $name il y a $_temp0 — on note ça tant que c\'est frais ?';
   }
@@ -11481,6 +11482,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutes',
       one: '1 minute',
+      zero: 'moins d\'une minute',
     );
     return 'Tu as écrit à $name il y a $_temp0 — on note ça tant que c\'est frais ?';
   }

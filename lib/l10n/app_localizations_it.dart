@@ -11179,7 +11179,7 @@ class AppLocalizationsIt extends AppLocalizations {
       other: '$count giorni di ritardo',
       one: '1 giorno di ritardo',
     );
-    return 'In scadenza da $day · $_temp0';
+    return 'In ritardo da $day · $_temp0';
   }
 
   @override
@@ -11406,7 +11406,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'iniziata $time · circa $minutes min';
+    return 'Inizio: $time · circa $minutes min';
   }
 
   @override
@@ -11416,6 +11416,7 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other: '$minutes minuti',
       one: '1 minuto',
+      zero: 'meno di un minuto',
     );
     return 'Hai chiamato $name $_temp0 fa — lo annotiamo finché è fresco?';
   }
@@ -11427,6 +11428,7 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other: '$minutes minuti',
       one: '1 minuto',
+      zero: 'meno di un minuto',
     );
     return 'Hai scritto a $name $_temp0 fa — lo annotiamo finché è fresco?';
   }

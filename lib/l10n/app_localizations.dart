@@ -18844,13 +18844,13 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipPostCallOfferCall.
   ///
   /// In en, this message translates to:
-  /// **'You called {name} {minutes, plural, =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
+  /// **'You called {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
   String relationshipPostCallOfferCall(String name, int minutes);
 
   /// No description provided for @relationshipPostCallOfferMessage.
   ///
   /// In en, this message translates to:
-  /// **'You wrote to {name} {minutes, plural, =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
+  /// **'You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
   String relationshipPostCallOfferMessage(String name, int minutes);
 
   /// No description provided for @relationshipQuietForDays.

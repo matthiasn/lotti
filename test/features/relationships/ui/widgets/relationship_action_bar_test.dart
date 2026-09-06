@@ -24,6 +24,7 @@ class _FakeContactLauncher implements ContactLauncher {
   final Set<ContactAction> launchable;
   final bool launchSucceeds;
   final List<(ContactChannel, ContactAction)> launched = [];
+  int probes = 0;
 
   /// When set, every availability answer waits on it — so a test can hold a
   /// resolution open while the widget's channels change under it.
@@ -31,6 +32,7 @@ class _FakeContactLauncher implements ContactLauncher {
 
   @override
   Future<bool> canLaunch(ContactChannel channel, ContactAction action) async {
+    probes++;
     if (gate case final gate?) await gate.future;
     return launchable.contains(action) &&
         contactChannelUri(channel, action) != null;
@@ -270,6 +272,36 @@ void main() {
 
       expect(channelButton, findsNothing);
       expect(find.byIcon(LottiIcons.call), findsNothing);
+    });
+
+    testWidgets('a rebuilt person with the same channels does not probe the '
+        'platform again — channels compare by value', (tester) async {
+      final launcher = _FakeContactLauncher(
+        launchable: const {ContactAction.call},
+      );
+      Widget bar() => makeTestableWidgetWithScaffold(
+        RelationshipActionBar(
+          // A fresh entity and a fresh list each build.
+          relationship: person([mobile]),
+          onLogCheckIn: () {},
+          onSpeak: () {},
+        ),
+        overrides: [
+          contactLauncherProvider.overrideWithValue(launcher),
+          pendingInteractionStoreProvider.overrideWithValue(store),
+        ],
+      );
+
+      await tester.pumpWidget(bar());
+      await tester.pumpAndSettle();
+      final probesAfterFirstBuild = launcher.probes;
+      expect(probesAfterFirstBuild, greaterThan(0));
+
+      await tester.pumpWidget(bar());
+      await tester.pumpAndSettle();
+
+      expect(launcher.probes, probesAfterFirstBuild);
+      expect(channelButton, findsOneWidget);
     });
 
     testWidgets('re-resolves when the channels change under it', (

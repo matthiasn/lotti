@@ -4836,7 +4836,7 @@
       }
     }
   },
-  "relationshipDueSince": "Försenad sedan {day} · {count, plural, =1{1 dag försenad} other{{count} dagar försenade}}",
+  "relationshipDueSince": "Försenad sedan {day} · {count, plural, =1{1 dag försenad} other{{count} dagar försenad}}",
   "@relationshipDueSince": {
     "placeholders": {
       "day": {
@@ -4971,7 +4971,7 @@
   "relationshipPayAttentionTo": "Var uppmärksam på",
   "relationshipPostCallConfirm": "Logga avstämning",
   "relationshipPostCallDismiss": "Inte nu",
-  "relationshipPostCallMeta": "började {time} · cirka {minutes} min",
+  "relationshipPostCallMeta": "började kl. {time} · cirka {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4982,7 +4982,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du ringde {name} för {minutes, plural, =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
+  "relationshipPostCallOfferCall": "Du ringde {name} för {minutes, plural, =0{mindre än en minut} =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4993,7 +4993,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Du skrev till {name} för {minutes, plural, =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
+  "relationshipPostCallOfferMessage": "Du skrev till {name} för {minutes, plural, =0{mindre än en minut} =1{1 minut} other{{minutes} minuter}} sedan — anteckna medan det är färskt?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

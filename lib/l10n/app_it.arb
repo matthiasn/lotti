@@ -4836,7 +4836,7 @@
       }
     }
   },
-  "relationshipDueSince": "In scadenza da {day} · {count, plural, =1{1 giorno di ritardo} other{{count} giorni di ritardo}}",
+  "relationshipDueSince": "In ritardo da {day} · {count, plural, =1{1 giorno di ritardo} other{{count} giorni di ritardo}}",
   "@relationshipDueSince": {
     "placeholders": {
       "day": {
@@ -4971,7 +4971,7 @@
   "relationshipPayAttentionTo": "Fai attenzione a",
   "relationshipPostCallConfirm": "Annota check-in",
   "relationshipPostCallDismiss": "Non ora",
-  "relationshipPostCallMeta": "iniziata {time} · circa {minutes} min",
+  "relationshipPostCallMeta": "Inizio: {time} · circa {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4982,7 +4982,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Hai chiamato {name} {minutes, plural, =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
+  "relationshipPostCallOfferCall": "Hai chiamato {name} {minutes, plural, =0{meno di un minuto} =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4993,7 +4993,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Hai scritto a {name} {minutes, plural, =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
+  "relationshipPostCallOfferMessage": "Hai scritto a {name} {minutes, plural, =0{meno di un minuto} =1{1 minuto} other{{minutes} minuti}} fa — lo annotiamo finché è fresco?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

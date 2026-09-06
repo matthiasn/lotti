@@ -4333,7 +4333,7 @@
       }
     }
   },
-  "relationshipDueSince": "Fällig seit {day} · {count, plural, =1{1 Tag drüber} other{{count} Tage drüber}}",
+  "relationshipDueSince": "Fällig seit {day} · {count, plural, =1{1 Tag überfällig} other{{count} Tage überfällig}}",
   "@relationshipDueSince": {
     "placeholders": {
       "day": {
@@ -4468,7 +4468,7 @@
   "relationshipPayAttentionTo": "Darauf achten",
   "relationshipPostCallConfirm": "Check-in festhalten",
   "relationshipPostCallDismiss": "Jetzt nicht",
-  "relationshipPostCallMeta": "begonnen {time} · etwa {minutes} Min.",
+  "relationshipPostCallMeta": "begonnen um {time} · etwa {minutes} Min.",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4479,7 +4479,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du hast {name} vor {minutes, plural, =1{1 Minute} other{{minutes} Minuten}} angerufen — jetzt festhalten, solange es frisch ist?",
+  "relationshipPostCallOfferCall": "Du hast {name} vor {minutes, plural, =0{weniger als einer Minute} =1{1 Minute} other{{minutes} Minuten}} angerufen — jetzt festhalten, solange es frisch ist?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4490,7 +4490,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Du hast {name} vor {minutes, plural, =1{1 Minute} other{{minutes} Minuten}} geschrieben — jetzt festhalten, solange es frisch ist?",
+  "relationshipPostCallOfferMessage": "Du hast {name} vor {minutes, plural, =0{weniger als einer Minute} =1{1 Minute} other{{minutes} Minuten}} geschrieben — jetzt festhalten, solange es frisch ist?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {
@@ -4594,7 +4594,7 @@
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
   },
-  "relationshipTasksLinkedCount": "{count, plural, =1{1 verknüpft} other{{count} verknüpft}}",
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 verknüpfte Aufgabe} other{{count} verknüpfte Aufgaben}}",
   "@relationshipTasksLinkedCount": {
     "placeholders": {
       "count": {

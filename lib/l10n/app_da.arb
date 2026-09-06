@@ -4836,7 +4836,7 @@
       }
     }
   },
-  "relationshipDueSince": "Forfaldet siden {day} · {count, plural, =1{1 dag over tid} other{{count} dage over tid}}",
+  "relationshipDueSince": "Forfalden siden {day} · {count, plural, =1{1 dag forsinket} other{{count} dage forsinket}}",
   "@relationshipDueSince": {
     "placeholders": {
       "day": {
@@ -4971,7 +4971,7 @@
   "relationshipPayAttentionTo": "Vær opmærksom på",
   "relationshipPostCallConfirm": "Log tjek-ind",
   "relationshipPostCallDismiss": "Ikke nu",
-  "relationshipPostCallMeta": "startede {time} · cirka {minutes} min",
+  "relationshipPostCallMeta": "startede kl. {time} · cirka {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4982,7 +4982,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Du ringede til {name} for {minutes, plural, =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
+  "relationshipPostCallOfferCall": "Du ringede til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4993,7 +4993,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Du skrev til {name} for {minutes, plural, =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
+  "relationshipPostCallOfferMessage": "Du skrev til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

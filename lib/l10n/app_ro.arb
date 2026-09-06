@@ -4333,7 +4333,7 @@
       }
     }
   },
-  "relationshipDueSince": "Scadent din {day} · {count, plural, =1{1 zi întârziere} few{{count} zile întârziere} other{{count} de zile întârziere}}",
+  "relationshipDueSince": "Scadent din {day} · {count, plural, =1{1 zi de întârziere} few{{count} zile de întârziere} other{{count} de zile de întârziere}}",
   "@relationshipDueSince": {
     "placeholders": {
       "day": {
@@ -4468,7 +4468,7 @@
   "relationshipPayAttentionTo": "Fiți atent la",
   "relationshipPostCallConfirm": "Notați check-in",
   "relationshipPostCallDismiss": "Nu acum",
-  "relationshipPostCallMeta": "început {time} · circa {minutes} min",
+  "relationshipPostCallMeta": "început la {time} · circa {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4479,7 +4479,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Ați sunat pe {name} acum {minutes, plural, =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
+  "relationshipPostCallOfferCall": "Ați sunat pe {name} acum {minutes, plural, =0{mai puțin de un minut} =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4490,7 +4490,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "I-ați scris lui {name} acum {minutes, plural, =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
+  "relationshipPostCallOfferMessage": "I-ați scris lui {name} acum {minutes, plural, =0{mai puțin de un minut} =1{1 minut} few{{minutes} minute} other{{minutes} de minute}} — notați cât este proaspăt?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

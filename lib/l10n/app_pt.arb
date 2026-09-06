@@ -4970,7 +4970,7 @@
   "relationshipPayAttentionTo": "Prestar atenção a",
   "relationshipPostCallConfirm": "Registar check-in",
   "relationshipPostCallDismiss": "Agora não",
-  "relationshipPostCallMeta": "começou {time} · cerca de {minutes} min",
+  "relationshipPostCallMeta": "começou às {time} · cerca de {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4981,7 +4981,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Ligaste a {name} há {minutes, plural, =1{1 minuto} other{{minutes} minutos}} — registamos enquanto está fresco?",
+  "relationshipPostCallOfferCall": "Ligaste a {name} há {minutes, plural, =0{menos de um minuto} =1{1 minuto} other{{minutes} minutos}} — registamos enquanto está fresco?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4992,7 +4992,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Escreveste a {name} há {minutes, plural, =1{1 minuto} other{{minutes} minutos}} — registamos enquanto está fresco?",
+  "relationshipPostCallOfferMessage": "Escreveste a {name} há {minutes, plural, =0{menos de um minuto} =1{1 minuto} other{{minutes} minutos}} — registamos enquanto está fresco?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

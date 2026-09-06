@@ -1350,6 +1350,43 @@ void main() {
       expect(find.text('How did you connect?'), findsOneWidget);
     });
 
+    testWidgets("a Speak press during the automatic launch's pre-flight does "
+        'not open a second recorder', (tester) async {
+      final launches = <String?>[];
+      // Hold the pre-flight open: the automatic launch is mid-await when the
+      // user presses Speak.
+      final gate = Completer<RelationshipEntry?>();
+      when(
+        () => mockRepository.getRelationshipById(any()),
+      ).thenAnswer((_) => gate.future);
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: null,
+          transcript: null,
+          onLaunch: launches.add,
+          startSpeaking: true,
+        ),
+      );
+      await tester.pump();
+
+      final speak = find.widgetWithText(DesignSystemButton, 'Speak check-in');
+      expect(
+        tester.widget<DesignSystemButton>(speak).onPressed,
+        isNull,
+        reason: 'the button is out while a spoken check-in is in flight',
+      );
+      await tester.tap(speak, warnIfMissed: false);
+      gate.complete(testRelationship);
+      await tester.pumpAndSettle();
+
+      expect(launches, hasLength(1));
+      expect(
+        tester.widget<DesignSystemButton>(speak).onPressed,
+        isNotNull,
+        reason: 'a cancelled recording hands the button back',
+      );
+    });
+
     testWidgets('a form opened the ordinary way launches nothing on its own', (
       tester,
     ) async {

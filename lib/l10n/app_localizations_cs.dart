@@ -11432,7 +11432,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'začátek $time · asi $minutes min';
+    return 'začátek v $time · asi $minutes min';
   }
 
   @override
@@ -11442,6 +11442,7 @@ class AppLocalizationsCs extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutami',
       one: '1 minutou',
+      zero: 'necelou minutou',
     );
     return 'Hovor s $name před $_temp0 — zapíšeme to, dokud je to čerstvé?';
   }
@@ -11453,6 +11454,7 @@ class AppLocalizationsCs extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutami',
       one: '1 minutou',
+      zero: 'necelou minutou',
     );
     return 'Zpráva pro $name před $_temp0 — zapíšeme to, dokud je to čerstvé?';
   }

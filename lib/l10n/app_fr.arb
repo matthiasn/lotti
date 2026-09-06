@@ -4468,7 +4468,7 @@
   "relationshipPayAttentionTo": "Faire attention à",
   "relationshipPostCallConfirm": "Noter un point",
   "relationshipPostCallDismiss": "Pas maintenant",
-  "relationshipPostCallMeta": "commencé {time} · environ {minutes} min",
+  "relationshipPostCallMeta": "commencé à {time} · environ {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4479,7 +4479,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Tu as appelé {name} il y a {minutes, plural, =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
+  "relationshipPostCallOfferCall": "Tu as appelé {name} il y a {minutes, plural, =0{moins d'une minute} =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4490,7 +4490,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Tu as écrit à {name} il y a {minutes, plural, =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
+  "relationshipPostCallOfferMessage": "Tu as écrit à {name} il y a {minutes, plural, =0{moins d'une minute} =1{1 minute} other{{minutes} minutes}} — on note ça tant que c'est frais ?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

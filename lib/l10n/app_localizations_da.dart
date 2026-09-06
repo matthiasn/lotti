@@ -11035,10 +11035,10 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dage over tid',
-      one: '1 dag over tid',
+      other: '$count dage forsinket',
+      one: '1 dag forsinket',
     );
-    return 'Forfaldet siden $day · $_temp0';
+    return 'Forfalden siden $day · $_temp0';
   }
 
   @override
@@ -11263,7 +11263,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'startede $time · cirka $minutes min';
+    return 'startede kl. $time · cirka $minutes min';
   }
 
   @override
@@ -11273,6 +11273,7 @@ class AppLocalizationsDa extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutter',
       one: '1 minut',
+      zero: 'under et minut',
     );
     return 'Du ringede til $name for $_temp0 siden — skal vi notere det, mens det er frisk?';
   }
@@ -11284,6 +11285,7 @@ class AppLocalizationsDa extends AppLocalizations {
       locale: localeName,
       other: '$minutes minutter',
       one: '1 minut',
+      zero: 'under et minut',
     );
     return 'Du skrev til $name for $_temp0 siden — skal vi notere det, mens det er frisk?';
   }

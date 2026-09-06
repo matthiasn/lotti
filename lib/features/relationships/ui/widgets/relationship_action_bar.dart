@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -63,8 +64,12 @@ class _RelationshipActionBarState extends ConsumerState<RelationshipActionBar> {
   @override
   void didUpdateWidget(RelationshipActionBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.relationship.data.contactChannels !=
-        widget.relationship.data.contactChannels) {
+    // By value: a rebuilt entity with the same channels must not re-probe
+    // the platform, and a changed list must, whatever its identity.
+    if (!listEquals(
+      oldWidget.relationship.data.contactChannels,
+      widget.relationship.data.contactChannels,
+    )) {
       unawaited(_resolveReachable());
     }
   }

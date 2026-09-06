@@ -220,6 +220,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   bool _isSaving = false;
   bool _isTranscribing = false;
 
+  /// Set synchronously the moment a spoken check-in starts and cleared once
+  /// the whole flow has ended, so the page's mic (`startSpeaking`) and a
+  /// press on *Speak* during the pre-flight awaits cannot open the recorder
+  /// twice. [_isTranscribing] only covers the wait that follows a recording.
+  bool _isSpeaking = false;
+
   /// The in-flight transcript wait, so dismissing the sheet stops it instead
   /// of leaving a database listener running out the timeout.
   CheckInTranscriptWait? _transcriptWait;
@@ -333,8 +339,18 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// automatic-inference switch: this is a gesture, so it only needs a model,
   /// not the consent gate that governs unattended runs.
   Future<void> _handleSpeak() async {
-    if (_isSaving || _isTranscribing) return;
+    if (_isSaving || _isTranscribing || _isSpeaking) return;
+    setState(() => _isSpeaking = true);
+    try {
+      await _speak();
+    } finally {
+      // Whatever ended the flow — a refused pre-flight, a cancelled
+      // recording, a transcript, an error — the button comes back.
+      if (mounted) setState(() => _isSpeaking = false);
+    }
+  }
 
+  Future<void> _speak() async {
     // Every provider is read up front: each `await` below can outlive this
     // widget, and reading through `ref` after that throws.
     final messages = context.messages;
@@ -655,7 +671,9 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             variant: DesignSystemButtonVariant.outlined,
             leadingIcon: LottiIcons.mic,
             isLoading: _isTranscribing,
-            onPressed: _isSaving || _isTranscribing ? null : _handleSpeak,
+            onPressed: _isSaving || _isTranscribing || _isSpeaking
+                ? null
+                : _handleSpeak,
           ),
         ),
         SizedBox(height: tokens.spacing.step5),

@@ -6601,7 +6601,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "You called {name} {minutes, plural, =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
+  "relationshipPostCallOfferCall": "You called {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -6612,7 +6612,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "You wrote to {name} {minutes, plural, =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
+  "relationshipPostCallOfferMessage": "You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

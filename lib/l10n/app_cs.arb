@@ -4475,7 +4475,7 @@
   "relationshipPayAttentionTo": "Dávej pozor na",
   "relationshipPostCallConfirm": "Zapsat check-in",
   "relationshipPostCallDismiss": "Teď ne",
-  "relationshipPostCallMeta": "začátek {time} · asi {minutes} min",
+  "relationshipPostCallMeta": "začátek v {time} · asi {minutes} min",
   "@relationshipPostCallMeta": {
     "placeholders": {
       "time": {
@@ -4486,7 +4486,7 @@
       }
     }
   },
-  "relationshipPostCallOfferCall": "Hovor s {name} před {minutes, plural, =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
+  "relationshipPostCallOfferCall": "Hovor s {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
   "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
@@ -4497,7 +4497,7 @@
       }
     }
   },
-  "relationshipPostCallOfferMessage": "Zpráva pro {name} před {minutes, plural, =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
+  "relationshipPostCallOfferMessage": "Zpráva pro {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
   "@relationshipPostCallOfferMessage": {
     "placeholders": {
       "name": {

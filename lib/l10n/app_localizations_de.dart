@@ -11103,8 +11103,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Tage drüber',
-      one: '1 Tag drüber',
+      other: '$count Tage überfällig',
+      one: '1 Tag überfällig',
     );
     return 'Fällig seit $day · $_temp0';
   }
@@ -11332,7 +11332,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
-    return 'begonnen $time · etwa $minutes Min.';
+    return 'begonnen um $time · etwa $minutes Min.';
   }
 
   @override
@@ -11342,6 +11342,7 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: '$minutes Minuten',
       one: '1 Minute',
+      zero: 'weniger als einer Minute',
     );
     return 'Du hast $name vor $_temp0 angerufen — jetzt festhalten, solange es frisch ist?';
   }
@@ -11353,6 +11354,7 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: '$minutes Minuten',
       one: '1 Minute',
+      zero: 'weniger als einer Minute',
     );
     return 'Du hast $name vor $_temp0 geschrieben — jetzt festhalten, solange es frisch ist?';
   }
@@ -11464,8 +11466,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count verknüpft',
-      one: '1 verknüpft',
+      other: '$count verknüpfte Aufgaben',
+      one: '1 verknüpfte Aufgabe',
     );
     return '$_temp0';
   }

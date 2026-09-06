@@ -155,6 +155,24 @@ void main() {
       );
     });
 
+    testWidgets('under a minute reads as such, never as "0 minutes"', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        pending: marker(startedAt: DateTime(2026, 8, 17, 11, 40, 30)),
+        resolves: person(),
+      );
+
+      expect(
+        find.text(
+          'You called Anna Schmidt less than a minute ago — log it while it '
+          'is fresh?',
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('a message reads as writing, not calling', (tester) async {
       await pump(
         tester,
