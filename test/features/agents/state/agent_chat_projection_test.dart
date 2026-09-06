@@ -47,6 +47,7 @@ void main() {
       kind: AgentMessageKind.action,
       payloadId: 'payload-reply',
       toolName: AgentConversationToolNames.replyToUser,
+      runKey: 'reply-run',
     );
     final privateThought = message(
       id: 'thought',
@@ -105,6 +106,7 @@ void main() {
       AgentChatRole.user,
       AgentChatRole.agent,
     ]);
+    expect(projection.map((message) => message.runKey), [null, 'reply-run']);
     verifyNever(() => repository.getEntity('payload-thought'));
     verifyNever(() => repository.getEntity('payload-facts'));
   });

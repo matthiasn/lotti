@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
@@ -223,6 +224,7 @@ class LinkedTasksCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final highlightedTasks = ref.watch(relationshipTaskHighlightProvider);
     final tokens = context.designTokens;
     final messages = context.messages;
 
@@ -261,6 +263,7 @@ class LinkedTasksCard extends ConsumerWidget {
             for (final task in tasks)
               DesignSystemListItem(
                 key: ValueKey('person-task-${task.meta.id}'),
+                activated: highlightedTasks.contains(task.id),
                 size: DesignSystemListItemSize.small,
                 title: task.data.title.isEmpty
                     ? messages.taskUntitled

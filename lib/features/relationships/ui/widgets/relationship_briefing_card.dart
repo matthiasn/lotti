@@ -34,6 +34,7 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
@@ -439,6 +440,7 @@ class _RelationshipBriefingCardState
       state: cardState,
       item: item,
       checkInCount: widget.checkIns.length,
+      checkIns: widget.checkIns,
       report: report,
       agentState: state,
       health: health,
@@ -604,6 +606,7 @@ class _AgentCard extends StatelessWidget {
     required this.state,
     required this.item,
     required this.checkInCount,
+    required this.checkIns,
     required this.report,
     required this.agentState,
     required this.health,
@@ -625,6 +628,7 @@ class _AgentCard extends StatelessWidget {
   final RelationshipAgentCardState state;
   final RelationshipListItem item;
   final int checkInCount;
+  final List<CheckInEntry> checkIns;
   final AgentReportEntity? report;
   final AgentStateEntity? agentState;
   final RelationshipHealthMetrics? health;
@@ -905,6 +909,11 @@ class _AgentCard extends StatelessWidget {
             body is TldrBody ? 0 : tokens.spacing.step4,
           ),
           child: body,
+        ),
+        RelationshipSuggestionsBand(
+          relationshipId: item.relationship.id,
+          checkIns: checkIns,
+          showHistory: expanded,
         ),
         _AgentCardFooter(
           status: footer.status,

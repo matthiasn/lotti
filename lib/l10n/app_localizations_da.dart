@@ -11445,6 +11445,20 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Tilføjet → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Fra check-in den $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Kunne ikke fortryde. Opgaven kan være blevet ændret.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Bliver på denne enhed · deles aldrig med AI\'en';
 

@@ -168,6 +168,8 @@ void main() {
     final facts = render(checkIns: many);
     expect(facts, contains('CHECK-INS (newest first, 10 of 14):'));
     expect(facts, contains('topic-14'));
+    expect(facts, contains('checkInId=c-14'));
+    expect(facts, isNot(contains('checkInId=c-4 |')));
     expect(
       facts,
       isNot(contains('topic-4')),

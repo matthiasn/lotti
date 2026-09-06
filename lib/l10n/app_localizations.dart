@@ -19027,6 +19027,24 @@ abstract class AppLocalizations {
   /// **'You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?'**
   String relationshipPostCallOfferMessage(String name, int minutes);
 
+  /// No description provided for @relationshipProposalAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added → {title}'**
+  String relationshipProposalAdded(String title);
+
+  /// No description provided for @relationshipProposalEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'From the check-in on {date}'**
+  String relationshipProposalEvidence(String date);
+
+  /// No description provided for @relationshipProposalUndoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not undo. The task may have changed.'**
+  String get relationshipProposalUndoFailed;
+
   /// No description provided for @relationshipReachPrivacy.
   ///
   /// In en, this message translates to:

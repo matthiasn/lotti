@@ -48,6 +48,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
     required this.threadId,
     required this.runKey,
     required this._activeAdIds,
+    this.sourceCheckInIds = const {},
   });
 
   @override
@@ -62,6 +63,14 @@ class RelationshipAgentStrategy extends ConversationStrategy
   /// Ad ids currently rendered — the only ids snooze may reference, so a
   /// hallucinated id fails in-conversation instead of corrupting state.
   final Set<String> _activeAdIds;
+
+  /// Only check-ins actually rendered in this wake may supply evidence.
+  final Set<String> sourceCheckInIds;
+  final _deferredItems = <Map<String, dynamic>>[];
+
+  /// Deferred mutations; the workflow alone owns their persistence.
+  List<Map<String, dynamic>> get deferredItems =>
+      List.unmodifiable(_deferredItems);
 
   RelationshipBriefing? _briefing;
   String? _finalResponse;
@@ -115,6 +124,8 @@ class RelationshipAgentStrategy extends ConversationStrategy
       await recordActionMessage(toolName: toolName);
 
       switch (toolName) {
+        case RelationshipAgentToolNames.createAndLinkTask:
+          await _handleTaskProposal(call, args, manager);
         case RelationshipAgentToolNames.replyToUser:
           await _handleReplyToUser(call, args, manager);
         case RelationshipAgentToolNames.updateRelationshipReport:
@@ -143,6 +154,56 @@ class RelationshipAgentStrategy extends ConversationStrategy
   /// train churn back in (the goal-strategy lesson).
   @override
   String? getContinuationPrompt(ConversationManager manager) => null;
+
+  Future<void> _handleTaskProposal(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final error = relationshipTaskProposalError(args);
+    if (error != null || !sourceCheckInIds.contains(args['sourceCheckInId'])) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: ${error ?? 'sourceCheckInId must name a rendered check-in'}.',
+      );
+      return;
+    }
+    final normalized = <String, dynamic>{
+      for (final key in [
+        'title',
+        'description',
+        'sourceCheckInId',
+        'reason',
+        'dueDate',
+      ])
+        if (args[key] case final String value) key: value.trim(),
+    };
+    if (_deferredItems.any((item) {
+      final previous = item['args'] as Map<String, dynamic>;
+      return previous['sourceCheckInId'] == normalized['sourceCheckInId'] &&
+          (previous['title'] as String).toLowerCase() ==
+              (normalized['title'] as String).toLowerCase();
+    })) {
+      await _accept(call, manager, 'Already queued for confirmation.');
+      return;
+    }
+    if (_deferredItems.length >= 3) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error: 'Error: at most three task proposals per wake.',
+      );
+      return;
+    }
+    _deferredItems.add({'toolName': call.function.name, 'args': normalized});
+    await _accept(
+      call,
+      manager,
+      'Queued for user confirmation; no task created.',
+    );
+  }
 
   Future<void> _handleUpdateReport(
     ChatCompletionMessageToolCall call,

@@ -645,9 +645,18 @@ void main() {
 
       // create test task
       final task = await getIt<PersistenceLogic>().createTaskEntry(
+        id: 'stable-relationship-task',
         data: taskData,
         entryText: const EntryText(plainText: testTaskText),
       );
+
+      expect(task?.id, 'stable-relationship-task');
+      final duplicate = await getIt<PersistenceLogic>().createTaskEntry(
+        id: 'stable-relationship-task',
+        data: taskData.copyWith(title: 'Duplicate from another confirmation'),
+        entryText: const EntryText(plainText: 'Another device'),
+      );
+      expect(duplicate, isNull);
 
       // expect to find created task
       final testTask =

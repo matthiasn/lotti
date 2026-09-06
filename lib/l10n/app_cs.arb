@@ -4485,6 +4485,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Přidáno → {title}",
+  "relationshipProposalEvidence": "Z kontaktu dne {date}",
+  "relationshipProposalUndoFailed": "Akci se nepodařilo vrátit. Úkol se možná změnil.",
   "relationshipReachPrivacy": "Zůstává v tomto zařízení · nikdy se nesdílí s AI",
   "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Propojit jiný kontakt",

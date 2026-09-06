@@ -11513,6 +11513,20 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Hinzugefügt → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Aus dem Check-in vom $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Rückgängig machen nicht möglich. Die Aufgabe wurde möglicherweise geändert.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Bleibt auf diesem Gerät · nie mit der KI geteilt';
 

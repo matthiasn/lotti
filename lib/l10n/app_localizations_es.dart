@@ -11609,6 +11609,20 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Añadida → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Del contacto del $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'No se pudo deshacer. Puede que la tarea haya cambiado.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Se queda en este dispositivo · nunca se comparte con la IA';
 

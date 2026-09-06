@@ -34,11 +34,13 @@ void main() {
     ChangeSetStatus status = ChangeSetStatus.pending,
     List<ChangeItem>? items,
     int clock = 1,
+    String runKey = 'source-run',
     DateTime? createdAt,
   }) async {
     final entity = makeTestChangeSet(
       id: id,
       agentId: agentId,
+      runKey: runKey,
       taskId: taskId,
       status: status,
       items: items,
@@ -74,6 +76,48 @@ void main() {
         .into(db.agentEntities)
         .insert(AgentDbConversions.toEntityCompanion(entity));
   }
+
+  test(
+    'open and handled proposals retain their originating chat run',
+    () async {
+      await insertChangeSet(
+        id: 'open',
+        agentId: 'agent',
+        taskId: 'person',
+        runKey: 'open-run',
+        items: const [
+          ChangeItem(
+            toolName: 'create_and_link_task',
+            args: {},
+            humanSummary: 'Task',
+          ),
+        ],
+      );
+      await insertChangeSet(
+        id: 'handled',
+        agentId: 'agent',
+        taskId: 'person',
+        runKey: 'handled-run',
+        status: ChangeSetStatus.resolved,
+        items: const [
+          ChangeItem(
+            toolName: 'create_and_link_task',
+            args: {},
+            humanSummary: 'Task',
+          ),
+        ],
+      );
+      await insertDecision(
+        id: 'decision',
+        agentId: 'agent',
+        taskId: 'person',
+        changeSetId: 'handled',
+      );
+      final result = await ledger.getProposalLedger('agent', taskId: 'person');
+      expect(result.open.single.runKey, 'open-run');
+      expect(result.resolved.single.runKey, 'handled-run');
+    },
+  );
 
   test('the newest decision for an item wins in the ledger', () async {
     // This is the invariant the compound ORDER BY protects: getProposalLedger

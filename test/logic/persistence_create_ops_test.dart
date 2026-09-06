@@ -517,4 +517,23 @@ void main() {
       ).called(1);
     },
   );
+
+  test(
+    'task creation writes the supplied stable identity rather than its payload hash',
+    () async {
+      final result = await ops.createTaskEntryImpl(
+        id: 'relationship-commitment-id',
+        data: testTask.data,
+        entryText: const EntryText(plainText: 'I promised to pack fish.'),
+      );
+      expect(result?.id, 'relationship-commitment-id');
+      final written =
+          verify(
+                () => logic.createDbEntity(captureAny()),
+              ).captured.single
+              as Task;
+      expect(written.id, 'relationship-commitment-id');
+      expect(written.data, testTask.data);
+    },
+  );
 }

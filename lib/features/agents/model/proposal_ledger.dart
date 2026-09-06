@@ -23,10 +23,14 @@ class LedgerEntry {
     this.resolvedBy,
     this.verdict,
     this.reason,
+    this.runKey,
   });
 
   /// The parent `ChangeSetEntity.id`.
   final String changeSetId;
+
+  /// Originating wake, used to attach proposals to their durable chat reply.
+  final String? runKey;
 
   /// The zero-based position of this item within its parent set's items list.
   final int itemIndex;

@@ -11588,6 +11588,20 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Aggiunta → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Dal contatto del $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Impossibile annullare. L’attività potrebbe essere stata modificata.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Resta su questo dispositivo · mai condiviso con l\'IA';
 

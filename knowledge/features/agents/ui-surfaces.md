@@ -623,3 +623,11 @@ lookahead stay out of the inline sidebar and remain on the full page; additional
 in-window wakes collapse into the overflow row rather than turning the navigation
 rail into a wake manager. The collapsed icon-only sidebar suppresses the slot
 entirely.
+
+The shared proposal sections accept host row builders, and `ProposalRow` accepts
+optional confirmation/rejection callbacks and a details slot. Hosts without
+callbacks retain the task confirmation service. Relationship card/chat hosts
+supply their own scoped service and evidence/history details; see
+[deferred relationship suggestions](../relationships.md#deferred-task-suggestions).
+The kind resolver recognizes `create_and_link_task` by literal tool name,
+keeping shared agent UI independent of the relationship feature.

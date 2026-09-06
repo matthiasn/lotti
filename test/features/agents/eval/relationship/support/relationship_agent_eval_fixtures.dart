@@ -31,6 +31,7 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 import 'package:mocktail/mocktail.dart';
@@ -352,8 +353,10 @@ class RelationshipEvalWorld {
     this.previousReport,
     this.nudges = const [],
     this.preTransitionStatus,
+    this.proposals = const ProposalLedger.empty(),
   });
 
+  final ProposalLedger proposals;
   final RelationshipEntry relationship;
   final List<CheckInEntry> checkIns;
   final List<Task> linkedTasks;
@@ -418,5 +421,6 @@ Future<String> renderEvalFacts(
     nudges: world.nudges,
     now: at,
     preTransitionStatus: world.preTransitionStatus,
+    proposals: world.proposals,
   );
 }

@@ -10,13 +10,14 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 
-/// Tool names of the relationship-agent surface —
-/// `<verb>_relationship_<noun>` throughout, the uniform-prefix lesson from
-/// the goal contract.
+/// Tool names of the relationship-agent surface.
+/// Domain tools use `<verb>_relationship_<noun>`; the shared reply carrier
+/// and deferred `create_and_link_task` keep their cross-feature names.
 class RelationshipAgentToolNames {
   static const String replyToUser = AgentConversationToolNames.replyToUser;
   static const updateRelationshipReport = 'update_relationship_report';
   static const createRelationshipAd = 'create_relationship_ad';
+  static const createAndLinkTask = 'create_and_link_task';
   static const snoozeRelationshipAd = 'snooze_relationship_ad';
 }
 
@@ -81,7 +82,15 @@ Act in this order of precedence:
    details, no health data, no third-party names beyond this person's.
    For an explicit temporary-hide request, call snooze_relationship_ad with
    the future instant.
-4. Nothing material changed: call no tools and write nothing.
+4. Proposals: only an explicit commitment in a captured check-in justifies
+   create_and_link_task. Quote the evidence in description and pass its
+   sourceCheckInId as a structured argument. Queue at most three per wake.
+   Never re-propose pending, confirmed or rejected proposals from FACTS,
+   including paraphrases. Never derive a task from a contact channel.
+   These tools only propose: user confirmation is required before any task
+   exists. Never claim a proposal was already applied. Propose a dueDate
+   only when the evidence supports it.
+5. Nothing material changed: call no tools and write nothing.
 ''';
 
 /// Header introducing the pending user message appended to an interactive
@@ -233,4 +242,61 @@ final List<AgentToolDefinition> relationshipAgentTools = [
       'required': ['adId', 'until', 'reason'],
     },
   ),
+  const AgentToolDefinition(
+    name: RelationshipAgentToolNames.createAndLinkTask,
+    description:
+        'Propose a task from an explicit check-in commitment. '
+        'Nothing is created until the user confirms.',
+    parameters: {
+      'type': 'object',
+      'additionalProperties': false,
+      'properties': {
+        'title': {'type': 'string', 'description': 'Concise task title.'},
+        'description': {
+          'type': 'string',
+          'description': 'Quote the commitment sentence from the check-in.',
+        },
+        'sourceCheckInId': {
+          'type': 'string',
+          'description': 'Exact checkInId from FACTS.',
+        },
+        'reason': {
+          'type': 'string',
+          'description': 'Why this commitment needs a task.',
+        },
+        'dueDate': {
+          'type': 'string',
+          'description': 'Optional evidence-supported due date, YYYY-MM-DD.',
+        },
+      },
+      'required': ['title', 'description', 'sourceCheckInId', 'reason'],
+    },
+  ),
 ];
+
+/// Mutations that are accumulated for user confirmation, never run by the LLM.
+const Set<String> relationshipDeferredTools = {
+  RelationshipAgentToolNames.createAndLinkTask,
+};
+
+/// Rejects malformed task proposals at both production and confirmation.
+/// Calendar dates must round-trip: Dart otherwise normalizes February 30.
+String? relationshipTaskProposalError(Map<String, dynamic> args) {
+  for (final key in ['title', 'description', 'sourceCheckInId', 'reason']) {
+    final value = args[key];
+    if (value is! String || value.trim().isEmpty) {
+      return '$key must be a non-empty string';
+    }
+  }
+  final due = args['dueDate'];
+  if (due != null) {
+    final parsed = due is String ? DateTime.tryParse(due) : null;
+    if (due is! String ||
+        !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(due) ||
+        parsed == null ||
+        parsed.toIso8601String().substring(0, 10) != due) {
+      return 'dueDate must be a valid YYYY-MM-DD calendar date';
+    }
+  }
+  return null;
+}

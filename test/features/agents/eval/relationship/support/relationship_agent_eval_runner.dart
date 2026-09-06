@@ -7,7 +7,7 @@
 /// * **The full tool surface is always offered.** `GoalAgentWorkflow`
 ///   withholds the ad tools from a wake its deterministic tier has already
 ///   ruled out; `RelationshipAgentWorkflow` does not — it hands over all
-///   four tools every time and enforces the banner rules in the FACTS block
+///   the full tool surface every time and enforces the banner rules in the FACTS block
 ///   and again at persistence. Withholding here would measure a surface the
 ///   app never presents.
 /// * **The classifier mirrors `RelationshipAgentStrategy` exactly.** Every
@@ -389,6 +389,16 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
   for (final call in toolCalls) {
     final args = call.jsonObjectArguments!;
     switch (call.name) {
+      case RelationshipAgentToolNames.createAndLinkTask:
+        if (relationshipTaskProposalError(args) != null) {
+          return RelationshipAgentEvalFailureCategory.invalidToolArguments;
+        }
+        final ids = RegExp(
+          r'checkInId=([^\s|]+)',
+        ).allMatches(scenario.facts).map((m) => m.group(1)).toSet();
+        if (!ids.contains(args['sourceCheckInId'])) {
+          return RelationshipAgentEvalFailureCategory.argumentMismatch;
+        }
       case RelationshipAgentToolNames.updateRelationshipReport:
         final band = args['healthBand'];
         final validBand =
@@ -487,6 +497,23 @@ RelationshipAgentEvalFailureCategory classifyRelationshipAgentResult({
       if (!exchanges.add(call.exchangeIndex)) {
         return RelationshipAgentEvalFailureCategory.toolCallOverBudget;
       }
+    }
+  }
+
+  final taskProposalsByExchange = <int, Set<String>>{};
+  for (final call in toolCalls.where(
+    (c) => c.name == RelationshipAgentToolNames.createAndLinkTask,
+  )) {
+    final args = call.jsonObjectArguments!;
+    final keys =
+        taskProposalsByExchange.putIfAbsent(
+          call.exchangeIndex,
+          () => <String>{},
+        )..add(
+          '${args['sourceCheckInId']}:${(args['title'] as String).trim().toLowerCase()}',
+        );
+    if (keys.length > 3) {
+      return RelationshipAgentEvalFailureCategory.toolCallOverBudget;
     }
   }
 

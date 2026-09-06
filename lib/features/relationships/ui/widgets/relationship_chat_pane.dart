@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
@@ -9,6 +10,8 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/state/relationship_chat_controller.dart';
+import 'package:lotti/features/relationships/state/relationships_providers.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -30,8 +33,7 @@ class RelationshipChatPane extends ConsumerWidget {
 
   final String relationshipId;
 
-  /// Renders a back affordance in the header when supplied. The phone route
-  /// leaves this null: its app bar already has one.
+  /// Renders a back affordance in the header when supplied by either host.
   final VoidCallback? onBack;
 
   /// Whether the header offers *Agent internals*. The desktop pane does,
@@ -104,6 +106,31 @@ class RelationshipChatPane extends ConsumerWidget {
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
       onRetry: controller.retry,
+      attachmentBuilder: (context, message) {
+        if (message.role != AgentChatRole.agent || message.runKey == null) {
+          return null;
+        }
+        return Consumer(
+          builder: (context, ref, child) {
+            final detail = ref
+                .watch(
+                  relationshipDetailControllerProvider(
+                    relationshipId,
+                  ),
+                )
+                .value;
+            return RelationshipSuggestionsBand(
+              key: ValueKey(
+                'relationship-chat-proposals-${message.id}',
+              ),
+              relationshipId: relationshipId,
+              checkIns: detail?.checkIns ?? const [],
+              runKey: message.runKey,
+              showHistory: true,
+            );
+          },
+        );
+      },
     );
   }
 }

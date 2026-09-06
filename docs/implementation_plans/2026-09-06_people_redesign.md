@@ -61,9 +61,9 @@ People list gains grouping, a summary card and truthful pills.
   Call).
 - Left out, on purpose: the *Automatic updates* switch (the relationship runtime does
   not read the flag, so the switch would lie), *Cancel* on a running wake (no cancel
-  API exists for a running wake), and the suggestions band — the generic change-set
-  ledger is keyed by task and nothing produces relationship proposals yet; it comes
-  with the agent tools (schedule a call, create a task), a separate project.
+  API exists for a running wake), and the suggestions band, delivered separately with its producer. Task proposals
+  now use the generic ledger scoped to a relationship; see
+  [the relationship concept](../../knowledge/features/relationships.md#deferred-task-suggestions).
 
 ### D · Check-in capture with duration
 - Order: how it felt → what you talked about (+ Speak instead) → when and how long
@@ -101,5 +101,6 @@ fragment, before/after captures from the handover recipe (`capture/` in the hand
 folder), README and knowledge concept kept in step.
 
 ## Out of this plan
-The suggestion-producing agent tools (S1 schedule a call onto the day plan, S2 create
-and link a task, S3 add to a task) and the `tint-*` design tokens.
+S1 (schedule a call onto the day plan), S3 (add to a task), and the `tint-*`
+design tokens remain out of this redesign. S2 (create and link a task) and its
+card/chat proposal surfaces are documented in the relationship concept.

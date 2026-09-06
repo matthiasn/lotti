@@ -58,6 +58,7 @@ void main() {
       threadId: 'thread-1',
       runKey: 'run-1',
       activeAdIds: {'ad-live'},
+      sourceCheckInIds: {'check-in-1'},
     );
   });
 
@@ -69,6 +70,94 @@ void main() {
             ),
           ).captured.last)
           as String;
+
+  group('create_and_link_task', () {
+    Map<String, dynamic> taskArgs({String source = 'check-in-1'}) => {
+      'title': 'Send Pip the launch checklist',
+      'description': 'I promised to send the launch checklist.',
+      'sourceCheckInId': source,
+      'reason': 'An explicit commitment in the check-in.',
+    };
+
+    test(
+      'queues a task for confirmation without writing a change set',
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [_call(name: 'create_and_link_task', args: taskArgs())],
+          manager: manager,
+        );
+        expect(strategy.deferredItems.single['args'], taskArgs());
+        expect(lastResponse(), contains('confirmation'));
+        // Message recording is permitted; domain mutations are not.
+        expect(strategy.briefing, isNull);
+      },
+    );
+
+    test('rejects evidence outside the rendered check-in window', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: 'create_and_link_task',
+            args: taskArgs(source: 'other-person'),
+          ),
+        ],
+        manager: manager,
+      );
+      expect(strategy.deferredItems, isEmpty);
+      expect(lastResponse(), contains('sourceCheckInId'));
+    });
+
+    test('rejects empty fields and invalid calendar dates', () async {
+      for (final args in [
+        {...taskArgs(), 'title': ' '},
+        {...taskArgs(), 'description': 42},
+        {...taskArgs(), 'reason': ''},
+        {...taskArgs(), 'dueDate': '2026-02-30'},
+        {...taskArgs(), 'dueDate': 'tomorrow'},
+      ]) {
+        await strategy.processToolCalls(
+          toolCalls: [_call(name: 'create_and_link_task', args: args)],
+          manager: manager,
+        );
+        expect(strategy.deferredItems, isEmpty);
+        expect(lastResponse(), startsWith('Error:'));
+      }
+    });
+
+    test('deduplicates repeated commitments within a wake', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(name: 'create_and_link_task', args: taskArgs()),
+          _call(
+            name: 'create_and_link_task',
+            args: {
+              ...taskArgs(),
+              'title': 'SEND PIP THE LAUNCH CHECKLIST',
+              'reason': 'Reworded rationale',
+            },
+          ),
+        ],
+        manager: manager,
+      );
+      expect(strategy.deferredItems, hasLength(1));
+      expect(strategy.deferredItems.single['args'], taskArgs());
+    });
+
+    test('bounds proposals per wake', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          for (var i = 0; i < 5; i++)
+            _call(
+              name: 'create_and_link_task',
+              args: {...taskArgs(), 'title': 'Commitment $i'},
+            ),
+        ],
+        manager: manager,
+      );
+      expect(strategy.deferredItems, hasLength(3));
+      expect(lastResponse(), contains('three'));
+    });
+  });
 
   group('update_relationship_report', () {
     test('accumulates the full briefing with band and confidence', () async {

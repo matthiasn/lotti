@@ -15,12 +15,16 @@ class AgentChatMessage {
     required this.role,
     required this.text,
     required this.createdAt,
+    this.runKey,
   });
 
   final String id;
   final AgentChatRole role;
   final String text;
   final DateTime createdAt;
+
+  /// Associates attachments with the durable agent reply that produced them.
+  final String? runKey;
 }
 
 /// Bounded, durable conversation projection. Model context and private agent
@@ -81,6 +85,7 @@ Future<List<AgentChatMessage>> agentChatProjection(
             : AgentChatRole.agent,
         text: text.trim(),
         createdAt: message.createdAt,
+        runKey: message.metadata.runKey,
       ),
     );
   }

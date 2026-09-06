@@ -92,6 +92,7 @@ abstract class PersistenceLogicContract {
     String? categoryId,
     List<String>? labelIds,
     bool? private,
+    String? id,
   });
 
   Future<AiResponseEntry?> createAiResponseEntryImpl({

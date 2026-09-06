@@ -6,7 +6,7 @@ import 'package:lotti/features/relationships/workflow/relationship_agent_contrac
 void main() {
   test('the system prompt stays lean — growth is argued, not accreted '
       '(the goal-contract hard-cap discipline)', () {
-    expect(relationshipAgentSystemPrompt.length, lessThanOrEqualTo(3600));
+    expect(relationshipAgentSystemPrompt.length, lessThanOrEqualTo(4300));
   });
 
   test('the prompt carries the ADR 0040 honesty rules and the privacy '
@@ -42,14 +42,39 @@ void main() {
     expect(RelationshipAgentToolNames.replyToUser, 'reply_to_user');
   });
 
-  test('the tool surface is exactly the four tools of plan v2 phase 5', () {
+  test('the tool surface is briefing tools and the deferred task proposal', () {
     expect(relationshipAgentTools.map((tool) => tool.name), [
       RelationshipAgentToolNames.replyToUser,
       RelationshipAgentToolNames.updateRelationshipReport,
       RelationshipAgentToolNames.createRelationshipAd,
       RelationshipAgentToolNames.snoozeRelationshipAd,
+      RelationshipAgentToolNames.createAndLinkTask,
     ]);
   });
+
+  test(
+    'task proposals require structured evidence and explicit confirmation',
+    () {
+      final tool = relationshipAgentTools.singleWhere(
+        (tool) => tool.name == RelationshipAgentToolNames.createAndLinkTask,
+      );
+      expect(
+        tool.parameters['required'],
+        containsAll([
+          'title',
+          'description',
+          'sourceCheckInId',
+          'reason',
+        ]),
+      );
+      expect(relationshipDeferredTools, {
+        RelationshipAgentToolNames.createAndLinkTask,
+      });
+      expect(relationshipAgentSystemPrompt, contains('explicit commitment'));
+      expect(relationshipAgentSystemPrompt, contains('Never re-propose'));
+      expect(relationshipAgentSystemPrompt, contains('confirmation'));
+    },
+  );
 
   test('the catalogs are derived from the real enums — the contract cannot '
       'drift from the code-owned presets (ADR 0058)', () {

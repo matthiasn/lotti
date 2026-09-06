@@ -4981,6 +4981,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Tilføjet → {title}",
+  "relationshipProposalEvidence": "Fra check-in den {date}",
+  "relationshipProposalUndoFailed": "Kunne ikke fortryde. Opgaven kan være blevet ændret.",
   "relationshipReachPrivacy": "Bliver på denne enhed · deles aldrig med AI'en",
   "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Tilknyt en anden kontakt",
