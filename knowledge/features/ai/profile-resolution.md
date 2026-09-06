@@ -5,7 +5,7 @@ description: Which profile drives a run, how model slots survive sync duplicates
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: resolver
@@ -96,18 +96,16 @@ model rows when no profile handles transcription. The fallback builds an
 **ephemeral** `ResolvedProfile` around the selected model and the built-in
 `Transcribe (Task Context)` skill — it does not persist a profile.
 
-Candidate ranking prefers the recommended MLX Audio Qwen3-ASR model, then other
-MLX Qwen3-ASR rows, then other configured STT providers with the required API
-key. This keeps local/mobile STT available when the user has installed MLX Audio
-but the desktop-only local profile is not available on that device.
+Candidate ranking prefers Mistral, Melious, OpenAI, Whisper, then Voxtral,
+followed by other configured audio-to-text providers. Candidates must be usable;
+equal-ranked models are ordered by name. The fallback works without a profile.
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
-ranks differently: a Mistral instruction-following Voxtral chat-audio model, then
-a Mistral transcription-only Voxtral model, then any other configured Mistral
-audio model, then contextual Melious Voxtral, Melious STT, MLX Qwen, Gemini
-Flash, and finally the first remaining audio-capable model. Realtime-only Mistral
-models are excluded from that batch verifier because they require the WebSocket
-pipeline.
+prefers Mistral contextual Voxtral, then a Mistral batch audio model; next come
+the seeded Melious Whisper Large v3 default, other Melious transcription models,
+and contextual Melious Voxtral. Gemini Flash follows, then the first remaining
+audio-capable model. Realtime-only Mistral models are excluded because they
+require a WebSocket pipeline. Explicit profile targets bypass this discovery.
 
 # Profile pinning
 
@@ -122,7 +120,7 @@ is embedded in `inference_profile_form.dart`.
 ## Locality is fail-closed
 
 `profileIsLocal(profile, repo)` returns true **iff every populated model id
-resolves to a provider in `{ollama, voxtral, whisper, mlxAudio}`**.
+resolves to a provider in `{ollama, omlx, voxtral, whisper}`**.
 
 A referenced-but-unresolved model id counts as **not local**. That prevents a
 deleted cloud-provider config from masking a profile as safe to auto-route. The

@@ -904,44 +904,6 @@
   "aiInferenceErrorUnknownTitle": "Fejl",
   "aiInternalsTitle": "Agentens interne dele",
   "aiModelCardDeleteTooltip": "Slet model",
-  "aiModelDownloadCloseButton": "Luk",
-  "aiModelDownloadDialogDescription": "Lotti downloader {modelName} ind i MLX Audio-cachen og bruger den til lokal talebehandling.",
-  "@aiModelDownloadDialogDescription": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadDialogTitle": "Installer {modelName}",
-  "@aiModelDownloadDialogTitle": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadInstallTooltip": "Installationsmodel",
-  "aiModelDownloadOpenProgressTooltip": "Vis downloadfremskridt",
-  "aiModelDownloadStatusChecking": "Kontrol af modelstatus",
-  "aiModelDownloadStatusDownloading": "Downloader {percent}%",
-  "@aiModelDownloadStatusDownloading": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Download",
-  "aiModelDownloadStatusFailed": "Download mislykkedes",
-  "aiModelDownloadStatusInstalled": "Installeret",
-  "aiModelDownloadStatusNotInstalled": "Ikke installeret",
-  "aiModelDownloadStatusUnsupported": "Apple Silicon påkrævet",
-  "aiModelInstallChoiceCancelButton": "Annuller",
-  "aiModelInstallChoiceDescription": "Vælg først den lokale tale-til-tekst-model til download. Du kan installere de andre senere fra modellisten.",
-  "aiModelInstallChoiceInstallButton": "Installationsmodel",
-  "aiModelInstallChoiceRecommended": "Anbefalet",
-  "aiModelInstallChoiceTitle": "Vælg MLX Audio-modellen",
   "aiModelPickerByProviderLabel": "Vælg en udbyder",
   "aiModelPickerCurrentDefaultLabel": "Nuværende betalingsstandard",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} other{{count} models}}",
@@ -1124,12 +1086,10 @@
   "aiProviderDetailRemoveDescription": "Det sletter udbyderen og alle modeller, der er afhængige af den. Det kan ikke gøres om.",
   "aiProviderDetailRemoveTitle": "Fjern denne udbyder",
   "aiProviderDetailValueUnset": "Ikke sat",
-  "aiProviderEmbeddedRuntimeHint": "Kører indlejret i Apple-appens proces. Ingen lokal server eller basis-URL er nødvendig.",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiName": "OpenAI-kompatibel",
   "aiProviderMeliousName": "Melious.ai",
   "aiProviderMistralName": "Mistral",
-  "aiProviderMlxAudioName": "MLX Audio (lokal)",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaName": "Ollama",
   "aiProviderOmlxName": "oMLX (lokal)",
@@ -1139,7 +1099,6 @@
   "aiProviderTaglineAnthropic": "Familien Claude · Lang kontekst",
   "aiProviderTaglineGemini": "Multimodal · Lydtransskription",
   "aiProviderTaglineMelious": "EU-vært · Dynamisk katalog · Eco-ruting",
-  "aiProviderTaglineMlxAudio": "Indlejret · Apple Silicon · Lokal lyd",
   "aiProviderTaglineOllama": "Kører lokalt · Ingen skyopkald",
   "aiProviderTaglineOmlx": "Lokal MLX-inferens: · OpenAI-kompatibel",
   "aiProviderTaglineOpenAi": "GPT-familien · Vision + ræsonnement",
@@ -1672,7 +1631,7 @@
   "configFlagEnableAiStreaming": "Aktiver AI-streaming til opgavehandlinger",
   "configFlagEnableAiStreamingDescription": "Stream AI-svar for opgaverelaterede handlinger. Slå fra for at buffere svarene og hold brugerfladen mere jævn.",
   "configFlagEnableAiSummaryTts": "AI-opsummering afspilning",
-  "configFlagEnableAiSummaryTtsDescription": "Vis den lokale tekst-til-tale-knap på opgave-AI-resuméer. Kræver en installeret MLX Audio TTS-model.",
+  "configFlagEnableAiSummaryTtsDescription": "Vis den lokale tekst-til-tale-knap på opgave-AI-resuméer. Kræver en installeret Supertonic TTS-model.",
   "configFlagEnableDailyOs": "Aktivér DailyOS",
   "configFlagEnableDailyOsDescription": "Vis DailyOS i hovednavigationen.",
   "configFlagEnableDashboardsPage": "Aktivér dashboards-siden",
@@ -5458,7 +5417,6 @@
   "settingsSyncConflictsSubtitle": "Løs synkroniseringskonflikter",
   "settingsSyncNodeProfileCapabilitiesEmpty": "Ingen opdaget — automatisk udløser af synkroniseret lydinferens vil ikke målrette denne enhed.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Opdagede AI-kapaciteter",
-  "settingsSyncNodeProfileCapabilityMlxAudio": "MLX Audio (lokal)",
   "settingsSyncNodeProfileCapabilityOllamaLlm": "Ollama LLM",
   "settingsSyncNodeProfileCapabilityOmlxLlm": "oMLX LLM",
   "settingsSyncNodeProfileCapabilityVoxtral": "Voxtral (lokal)",

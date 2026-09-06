@@ -15,7 +15,6 @@ const _localProviderTypes = <InferenceProviderType>{
   InferenceProviderType.ollama,
   InferenceProviderType.omlx,
   InferenceProviderType.voxtral,
-  InferenceProviderType.mlxAudio,
 };
 
 /// One generated profile slot. Drives both how the repo snapshots are stubbed
@@ -209,7 +208,7 @@ AiConfigInferenceProvider _provider({
 }) {
   return AiConfig.inferenceProvider(
         id: id,
-        baseUrl: '',
+        baseUrl: 'http://localhost:8000/v1',
         apiKey: '',
         name: type.name,
         inferenceProviderType: type,
@@ -287,11 +286,11 @@ void main() {
       );
       stubModelWithProvider(
         providerModelId: 'vision',
-        providerType: InferenceProviderType.mlxAudio,
+        providerType: InferenceProviderType.omlx,
       );
       stubModelWithProvider(
         providerModelId: 'asr',
-        providerType: InferenceProviderType.mlxAudio,
+        providerType: InferenceProviderType.omlx,
       );
       stubModelWithProvider(
         providerModelId: 'image-gen',

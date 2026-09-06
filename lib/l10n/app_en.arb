@@ -1214,44 +1214,6 @@
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInternalsTitle": "Agent internals",
   "aiModelCardDeleteTooltip": "Delete model",
-  "aiModelDownloadCloseButton": "Close",
-  "aiModelDownloadDialogDescription": "Lotti will download {modelName} into the MLX Audio cache and use it for local speech processing.",
-  "@aiModelDownloadDialogDescription": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadDialogTitle": "Install {modelName}",
-  "@aiModelDownloadDialogTitle": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadInstallTooltip": "Install model",
-  "aiModelDownloadOpenProgressTooltip": "Show download progress",
-  "aiModelDownloadStatusChecking": "Checking model status",
-  "aiModelDownloadStatusDownloading": "Downloading {percent}%",
-  "@aiModelDownloadStatusDownloading": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Downloading",
-  "aiModelDownloadStatusFailed": "Download failed",
-  "aiModelDownloadStatusInstalled": "Installed",
-  "aiModelDownloadStatusNotInstalled": "Not installed",
-  "aiModelDownloadStatusUnsupported": "Apple Silicon required",
-  "aiModelInstallChoiceCancelButton": "Cancel",
-  "aiModelInstallChoiceDescription": "Pick the local speech-to-text model to download first. You can install the others later from the model list.",
-  "aiModelInstallChoiceInstallButton": "Install model",
-  "aiModelInstallChoiceRecommended": "Recommended",
-  "aiModelInstallChoiceTitle": "Choose MLX Audio model",
   "aiModelPickerByProviderLabel": "Choose a provider",
   "aiModelPickerCurrentDefaultLabel": "Current default",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} other{{count} models}}",
@@ -1434,12 +1396,10 @@
   "aiProviderDetailRemoveDescription": "Deletes the provider and every model that depends on it. This cannot be undone.",
   "aiProviderDetailRemoveTitle": "Remove this provider",
   "aiProviderDetailValueUnset": "Not set",
-  "aiProviderEmbeddedRuntimeHint": "Runs embedded in the Apple app process. No local server or Base URL is required.",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiName": "OpenAI Compatible",
   "aiProviderMeliousName": "Melious.ai",
   "aiProviderMistralName": "Mistral",
-  "aiProviderMlxAudioName": "MLX Audio (local)",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaName": "Ollama",
   "aiProviderOmlxName": "oMLX (local)",
@@ -1449,7 +1409,6 @@
   "aiProviderTaglineAnthropic": "Claude family · long context",
   "aiProviderTaglineGemini": "Multimodal · audio transcription",
   "aiProviderTaglineMelious": "EU-hosted · dynamic catalog · eco routing",
-  "aiProviderTaglineMlxAudio": "Embedded · Apple Silicon · local audio",
   "aiProviderTaglineOllama": "Runs locally · no cloud calls",
   "aiProviderTaglineOmlx": "Local MLX inference · OpenAI-compatible",
   "aiProviderTaglineOpenAi": "GPT family · vision + reasoning",
@@ -2022,7 +1981,7 @@
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
-  "configFlagEnableAiSummaryTtsDescription": "Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.",
+  "configFlagEnableAiSummaryTtsDescription": "Show the local text-to-speech button on task AI summaries. Requires an installed Supertonic TTS model.",
   "configFlagEnableDailyOs": "Enable DailyOS",
   "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",
@@ -7097,7 +7056,6 @@
   "settingsSyncConflictsSubtitle": "Resolve sync conflicts",
   "settingsSyncNodeProfileCapabilitiesEmpty": "None detected — auto-trigger of synced audio inference will not target this device.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Detected AI capabilities",
-  "settingsSyncNodeProfileCapabilityMlxAudio": "MLX Audio (local)",
   "settingsSyncNodeProfileCapabilityOllamaLlm": "Ollama LLM",
   "settingsSyncNodeProfileCapabilityOmlxLlm": "oMLX LLM",
   "settingsSyncNodeProfileCapabilityVoxtral": "Voxtral (local)",

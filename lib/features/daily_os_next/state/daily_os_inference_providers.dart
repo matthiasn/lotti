@@ -18,10 +18,6 @@ enum DailyOsInferenceEndpointKind { onDevice, remote }
 DailyOsInferenceEndpointKind dailyOsInferenceEndpointKind(
   AiConfigInferenceProvider provider,
 ) {
-  if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
-    return DailyOsInferenceEndpointKind.onDevice;
-  }
-
   final host = dailyOsInferenceEndpointHost(provider)?.toLowerCase();
   if (host == 'localhost' || host == '::1' || _isIpv4Loopback(host)) {
     return DailyOsInferenceEndpointKind.onDevice;

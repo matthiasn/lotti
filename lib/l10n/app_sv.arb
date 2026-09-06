@@ -904,44 +904,6 @@
   "aiInferenceErrorUnknownTitle": "Fel",
   "aiInternalsTitle": "Agentens inre delar",
   "aiModelCardDeleteTooltip": "Radera modell",
-  "aiModelDownloadCloseButton": "Stäng",
-  "aiModelDownloadDialogDescription": "Lotti laddar ner {modelName} till MLX Audio-cachen och använder den för lokal talbearbetning.",
-  "@aiModelDownloadDialogDescription": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadDialogTitle": "Installera {modelName}",
-  "@aiModelDownloadDialogTitle": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadInstallTooltip": "Installationsmodell",
-  "aiModelDownloadOpenProgressTooltip": "Visa nedladdningsframsteg",
-  "aiModelDownloadStatusChecking": "Kontrollerar modellstatus",
-  "aiModelDownloadStatusDownloading": "Nedladdning av {percent}%",
-  "@aiModelDownloadStatusDownloading": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Nedladdning",
-  "aiModelDownloadStatusFailed": "Nedladdning misslyckades",
-  "aiModelDownloadStatusInstalled": "Installerat",
-  "aiModelDownloadStatusNotInstalled": "Ej installerad",
-  "aiModelDownloadStatusUnsupported": "Apple Silicon krävs",
-  "aiModelInstallChoiceCancelButton": "Avbryt",
-  "aiModelInstallChoiceDescription": "Välj först den lokala tal-till-text-modellen att ladda ner. Du kan installera de andra senare från modelllistan.",
-  "aiModelInstallChoiceInstallButton": "Installationsmodell",
-  "aiModelInstallChoiceRecommended": "Rekommenderas",
-  "aiModelInstallChoiceTitle": "Välj MLX Audio-modellen",
   "aiModelPickerByProviderLabel": "Välj en leverantör",
   "aiModelPickerCurrentDefaultLabel": "Nuvarande betalningsinställelse",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 modell} other{{count} modeller}}",
@@ -1124,12 +1086,10 @@
   "aiProviderDetailRemoveDescription": "Tar bort leverantören och alla modeller som är beroende av den. Detta kan inte göras ogjort.",
   "aiProviderDetailRemoveTitle": "Ta bort denna leverantör",
   "aiProviderDetailValueUnset": "Inte inställt",
-  "aiProviderEmbeddedRuntimeHint": "Körs inbäddad i Apple-appens process. Ingen lokal server eller bas-URL krävs.",
   "aiProviderGeminiName": "Googla Gemini",
   "aiProviderGenericOpenAiName": "OpenAI-kompatibel",
   "aiProviderMeliousName": "Melious.ai",
   "aiProviderMistralName": "Mistral",
-  "aiProviderMlxAudioName": "MLX Audio (lokal)",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaName": "Ollama",
   "aiProviderOmlxName": "oMLX (lokal)",
@@ -1139,7 +1099,6 @@
   "aiProviderTaglineAnthropic": "Familjen Claude · Lång kontext",
   "aiProviderTaglineGemini": "Multimodal · Ljudtranskription",
   "aiProviderTaglineMelious": "EU-värd · Dynamisk katalog · Eco-ruttning",
-  "aiProviderTaglineMlxAudio": "Inbäddad · Apple Silicon · Lokalt ljud",
   "aiProviderTaglineOllama": "Körs lokalt · inga molnsamtal",
   "aiProviderTaglineOmlx": "Lokal MLX-inferens · OpenAI-kompatibel",
   "aiProviderTaglineOpenAi": "GPT-familjen · Vision + resonemang",
@@ -1672,7 +1631,7 @@
   "configFlagEnableAiStreaming": "Aktivera AI-strömning för uppgiftsåtgärder",
   "configFlagEnableAiStreamingDescription": "Strömma AI-svar för uppgiftsrelaterade åtgärder. Stäng av för att buffra svar och håll gränssnittet smidigare.",
   "configFlagEnableAiSummaryTts": "AI-sammanfattningsuppspelning",
-  "configFlagEnableAiSummaryTtsDescription": "Visa den lokala text-till-tal-knappen på sammanfattningar av uppgift-AI. Kräver en installerad MLX Audio TTS-modell.",
+  "configFlagEnableAiSummaryTtsDescription": "Visa den lokala text-till-tal-knappen på sammanfattningar av uppgift-AI. Kräver en installerad Supertonic TTS-modell.",
   "configFlagEnableDailyOs": "Aktivera DailyOS",
   "configFlagEnableDailyOsDescription": "Visa DailyOS i huvudnavigeringen.",
   "configFlagEnableDashboardsPage": "Aktivera dashboards-sidan",
@@ -5458,7 +5417,6 @@
   "settingsSyncConflictsSubtitle": "Lös synkkonflikter",
   "settingsSyncNodeProfileCapabilitiesEmpty": "Ingen upptäckt — automatisk utlösning av synkroniserad ljudinferens riktar inte in sig på denna enhet.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Upptäckta AI-förmågor",
-  "settingsSyncNodeProfileCapabilityMlxAudio": "MLX Audio (lokal)",
   "settingsSyncNodeProfileCapabilityOllamaLlm": "Ollama LLM",
   "settingsSyncNodeProfileCapabilityOmlxLlm": "oMLX LLM",
   "settingsSyncNodeProfileCapabilityVoxtral": "Voxtral (lokal)",

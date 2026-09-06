@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
@@ -18,32 +17,6 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
-
-class _FakeMlxAudioChannel extends MlxAudioChannel {
-  String? transcribedFilePath;
-  String? transcribedModelId;
-  List<String>? transcribedSpeechDictionaryTerms;
-  MlxAudioTranscriptionResult result = const MlxAudioTranscriptionResult(
-    text: 'local qwen',
-  );
-  Exception? error;
-
-  @override
-  Future<MlxAudioTranscriptionResult> transcribeFile({
-    required String filePath,
-    required String modelId,
-    List<String> speechDictionaryTerms = const [],
-    String? language,
-    bool enableSpeakerDiarization = false,
-  }) async {
-    transcribedFilePath = filePath;
-    transcribedModelId = modelId;
-    transcribedSpeechDictionaryTerms = speechDictionaryTerms;
-    final failure = error;
-    if (failure != null) throw failure;
-    return result;
-  }
-}
 
 // Provider IDs used across batch guard tests
 const _pMistral = 'p-mistral-guard';
@@ -186,43 +159,16 @@ void main() {
     return AiConfigRepository(db);
   }
 
-  Future<AiConfigRepository> mlxRepo() async {
-    final repo = isolatedRepo();
-    await repo.saveConfig(
-      _provider(
-        id: 'p-mlx-attribution',
-        type: InferenceProviderType.mlxAudio,
-        name: 'MLX Audio',
-        baseUrl: '',
-        apiKey: '',
-      ),
-      fromSync: true,
-    );
-    await repo.saveConfig(
-      _audioModel(
-        id: 'm-mlx-attribution',
-        providerId: 'p-mlx-attribution',
-        name: 'Qwen3 ASR',
-        providerModelId: mlxAudioQwenAsrModelId,
-      ),
-      fromSync: true,
-    );
-    return repo;
-  }
-
-  /// Builds the service with the standard repo/cloud/MLX overrides.
+  /// Builds the service with the standard repo/cloud overrides.
   AudioTranscriptionService buildService({
     required AiConfigRepository repo,
     MockCloudInferenceRepository? cloud,
-    MlxAudioChannel? mlxChannel,
   }) {
     final container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWith((_) => repo),
         if (cloud != null)
           cloudInferenceRepositoryProvider.overrideWith((_) => cloud),
-        if (mlxChannel != null)
-          mlxAudioChannelProvider.overrideWithValue(mlxChannel),
       ],
     );
     addTearDown(container.dispose);
@@ -408,94 +354,6 @@ void main() {
       ),
     );
   });
-
-  test(
-    'attributed MLX transcription records the local provider call',
-    () async {
-      final attribution = registerInteractionCapture();
-      final file = await audioFile();
-      final channel = _FakeMlxAudioChannel();
-      final svc = buildService(repo: await mlxRepo(), mlxChannel: channel);
-
-      expect(await svc.transcribe(file.path), 'local qwen');
-      final event = capturedEvents(attribution).single;
-      expect(event.providerType, InferenceProviderType.mlxAudio);
-      expect(event.providerModelId, mlxAudioQwenAsrModelId);
-      expect(event.interactionStatus, AiInteractionStatus.succeeded);
-    },
-  );
-
-  test('empty attributed MLX result reports recorded evidence', () async {
-    final attribution = registerInteractionCapture();
-    final file = await audioFile();
-    final channel = _FakeMlxAudioChannel()
-      ..result = const MlxAudioTranscriptionResult(text: '   ');
-    final svc = buildService(repo: await mlxRepo(), mlxChannel: channel);
-
-    await expectLater(
-      svc.transcribe(
-        file.path,
-        attributionSession: AiAttributionSession(
-          id: 'existing-mlx-attribution',
-          workType: AiWorkType.audioTranscription,
-          initiator: makeAiActor(),
-          trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
-          startedAt: DateTime.utc(2026, 7, 19, 10),
-        ),
-        terminalizeAttributionFailure: false,
-      ),
-      throwsA(
-        isA<AttributedTranscriptionException>()
-            .having(
-              (error) => error.evidenceState,
-              'evidenceState',
-              TranscriptionEvidenceState.recorded,
-            )
-            .having(
-              (error) => error.cause,
-              'cause',
-              isA<TranscriptionException>(),
-            ),
-      ),
-    );
-    expect(
-      capturedEvents(attribution).single.interactionStatus,
-      AiInteractionStatus.failed,
-    );
-  });
-
-  test(
-    'MLX attribution finalization failure reports uncertain evidence',
-    () async {
-      final attribution = registerInteractionCapture();
-      when(
-        () => attribution.service.prepareCompletion(
-          attributionId: any(named: 'attributionId'),
-          outputs: any(named: 'outputs'),
-          status: any(named: 'status'),
-          errorCode: any(named: 'errorCode'),
-        ),
-      ).thenThrow(StateError('projection failed'));
-      final file = await audioFile();
-      final svc = buildService(
-        repo: await mlxRepo(),
-        mlxChannel: _FakeMlxAudioChannel(),
-      );
-
-      await expectLater(
-        svc.transcribe(file.path),
-        throwsA(
-          isA<AttributedTranscriptionException>()
-              .having(
-                (error) => error.evidenceState,
-                'evidenceState',
-                TranscriptionEvidenceState.uncertain,
-              )
-              .having((error) => error.cause, 'cause', isA<StateError>()),
-        ),
-      );
-    },
-  );
 
   test(
     'forwards the model row thinking mode for Gemini 3 audio models',
@@ -929,164 +787,6 @@ void main() {
         expect(
           _verifyGenerateWithAudio(mockCloud).model,
           meliousVoxtralSmall24B2507ModelId,
-        );
-      },
-    );
-
-    test('prefers Mistral transcription over MLX Qwen', () async {
-      final aiRepo = isolatedRepo();
-      await aiRepo.saveConfig(
-        _provider(
-          id: 'p-mistral-default-choice',
-          type: InferenceProviderType.mistral,
-          name: 'Mistral',
-          baseUrl: 'https://api.mistral.ai/v1',
-          apiKey: 'mistral-key',
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        _audioModel(
-          id: 'm-mistral-default-choice',
-          providerId: 'p-mistral-default-choice',
-          name: 'Voxtral Mini Transcribe',
-          providerModelId: 'voxtral-mini-latest',
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        _provider(
-          id: 'p-mlx-default-choice',
-          type: InferenceProviderType.mlxAudio,
-          name: 'MLX Audio',
-          baseUrl: '',
-          apiKey: '',
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        _audioModel(
-          id: 'm-mlx-default-choice',
-          providerId: 'p-mlx-default-choice',
-          name: 'Qwen3 ASR',
-          providerModelId: mlxAudioQwenAsrModelId,
-        ),
-        fromSync: true,
-      );
-
-      final file = await audioFile();
-      final mlxAudioChannel = _FakeMlxAudioChannel();
-      final mockCloud = MockCloudInferenceRepository();
-      _stubGenerateWithAudio(mockCloud, ['mistral default']);
-
-      final svc = buildService(
-        repo: aiRepo,
-        cloud: mockCloud,
-        mlxChannel: mlxAudioChannel,
-      );
-      final result = await svc.transcribe(file.path);
-
-      expect(result, 'mistral default');
-      expect(mlxAudioChannel.transcribedFilePath, isNull);
-      expect(_verifyGenerateWithAudio(mockCloud).model, 'voxtral-mini-latest');
-    });
-
-    test('prefers MLX Qwen and forwards speech dictionary terms', () async {
-      final aiRepo = isolatedRepo();
-      await aiRepo.saveConfig(
-        _provider(
-          id: 'p-gemini-qwen-choice',
-          baseUrl: 'https://api.gemini.test',
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        _audioModel(
-          id: 'm-gemini-qwen-choice',
-          providerId: 'p-gemini-qwen-choice',
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        _provider(
-          id: 'p-mlx-qwen-choice',
-          type: InferenceProviderType.mlxAudio,
-          name: 'MLX Audio',
-          baseUrl: '',
-          apiKey: '',
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        _audioModel(
-          id: 'm-mlx-qwen-choice',
-          providerId: 'p-mlx-qwen-choice',
-          name: 'Qwen3 ASR',
-          providerModelId: mlxAudioQwenAsrModelId,
-        ),
-        fromSync: true,
-      );
-
-      final file = await audioFile();
-      final mlxAudioChannel = _FakeMlxAudioChannel();
-
-      final svc = buildService(repo: aiRepo, mlxChannel: mlxAudioChannel);
-      final result = await svc.transcribe(
-        file.path,
-        speechDictionaryTerms: const ['Claude Code', 'macOS'],
-      );
-
-      expect(result, 'local qwen');
-      expect(mlxAudioChannel.transcribedFilePath, file.path);
-      expect(mlxAudioChannel.transcribedModelId, mlxAudioQwenAsrModelId);
-      expect(
-        mlxAudioChannel.transcribedSpeechDictionaryTerms,
-        ['Claude Code', 'macOS'],
-      );
-    });
-
-    test(
-      'uses configured MLX Qwen 1.7B with speech dictionary terms',
-      () async {
-        final aiRepo = isolatedRepo();
-        await aiRepo.saveConfig(
-          _provider(
-            id: 'p-mlx-qwen17-choice',
-            type: InferenceProviderType.mlxAudio,
-            name: 'MLX Audio',
-            baseUrl: '',
-            apiKey: '',
-          ),
-          fromSync: true,
-        );
-        await aiRepo.saveConfig(
-          _audioModel(
-            id: 'm-mlx-qwen17-choice',
-            providerId: 'p-mlx-qwen17-choice',
-            name: 'Qwen3 ASR 1.7B',
-            providerModelId: mlxAudioQwenAsr17B8BitModelId,
-          ),
-          fromSync: true,
-        );
-
-        final file = await audioFile();
-        final mlxAudioChannel = _FakeMlxAudioChannel();
-
-        final svc = buildService(repo: aiRepo, mlxChannel: mlxAudioChannel);
-        final result = await svc.transcribe(
-          file.path,
-          speechDictionaryTerms: const ['Brunsberg', 'Seembinderstrasse'],
-        );
-
-        expect(result, 'local qwen');
-        expect(mlxAudioChannel.transcribedFilePath, file.path);
-        expect(
-          mlxAudioChannel.transcribedModelId,
-          mlxAudioQwenAsr17B8BitModelId,
-        );
-        expect(
-          mlxAudioChannel.transcribedSpeechDictionaryTerms,
-          ['Brunsberg', 'Seembinderstrasse'],
         );
       },
     );

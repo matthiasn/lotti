@@ -1816,64 +1816,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiModelCardDeleteTooltip => 'Model verwijderen';
 
   @override
-  String get aiModelDownloadCloseButton => 'Sluiten';
-
-  @override
-  String aiModelDownloadDialogDescription(String modelName) {
-    return 'Lotti zal downloaden $modelName in de MLX Audio cache en gebruik het voor lokale spraakverwerking.';
-  }
-
-  @override
-  String aiModelDownloadDialogTitle(String modelName) {
-    return 'Installeren $modelName';
-  }
-
-  @override
-  String get aiModelDownloadInstallTooltip => 'Model installeren';
-
-  @override
-  String get aiModelDownloadOpenProgressTooltip => 'Downloadvoortgang tonen';
-
-  @override
-  String get aiModelDownloadStatusChecking => 'Modelstatus controleren';
-
-  @override
-  String aiModelDownloadStatusDownloading(int percent) {
-    return 'Downloaden $percent%';
-  }
-
-  @override
-  String get aiModelDownloadStatusDownloadingIndeterminate => 'Downloaden';
-
-  @override
-  String get aiModelDownloadStatusFailed => 'Downloaden is mislukt';
-
-  @override
-  String get aiModelDownloadStatusInstalled => 'Geïnstalleerd';
-
-  @override
-  String get aiModelDownloadStatusNotInstalled => 'Niet geïnstalleerd';
-
-  @override
-  String get aiModelDownloadStatusUnsupported => 'Apple Silicium vereist';
-
-  @override
-  String get aiModelInstallChoiceCancelButton => 'Annuleren';
-
-  @override
-  String get aiModelInstallChoiceDescription =>
-      'Kies het lokale spraak-tekstmodel om eerst te downloaden. U kunt de anderen later installeren uit de lijst met modellen.';
-
-  @override
-  String get aiModelInstallChoiceInstallButton => 'Model installeren';
-
-  @override
-  String get aiModelInstallChoiceRecommended => 'Aanbevolen';
-
-  @override
-  String get aiModelInstallChoiceTitle => 'Kies MLX Audio model';
-
-  @override
   String get aiModelPickerByProviderLabel => 'Kies een provider';
 
   @override
@@ -2175,10 +2117,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiProviderDetailValueUnset => 'Niet ingesteld';
 
   @override
-  String get aiProviderEmbeddedRuntimeHint =>
-      'Runs ingebed in het Apple-appproces. Er is geen lokale server of basis-URL vereist.';
-
-  @override
   String get aiProviderGeminiName => 'Google Gemini';
 
   @override
@@ -2189,9 +2127,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiProviderMistralName => 'Mistral';
-
-  @override
-  String get aiProviderMlxAudioName => 'MLX-audio (lokaal)';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
@@ -2221,10 +2156,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get aiProviderTaglineMelious =>
       'EU-gehoste · dynamische catalogus · eco routing';
-
-  @override
-  String get aiProviderTaglineMlxAudio =>
-      'Ingebed · Apple Silicon · lokale audio';
 
   @override
   String get aiProviderTaglineOllama => 'Lokaal draait · geen cloudgesprekken';
@@ -3367,7 +3298,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
-      'Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd MLX Audio TTS model.';
+      'Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd Supertonic TTS model.';
 
   @override
   String get configFlagEnableDailyOs => 'DailyOS inschakelen';
@@ -12598,9 +12529,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Gedetecteerde AI-mogelijkheden';
-
-  @override
-  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX-audio (lokaal)';
 
   @override
   String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';

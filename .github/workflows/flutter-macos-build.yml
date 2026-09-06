@@ -1,0 +1,42 @@
+name: Flutter macOS Build
+
+on:
+  pull_request:
+    paths:
+      - 'macos/**'
+      - '.fvmrc'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/flutter-macos-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build macOS without publishing
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config.outputs.FLUTTER_CHANNEL }}
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+      - name: Install FVM
+        run: dart pub global activate fvm
+      - name: Install pinned Flutter SDK
+        run: fvm install
+      - name: Compile macOS app
+        run: fvm flutter build macos --debug

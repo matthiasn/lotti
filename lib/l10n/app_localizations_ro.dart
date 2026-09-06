@@ -1834,65 +1834,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiModelCardDeleteTooltip => 'Ștergeți modelul';
 
   @override
-  String get aiModelDownloadCloseButton => 'Închideți';
-
-  @override
-  String aiModelDownloadDialogDescription(String modelName) {
-    return 'Lotti va descărca $modelName în cache-ul MLX Audio și îl va utiliza pentru procesarea vocală locală.';
-  }
-
-  @override
-  String aiModelDownloadDialogTitle(String modelName) {
-    return 'Instalați $modelName';
-  }
-
-  @override
-  String get aiModelDownloadInstallTooltip => 'Instalați modelul';
-
-  @override
-  String get aiModelDownloadOpenProgressTooltip =>
-      'Afișați progresul descărcării';
-
-  @override
-  String get aiModelDownloadStatusChecking => 'Se verifică starea modelului';
-
-  @override
-  String aiModelDownloadStatusDownloading(int percent) {
-    return 'Se descarcă $percent %';
-  }
-
-  @override
-  String get aiModelDownloadStatusDownloadingIndeterminate => 'Se descarcă';
-
-  @override
-  String get aiModelDownloadStatusFailed => 'Descărcarea a eșuat';
-
-  @override
-  String get aiModelDownloadStatusInstalled => 'Instalat';
-
-  @override
-  String get aiModelDownloadStatusNotInstalled => 'Neinstalat';
-
-  @override
-  String get aiModelDownloadStatusUnsupported => 'Apple Silicon necesar';
-
-  @override
-  String get aiModelInstallChoiceCancelButton => 'Anulați';
-
-  @override
-  String get aiModelInstallChoiceDescription =>
-      'Alegeți mai întâi modelul local de recunoaștere vocală pe care doriți să-l descărcați. Puteți instala celelalte modele mai târziu din lista de modele.';
-
-  @override
-  String get aiModelInstallChoiceInstallButton => 'Instalați modelul';
-
-  @override
-  String get aiModelInstallChoiceRecommended => 'Recomandat';
-
-  @override
-  String get aiModelInstallChoiceTitle => 'Alegeți modelul MLX Audio';
-
-  @override
   String get aiModelPickerByProviderLabel => 'Alegeți un furnizor';
 
   @override
@@ -2200,10 +2141,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderDetailValueUnset => 'Nesetat';
 
   @override
-  String get aiProviderEmbeddedRuntimeHint =>
-      'Rulează integrat în procesul aplicației Apple. Nu este necesar un server local sau un URL de bază.';
-
-  @override
   String get aiProviderGeminiName => 'Google Gemini';
 
   @override
@@ -2214,9 +2151,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderMistralName => 'Mistral';
-
-  @override
-  String get aiProviderMlxAudioName => 'MLX Audio (local)';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
@@ -2246,10 +2180,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get aiProviderTaglineMelious =>
       'Găzduit în UE · catalog dinamic · rutare eco';
-
-  @override
-  String get aiProviderTaglineMlxAudio =>
-      'Integrat · Apple Silicon · audio local';
 
   @override
   String get aiProviderTaglineOllama => 'Rulează local · fără apeluri în cloud';
@@ -3412,7 +3342,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
-      'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.';
+      'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS Supertonic instalat.';
 
   @override
   String get configFlagEnableDailyOs => 'Activează DailyOS';
@@ -12816,9 +12746,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Capabilități AI detectate';
-
-  @override
-  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (local)';
 
   @override
   String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';

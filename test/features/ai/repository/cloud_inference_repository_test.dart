@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -15,8 +14,6 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/utils/platform.dart' as platform;
-import 'package:lotti/utils/uuid.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -441,63 +438,6 @@ void main() {
         expect(request.reasoningEffort, ReasoningEffort.low);
       },
     );
-
-    test('generateWithAudio routes MLX Audio through native channel', () async {
-      // MlxAudioChannel short-circuits on non-macOS hosts. This test exercises
-      // the macOS routing path through the real channel, so force the flag and
-      // restore it after the test (the Linux + Windows CI runners would
-      // otherwise see the channel throw UNSUPPORTED before reaching the mock
-      // method handler).
-      final originalIsMacOS = platform.isMacOS;
-      platform.isMacOS = true;
-      addTearDown(() => platform.isMacOS = originalIsMacOS);
-
-      const methodChannel = MethodChannel('com.matthiasn.lotti/mlx_audio');
-      final messenger =
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-      addTearDown(() {
-        messenger.setMockMethodCallHandler(methodChannel, null);
-      });
-      messenger.setMockMethodCallHandler(methodChannel, (call) async {
-        expect(call.method, 'transcribeBase64Audio');
-        expect(call.arguments, containsPair('audioBase64', 'local-audio'));
-        expect(call.arguments, containsPair('modelId', 'mlx-qwen'));
-        return <String, Object?>{'text': 'local transcript'};
-      });
-
-      final mlxProvider =
-          AiConfig.inferenceProvider(
-                id: 'mlx-provider',
-                name: 'MLX Audio',
-                baseUrl: '',
-                apiKey: '',
-                createdAt: DateTime(2024, 3, 15),
-                inferenceProviderType: InferenceProviderType.mlxAudio,
-              )
-              as AiConfigInferenceProvider;
-
-      final chunks = await repository
-          .generateWithAudio(
-            prompt,
-            model: 'mlx-qwen',
-            baseUrl: '',
-            apiKey: '',
-            audioBase64: 'local-audio',
-            provider: mlxProvider,
-          )
-          .toList();
-
-      expect(chunks, hasLength(1));
-      const prefix = 'mlx-audio-';
-      final responseId = chunks.single.id;
-      expect(responseId, isNotNull);
-      expect(responseId, startsWith(prefix));
-      expect(isUuid(responseId!.substring(prefix.length)), isTrue);
-      expect(
-        chunks.single.choices?.single.delta?.content,
-        'local transcript',
-      );
-    });
 
     test(
       'generate with maxCompletionTokens sets maxTokens parameter correctly',

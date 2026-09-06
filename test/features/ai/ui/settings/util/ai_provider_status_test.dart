@@ -57,8 +57,6 @@ void main() {
     test('local provider needs a base URL and at least one model', () {
       // Exhaustive over all local (no-key) provider types.
       for (final type in ProviderConfig.noApiKeyRequired) {
-        final usesBaseUrl = ProviderConfig.usesBaseUrl(type);
-
         // Models present + base URL present -> connected (key irrelevant).
         expect(
           aiProviderCardStatusFor(
@@ -79,15 +77,13 @@ void main() {
           reason: '$type no models',
         );
 
-        // Blank base URL -> offline, but only for types that use one.
+        // Blank base URL -> offline, for every local provider.
         expect(
           aiProviderCardStatusFor(
             provider: provider(type: type, baseUrl: '  '),
             modelCount: 2,
           ),
-          usesBaseUrl
-              ? AiProviderCardStatus.offline
-              : AiProviderCardStatus.connected,
+          AiProviderCardStatus.offline,
           reason: '$type blank baseUrl',
         );
 

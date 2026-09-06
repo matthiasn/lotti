@@ -6,7 +6,6 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
@@ -168,23 +167,11 @@ class _GeneratedFallbackRankScenario {
   final List<InferenceProviderType> providerTypes;
   final bool isMacOS;
 
-  bool get hasMlx => providerTypes.contains(InferenceProviderType.mlxAudio);
-
-  bool get hasNonMlx =>
-      providerTypes.any((type) => type != InferenceProviderType.mlxAudio);
-
   String providerIdAt(int index) => 'rank-provider-$index';
 
   String modelIdAt(int index) => 'rank-model-$index';
 
-  /// MLX rows use the recommended STT model id so the macOS ranker scores
-  /// them rank 0 (best). Cloud / other rows get distinct synthetic ids so
-  /// they never collide with the MLX discriminator constants.
-  String providerModelIdAt(int index) {
-    return providerTypes[index] == InferenceProviderType.mlxAudio
-        ? mlxAudioRecommendedSttModelId
-        : 'synthetic-stt-model-$index';
-  }
+  String providerModelIdAt(int index) => 'synthetic-stt-model-$index';
 
   @override
   String toString() {
@@ -257,12 +244,6 @@ void main() {
   late MockProfileAutomationResolver mockResolver;
   late MockAiConfigRepository mockAiConfig;
   late ProfileAutomationService service;
-  // The fallback ranker demotes MLX Audio rows on non-macOS so iOS / Android /
-  // Linux / Windows never route mobile audio to the local MLX bridge that
-  // ships only on macOS. Force the flag on for the existing suite (which
-  // exercises the macOS ranking) and restore it for each test. A dedicated
-  // test below pins the non-macOS demotion behaviour.
-  late bool originalIsMacOS;
   // Every path is gated on the owning category's automatic-inference switch.
   // The suite below exercises what happens *past* that gate, so the default is
   // an opted-in category; the `category automation gate` group flips it.
@@ -281,8 +262,6 @@ void main() {
   List<String> loggedLines() => capturedLogLines;
 
   setUp(() {
-    originalIsMacOS = platform.isMacOS;
-    platform.isMacOS = true;
     categoryAllowsAutomation = true;
     automationLookupTaskIds = [];
     mockResolver = MockProfileAutomationResolver();
@@ -321,9 +300,7 @@ void main() {
     ).thenAnswer((_) async => const <ResolvedProfile>[]);
   });
 
-  tearDown(() {
-    platform.isMacOS = originalIsMacOS;
-  });
+  tearDown(() {});
 
   /// Creates a resolved profile with optional transcription/image providers.
   ResolvedProfile makeProfile({
@@ -410,8 +387,8 @@ void main() {
 
   AiConfigInferenceProvider makeProvider({
     String id = 'provider-mlx',
-    String name = 'MLX Audio',
-    InferenceProviderType type = InferenceProviderType.mlxAudio,
+    String name = 'Whisper',
+    InferenceProviderType type = InferenceProviderType.whisper,
     String apiKey = '',
   }) {
     return AiConfig.inferenceProvider(
@@ -428,7 +405,7 @@ void main() {
   AiConfigModel makeModel({
     String id = 'model-qwen',
     String name = 'Qwen3 ASR 1.7B (MLX 8-bit)',
-    String providerModelId = mlxAudioQwenAsr17B8BitModelId,
+    String providerModelId = 'whisper-1',
     String providerId = 'provider-mlx',
     List<Modality> inputModalities = const [Modality.audio, Modality.text],
     List<Modality> outputModalities = const [Modality.text],
@@ -801,41 +778,6 @@ void main() {
       });
 
       test(
-        'falls back to the configured recommended MLX speech model when no '
-        'profile handles transcription',
-        () async {
-          final provider = makeProvider();
-          final olderQwen = makeModel(
-            id: 'model-qwen-small',
-            name: 'Qwen3 ASR 0.6B (MLX 8-bit)',
-            providerModelId: mlxAudioQwenAsrModelId,
-          );
-          final recommendedQwen = makeModel();
-
-          when(
-            () => mockResolver.resolveForSubject('task-1'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [olderQwen, recommendedQwen]);
-          when(
-            () => mockAiConfig.getConfigById('provider-mlx'),
-          ).thenAnswer((_) async => provider);
-
-          final result = await service.tryTranscribe(subjectId: 'task-1');
-
-          expect(result.handled, isTrue);
-          expect(result.skill!.id, skillTranscribeContextId);
-          expect(result.skillAssignment!.skillId, skillTranscribeContextId);
-          expect(
-            result.resolvedProfile!.transcriptionModelId,
-            mlxAudioQwenAsr17B8BitModelId,
-          );
-          expect(result.resolvedProfile!.transcriptionProvider, provider);
-        },
-      );
-
-      test(
         'does not fall back to cloud transcription providers with no API key',
         () async {
           final provider = makeProvider(
@@ -846,7 +788,6 @@ void main() {
           final model = makeModel(
             id: 'model-whisper',
             name: 'Whisper',
-            providerModelId: 'whisper-1',
             providerId: provider.id,
           );
 
@@ -867,164 +808,18 @@ void main() {
       );
 
       test(
-        'ranks generic MLX speech models ahead of cloud transcription '
-        'fallbacks',
-        () async {
-          final providers = [
-            makeProvider(
-              id: 'provider-openai',
-              type: InferenceProviderType.openAi,
-              apiKey: 'sk-openai',
-            ),
-            makeProvider(
-              id: 'provider-whisper',
-              type: InferenceProviderType.whisper,
-              apiKey: 'sk-whisper',
-            ),
-            makeProvider(
-              id: 'provider-voxtral',
-              type: InferenceProviderType.voxtral,
-              apiKey: 'sk-voxtral',
-            ),
-            makeProvider(
-              id: 'provider-mistral',
-              type: InferenceProviderType.mistral,
-              apiKey: 'sk-mistral',
-            ),
-            makeProvider(
-              id: 'provider-ollama',
-              type: InferenceProviderType.ollama,
-            ),
-            makeProvider(),
-          ];
-          final models = [
-            makeModel(
-              id: 'model-openai',
-              name: 'OpenAI Whisper',
-              providerModelId: 'whisper-1',
-              providerId: 'provider-openai',
-            ),
-            makeModel(
-              id: 'model-whisper',
-              name: 'Whisper Provider',
-              providerModelId: 'whisper-large-v3',
-              providerId: 'provider-whisper',
-            ),
-            makeModel(
-              id: 'model-voxtral',
-              name: 'Voxtral Cloud',
-              providerModelId: 'mistralai/Voxtral-Mini-3B-2507',
-              providerId: 'provider-voxtral',
-            ),
-            makeModel(
-              id: 'model-mistral',
-              name: 'Mistral Voxtral',
-              providerModelId: 'voxtral-mini-latest',
-              providerId: 'provider-mistral',
-            ),
-            makeModel(
-              id: 'model-ollama',
-              name: 'Other Local Audio',
-              providerModelId: 'local-audio-model',
-              providerId: 'provider-ollama',
-            ),
-            makeModel(
-              id: 'model-mlx',
-              name: 'Parakeet MLX',
-              providerModelId: mlxAudioParakeetModelId,
-            ),
-          ];
-
-          when(
-            () => mockResolver.resolveForSubject('task-1'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => models);
-          for (final provider in providers) {
-            when(
-              () => mockAiConfig.getConfigById(provider.id),
-            ).thenAnswer((_) async => provider);
-          }
-
-          final result = await service.tryTranscribe(subjectId: 'task-1');
-
-          expect(result.handled, isTrue);
-          expect(
-            result.resolvedProfile!.transcriptionModelId,
-            mlxAudioParakeetModelId,
-          );
-          expect(
-            result
-                .resolvedProfile!
-                .transcriptionProvider!
-                .inferenceProviderType,
-            InferenceProviderType.mlxAudio,
-          );
-        },
-      );
-
-      test(
-        'demotes MLX Audio rows on non-macOS so cloud STT wins direct fallback',
-        () async {
-          platform.isMacOS = false;
-          final providers = [
-            makeProvider(),
-            makeProvider(
-              id: 'provider-openai',
-              type: InferenceProviderType.openAi,
-              apiKey: 'sk-test',
-            ),
-          ];
-          final models = [
-            makeModel(),
-            makeModel(
-              id: 'model-openai',
-              name: 'OpenAI Whisper',
-              providerModelId: 'whisper-1',
-              providerId: 'provider-openai',
-            ),
-          ];
-
-          when(
-            () => mockResolver.resolveForSubject('task-1'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => models);
-          for (final provider in providers) {
-            when(
-              () => mockAiConfig.getConfigById(provider.id),
-            ).thenAnswer((_) async => provider);
-          }
-
-          final result = await service.tryTranscribe(subjectId: 'task-1');
-
-          expect(result.handled, isTrue);
-          expect(
-            result
-                .resolvedProfile!
-                .transcriptionProvider!
-                .inferenceProviderType,
-            InferenceProviderType.openAi,
-            reason: 'On non-macOS the cloud STT must win over the MLX row.',
-          );
-        },
-      );
-
-      test(
         'sorts same-rank direct transcription fallbacks by model name',
         () async {
           final provider = makeProvider();
           final betaModel = makeModel(
             id: 'model-beta',
-            name: 'Beta MLX model',
-            providerModelId: mlxAudioParakeetModelId,
+            name: 'Beta Whisper model',
+            providerModelId: 'whisper-small',
           );
           final alphaModel = makeModel(
             id: 'model-alpha',
-            name: 'Alpha MLX model',
-            providerModelId: mlxAudioVoxtralRealtime4BitModelId,
+            name: 'Alpha Whisper model',
+            providerModelId: 'whisper-large',
           );
 
           when(
@@ -1042,7 +837,7 @@ void main() {
           expect(result.handled, isTrue);
           expect(
             result.resolvedProfile!.transcriptionModelId,
-            mlxAudioVoxtralRealtime4BitModelId,
+            'whisper-large',
           );
         },
       );
@@ -1632,7 +1427,7 @@ void main() {
           (l) => l.startsWith('resolved:'),
         );
         expect(line, contains('[id:model-]'));
-        expect(line, contains('mlxAudio'));
+        expect(line, contains('whisper'));
         expect(line, isNot(contains('secret-suffix')));
         expect(line, isNot(contains('private-asr')));
         expect(line, isNot(contains('internal-box')));
@@ -1987,7 +1782,7 @@ void main() {
           expect(result.handled, isTrue);
           expect(
             result.resolvedProfile!.transcriptionModelId,
-            mlxAudioQwenAsr17B8BitModelId,
+            'whisper-1',
           );
         },
       );
@@ -2010,7 +1805,7 @@ void main() {
           expect(result.handled, isTrue);
           expect(
             result.resolvedProfile!.transcriptionModelId,
-            mlxAudioQwenAsr17B8BitModelId,
+            'whisper-1',
           );
           expect(result.skill!.id, skillTranscribeContextId);
           // No task was involved, so the consent gate was never consulted.
@@ -2188,27 +1983,19 @@ void main() {
         final winnerProvider = result.resolvedProfile!.transcriptionProvider!;
         final winnerType = winnerProvider.inferenceProviderType;
 
-        if (scenario.hasMlx && scenario.isMacOS) {
-          // MLX recommended STT scores rank 0 on macOS — it must win whenever
-          // present, beating every cloud and other-local candidate.
+        if (scenario.providerTypes.contains(InferenceProviderType.mistral)) {
           expect(
             winnerType,
-            InferenceProviderType.mlxAudio,
-            reason:
-                'On macOS the recommended MLX STT must top the ranking. '
-                '$scenario',
+            InferenceProviderType.mistral,
+            reason: '$scenario',
           );
-        }
-
-        if (scenario.hasMlx && scenario.hasNonMlx && !scenario.isMacOS) {
-          // Off macOS the native MLX bridge is unavailable, so MLX rows are
-          // demoted past every other candidate and must never win.
+        } else if (scenario.providerTypes.contains(
+          InferenceProviderType.melious,
+        )) {
           expect(
             winnerType,
-            isNot(InferenceProviderType.mlxAudio),
-            reason:
-                'Off macOS the MLX row must lose to any non-MLX candidate. '
-                '$scenario',
+            InferenceProviderType.melious,
+            reason: '$scenario',
           );
         }
 

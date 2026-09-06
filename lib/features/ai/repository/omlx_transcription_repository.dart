@@ -20,7 +20,7 @@ class OmlxTranscriptionRepository extends TranscriptionRepository {
   /// `/audio/transcriptions` instead of chat completions.
   ///
   /// The caller also gates on `InferenceProviderType.omlx`, so this can stay
-  /// intentionally broad without affecting MLX Audio, Whisper, or cloud
+  /// intentionally broad without affecting Whisper or cloud
   /// providers.
   static bool isOmlxTranscriptionModel(String model) {
     final normalized = model.toLowerCase();

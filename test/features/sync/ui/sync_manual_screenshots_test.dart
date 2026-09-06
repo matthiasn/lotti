@@ -103,9 +103,8 @@ final SyncNodeProfile _localNode = SyncNodeProfile(
   displayName: _t('Mission Control Mac', 'Missionskontrolle Mac'),
   platform: 'macos',
   capabilities: const [
-    NodeCapability.mlxAudio,
-    NodeCapability.ollamaLlm,
     NodeCapability.whisper,
+    NodeCapability.ollamaLlm,
   ],
   updatedAt: _syncTime,
 );

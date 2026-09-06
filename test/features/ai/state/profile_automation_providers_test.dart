@@ -671,7 +671,7 @@ void main() {
         },
       );
 
-      // The mobile case: no profile selectable, but an MLX Audio model
+      // No profile is selected, but a transcription model
       // configured. Hiding the switch here would strand the fallback.
       test('true from the fallback when the category has no profile', () async {
         stubFallbackAvailable(available: true);

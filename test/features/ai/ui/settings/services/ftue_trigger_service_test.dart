@@ -536,7 +536,7 @@ void main() {
         for (final type in const [
           InferenceProviderType.genericOpenAi,
           InferenceProviderType.melious,
-          InferenceProviderType.mlxAudio,
+
           InferenceProviderType.omlx,
           InferenceProviderType.whisper,
           InferenceProviderType.voxtral,

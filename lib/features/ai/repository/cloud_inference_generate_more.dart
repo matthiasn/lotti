@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -23,22 +22,19 @@ import 'package:lotti/features/ai/repository/openai_transcription_repository.dar
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'package:uuid/uuid.dart';
 
 /// Audio transcription, multi-turn, image generation, model install, and
 /// resource cleanup paths for [CloudInferenceRepository].
 ///
 /// Routes `generateWithAudio` to contextual chat-audio, dedicated
 /// transcription repositories (Whisper, Voxtral, OpenAI, Mistral, Melious),
-/// or the in-process MLX Audio channel; `generateWithMessages` to the
+/// and oMLX; `generateWithMessages` to the
 /// provider-specific multi-turn implementations; and `generateImage` to the
 /// Gemini/DashScope image APIs. Owns the HTTP-backed sub-repositories so
 /// [close] can dispose them.
 class CloudInferenceGenerateMore {
   CloudInferenceGenerateMore({
-    required this._ref,
     required this._ollamaRepository,
     required this._geminiRepository,
     required this._dashScopeRepository,
@@ -52,7 +48,6 @@ class CloudInferenceGenerateMore {
     required this._helpers,
   });
 
-  final Ref _ref;
   final OllamaInferenceRepository _ollamaRepository;
   final GeminiInferenceRepository _geminiRepository;
   final DashScopeInferenceRepository _dashScopeRepository;
@@ -91,37 +86,6 @@ class CloudInferenceGenerateMore {
         baseUrl: baseUrl,
         prompt: prompt, // Optional parameter
         maxCompletionTokens: maxCompletionTokens,
-      );
-    }
-
-    // For MLX Audio, stay inside the app process through the native Swift
-    // bridge. The bridge reports unsupported on x86 macOS and on platforms
-    // where the Swift SDK is not linked.
-    if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
-      return Stream.fromFuture(
-        _ref
-            .read(mlxAudioChannelProvider)
-            .transcribeBase64Audio(
-              modelId: model,
-              audioBase64: audioBase64,
-              speechDictionaryTerms: speechDictionaryTerms ?? const [],
-              enableSpeakerDiarization: true,
-            )
-            .then(
-              (result) => CreateChatCompletionStreamResponse(
-                id: 'mlx-audio-${const Uuid().v4()}',
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: result.text,
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: 0,
-              ),
-            ),
       );
     }
 
@@ -551,7 +515,6 @@ class CloudInferenceGenerateMore {
       case InferenceProviderType.anthropic:
       case InferenceProviderType.genericOpenAi:
       case InferenceProviderType.mistral:
-      case InferenceProviderType.mlxAudio:
       case InferenceProviderType.nebiusAiStudio:
       case InferenceProviderType.omlx:
       case InferenceProviderType.openAi:

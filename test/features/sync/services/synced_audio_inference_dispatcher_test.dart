@@ -157,7 +157,7 @@ class _Bench {
 
     // Locality: stub the dependencies that `profileIsLocal` walks.
     final thinkingProviderType = profileIsLocal
-        ? InferenceProviderType.mlxAudio
+        ? InferenceProviderType.whisper
         : InferenceProviderType.gemini;
     _stubModelAndProvider(
       modelId: referencedThinkingModelId,
@@ -167,7 +167,7 @@ class _Bench {
     if (referencedTranscriptionModelId != null) {
       _stubModelAndProvider(
         modelId: referencedTranscriptionModelId,
-        providerType: InferenceProviderType.mlxAudio,
+        providerType: InferenceProviderType.whisper,
         providerId: 'p-transcribe',
       );
     }
@@ -192,8 +192,8 @@ class _Bench {
               id: 'p-transcribe',
               baseUrl: '',
               apiKey: '',
-              name: 'mlxAudio',
-              inferenceProviderType: InferenceProviderType.mlxAudio,
+              name: 'whisper',
+              inferenceProviderType: InferenceProviderType.whisper,
               createdAt: _kCreatedAt,
             )
             as AiConfigInferenceProvider;

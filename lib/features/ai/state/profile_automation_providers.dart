@@ -70,9 +70,8 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
 /// profile carries at least one `automate: true` skill assignment — the
 /// "profile is set to automatic" case — or when the direct transcription
 /// fallback could run, which needs no profile at all. Showing the switch in
-/// that second case is what keeps mobile recording (MLX Audio model, no
-/// desktop-only profile selectable) from losing automation with no way to
-/// turn it back on.
+/// that second case lets users control recording automation even without a
+/// configured profile.
 final FutureProviderFamily<bool, String?> categoryAutomationAvailableProvider =
     FutureProvider.family<bool, String?>(
       categoryAutomationAvailable,

@@ -49,7 +49,7 @@ void main() {
       hostId: hostId,
       displayName: displayName,
       platform: 'macos',
-      capabilities: const [NodeCapability.mlxAudio],
+      capabilities: const [NodeCapability.whisper],
       updatedAt: updatedAt ?? t0,
     );
   }

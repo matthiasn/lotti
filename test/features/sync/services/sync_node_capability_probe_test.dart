@@ -62,29 +62,6 @@ void main() {
     });
 
     test(
-      'claims mlxAudio iff running on macOS',
-      () async {
-        final probe = makeDefaultSyncNodeCapabilityProbe(
-          ollamaProbe:
-              ({Duration timeout = const Duration(seconds: 1)}) async => false,
-          omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
-              false,
-        );
-
-        final profile = await probe(hostId: 'h1', now: now);
-
-        if (Platform.isMacOS) {
-          expect(profile.capabilities, contains(NodeCapability.mlxAudio));
-        } else {
-          expect(
-            profile.capabilities,
-            isNot(contains(NodeCapability.mlxAudio)),
-          );
-        }
-      },
-    );
-
-    test(
       'never claims voxtral or whisper from auto-detection',
       () async {
         // These require local binaries the app does not manage. Auto-claim

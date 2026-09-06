@@ -24,7 +24,6 @@ void main() {
           InferenceProviderType.omlx: LottiIcons.memory,
           InferenceProviderType.whisper: LottiIcons.mic,
           InferenceProviderType.voxtral: LottiIcons.waveform,
-          InferenceProviderType.mlxAudio: LottiIcons.memory,
         };
 
         for (final entry in icons.entries) {
@@ -52,7 +51,6 @@ void main() {
           InferenceProviderType.omlx,
           InferenceProviderType.whisper,
           InferenceProviderType.voxtral,
-          InferenceProviderType.mlxAudio,
         };
         expect(pinned, InferenceProviderType.values.toSet());
       });

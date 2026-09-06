@@ -24,8 +24,6 @@ import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
-import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -381,12 +379,7 @@ class _InferenceProviderEditPageState
           if (fireFtueWorkflow &&
               context.mounted &&
               config is AiConfigInferenceProvider) {
-            if (config.inferenceProviderType ==
-                InferenceProviderType.mlxAudio) {
-              await _offerMlxAudioInstall(config);
-            } else {
-              await _offerFtueSetupIfFirstProvider(config);
-            }
+            await _offerFtueSetupIfFirstProvider(config);
           }
         } else {
           await controller.updateConfig(config);

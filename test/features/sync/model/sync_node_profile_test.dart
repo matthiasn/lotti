@@ -148,7 +148,7 @@ void main() {
         gpuModel: 'Apple M4 Max GPU',
         appVersion: '1.0.0+1',
         capabilities: const [
-          NodeCapability.mlxAudio,
+          NodeCapability.whisper,
           NodeCapability.omlxLlm,
           NodeCapability.ollamaLlm,
         ],
@@ -169,7 +169,7 @@ void main() {
       expect(decoded.gpuModel, 'Apple M4 Max GPU');
       expect(decoded.appVersion, '1.0.0+1');
       expect(decoded.capabilities, [
-        NodeCapability.mlxAudio,
+        NodeCapability.whisper,
         NodeCapability.omlxLlm,
         NodeCapability.ollamaLlm,
       ]);
@@ -207,7 +207,7 @@ void main() {
         hostId: 'host-uuid-3',
         displayName: 'Bare Mac',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
 
@@ -247,14 +247,14 @@ void main() {
         hostId: 'h',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
       final b = SyncNodeProfile(
         hostId: 'h',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
 
@@ -267,14 +267,14 @@ void main() {
         hostId: 'h',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
       final b = SyncNodeProfile(
         hostId: 'h',
         displayName: 'B',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
 
@@ -286,7 +286,7 @@ void main() {
         hostId: 'h',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
       final b = SyncNodeProfile(
@@ -294,7 +294,7 @@ void main() {
         displayName: 'A',
         platform: 'macos',
         capabilities: const [
-          NodeCapability.mlxAudio,
+          NodeCapability.whisper,
           NodeCapability.ollamaLlm,
         ],
         updatedAt: updatedAt,
@@ -311,14 +311,14 @@ void main() {
         hostId: 'host-a',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
       final b = SyncNodeProfile(
         hostId: 'host-b',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
 
@@ -334,14 +334,14 @@ void main() {
         hostId: 'h',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
       final b = SyncNodeProfile(
         hostId: 'h',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt.add(const Duration(seconds: 1)),
       );
 

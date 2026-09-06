@@ -28,9 +28,6 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
     final needsApiKey = !ProviderConfig.noApiKeyRequired.contains(
       formState.inferenceProviderType,
     );
-    final usesBaseUrl = ProviderConfig.usesBaseUrl(
-      formState.inferenceProviderType,
-    );
     final apiKeySuffix = IconButton(
       icon: Icon(
         _showApiKey ? LottiIcons.hidden : LottiIcons.visible,
@@ -100,53 +97,46 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                 },
               ),
             ],
-            if (usesBaseUrl) ...[
-              SizedBox(height: tokens.spacing.step6),
-              FlatField(
-                label: messages.aiProviderConnectFieldBaseUrlLabelOptional,
-                hintRight: messages.aiProviderConnectFieldBaseUrlHint,
-                child: AiTextField(
-                  label: '',
-                  hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
-                  controller: formController.baseUrlController,
-                  onChanged: (value) {
-                    formController.baseUrlChanged(value);
-                    _scheduleConnectionVerify(
-                      providerType: formState.inferenceProviderType,
-                      apiKey: formController.apiKeyController.text,
-                      baseUrl: value,
-                    );
-                  },
-                  validator: (_) => formState.baseUrl.error?.displayMessage,
-                  keyboardType: TextInputType.url,
-                ),
+            SizedBox(height: tokens.spacing.step6),
+            FlatField(
+              label: messages.aiProviderConnectFieldBaseUrlLabelOptional,
+              hintRight: messages.aiProviderConnectFieldBaseUrlHint,
+              child: AiTextField(
+                label: '',
+                hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
+                controller: formController.baseUrlController,
+                onChanged: (value) {
+                  formController.baseUrlChanged(value);
+                  _scheduleConnectionVerify(
+                    providerType: formState.inferenceProviderType,
+                    apiKey: formController.apiKeyController.text,
+                    baseUrl: value,
+                  );
+                },
+                validator: (_) => formState.baseUrl.error?.displayMessage,
+                keyboardType: TextInputType.url,
               ),
-              // Only carve out the gap when the strip below is actually
-              // going to render — when no probe has run, the strip
-              // collapses to `SizedBox.shrink()` and a fixed gap above
-              // it would leave a phantom void of whitespace between the
-              // base-URL field and the privacy hint.
-              if (ref.watch(
-                    connectionVerifierControllerProvider(
-                      formState.inferenceProviderType,
-                    ),
-                  )
-                  is! ConnectionCheckIdle)
-                SizedBox(height: tokens.spacing.step5),
-              ConnectionStatusStrip(
+            ),
+            // Only carve out the gap when the strip below is actually
+            // going to render — when no probe has run, the strip
+            // collapses to `SizedBox.shrink()` and a fixed gap above
+            // it would leave a phantom void of whitespace between the
+            // base-URL field and the privacy hint.
+            if (ref.watch(
+                  connectionVerifierControllerProvider(
+                    formState.inferenceProviderType,
+                  ),
+                )
+                is! ConnectionCheckIdle)
+              SizedBox(height: tokens.spacing.step5),
+            ConnectionStatusStrip(
+              providerType: formState.inferenceProviderType,
+              onRetest: () => _retryConnectionVerify(
                 providerType: formState.inferenceProviderType,
-                onRetest: () => _retryConnectionVerify(
-                  providerType: formState.inferenceProviderType,
-                  apiKey: formController.apiKeyController.text,
-                  baseUrl: formController.baseUrlController.text,
-                ),
+                apiKey: formController.apiKeyController.text,
+                baseUrl: formController.baseUrlController.text,
               ),
-            ] else ...[
-              SizedBox(height: tokens.spacing.step6),
-              EmbeddedProviderHint(
-                providerType: formState.inferenceProviderType,
-              ),
-            ],
+            ),
           ],
         ),
       );
@@ -178,23 +168,16 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                 validator: (_) => formState.name.error?.displayMessage,
                 prefixIcon: LottiIcons.label,
               ),
-              if (usesBaseUrl) ...[
-                SizedBox(height: tokens.spacing.step6),
-                AiTextField(
-                  label: messages.apiKeyBaseUrlLabel,
-                  hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
-                  controller: formController.baseUrlController,
-                  onChanged: formController.baseUrlChanged,
-                  validator: (_) => formState.baseUrl.error?.displayMessage,
-                  keyboardType: TextInputType.url,
-                  prefixIcon: LottiIcons.link,
-                ),
-              ] else ...[
-                SizedBox(height: tokens.spacing.step6),
-                EmbeddedProviderHint(
-                  providerType: formState.inferenceProviderType,
-                ),
-              ],
+              SizedBox(height: tokens.spacing.step6),
+              AiTextField(
+                label: messages.apiKeyBaseUrlLabel,
+                hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
+                controller: formController.baseUrlController,
+                onChanged: formController.baseUrlChanged,
+                validator: (_) => formState.baseUrl.error?.displayMessage,
+                keyboardType: TextInputType.url,
+                prefixIcon: LottiIcons.link,
+              ),
             ],
           ),
           SizedBox(height: tokens.spacing.step7),
@@ -289,28 +272,6 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
 
     // Perform FTUE setup for supported provider types
     await _performFtueSetupForProvider(config: config);
-  }
-
-  Future<void> _offerMlxAudioInstall(AiConfigInferenceProvider config) async {
-    if (!mounted) return;
-
-    final repository = ref.read(aiConfigRepositoryProvider);
-    final allModels = await repository.getConfigsByType(AiConfigType.model);
-    final providerModels = allModels
-        .whereType<AiConfigModel>()
-        .where((m) => m.inferenceProviderId == config.id)
-        .where(isMlxAudioSpeechToTextModel)
-        .toList(growable: false);
-    if (providerModels.isEmpty || !mounted) return;
-
-    final model = await MlxAudioModelInstallChoiceDialog.show(
-      context: context,
-      models: providerModels,
-      recommendedModelId: mlxAudioRecommendedSttModelId,
-    );
-    if (model == null || !mounted) return;
-
-    await MlxAudioModelDownloadDialog.show(context: context, model: model);
   }
 
   /// Performs FTUE setup flow for a supported provider.

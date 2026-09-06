@@ -81,7 +81,7 @@ void main() {
 
     probe = _FakeProbe(
       platform: 'macos',
-      capabilities: [NodeCapability.mlxAudio],
+      capabilities: [NodeCapability.whisper],
     );
 
     clockQueue = [t0, t1];
@@ -109,7 +109,7 @@ void main() {
 
       final self = await repo.getSelf();
       expect(self?.hostId, 'self-h');
-      expect(self?.capabilities, [NodeCapability.mlxAudio]);
+      expect(self?.capabilities, [NodeCapability.whisper]);
 
       final captured = verify(
         () => outboxService.enqueueMessage(captureAny()),
@@ -117,7 +117,7 @@ void main() {
       expect(captured, hasLength(1));
       final msg = captured.single as SyncSyncNodeProfile;
       expect(msg.profile.hostId, 'self-h');
-      expect(msg.profile.capabilities, [NodeCapability.mlxAudio]);
+      expect(msg.profile.capabilities, [NodeCapability.whisper]);
     },
   );
 
@@ -177,7 +177,7 @@ void main() {
     when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
 
     probe.capabilities = [
-      NodeCapability.mlxAudio,
+      NodeCapability.whisper,
       NodeCapability.ollamaLlm,
     ];
 
@@ -189,7 +189,7 @@ void main() {
     ).captured;
     final msg = captured.single as SyncSyncNodeProfile;
     expect(msg.profile.capabilities, [
-      NodeCapability.mlxAudio,
+      NodeCapability.whisper,
       NodeCapability.ollamaLlm,
     ]);
   });

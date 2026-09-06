@@ -218,44 +218,6 @@ class ProviderTypeField extends StatelessWidget {
   }
 }
 
-class EmbeddedProviderHint extends StatelessWidget {
-  const EmbeddedProviderHint({required this.providerType, super.key});
-
-  final InferenceProviderType providerType;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final visual = aiProviderVisual(
-      type: providerType,
-      tokens: tokens,
-      messages: context.messages,
-    );
-    return Container(
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: visual.accent.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        children: [
-          Icon(LottiIcons.memory, color: visual.accent),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Text(
-              context.messages.aiProviderEmbeddedRuntimeHint,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Section showing available known models that can be added to this provider.
 class AvailableModelsSection extends ConsumerWidget {
   const AvailableModelsSection({

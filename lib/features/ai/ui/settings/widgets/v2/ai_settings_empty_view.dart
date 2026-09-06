@@ -100,7 +100,7 @@ class AiSettingsFtueBanner extends StatelessWidget {
 /// │      Add one to unlock transcription, image recognition,      │
 /// │            image generation, and semantic search.             │
 /// │                                                               │
-/// │ [Gemini] [OpenAI] [Anthropic] [Alibaba] [MLX Audio] [oMLX] [Ollama] │
+/// │ [Gemini] [OpenAI] [Anthropic] [Alibaba] [oMLX] [Ollama] │
 /// └──────────────────────────────────────────────────────────────┘
 /// ```
 ///
@@ -122,7 +122,6 @@ class AiSettingsNoProvidersCard extends StatelessWidget {
     InferenceProviderType.openAi,
     InferenceProviderType.anthropic,
     InferenceProviderType.alibaba,
-    InferenceProviderType.mlxAudio,
     InferenceProviderType.omlx,
     InferenceProviderType.ollama,
   ];

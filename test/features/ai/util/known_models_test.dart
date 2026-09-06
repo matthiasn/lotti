@@ -25,16 +25,6 @@ enum _GeneratedKnownModelModalities {
 
 enum _GeneratedKnownModelTokens { absent, small, large }
 
-enum _GeneratedMlxQwenAsrIdShape {
-  canonicalSmall,
-  canonical17B4Bit,
-  canonical17B8Bit,
-  uppercasePrefix,
-  missingMlxPrefix,
-  nonQwenMlx,
-  qwenTts,
-}
-
 String _generatedKnownModelIdPartText(_GeneratedKnownModelIdPart part) {
   return switch (part) {
     _GeneratedKnownModelIdPart.lower => 'alpha',
@@ -75,22 +65,6 @@ int? _generatedKnownModelMaxTokens(_GeneratedKnownModelTokens tokens) {
     _GeneratedKnownModelTokens.absent => null,
     _GeneratedKnownModelTokens.small => 128,
     _GeneratedKnownModelTokens.large => 8192,
-  };
-}
-
-String _generatedMlxQwenAsrId(_GeneratedMlxQwenAsrIdShape shape) {
-  return switch (shape) {
-    _GeneratedMlxQwenAsrIdShape.canonicalSmall => mlxAudioQwenAsrModelId,
-    _GeneratedMlxQwenAsrIdShape.canonical17B4Bit =>
-      mlxAudioQwenAsr17B4BitModelId,
-    _GeneratedMlxQwenAsrIdShape.canonical17B8Bit =>
-      mlxAudioQwenAsr17B8BitModelId,
-    _GeneratedMlxQwenAsrIdShape.uppercasePrefix =>
-      'MLX-COMMUNITY/QWEN3-ASR-1.7B-8BIT',
-    _GeneratedMlxQwenAsrIdShape.missingMlxPrefix => 'Qwen/Qwen3-ASR-1.7B',
-    _GeneratedMlxQwenAsrIdShape.nonQwenMlx => mlxAudioParakeetModelId,
-    _GeneratedMlxQwenAsrIdShape.qwenTts =>
-      'mlx-community/Qwen3-TTS-12Hz-0.6B-Base-8bit',
   };
 }
 
@@ -181,21 +155,6 @@ extension _AnyGeneratedKnownModelScenario on glados.Any {
 
   glados.Generator<_GeneratedKnownModelTokens> get knownModelTokens =>
       glados.AnyUtils(this).choose(_GeneratedKnownModelTokens.values);
-
-  glados.Generator<List<Modality>> get modalitySubset =>
-      glados.CombinableAny(this).combine3(
-        glados.any.bool,
-        glados.any.bool,
-        glados.any.bool,
-        (bool text, bool audio, bool image) => [
-          if (text) Modality.text,
-          if (audio) Modality.audio,
-          if (image) Modality.image,
-        ],
-      );
-
-  glados.Generator<_GeneratedMlxQwenAsrIdShape> get mlxQwenAsrIdShape =>
-      glados.AnyUtils(this).choose(_GeneratedMlxQwenAsrIdShape.values);
 
   glados.Generator<_GeneratedKnownModelIdScenario> get knownModelIdScenario =>
       glados.CombinableAny(this).combine2(
@@ -747,7 +706,6 @@ void main() {
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
             InferenceProviderType.mistral,
-            InferenceProviderType.mlxAudio,
           ]),
         );
       });
@@ -803,66 +761,6 @@ void main() {
           }
         }
       });
-    });
-
-    group('MLX Audio Models', () {
-      test('recommends Qwen3 ASR 1.7B 8-bit for first install choice', () {
-        expect(
-          mlxAudioRecommendedSttModelId,
-          equals(mlxAudioQwenAsr17B8BitModelId),
-        );
-        expect(
-          mlxAudioModels.first.providerModelId,
-          mlxAudioQwenAsr17B8BitModelId,
-        );
-      });
-
-      test('has explicit Voxtral Realtime and Qwen3 ASR 1.7B variants', () {
-        final modelIds = mlxAudioModels.map((m) => m.providerModelId).toSet();
-
-        expect(modelIds, contains(mlxAudioVoxtralRealtime4BitModelId));
-        expect(modelIds, contains(mlxAudioVoxtralRealtimeFp16ModelId));
-        expect(modelIds, contains(mlxAudioQwenAsr17B4BitModelId));
-        expect(modelIds, contains(mlxAudioQwenAsr17B8BitModelId));
-      });
-
-      test('curated catalog contains only speech-to-text models', () {
-        final aiModels = mlxAudioModels
-            .map(
-              (model) => model.toAiConfigModel(
-                id: model.providerModelId,
-                inferenceProviderId: 'mlx-audio-provider',
-              ),
-            )
-            .toList();
-
-        final sttModelIds = aiModels
-            .where(isMlxAudioSpeechToTextModel)
-            .map((model) => model.providerModelId)
-            .toSet();
-
-        expect(sttModelIds, contains(mlxAudioQwenAsr17B8BitModelId));
-        expect(sttModelIds, contains(mlxAudioVoxtralRealtime4BitModelId));
-        expect(sttModelIds, hasLength(mlxAudioModels.length));
-      });
-
-      glados.Glados(
-        glados.any.mlxQwenAsrIdShape,
-        glados.ExploreConfig(numRuns: 80),
-      ).test('recognizes only MLX Qwen3-ASR realtime-capable IDs', (shape) {
-        final modelId = _generatedMlxQwenAsrId(shape);
-        final expected = switch (shape) {
-          _GeneratedMlxQwenAsrIdShape.canonicalSmall ||
-          _GeneratedMlxQwenAsrIdShape.canonical17B4Bit ||
-          _GeneratedMlxQwenAsrIdShape.canonical17B8Bit ||
-          _GeneratedMlxQwenAsrIdShape.uppercasePrefix => true,
-          _GeneratedMlxQwenAsrIdShape.missingMlxPrefix ||
-          _GeneratedMlxQwenAsrIdShape.nonQwenMlx ||
-          _GeneratedMlxQwenAsrIdShape.qwenTts => false,
-        };
-
-        expect(isMlxAudioQwenAsrModelId(modelId), expected);
-      }, tags: 'glados');
     });
 
     group('oMLX Models', () {
@@ -938,36 +836,6 @@ void main() {
         expect(model.supportsFunctionCalling, isTrue);
       });
     });
-
-    glados.Glados2(
-      glados.any.modalitySubset,
-      glados.any.modalitySubset,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'isMlxAudioSpeechToTextModel holds exactly for audio-in/text-out '
-      'modality combinations',
-      (inputs, outputs) {
-        final model =
-            AiConfig.model(
-                  id: 'generated-model',
-                  name: 'Generated model',
-                  providerModelId: 'generated-model',
-                  inferenceProviderId: 'mlx-audio-provider',
-                  createdAt: DateTime(2024, 3, 15),
-                  inputModalities: inputs,
-                  outputModalities: outputs,
-                  isReasoningModel: false,
-                )
-                as AiConfigModel;
-
-        expect(
-          isMlxAudioSpeechToTextModel(model),
-          inputs.contains(Modality.audio) && outputs.contains(Modality.text),
-          reason: 'inputs=$inputs outputs=$outputs',
-        );
-      },
-      tags: 'glados',
-    );
 
     group('Ollama Models', () {
       test('Qwen 3.5 9B should be a multimodal reasoning model', () {

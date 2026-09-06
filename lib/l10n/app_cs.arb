@@ -743,44 +743,6 @@
   "aiInferenceErrorUnknownTitle": "Chyba",
   "aiInternalsTitle": "Interní informace agenta",
   "aiModelCardDeleteTooltip": "Smazat model",
-  "aiModelDownloadCloseButton": "Zavřít",
-  "aiModelDownloadDialogDescription": "Lotti stáhne {modelName} do cache MLX Audio a použije ho pro lokální zpracování řeči.",
-  "@aiModelDownloadDialogDescription": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadDialogTitle": "Instalovat {modelName}",
-  "@aiModelDownloadDialogTitle": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadInstallTooltip": "Instalovat model",
-  "aiModelDownloadOpenProgressTooltip": "Zobrazit průběh stahování",
-  "aiModelDownloadStatusChecking": "Kontroluje se stav modelu",
-  "aiModelDownloadStatusDownloading": "Stahování {percent} %",
-  "@aiModelDownloadStatusDownloading": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Stahování",
-  "aiModelDownloadStatusFailed": "Stahování selhalo",
-  "aiModelDownloadStatusInstalled": "Nainstalováno",
-  "aiModelDownloadStatusNotInstalled": "Nenainstalováno",
-  "aiModelDownloadStatusUnsupported": "Vyžaduje Apple Silicon",
-  "aiModelInstallChoiceCancelButton": "Zrušit",
-  "aiModelInstallChoiceDescription": "Nejdřív vyber lokální model pro převod řeči na text, který se má stáhnout. Ostatní můžeš nainstalovat později ze seznamu modelů.",
-  "aiModelInstallChoiceInstallButton": "Instalovat model",
-  "aiModelInstallChoiceRecommended": "Doporučeno",
-  "aiModelInstallChoiceTitle": "Vybrat model MLX Audio",
   "aiModelPickerByProviderLabel": "Vyber poskytovatele",
   "aiModelPickerCurrentDefaultLabel": "Aktuální výchozí",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modely} other{{count} modelů}}",
@@ -948,12 +910,10 @@
   "aiProviderDetailRemoveDescription": "Smaže poskytovatele a všechny modely, které jej používají. Tuto akci nelze vrátit.",
   "aiProviderDetailRemoveTitle": "Odstranit tohoto poskytovatele",
   "aiProviderDetailValueUnset": "Nenastaveno",
-  "aiProviderEmbeddedRuntimeHint": "Běží přímo v procesu aplikace Apple. Není potřeba lokální server ani základní URL.",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiName": "Kompatibilní s OpenAI",
   "aiProviderMeliousName": "Melious.ai",
   "aiProviderMistralName": "Mistral",
-  "aiProviderMlxAudioName": "MLX Audio (lokálně)",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaName": "Ollama",
   "aiProviderOmlxName": "oMLX (lokálně)",
@@ -963,7 +923,6 @@
   "aiProviderTaglineAnthropic": "Rodina Claude · dlouhý kontext",
   "aiProviderTaglineGemini": "Multimodální · přepis zvuku",
   "aiProviderTaglineMelious": "Hostováno v EU · dynamický katalog · eko směrování",
-  "aiProviderTaglineMlxAudio": "Vestavěné · Apple Silicon · lokální audio",
   "aiProviderTaglineOllama": "Běží lokálně · bez cloudových volání",
   "aiProviderTaglineOmlx": "Lokální MLX inference · kompatibilní s OpenAI",
   "aiProviderTaglineOpenAi": "Rodina GPT · vize + uvažování",
@@ -1501,7 +1460,7 @@
   "configFlagEnableAiStreaming": "Povolit AI streamování pro akce úkolů",
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
   "configFlagEnableAiSummaryTts": "Přehrávání AI souhrnů",
-  "configFlagEnableAiSummaryTtsDescription": "Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.",
+  "configFlagEnableAiSummaryTtsDescription": "Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model Supertonic TTS.",
   "configFlagEnableDailyOs": "Povolit DailyOS",
   "configFlagEnableDailyOsDescription": "Zobrazit DailyOS v hlavní navigaci.",
   "configFlagEnableDashboardsPage": "Povolit stránku Dashboardů",
@@ -4929,7 +4888,6 @@
   "settingsSyncConflictsSubtitle": "Vyřeš konflikty synchronizace",
   "settingsSyncNodeProfileCapabilitiesEmpty": "Žádné detekovány — automatické spuštění inference pro synchronizovaný zvuk nebude na toto zařízení směrováno.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Detekované AI schopnosti",
-  "settingsSyncNodeProfileCapabilityMlxAudio": "MLX Audio (lokální)",
   "settingsSyncNodeProfileCapabilityOllamaLlm": "Ollama LLM",
   "settingsSyncNodeProfileCapabilityOmlxLlm": "oMLX LLM",
   "settingsSyncNodeProfileCapabilityVoxtral": "Voxtral (lokální)",

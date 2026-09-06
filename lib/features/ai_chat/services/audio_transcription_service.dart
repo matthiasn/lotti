@@ -13,7 +13,6 @@ import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
@@ -139,68 +138,6 @@ class AudioTranscriptionService {
         (p) => p.id == model.inferenceProviderId,
         orElse: () => throw Exception('Provider not found for audio model'),
       );
-    }
-
-    if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
-      Future<MlxAudioTranscriptionResult> invoke() async {
-        final result = await ref
-            .read(mlxAudioChannelProvider)
-            .transcribeFile(
-              filePath: filePath,
-              modelId: model.providerModelId,
-              speechDictionaryTerms: speechDictionaryTerms,
-            );
-        if (result.text.trim().isEmpty) {
-          throw TranscriptionException(
-            '${provider.name} returned no transcript for '
-            '${model.providerModelId}. The request completed without any text.',
-            provider: provider.name,
-          );
-        }
-        return result;
-      }
-
-      final capture = getIt.isRegistered<AiInteractionCapture>()
-          ? getIt<AiInteractionCapture>()
-          : null;
-      late MlxAudioTranscriptionResult result;
-      if (capture == null) {
-        result = await invoke();
-      } else {
-        try {
-          result = await capture.captureUnary(
-            workType: AiWorkType.audioTranscription,
-            interactionKind: AiInteractionKind.audioTranscription,
-            responseType: AiConsumptionResponseType.audioTranscription,
-            providerType: provider.inferenceProviderType,
-            modelId: model.providerModelId,
-            requestText: _kTranscriptionPrompt,
-            invoke: () async {
-              try {
-                return await invoke();
-              } catch (error) {
-                throw _ProviderTranscriptionFailure(error);
-              }
-            },
-            responseText: (value) => value.text,
-            existingSession: attributionSession,
-            terminalizeSuccess: attributionSession == null,
-            terminalizeFailure: terminalizeAttributionFailure,
-          );
-        } on _ProviderTranscriptionFailure catch (failure) {
-          throw AttributedTranscriptionException(
-            cause: failure.cause,
-            evidenceState: TranscriptionEvidenceState.recorded,
-          );
-        } catch (error) {
-          throw AttributedTranscriptionException(
-            cause: error,
-            evidenceState: TranscriptionEvidenceState.uncertain,
-          );
-        }
-      }
-      yield result.text;
-      return;
     }
 
     final bytes = await File(filePath).readAsBytes();
@@ -385,15 +322,6 @@ AiConfigModel _selectBatchAudioModel(
   );
   if (meliousChatAudio != null) {
     return meliousChatAudio;
-  }
-
-  final mlxQwen = audioModels.firstWhereOrNull(
-    (model) =>
-        isMlxAudioQwenAsrModelId(model.providerModelId) &&
-        hasProviderType(model, InferenceProviderType.mlxAudio),
-  );
-  if (mlxQwen != null) {
-    return mlxQwen;
   }
 
   return audioModels.firstWhere(

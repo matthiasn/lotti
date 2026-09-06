@@ -22,8 +22,6 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderMeliousName;
       case InferenceProviderType.mistral:
         return context.messages.aiProviderMistralName;
-      case InferenceProviderType.mlxAudio:
-        return context.messages.aiProviderMlxAudioName;
       case InferenceProviderType.omlx:
         return context.messages.aiProviderOmlxName;
       case InferenceProviderType.openAi:
@@ -57,8 +55,6 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return LottiIcons.eco;
       case InferenceProviderType.mistral:
         return LottiIcons.voice;
-      case InferenceProviderType.mlxAudio:
-        return LottiIcons.memory;
       case InferenceProviderType.omlx:
         return LottiIcons.memory;
       case InferenceProviderType.openRouter:

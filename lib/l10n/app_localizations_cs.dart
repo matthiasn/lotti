@@ -1819,64 +1819,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiModelCardDeleteTooltip => 'Smazat model';
 
   @override
-  String get aiModelDownloadCloseButton => 'Zavřít';
-
-  @override
-  String aiModelDownloadDialogDescription(String modelName) {
-    return 'Lotti stáhne $modelName do cache MLX Audio a použije ho pro lokální zpracování řeči.';
-  }
-
-  @override
-  String aiModelDownloadDialogTitle(String modelName) {
-    return 'Instalovat $modelName';
-  }
-
-  @override
-  String get aiModelDownloadInstallTooltip => 'Instalovat model';
-
-  @override
-  String get aiModelDownloadOpenProgressTooltip => 'Zobrazit průběh stahování';
-
-  @override
-  String get aiModelDownloadStatusChecking => 'Kontroluje se stav modelu';
-
-  @override
-  String aiModelDownloadStatusDownloading(int percent) {
-    return 'Stahování $percent %';
-  }
-
-  @override
-  String get aiModelDownloadStatusDownloadingIndeterminate => 'Stahování';
-
-  @override
-  String get aiModelDownloadStatusFailed => 'Stahování selhalo';
-
-  @override
-  String get aiModelDownloadStatusInstalled => 'Nainstalováno';
-
-  @override
-  String get aiModelDownloadStatusNotInstalled => 'Nenainstalováno';
-
-  @override
-  String get aiModelDownloadStatusUnsupported => 'Vyžaduje Apple Silicon';
-
-  @override
-  String get aiModelInstallChoiceCancelButton => 'Zrušit';
-
-  @override
-  String get aiModelInstallChoiceDescription =>
-      'Nejdřív vyber lokální model pro převod řeči na text, který se má stáhnout. Ostatní můžeš nainstalovat později ze seznamu modelů.';
-
-  @override
-  String get aiModelInstallChoiceInstallButton => 'Instalovat model';
-
-  @override
-  String get aiModelInstallChoiceRecommended => 'Doporučeno';
-
-  @override
-  String get aiModelInstallChoiceTitle => 'Vybrat model MLX Audio';
-
-  @override
   String get aiModelPickerByProviderLabel => 'Vyber poskytovatele';
 
   @override
@@ -2185,10 +2127,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderDetailValueUnset => 'Nenastaveno';
 
   @override
-  String get aiProviderEmbeddedRuntimeHint =>
-      'Běží přímo v procesu aplikace Apple. Není potřeba lokální server ani základní URL.';
-
-  @override
   String get aiProviderGeminiName => 'Google Gemini';
 
   @override
@@ -2199,9 +2137,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiProviderMistralName => 'Mistral';
-
-  @override
-  String get aiProviderMlxAudioName => 'MLX Audio (lokálně)';
 
   @override
   String get aiProviderNebiusAiStudioName => 'Nebius AI Studio';
@@ -2231,10 +2166,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get aiProviderTaglineMelious =>
       'Hostováno v EU · dynamický katalog · eko směrování';
-
-  @override
-  String get aiProviderTaglineMlxAudio =>
-      'Vestavěné · Apple Silicon · lokální audio';
 
   @override
   String get aiProviderTaglineOllama => 'Běží lokálně · bez cloudových volání';
@@ -3398,7 +3329,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagEnableAiSummaryTtsDescription =>
-      'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.';
+      'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model Supertonic TTS.';
 
   @override
   String get configFlagEnableDailyOs => 'Povolit DailyOS';
@@ -12738,9 +12669,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Detekované AI schopnosti';
-
-  @override
-  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (lokální)';
 
   @override
   String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
