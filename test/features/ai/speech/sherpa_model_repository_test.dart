@@ -3,13 +3,32 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../mocks/mocks.dart';
+
 void main() {
+  test('provider closes its owned HTTP client on disposal', () async {
+    final client = MockHttpClient();
+    await http.runWithClient(() async {
+      final container = ProviderContainer();
+      try {
+        final repository = container.read(sherpaModelRepositoryProvider);
+        expect(await repository.isAvailable('unknown-model'), isFalse);
+        verifyNever(client.close);
+      } finally {
+        container.dispose();
+      }
+      verify(client.close).called(1);
+    }, () => client);
+  });
+
   late Directory directory;
   final data = utf8.encode('verified model');
   final spec = SherpaModel(

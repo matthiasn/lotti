@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeneratedImage;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -89,6 +90,41 @@ void main() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(<ChatCompletionTool>[]);
   });
+
+  test(
+    'sherpa provider resolves the embedded repository without HTTP',
+    () async {
+      final embedded = MockSherpaTranscriptionRepository();
+      final response = minimalStreamResponse('Local speech');
+      when(
+        () => embedded.transcribeAudio(model: 'tiny', audioBase64: 'audio'),
+      ).thenAnswer((_) => Stream.value(response));
+      final bench = _TestBench(
+        extraOverrides: [
+          sherpaTranscriptionRepositoryProvider.overrideWithValue(embedded),
+        ],
+      );
+      addTearDown(bench.dispose);
+      final provider = AiTestDataFactory.createTestProvider(
+        type: InferenceProviderType.sherpa,
+      );
+      final result = await bench.repository
+          .generateWithAudio(
+            '',
+            model: 'tiny',
+            audioBase64: 'audio',
+            baseUrl: '',
+            apiKey: '',
+            provider: provider,
+          )
+          .toList();
+      expect(result, [response]);
+      verify(
+        () => embedded.transcribeAudio(model: 'tiny', audioBase64: 'audio'),
+      ).called(1);
+      verifyZeroInteractions(bench.mockHttpClient);
+    },
+  );
 
   group('CloudInferenceRepository', () {
     late MockOpenAIClient mockClient;
@@ -4272,6 +4308,7 @@ void main() {
     for (final type in const [
       InferenceProviderType.voxtral,
       InferenceProviderType.whisper,
+      InferenceProviderType.sherpa,
       InferenceProviderType.mistral,
       InferenceProviderType.nebiusAiStudio,
       InferenceProviderType.openRouter,

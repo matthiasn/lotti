@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -58,6 +59,24 @@ void main() {
     decode: decode,
     convert: convert ?? (_) async => throw StateError('Unexpected conversion'),
     temporaryDirectory: directory,
+  );
+
+  test(
+    'provider refuses a missing local model without network access',
+    () async {
+      final container = ProviderContainer(
+        overrides: [sherpaModelRepositoryProvider.overrideWithValue(models)],
+      );
+      addTearDown(container.dispose);
+      await expectLater(
+        container
+            .read(sherpaTranscriptionRepositoryProvider)
+            .transcribeAudio(model: 'tiny', audioBase64: base64Encode(wav))
+            .toList(),
+        throwsA(isA<TranscriptionException>()),
+      );
+      expect(downloads, 0);
+    },
   );
 
   test(
