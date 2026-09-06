@@ -106,14 +106,23 @@ void main() {
     'renders detected capabilities as chips',
     (tester) async {
       await tester.pumpWidget(
-        harness(self: _self(), directory: [_self()]),
+        harness(
+          self: _self(
+            capabilities: const [
+              NodeCapability.whisper,
+              NodeCapability.ollamaLlm,
+              NodeCapability.sherpa,
+            ],
+          ),
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(DesignSystemBadge), findsNWidgets(2));
+      expect(find.byType(DesignSystemBadge), findsNWidgets(3));
       expect(find.text('Whisper (local)'), findsOneWidget);
       expect(find.text('Ollama LLM'), findsOneWidget);
+      expect(find.text('sherpa-onnx (on device)'), findsOneWidget);
     },
   );
 
