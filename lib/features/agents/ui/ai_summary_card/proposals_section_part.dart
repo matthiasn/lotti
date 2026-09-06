@@ -32,10 +32,14 @@ class ProposalsSection extends StatelessWidget {
     this.onResolveEnd,
     this.settling = false,
     this.newlyArrived = const {},
+    this.rowBuilder,
     super.key,
   });
 
   final List<PendingSuggestion> open;
+
+  /// Optional feature host for evidence links and scoped confirmation.
+  final Widget Function(PendingSuggestion suggestion, int index)? rowBuilder;
 
   /// The count to show in the pending pill. Excludes rows that are committed
   /// and collapsing out, so the count ticks down in sync with the action.
@@ -134,26 +138,28 @@ class ProposalsSection extends StatelessWidget {
                     'enter-${open[i].changeSet.id}-${open[i].itemIndex}',
                   ),
                   animate: newlyArrived.contains(open[i].fingerprint),
-                  child: ProposalRow(
-                    // Stable identity (set id + item index) so the row's
-                    // timer/animation/busy state stays bound to its suggestion
-                    // when the open list mutates (e.g. confirm-all), instead of
-                    // index-based element reuse transferring it to a sibling.
-                    key: ValueKey(
-                      'open-${open[i].changeSet.id}-${open[i].itemIndex}',
-                    ),
-                    suggestion: open[i],
-                    // Only the first pending row gets the swipe-affordance
-                    // wiggle hint so the page doesn't pulse with every
-                    // visible row.
-                    isFirst: i == 0,
-                    confirmAllPulse: confirmAllPulse,
-                    cascadeIndex: i,
-                    onResolveStart: onResolveStart,
-                    onResolveEnd: onResolveEnd,
-                    settling: settling,
-                    pendingCount: pendingCount ?? open.length,
-                  ),
+                  child:
+                      rowBuilder?.call(open[i], i) ??
+                      ProposalRow(
+                        // Stable identity (set id + item index) so the row's
+                        // timer/animation/busy state stays bound to its suggestion
+                        // when the open list mutates (e.g. confirm-all), instead of
+                        // index-based element reuse transferring it to a sibling.
+                        key: ValueKey(
+                          'open-${open[i].changeSet.id}-${open[i].itemIndex}',
+                        ),
+                        suggestion: open[i],
+                        // Only the first pending row gets the swipe-affordance
+                        // wiggle hint so the page doesn't pulse with every
+                        // visible row.
+                        isFirst: i == 0,
+                        confirmAllPulse: confirmAllPulse,
+                        cascadeIndex: i,
+                        onResolveStart: onResolveStart,
+                        onResolveEnd: onResolveEnd,
+                        settling: settling,
+                        pendingCount: pendingCount ?? open.length,
+                      ),
                 ),
               // Bottom rail: the one list-level operation, trailing-aligned.
               // Open rows already end with their own trailing gap, so the
@@ -201,6 +207,7 @@ class ProposalHistorySection extends StatelessWidget {
     required this.resolved,
     required this.open,
     required this.onToggle,
+    this.rowBuilder,
     super.key,
   });
 
@@ -211,6 +218,9 @@ class ProposalHistorySection extends StatelessWidget {
   /// Whether the resolved list is disclosed.
   final bool open;
   final VoidCallback onToggle;
+
+  /// Feature-owned history details, such as destinations and Undo.
+  final Widget Function(LedgerEntry entry)? rowBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -252,12 +262,14 @@ class ProposalHistorySection extends StatelessWidget {
                           ? tokens.spacing.step3
                           : 0,
                     ),
-                    child: ProposalRow.fromLedger(
-                      key: ValueKey(
-                        'resolved-${resolved[i].changeSetId}-${resolved[i].itemIndex}',
-                      ),
-                      entry: resolved[i],
-                    ),
+                    child:
+                        rowBuilder?.call(resolved[i]) ??
+                        ProposalRow.fromLedger(
+                          key: ValueKey(
+                            'resolved-${resolved[i].changeSetId}-${resolved[i].itemIndex}',
+                          ),
+                          entry: resolved[i],
+                        ),
                   ),
               ],
             ],

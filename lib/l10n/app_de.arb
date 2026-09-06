@@ -4478,6 +4478,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Hinzugefügt → {title}",
+  "relationshipProposalEvidence": "Aus dem Check-in vom {date}",
+  "relationshipProposalUndoFailed": "Rückgängig machen nicht möglich. Die Aufgabe wurde möglicherweise geändert.",
   "relationshipReachPrivacy": "Bleibt auf diesem Gerät · nie mit der KI geteilt",
   "relationshipReachTitle": "Erreichen",
   "relationshipRelinkContact": "Anderen Kontakt verknüpfen",

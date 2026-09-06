@@ -11617,6 +11617,20 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Přidáno → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Z kontaktu dne $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Akci se nepodařilo vrátit. Úkol se možná změnil.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Zůstává v tomto zařízení · nikdy se nesdílí s AI';
 

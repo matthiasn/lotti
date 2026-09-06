@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 
 /// How many recent check-ins feed the FACTS block (ADR 0040 Decision 4:
@@ -42,6 +45,7 @@ class RelationshipFactsRenderer {
     required List<RelationshipNudgeEntity> nudges,
     required DateTime now,
     RelationshipCadenceStatus? preTransitionStatus,
+    ProposalLedger proposals = const ProposalLedger.empty(),
   }) {
     final data = relationship.data;
     final buffer = StringBuffer()
@@ -81,9 +85,7 @@ class RelationshipFactsRenderer {
         );
     }
 
-    final recent = [...checkIns]
-      ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
-    final window = recent.take(relationshipCheckInLookback).toList();
+    final window = relationshipCheckInWindow(checkIns);
     buffer.writeln(
       'CHECK-INS (newest first, ${window.length} of ${checkIns.length}):',
     );
@@ -93,6 +95,7 @@ class RelationshipFactsRenderer {
     for (final checkIn in window) {
       final d = checkIn.data;
       final parts = <String>[
+        'checkInId=${checkIn.id}',
         _day(checkIn.meta.dateFrom),
         d.interactionType.name,
         if (d.sentiment != null) 'sentiment(user-set)=${d.sentiment!.name}',
@@ -167,6 +170,15 @@ class RelationshipFactsRenderer {
       );
     }
 
+    buffer.writeln('PROPOSALS (do not repeat, including paraphrases):');
+    for (final entry in [...proposals.open, ...proposals.resolved]) {
+      buffer.writeln(
+        '- ${entry.status.name} | ${entry.toolName} | '
+        '${jsonEncode(entry.args)} | ${entry.humanSummary}',
+      );
+    }
+    if (proposals.isEmpty) buffer.writeln('- none');
+
     return buffer.toString().trimRight();
   }
 
@@ -218,4 +230,11 @@ class RelationshipFactsRenderer {
     if (collapsed.length <= relationshipNarrativeExcerptChars) return collapsed;
     return '${collapsed.substring(0, relationshipNarrativeExcerptChars)}…';
   }
+}
+
+/// The exact evidence window shared by prompt rendering and tool validation.
+List<CheckInEntry> relationshipCheckInWindow(List<CheckInEntry> checkIns) {
+  final sorted = [...checkIns]
+    ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+  return sorted.take(relationshipCheckInLookback).toList();
 }

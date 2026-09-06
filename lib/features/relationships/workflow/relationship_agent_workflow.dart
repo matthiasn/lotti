@@ -9,12 +9,14 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
+import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
@@ -330,6 +332,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     final checkIns = await _relationshipRepository
         .getAllCheckInsForRelationship(relationshipId);
 
+    final proposals = await _repository.getProposalLedger(
+      agentId,
+      taskId: relationshipId,
+    );
     var factsBlock = _factsRenderer.render(
       relationship: relationship,
       derivation: derivation,
@@ -339,6 +345,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       nudges: nudges,
       now: now,
       preTransitionStatus: preTransitionStatus,
+      proposals: proposals,
     );
     if (interactive) {
       factsBlock =
@@ -386,6 +393,9 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       threadId: threadId,
       runKey: runKey,
       activeAdIds: activeAdIds,
+      sourceCheckInIds: {
+        for (final entry in relationshipCheckInWindow(checkIns)) entry.id,
+      },
     );
     final tools = [
       for (final tool in relationshipAgentTools)
@@ -689,6 +699,60 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           (!subject.data.important ||
               subject.data.status is! RelationshipActive)) {
         return;
+      }
+
+      if (strategy.deferredItems.isNotEmpty &&
+          subject.data.important &&
+          subject.data.status is RelationshipActive) {
+        final setId = const Uuid().v5(
+          Namespace.url.value,
+          'lotti://relationship-agent/$agentId/$runKey/proposals',
+        );
+        // Retry must not replace a set the user has already acted on.
+        if (await _repository.getEntity(setId) == null) {
+          final ledger = await _repository.getProposalLedger(
+            agentId,
+            taskId: relationshipId,
+          );
+          final fingerprints = {
+            for (final entry in [...ledger.open, ...ledger.resolved])
+              entry.fingerprint,
+          };
+          final displayKeys = {
+            for (final entry in [...ledger.open, ...ledger.resolved])
+              ChangeItem.displayDuplicateKeyFromParts(
+                entry.toolName,
+                entry.humanSummary,
+                args: entry.args,
+              ),
+          };
+          final items =
+              buildDeferredChangeItems(
+                    strategy.deferredItems,
+                    (tool, args) => 'Create task: ${args['title']}',
+                  )
+                  .where(
+                    (item) =>
+                        fingerprints.add(ChangeItem.fingerprint(item)) &&
+                        displayKeys.add(ChangeItem.displayDuplicateKey(item)),
+                  )
+                  .toList();
+          if (items.isNotEmpty) {
+            await _syncService.upsertEntity(
+              AgentDomainEntity.changeSet(
+                id: setId,
+                agentId: agentId,
+                taskId: relationshipId,
+                threadId: threadId,
+                runKey: runKey,
+                status: ChangeSetStatus.pending,
+                items: items,
+                createdAt: now,
+                vectorClock: null,
+              ),
+            );
+          }
+        }
       }
 
       // RE-READ inside the transaction: the user may have dismissed a

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
@@ -57,21 +58,36 @@ class ProposalRow extends ConsumerStatefulWidget {
     this.onResolveEnd,
     this.settling = false,
     this.pendingCount = 0,
+    this.onConfirm,
+    this.onReject,
+    this.details,
     super.key,
   }) : entry = null;
 
-  const ProposalRow.fromLedger({required LedgerEntry this.entry, super.key})
-    : suggestion = null,
-      isFirst = false,
-      confirmAllPulse = 0,
-      cascadeIndex = 0,
-      onResolveStart = null,
-      onResolveEnd = null,
-      settling = false,
-      pendingCount = 0;
+  const ProposalRow.fromLedger({
+    required LedgerEntry this.entry,
+    this.details,
+    super.key,
+  }) : suggestion = null,
+       onConfirm = null,
+       onReject = null,
+       isFirst = false,
+       confirmAllPulse = 0,
+       cascadeIndex = 0,
+       onResolveStart = null,
+       onResolveEnd = null,
+       settling = false,
+       pendingCount = 0;
 
   final PendingSuggestion? suggestion;
   final LedgerEntry? entry;
+
+  /// Feature-owned confirmation paths; absent on the existing task host.
+  final Future<ToolExecutionResult> Function()? onConfirm;
+  final Future<bool> Function()? onReject;
+
+  /// Evidence or consequence links owned by the feature hosting this row.
+  final Widget? details;
 
   /// Whether this row is the topmost pending row. Drives the
   /// swipe-affordance wiggle hint on narrow viewports.
@@ -480,13 +496,16 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     final messages = context.messages;
     final textDirection = Directionality.of(context);
     final view = View.of(context);
-    final service = ref.read(changeSetConfirmationServiceProvider);
     final notifier = ref.read(updateNotificationsProvider);
     try {
-      final result = await service.confirmItem(
-        suggestion.changeSet,
-        suggestion.itemIndex,
-      );
+      final result =
+          await (widget.onConfirm?.call() ??
+              ref
+                  .read(changeSetConfirmationServiceProvider)
+                  .confirmItem(
+                    suggestion.changeSet,
+                    suggestion.itemIndex,
+                  ));
       notifier.notify({suggestion.changeSet.agentId});
       if (result.success && result.errorMessage == null) {
         // Pure success: the in-place resolve beat + the ticking pending count
@@ -553,13 +572,16 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     final messages = context.messages;
     final textDirection = Directionality.of(context);
     final view = View.of(context);
-    final service = ref.read(changeSetConfirmationServiceProvider);
     final notifier = ref.read(updateNotificationsProvider);
     try {
-      final applied = await service.rejectItem(
-        suggestion.changeSet,
-        suggestion.itemIndex,
-      );
+      final applied =
+          await (widget.onReject?.call() ??
+              ref
+                  .read(changeSetConfirmationServiceProvider)
+                  .rejectItem(
+                    suggestion.changeSet,
+                    suggestion.itemIndex,
+                  ));
       notifier.notify({suggestion.changeSet.agentId});
       if (applied) {
         // As with confirm: the in-place dismiss beat + pending count carry it,
@@ -746,18 +768,25 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
                 opacity: _collapseContentOpacity,
                 child: Opacity(
                   opacity: dimmed ? 0.45 : 1,
-                  child: ProposalRowContent(
-                    meta: meta,
-                    text: cleanText,
-                    lineThrough: lineThrough,
-                    isResolved: widget.isResolved,
-                    resolvedStatus: _resolvedStatus,
-                    busy: _busy,
-                    // While resolving, the badge below is the indicator — hide
-                    // the trailing buttons/spinner so they don't peek behind it.
-                    resolving: resolveKindLocal != null,
-                    onReject: _reject,
-                    onConfirm: _confirm,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ProposalRowContent(
+                        meta: meta,
+                        text: cleanText,
+                        lineThrough: lineThrough,
+                        isResolved: widget.isResolved,
+                        resolvedStatus: _resolvedStatus,
+                        busy: _busy,
+                        // While resolving, the badge below is the indicator — hide
+                        // the trailing buttons/spinner so they don't peek behind it.
+                        resolving: resolveKindLocal != null,
+                        onReject: _reject,
+                        onConfirm: _confirm,
+                      ),
+                      ?widget.details,
+                    ],
                   ),
                 ),
               ),

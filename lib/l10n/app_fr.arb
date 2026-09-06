@@ -4478,6 +4478,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Ajoutée → {title}",
+  "relationshipProposalEvidence": "Depuis l’échange du {date}",
+  "relationshipProposalUndoFailed": "Impossible d’annuler. La tâche a peut-être été modifiée.",
   "relationshipReachPrivacy": "Reste sur cet appareil · jamais partagé avec l'IA",
   "relationshipReachTitle": "Contacter",
   "relationshipRelinkContact": "Associer un autre contact",

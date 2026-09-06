@@ -11682,6 +11682,20 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Adăugată → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Din interacțiunea din $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Anularea nu a reușit. Este posibil ca sarcina să fi fost modificată.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Rămâne pe acest dispozitiv · niciodată partajat cu AI-ul';
 

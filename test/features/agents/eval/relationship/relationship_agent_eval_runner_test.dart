@@ -106,6 +106,45 @@ void main() {
     assistantContent: assistantContent,
   );
 
+  group('deferred relationship task policy', () {
+    RelationshipAgentEvalToolCall task({
+      String source = 'ci-commitment',
+      int index = 0,
+    }) => call(
+      'create_and_link_task',
+      jsonEncode({
+        'title': 'Commitment $index',
+        'description': 'I promised to send the checklist.',
+        'sourceCheckInId': source,
+        'reason': 'Explicit promise',
+      }),
+    );
+    test('accepts structured evidence and refuses an invented source', () {
+      expect(
+        classify('pr_explicit_commitment', [task()]),
+        RelationshipAgentEvalFailureCategory.none,
+      );
+      expect(
+        classify('pr_explicit_commitment', [task(source: 'invented')]),
+        RelationshipAgentEvalFailureCategory.argumentMismatch,
+      );
+    });
+    test('allows three distinct commitments but refuses a fourth', () {
+      expect(
+        classify('pr_bounded_commitments', [
+          for (var i = 0; i < 3; i++) task(index: i),
+        ]),
+        RelationshipAgentEvalFailureCategory.none,
+      );
+      expect(
+        classify('pr_bounded_commitments', [
+          for (var i = 0; i < 4; i++) task(index: i),
+        ]),
+        RelationshipAgentEvalFailureCategory.toolCallOverBudget,
+      );
+    });
+  });
+
   group('classifyRelationshipAgentResult — happy paths', () {
     test('a stale-briefing wake refreshing the briefing passes', () {
       expect(

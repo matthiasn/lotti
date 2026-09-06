@@ -4981,6 +4981,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Tillagd → {title}",
+  "relationshipProposalEvidence": "Från kontakten den {date}",
+  "relationshipProposalUndoFailed": "Kunde inte ångra. Uppgiften kan ha ändrats.",
   "relationshipReachPrivacy": "Stannar på den här enheten · delas aldrig med AI:n",
   "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Länka en annan kontakt",

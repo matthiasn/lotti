@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -173,6 +175,9 @@ void main() {
     conversationRepository = MockConversationRepository(conversationManager);
     when(() => conversationManager.messages).thenReturn(const []);
     upserts = [];
+    when(
+      () => repository.getProposalLedger(agentId, taskId: relationshipId),
+    ).thenAnswer((_) async => const ProposalLedger.empty());
     workflow = RelationshipAgentWorkflow(
       repository: repository,
       syncService: syncService,
@@ -248,6 +253,116 @@ void main() {
       pendingUserMessage: pendingUserMessage,
     ),
   );
+
+  void stubTaskProposal() {
+    stubGlmResolution();
+    conversationRepository
+      ..maxDelegateCalls = 1
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async {
+            expect(message, contains('checkInId=c-1'));
+            expect(message, contains('PROPOSALS'));
+            await strategy!.processToolCalls(
+              toolCalls: [
+                toolCall(RelationshipAgentToolNames.createAndLinkTask, {
+                  'title': 'Send Pip the checklist',
+                  'description': 'I promised to send the checklist.',
+                  'sourceCheckInId': 'c-1',
+                  'reason': 'An explicit commitment.',
+                }),
+                toolCall(
+                  RelationshipAgentToolNames.updateRelationshipReport,
+                  briefingArgs(),
+                  id: 'report',
+                ),
+                toolCall(
+                  RelationshipAgentToolNames.createRelationshipAd,
+                  adArgs(),
+                  id: 'ad',
+                ),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+  }
+
+  test(
+    'defers the task in a relationship-scoped change set with evidence',
+    () async {
+      stubTaskProposal();
+      expect((await run()).success, isTrue);
+      final set = upserts.whereType<ChangeSetEntity>().single;
+      expect(set.taskId, relationshipId);
+      expect(set.agentId, agentId);
+      expect(set.status, ChangeSetStatus.pending);
+      expect(set.items.single.args['sourceCheckInId'], 'c-1');
+      expect(
+        set.items.single.humanSummary,
+        'Create task: Send Pip the checklist',
+      );
+    },
+  );
+
+  for (final status in [
+    ChangeItemStatus.pending,
+    ChangeItemStatus.confirmed,
+    ChangeItemStatus.rejected,
+  ]) {
+    test('does not repeat a $status task when its rationale changes', () async {
+      stubTaskProposal();
+      expect((await run()).success, isTrue);
+      final previous = upserts.whereType<ChangeSetEntity>().single;
+      final item = previous.items.single.copyWith(
+        args: {...previous.items.single.args, 'reason': 'Different rationale'},
+      );
+      final entry = LedgerEntry(
+        changeSetId: 'previous',
+        itemIndex: 0,
+        toolName: item.toolName,
+        args: item.args,
+        humanSummary: item.humanSummary,
+        fingerprint: ChangeItem.fingerprint(item),
+        status: status,
+        createdAt: now,
+      );
+      when(
+        () => repository.getProposalLedger(agentId, taskId: relationshipId),
+      ).thenAnswer(
+        (_) async => ProposalLedger(
+          open: status == ChangeItemStatus.pending ? [entry] : [],
+          resolved: status == ChangeItemStatus.pending ? [] : [entry],
+        ),
+      );
+      upserts.clear();
+      conversationRepository.maxDelegateCalls = 2;
+      expect((await run()).success, isTrue);
+      expect(upserts.whereType<ChangeSetEntity>(), isEmpty);
+    });
+  }
+
+  test('a retry never replaces an already persisted proposal set', () async {
+    stubTaskProposal();
+    expect((await run()).success, isTrue);
+    final previous = upserts.whereType<ChangeSetEntity>().single;
+    when(
+      () => repository.getEntity(previous.id),
+    ).thenAnswer((_) async => previous);
+    upserts.clear();
+    conversationRepository.maxDelegateCalls = 2;
+    expect((await run()).success, isTrue);
+    expect(upserts.whereType<ChangeSetEntity>(), isEmpty);
+  });
 
   group('the €0 gates — no inference without a live fact', () {
     test('an agent with no link is a benign no-op', () async {

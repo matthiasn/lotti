@@ -11455,6 +11455,20 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Tillagd → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Från kontakten den $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Kunde inte ångra. Uppgiften kan ha ändrats.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Stannar på den här enheten · delas aldrig med AI:n';
 

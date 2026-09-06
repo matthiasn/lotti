@@ -9,9 +9,14 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -257,4 +262,62 @@ void main() {
     await tester.pump();
     expect(backs, 2);
   });
+  testWidgets(
+    'only durable agent replies attach proposals from their own run',
+    (tester) async {
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      final repository = MockRelationshipRepository();
+      when(
+        () => repository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => null);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(
+            body: RelationshipChatPane(relationshipId: relationshipId),
+          ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(repository),
+            relationshipSuggestionListProvider(relationshipId).overrideWith(
+              (ref) async => const RelationshipProposalSnapshot.empty(),
+            ),
+            agentIdentityProvider(
+              agentId,
+            ).overrideWith((ref) async => identity()),
+            agentChatProjectionProvider(agentId).overrideWith(
+              (ref) async => [
+                AgentChatMessage(
+                  id: 'user',
+                  role: AgentChatRole.user,
+                  text: 'What did I promise?',
+                  createdAt: DateTime(2026),
+                ),
+                AgentChatMessage(
+                  id: 'old-reply',
+                  role: AgentChatRole.agent,
+                  text: 'Earlier reply',
+                  createdAt: DateTime(2026),
+                ),
+                AgentChatMessage(
+                  id: 'reply',
+                  role: AgentChatRole.agent,
+                  text: 'A task is ready for confirmation.',
+                  createdAt: DateTime(2026),
+                  runKey: 'reply-run',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final band = tester.widget<RelationshipSuggestionsBand>(
+        find.byType(RelationshipSuggestionsBand),
+      );
+      expect(band.relationshipId, relationshipId);
+      expect(band.runKey, 'reply-run');
+      expect(band.showHistory, isTrue);
+      expect(find.text('A task is ready for confirmation.'), findsOneWidget);
+    },
+  );
 }

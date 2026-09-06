@@ -19,7 +19,7 @@ staleness cost, and that is the cheaper of the two.
 
 ## What is measured
 
-Six scenario families, one catalog
+Seven scenario families, one catalog
 (`relationship_agent_eval_scenarios.dart`, ids in parentheses):
 
 1. **Restraint** — the no-op wakes (`qt_*`): nothing changed → zero tool
@@ -45,8 +45,12 @@ Six scenario families, one catalog
    structurally absent from FACTS (ADR 0041 §5), and the model says so
    instead of inventing a number.
 
+7. **Task proposals** (`pr_*`) — explicit captured commitments produce deferred
+   tasks with structured check-in evidence; contact channels do not create
+   tasks, rejected commitments are not repeated, and a wake queues at most three.
+
 Every expectation derives from the policy matrix
-`relationshipAgentPolicyMatrix` (R1–R17) in the spec file — the single
+`relationshipAgentPolicyMatrix` (R1–R21) in the spec file — the single
 source of truth. The offline self-test enforces that every policy row has
 a scenario.
 
@@ -55,7 +59,7 @@ a scenario.
 The goal suite's tier 1 stated its own headline limitation: authored FACTS
 blocks that can drift from what the runtime actually sends. This suite
 closes that from day one — every scenario's world (relationship,
-check-ins, linked tasks, previous briefing, banners) is rendered through
+check-ins, linked tasks, previous briefing, banners, proposal ledger) is rendered through
 the REAL `RelationshipFactsRenderer` over a cadence derivation from the
 REAL `RelationshipAgentPhaseA.deriveCadenceFacts`, and the wake message is
 composed with the workflow's own suffixes. A renderer change moves the
@@ -68,7 +72,7 @@ The classifier mirrors `RelationshipAgentStrategy` exactly — every shape
 rule it enforces is one the runtime rejects in-conversation (band enum,
 required briefing fields, banner tone/animation catalogs, the
 explicit-offset snooze instant, the active-adId allow-list, one reply and
-one banner per wake), and where the runtime is lenient the classifier is
+one banner per wake, evidence IDs and the three-task limit), and where the runtime is lenient the classifier is
 too (an unknown accent defaults to `calm`). Stricter than the code under
 test is the same defect as looser: both measure the harness.
 
@@ -106,7 +110,7 @@ fvm flutter test test/features/agents/eval/relationship/ \
 
 One sample is not a measurement. The goal suite measured its own noise
 floor over five identical runs — total range 10, sd 3.7 per 250 cases — so a
-single pass over this suite's 24 cases cannot separate a real regression
+single pass over this suite's cases cannot separate a real regression
 from a redraw. Use the matrix runner, which drives N samples per model as
 separate processes (GetIt is a global, so two runs cannot share a Dart VM)
 and merges the artifacts into one report:
@@ -145,6 +149,10 @@ these are thinking models, and a tiny budget makes a *working* model
 return empty content with `finish_reason: length`, indistinguishable from
 a broken one. A 401 is an authentication failure (missing, invalid or
 expired key), never throttling — that arrives as a 429.
+
+The task-proposal policy rows were added after the historical live reports
+below. Offline tests cover their classifier and production contract; these
+changes have not yet been measured in a new live model matrix.
 
 ## Cost (observed, not a target)
 

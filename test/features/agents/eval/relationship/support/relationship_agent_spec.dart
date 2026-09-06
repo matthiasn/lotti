@@ -153,4 +153,25 @@ const relationshipAgentPolicyMatrix = [
         'the briefing may cite them by title and status, and invents '
         'neither a task nor a status FACTS does not carry',
   ),
+  RelationshipAgentPolicyRule(
+    id: 'R18',
+    given: 'a captured check-in contains an explicit commitment',
+    expected:
+        'propose a task with the exact sourceCheckInId, without claiming it exists',
+  ),
+  RelationshipAgentPolicyRule(
+    id: 'R19',
+    given: 'contact channels exist but no captured commitment exists',
+    expected: 'never propose a task from contact channels',
+  ),
+  RelationshipAgentPolicyRule(
+    id: 'R20',
+    given: 'the proposal ledger records a rejected task',
+    expected: 'never re-propose the rejected commitment, including paraphrases',
+  ),
+  RelationshipAgentPolicyRule(
+    id: 'R21',
+    given: 'more than three explicit commitments in the current evidence',
+    expected: 'queue no more than three task proposals in one wake',
+  ),
 ];

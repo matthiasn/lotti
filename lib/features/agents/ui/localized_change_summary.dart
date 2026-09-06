@@ -87,6 +87,7 @@ String? localizedChangeSummary(
     messages.agentSummaryUpdateProjectStatus(
       _projectStatus(messages, args['status']),
     ),
+  'create_and_link_task' => _string(args['title'], fallback: '?'),
   ProjectAgentToolNames.createTask => messages.agentSummaryCreateTask(
     _string(args['title'], fallback: '?'),
   ),

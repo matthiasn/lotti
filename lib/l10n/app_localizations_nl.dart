@@ -11464,6 +11464,20 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Toegevoegd → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'Uit het contact van $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Ongedaan maken is mislukt. De taak is mogelijk gewijzigd.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Blijft op dit apparaat · nooit gedeeld met de AI';
 

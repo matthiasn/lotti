@@ -4980,6 +4980,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Adicionada → {title}",
+  "relationshipProposalEvidence": "Do contacto de {date}",
+  "relationshipProposalUndoFailed": "Não foi possível desfazer. A tarefa pode ter sido alterada.",
   "relationshipReachPrivacy": "Fica neste dispositivo · nunca partilhado com a IA",
   "relationshipReachTitle": "Contactar",
   "relationshipRelinkContact": "Associar outro contacto",

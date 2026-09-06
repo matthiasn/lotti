@@ -11387,6 +11387,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String relationshipProposalAdded(String title) {
+    return 'Added → $title';
+  }
+
+  @override
+  String relationshipProposalEvidence(String date) {
+    return 'From the check-in on $date';
+  }
+
+  @override
+  String get relationshipProposalUndoFailed =>
+      'Could not undo. The task may have changed.';
+
+  @override
   String get relationshipReachPrivacy =>
       'Stays on this device · never shared with the AI';
 

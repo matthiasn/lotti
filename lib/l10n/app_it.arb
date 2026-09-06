@@ -4981,6 +4981,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Aggiunta → {title}",
+  "relationshipProposalEvidence": "Dal contatto del {date}",
+  "relationshipProposalUndoFailed": "Impossibile annullare. L’attività potrebbe essere stata modificata.",
   "relationshipReachPrivacy": "Resta su questo dispositivo · mai condiviso con l'IA",
   "relationshipReachTitle": "Contatti",
   "relationshipRelinkContact": "Collega un altro contatto",

@@ -150,6 +150,7 @@ class AgentProposalLedger {
         }
         final entry = LedgerEntry(
           changeSetId: set.id,
+          runKey: set.runKey,
           itemIndex: i,
           toolName: item.toolName,
           args: item.args,

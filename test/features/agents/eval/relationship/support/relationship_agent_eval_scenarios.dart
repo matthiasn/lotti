@@ -14,6 +14,9 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 
 import 'relationship_agent_eval_fixtures.dart';
@@ -933,6 +936,90 @@ buildRelationshipAgentEvalScenarios() async {
     requiredAssistantContentTermGroups: const [
       ['interview', '12th'],
       ['flat sale', 'flat', 'sale'],
+    ],
+  );
+
+  const commitment = 'I promised to send Tove the checklist.';
+  final proposalArgs = <String, dynamic>{
+    'title': 'Send Tove the checklist',
+    'description': commitment,
+    'sourceCheckInId': 'ci-commitment',
+    'reason': 'Explicit commitment.',
+  };
+  RelationshipEvalWorld proposalWorld({
+    bool rejected = false,
+    bool many = false,
+  }) => RelationshipEvalWorld(
+    relationship: relationshipEvalTove(),
+    checkIns: [
+      relationshipEvalCheckIn(
+        id: 'ci-commitment',
+        at: DateTime(2026, 8, 7, 12),
+        interactionType: CheckInInteractionType.call,
+        narrative: many
+            ? '$commitment I promised to book the flights. '
+                  'I promised to pack the fish. I promised to send the photos.'
+            : commitment,
+      ),
+    ],
+    previousReport: relationshipEvalPreviousBriefing(
+      createdAt: DateTime(2026, 8, 6),
+    ),
+    proposals: rejected
+        ? ProposalLedger(
+            open: const [],
+            resolved: [
+              LedgerEntry(
+                changeSetId: 'old-set',
+                itemIndex: 0,
+                toolName: 'create_and_link_task',
+                args: proposalArgs,
+                humanSummary: 'Create task: Send Tove the checklist',
+                fingerprint: ChangeItem.fingerprintFromParts(
+                  'create_and_link_task',
+                  proposalArgs,
+                ),
+                status: ChangeItemStatus.rejected,
+                verdict: ChangeDecisionVerdict.rejected,
+                createdAt: DateTime(2026, 8, 7, 13),
+              ),
+            ],
+          )
+        : const ProposalLedger.empty(),
+  );
+  await add(
+    id: 'pr_explicit_commitment',
+    policyRuleId: 'R18',
+    description: 'An explicit promise earns a deferred task, with evidence.',
+    world: proposalWorld(),
+    expectedToolCalls: const [
+      RelationshipAgentExpectedToolCall(
+        'create_and_link_task',
+        expectedArgumentsSubset: {'sourceCheckInId': 'ci-commitment'},
+      ),
+    ],
+  );
+  await add(
+    id: 'pr_no_channel_tasks',
+    policyRuleId: 'R19',
+    description: 'Channels cannot manufacture a commitment.',
+    world: _quietWorld(),
+    forbiddenToolNames: const ['create_and_link_task'],
+  );
+  await add(
+    id: 'pr_rejected_commitment',
+    policyRuleId: 'R20',
+    description: 'A rejected promise is not proposed again.',
+    world: proposalWorld(rejected: true),
+    forbiddenToolNames: const ['create_and_link_task'],
+  );
+  await add(
+    id: 'pr_bounded_commitments',
+    policyRuleId: 'R21',
+    description: 'Four promises produce at most three proposals.',
+    world: proposalWorld(many: true),
+    expectedToolCalls: const [
+      RelationshipAgentExpectedToolCall('create_and_link_task'),
     ],
   );
 

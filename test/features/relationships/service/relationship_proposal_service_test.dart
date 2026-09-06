@@ -1,0 +1,239 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
+import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
+import '../../agents/test_data/change_set_factories.dart';
+
+void main() {
+  setUpAll(registerAllFallbackValues);
+  final set = makeTestChangeSet(
+    agentId: relationshipAgentIdFor('person'),
+    taskId: 'person',
+    items: const [
+      ChangeItem(
+        toolName: 'create_and_link_task',
+        args: {'title': 'Pack fish'},
+        humanSummary: 'Create task: Pack fish',
+      ),
+    ],
+  );
+  final confirmed = set.copyWith(
+    items: [set.items.single.copyWith(status: ChangeItemStatus.confirmed)],
+  );
+  late MockChangeSetConfirmationService confirmation;
+  late MockAgentRepository repository;
+  late MockAgentSyncService sync;
+  late MockJournalDb db;
+  late MockRelationshipRepository relationships;
+  late RelationshipProposalService service;
+  late List<Task> removed;
+  late bool removeSucceeds;
+  setUp(() {
+    confirmation = MockChangeSetConfirmationService();
+    repository = MockAgentRepository();
+    sync = MockAgentSyncService();
+    db = MockJournalDb();
+    when(
+      () => db.linksForEntryIdsBidirectional(any()),
+    ).thenAnswer((_) async => []);
+    relationships = MockRelationshipRepository();
+    removed = [];
+    removeSucceeds = true;
+    service = RelationshipProposalService(
+      confirmation: confirmation,
+      repository: repository,
+      syncService: sync,
+      journalDb: db,
+      relationshipRepository: relationships,
+      taskRemover: (task) async {
+        removed.add(task);
+        return removeSucceeds;
+      },
+    );
+    when(() => repository.getEntity(set.id)).thenAnswer((_) async => confirmed);
+    when(
+      () => repository.getEntitiesByAgentId(
+        set.agentId,
+        type: AgentEntityTypes.changeDecision,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        makeTestChangeDecision(
+          agentId: set.agentId,
+          changeSetId: set.id,
+          args: {RelationshipProposalService.receiptKey: testTask.toJson()},
+        ),
+      ],
+    );
+    when(
+      () => db.journalEntityById(testTask.id),
+    ).thenAnswer((_) async => testTask);
+    when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
+    when(
+      () => relationships.unlinkTask(
+        relationshipId: set.taskId,
+        taskId: testTask.id,
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => relationships.linkTask(
+        relationshipId: set.taskId,
+        taskId: testTask.id,
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => confirmation.reopenItem(any(), any(), revert: any(named: 'revert')),
+    ).thenAnswer((invocation) async {
+      final revert =
+          invocation.namedArguments[#revert] as Future<bool> Function()?;
+      return revert == null || await revert();
+    });
+  });
+
+  test(
+    'confirmation persists a task receipt on the decision, leaving proposal args intact',
+    () async {
+      when(() => confirmation.confirmItem(set, 0)).thenAnswer(
+        (_) async => RelationshipTaskCreationResult(testTask),
+      );
+      expect((await service.confirm(set, 0)).success, isTrue);
+      expect(await service.receipt(set, 0), testTask);
+      verify(() => sync.upsertEntity(any())).called(1);
+      expect(set.items.single.args, {'title': 'Pack fish'});
+    },
+  );
+  test(
+    'undo reads the durable receipt and removes an unchanged task after unlinking',
+    () async {
+      expect(await service.undo(confirmed, 0), isTrue);
+      expect(removed, [testTask]);
+      verify(
+        () => relationships.unlinkTask(
+          relationshipId: set.taskId,
+          taskId: testTask.id,
+        ),
+      ).called(1);
+    },
+  );
+  test('undo refuses a task changed since confirmation', () async {
+    when(() => db.journalEntityById(testTask.id)).thenAnswer(
+      (_) async =>
+          testTask.copyWith(data: testTask.data.copyWith(title: 'Edited')),
+    );
+    expect(await service.undo(confirmed, 0), isFalse);
+    expect(removed, isEmpty);
+    verifyNever(
+      () => relationships.unlinkTask(
+        relationshipId: set.taskId,
+        taskId: testTask.id,
+      ),
+    );
+  });
+  test(
+    'a failed delete restores the relationship link and refuses undo',
+    () async {
+      removeSucceeds = false;
+      expect(await service.undo(confirmed, 0), isFalse);
+      verify(
+        () => relationships.linkTask(
+          relationshipId: set.taskId,
+          taskId: testTask.id,
+        ),
+      ).called(1);
+    },
+  );
+  test('rejection makes no journal mutation', () async {
+    when(() => confirmation.rejectItem(set, 0)).thenAnswer((_) async => true);
+    expect(await service.reject(set, 0), isTrue);
+    expect(removed, isEmpty);
+    verifyNever(() => db.journalEntityById(any()));
+  });
+
+  test(
+    'receipt write failure preserves success and the creation snapshot',
+    () async {
+      when(
+        () => confirmation.confirmItem(set, 0),
+      ).thenAnswer((_) async => RelationshipTaskCreationResult(testTask));
+      when(() => sync.upsertEntity(any())).thenThrow(StateError('offline'));
+      expect((await service.confirm(set, 0)).success, isTrue);
+      expect(await service.receipt(set, 0), testTask);
+      verifyNever(() => db.journalEntityById(any()));
+    },
+  );
+
+  test('malformed receipt cannot enable undo', () {
+    expect(
+      RelationshipProposalService.decodeReceipt({'runtimeType': 'task'}),
+      isNull,
+    );
+    expect(RelationshipProposalService.decodeReceipt('broken'), isNull);
+  });
+
+  test(
+    'an edit during unlink refuses deletion and restores the link',
+    () async {
+      var reads = 0;
+      when(() => db.journalEntityById(testTask.id)).thenAnswer(
+        (_) async => reads++ == 0
+            ? testTask
+            : testTask.copyWith(
+                data: testTask.data.copyWith(title: 'Edited during unlink'),
+              ),
+      );
+      expect(await service.undo(confirmed, 0), isFalse);
+      expect(removed, isEmpty);
+      verify(
+        () => relationships.linkTask(
+          relationshipId: set.taskId,
+          taskId: testTask.id,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'another agent scope cannot reject or reopen a relationship proposal',
+    () async {
+      final foreign = set.copyWith(agentId: 'task-agent');
+      expect(await service.reject(foreign, 0), isFalse);
+      expect(await service.undo(foreign, 0), isFalse);
+      verifyNever(() => confirmation.rejectItem(any(), any()));
+      verifyNever(() => repository.getEntity(any()));
+    },
+  );
+  test(
+    'a newly linked note prevents undo even if the task itself is unchanged',
+    () async {
+      when(() => db.linksForEntryIdsBidirectional({testTask.id})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'new-note-link',
+            fromId: testTask.id,
+            toId: 'note',
+            createdAt: testTask.meta.createdAt,
+            updatedAt: testTask.meta.createdAt,
+            vectorClock: null,
+          ),
+        ],
+      );
+      expect(await service.undo(confirmed, 0), isFalse);
+      expect(removed, isEmpty);
+      verifyNever(
+        () => relationships.unlinkTask(
+          relationshipId: set.taskId,
+          taskId: testTask.id,
+        ),
+      );
+    },
+  );
+}

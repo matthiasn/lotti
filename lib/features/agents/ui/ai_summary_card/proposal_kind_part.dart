@@ -15,6 +15,7 @@ enum ProposalKind {
   status,
   label,
   due,
+  task,
 }
 
 class KindMeta {
@@ -29,6 +30,8 @@ class KindMeta {
 /// each one onto the closest visual kind.
 ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
   switch (toolName) {
+    case 'create_and_link_task':
+      return ProposalKind.task;
     case TaskAgentToolNames.addMultipleChecklistItems:
     case TaskAgentToolNames.addChecklistItem:
     case TaskAgentToolNames.createFollowUpTask:
@@ -65,6 +68,8 @@ ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
 KindMeta kindMeta(BuildContext context, ProposalKind kind) {
   final messages = context.messages;
   switch (kind) {
+    case ProposalKind.task:
+      return KindMeta(label: messages.entryTypeLabelTask);
     case ProposalKind.add:
       return KindMeta(
         label: messages.aiCardProposalKindAdd,

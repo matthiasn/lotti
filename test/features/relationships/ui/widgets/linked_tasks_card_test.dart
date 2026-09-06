@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/get_it.dart';
@@ -165,4 +167,24 @@ void main() {
     expect(find.text('Send photos'), findsOneWidget);
     expect(find.text('Prepare the call'), findsOneWidget);
   });
+
+  testWidgets(
+    'newly confirmed tasks highlight briefly without selecting other rows',
+    (tester) async {
+      await pump(tester, [task('new'), task('existing')]);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(LinkedTasksCard)),
+      );
+      container
+          .read(relationshipTaskHighlightProvider.notifier)
+          .highlight('new');
+      await tester.pump();
+      DesignSystemListItem row(String id) =>
+          tester.widget(find.byKey(ValueKey('person-task-$id')));
+      expect(row('new').activated, isTrue);
+      expect(row('existing').activated, isFalse);
+      await tester.pump(const Duration(seconds: 3));
+      expect(row('new').activated, isFalse);
+    },
+  );
 }

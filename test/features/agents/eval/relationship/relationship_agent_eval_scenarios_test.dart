@@ -313,11 +313,12 @@ void main() {
       );
     });
 
-    test('tool names use the shared reply carrier or '
+    test('tool names use shared conversation and deferred tools or '
         'verb_relationship_noun', () {
       for (final tool in relationshipAgentTools) {
         expect(
           tool.name == RelationshipAgentToolNames.replyToUser ||
+              relationshipDeferredTools.contains(tool.name) ||
               RegExp(r'^[a-z]+_relationship_[a-z0-9_]+$').hasMatch(tool.name),
           isTrue,
           reason: tool.name,

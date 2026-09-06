@@ -4478,6 +4478,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Añadida → {title}",
+  "relationshipProposalEvidence": "Del contacto del {date}",
+  "relationshipProposalUndoFailed": "No se pudo deshacer. Puede que la tarea haya cambiado.",
   "relationshipReachPrivacy": "Se queda en este dispositivo · nunca se comparte con la IA",
   "relationshipReachTitle": "Contacto",
   "relationshipRelinkContact": "Vincular otro contacto",

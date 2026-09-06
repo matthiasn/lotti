@@ -6700,6 +6700,23 @@
       }
     }
   },
+  "relationshipProposalAdded": "Added → {title}",
+  "@relationshipProposalAdded": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipProposalEvidence": "From the check-in on {date}",
+  "@relationshipProposalEvidence": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipProposalUndoFailed": "Could not undo. The task may have changed.",
   "relationshipReachPrivacy": "Stays on this device · never shared with the AI",
   "relationshipReachTitle": "Reach",
   "relationshipRelinkContact": "Link a different contact",

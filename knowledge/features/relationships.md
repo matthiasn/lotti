@@ -649,19 +649,83 @@ just now" does not stay on screen for hours. *Mark important* on the plain
 card also mints the agent through `ensureAgentForRelationship`, the same
 lazy-create call the edit form makes.
 
-Three things the card deliberately does not have. The chat entry lives in the
-page's hero. There is no *Automatic updates* switch, because the relationship
-runtime never reads `AgentConfig.automaticUpdatesEnabled` — offering the
-switch would lie. And the suggestions band from the design waits for the
-agent tools that would fill it (schedule a call, create a task; see the plan)
-— the generic change-set ledger is keyed by task, and a band with no producer
-would be untestable theatre.
+The chat entry lives in the page's hero. There is no *Automatic updates*
+switch, because the relationship runtime never reads
+`AgentConfig.automaticUpdatesEnabled`. Task proposals appear below the TL;DR
+and above the footer, including when a later wake fails. Their scope and
+confirmation path are described below.
 
 The pills are the header block's own: [`relationshipCadencePill`](../../lib/features/relationships/ui/widgets/person_header.dart)
 renders the list model's cadence fact under a per-host key prefix, and the
 health band pill shares `relationshipHealthBandColor`. The cost pill sums
 `agentTokenUsageSummariesProvider`; the "as of" meta uses the shared
 [`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
+
+## Deferred task suggestions
+
+[`relationship_agent_contract.dart`](../../lib/features/relationships/workflow/relationship_agent_contract.dart)
+exposes `create_and_link_task` as a deferred tool. It requires an explicit
+commitment, a quoted description, a structured `sourceCheckInId`, and a reason;
+`dueDate` is optional and must be a real calendar date. The renderer includes
+check-in IDs in its ten-entry window and the relationship-scoped `PROPOSALS`
+ledger. Pending, confirmed and rejected decisions therefore feed the next wake;
+contact channels remain outside FACTS. The strategy accepts only IDs from that
+rendered window, deduplicates source/title pairs, and queues at most three tasks.
+
+The workflow persists those items inside its existing output transaction,
+rechecking that the person is live, important and active. A deterministic
+agent/run change-set ID prevents a retry overwriting decisions. A fresh ledger
+read suppresses structural and display duplicates. The historic `taskId` column
+stores the relationship ID: the ledger already supports arbitrary subjects,
+so no schema migration is involved. Paraphrase suppression remains an LLM
+policy; deterministic dedup cannot recognize every equivalent commitment.
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: validated proposal persisted
+  pending --> confirmed: user confirms
+  pending --> rejected: user rejects
+  confirmed --> pending: retryable dispatch failure
+  confirmed --> retracted: permanent dispatch failure
+  rejected --> pending: undo rejection
+  confirmed --> pending: undo removes untouched task and link
+```
+
+[`relationship_tool_dispatcher.dart`](../../lib/features/relationships/workflow/relationship_tool_dispatcher.dart)
+is the only apply path. It rechecks visible evidence, its quoted narrative,
+and current consent; creates a task with the person's category, inherited
+privacy (also preserving private evidence), evidence link and proposed due
+date; then links it to the person. A link failure tombstones the new task;
+a failed compensation is non-retryable to avoid duplicate creation. The shared
+category-default assignment helper provisions its task agent.
+
+[`relationship_proposal_service.dart`](../../lib/features/relationships/service/relationship_proposal_service.dart)
+wraps the generic confirmation service. The exact creation snapshot is stored
+under `_relationshipTaskReceipt` on the user decision's args, leaving immutable
+proposal args and fingerprints unchanged. It supplies the durable task
+navigation destination and guards undo against task edits. Undo unlinks,
+rechecks the task and additional journal links, then tombstones it; a refused delete restores the link.
+Malformed or absent receipts disable confirmed-task undo. A receipt write
+failure after successful creation is logged and keeps confirmation successful;
+the local receipt remains usable, but its destination/undo may be unavailable
+after restart until a durable receipt exists. Cross-database confirmation and
+journal writes are not one atomic transaction.
+
+[`relationship_proposal_providers.dart`](../../lib/features/relationships/state/relationship_proposal_providers.dart)
+reads the agent/person ledger and receipt decisions. Ledger entries carry their
+originating run key from the existing query, avoiding a per-history-row read. The band retains previous
+async data and resolving rows while their shared task-card animations finish.
+It folds after three pending rows, offers bulk confirmation only for a single
+kind, links evidence to the check-in editor, and provides handled history and
+undo. Confirmation briefly highlights the created task in the Tasks card.
+It does not use the task-specific `ChangeSetNotificationService`.
+
+The shared chat projection carries each reply's `runKey`.
+[`relationship_chat_pane.dart`](../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart)
+uses the existing attachment slot to render the same band filtered to that
+run, including its handled history. Card and chat act on the same decisions.
+Call scheduling and task-note proposals remain separate follow-up work; this
+tool does not create Daily OS blocks or OS reminders.
 
 ## The check-in capture sheet
 

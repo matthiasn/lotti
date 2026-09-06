@@ -4478,6 +4478,9 @@
       }
     }
   },
+  "relationshipProposalAdded": "Adăugată → {title}",
+  "relationshipProposalEvidence": "Din interacțiunea din {date}",
+  "relationshipProposalUndoFailed": "Anularea nu a reușit. Este posibil ca sarcina să fi fost modificată.",
   "relationshipReachPrivacy": "Rămâne pe acest dispozitiv · niciodată partajat cu AI-ul",
   "relationshipReachTitle": "Contact",
   "relationshipRelinkContact": "Asociați alt contact",
