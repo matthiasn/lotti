@@ -4,6 +4,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3]
+
+### Added
+- **Searchable on-device speech model catalog with 22 multilingual models.**
+  Choose from Whisper Medium, Large v3 and Turbo, Parakeet, SenseVoice,
+  Dolphin, Omnilingual, FireRed, Paraformer, WeNet, Qwen3 ASR, and FunASR
+  Nano. Filter by model family and download the models you want. The Whisper
+  Large v3 INT8 download is about 1.78 GB.
+
+### Changed
+- **The People list now reads like the rest of the app.** People are banded
+  into *Due*, *On track* and *Not enrolled*, with the lapsed ones first; a
+  summary card at the top counts who is due right now against everyone the
+  agent is watching and names who lapses next and on which day. Each row says
+  what the last contact was and when (`Call · Today 12:44 · Weekly`), and the
+  pill tells the truth: a lapsed cadence reads *3 days over* instead of a
+  confusing "Due Sun". An important person is marked with a sparkle rather
+  than a star. On desktop the tab becomes a list/detail split like Tasks, with
+  the person's page beside the list and a labelled *Add person* button.
+- **A person's page now reads like a task's.** A cover-style header carries
+  back, *Talk to agent*, edit and a menu (link contact, delete), with the
+  person's avatar hanging off it; below it the category and *Important*, the
+  full name, the nickname and when you last spoke, and pills that tell the
+  truth about the cadence (*On track · Weekly*, or *Due since Sat · 5 days
+  over*), the health band once a briefing exists, and the next due day. The
+  sections follow in one order — Briefing, *Next time* (what your latest
+  check-in asked you to bring up or avoid), Check-ins (`Today 12:44 · Call ·
+  11 min`, the sentiment as a coloured pill, topics as tags), *Reach* (the
+  person's channels, with the note that they stay on this device), Tasks — and
+  the page ends in a bar with *Log check-in*, a mic that starts a spoken
+  check-in straight away, and a call or email button for the first channel
+  your device can open. The floating button is gone. Coming back from a call
+  placed here, the offer to log it now says who you called, how long ago and
+  roughly how long it lasted.
+- **The briefing card on a person's page now says what the agent is doing.**
+  Someone you have not marked important gets a plain card explaining what
+  *important* turns on, with the switch right there. Once enrolled, the card
+  shows a cadence pill that is always current, and one of six faces: no
+  briefing yet (*Brief now*), writing one, failed (the reason, and *Choose a
+  model* or *Try again* as the fix), up to date (when it was written, what it
+  has cost, which model answers, *Update now*), out of date after a new
+  check-in, or due — where the footer turns into *Log check-in* and *Call*.
+- **On-device speech models are easier to manage.** Compact download controls
+  show model size, language coverage and installation progress. Failed model
+  setup can be retried without downloading the files again.
+
+### Fixed
+- **Installed speech models now reflect verified downloads on this device.**
+  Models become selectable only after installation. Reuse existing downloads
+  when adding a model to another provider.
+- **sherpa-onnx appears when adding your first provider**, including on Linux.
+- **Large speech models start faster.** Readiness checks reuse verification
+  for unchanged files instead of repeatedly reading the model before
+  transcription.
+
 ## [1.1.2]
 
 ### Added
