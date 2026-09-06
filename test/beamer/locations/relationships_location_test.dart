@@ -16,19 +16,25 @@ void main() {
   group('RelationshipsLocation', () {
     late MockNavService navService;
     late ValueNotifier<String?> selected;
+    late ValueNotifier<bool> chatOpen;
 
     setUp(() {
       navService = MockNavService();
       selected = ValueNotifier<String?>(null);
+      chatOpen = ValueNotifier<bool>(false);
       when(() => navService.isDesktopMode).thenReturn(false);
       when(
         () => navService.desktopSelectedRelationshipId,
       ).thenReturn(selected);
+      when(
+        () => navService.desktopRelationshipChatOpen,
+      ).thenReturn(chatOpen);
       getIt.registerSingleton<NavService>(navService);
     });
 
     tearDown(() async {
       selected.dispose();
+      chatOpen.dispose();
       await getIt.unregister<NavService>();
     });
 
@@ -142,16 +148,32 @@ void main() {
         expect(selected.value, isNull);
       });
 
-      testWidgets('the chat still stacks as its own page above the list', (
+      testWidgets('the chat is the detail pane, not a page above the list', (
         tester,
       ) async {
         final context = await localizedContext(tester);
 
         final pages = pagesFor(context, '/people/rel-1/chat');
 
-        expect(pages, hasLength(2));
-        expect(pages[0].child, isA<RelationshipsPage>());
-        expect(pages[1].child, isA<RelationshipChatPage>());
+        // One page: the split itself. The chat rides the pane flag, so the
+        // URL still names the person and the list stays beside the chat.
+        expect(pages, hasLength(1));
+        expect(pages.single.child, isA<RelationshipsPage>());
+        expect(selected.value, 'rel-1');
+        expect(chatOpen.value, isTrue);
+      });
+
+      testWidgets('leaving the chat route closes the pane again', (
+        tester,
+      ) async {
+        final context = await localizedContext(tester);
+
+        pagesFor(context, '/people/rel-1/chat');
+        expect(chatOpen.value, isTrue);
+
+        pagesFor(context, '/people/rel-1');
+
+        expect(chatOpen.value, isFalse);
         expect(selected.value, 'rel-1');
       });
     });

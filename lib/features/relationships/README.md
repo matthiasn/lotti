@@ -41,9 +41,11 @@ the `enable_relationships` flag):
   (`RelationshipLink` both ways, a picker that also creates the task when
   none exists yet, per-row unlink) — above a sticky action bar: *Log
   check-in*, a mic that opens the capture sheet already recording, and the
-  first channel the platform can open. The add/edit person modal (name, nickname, importance,
-  cadence presets, status, and the manual contact-channel editor — desktop
-  parity per ADR 0041 §2), and the check-in capture sheet: how it felt
+  first channel the platform can open. The add/edit person modal — three
+  cards (*Who* · *Important* · *How to reach them*), the category as a colour
+  dot, cadence presets that appear once importance is on, and the manual
+  contact-channel editor beside *or from contacts* where an address book
+  exists (desktop parity per ADR 0041 §2) — and the check-in capture sheet: how it felt
   (user-set sentiment — never AI-filled, ADR 0038), what you talked about
   (or *Speak instead*), when and how long (interaction type, a *Started*
   date and time, a duration picked from the lengths you log most or spun on
@@ -69,7 +71,9 @@ the `enable_relationships` flag):
   failed (the reason, with *Choose a model* or *Try again* as the fix),
   current (*Update now*, the cost so far, the model row), out of date, and
   due (*Log check-in* · *Call*). `/people/<id>/chat`
-  opens the per-person agent chat from the page's hero. A briefing runs on the AI profile of the
+  opens the per-person agent chat from the page's hero, under a header that
+  names the agent and what it can see — a full page on phones, the detail
+  pane itself on desktop, where *Agent internals* sits beside it. A briefing runs on the AI profile of the
   person's category unless the person has one of their own. Banners surface through the
   kind-agnostic channel (`lib/features/nudges/`), tapping through to the
   person.

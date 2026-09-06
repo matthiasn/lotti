@@ -5,16 +5,24 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -68,15 +76,61 @@ String relationshipStatusLabel(
   RelationshipArchived() => context.messages.relationshipStatusArchived,
 };
 
+/// What the modal's pinned action bar needs from the form inside it: the
+/// save intent and whether it is currently allowed. The form publishes after
+/// every state change; the bar listens. Delete is not here — a person is
+/// deleted from the page's kebab, never from inside their own edit sheet.
+class RelationshipFormHandle extends ChangeNotifier {
+  Future<void> Function()? _save;
+  bool _canSave = false;
+  bool _isEditing = false;
+
+  bool get canSave => _canSave;
+
+  /// Whether the sheet is editing an existing person, which decides the
+  /// primary action's label (*Save* versus *Create*).
+  bool get isEditing => _isEditing;
+
+  Future<void> save() => _save?.call() ?? Future.value();
+
+  void publish({
+    required Future<void> Function()? save,
+    required bool canSave,
+    required bool isEditing,
+  }) {
+    _save = save;
+    _canSave = canSave;
+    _isEditing = isEditing;
+    notifyListeners();
+  }
+}
+
+/// Room under the form for the pinned action bar, so the last field can
+/// scroll clear of it (the check-in sheet's measurement).
+EdgeInsets _formPadding(BuildContext context) {
+  final tokens = context.designTokens;
+  return EdgeInsets.fromLTRB(
+    tokens.spacing.step5,
+    tokens.spacing.step4,
+    tokens.spacing.step5,
+    tokens.spacing.step11 + tokens.spacing.step6,
+  );
+}
+
 /// Opens the responsive add-person overlay. Resolves to the created
 /// [RelationshipEntry], or `null` when dismissed.
 Future<RelationshipEntry?> showRelationshipCreateModal({
   required BuildContext context,
 }) {
+  final handle = RelationshipFormHandle();
   return ModalUtils.showSinglePageModal<RelationshipEntry>(
     context: context,
     title: context.messages.relationshipCreateTitle,
-    builder: (modalContext) => const RelationshipForm(),
+    padding: _formPadding(context),
+    stickyActionBarBuilder: (_) => RelationshipFormStickyActions(
+      handle: handle,
+    ),
+    builder: (modalContext) => RelationshipForm(handle: handle),
   );
 }
 
@@ -86,11 +140,54 @@ Future<RelationshipEntry?> showRelationshipEditModal({
   required BuildContext context,
   required RelationshipEntry relationship,
 }) {
+  final handle = RelationshipFormHandle();
   return ModalUtils.showSinglePageModal<RelationshipEntry>(
     context: context,
     title: context.messages.relationshipEditTitle,
-    builder: (modalContext) => RelationshipForm(initial: relationship),
+    padding: _formPadding(context),
+    stickyActionBarBuilder: (_) => RelationshipFormStickyActions(
+      handle: handle,
+    ),
+    builder: (modalContext) => RelationshipForm(
+      initial: relationship,
+      handle: handle,
+    ),
   );
+}
+
+/// The modal's pinned actions: *Save* reachable without scrolling past three
+/// cards of fields, Cancel beside it. Reads the form through its [handle].
+class RelationshipFormStickyActions extends StatelessWidget {
+  const RelationshipFormStickyActions({required this.handle, super.key});
+
+  final RelationshipFormHandle handle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return ListenableBuilder(
+      listenable: handle,
+      builder: (context, _) => DesignSystemModalActionBar(
+        glass: true,
+        padding: EdgeInsets.all(tokens.spacing.step5),
+        secondary: [
+          DesignSystemButton(
+            key: const ValueKey('person-form-cancel'),
+            label: messages.cancelButton,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+        primary: DesignSystemButton(
+          key: const ValueKey('person-form-save'),
+          label: handle.isEditing ? messages.saveButton : messages.createButton,
+          fullWidth: true,
+          onPressed: handle.canSave ? handle.save : null,
+        ),
+      ),
+    );
+  }
 }
 
 /// One editable contact-channel row: the picked type plus live controllers
@@ -140,11 +237,23 @@ _StatusKind _kindOf(RelationshipStatus status) => switch (status) {
 };
 
 /// The add/edit person form rendered inside [showRelationshipCreateModal]
-/// and [showRelationshipEditModal]: name, optional nickname, the `important`
-/// consent switch, a cadence preset, and (in edit mode) the status. Persists
-/// through [RelationshipRepository]; pops with the saved entry on success.
+/// and [showRelationshipEditModal].
+///
+/// Three cards, in the design's order (2026-09-06 §6): **Who** (name,
+/// nickname, category as a colour dot), **Important** (the consent switch,
+/// what it turns on, and — only once it is on — the cadence presets), and
+/// **How to reach them** (the channel editor under its privacy line). The
+/// status picker joins the first card while editing. Persists through
+/// [RelationshipRepository]; pops with the saved entry on success.
+///
+/// The form has no inline action row: it publishes save and can-save to its
+/// [handle], and [RelationshipFormStickyActions] renders them in the modal's
+/// pinned bar, so Save stays reachable without scrolling three cards.
 class RelationshipForm extends ConsumerStatefulWidget {
-  const RelationshipForm({this.initial, super.key});
+  const RelationshipForm({required this.handle, this.initial, super.key});
+
+  /// The channel through which the pinned action bar reads this form.
+  final RelationshipFormHandle handle;
 
   /// When set, the form edits this relationship instead of creating one.
   final RelationshipEntry? initial;
@@ -362,10 +471,58 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }());
   }
 
+  /// Republishes the pinned bar's view of this form. Deferred to the end of
+  /// the frame because the bar lives in the modal's sticky slot — a sibling
+  /// subtree — and notifying a listener that is mid-build throws.
+  void _publish() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.handle.publish(
+        save: _handleSave,
+        canSave: !_isSaving,
+        isEditing: _isEditing,
+      );
+    });
+  }
+
+  /// Folds a picked address-book entry's channels into the drafts, skipping
+  /// values the form already holds.
+  ///
+  /// Nothing is written here: the picked channels become editable rows like
+  /// any other, and the person is saved only when the user says so. That is
+  /// what separates this from the detail page's *Link contact*, which
+  /// persists — a form that saved behind its own Save button would lose the
+  /// edits still sitting in its fields.
+  Future<void> _addFromContacts() async {
+    final service = ref.read(contactsServiceProvider);
+    if (!service.isSupported) return;
+    final picked = await service.pickSingle();
+    if (picked == null || !mounted) return;
+
+    final known = _editedChannels.map((channel) => channel.value).toSet();
+    final added = picked.channels.where(
+      (channel) => !known.contains(channel.value),
+    );
+    if (added.isEmpty) {
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.relationshipContactNoChanges,
+        );
+      }
+      return;
+    }
+    setState(() {
+      _channels.addAll(added.map(_ChannelDraft.fromChannel));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final tokens = context.designTokens;
+    // The bar mirrors this build's state; see `_publish`.
+    _publish();
 
     Widget sectionLabel(String text) => Text(
       text,
@@ -373,6 +530,8 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         color: tokens.colors.text.highEmphasis,
       ),
     );
+
+    Widget gap(double height) => SizedBox(height: height);
 
     // One scrollable, not two — see the same note on the check-in capture
     // sheet. The modal page already scrolls its child and stacks a top bar,
@@ -384,121 +543,287 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        LottiTextField(
-          controller: _nameController,
-          labelText: messages.relationshipNameLabel,
-          autofocus: !_isEditing,
-          textCapitalization: TextCapitalization.words,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        LottiTextField(
-          controller: _nicknameController,
-          labelText: messages.relationshipNicknameLabel,
-          textCapitalization: TextCapitalization.words,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        // Category scoping (the ProjectCreateForm precedent): the
-        // relationship's category also seeds every check-in
-        // created under it.
-        CategoryField(
-          categoryId: _categoryId,
-          onSave: (category) => setState(() => _categoryId = category?.id),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _important,
-          onChanged: (value) => setState(() => _important = value),
-          title: Text(
-            messages.relationshipImportantLabel,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          subtitle: Text(
-            messages.relationshipImportantDescription,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        sectionLabel(messages.relationshipCadenceLabel),
-        SizedBox(height: tokens.spacing.step3),
-        Wrap(
-          spacing: tokens.spacing.step3,
-          runSpacing: tokens.spacing.step3,
-          children: [
-            for (final preset in relationshipCadencePresets)
-              ChoiceChip(
-                label: Text(
-                  relationshipCadenceLabel(context, preset),
-                ),
-                selected: _cadenceDays == preset,
-                onSelected: (_) => setState(() => _cadenceDays = preset),
+        // Who — identity, and the category as a colour dot rather than a
+        // second large avatar competing with the person's own.
+        DesignSystemSectionCard(
+          key: const ValueKey('person-form-who-card'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PersonCardHeader(title: messages.relationshipFormWhoTitle),
+              gap(tokens.spacing.step4),
+              LottiTextField(
+                controller: _nameController,
+                labelText: messages.relationshipNameLabel,
+                autofocus: !_isEditing,
+                textCapitalization: TextCapitalization.words,
               ),
+              gap(tokens.spacing.step4),
+              LottiTextField(
+                controller: _nicknameController,
+                labelText: messages.relationshipNicknameLabel,
+                textCapitalization: TextCapitalization.words,
+              ),
+              gap(tokens.spacing.step4),
+              // Category scoping (the ProjectCreateForm precedent): the
+              // relationship's category also seeds every check-in created
+              // under it.
+              PersonCategoryRow(
+                categoryId: _categoryId,
+                onChanged: (id) => setState(() => _categoryId = id),
+              ),
+              if (_isEditing) ...[
+                gap(tokens.spacing.step4),
+                sectionLabel(messages.relationshipStatusFieldLabel),
+                gap(tokens.spacing.step3),
+                DsChoicePills<_StatusKind>(
+                  value: _statusKind,
+                  values: _StatusKind.values,
+                  labelFor: (kind) => _statusKindLabel(context, kind),
+                  onSelected: (kind) => setState(() => _statusKind = kind),
+                ),
+              ],
+            ],
+          ),
+        ),
+        gap(tokens.spacing.cardItemSpacing),
+        // Important — the consent switch, what it turns on, and the cadence
+        // it schedules. The cadence only exists for someone who is nurtured,
+        // so it appears with the switch rather than beside it.
+        DesignSystemSectionCard(
+          key: const ValueKey('person-form-important-card'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      messages.relationshipImportantLabel,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(color: tokens.colors.text.highEmphasis),
+                    ),
+                  ),
+                  Switch(
+                    value: _important,
+                    onChanged: (value) => setState(() => _important = value),
+                  ),
+                ],
+              ),
+              gap(tokens.spacing.step1),
+              // Follows the name field as it is typed, so the sentence names
+              // the person the moment there is a person to name — without
+              // rebuilding the rest of the form on every keystroke.
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _nameController,
+                builder: (context, _, _) => Text(
+                  _importantBody(context),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+              if (_important) ...[
+                gap(tokens.spacing.step4),
+                sectionLabel(messages.relationshipCadencePromptLabel),
+                gap(tokens.spacing.step3),
+                DsChoicePills<int?>(
+                  value: _cadenceDays,
+                  values: relationshipCadencePresets,
+                  labelFor: (preset) => relationshipCadenceLabel(
+                    context,
+                    preset,
+                  ),
+                  onSelected: (preset) => setState(() => _cadenceDays = preset),
+                ),
+              ],
+            ],
+          ),
+        ),
+        gap(tokens.spacing.cardItemSpacing),
+        // How to reach them — the channel editor under the privacy line the
+        // page's Reach card carries, so the promise is repeated where the
+        // numbers are actually typed.
+        DesignSystemSectionCard(
+          key: const ValueKey('person-form-reach-card'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PersonCardHeader(title: messages.relationshipFormReachTitle),
+              gap(tokens.spacing.step1),
+              Text(
+                messages.relationshipReachPrivacy,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+              gap(tokens.spacing.step3),
+              for (final (index, draft) in _channels.indexed) ...[
+                _ChannelEditorRow(
+                  key: ObjectKey(draft),
+                  draft: draft,
+                  onTypeChanged: (type) => setState(() => draft.type = type),
+                  onRemoved: () => setState(() {
+                    _channels.removeAt(index).dispose();
+                  }),
+                ),
+                gap(tokens.spacing.step4),
+              ],
+              _AddChannelActions(
+                onAdd: () => setState(() => _channels.add(_ChannelDraft())),
+                onFromContacts: ref.watch(contactsServiceProvider).isSupported
+                    ? () => unawaited(_addFromContacts())
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The *Important* explainer, naming the person once they have a name.
+  ///
+  /// It says what the switch turns **on** and where check-in notes go, and
+  /// never claims that leaving it off keeps the person out of AI entirely —
+  /// a chat, an explicit briefing and a dictated check-in all reach a model
+  /// for anyone (the correction made in PR #4185).
+  String _importantBody(BuildContext context) {
+    final messages = context.messages;
+    final name = _nameController.text.trim();
+    return name.isEmpty
+        ? messages.relationshipFormImportantBody
+        : messages.relationshipFormImportantBodyNamed(name);
+  }
+}
+
+/// The category as one quiet row: its name beside a colour dot, opening the
+/// shared picker on tap. The dot is the whole colour treatment — a second
+/// large avatar would compete with the person's own (design 2026-09-06 §6).
+///
+/// Clearing happens through the picker's own no-category row rather than an
+/// inline ×, so there is one way to change this field and one place that
+/// knows what the choices are. [onChanged] reports the picked category's id,
+/// or null for cleared.
+class PersonCategoryRow extends StatelessWidget {
+  const PersonCategoryRow({
+    required this.categoryId,
+    required this.onChanged,
+    super.key,
+  });
+
+  final String? categoryId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
+
+    return InkWell(
+      key: const ValueKey('person-form-category'),
+      borderRadius: BorderRadius.circular(tokens.radii.m),
+      onTap: () async {
+        final result = await showCategoryPicker(
+          context: context,
+          title: messages.habitCategoryLabel,
+          currentCategoryId: categoryId,
+        );
+        // null = dismissed (no change); otherwise apply the pick or the
+        // clear, which the picker reports as a category-less result.
+        if (result == null) return;
+        onChanged(result.categoryOrNull?.id);
+      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    messages.habitCategoryLabel,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    category?.name ?? messages.habitCategoryHint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: category == null
+                          ? tokens.colors.text.lowEmphasis
+                          : tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (category != null) ...[
+              SizedBox(width: tokens.spacing.step3),
+              Container(
+                key: const ValueKey('person-form-category-dot'),
+                width: tokens.spacing.step3,
+                height: tokens.spacing.step3,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorFromCssHex(
+                    category.color,
+                    substitute: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
-        SizedBox(height: tokens.spacing.step5),
-        sectionLabel(messages.relationshipContactChannelsLabel),
-        SizedBox(height: tokens.spacing.step3),
-        for (final (index, draft) in _channels.indexed) ...[
-          _ChannelEditorRow(
-            key: ObjectKey(draft),
-            draft: draft,
-            onTypeChanged: (type) => setState(() => draft.type = type),
-            onRemoved: () => setState(() {
-              _channels.removeAt(index).dispose();
-            }),
-          ),
-          SizedBox(height: tokens.spacing.step4),
-        ],
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: TextButton.icon(
-            onPressed: () => setState(() => _channels.add(_ChannelDraft())),
+      ),
+    );
+  }
+}
+
+/// *Add channel · or from contacts* — the manual row on every platform
+/// (ADR 0041 §2), and beside it the address book where there is one.
+class _AddChannelActions extends StatelessWidget {
+  const _AddChannelActions({required this.onAdd, this.onFromContacts});
+
+  final VoidCallback onAdd;
+  final VoidCallback? onFromContacts;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          TextButton.icon(
+            key: const ValueKey('person-form-add-channel'),
+            onPressed: onAdd,
             icon: const Icon(LottiIcons.add),
             label: Text(messages.relationshipAddChannelButton),
           ),
-        ),
-        if (_isEditing) ...[
-          SizedBox(height: tokens.spacing.step5),
-          sectionLabel(messages.relationshipStatusFieldLabel),
-          SizedBox(height: tokens.spacing.step3),
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step3,
-            children: [
-              for (final kind in _StatusKind.values)
-                ChoiceChip(
-                  label: Text(_statusKindLabel(context, kind)),
-                  selected: _statusKind == kind,
-                  onSelected: (_) => setState(() => _statusKind = kind),
-                ),
-            ],
-          ),
-        ],
-        SizedBox(height: tokens.spacing.step6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            DesignSystemButton(
-              label: messages.cancelButton,
-              variant: DesignSystemButtonVariant.secondary,
-              onPressed: () => Navigator.of(context).pop(),
+          if (onFromContacts != null) ...[
+            Text(
+              '·',
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
             ),
-            SizedBox(width: tokens.spacing.step4),
-            DesignSystemButton(
-              label: _isEditing ? messages.saveButton : messages.createButton,
-              onPressed: _isSaving ? null : _handleSave,
+            TextButton(
+              key: const ValueKey('person-form-add-from-contacts'),
+              onPressed: onFromContacts,
+              child: Text(messages.relationshipAddChannelFromContacts),
             ),
           ],
-        ),
-        // Breathing room under the action row, so the last control clears the
-        // sheet's bottom edge instead of sitting flush against it once the
-        // content has been scrolled to the end.
-        SizedBox(height: tokens.spacing.step6),
-      ],
+        ],
+      ),
     );
   }
 }

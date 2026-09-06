@@ -10922,6 +10922,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipAddChannelButton => 'Tilføj kontaktoplysning';
 
   @override
+  String get relationshipAddChannelFromContacts => 'eller fra kontakter';
+
+  @override
   String get relationshipAgentBriefNow => 'Brief nu';
 
   @override
@@ -11080,10 +11083,22 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'på sporet';
 
   @override
+  String get relationshipCadencePromptLabel => 'Mind mig om det hver';
+
+  @override
   String get relationshipCadenceQuarterly => 'Hvert kvartal';
 
   @override
   String get relationshipCadenceWeekly => 'Ugentligt';
+
+  @override
+  String get relationshipChatAgentSubtitle =>
+      'Kender dine check-ins, ikke kontaktvejene';
+
+  @override
+  String relationshipChatAgentTitle(String name) {
+    return '$name · briefingagent';
+  }
 
   @override
   String get relationshipChatTooltip => 'Chat om denne person';
@@ -11201,6 +11216,21 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ændringerne kunne ikke gemmes. Prøv igen.';
 
   @override
+  String get relationshipFormImportantBody =>
+      'Slår en briefing, påmindelser og en chat til. Noter fra check-ins går til agenten, kontaktveje aldrig.';
+
+  @override
+  String relationshipFormImportantBodyNamed(String name) {
+    return 'Slår en briefing, påmindelser og en chat til for $name. Noter fra check-ins går til agenten, kontaktveje aldrig.';
+  }
+
+  @override
+  String get relationshipFormReachTitle => 'Sådan får du fat i dem';
+
+  @override
+  String get relationshipFormWhoTitle => 'Hvem';
+
+  @override
   String get relationshipHealthNeedsAttention => 'Kræver opmærksomhed';
 
   @override
@@ -11254,6 +11284,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipImportGrantButton => 'Tillad adgang';
 
   @override
+  String get relationshipImportImportantBody =>
+      'Briefinger, påmindelser og en chat. Uden det kører intet af sig selv.';
+
+  @override
   String get relationshipImportNoMatches =>
       'Ingen kontakter matcher din søgning';
 
@@ -11274,6 +11308,17 @@ class AppLocalizationsDa extends AppLocalizations {
       locale: localeName,
       other: 'Gennemse $count',
       one: 'Gennemse 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipImportReviewSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count valgt · numrene bliver på denne enhed',
+      one: '1 valgt · numrene bliver på denne enhed',
     );
     return '$_temp0';
   }

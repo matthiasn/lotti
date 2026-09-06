@@ -20,6 +20,7 @@ import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -573,14 +574,19 @@ void main() {
   group('desktop split', () {
     late MockNavService navService;
     late ValueNotifier<String?> selected;
+    late ValueNotifier<bool> chatOpen;
 
     setUp(() {
       navService = MockNavService();
       selected = ValueNotifier<String?>(null);
+      chatOpen = ValueNotifier<bool>(false);
       when(() => navService.isDesktopMode).thenReturn(true);
       when(
         () => navService.desktopSelectedRelationshipId,
       ).thenReturn(selected);
+      when(
+        () => navService.desktopRelationshipChatOpen,
+      ).thenReturn(chatOpen);
       final settingsDb = MockSettingsDb();
       when(
         () => settingsDb.itemsByKeys(any()),
@@ -596,6 +602,7 @@ void main() {
 
     tearDown(() async {
       selected.dispose();
+      chatOpen.dispose();
       await getIt.unregister<NavService>();
       await getIt.unregister<SettingsDb>();
     });
@@ -764,6 +771,46 @@ void main() {
       );
       expect(selectedRow.selected, isTrue);
       expect(otherRow.selected, isFalse);
+    });
+
+    testWidgets('the chat takes over the detail pane beside the list, rather '
+        'than stacking over the whole split', (tester) async {
+      when(
+        () => mockRepository.getRelationshipsByRecency(),
+      ).thenAnswer((_) async => crew());
+      final anna = crew().firstWhere((i) => i.relationship.id == 'rel-anna');
+      when(
+        () => mockRepository.getRelationshipById('rel-anna'),
+      ).thenAnswer((_) async => anna.relationship);
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-anna'),
+      ).thenAnswer((_) async => [anna.lastCheckIn!]);
+      when(
+        () => mockRepository.getLinkedTasks('rel-anna'),
+      ).thenAnswer((_) async => []);
+      selected.value = 'rel-anna';
+      chatOpen.value = true;
+
+      await pumpDesktop(tester);
+
+      expect(find.byType(RelationshipChatPane), findsOneWidget);
+      expect(
+        find.byType(RelationshipDetailsPage),
+        findsNothing,
+        reason: 'the chat replaces the page, it does not cover it',
+      );
+      // The list is still there to switch people from.
+      expect(
+        find.byKey(const ValueKey('people-row-rel-ben')),
+        findsOneWidget,
+      );
+
+      // Closing the chat returns the person's page to the same pane.
+      chatOpen.value = false;
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RelationshipChatPane), findsNothing);
+      expect(find.byType(RelationshipDetailsPage), findsOneWidget);
     });
   });
 }

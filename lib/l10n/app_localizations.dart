@@ -18325,6 +18325,12 @@ abstract class AppLocalizations {
   /// **'Add channel'**
   String get relationshipAddChannelButton;
 
+  /// No description provided for @relationshipAddChannelFromContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'or from contacts'**
+  String get relationshipAddChannelFromContacts;
+
   /// No description provided for @relationshipAgentBriefNow.
   ///
   /// In en, this message translates to:
@@ -18529,6 +18535,12 @@ abstract class AppLocalizations {
   /// **'On track'**
   String get relationshipCadenceOnTrack;
 
+  /// No description provided for @relationshipCadencePromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudge me every'**
+  String get relationshipCadencePromptLabel;
+
   /// No description provided for @relationshipCadenceQuarterly.
   ///
   /// In en, this message translates to:
@@ -18540,6 +18552,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weekly'**
   String get relationshipCadenceWeekly;
+
+  /// No description provided for @relationshipChatAgentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Knows your check-ins, not the channels'**
+  String get relationshipChatAgentSubtitle;
+
+  /// Title of the per-person chat header: the person's name and what the agent is
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · briefing agent'**
+  String relationshipChatAgentTitle(String name);
 
   /// No description provided for @relationshipChatTooltip.
   ///
@@ -18697,6 +18721,30 @@ abstract class AppLocalizations {
   /// **'Could not save the changes. Please try again.'**
   String get relationshipErrorUpdateFailed;
 
+  /// No description provided for @relationshipFormImportantBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Turns on a briefing, nudges and a chat. Check-in notes go to the agent; contact channels never do.'**
+  String get relationshipFormImportantBody;
+
+  /// Explains what marking a named person important turns on
+  ///
+  /// In en, this message translates to:
+  /// **'Turns on a briefing, nudges and a chat for {name}. Check-in notes go to the agent; contact channels never do.'**
+  String relationshipFormImportantBodyNamed(String name);
+
+  /// No description provided for @relationshipFormReachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How to reach them'**
+  String get relationshipFormReachTitle;
+
+  /// No description provided for @relationshipFormWhoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who'**
+  String get relationshipFormWhoTitle;
+
   /// No description provided for @relationshipHealthNeedsAttention.
   ///
   /// In en, this message translates to:
@@ -18769,6 +18817,12 @@ abstract class AppLocalizations {
   /// **'Allow access'**
   String get relationshipImportGrantButton;
 
+  /// No description provided for @relationshipImportImportantBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefings, nudges and a chat. Without it, nothing runs on its own.'**
+  String get relationshipImportImportantBody;
+
   /// Shown when the contact search matches nothing
   ///
   /// In en, this message translates to:
@@ -18798,6 +18852,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{Review 1} other{Review {count}}}'**
   String relationshipImportReviewButton(int count);
+
+  /// Subtitle of the contact import review step, naming how many contacts were chosen
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 selected · numbers stay on this device} other{{count} selected · numbers stay on this device}}'**
+  String relationshipImportReviewSubtitle(int count);
 
   /// Title of the import review step, where importance and cadence are set
   ///

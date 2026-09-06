@@ -6253,6 +6253,7 @@
     "description": "Tooltip on the button that opens a message composer"
   },
   "relationshipAddChannelButton": "Add channel",
+  "relationshipAddChannelFromContacts": "or from contacts",
   "relationshipAgentBriefNow": "Brief now",
   "relationshipAgentCall": "Call {name}",
   "@relationshipAgentCall": {
@@ -6387,8 +6388,19 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
+  "relationshipCadencePromptLabel": "Nudge me every",
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
+  "relationshipChatAgentSubtitle": "Knows your check-ins, not the channels",
+  "relationshipChatAgentTitle": "{name} · briefing agent",
+  "@relationshipChatAgentTitle": {
+    "description": "Title of the per-person chat header: the person's name and what the agent is",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipChatTooltip": "Chat about this person",
   "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
   "relationshipCheckInReminderBody": "A good moment to reach out.",
@@ -6492,6 +6504,18 @@
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
+  "relationshipFormImportantBody": "Turns on a briefing, nudges and a chat. Check-in notes go to the agent; contact channels never do.",
+  "relationshipFormImportantBodyNamed": "Turns on a briefing, nudges and a chat for {name}. Check-in notes go to the agent; contact channels never do.",
+  "@relationshipFormImportantBodyNamed": {
+    "description": "Explains what marking a named person important turns on",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipFormReachTitle": "How to reach them",
+  "relationshipFormWhoTitle": "Who",
   "relationshipHealthNeedsAttention": "Needs attention",
   "relationshipHealthSteady": "Steady",
   "relationshipHealthStrained": "Strained",
@@ -6532,6 +6556,7 @@
   "@relationshipImportGrantButton": {
     "description": "Requests contact permission from the import screen"
   },
+  "relationshipImportImportantBody": "Briefings, nudges and a chat. Without it, nothing runs on its own.",
   "relationshipImportNoMatches": "No contacts match your search",
   "@relationshipImportNoMatches": {
     "description": "Shown when the contact search matches nothing"
@@ -6551,6 +6576,15 @@
   "relationshipImportReviewButton": "{count, plural, =1{Review 1} other{Review {count}}}",
   "@relationshipImportReviewButton": {
     "description": "Advances from contact selection to the review step",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 selected · numbers stay on this device} other{{count} selected · numbers stay on this device}}",
+  "@relationshipImportReviewSubtitle": {
+    "description": "Subtitle of the contact import review step, naming how many contacts were chosen",
     "placeholders": {
       "count": {
         "type": "int"

@@ -15,6 +15,7 @@ import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -92,10 +93,7 @@ class RelationshipsPage extends ConsumerWidget {
             // The page carries its own show-list-pane control in the hero
             // while the list is folded away, so nothing is overlaid here.
             detailPane: selectedId != null
-                ? RelationshipDetailsPage(
-                    key: ValueKey(selectedId),
-                    relationshipId: selectedId,
-                  )
+                ? _PersonDetailPane(relationshipId: selectedId)
                 : DesktopDetailEmptyState(
                     message: context.messages.relationshipsSelectPersonHint,
                     icon: LottiIcons.people,
@@ -103,6 +101,40 @@ class RelationshipsPage extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// The desktop detail pane's two faces: the person's page, or their chat.
+///
+/// The chat replaces the page rather than stacking over it (design
+/// 2026-09-06 §6), so the pane switches on
+/// `NavService.desktopRelationshipChatOpen` — which the location writes from
+/// the URL's `/chat` segment, keeping the address bar and the pane in step.
+class _PersonDetailPane extends StatelessWidget {
+  const _PersonDetailPane({required this.relationshipId});
+
+  final String relationshipId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: getIt<NavService>().desktopRelationshipChatOpen,
+      builder: (context, chatOpen, _) => chatOpen
+          // The pane is raw content, unlike the person page, which brings its
+          // own Scaffold — and the composer's fields need a Material ancestor.
+          ? Scaffold(
+              key: ValueKey('people-chat-$relationshipId'),
+              body: RelationshipChatPane(
+                relationshipId: relationshipId,
+                onBack: () => beamToNamed('/people/$relationshipId'),
+                showInternalsAction: true,
+              ),
+            )
+          : RelationshipDetailsPage(
+              key: ValueKey(relationshipId),
+              relationshipId: relationshipId,
+            ),
     );
   }
 }

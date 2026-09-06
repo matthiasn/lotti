@@ -11086,6 +11086,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipAddChannelButton => 'Přidat kontakt';
 
   @override
+  String get relationshipAddChannelFromContacts => 'nebo z kontaktů';
+
+  @override
   String get relationshipAgentBriefNow => 'Vytvořit briefing teď';
 
   @override
@@ -11247,10 +11250,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'v rytmu';
 
   @override
+  String get relationshipCadencePromptLabel => 'Připomínej mi každý';
+
+  @override
   String get relationshipCadenceQuarterly => 'Každé čtvrtletí';
 
   @override
   String get relationshipCadenceWeekly => 'Každý týden';
+
+  @override
+  String get relationshipChatAgentSubtitle =>
+      'Zná tvá setkání, ne kontaktní údaje';
+
+  @override
+  String relationshipChatAgentTitle(String name) {
+    return '$name · briefingový agent';
+  }
 
   @override
   String get relationshipChatTooltip => 'Chatovat o této osobě';
@@ -11369,6 +11384,21 @@ class AppLocalizationsCs extends AppLocalizations {
       'Změny se nepodařilo uložit. Zkus to prosím znovu.';
 
   @override
+  String get relationshipFormImportantBody =>
+      'Zapne briefing, připomínky a chat. Poznámky ze setkání jdou agentovi, kontaktní údaje nikdy.';
+
+  @override
+  String relationshipFormImportantBodyNamed(String name) {
+    return 'Zapne briefing, připomínky a chat pro osobu $name. Poznámky ze setkání jdou agentovi, kontaktní údaje nikdy.';
+  }
+
+  @override
+  String get relationshipFormReachTitle => 'Jak je zastihnout';
+
+  @override
+  String get relationshipFormWhoTitle => 'Kdo';
+
+  @override
   String get relationshipHealthNeedsAttention => 'Vyžaduje pozornost';
 
   @override
@@ -11424,6 +11454,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipImportGrantButton => 'Povolit přístup';
 
   @override
+  String get relationshipImportImportantBody =>
+      'Briefingy, připomínky a chat. Bez toho se nic nespustí samo.';
+
+  @override
   String get relationshipImportNoMatches =>
       'Tvému hledání neodpovídají žádné kontakty';
 
@@ -11445,6 +11479,17 @@ class AppLocalizationsCs extends AppLocalizations {
       other: 'Zkontrolovat $count',
       few: 'Zkontrolovat $count',
       one: 'Zkontrolovat 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipImportReviewSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vybraných · čísla zůstanou v tomto zařízení',
+      one: '1 vybraný · čísla zůstanou v tomto zařízení',
     );
     return '$_temp0';
   }

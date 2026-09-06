@@ -10933,6 +10933,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipAddChannelButton => 'Lägg till kontaktuppgift';
 
   @override
+  String get relationshipAddChannelFromContacts => 'eller från kontakter';
+
+  @override
   String get relationshipAgentBriefNow => 'Briefa nu';
 
   @override
@@ -11090,10 +11093,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'i fas';
 
   @override
+  String get relationshipCadencePromptLabel => 'Påminn mig var';
+
+  @override
   String get relationshipCadenceQuarterly => 'Varje kvartal';
 
   @override
   String get relationshipCadenceWeekly => 'Varje vecka';
+
+  @override
+  String get relationshipChatAgentSubtitle =>
+      'Känner dina avstämningar, inte kontaktvägarna';
+
+  @override
+  String relationshipChatAgentTitle(String name) {
+    return '$name · briefingagent';
+  }
 
   @override
   String get relationshipChatTooltip => 'Chatta om den här personen';
@@ -11211,6 +11226,21 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ändringarna kunde inte sparas. Försök igen.';
 
   @override
+  String get relationshipFormImportantBody =>
+      'Slår på en briefing, påminnelser och en chatt. Anteckningar från avstämningar går till agenten, kontaktvägar aldrig.';
+
+  @override
+  String relationshipFormImportantBodyNamed(String name) {
+    return 'Slår på en briefing, påminnelser och en chatt för $name. Anteckningar från avstämningar går till agenten, kontaktvägar aldrig.';
+  }
+
+  @override
+  String get relationshipFormReachTitle => 'Så når du dem';
+
+  @override
+  String get relationshipFormWhoTitle => 'Vem';
+
+  @override
   String get relationshipHealthNeedsAttention => 'Behöver uppmärksamhet';
 
   @override
@@ -11264,6 +11294,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipImportGrantButton => 'Tillåt åtkomst';
 
   @override
+  String get relationshipImportImportantBody =>
+      'Briefingar, påminnelser och en chatt. Utan det händer inget av sig självt.';
+
+  @override
   String get relationshipImportNoMatches =>
       'Inga kontakter matchar din sökning';
 
@@ -11284,6 +11318,17 @@ class AppLocalizationsSv extends AppLocalizations {
       locale: localeName,
       other: 'Granska $count',
       one: 'Granska 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipImportReviewSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count valda · numren stannar på den här enheten',
+      one: '1 vald · numren stannar på den här enheten',
     );
     return '$_temp0';
   }

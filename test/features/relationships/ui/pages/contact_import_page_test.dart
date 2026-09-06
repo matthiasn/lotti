@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -261,19 +262,35 @@ void main() {
       await advanceToReview(tester);
 
       expect(find.text('Before you add them'), findsOneWidget);
-      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget);
+      // The subtitle says how many people this decision is about, and where
+      // their numbers stay.
+      expect(
+        find.text('1 selected · numbers stay on this device'),
+        findsOneWidget,
+      );
+      // The switch explains itself without claiming that leaving it off
+      // keeps the person away from AI entirely.
+      expect(
+        find.text(
+          'Briefings, nudges and a chat. Without it, nothing runs on its own.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides the cadence until a person is marked important — a '
         'cadence on an unimportant person is never evaluated', (tester) async {
       await advanceToReview(tester);
 
-      expect(find.byType(ChoiceChip), findsNothing);
+      expect(find.text('Nudge me every'), findsNothing);
+      expect(find.byType(DsPill), findsNothing);
 
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
-      expect(find.byType(ChoiceChip), findsWidgets);
+      expect(find.text('Nudge me every'), findsOneWidget);
+      expect(find.byType(DsPill), findsWidgets);
     });
 
     testWidgets('going back keeps the selection', (tester) async {
@@ -407,9 +424,9 @@ void main() {
     ) async {
       await advanceToReview(tester);
 
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Every two weeks'));
+      await tester.tap(find.widgetWithText(DsPill, 'Every two weeks'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add 1 person'));
       await tester.pumpAndSettle();
@@ -432,7 +449,7 @@ void main() {
     ) async {
       await advanceToReview(tester);
 
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add 1 person'));
       await tester.pumpAndSettle();
