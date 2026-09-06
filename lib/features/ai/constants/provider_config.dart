@@ -5,8 +5,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 /// This class provides default configurations for various AI inference providers,
 /// including base URLs, display names, and API key requirements.
 ///
-/// Security Note: Local keyless providers (Ollama, Whisper, Voxtral, MLX
-/// Audio) use localhost/embedded runtimes and don't require API keys, making
+/// Security Note: Local keyless providers (Ollama, Whisper, Voxtral, sherpa)
+/// use localhost/embedded runtimes and don't require API keys, making
 /// them suitable for privacy-focused applications. Local OpenAI-compatible
 /// providers such as oMLX may still require an API key depending on the server
 /// configuration.
@@ -33,6 +33,7 @@ class ProviderConfig {
     InferenceProviderType.openRouter: 'https://openrouter.ai/api/v1',
     InferenceProviderType.voxtral: 'http://localhost:11344',
     InferenceProviderType.whisper: 'http://localhost:8084',
+    InferenceProviderType.sherpa: '',
   };
 
   /// Default names for each provider type
@@ -52,6 +53,7 @@ class ProviderConfig {
     InferenceProviderType.openRouter: 'OpenRouter',
     InferenceProviderType.voxtral: 'Voxtral (local)',
     InferenceProviderType.whisper: 'Whisper (local)',
+    InferenceProviderType.sherpa: 'sherpa-onnx',
   };
 
   /// Provider types that don't require an API key
@@ -62,6 +64,7 @@ class ProviderConfig {
     InferenceProviderType.ollama,
     InferenceProviderType.voxtral,
     InferenceProviderType.whisper,
+    InferenceProviderType.sherpa,
   };
 
   /// Provider types that expose a live, searchable model catalog.
@@ -76,6 +79,10 @@ class ProviderConfig {
     InferenceProviderType.omlx,
     InferenceProviderType.openAi,
   };
+
+  /// Embedded inference has no server endpoint.
+  static bool usesBaseUrl(InferenceProviderType type) =>
+      type != InferenceProviderType.sherpa;
 
   /// Get the default base URL for a provider type
   ///
@@ -113,6 +120,7 @@ extension AiConfigInferenceProviderUsability on AiConfigInferenceProvider {
   /// base URL — the base URL itself is set. A local provider with a cleared
   /// base URL cannot actually connect, so it is not considered usable.
   bool get isUsable =>
+      inferenceProviderType == InferenceProviderType.sherpa ||
       apiKey.trim().isNotEmpty ||
       (!ProviderConfig.requiresApiKey(inferenceProviderType) &&
           baseUrl.trim().isNotEmpty);

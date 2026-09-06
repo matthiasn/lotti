@@ -202,6 +202,7 @@ String _capabilityLabel(BuildContext context, NodeCapability cap) {
     NodeCapability.ollamaLlm => m.settingsSyncNodeProfileCapabilityOllamaLlm,
     NodeCapability.voxtral => m.settingsSyncNodeProfileCapabilityVoxtral,
     NodeCapability.whisper => m.settingsSyncNodeProfileCapabilityWhisper,
+    NodeCapability.sherpa => m.aiProviderSherpaName,
   };
 }
 

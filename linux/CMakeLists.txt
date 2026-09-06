@@ -84,7 +84,14 @@ if(_LOTTI_CMAKE_WARN_DEPRECATED_WAS_SET)
     CACHE CMAKE_WARN_DEPRECATED PROPERTY VALUE)
 endif()
 set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
+# Match sherpa_onnx 1.13.7's runtime when flutter_onnxruntime needs headers.
+set(ONNXRUNTIME_VERSION "1.27.1" CACHE STRING "Shared speech runtime" FORCE)
 include(flutter/generated_plugins.cmake)
+
+# Flutter copies plugin files rather than installing their targets. Avoid
+# retaining a build-machine runtime path in the shipped TTS plugin.
+set_target_properties(flutter_onnxruntime_plugin PROPERTIES
+  INSTALL_RPATH "$ORIGIN")
 if(_LOTTI_CMAKE_WARN_DEPRECATED_WAS_SET)
   set(CMAKE_WARN_DEPRECATED "${_LOTTI_CMAKE_WARN_DEPRECATED}"
     CACHE BOOL "" FORCE)
@@ -118,11 +125,31 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
+# Both speech plugins bundle libonnxruntime.so. Keep sherpa's pinned copy as
+# the single runtime, rather than relying on install order to overwrite TTS's
+# copy. ONNX Runtime retains the older C API used by flutter_onnxruntime.
 foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
+  if(bundled_library STREQUAL "$<TARGET_FILE:flutter_onnxruntime_plugin>")
+    # Installing the target rewrites its runtime search path for this bundle.
+    install(TARGETS flutter_onnxruntime_plugin
+      LIBRARY DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+    continue()
+  endif()
+  if(bundled_library MATCHES "/libonnxruntime\\.so$" AND
+     NOT bundled_library MATCHES "/sherpa_onnx_linux/")
+    continue()
+  endif()
   install(FILES "${bundled_library}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endforeach(bundled_library)
+
+# The official TTS dependency uses SONAME libonnxruntime.so.1, whereas
+# sherpa's prebuilt library uses libonnxruntime.so. Both resolve to one file.
+install(CODE "
+  file(CREATE_LINK libonnxruntime.so
+    \"${INSTALL_BUNDLE_LIB_DIR}/libonnxruntime.so.1\" SYMBOLIC)
+" COMPONENT Runtime)
 
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")

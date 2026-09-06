@@ -38,7 +38,8 @@ class PromptCapabilityFilter {
     }
 
     // Check if this is a local-only provider type
-    return !_isLocalOnlyProvider(provider.inferenceProviderType);
+    return provider.inferenceProviderType == InferenceProviderType.sherpa ||
+        !_isLocalOnlyProvider(provider.inferenceProviderType);
   }
 
   /// Check if an inference provider type is local-only
@@ -57,7 +58,8 @@ class PromptCapabilityFilter {
   ///
   /// New local providers must be added here so both call sites stay in sync.
   static bool isLocalOnlyProviderType(InferenceProviderType providerType) {
-    return providerType == InferenceProviderType.whisper ||
+    return providerType == InferenceProviderType.sherpa ||
+        providerType == InferenceProviderType.whisper ||
         providerType == InferenceProviderType.ollama ||
         providerType == InferenceProviderType.omlx ||
         providerType == InferenceProviderType.voxtral;

@@ -157,6 +157,7 @@ class AiPickProviderModal extends StatefulWidget {
         ),
         AiPickProviderTileSpec(providerType: InferenceProviderType.openRouter),
         AiPickProviderTileSpec(providerType: InferenceProviderType.whisper),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.sherpa),
       ];
 
   final List<AiPickProviderTileSpec> tiles;

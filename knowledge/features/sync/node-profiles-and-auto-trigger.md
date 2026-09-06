@@ -41,7 +41,7 @@ otherwise-convenient fallbacks are deliberately absent.
 
 **`SyncNodeProfile`** captures one device's vector-clock `hostId`, display name,
 platform, and advertised capabilities: `omlxLlm`, `ollamaLlm`,
-`voxtral`, `whisper`.
+`voxtral`, `whisper`, `sherpa`.
 
 Capabilities are auto-detected at startup by
 `makeDefaultSyncNodeCapabilityProbe`:
@@ -51,6 +51,7 @@ Capabilities are auto-detected at startup by
 | `omlxLlm` | The local OpenAI-compatible oMLX `/models` endpoint responds at the configured default base URL. **401/403 still counts as reachable**, because inference uses the saved provider key |
 | `ollamaLlm` | A 300 ms request to `127.0.0.1:11434/api/version` succeeds |
 | `voxtral`, `whisper` | Never auto-claimed — they need user-installed binaries the app does not manage |
+| `sherpa` | At least one device-local embedded model passes installation verification; see [embedded speech](../ai/embedded-speech.md) |
 
 **`SyncMessage.syncNodeProfile(profile)`** broadcasts the local self profile.
 Receivers upsert it into a `SettingsDb` directory

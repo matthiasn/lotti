@@ -96,12 +96,15 @@ model rows when no profile handles transcription. The fallback builds an
 **ephemeral** `ResolvedProfile` around the selected model and the built-in
 `Transcribe (Task Context)` skill — it does not persist a profile.
 
-Candidate ranking prefers Mistral, Melious, OpenAI, Whisper, then Voxtral,
-followed by other configured audio-to-text providers. Candidates must be usable;
-equal-ranked models are ordered by name. The fallback works without a profile.
+Candidate ranking prefers installed sherpa models, then Mistral, Melious,
+OpenAI, Whisper, and Voxtral, followed by other audio-to-text providers.
+Candidates need a resolvable provider and any required API key; sherpa also
+requires a verified local model. HTTP endpoint validation is left to the
+provider. Equal-ranked models are ordered by name. The fallback works without
+a profile.
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
-prefers Mistral contextual Voxtral, then a Mistral batch audio model; next come
+prefers installed sherpa models, then Mistral contextual Voxtral and a Mistral batch audio model; next come
 the seeded Melious Whisper Large v3 default, other Melious transcription models,
 and contextual Melious Voxtral. Gemini Flash follows, then the first remaining
 audio-capable model. Realtime-only Mistral models are excluded because they
@@ -120,7 +123,7 @@ is embedded in `inference_profile_form.dart`.
 ## Locality is fail-closed
 
 `profileIsLocal(profile, repo)` returns true **iff every populated model id
-resolves to a provider in `{ollama, omlx, voxtral, whisper}`**.
+resolves to a provider in `{ollama, omlx, voxtral, whisper, sherpa}`**.
 
 A referenced-but-unresolved model id counts as **not local**. That prevents a
 deleted cloud-provider config from masking a profile as safe to auto-route. The

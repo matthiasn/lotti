@@ -32,6 +32,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderOpenRouterName;
       case InferenceProviderType.ollama:
         return context.messages.aiProviderOllamaName;
+      case InferenceProviderType.sherpa:
+        return context.messages.aiProviderSherpaName;
       case InferenceProviderType.whisper:
         return context.messages.aiProviderWhisperName;
       case InferenceProviderType.voxtral:
@@ -65,6 +67,7 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return LottiIcons.cloud;
       case InferenceProviderType.nebiusAiStudio:
         return LottiIcons.rocket;
+      case InferenceProviderType.sherpa:
       case InferenceProviderType.whisper:
         return LottiIcons.mic;
       case InferenceProviderType.voxtral:

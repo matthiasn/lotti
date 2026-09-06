@@ -49,7 +49,7 @@ unchanged.
 |-----------|--------------------|----------|
 | `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; explicit reasoning effort forwarded where supported, omitted from Mistral |
 | `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` |
-| `generateWithAudio()` | Whisper, Voxtral, oMLX/OpenAI/Mistral/Melious transcription endpoints, temporary-MP3 Mistral and Melious Voxtral chat audio | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` |
+| `generateWithAudio()` | embedded sherpa, Whisper, Voxtral, oMLX/OpenAI/Mistral/Melious transcription endpoints, temporary-MP3 Mistral and Melious Voxtral chat audio | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` |
 | `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; reasoning effort omitted from Mistral |
 | `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported — throws for every other provider type |
 
@@ -394,3 +394,9 @@ dictionary terms through `PromptBuilderHelper.getSpeechDictionaryTerms()`.
 
 Decoder-level dictionary/G2P integration remains a separate native-bridge
 follow-up, pending a stable SDK surface.
+
+# Embedded recognition
+
+Sherpa branches before HTTP client construction in `generateWithAudio`. Model
+installation, background decoding, cancellation, and platform packaging are
+documented in [embedded speech recognition](embedded-speech.md).

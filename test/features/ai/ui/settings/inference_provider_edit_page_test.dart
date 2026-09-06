@@ -834,6 +834,40 @@ void main() {
       },
     );
 
+    testWidgets('sherpa setup saves without an endpoint or credentials', (
+      tester,
+    ) async {
+      await _setTestSurface(tester);
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.sherpa),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final strings = l10n(tester);
+      expect(
+        find.widgetWithText(TextFormField, strings.apiKeyInputHint),
+        findsNothing,
+      );
+      expect(
+        find.widgetWithText(
+          TextFormField,
+          strings.aiProviderConnectFieldBaseUrlPlaceholder,
+        ),
+        findsNothing,
+      );
+      expect(find.text(strings.sherpaProviderDescription), findsOneWidget);
+      final save = find.text(strings.aiProviderConnectSaveAndContinue);
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pump();
+      final saved = verify(
+        () => mockRepository.saveConfig(captureAny()),
+      ).captured.whereType<AiConfigInferenceProvider>().single;
+      expect(saved.inferenceProviderType, InferenceProviderType.sherpa);
+      expect(saved.apiKey, isEmpty);
+      expect(saved.baseUrl, isEmpty);
+    });
+
     testWidgets('API key field visibility changes when switching providers', (
       WidgetTester tester,
     ) async {

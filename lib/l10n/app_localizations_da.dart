@@ -2134,6 +2134,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSherpaName => 'sherpa-onnx (på enheden)';
+
+  @override
   String get aiProviderTaglineAlibaba =>
       'Qwen-modeller · multimodal · Lang kontekst';
 
@@ -12591,6 +12594,24 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'Hvad er nyt';
+
+  @override
+  String get sherpaDeleteModel => 'Slet downloadet model';
+
+  @override
+  String get sherpaModelError => 'Modelhandlingen mislykkedes. Prøv igen.';
+
+  @override
+  String sherpaDownloadModel(String size) {
+    return 'Download ($size MB)';
+  }
+
+  @override
+  String get sherpaModelInstalled => 'Downloadet';
+
+  @override
+  String get sherpaProviderDescription =>
+      'Transskriber på denne enhed uden en server. Download en model nedenfor; dine optagelser bliver på denne enhed.';
 
   @override
   String get sidebarActiveSectionTitle => 'Aktivitet';

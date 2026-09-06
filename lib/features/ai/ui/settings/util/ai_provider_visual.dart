@@ -201,6 +201,7 @@ String aiProviderDisplayName({
       messages.aiProviderNebiusAiStudioName,
     InferenceProviderType.genericOpenAi => messages.aiProviderGenericOpenAiName,
     InferenceProviderType.whisper => messages.aiProviderWhisperName,
+    InferenceProviderType.sherpa => messages.aiProviderSherpaName,
     InferenceProviderType.voxtral => messages.aiProviderVoxtralName,
     null => messages.aiProviderUnknownName,
   };

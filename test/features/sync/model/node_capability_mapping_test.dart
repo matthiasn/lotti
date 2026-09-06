@@ -17,6 +17,10 @@ void main() {
   group('nodeCapabilityFromProviderType', () {
     test('returns a capability for every local provider type', () {
       expect(
+        nodeCapabilityFromProviderType(InferenceProviderType.sherpa),
+        NodeCapability.sherpa,
+      );
+      expect(
         nodeCapabilityFromProviderType(InferenceProviderType.omlx),
         NodeCapability.omlxLlm,
       );
@@ -78,6 +82,7 @@ void main() {
           InferenceProviderType.ollama: NodeCapability.ollamaLlm,
           InferenceProviderType.voxtral: NodeCapability.voxtral,
           InferenceProviderType.whisper: NodeCapability.whisper,
+          InferenceProviderType.sherpa: NodeCapability.sherpa,
         };
         expect(capability, expected[providerType]);
       },

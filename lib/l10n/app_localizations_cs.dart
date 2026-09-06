@@ -2154,6 +2154,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSherpaName => 'sherpa-onnx (v zařízení)';
+
+  @override
   String get aiProviderTaglineAlibaba =>
       'Modely Qwen · multimodální · dlouhý kontext';
 
@@ -12754,6 +12757,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'Co je nového';
+
+  @override
+  String get sherpaDeleteModel => 'Smazat stažený model';
+
+  @override
+  String get sherpaModelError =>
+      'Operace s modelem se nezdařila. Zkus to znovu.';
+
+  @override
+  String sherpaDownloadModel(String size) {
+    return 'Stáhnout ($size MB)';
+  }
+
+  @override
+  String get sherpaModelInstalled => 'Staženo';
+
+  @override
+  String get sherpaProviderDescription =>
+      'Přepisuj na tomto zařízení bez serveru. Stáhni si níže model; tvoje nahrávky zůstanou v tomto zařízení.';
 
   @override
   String get sidebarActiveSectionTitle => 'Aktivita';

@@ -36,6 +36,7 @@ void main() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
   });
 
+  late MockSherpaTranscriptionRepository sherpaRepo;
   late MockHttpClient httpClient;
   late MockOllamaInferenceRepository ollamaRepo;
   late MockGeminiInferenceRepository geminiRepo;
@@ -72,6 +73,7 @@ void main() {
     OmlxTranscriptionRepository? omlxRepository,
   }) {
     return CloudInferenceGenerateMore(
+      sherpaRepository: () => sherpaRepo,
       ollamaRepository: ollamaRepo,
       geminiRepository: geminiRepo,
       dashScopeRepository: dashScopeRepo,
@@ -86,7 +88,40 @@ void main() {
     );
   }
 
+  test('sherpa audio routes to the embedded runner without HTTP', () async {
+    const chunk = CreateChatCompletionStreamResponse(
+      id: 'embedded',
+      object: 'chat.completion.chunk',
+      created: 0,
+      choices: [
+        ChatCompletionStreamResponseChoice(
+          index: 0,
+          delta: ChatCompletionStreamResponseDelta(content: 'local transcript'),
+        ),
+      ],
+    );
+    when(
+      () => sherpaRepo.transcribeAudio(model: 'tiny', audioBase64: 'audio'),
+    ).thenAnswer((_) => Stream.value(chunk));
+    final result = await generateMore
+        .generateWithAudio(
+          'transcribe',
+          model: 'tiny',
+          audioBase64: 'audio',
+          baseUrl: '',
+          apiKey: '',
+          provider: providerOfType(InferenceProviderType.sherpa),
+        )
+        .toList();
+    expect(result, [chunk]);
+    verify(
+      () => sherpaRepo.transcribeAudio(model: 'tiny', audioBase64: 'audio'),
+    ).called(1);
+    verifyNever(() => httpClient.send(any()));
+  });
+
   setUp(() {
+    sherpaRepo = MockSherpaTranscriptionRepository();
     httpClient = MockHttpClient();
     ollamaRepo = MockOllamaInferenceRepository();
     geminiRepo = MockGeminiInferenceRepository();

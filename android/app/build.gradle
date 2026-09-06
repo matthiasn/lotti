@@ -42,6 +42,13 @@ android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     ndkVersion rootProject.ext.ndkVersion
 
+    packaging {
+        jniLibs {
+            // TTS and sherpa both supply the compatible ORT 1.27 runtime.
+            pickFirsts += ['**/libonnxruntime.so']
+        }
+    }
+
     compileOptions {
         coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17

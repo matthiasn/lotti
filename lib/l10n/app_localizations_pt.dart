@@ -2151,6 +2151,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSherpaName => 'sherpa-onnx (no dispositivo)';
+
+  @override
   String get aiProviderTaglineAlibaba =>
       'Modelos Qwen · multimodal · contexto longo';
 
@@ -12710,6 +12713,25 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'Novidades';
+
+  @override
+  String get sherpaDeleteModel => 'Eliminar o modelo descarregado';
+
+  @override
+  String get sherpaModelError =>
+      'A operação do modelo falhou. Tenta novamente.';
+
+  @override
+  String sherpaDownloadModel(String size) {
+    return 'Descarregar ($size MB)';
+  }
+
+  @override
+  String get sherpaModelInstalled => 'Descarregado';
+
+  @override
+  String get sherpaProviderDescription =>
+      'Transcreve neste dispositivo sem um servidor. Descarrega um modelo abaixo; as tuas gravações ficam neste dispositivo.';
 
   @override
   String get sidebarActiveSectionTitle => 'Atividade';

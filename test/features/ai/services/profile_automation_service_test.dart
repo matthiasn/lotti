@@ -423,6 +423,47 @@ void main() {
         as AiConfigModel;
   }
 
+  for (final installed in [true, false, null]) {
+    test(
+      'embedded fallback requires device-local availability ($installed)',
+      () async {
+        final embedded = makeProvider(
+          id: 'sherpa',
+          type: InferenceProviderType.sherpa,
+        );
+        final model = makeModel(
+          providerId: embedded.id,
+          providerModelId: 'tiny',
+        );
+        when(
+          () => mockResolver.resolveForSubject('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [model]);
+        when(
+          () => mockAiConfig.getConfigById(embedded.id),
+        ).thenAnswer((_) async => embedded);
+        final subject = ProfileAutomationService(
+          resolver: mockResolver,
+          aiConfigRepository: mockAiConfig,
+          categoryAutomationLookup: (_) async => true,
+          isEmbeddedModelInstalled: installed == null
+              ? null
+              : (id) async {
+                  expect(id, 'tiny');
+                  return installed;
+                },
+        );
+        final result = await subject.tryTranscribe(subjectId: 'task-1');
+        expect(result.handled, installed ?? false);
+        if (installed ?? false) {
+          expect(result.resolvedProfile?.transcriptionProvider, embedded);
+        }
+      },
+    );
+  }
+
   group('ProfileAutomationService', () {
     // The category switch is the only place the user consents to inference
     // running without a gesture. Selecting a profile is not consent: seeded

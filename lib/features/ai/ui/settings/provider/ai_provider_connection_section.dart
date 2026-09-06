@@ -37,13 +37,14 @@ class ConnectionSection extends StatelessWidget {
           value: maskApiKey(provider.apiKey),
           isMissing: provider.apiKey.trim().isEmpty,
         ),
-      _ConnectionRow(
-        label: messages.aiProviderDetailBaseUrlLabel,
-        value: provider.baseUrl.isEmpty
-            ? messages.aiProviderDetailValueUnset
-            : provider.baseUrl,
-        isMissing: provider.baseUrl.trim().isEmpty,
-      ),
+      if (ProviderConfig.usesBaseUrl(provider.inferenceProviderType))
+        _ConnectionRow(
+          label: messages.aiProviderDetailBaseUrlLabel,
+          value: provider.baseUrl.isEmpty
+              ? messages.aiProviderDetailValueUnset
+              : provider.baseUrl,
+          isMissing: provider.baseUrl.trim().isEmpty,
+        ),
       _ConnectionRow(
         label: messages.aiProviderDetailDisplayNameLabel,
         value: provider.name.isEmpty
@@ -71,6 +72,8 @@ class ConnectionSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (!ProviderConfig.usesBaseUrl(provider.inferenceProviderType))
+              Text(messages.sherpaProviderDescription),
             for (var i = 0; i < rows.length; i++) ...[
               if (i > 0) SizedBox(height: tokens.spacing.step3),
               rows[i],

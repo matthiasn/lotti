@@ -2126,6 +2126,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSherpaName => 'sherpa-onnx (on device)';
+
+  @override
   String get aiProviderTaglineAlibaba =>
       'Qwen models · multimodal · long context';
 
@@ -12516,6 +12519,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsWhatsNewTitle => 'What\'s New';
+
+  @override
+  String get sherpaDeleteModel => 'Delete downloaded model';
+
+  @override
+  String get sherpaModelError => 'Model operation failed. Try again.';
+
+  @override
+  String sherpaDownloadModel(String size) {
+    return 'Download ($size MB)';
+  }
+
+  @override
+  String get sherpaModelInstalled => 'Downloaded';
+
+  @override
+  String get sherpaProviderDescription =>
+      'Transcribe on this device without a server. Download a model below; your recordings stay on this device.';
 
   @override
   String get sidebarActiveSectionTitle => 'Activity';
