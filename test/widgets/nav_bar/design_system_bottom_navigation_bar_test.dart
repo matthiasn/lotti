@@ -32,8 +32,13 @@ void main() {
       expect(taps, 1);
     });
 
-    for (final scale in [1.3, 2.0, 3.0]) {
-      testWidgets('launcher clearance matches large text at $scale', (
+    for (final scaler in const [
+      TextScaler.linear(1.3),
+      TextScaler.linear(2),
+      TextScaler.linear(3),
+      _NonlinearTextScaler(),
+    ]) {
+      testWidgets('launcher clearance matches large text at $scaler', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -42,7 +47,7 @@ void main() {
             theme: DesignSystemTheme.light(),
             mediaQueryData: MediaQueryData(
               size: const Size(390, 844),
-              textScaler: TextScaler.linear(scale),
+              textScaler: scaler,
               padding: const EdgeInsets.only(bottom: 34),
             ),
           ),
@@ -403,4 +408,16 @@ void main() {
       );
     });
   });
+}
+
+/// Smaller fonts grow proportionally more, as in accessibility text scaling.
+class _NonlinearTextScaler extends TextScaler {
+  const _NonlinearTextScaler();
+
+  @override
+  double scale(double fontSize) =>
+      fontSize <= 16 ? fontSize * 2 : fontSize * 1.5 + 8;
+
+  @override
+  double get textScaleFactor => 2;
 }
