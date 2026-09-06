@@ -11317,8 +11317,9 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count personer valgt · numrene bliver på denne enhed',
-      one: '1 person valgt · numrene bliver på denne enhed',
+      other:
+          '$count personer valgt · kontaktoplysningerne bliver på denne enhed',
+      one: '1 person valgt · kontaktoplysningerne bliver på denne enhed',
     );
     return '$_temp0';
   }

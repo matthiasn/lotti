@@ -4402,7 +4402,7 @@
   "relationshipImportPermissionBody": "Lotti čte tvé kontakty jen po dobu, kdy je tento výběr otevřený, a zkopíruje jen lidi, které vybereš.",
   "relationshipImportRetry": "Zkusit znovu",
   "relationshipImportReviewButton": "{count, plural, =1{Zkontrolovat 1} few{Zkontrolovat {count}} other{Zkontrolovat {count}}}",
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 vybraná osoba · čísla zůstanou v tomto zařízení} few{{count} vybrané osoby · čísla zůstanou v tomto zařízení} other{{count} vybraných osob · čísla zůstanou v tomto zařízení}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 vybraná osoba · kontaktní údaje zůstanou v tomto zařízení} few{{count} vybrané osoby · kontaktní údaje zůstanou v tomto zařízení} other{{count} vybraných osob · kontaktní údaje zůstanou v tomto zařízení}}",
   "relationshipImportReviewTitle": "Než je přidáš",
   "relationshipImportSearchHint": "Hledat kontakty",
   "relationshipImportSettingsBody": "Přístup ke kontaktům je vypnutý. Zapni ho v nastavení systému, abys mohl lidi importovat.",

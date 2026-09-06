@@ -4395,7 +4395,7 @@
   "relationshipImportPermissionBody": "Lotti liest deine Kontakte nur, solange diese Auswahl offen ist, und übernimmt nur die Personen, die du auswählst.",
   "relationshipImportRetry": "Erneut versuchen",
   "relationshipImportReviewButton": "{count, plural, =1{1 prüfen} other{{count} prüfen}}",
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 Person ausgewählt · Nummern bleiben auf diesem Gerät} other{{count} Personen ausgewählt · Nummern bleiben auf diesem Gerät}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 Person ausgewählt · Kontaktdaten bleiben auf diesem Gerät} other{{count} Personen ausgewählt · Kontaktdaten bleiben auf diesem Gerät}}",
   "relationshipImportReviewTitle": "Bevor du sie hinzufügst",
   "relationshipImportSearchHint": "Kontakte durchsuchen",
   "relationshipImportSettingsBody": "Der Kontaktzugriff ist deaktiviert. Aktiviere ihn in den Systemeinstellungen, um Personen zu importieren.",

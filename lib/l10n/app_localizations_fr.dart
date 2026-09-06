@@ -11513,8 +11513,8 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count personnes sélectionnées · les numéros restent sur cet appareil',
-      one: '1 personne sélectionnée · les numéros restent sur cet appareil',
+          '$count personnes sélectionnées · les coordonnées restent sur cet appareil',
+      one: '1 personne sélectionnée · les coordonnées restent sur cet appareil',
     );
     return '$_temp0';
   }

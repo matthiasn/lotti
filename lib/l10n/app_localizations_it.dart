@@ -11460,8 +11460,8 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count persone selezionate · i numeri restano su questo dispositivo',
-      one: '1 persona selezionata · i numeri restano su questo dispositivo',
+          '$count persone selezionate · i recapiti restano su questo dispositivo',
+      one: '1 persona selezionata · i recapiti restano su questo dispositivo',
     );
     return '$_temp0';
   }

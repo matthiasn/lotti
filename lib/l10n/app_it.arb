@@ -4898,7 +4898,7 @@
   "relationshipImportPermissionBody": "Lotti legge i tuoi contatti solo mentre questo selettore è aperto e copia solo le persone che scegli.",
   "relationshipImportRetry": "Riprova",
   "relationshipImportReviewButton": "{count, plural, =1{Controlla 1} other{Controlla {count}}}",
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 persona selezionata · i numeri restano su questo dispositivo} other{{count} persone selezionate · i numeri restano su questo dispositivo}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 persona selezionata · i recapiti restano su questo dispositivo} other{{count} persone selezionate · i recapiti restano su questo dispositivo}}",
   "relationshipImportReviewTitle": "Prima di aggiungerle",
   "relationshipImportSearchHint": "Cerca contatti",
   "relationshipImportSettingsBody": "L’accesso ai contatti è disattivato. Attivalo nelle impostazioni di sistema per importare persone.",

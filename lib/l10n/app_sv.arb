@@ -4898,7 +4898,7 @@
   "relationshipImportPermissionBody": "Lotti läser dina kontakter bara medan den här väljaren är öppen och kopierar bara de personer du väljer.",
   "relationshipImportRetry": "Försök igen",
   "relationshipImportReviewButton": "{count, plural, =1{Granska 1} other{Granska {count}}}",
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 person vald · numren stannar på den här enheten} other{{count} personer valda · numren stannar på den här enheten}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 person vald · kontaktuppgifterna stannar på den här enheten} other{{count} personer valda · kontaktuppgifterna stannar på den här enheten}}",
   "relationshipImportReviewTitle": "Innan du lägger till dem",
   "relationshipImportSearchHint": "Sök kontakter",
   "relationshipImportSettingsBody": "Åtkomst till kontakter är avstängd. Slå på den i systeminställningarna för att importera personer.",

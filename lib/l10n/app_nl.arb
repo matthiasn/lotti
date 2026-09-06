@@ -4897,7 +4897,7 @@
   "relationshipImportPermissionBody": "Lotti leest je contacten alleen zolang deze kiezer open is en kopieert alleen de personen die je kiest.",
   "relationshipImportRetry": "Opnieuw proberen",
   "relationshipImportReviewButton": "{count, plural, =1{1 nakijken} other{{count} nakijken}}",
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 persoon geselecteerd · nummers blijven op dit apparaat} other{{count} personen geselecteerd · nummers blijven op dit apparaat}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 persoon geselecteerd · contactgegevens blijven op dit apparaat} other{{count} personen geselecteerd · contactgegevens blijven op dit apparaat}}",
   "relationshipImportReviewTitle": "Voordat je ze toevoegt",
   "relationshipImportSearchHint": "Contacten zoeken",
   "relationshipImportSettingsBody": "Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.",

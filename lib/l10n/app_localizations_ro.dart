@@ -11551,9 +11551,10 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count de persoane selectate · numerele rămân pe acest dispozitiv',
-      few: '$count persoane selectate · numerele rămân pe acest dispozitiv',
-      one: '1 persoană selectată · numerele rămân pe acest dispozitiv',
+          '$count de persoane selectate · datele de contact rămân pe acest dispozitiv',
+      few:
+          '$count persoane selectate · datele de contact rămân pe acest dispozitiv',
+      one: '1 persoană selectată · datele de contact rămân pe acest dispozitiv',
     );
     return '$_temp0';
   }

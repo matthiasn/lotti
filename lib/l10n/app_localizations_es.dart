@@ -11481,8 +11481,9 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count personas seleccionadas · los números se quedan en este dispositivo',
-      one: '1 persona seleccionada · los números se quedan en este dispositivo',
+          '$count personas seleccionadas · los datos de contacto se quedan en este dispositivo',
+      one:
+          '1 persona seleccionada · los datos de contacto se quedan en este dispositivo',
     );
     return '$_temp0';
   }

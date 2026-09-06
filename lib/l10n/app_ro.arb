@@ -4395,7 +4395,7 @@
   "relationshipImportPermissionBody": "Lotti vă citește contactele doar cât timp acest selector este deschis și copiază doar persoanele pe care le alegeți.",
   "relationshipImportRetry": "Încercați din nou",
   "relationshipImportReviewButton": "{count, plural, =1{Verificați 1} few{Verificați {count}} other{Verificați {count}}}",
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 persoană selectată · numerele rămân pe acest dispozitiv} few{{count} persoane selectate · numerele rămân pe acest dispozitiv} other{{count} de persoane selectate · numerele rămân pe acest dispozitiv}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 persoană selectată · datele de contact rămân pe acest dispozitiv} few{{count} persoane selectate · datele de contact rămân pe acest dispozitiv} other{{count} de persoane selectate · datele de contact rămân pe acest dispozitiv}}",
   "relationshipImportReviewTitle": "Înainte de a le adăuga",
   "relationshipImportSearchHint": "Căutați contacte",
   "relationshipImportSettingsBody": "Accesul la contacte este dezactivat. Activați-l din setările sistemului pentru a importa persoane.",

@@ -4898,7 +4898,7 @@
   "relationshipImportPermissionBody": "Lotti læser kun dine kontakter, mens denne vælger er åben, og kopierer kun de personer, du vælger.",
   "relationshipImportRetry": "Prøv igen",
   "relationshipImportReviewButton": "{count, plural, =1{Gennemse 1} other{Gennemse {count}}}",
-  "relationshipImportReviewSubtitle": "{count, plural, =1{1 person valgt · numrene bliver på denne enhed} other{{count} personer valgt · numrene bliver på denne enhed}}",
+  "relationshipImportReviewSubtitle": "{count, plural, =1{1 person valgt · kontaktoplysningerne bliver på denne enhed} other{{count} personer valgt · kontaktoplysningerne bliver på denne enhed}}",
   "relationshipImportReviewTitle": "Før du tilføjer dem",
   "relationshipImportSearchHint": "Søg i kontakter",
   "relationshipImportSettingsBody": "Adgang til kontakter er slået fra. Slå den til i systemindstillingerne for at importere personer.",
