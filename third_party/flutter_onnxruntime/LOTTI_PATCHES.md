@@ -89,6 +89,10 @@ When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
 - **Linux** (`linux/CMakeLists.txt`): the `ONNXRUNTIME_ROOT_DIR` env seeding
   and separate `SYSTEM_ONNXRUNTIME` pkg-config prefix, which prevents a failed
   lookup from clearing the application's pinned download version.
+- **Android** (`android/src/main/kotlin/com/masicai/flutteronnxruntime/FlutterOnnxruntimePlugin.kt`):
+  remove the obsolete `addArmNN` call, which is absent from the shared runtime's
+  Java API. Explicit ArmNN requests use the existing unsupported-provider error;
+  the application's CPU sessions are unaffected.
 
 If the bundled ONNX Runtime **version** changes, also update the pinned binary
 URL + per-arch `sha256` in the Flathub manifest's `onnxruntime` module

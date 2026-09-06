@@ -12762,16 +12762,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sherpaDeleteModel => 'Smazat stažený model';
 
   @override
-  String get sherpaModelError =>
-      'Operace s modelem se nezdařila. Zkus to znovu.';
-
-  @override
   String sherpaDownloadModel(String size) {
     return 'Stáhnout ($size MB)';
   }
 
   @override
+  String get sherpaModelError =>
+      'Operace s modelem se nezdařila. Zkus to znovu.';
+
+  @override
   String get sherpaModelInstalled => 'Staženo';
+
+  @override
+  String get sherpaModelNotInstalled => 'Stáhni si model do tohoto zařízení';
 
   @override
   String get sherpaProviderDescription =>

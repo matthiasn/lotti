@@ -5448,6 +5448,7 @@
   "sherpaDownloadModel": "Ladda ner ({size} MB)",
   "sherpaModelError": "Modellåtgärden misslyckades. Försök igen.",
   "sherpaModelInstalled": "Nedladdad",
+  "sherpaModelNotInstalled": "Ladda ner en modell på den här enheten",
   "sherpaProviderDescription": "Transkribera på den här enheten utan server. Ladda ner en modell nedan; dina inspelningar stannar på den här enheten.",
   "sidebarActiveSectionTitle": "Verksamhet",
   "sidebarActivityCollapseTooltip": "Kollapsaktivitet",

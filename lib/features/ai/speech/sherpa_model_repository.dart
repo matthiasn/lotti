@@ -31,9 +31,6 @@ class SherpaModel {
   final List<SherpaModelFile> files;
 
   int get bytes => files.fold(0, (total, file) => total + file.bytes);
-  String get encoder => '$id-encoder.int8.onnx';
-  String get decoder => '$id-decoder.int8.onnx';
-  String get tokens => '$id-tokens.txt';
 
   Uri uri(SherpaModelFile file) => Uri.parse(
     'https://huggingface.co/csukuangfj/sherpa-onnx-whisper-$id/'

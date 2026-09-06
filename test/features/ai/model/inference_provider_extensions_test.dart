@@ -23,6 +23,7 @@ void main() {
           InferenceProviderType.nebiusAiStudio: LottiIcons.rocket,
           InferenceProviderType.omlx: LottiIcons.memory,
           InferenceProviderType.whisper: LottiIcons.mic,
+          InferenceProviderType.sherpa: LottiIcons.mic,
           InferenceProviderType.voxtral: LottiIcons.waveform,
         };
 
@@ -50,6 +51,7 @@ void main() {
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.omlx,
           InferenceProviderType.whisper,
+          InferenceProviderType.sherpa,
           InferenceProviderType.voxtral,
         };
         expect(pinned, InferenceProviderType.values.toSet());

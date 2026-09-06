@@ -217,5 +217,16 @@ void main() {
         expect(File(request.wavPath).existsSync(), isFalse);
       },
     );
+
+    test(
+      'default worker reports unavailable native or model resources',
+      () async {
+        await expectLater(
+          runSherpaWorker(request).toList(),
+          throwsA(isA<StateError>()),
+        );
+        expect(await directory.list().toList(), isEmpty);
+      },
+    );
   });
 }

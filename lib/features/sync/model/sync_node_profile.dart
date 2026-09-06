@@ -77,3 +77,46 @@ abstract class SyncNodeProfile with _$SyncNodeProfile {
   factory SyncNodeProfile.fromJson(Map<String, dynamic> json) =>
       _$SyncNodeProfileFromJson(json);
 }
+
+/// Keeps legacy peers' closed capability enum readable on the sync wire.
+/// New peers prefer the extensible complete list and ignore unknown tokens;
+/// older peers read only the original four tokens in `capabilities`.
+class SyncNodeProfileWireConverter
+    implements JsonConverter<SyncNodeProfile, Map<String, dynamic>> {
+  const SyncNodeProfileWireConverter();
+
+  static const Set<NodeCapability> _legacyCapabilities = {
+    NodeCapability.omlxLlm,
+    NodeCapability.ollamaLlm,
+    NodeCapability.voxtral,
+    NodeCapability.whisper,
+  };
+
+  @override
+  SyncNodeProfile fromJson(Map<String, dynamic> json) {
+    final tokens =
+        (json['capabilitiesV2'] ?? json['capabilities']) as List<dynamic>;
+    final known = NodeCapability.values
+        .map((capability) => capability.name)
+        .toSet();
+    return SyncNodeProfile.fromJson({
+      ...json,
+      'capabilities': tokens.where(known.contains).toList(),
+    });
+  }
+
+  @override
+  Map<String, dynamic> toJson(SyncNodeProfile profile) => {
+    ...profile.toJson(),
+    'capabilities': profile.capabilities
+        .where(_legacyCapabilities.contains)
+        .map((capability) => capability.name)
+        .toList(),
+    if (profile.capabilities.any(
+      (capability) => !_legacyCapabilities.contains(capability),
+    ))
+      'capabilitiesV2': profile.capabilities
+          .map((capability) => capability.name)
+          .toList(),
+  };
+}

@@ -1,10 +1,15 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -57,6 +62,7 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
   Future<void> _download() async {
     if (_progress != null) return;
     final models = ref.read(sherpaModelRepositoryProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
     final configs = ref.read(aiConfigRepositoryProvider);
     setState(() {
       _progress = 0;
@@ -69,6 +75,7 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
           if (mounted) setState(() => _progress = progress);
         },
       );
+      await _modelsChanged(container);
       // A synced row may already exist. Re-create only a missing/deleted row,
       // so downloading does not rewrite its profile references or user edits.
       final existing = await configs.getConfigsByType(AiConfigType.model);
@@ -90,7 +97,11 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
           ),
         );
       }
-      if (mounted) setState(() => _installed = Future.value(true));
+      if (mounted) {
+        setState(() {
+          _installed = Future.value(true);
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
@@ -98,15 +109,36 @@ class _ModelDownloadState extends ConsumerState<_ModelDownload> {
     }
   }
 
+  Future<void> _modelsChanged(ProviderContainer container) async {
+    try {
+      container.invalidate(sherpaInstalledModelIdsProvider);
+      await getIt<SyncNodeProfileBroadcaster>().broadcastIfChanged();
+    } catch (error, stackTrace) {
+      // A sync failure does not undo a successful local file operation.
+      developer.log(
+        'Failed to advertise updated speech capability',
+        name: 'SherpaModelsSection',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
   Future<void> _remove() async {
     final models = ref.read(sherpaModelRepositoryProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
     setState(() {
       _progress = 0;
       _failed = false;
     });
     try {
       await models.remove(widget.model.id);
-      if (mounted) setState(() => _installed = Future.value(false));
+      await _modelsChanged(container);
+      if (mounted) {
+        setState(() {
+          _installed = Future.value(false);
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {

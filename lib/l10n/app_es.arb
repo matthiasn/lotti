@@ -4912,6 +4912,7 @@
   "sherpaDownloadModel": "Descargar ({size} MB)",
   "sherpaModelError": "La operación del modelo falló. Inténtalo de nuevo.",
   "sherpaModelInstalled": "Descargado",
+  "sherpaModelNotInstalled": "Descarga un modelo en este dispositivo",
   "sherpaProviderDescription": "Transcribe en este dispositivo sin servidor. Descarga un modelo abajo; tus grabaciones se quedan en este dispositivo.",
   "sidebarActiveSectionTitle": "Actividad",
   "sidebarActivityCollapseTooltip": "Contraer actividad",

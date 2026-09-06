@@ -10,7 +10,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// profile, and broadcasts it over Matrix when it differs from the previously
 /// published snapshot.
 ///
-/// Invoked on startup and whenever the user edits their device's display name.
+/// Invoked on startup, device renames, and embedded speech model changes.
 /// All calls are idempotent — a no-op when nothing has changed since the last
 /// broadcast — so callers can invoke [broadcastIfChanged] without coordinating
 /// against each other.

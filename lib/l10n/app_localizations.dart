@@ -21205,23 +21205,29 @@ abstract class AppLocalizations {
   /// **'Delete downloaded model'**
   String get sherpaDeleteModel;
 
-  /// No description provided for @sherpaModelError.
-  ///
-  /// In en, this message translates to:
-  /// **'Model operation failed. Try again.'**
-  String get sherpaModelError;
-
   /// No description provided for @sherpaDownloadModel.
   ///
   /// In en, this message translates to:
   /// **'Download ({size} MB)'**
   String sherpaDownloadModel(String size);
 
+  /// No description provided for @sherpaModelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Model operation failed. Try again.'**
+  String get sherpaModelError;
+
   /// No description provided for @sherpaModelInstalled.
   ///
   /// In en, this message translates to:
   /// **'Downloaded'**
   String get sherpaModelInstalled;
+
+  /// No description provided for @sherpaModelNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Download a model on this device'**
+  String get sherpaModelNotInstalled;
 
   /// No description provided for @sherpaProviderDescription.
   ///

@@ -8,7 +8,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 /// - `connected`: a cloud provider has a non-blank API key and a
 ///   local provider (Ollama / Voxtral / Whisper — see
 ///   [ProviderConfig.noApiKeyRequired]) has both a non-blank base URL
-///   and at least one model row. The card renders the model-count
+///   and at least one model row. Embedded sherpa instead requires a verified
+///   downloaded model on this device. The card renders the model-count
 ///   tail on the right of the status row.
 /// - `invalidKey`: cloud provider with no / blank API key. Generic
 ///   on purpose so missing / wrong / revoked / 401 / 403 all read
@@ -31,7 +32,13 @@ enum AiProviderCardStatus { connected, invalidKey, offline }
 AiProviderCardStatus aiProviderCardStatusFor({
   required AiConfigInferenceProvider provider,
   required int modelCount,
+  int installedEmbeddedModelCount = 0,
 }) {
+  if (provider.inferenceProviderType == InferenceProviderType.sherpa) {
+    return installedEmbeddedModelCount > 0 && modelCount > 0
+        ? AiProviderCardStatus.connected
+        : AiProviderCardStatus.offline;
+  }
   final isLocal = ProviderConfig.noApiKeyRequired.contains(
     provider.inferenceProviderType,
   );

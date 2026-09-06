@@ -62,6 +62,10 @@ Downloads stream into `.part` files, verify size and digest, then rename into
 place. Concurrent requests for the same model share one future. Partial files
 are deleted on failure; valid completed artifacts can be reused on retry.
 Removing files preserves synced model configurations and profile references.
+Provider cards and detail headers count verified local installations, refreshed
+after downloads and removals. Both operations also republish changed sync-node
+capabilities without requiring an app restart. A failed broadcast does not undo
+the successful local file operation.
 Removing a model during its download is rejected.
 
 # Runtime flow

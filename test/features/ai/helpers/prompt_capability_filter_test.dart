@@ -385,6 +385,7 @@ void main() {
           InferenceProviderType.ollama,
           InferenceProviderType.omlx,
           InferenceProviderType.voxtral,
+          InferenceProviderType.sherpa,
         }.contains(providerType);
 
         expect(

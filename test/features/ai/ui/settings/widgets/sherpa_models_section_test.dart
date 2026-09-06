@@ -5,6 +5,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/sherpa_models_section.dart';
+import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -14,9 +16,13 @@ import '../../../../../widget_test_utils.dart';
 void main() {
   late MockSherpaModelRepository models;
   late MockAiConfigRepository configs;
+  late MockSyncNodeProfileBroadcaster broadcaster;
   setUpAll(registerAllFallbackValues);
   setUp(() async {
     await setUpTestGetIt();
+    broadcaster = MockSyncNodeProfileBroadcaster();
+    when(() => broadcaster.broadcastIfChanged()).thenAnswer((_) async => true);
+    getIt.registerSingleton<SyncNodeProfileBroadcaster>(broadcaster);
     models = MockSherpaModelRepository();
     configs = MockAiConfigRepository();
     when(() => models.isInstalled(any())).thenAnswer((_) async => false);
@@ -62,10 +68,12 @@ void main() {
       final saved =
           verify(() => configs.saveConfig(captureAny())).captured.single
               as AiConfigModel;
+      verify(() => broadcaster.broadcastIfChanged()).called(1);
       expect(saved.inferenceProviderId, 'sherpa-provider');
       expect(saved.providerModelId, 'tiny');
       expect(saved.inputModalities, [Modality.audio]);
       expect(find.text('Downloaded'), findsOneWidget);
+      expect(find.text('Model operation failed. Try again.'), findsNothing);
     },
   );
 
@@ -93,9 +101,11 @@ void main() {
       await tester.tap(find.text('Delete downloaded model'));
       await tester.pumpAndSettle();
       verify(() => models.remove('tiny')).called(1);
+      verify(() => broadcaster.broadcastIfChanged()).called(1);
       verifyNever(() => configs.saveConfig(any()));
       expect(find.text('Download (104 MB)'), findsOneWidget);
       expect(find.text('Downloaded'), findsNothing);
+      expect(find.text('Model operation failed. Try again.'), findsNothing);
     },
   );
   testWidgets(
@@ -138,5 +148,21 @@ void main() {
     verifyNever(() => configs.saveConfig(any()));
     expect(find.text('Downloaded'), findsOneWidget);
     expect(find.text('Download (104 MB)'), findsNothing);
+  });
+  testWidgets('a sync failure does not undo a successful model download', (
+    tester,
+  ) async {
+    when(
+      () => broadcaster.broadcastIfChanged(),
+    ).thenThrow(StateError('sync unavailable'));
+    when(
+      () => models.install('tiny', onProgress: any(named: 'onProgress')),
+    ).thenAnswer((_) async => '/model');
+    await pump(tester);
+    await tester.tap(find.text('Download (104 MB)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Downloaded'), findsOneWidget);
+    expect(find.text('Model operation failed. Try again.'), findsNothing);
+    verify(() => configs.saveConfig(any())).called(1);
   });
 }

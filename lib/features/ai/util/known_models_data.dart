@@ -784,7 +784,7 @@ const sherpaSpeechModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     publisher: 'OpenAI',
-    description: '',
+    description: 'OpenAI Whisper Tiny · ONNX INT8',
   ),
   KnownModel(
     providerModelId: 'base',
@@ -793,6 +793,6 @@ const sherpaSpeechModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     publisher: 'OpenAI',
-    description: '',
+    description: 'OpenAI Whisper Base · ONNX INT8',
   ),
 ];

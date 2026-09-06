@@ -12624,15 +12624,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sherpaDeleteModel => 'Gedownload model verwijderen';
 
   @override
-  String get sherpaModelError => 'Modelbewerking mislukt. Probeer het opnieuw.';
-
-  @override
   String sherpaDownloadModel(String size) {
     return 'Downloaden ($size MB)';
   }
 
   @override
+  String get sherpaModelError => 'Modelbewerking mislukt. Probeer het opnieuw.';
+
+  @override
   String get sherpaModelInstalled => 'Gedownload';
+
+  @override
+  String get sherpaModelNotInstalled => 'Download een model op dit apparaat';
 
   @override
   String get sherpaProviderDescription =>

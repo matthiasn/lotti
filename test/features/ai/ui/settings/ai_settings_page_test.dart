@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/profile_usage_provider.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
@@ -240,6 +241,59 @@ void main() {
   // "no pending Timer" guard trips on teardown.
   Future<void> settleTimers(WidgetTester tester) =>
       tester.pump(const Duration(milliseconds: 400));
+
+  testWidgets(
+    'sherpa cards follow installed files rather than synced model rows',
+    (tester) async {
+      var installed = <String>{};
+      await pumpWith(
+        tester: tester,
+        providers: [
+          buildProvider(
+            id: 'embedded',
+            type: InferenceProviderType.sherpa,
+            apiKey: '',
+            baseUrl: '',
+          ),
+        ],
+        models: [
+          buildModel(
+            id: 'tiny-model',
+            providerId: 'embedded',
+            providerModelId: 'tiny',
+          ),
+        ],
+        profiles: [],
+        initialTab: AiSettingsTab.providers,
+        additionalOverrides: [
+          sherpaInstalledModelIdsProvider.overrideWith(
+            (ref) async => installed,
+          ),
+        ],
+      );
+      await tester.pump();
+      AiProviderCard card() =>
+          tester.widget<AiProviderCard>(find.byType(AiProviderCard));
+      expect(card().status, AiProviderCardStatus.offline);
+      expect(card().modelCount, 0);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AiSettingsPage)),
+      );
+      installed = {'tiny'};
+      container.invalidate(sherpaInstalledModelIdsProvider);
+      await tester.pump();
+      await tester.pump();
+      expect(card().status, AiProviderCardStatus.connected);
+      expect(card().modelCount, 1);
+      installed = {};
+      container.invalidate(sherpaInstalledModelIdsProvider);
+      await tester.pump();
+      await tester.pump();
+      expect(card().status, AiProviderCardStatus.offline);
+      expect(card().modelCount, 0);
+      await settleTimers(tester);
+    },
+  );
 
   group('AiSettingsPage — empty state', () {
     testWidgets(

@@ -184,6 +184,28 @@ void main() {
       expect(decoded.profile.updatedAt, updatedAt);
     });
 
+    test('sherpa wire capability does not break a legacy profile decoder', () {
+      final profile = SyncNodeProfile(
+        hostId: 'h',
+        displayName: 'Local',
+        platform: 'linux',
+        capabilities: const [NodeCapability.sherpa, NodeCapability.ollamaLlm],
+        updatedAt: updatedAt,
+      );
+      final json =
+          jsonDecode(
+                jsonEncode(
+                  SyncMessage.syncNodeProfile(profile: profile).toJson(),
+                ),
+              )
+              as Map<String, dynamic>;
+      final wireProfile = json['profile'] as Map<String, dynamic>;
+      expect(wireProfile['capabilities'], ['ollamaLlm']);
+      expect(wireProfile['capabilitiesV2'], ['sherpa', 'ollamaLlm']);
+      final decoded = SyncMessage.fromJson(json) as SyncSyncNodeProfile;
+      expect(decoded.profile, profile);
+    });
+
     test('emits a stable runtimeType discriminator', () {
       final profile = SyncNodeProfile(
         hostId: 'h',

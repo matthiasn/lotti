@@ -7094,6 +7094,7 @@
   },
   "sherpaModelError": "Model operation failed. Try again.",
   "sherpaModelInstalled": "Downloaded",
+  "sherpaModelNotInstalled": "Download a model on this device",
   "sherpaProviderDescription": "Transcribe on this device without a server. Download a model below; your recordings stay on this device.",
   "sidebarActiveSectionTitle": "Activity",
   "sidebarActivityCollapseTooltip": "Collapse activity",

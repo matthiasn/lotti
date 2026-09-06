@@ -12599,15 +12599,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get sherpaDeleteModel => 'Slet downloadet model';
 
   @override
-  String get sherpaModelError => 'Modelhandlingen mislykkedes. Prøv igen.';
-
-  @override
   String sherpaDownloadModel(String size) {
     return 'Download ($size MB)';
   }
 
   @override
+  String get sherpaModelError => 'Modelhandlingen mislykkedes. Prøv igen.';
+
+  @override
   String get sherpaModelInstalled => 'Downloadet';
+
+  @override
+  String get sherpaModelNotInstalled => 'Download en model på denne enhed';
 
   @override
   String get sherpaProviderDescription =>

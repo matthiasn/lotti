@@ -1975,6 +1975,7 @@ void main() {
           aiConfigRepository: localAiConfig,
           // Generated scenarios cover behaviour past the consent gate.
           categoryAutomationLookup: (_) async => true,
+          isEmbeddedModelInstalled: (_) async => true,
         );
 
         final providers = <AiConfigInferenceProvider>[];
@@ -2024,7 +2025,11 @@ void main() {
         final winnerProvider = result.resolvedProfile!.transcriptionProvider!;
         final winnerType = winnerProvider.inferenceProviderType;
 
-        if (scenario.providerTypes.contains(InferenceProviderType.mistral)) {
+        if (scenario.providerTypes.contains(InferenceProviderType.sherpa)) {
+          expect(winnerType, InferenceProviderType.sherpa, reason: '$scenario');
+        } else if (scenario.providerTypes.contains(
+          InferenceProviderType.mistral,
+        )) {
           expect(
             winnerType,
             InferenceProviderType.mistral,

@@ -4919,6 +4919,7 @@
   "sherpaDownloadModel": "Stáhnout ({size} MB)",
   "sherpaModelError": "Operace s modelem se nezdařila. Zkus to znovu.",
   "sherpaModelInstalled": "Staženo",
+  "sherpaModelNotInstalled": "Stáhni si model do tohoto zařízení",
   "sherpaProviderDescription": "Přepisuj na tomto zařízení bez serveru. Stáhni si níže model; tvoje nahrávky zůstanou v tomto zařízení.",
   "sidebarActiveSectionTitle": "Aktivita",
   "sidebarActivityCollapseTooltip": "Sbalit aktivitu",

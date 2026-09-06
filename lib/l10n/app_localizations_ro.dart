@@ -12843,16 +12843,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sherpaDeleteModel => 'Ștergeți modelul descărcat';
 
   @override
-  String get sherpaModelError =>
-      'Operațiunea asupra modelului a eșuat. Încercați din nou.';
-
-  @override
   String sherpaDownloadModel(String size) {
     return 'Descărcare ($size MB)';
   }
 
   @override
+  String get sherpaModelError =>
+      'Operațiunea asupra modelului a eșuat. Încercați din nou.';
+
+  @override
   String get sherpaModelInstalled => 'Descărcat';
+
+  @override
+  String get sherpaModelNotInstalled =>
+      'Descărcați un model pe acest dispozitiv';
 
   @override
   String get sherpaProviderDescription =>

@@ -12819,16 +12819,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sherpaDeleteModel => 'Supprimer le modèle téléchargé';
 
   @override
-  String get sherpaModelError =>
-      'L’opération sur le modèle a échoué. Réessaie.';
-
-  @override
   String sherpaDownloadModel(String size) {
     return 'Télécharger ($size Mo)';
   }
 
   @override
+  String get sherpaModelError =>
+      'L’opération sur le modèle a échoué. Réessaie.';
+
+  @override
   String get sherpaModelInstalled => 'Téléchargé';
+
+  @override
+  String get sherpaModelNotInstalled => 'Télécharge un modèle sur cet appareil';
 
   @override
   String get sherpaProviderDescription =>

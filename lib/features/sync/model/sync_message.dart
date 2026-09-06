@@ -139,7 +139,7 @@ sealed class SyncMessage with _$SyncMessage {
   /// `profile.updatedAt` for last-write-wins. Profiles are presence-style
   /// state, not journal data, so they don't participate in gap detection.
   const factory SyncMessage.syncNodeProfile({
-    required SyncNodeProfile profile,
+    @SyncNodeProfileWireConverter() required SyncNodeProfile profile,
   }) = SyncSyncNodeProfile;
 
   /// Removal of an AI config row.
