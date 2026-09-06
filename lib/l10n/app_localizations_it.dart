@@ -11064,6 +11064,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipAddChannelButton => 'Aggiungi recapito';
 
   @override
+  String get relationshipAddChannelFromContacts => 'o dai contatti';
+
+  @override
   String get relationshipAgentBriefNow => 'Crea il briefing ora';
 
   @override
@@ -11222,10 +11225,22 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'in regola';
 
   @override
+  String get relationshipCadencePromptLabel => 'Ricordamelo ogni';
+
+  @override
   String get relationshipCadenceQuarterly => 'Ogni trimestre';
 
   @override
   String get relationshipCadenceWeekly => 'Ogni settimana';
+
+  @override
+  String get relationshipChatAgentSubtitle =>
+      'Conosce i tuoi contatti, non i recapiti';
+
+  @override
+  String relationshipChatAgentTitle(String name) {
+    return '$name · agente di briefing';
+  }
 
   @override
   String get relationshipChatTooltip => 'Chatta su questa persona';
@@ -11342,6 +11357,21 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile salvare le modifiche. Riprova.';
 
   @override
+  String get relationshipFormImportantBody =>
+      'Attiva un briefing, promemoria e una chat. Le note su questa persona vanno all\'agente; i recapiti mai.';
+
+  @override
+  String relationshipFormImportantBodyNamed(String name) {
+    return 'Attiva un briefing, promemoria e una chat per $name. Le note su questa persona vanno all\'agente; i recapiti mai.';
+  }
+
+  @override
+  String get relationshipFormReachTitle => 'Come raggiungerli';
+
+  @override
+  String get relationshipFormWhoTitle => 'Chi';
+
+  @override
   String get relationshipHealthNeedsAttention => 'Serve attenzione';
 
   @override
@@ -11396,6 +11426,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipImportGrantButton => 'Consenti accesso';
 
   @override
+  String get relationshipImportImportantBody =>
+      'Briefing, promemoria e una chat. Senza, non parte nulla da solo.';
+
+  @override
   String get relationshipImportNoMatches =>
       'Nessun contatto corrisponde alla tua ricerca';
 
@@ -11416,6 +11450,18 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other: 'Controlla $count',
       one: 'Controlla 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipImportReviewSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count persone selezionate · i recapiti restano su questo dispositivo',
+      one: '1 persona selezionata · i recapiti restano su questo dispositivo',
     );
     return '$_temp0';
   }

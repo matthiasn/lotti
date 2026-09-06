@@ -10990,6 +10990,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipAddChannelButton => 'Kontaktweg hinzufügen';
 
   @override
+  String get relationshipAddChannelFromContacts => 'oder aus Kontakten';
+
+  @override
   String get relationshipAgentBriefNow => 'Jetzt briefen';
 
   @override
@@ -11147,10 +11150,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'im Rhythmus';
 
   @override
+  String get relationshipCadencePromptLabel => 'Erinnere mich alle';
+
+  @override
   String get relationshipCadenceQuarterly => 'Vierteljährlich';
 
   @override
   String get relationshipCadenceWeekly => 'Wöchentlich';
+
+  @override
+  String get relationshipChatAgentSubtitle =>
+      'Kennt deine Check-ins, nicht die Kontaktwege';
+
+  @override
+  String relationshipChatAgentTitle(String name) {
+    return '$name · Briefing-Agent';
+  }
 
   @override
   String get relationshipChatTooltip => 'Über diese Person chatten';
@@ -11268,6 +11283,21 @@ class AppLocalizationsDe extends AppLocalizations {
       'Änderungen konnten nicht gespeichert werden. Bitte versuch es erneut.';
 
   @override
+  String get relationshipFormImportantBody =>
+      'Schaltet Briefing, Erinnerungen und einen Chat ein. Notizen zu Check-ins gehen an den Agenten, Kontaktwege nie.';
+
+  @override
+  String relationshipFormImportantBodyNamed(String name) {
+    return 'Schaltet Briefing, Erinnerungen und einen Chat für $name ein. Notizen zu Check-ins gehen an den Agenten, Kontaktwege nie.';
+  }
+
+  @override
+  String get relationshipFormReachTitle => 'Kontaktmöglichkeiten';
+
+  @override
+  String get relationshipFormWhoTitle => 'Wer';
+
+  @override
   String get relationshipHealthNeedsAttention => 'Braucht Aufmerksamkeit';
 
   @override
@@ -11321,6 +11351,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipImportGrantButton => 'Zugriff erlauben';
 
   @override
+  String get relationshipImportImportantBody =>
+      'Briefings, Erinnerungen und ein Chat. Ohne das läuft nichts von allein.';
+
+  @override
   String get relationshipImportNoMatches =>
       'Keine Kontakte passen zu deiner Suche';
 
@@ -11341,6 +11375,18 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: '$count prüfen',
       one: '1 prüfen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipImportReviewSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count Personen ausgewählt · Kontaktdaten bleiben auf diesem Gerät',
+      one: '1 Person ausgewählt · Kontaktdaten bleiben auf diesem Gerät',
     );
     return '$_temp0';
   }

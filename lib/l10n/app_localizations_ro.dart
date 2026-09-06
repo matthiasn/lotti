@@ -11145,6 +11145,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipAddChannelButton => 'Adăugați o modalitate de contact';
 
   @override
+  String get relationshipAddChannelFromContacts => 'sau din contacte';
+
+  @override
   String get relationshipAgentBriefNow => 'Creați briefingul acum';
 
   @override
@@ -11307,10 +11310,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'la zi';
 
   @override
+  String get relationshipCadencePromptLabel => 'Amintiți-mi la fiecare';
+
+  @override
   String get relationshipCadenceQuarterly => 'Trimestrial';
 
   @override
   String get relationshipCadenceWeekly => 'Săptămânal';
+
+  @override
+  String get relationshipChatAgentSubtitle =>
+      'Cunoaște check-in-urile dvs., nu canalele de contact';
+
+  @override
+  String relationshipChatAgentTitle(String name) {
+    return '$name · agent de briefing';
+  }
 
   @override
   String get relationshipChatTooltip => 'Discutați despre această persoană';
@@ -11430,6 +11445,21 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modificările nu au putut fi salvate. Încercați din nou.';
 
   @override
+  String get relationshipFormImportantBody =>
+      'Activează un briefing, memento-uri și un chat. Notele din check-in-uri ajung la agent; canalele de contact niciodată.';
+
+  @override
+  String relationshipFormImportantBodyNamed(String name) {
+    return 'Activează un briefing, memento-uri și un chat pentru $name. Notele din check-in-uri ajung la agent; canalele de contact niciodată.';
+  }
+
+  @override
+  String get relationshipFormReachTitle => 'Cum îi contactați';
+
+  @override
+  String get relationshipFormWhoTitle => 'Cine';
+
+  @override
   String get relationshipHealthNeedsAttention => 'Necesită atenție';
 
   @override
@@ -11486,6 +11516,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipImportGrantButton => 'Permiteți accesul';
 
   @override
+  String get relationshipImportImportantBody =>
+      'Briefinguri, memento-uri și un chat. Fără acestea, nimic nu pornește singur.';
+
+  @override
   String get relationshipImportNoMatches =>
       'Niciun contact nu corespunde căutării dumneavoastră';
 
@@ -11507,6 +11541,20 @@ class AppLocalizationsRo extends AppLocalizations {
       other: 'Verificați $count',
       few: 'Verificați $count',
       one: 'Verificați 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipImportReviewSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de persoane selectate · datele de contact rămân pe acest dispozitiv',
+      few:
+          '$count persoane selectate · datele de contact rămân pe acest dispozitiv',
+      one: '1 persoană selectată · datele de contact rămân pe acest dispozitiv',
     );
     return '$_temp0';
   }

@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
+import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
+import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -84,12 +87,30 @@ class _ContactImportPageState extends ConsumerState<ContactImportPage> {
     final state = ref.watch(contactImportControllerProvider);
     final messages = context.messages;
 
+    final tokens = context.designTokens;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _reviewing
-              ? messages.relationshipImportReviewTitle
-              : messages.relationshipImportTitle,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _reviewing
+                  ? messages.relationshipImportReviewTitle
+                  : messages.relationshipImportTitle,
+            ),
+            // The review step says how many people this is about, and
+            // repeats where their numbers stay — the two facts the user is
+            // deciding with.
+            if (_reviewing)
+              Text(
+                messages.relationshipImportReviewSubtitle(state.drafts.length),
+                key: const ValueKey('contact-import-review-subtitle'),
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+          ],
         ),
         leading: _reviewing
             ? IconButton(
@@ -225,61 +246,117 @@ class _ReviewStep extends ConsumerWidget {
       itemCount: drafts.length,
       itemBuilder: (context, index) {
         final draft = drafts[index];
-        return Card(
+        final messages = context.messages;
+        final name = draft.contact.displayName;
+        return DesignSystemSectionCard(
+          key: ValueKey('contact-import-review-${draft.contact.id}'),
           margin: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.cardPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  draft.contact.displayName,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  PersonaAvatar(
+                    initial: name.isEmpty ? '?' : name.characters.first,
+                    id: draft.contact.id,
+                    size: tokens.spacing.step9,
                   ),
-                ),
-                if (draft.contact.channels.isNotEmpty) ...[
-                  SizedBox(height: tokens.spacing.step2),
-                  Text(
-                    draft.contact.channels.map((c) => c.value).join(' · '),
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                        if (draft.contact.channels.isNotEmpty) ...[
+                          SizedBox(height: tokens.spacing.step1),
+                          Text(
+                            draft.contact.channels
+                                .map((c) => c.value)
+                                .join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: tokens.colors.text.lowEmphasis,
+                                ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: draft.important,
-                  title: Text(context.messages.relationshipImportantLabel),
-                  subtitle: Text(
-                    context.messages.relationshipImportantDescription,
-                  ),
-                  onChanged: (value) => controller.setImportant(
-                    contactId: draft.contact.id,
-                    important: value,
-                  ),
-                ),
-                // The cadence only exists for people who are nurtured, so it
-                // appears only once importance is on.
-                if (draft.important)
-                  Wrap(
-                    spacing: tokens.spacing.step3,
-                    children: [
-                      for (final preset in relationshipCadencePresets)
-                        ChoiceChip(
-                          label: Text(
-                            relationshipCadenceLabel(context, preset),
-                          ),
-                          selected: draft.cadenceDays == preset,
-                          onSelected: (_) => controller.setCadence(
-                            contactId: draft.contact.id,
-                            cadenceDays: preset,
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              // Named for the person it decides about: several of these
+              // switches sit in one list, and "on" alone would not say whose
+              // importance just changed.
+              MergeSemantics(
+                child: Semantics(
+                  label: '${messages.relationshipImportantLabel} · $name',
+                  child: InkWell(
+                    onTap: () => controller.setImportant(
+                      contactId: draft.contact.id,
+                      important: !draft.important,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            messages.relationshipImportantLabel,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
                           ),
                         ),
-                    ],
+                        Switch(
+                          value: draft.important,
+                          onChanged: (value) => controller.setImportant(
+                            contactId: draft.contact.id,
+                            important: value,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                messages.relationshipImportImportantBody,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+              // The cadence only exists for people who are nurtured, so it
+              // appears only once importance is on.
+              if (draft.important) ...[
+                SizedBox(height: tokens.spacing.step4),
+                Text(
+                  messages.relationshipCadencePromptLabel,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                DsChoicePills<int?>(
+                  value: draft.cadenceDays,
+                  values: relationshipCadencePresets,
+                  labelFor: (preset) =>
+                      relationshipCadenceLabel(context, preset),
+                  onSelected: (preset) => controller.setCadence(
+                    contactId: draft.contact.id,
+                    cadenceDays: preset,
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
         );
       },

@@ -84,6 +84,17 @@ People list gains grouping, a summary card and truthful pills.
 - Import review: cadence presets appear when Important is on; subtitle names the count.
 - Chat: agent header (sparkle avatar, subtitle), desktop chat inside the detail pane with
   an Agent internals button.
+- Delivered as: the form publishes to a `RelationshipFormHandle` so its actions
+  ride the modal's pinned bar, as the capture sheet's do; the category clears
+  through the picker rather than an inline ×; *or from contacts* picks without
+  persisting, folding the contact's channels in as editable drafts; the cadence
+  and status chips use the feature's `DsChoicePills` (one scrolling row) rather
+  than the design's wrap grid, per the design-system decision that removed wrap
+  grids; the chat became `RelationshipChatPane`, hosted by the phone route and
+  by the desktop detail pane, which the location switches through
+  `NavService.desktopRelationshipChatOpen`. The import review's *important*
+  copy says what the switch turns on rather than the design's "keeps them out
+  of AI entirely", which PR #4185 established is untrue.
 
 Every increment: 100 % patch coverage, every new label in every catalog, a changelog
 fragment, before/after captures from the handover recipe (`capture/` in the handover

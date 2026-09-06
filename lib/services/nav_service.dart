@@ -251,6 +251,14 @@ class NavService {
   /// `RelationshipsLocation` from the URL, like the projects slot.
   final ValueNotifier<String?> desktopSelectedRelationshipId =
       ValueNotifier<String?>(null);
+
+  /// Whether the desktop People pane shows the selected person's chat rather
+  /// than their page (the `/chat` segment). The chat is a *pane* on desktop,
+  /// not a stacked route, so the URL still says which person is selected and
+  /// this says which of their two faces is showing.
+  final ValueNotifier<bool> desktopRelationshipChatOpen = ValueNotifier<bool>(
+    false,
+  );
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
 
@@ -959,6 +967,7 @@ class NavService {
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedRelationshipId.dispose();
+    desktopRelationshipChatOpen.dispose();
     desktopSelectedDashboardId.dispose();
     desktopSelectedEntryId.dispose();
     desktopSelectedEntryLinkedFromId.dispose();

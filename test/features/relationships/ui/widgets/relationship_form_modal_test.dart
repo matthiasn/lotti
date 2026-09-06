@@ -4,11 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -21,6 +22,35 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
 
+/// The address book this device does or does not have. `supported: false`
+/// is the desktop case, where the form offers manual entry only.
+class _FakeContactsService implements ContactsService {
+  bool supported = false;
+  ImportedContact? picked;
+  int pickCalls = 0;
+
+  @override
+  bool get isSupported => supported;
+
+  @override
+  Future<ContactsAccess> requestReadAccess() async => ContactsAccess.granted;
+
+  @override
+  Future<List<ImportedContact>> readAll() async => const [];
+
+  @override
+  Future<ImportedContact?> pickSingle() async {
+    pickCalls++;
+    return picked;
+  }
+
+  @override
+  Future<ImportedContact?> readById(String id) async => null;
+
+  @override
+  Future<void> openSystemSettings() async {}
+}
+
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
@@ -28,6 +58,7 @@ void main() {
   late MockRelationshipAgentService mockAgentService;
   late MockJournalRepository mockJournalRepository;
   late MockEntitiesCacheService mockCacheService;
+  late _FakeContactsService contactsService;
 
   RelationshipEntry createdEntry(RelationshipData data) => RelationshipEntry(
     meta: Metadata(
@@ -55,9 +86,10 @@ void main() {
         categoryId: any(named: 'categoryId'),
       ),
     ).thenAnswer((_) async => true);
-    // CategoryField (rendered by the form) reads the category name through
+    // The category row (rendered by the form) reads the category name through
     // `getIt<EntitiesCacheService>()`; default the lookup to "no category".
     mockCacheService = MockEntitiesCacheService();
+    contactsService = _FakeContactsService();
     when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
     await setUpTestGetIt(
       additionalSetup: () =>
@@ -67,15 +99,28 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  Widget buildForm({RelationshipEntry? initial}) =>
-      makeTestableWidgetWithScaffold(
-        RelationshipForm(initial: initial),
-        overrides: [
-          relationshipRepositoryProvider.overrideWithValue(mockRepository),
-          relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
-          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-        ],
-      );
+  /// The form with the pinned bar its actions now live in — the pairing the
+  /// modal builds, so a bare-form test still has a Save to press. Scrollable
+  /// because three cards exceed the harness's 800px child.
+  Widget buildForm({RelationshipEntry? initial}) {
+    final handle = RelationshipFormHandle();
+    return makeTestableWidgetWithScaffold(
+      SingleChildScrollView(
+        child: Column(
+          children: [
+            RelationshipForm(initial: initial, handle: handle),
+            RelationshipFormStickyActions(handle: handle),
+          ],
+        ),
+      ),
+      overrides: [
+        relationshipRepositoryProvider.overrideWithValue(mockRepository),
+        relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
+        journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        contactsServiceProvider.overrideWithValue(contactsService),
+      ],
+    );
+  }
 
   // Every other test here pumps `RelationshipForm` bare, which is why the
   // defect below survived: the form was fine, the modal it lives in was not.
@@ -138,46 +183,64 @@ void main() {
     // a top bar, padding and the safe area on top, so the action row sat
     // below the viewport — and the form's own scroll view consumed every
     // drag, so the page never moved and Save could not be reached at all.
-    testWidgets('dragging over the form reaches the save action', (
+    // The actions now ride the modal's pinned bar, which is what keeps them
+    // on screen no matter how tall the three cards grow.
+    testWidgets('Save is pinned and reachable without scrolling', (
       tester,
     ) async {
       await openEditSheet(tester);
 
-      final save = find.widgetWithText(DesignSystemButton, 'Save');
+      final save = find.byKey(const ValueKey('person-form-save'));
       final viewportBottom =
           tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
-      expect(
-        tester.getTopLeft(save).dy,
-        greaterThan(viewportBottom),
-        reason: 'precondition: the action row starts below the fold',
-      );
-
-      for (var i = 0; i < 5; i++) {
-        await tester.drag(
-          find.byType(RelationshipForm),
-          const Offset(0, -400),
-          warnIfMissed: false,
-        );
-        await tester.pumpAndSettle();
-      }
-
+      expect(save, findsOneWidget);
       expect(
         tester.getBottomLeft(save).dy,
         lessThanOrEqualTo(viewportBottom),
-        reason: 'Save is on screen once the user has scrolled to the end',
+        reason: 'Save is on screen before the user scrolls anywhere',
       );
+      // And it stays there while the form scrolls under it.
+      final before = tester.getTopLeft(save).dy;
+      await tester.drag(
+        find.byType(RelationshipForm),
+        const Offset(0, -400),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(save).dy, before);
     });
 
-    testWidgets('the form adds no scroll view of its own', (tester) async {
+    testWidgets('Cancel in the pinned bar closes without saving', (
+      tester,
+    ) async {
       await openEditSheet(tester);
 
-      expect(
+      await tester.tap(find.byKey(const ValueKey('person-form-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RelationshipForm), findsNothing);
+      verifyNever(() => mockRepository.updateRelationship(any()));
+    });
+
+    // The modal page scrolls the form; a second vertical scroll view inside
+    // it would eat the drag that should reach the page. (The chip rows scroll
+    // horizontally, which does not compete.)
+    testWidgets('the form adds no vertical scroll view of its own', (
+      tester,
+    ) async {
+      await openEditSheet(tester);
+
+      final inner = tester.widgetList<SingleChildScrollView>(
         find.descendant(
           of: find.byType(RelationshipForm),
           matching: find.byType(SingleChildScrollView),
         ),
-        findsNothing,
+      );
+
+      expect(
+        inner.map((view) => view.scrollDirection),
+        everyElement(Axis.horizontal),
       );
     });
   });
@@ -412,6 +475,378 @@ void main() {
     },
   );
 
+  group('the three cards (design 2026-09-06 §6)', () {
+    testWidgets('the Important switch is one labelled control, not a switch '
+        'sitting near a word', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      // A screen reader reaching the control hears what it changes, and the
+      // label toggles it.
+      final semantics = tester.getSemantics(find.byType(Switch));
+      expect(semantics.label, contains('Important'));
+
+      await tester.tap(find.text('Important'));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    });
+
+    testWidgets('groups the form as Who · Important · How to reach them', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('person-form-who-card')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-important-card')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-reach-card')),
+        findsOneWidget,
+      );
+      expect(find.text('Who'), findsOneWidget);
+      expect(find.text('How to reach them'), findsOneWidget);
+      // The channels card repeats the promise the person page makes.
+      expect(
+        find.text('Stays on this device · never shared with the AI'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the cadence appears only once the person is important — a '
+        'cadence on an unimportant person is never evaluated', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nudge me every'), findsNothing);
+      expect(find.text('Weekly'), findsNothing);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nudge me every'), findsOneWidget);
+      expect(find.widgetWithText(DsPill, 'Weekly'), findsOneWidget);
+    });
+
+    testWidgets('the Important explainer names the person once they have a '
+        'name, and never promises no AI at all', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Turns on a briefing, nudges and a chat. Check-in notes go to the '
+          'agent; contact channels never do.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Turns on a briefing, nudges and a chat for Ada. Check-in notes go '
+          'to the agent; contact channels never do.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the category shows as a colour dot, and none shows no dot', (
+      tester,
+    ) async {
+      when(() => mockCacheService.getCategoryById('cat-1')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-1',
+          name: 'Family',
+          private: false,
+          active: true,
+          color: '#FF0000',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('person-form-category-dot')),
+        findsNothing,
+        reason: 'no category, nothing to tint',
+      );
+
+      tester
+          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+          .onChanged('cat-1');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Family'), findsOneWidget);
+      final dot = tester.widget<Container>(
+        find.byKey(const ValueKey('person-form-category-dot')),
+      );
+      expect(
+        (dot.decoration! as BoxDecoration).color,
+        const Color(0xFFFF0000),
+        reason: "the dot carries the category's own colour",
+      );
+    });
+  });
+
+  group('the channel editor rows', () {
+    testWidgets("changing a row's type keeps the value that was typed", (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(2), 'ada@example.com');
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byType(DropdownButtonFormField<ContactChannelType>),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Email').last);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      final data =
+          verify(
+                () => mockRepository.createRelationship(
+                  data: captureAny(named: 'data'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).captured.single
+              as RelationshipData;
+      expect(data.contactChannels, hasLength(1));
+      expect(data.contactChannels.single.type, ContactChannelType.email);
+      expect(data.contactChannels.single.value, 'ada@example.com');
+    });
+
+    testWidgets('removing a row drops it from what is saved', (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(2), '+1 555');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('+1 555'), findsNothing);
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      final data =
+          verify(
+                () => mockRepository.createRelationship(
+                  data: captureAny(named: 'data'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).captured.single
+              as RelationshipData;
+      expect(data.contactChannels, isEmpty);
+    });
+
+    testWidgets('the category row opens the picker and takes the pick', (
+      tester,
+    ) async {
+      final family = CategoryDefinition(
+        id: 'cat-1',
+        name: 'Family',
+        private: false,
+        active: true,
+        color: '#00FF00',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      );
+      when(() => mockCacheService.sortedCategories).thenReturn([family]);
+      when(() => mockCacheService.getCategoryById('cat-1')).thenReturn(family);
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('person-form-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Family').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Family'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('person-form-category-dot')),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('adding channels from the address book', () {
+    testWidgets('is not offered on a device without one', (tester) async {
+      contactsService.supported = false;
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('person-form-add-channel')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+        findsNothing,
+      );
+    });
+
+    testWidgets("folds the picked contact's channels in as editable rows, "
+        'saving nothing until the user does', (tester) async {
+      contactsService
+        ..supported = true
+        ..picked = (
+          id: 'os-1',
+          displayName: 'Ada Lovelace',
+          channels: const [
+            ContactChannel(type: ContactChannelType.mobile, value: '+1 555'),
+          ],
+        );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(contactsService.pickCalls, 1);
+      expect(find.text('+1 555'), findsOneWidget);
+      // Picking is not saving: the person is written only on Save.
+      verifyNever(() => mockRepository.updateRelationship(any()));
+      verifyNever(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      );
+    });
+
+    testWidgets('judges sameness the way the model does, so a formatted '
+        'number and its bare form are one channel', (tester) async {
+      contactsService
+        ..supported = true
+        ..picked = (
+          id: 'os-1',
+          displayName: 'Ada Lovelace',
+          channels: const [
+            // The same number the user typed, punctuated differently, plus an
+            // email that reads like the number's digits but is another type.
+            ContactChannel(
+              type: ContactChannelType.mobile,
+              value: '+1 (555) 010-9999',
+            ),
+            ContactChannel(
+              type: ContactChannelType.email,
+              value: 'ada@example.com',
+            ),
+          ],
+        );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(2), '+15550109999');
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('+1 (555) 010-9999'),
+        findsNothing,
+        reason: 'the punctuated form is the number already typed',
+      );
+      expect(find.text('ada@example.com'), findsOneWidget);
+    });
+
+    testWidgets('adds nothing when the contact only repeats what is already '
+        'typed', (tester) async {
+      contactsService
+        ..supported = true
+        ..picked = (
+          id: 'os-1',
+          displayName: 'Ada Lovelace',
+          channels: const [
+            ContactChannel(type: ContactChannelType.mobile, value: '+1 555'),
+          ],
+        );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(2), '+1 555');
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('person-form-add-from-contacts')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('+1 555'), findsOneWidget);
+    });
+  });
+
   testWidgets('cadence defaults to none when nothing is picked', (
     tester,
   ) async {
@@ -530,23 +965,12 @@ void main() {
       await tester.pumpWidget(buildForm(initial: existing()));
       await tester.pumpAndSettle();
 
-      // Drive the field's callback rather than its picker: the picker is a
+      // Drive the row's callback rather than its picker: the picker is a
       // nested modal with its own harness, and the branch under test is what
       // the form does with the chosen category.
       tester
-          .widget<CategoryField>(find.byType(CategoryField))
-          .onSave(
-            CategoryDefinition(
-              id: 'category-7',
-              name: 'People',
-              createdAt: testDate,
-              updatedAt: testDate,
-              vectorClock: null,
-              private: false,
-              active: true,
-              color: '#FFFFFF',
-            ),
-          );
+          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+          .onChanged('category-7');
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(
@@ -867,7 +1291,7 @@ void main() {
   });
 
   group('the category leg of an edit', () {
-    /// A person filed under `cat-1`, so the field renders its clear button.
+    /// A person filed under `cat-1`, so the row renders that category.
     RelationshipEntry categorized() {
       when(() => mockCacheService.getCategoryById('cat-1')).thenReturn(
         CategoryDefinition(
@@ -900,12 +1324,15 @@ void main() {
       );
     }
 
-    /// Clears the category through the field's × affordance, then saves.
+    /// Clears the category the way the picker reports a cleared choice,
+    /// then saves.
     Future<void> clearCategoryAndSave(WidgetTester tester) async {
       await tester.pumpWidget(buildForm(initial: categorized()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LottiIcons.close));
+      tester
+          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+          .onChanged(null);
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));
@@ -969,9 +1396,11 @@ void main() {
       await tester.pumpWidget(buildForm(initial: categorized()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LottiIcons.close));
+      tester
+          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+          .onChanged(null);
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(Switch));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));

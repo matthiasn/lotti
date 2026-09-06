@@ -40,6 +40,18 @@ sources:
     resource: ../../lib/features/design_system/components/time_pickers/duration_picker_modal.dart
     title: showDurationPicker — the design-system duration modal both hosts share
     last_modified: 2026-09-06
+  - id: person-form
+    resource: ../../lib/features/relationships/ui/widgets/relationship_form_modal.dart
+    title: The add/edit person form — three cards, pinned actions
+    last_modified: 2026-09-06
+  - id: chat-pane
+    resource: ../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart
+    title: The per-person chat pane and its agent header
+    last_modified: 2026-09-06
+  - id: contact-import
+    resource: ../../lib/features/relationships/ui/pages/contact_import_page.dart
+    title: Contact import and its review step
+    last_modified: 2026-09-06
   - id: adr-0038
     resource: ../../docs/adr/0038-relationship-domain-model.md
     title: ADR 0038 — Relationship domain model
@@ -701,6 +713,71 @@ carry the shape — a host-named title, host-worded chips, Done committing a
 *changed* wheel, Clear committing zero, a chip popping before it writes — and
 the task estimate picker is the other host (see the
 [tasks data model](tasks/data-model.md#pickers)).
+
+## The person form, the import review and the chat
+
+Three surfaces finish the redesign (design 2026-09-06 §6), and all three say
+the same thing in the same words: what *important* turns on, and where a
+phone number does not go.
+
+**The form** ([relationship_form_modal.dart](../../lib/features/relationships/ui/widgets/relationship_form_modal.dart))
+groups into three `DesignSystemSectionCard`s — **Who** (name, nickname, the
+category, and while editing the status), **Important** (the consent switch,
+one line saying what it enables, and the cadence presets *only* once it is
+on), **How to reach them** (the channel editor under the same privacy line
+the page's Reach card carries). The category is a name beside a 10px colour
+dot rather than a second large avatar competing with the person's own;
+clearing it goes through the picker's own no-category row, so one component
+owns what the choices are. Like the capture sheet, the form draws no actions:
+it publishes `save` and `canSave` to a `RelationshipFormHandle` and
+`RelationshipFormStickyActions` renders them in the modal's pinned bar, which
+is what keeps Save reachable over three cards of fields.
+
+*Add channel · or from contacts* is one row with two doors. The manual one is
+on every platform (ADR 0041 §2); the address book appears only where there is
+one, and it **picks without persisting** — `ContactsService.pickSingle` hands
+back an `ImportedContact` whose channels become ordinary editable draft rows,
+deduplicated against what is already typed. That is the difference between it
+and the detail page's *Link contact*, which writes: a form that saved behind
+its own Save button would lose the edits still in its fields.
+
+**The import review** ([contact_import_page.dart](../../lib/features/relationships/ui/pages/contact_import_page.dart))
+names the count and the boundary in its subtitle ("2 selected · numbers stay
+on this device"), gives each chosen contact a persona avatar, and reveals the
+cadence presets under a person only once they are marked important — a
+cadence on an unimportant person is never evaluated. Its switch copy says
+what importance turns on, never that leaving it off keeps the person out of
+AI entirely: a chat, an explicit briefing and a dictated check-in all reach a
+model for anyone.
+
+**The chat** is a pane, not only a page.
+[`RelationshipChatPane`](../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart)
+is the shared `AgentChatView` under an identity header — sparkle, "<name> ·
+briefing agent", and the line naming the boundary the agent works within
+(ADR 0041 §5) — with *Agent internals* labelled where there is room and an
+icon where there is not. It has two hosts, and the layout decides which:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Page: /people/<id> on a phone
+    [*] --> Pane: /people/<id> on desktop
+    Page --> ChatPage: /people/<id>/chat — RelationshipChatPage stacks
+    ChatPage --> Page: back beams to the person
+    Pane --> ChatPane: /people/<id>/chat — the detail pane switches
+    ChatPane --> Pane: back beams to the person
+    note right of ChatPane
+      The list stays beside it: the chat replaces
+      the person page inside the same pane rather
+      than covering the whole split.
+    end note
+```
+
+`RelationshipsLocation` writes `NavService.desktopRelationshipChatOpen` from
+the URL's `/chat` segment and pushes the page only on phones, so the address
+bar stays the single source of truth for both layouts and the desktop pane
+never disagrees with it. The pane carries no `Scaffold` of its own — the
+phone route and the detail pane each supply one, which the composer's fields
+need.
 
 # Voice check-ins (plan v2 phase 6)
 

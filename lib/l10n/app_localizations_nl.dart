@@ -10941,6 +10941,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipAddChannelButton => 'Contactgegeven toevoegen';
 
   @override
+  String get relationshipAddChannelFromContacts => 'of uit contacten';
+
+  @override
   String get relationshipAgentBriefNow => 'Nu briefen';
 
   @override
@@ -11098,10 +11101,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCadenceOnTrack => 'op schema';
 
   @override
+  String get relationshipCadencePromptLabel => 'Herinner me elke';
+
+  @override
   String get relationshipCadenceQuarterly => 'Elk kwartaal';
 
   @override
   String get relationshipCadenceWeekly => 'Wekelijks';
+
+  @override
+  String get relationshipChatAgentSubtitle =>
+      'Kent je check-ins, niet de contactgegevens';
+
+  @override
+  String relationshipChatAgentTitle(String name) {
+    return '$name · briefingagent';
+  }
 
   @override
   String get relationshipChatTooltip => 'Chat over deze persoon';
@@ -11219,6 +11234,21 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
 
   @override
+  String get relationshipFormImportantBody =>
+      'Zet een briefing, seintjes en een chat aan. Notities van check-ins gaan naar de agent, contactgegevens nooit.';
+
+  @override
+  String relationshipFormImportantBodyNamed(String name) {
+    return 'Zet een briefing, seintjes en een chat aan voor $name. Notities van check-ins gaan naar de agent, contactgegevens nooit.';
+  }
+
+  @override
+  String get relationshipFormReachTitle => 'Hoe je ze bereikt';
+
+  @override
+  String get relationshipFormWhoTitle => 'Wie';
+
+  @override
   String get relationshipHealthNeedsAttention => 'Vraagt aandacht';
 
   @override
@@ -11272,6 +11302,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipImportGrantButton => 'Toegang toestaan';
 
   @override
+  String get relationshipImportImportantBody =>
+      'Briefings, seintjes en een chat. Zonder dit loopt er niets vanzelf.';
+
+  @override
   String get relationshipImportNoMatches =>
       'Geen contacten komen overeen met je zoekopdracht';
 
@@ -11292,6 +11326,18 @@ class AppLocalizationsNl extends AppLocalizations {
       locale: localeName,
       other: '$count nakijken',
       one: '1 nakijken',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipImportReviewSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count personen geselecteerd · contactgegevens blijven op dit apparaat',
+      one: '1 persoon geselecteerd · contactgegevens blijven op dit apparaat',
     );
     return '$_temp0';
   }
