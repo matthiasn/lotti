@@ -1258,11 +1258,15 @@ void main() {
       // synchronous test scheduler the rejected future stays AsyncLoading),
       // hence the invalidate + future-drain inside `tester.runAsync`.
       var shouldThrow = false;
+      var providerBuilds = 0;
       final result = makeTestableWidgetWithContainer(
         const TaskKnowledgeGraphPage(taskId: taskId),
         mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        // Deliver the deliberate failure without real backoff delays.
+        retry: (_, _) => null,
         overrides: [
           taskGraphProvider(taskId).overrideWith((ref) async {
+            providerBuilds++;
             if (shouldThrow) throw failure;
             return multiNodeData();
           }),
@@ -1297,6 +1301,8 @@ void main() {
       // listener.
       await tester.pump();
       await tester.pump();
+
+      expect(providerBuilds, 2);
 
       // Established content remains visible while the error is logged.
       expect(find.text(l10n.knowledgeGraphError), findsNothing);
