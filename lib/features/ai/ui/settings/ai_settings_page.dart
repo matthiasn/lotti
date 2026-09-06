@@ -18,13 +18,11 @@ import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_actio
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_empty_view.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
-import 'package:lotti/features/ai/util/mlx_audio_model_progress_store.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -249,16 +247,12 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     );
   }
 
-  Future<void> _handleInstallMlxAudioModel(AiConfigModel model) async {
-    await MlxAudioModelDownloadDialog.show(context: context, model: model);
-  }
-
   Future<void> _handleAddProvider() async {
     // Two-tier picker behaviour, but a single modal widget now:
     //
     //  - Fresh users (dismiss flag NOT set) see [AiPickProviderModal]
     //    with its FTUE chrome — branded tile lineup (Gemini, OpenAI,
-    //    Anthropic, Alibaba, MLX Audio, Ollama, Voxtral), the
+    //    Anthropic, Alibaba, oMLX, Ollama, Voxtral), the
     //    "Don't show again" button, and the FTUE subtitle/footer.
     //
     //  - Users who tapped "Don't show again" once before see the

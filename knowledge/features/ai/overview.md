@@ -5,7 +5,7 @@ description: The shared inference plumbing — configuration objects, the skill/
 resource: ../../../lib/features/ai
 tags: [ai, inference, configuration, profiles, skills]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: ai-src
@@ -178,7 +178,7 @@ an established picker with a full loading shell.
 
 * [Execution paths](execution-paths.md) - the legacy prompt path, the skill/profile path, the category consent gate, and per-invocation overrides.
 * [Profile resolution](profile-resolution.md) - which profile drives a run, pinning, and the fail-closed locality check.
-* [Provider routing](provider-routing.md) - the routing table, per-provider specifics, audio transcoding, and MLX Audio.
+* [Provider routing](provider-routing.md) - the routing table, per-provider specifics, audio transcoding, and local HTTP transcription.
 * [Conversations and tool calling](conversations-and-tools.md) - the reusable multi-turn loop.
 * [Seeding and config lifecycle](seeding-and-lifecycle.md) - gated seeds, soft deletes, and migration-safe upgrades.
 * [Embeddings and semantic search](embeddings-and-search.md) - local vector search over ObjectBox shards.
@@ -193,11 +193,7 @@ an established picker with a full loading shell.
   analysis.** The direct path covers considerably more.
 - **Image generation is implemented only for Gemini, Alibaba and Melious.**
 - **Data residency is not enforced by code.** Request destinations are whatever
-  `baseUrl` the selected provider carries. MLX Audio is the exception — it stays
-  inside the app process where supported.
-- **MLX Audio ships only on macOS.** Other platforms report every model
-  unsupported; mobile recordings rely on the synced-audio auto-trigger to reach
-  an MLX-capable desktop.
+  `baseUrl` the selected provider carries.
 
 # Reading guide
 

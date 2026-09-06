@@ -55,7 +55,7 @@ void main() {
         expect(find.text('OpenAI'), findsOneWidget);
         expect(find.text('Anthropic Claude'), findsOneWidget);
         expect(find.text('Alibaba Cloud (Qwen)'), findsOneWidget);
-        expect(find.text('MLX Audio (local)'), findsOneWidget);
+        expect(find.text('MLX Audio (local)'), findsNothing);
         expect(find.text('oMLX (local)'), findsOneWidget);
         expect(find.text('Ollama'), findsOneWidget);
       },

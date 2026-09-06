@@ -36,9 +36,7 @@ AiProviderCardStatus aiProviderCardStatusFor({
     provider.inferenceProviderType,
   );
   if (isLocal) {
-    final missingRequiredBaseUrl =
-        ProviderConfig.usesBaseUrl(provider.inferenceProviderType) &&
-        provider.baseUrl.trim().isEmpty;
+    final missingRequiredBaseUrl = provider.baseUrl.trim().isEmpty;
     if (modelCount == 0 || missingRequiredBaseUrl) {
       return AiProviderCardStatus.offline;
     }

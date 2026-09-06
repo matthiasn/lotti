@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-10T01:20:00+02:00 }
+generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: runner
@@ -166,9 +166,8 @@ exactly the behaviour the switch is meant to make explicit.
 
 Because the fallback needs no profile, the settings switch is offered whenever
 *either* the selected profile carries automated skills *or* the fallback could
-run (`categoryAutomationAvailableProvider`) — otherwise a mobile install with an
-MLX Audio model and no selectable desktop-only profile would lose automation with
-no visible control to restore it.
+run (`categoryAutomationAvailableProvider`). This keeps recording automation
+controllable even when no profile is configured.
 
 Past the gate the automatic branch is intentionally strict:
 

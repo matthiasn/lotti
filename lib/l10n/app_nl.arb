@@ -903,44 +903,6 @@
   "aiInferenceErrorUnknownTitle": "Fout",
   "aiInternalsTitle": "Agent internals",
   "aiModelCardDeleteTooltip": "Model verwijderen",
-  "aiModelDownloadCloseButton": "Sluiten",
-  "aiModelDownloadDialogDescription": "Lotti zal downloaden {modelName} in de MLX Audio cache en gebruik het voor lokale spraakverwerking.",
-  "@aiModelDownloadDialogDescription": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadDialogTitle": "Installeren {modelName}",
-  "@aiModelDownloadDialogTitle": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadInstallTooltip": "Model installeren",
-  "aiModelDownloadOpenProgressTooltip": "Downloadvoortgang tonen",
-  "aiModelDownloadStatusChecking": "Modelstatus controleren",
-  "aiModelDownloadStatusDownloading": "Downloaden {percent}%",
-  "@aiModelDownloadStatusDownloading": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Downloaden",
-  "aiModelDownloadStatusFailed": "Downloaden is mislukt",
-  "aiModelDownloadStatusInstalled": "Geïnstalleerd",
-  "aiModelDownloadStatusNotInstalled": "Niet geïnstalleerd",
-  "aiModelDownloadStatusUnsupported": "Apple Silicium vereist",
-  "aiModelInstallChoiceCancelButton": "Annuleren",
-  "aiModelInstallChoiceDescription": "Kies het lokale spraak-tekstmodel om eerst te downloaden. U kunt de anderen later installeren uit de lijst met modellen.",
-  "aiModelInstallChoiceInstallButton": "Model installeren",
-  "aiModelInstallChoiceRecommended": "Aanbevolen",
-  "aiModelInstallChoiceTitle": "Kies MLX Audio model",
   "aiModelPickerByProviderLabel": "Kies een provider",
   "aiModelPickerCurrentDefaultLabel": "Huidige standaard",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} other{{count} modellen}}",
@@ -1123,12 +1085,10 @@
   "aiProviderDetailRemoveDescription": "Verwijdert de provider en elk model dat ervan afhangt. Dit kan niet ongedaan worden gemaakt.",
   "aiProviderDetailRemoveTitle": "Deze provider verwijderen",
   "aiProviderDetailValueUnset": "Niet ingesteld",
-  "aiProviderEmbeddedRuntimeHint": "Runs ingebed in het Apple-appproces. Er is geen lokale server of basis-URL vereist.",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiName": "OpenAI Compatible",
   "aiProviderMeliousName": "Melious.ai",
   "aiProviderMistralName": "Mistral",
-  "aiProviderMlxAudioName": "MLX-audio (lokaal)",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaName": "Ollama",
   "aiProviderOmlxName": "oMLX (lokaal)",
@@ -1138,7 +1098,6 @@
   "aiProviderTaglineAnthropic": "Claude familie · lange context",
   "aiProviderTaglineGemini": "Multimodal · audio transcriptie",
   "aiProviderTaglineMelious": "EU-gehoste · dynamische catalogus · eco routing",
-  "aiProviderTaglineMlxAudio": "Ingebed · Apple Silicon · lokale audio",
   "aiProviderTaglineOllama": "Lokaal draait · geen cloudgesprekken",
   "aiProviderTaglineOmlx": "Lokale MLX-inferentie · OpenAI-compatibel",
   "aiProviderTaglineOpenAi": "GPT-familie · zicht + redenering",
@@ -1671,7 +1630,7 @@
   "configFlagEnableAiStreaming": "AI-streaming inschakelen voor taakacties",
   "configFlagEnableAiStreamingDescription": "Stream AI-responsen voor taakgerelateerde acties. Schakel de bufferresponsen uit en houd de UI soepeler.",
   "configFlagEnableAiSummaryTts": "AI samenvatting afspelen",
-  "configFlagEnableAiSummaryTtsDescription": "Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd MLX Audio TTS model.",
+  "configFlagEnableAiSummaryTtsDescription": "Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd Supertonic TTS model.",
   "configFlagEnableDailyOs": "DailyOS inschakelen",
   "configFlagEnableDailyOsDescription": "Toon DailyOS in de hoofdnavigatie.",
   "configFlagEnableDashboardsPage": "Dashboards-pagina inschakelen",
@@ -5457,7 +5416,6 @@
   "settingsSyncConflictsSubtitle": "Synchronisatieconflicten oplossen",
   "settingsSyncNodeProfileCapabilitiesEmpty": "Geen enkele gedetecteerde .. auto-trigger van gesynchroniseerde audio-inferentie zal niet gericht op dit apparaat.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Gedetecteerde AI-mogelijkheden",
-  "settingsSyncNodeProfileCapabilityMlxAudio": "MLX-audio (lokaal)",
   "settingsSyncNodeProfileCapabilityOllamaLlm": "Ollama LLM",
   "settingsSyncNodeProfileCapabilityOmlxLlm": "oMLX LLM",
   "settingsSyncNodeProfileCapabilityVoxtral": "Voxtral (lokaal)",

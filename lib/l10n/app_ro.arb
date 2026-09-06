@@ -736,44 +736,6 @@
   "aiInferenceErrorUnknownTitle": "Eroare",
   "aiInternalsTitle": "Componente interne ale agentului",
   "aiModelCardDeleteTooltip": "Ștergeți modelul",
-  "aiModelDownloadCloseButton": "Închideți",
-  "aiModelDownloadDialogDescription": "Lotti va descărca {modelName} în cache-ul MLX Audio și îl va utiliza pentru procesarea vocală locală.",
-  "@aiModelDownloadDialogDescription": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadDialogTitle": "Instalați {modelName}",
-  "@aiModelDownloadDialogTitle": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadInstallTooltip": "Instalați modelul",
-  "aiModelDownloadOpenProgressTooltip": "Afișați progresul descărcării",
-  "aiModelDownloadStatusChecking": "Se verifică starea modelului",
-  "aiModelDownloadStatusDownloading": "Se descarcă {percent} %",
-  "@aiModelDownloadStatusDownloading": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Se descarcă",
-  "aiModelDownloadStatusFailed": "Descărcarea a eșuat",
-  "aiModelDownloadStatusInstalled": "Instalat",
-  "aiModelDownloadStatusNotInstalled": "Neinstalat",
-  "aiModelDownloadStatusUnsupported": "Apple Silicon necesar",
-  "aiModelInstallChoiceCancelButton": "Anulați",
-  "aiModelInstallChoiceDescription": "Alegeți mai întâi modelul local de recunoaștere vocală pe care doriți să-l descărcați. Puteți instala celelalte modele mai târziu din lista de modele.",
-  "aiModelInstallChoiceInstallButton": "Instalați modelul",
-  "aiModelInstallChoiceRecommended": "Recomandat",
-  "aiModelInstallChoiceTitle": "Alegeți modelul MLX Audio",
   "aiModelPickerByProviderLabel": "Alegeți un furnizor",
   "aiModelPickerCurrentDefaultLabel": "Modelul implicit actual",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 model} few{{count} modele} other{{count} de modele}}",
@@ -941,12 +903,10 @@
   "aiProviderDetailRemoveDescription": "Ștergeți furnizorul și toate modelele care depind de el. Această acțiune este ireversibilă.",
   "aiProviderDetailRemoveTitle": "Eliminați acest furnizor",
   "aiProviderDetailValueUnset": "Nesetat",
-  "aiProviderEmbeddedRuntimeHint": "Rulează integrat în procesul aplicației Apple. Nu este necesar un server local sau un URL de bază.",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiName": "Compatibil OpenAI",
   "aiProviderMeliousName": "Melious.ai",
   "aiProviderMistralName": "Mistral",
-  "aiProviderMlxAudioName": "MLX Audio (local)",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaName": "Ollama",
   "aiProviderOmlxName": "oMLX (local)",
@@ -956,7 +916,6 @@
   "aiProviderTaglineAnthropic": "Familia Claude · context lung",
   "aiProviderTaglineGemini": "Multimodal · transcriere audio",
   "aiProviderTaglineMelious": "Găzduit în UE · catalog dinamic · rutare eco",
-  "aiProviderTaglineMlxAudio": "Integrat · Apple Silicon · audio local",
   "aiProviderTaglineOllama": "Rulează local · fără apeluri în cloud",
   "aiProviderTaglineOmlx": "Inferență MLX locală · compatibilă OpenAI",
   "aiProviderTaglineOpenAi": "Familia GPT · vision + raționament",
@@ -1494,7 +1453,7 @@
   "configFlagEnableAiStreaming": "Activați transmiterea în flux AI pentru acțiunile legate de sarcini",
   "configFlagEnableAiStreamingDescription": "Transmiteți răspunsurile AI în flux pentru acțiunile legate de sarcini. Dezactivați opțiunea pentru a păstra răspunsurile în memoria tampon și a menține interfața mai fluidă.",
   "configFlagEnableAiSummaryTts": "Redare rezumate AI",
-  "configFlagEnableAiSummaryTtsDescription": "Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.",
+  "configFlagEnableAiSummaryTtsDescription": "Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS Supertonic instalat.",
   "configFlagEnableDailyOs": "Activează DailyOS",
   "configFlagEnableDailyOsDescription": "Afișează DailyOS în navigarea principală.",
   "configFlagEnableDashboardsPage": "Activați pagina Tablouri de bord",
@@ -4922,7 +4881,6 @@
   "settingsSyncConflictsSubtitle": "Rezolvați conflictele de sincronizare",
   "settingsSyncNodeProfileCapabilitiesEmpty": "Niciuna detectată — declanșarea automată a inferenței audio sincronizate nu va viza acest dispozitiv.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Capabilități AI detectate",
-  "settingsSyncNodeProfileCapabilityMlxAudio": "MLX Audio (local)",
   "settingsSyncNodeProfileCapabilityOllamaLlm": "Ollama LLM",
   "settingsSyncNodeProfileCapabilityOmlxLlm": "oMLX LLM",
   "settingsSyncNodeProfileCapabilityVoxtral": "Voxtral (local)",

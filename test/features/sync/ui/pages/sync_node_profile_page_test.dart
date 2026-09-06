@@ -19,7 +19,7 @@ final _kUpdatedAt = DateTime.utc(2026, 3, 15, 12);
 SyncNodeProfile _self({
   String displayName = 'Studio Mac',
   List<NodeCapability> capabilities = const [
-    NodeCapability.mlxAudio,
+    NodeCapability.whisper,
     NodeCapability.ollamaLlm,
   ],
 }) {
@@ -112,7 +112,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesignSystemBadge), findsNWidgets(2));
-      expect(find.text('MLX Audio (local)'), findsOneWidget);
+      expect(find.text('Whisper (local)'), findsOneWidget);
       expect(find.text('Ollama LLM'), findsOneWidget);
     },
   );
@@ -341,21 +341,19 @@ void main() {
         harness(
           self: _self(
             capabilities: const [
-              NodeCapability.mlxAudio,
+              NodeCapability.whisper,
               NodeCapability.omlxLlm,
               NodeCapability.ollamaLlm,
               NodeCapability.voxtral,
-              NodeCapability.whisper,
             ],
           ),
           directory: [
             _self(
               capabilities: const [
-                NodeCapability.mlxAudio,
+                NodeCapability.whisper,
                 NodeCapability.omlxLlm,
                 NodeCapability.ollamaLlm,
                 NodeCapability.voxtral,
-                NodeCapability.whisper,
               ],
             ),
           ],
@@ -364,8 +362,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(DesignSystemBadge), findsNWidgets(5));
-      expect(find.text('MLX Audio (local)'), findsOneWidget);
+      expect(find.byType(DesignSystemBadge), findsNWidgets(4));
       expect(find.text('oMLX LLM'), findsOneWidget);
       expect(find.text('Ollama LLM'), findsOneWidget);
       expect(find.text('Voxtral (local)'), findsOneWidget);

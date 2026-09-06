@@ -11,7 +11,7 @@ one.
 ## What it does for the user
 
 - **Connects to AI providers.** Cloud services (Gemini, OpenAI, Anthropic,
-  Mistral, Melious, Alibaba) and local ones (Ollama, oMLX, MLX Audio on macOS)
+  Mistral, Melious, Alibaba) and local ones (Ollama, oMLX, Whisper, Voxtral)
   are set up the same way. Connecting a provider automatically offers a matching
   ready-made setup, so nobody has to assemble one model slot at a time.
 - **Transcribes voice notes**, using a cloud service or a model running entirely

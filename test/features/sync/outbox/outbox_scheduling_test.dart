@@ -219,7 +219,7 @@ class _GeneratedPriorityScenario {
             hostId: 'host-$counterSlot',
             displayName: 'Device $counterSlot',
             platform: 'macos',
-            capabilities: const [NodeCapability.mlxAudio],
+            capabilities: const [NodeCapability.whisper],
             updatedAt: DateTime.utc(2026, 3, 15, 12, counterSlot),
           ),
         ),

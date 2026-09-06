@@ -736,44 +736,6 @@
   "aiInferenceErrorUnknownTitle": "Fehler",
   "aiInternalsTitle": "Agent-Internes",
   "aiModelCardDeleteTooltip": "Modell löschen",
-  "aiModelDownloadCloseButton": "Schließen",
-  "aiModelDownloadDialogDescription": "Lotti lädt {modelName} in den MLX-Audio-Cache und nutzt es für lokale Sprachverarbeitung.",
-  "@aiModelDownloadDialogDescription": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadDialogTitle": "{modelName} installieren",
-  "@aiModelDownloadDialogTitle": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiModelDownloadInstallTooltip": "Modell installieren",
-  "aiModelDownloadOpenProgressTooltip": "Download-Fortschritt anzeigen",
-  "aiModelDownloadStatusChecking": "Modellstatus wird geprüft",
-  "aiModelDownloadStatusDownloading": "Download läuft {percent} %",
-  "@aiModelDownloadStatusDownloading": {
-    "placeholders": {
-      "percent": {
-        "type": "int"
-      }
-    }
-  },
-  "aiModelDownloadStatusDownloadingIndeterminate": "Download läuft",
-  "aiModelDownloadStatusFailed": "Download fehlgeschlagen",
-  "aiModelDownloadStatusInstalled": "Installiert",
-  "aiModelDownloadStatusNotInstalled": "Nicht installiert",
-  "aiModelDownloadStatusUnsupported": "Apple Silicon erforderlich",
-  "aiModelInstallChoiceCancelButton": "Abbrechen",
-  "aiModelInstallChoiceDescription": "Wähle zuerst das lokale Speech-to-Text-Modell aus, das heruntergeladen werden soll. Die anderen kannst du später über die Modellliste installieren.",
-  "aiModelInstallChoiceInstallButton": "Modell installieren",
-  "aiModelInstallChoiceRecommended": "Empfohlen",
-  "aiModelInstallChoiceTitle": "MLX-Audio-Modell wählen",
   "aiModelPickerByProviderLabel": "Anbieter wählen",
   "aiModelPickerCurrentDefaultLabel": "Aktueller Standard",
   "aiModelPickerProviderModelCount": "{count, plural, =1{1 Modell} other{{count} Modelle}}",
@@ -941,12 +903,10 @@
   "aiProviderDetailRemoveDescription": "Löscht den Anbieter und alle Modelle, die ihn nutzen. Das lässt sich nicht rückgängig machen.",
   "aiProviderDetailRemoveTitle": "Diesen Anbieter entfernen",
   "aiProviderDetailValueUnset": "Nicht gesetzt",
-  "aiProviderEmbeddedRuntimeHint": "Läuft eingebettet im Apple-App-Prozess. Kein lokaler Server und keine Basis-URL nötig.",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiName": "OpenAI-kompatibel",
   "aiProviderMeliousName": "Melious.ai",
   "aiProviderMistralName": "Mistral",
-  "aiProviderMlxAudioName": "MLX Audio (lokal)",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaName": "Ollama",
   "aiProviderOmlxName": "oMLX (lokal)",
@@ -956,7 +916,6 @@
   "aiProviderTaglineAnthropic": "Claude-Familie · langer Kontext",
   "aiProviderTaglineGemini": "Multimodal · Audiotranskription",
   "aiProviderTaglineMelious": "EU-gehostet · dynamischer Katalog · Eco-Routing",
-  "aiProviderTaglineMlxAudio": "Eingebettet · Apple Silicon · lokales Audio",
   "aiProviderTaglineOllama": "Läuft lokal · keine Cloud-Aufrufe",
   "aiProviderTaglineOmlx": "Lokale MLX-Inferenz · OpenAI-kompatibel",
   "aiProviderTaglineOpenAi": "GPT-Familie · Vision + Reasoning",
@@ -1494,7 +1453,7 @@
   "configFlagEnableAiStreaming": "AI-Streaming für Aufgabenaktionen aktivieren",
   "configFlagEnableAiStreamingDescription": "Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
   "configFlagEnableAiSummaryTts": "AI-Zusammenfassung vorlesen",
-  "configFlagEnableAiSummaryTtsDescription": "Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes MLX-Audio-TTS-Modell.",
+  "configFlagEnableAiSummaryTtsDescription": "Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes Supertonic-TTS-Modell.",
   "configFlagEnableDailyOs": "DailyOS aktivieren",
   "configFlagEnableDailyOsDescription": "DailyOS in der Hauptnavigation anzeigen.",
   "configFlagEnableDashboardsPage": "Seite Dashboards aktivieren",
@@ -4922,7 +4881,6 @@
   "settingsSyncConflictsSubtitle": "Sync-Konflikte auflösen",
   "settingsSyncNodeProfileCapabilitiesEmpty": "Keine erkannt — der Auto-Trigger für synchronisierte Audio-Inferenz zielt nicht auf dieses Gerät.",
   "settingsSyncNodeProfileCapabilitiesLabel": "Erkannte KI-Fähigkeiten",
-  "settingsSyncNodeProfileCapabilityMlxAudio": "MLX Audio (lokal)",
   "settingsSyncNodeProfileCapabilityOllamaLlm": "Ollama LLM",
   "settingsSyncNodeProfileCapabilityOmlxLlm": "oMLX LLM",
   "settingsSyncNodeProfileCapabilityVoxtral": "Voxtral (lokal)",

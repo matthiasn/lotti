@@ -101,7 +101,6 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.gemini: geminiModels,
   InferenceProviderType.melious: meliousModels,
   InferenceProviderType.mistral: mistralModels,
-  InferenceProviderType.mlxAudio: mlxAudioModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.omlx: omlxModels,
   InferenceProviderType.ollama: ollamaModels,
@@ -111,17 +110,6 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };
-
-/// Canonical MLX Audio model identifiers used by the native Apple bridge.
-const mlxAudioVoxtralRealtime4BitModelId =
-    'mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit';
-const mlxAudioVoxtralRealtimeFp16ModelId =
-    'mlx-community/Voxtral-Mini-4B-Realtime-2602-fp16';
-const mlxAudioQwenAsrModelId = 'mlx-community/Qwen3-ASR-0.6B-8bit';
-const mlxAudioQwenAsr17B4BitModelId = 'mlx-community/Qwen3-ASR-1.7B-4bit';
-const mlxAudioQwenAsr17B8BitModelId = 'mlx-community/Qwen3-ASR-1.7B-8bit';
-const String mlxAudioRecommendedSttModelId = mlxAudioQwenAsr17B8BitModelId;
-const mlxAudioParakeetModelId = 'mlx-community/parakeet-tdt-0.6b-v3';
 
 /// Canonical Melious.ai model identifiers used by the curated default setup.
 ///
@@ -174,18 +162,6 @@ const String omlxRecommendedMultimodalModelId = omlxQwen36A35bA3b4BitModelId;
 const String omlxWhisperLargeV3ModelId = 'openai/whisper-large-v3';
 const String omlxWhisperLargeV3MlxModelId = 'whisper-large-v3-mlx';
 const String omlxWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
-
-/// Whether [providerModelId] is a Qwen3-ASR checkpoint converted for MLX Audio.
-bool isMlxAudioQwenAsrModelId(String providerModelId) {
-  final normalized = providerModelId.toLowerCase();
-  return normalized.startsWith('mlx-community/qwen3-asr-');
-}
-
-/// Whether [model] can be offered as an MLX Audio speech-to-text install.
-bool isMlxAudioSpeechToTextModel(AiConfigModel model) {
-  return model.inputModalities.contains(Modality.audio) &&
-      model.outputModalities.contains(Modality.text);
-}
 
 /// Whether [providerModelId] identifies Mistral's dedicated OCR endpoint.
 bool isMistralOcrModelId(String providerModelId) =>

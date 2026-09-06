@@ -87,10 +87,6 @@ Future<bool> probeHttpReachability({
 /// Default probe: reports the host platform and detects the local
 /// inference capabilities this app actually integrates with:
 ///
-/// - **`mlxAudio`** — claimed on macOS only. The MLX channel
-///   (`lib/features/ai/util/mlx_audio_channel.dart`) is macOS-only; on any
-///   other platform the runtime cannot run MLX models, so advertising the
-///   capability would mis-route pin choices in the UI.
 /// - **`ollamaLlm`** — claimed when a short HTTP probe to
 ///   `127.0.0.1:11434/api/version` succeeds. Uses a tight 300ms timeout so
 ///   startup never stalls; a missed Ollama server is recoverable — the next
@@ -114,7 +110,6 @@ SyncNodeCapabilityProbe makeDefaultSyncNodeCapabilityProbe({
     String? appVersion,
   }) async {
     final capabilities = <NodeCapability>[
-      if (Platform.isMacOS) NodeCapability.mlxAudio,
       if (await omlxProbe(timeout: const Duration(milliseconds: 300)))
         NodeCapability.omlxLlm,
       if (await ollamaProbe(timeout: const Duration(milliseconds: 300)))

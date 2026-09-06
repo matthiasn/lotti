@@ -128,7 +128,6 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.genericOpenAi: 'genericOpenAi',
   InferenceProviderType.melious: 'melious',
   InferenceProviderType.mistral: 'mistral',
-  InferenceProviderType.mlxAudio: 'mlxAudio',
   InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',
   InferenceProviderType.omlx: 'omlx',
   InferenceProviderType.openAi: 'openAi',

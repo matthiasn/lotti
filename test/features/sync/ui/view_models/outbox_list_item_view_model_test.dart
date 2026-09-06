@@ -588,7 +588,7 @@ void main() {
                   hostId: 'host-profile-001',
                   displayName: 'Test Node',
                   platform: 'macos',
-                  capabilities: const [NodeCapability.mlxAudio],
+                  capabilities: const [NodeCapability.whisper],
                   updatedAt: DateTime(2024, 3, 15),
                 ),
               ),

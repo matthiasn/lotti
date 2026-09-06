@@ -568,7 +568,7 @@ void main() {
     );
 
     test(
-      'provider types with no registered probe (mlxAudio / whisper / voxtral) '
+      'provider types with no registered probe (whisper / voxtral) '
       'short-circuit to idle without firing an HTTP call',
       () async {
         var calls = 0;
@@ -580,7 +580,6 @@ void main() {
         );
         addTearDown(container.dispose);
         for (final type in [
-          InferenceProviderType.mlxAudio,
           InferenceProviderType.whisper,
           InferenceProviderType.voxtral,
         ]) {

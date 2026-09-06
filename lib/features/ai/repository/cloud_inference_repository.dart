@@ -74,7 +74,6 @@ class CloudInferenceRepository {
     );
 
     _generateMore = CloudInferenceGenerateMore(
-      ref: ref,
       ollamaRepository: ollamaRepository,
       geminiRepository: geminiRepository,
       dashScopeRepository: dashScopeRepository,

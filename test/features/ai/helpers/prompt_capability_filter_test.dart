@@ -285,15 +285,6 @@ void main() {
         );
       });
 
-      test('returns true for MLX Audio', () {
-        expect(
-          PromptCapabilityFilter.isLocalOnlyProviderType(
-            InferenceProviderType.mlxAudio,
-          ),
-          isTrue,
-        );
-      });
-
       test('returns true for oMLX', () {
         expect(
           PromptCapabilityFilter.isLocalOnlyProviderType(
@@ -365,7 +356,6 @@ void main() {
           InferenceProviderType.ollama,
           InferenceProviderType.omlx,
           InferenceProviderType.voxtral,
-          InferenceProviderType.mlxAudio,
         }.contains(providerType);
 
         expect(
@@ -810,7 +800,7 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Glados property test for PromptCapabilityFilter.isLocalOnlyProviderType
-  // A closed-enum property: exactly {whisper, ollama, oMLX, voxtral, mlxAudio}
+  // A closed-enum property: exactly {whisper, ollama, oMLX, voxtral}
   // are local-only; all other variants must return false.
   // ---------------------------------------------------------------------------
   group('isLocalOnlyProviderType — Glados property', () {
@@ -819,7 +809,6 @@ void main() {
       InferenceProviderType.ollama,
       InferenceProviderType.omlx,
       InferenceProviderType.voxtral,
-      InferenceProviderType.mlxAudio,
     };
 
     // Property: for every enum variant, the return value equals membership in

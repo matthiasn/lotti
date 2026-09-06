@@ -75,24 +75,11 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
           // null and let the card render neutral chrome instead of
           // misbranding a model as Gemini.
           final providerType = providerTypeById[model.inferenceProviderId];
-          return Consumer(
-            builder: (context, ref, _) {
-              final progress = providerType == InferenceProviderType.mlxAudio
-                  ? ref.watch(
-                      mlxAudioModelProgressProvider(model.providerModelId),
-                    )
-                  : null;
-              return AiModelCard(
-                model: model,
-                providerType: providerType,
-                onTap: () => _handleConfigTap(model),
-                menuActions: _buildCardMenu(model),
-                modelDownloadProgress: progress,
-                onInstallModel: providerType == InferenceProviderType.mlxAudio
-                    ? () => _handleInstallMlxAudioModel(model)
-                    : null,
-              );
-            },
+          return AiModelCard(
+            model: model,
+            providerType: providerType,
+            onTap: () => _handleConfigTap(model),
+            menuActions: _buildCardMenu(model),
           );
         },
       ),

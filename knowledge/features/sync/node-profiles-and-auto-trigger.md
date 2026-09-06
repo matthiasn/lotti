@@ -5,7 +5,7 @@ description: How devices advertise AI capabilities and how a pinned desktop auto
 resource: ../../../lib/features/sync/services/synced_audio_inference_dispatcher.dart
 tags: [sync, ai, transcription, capabilities, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: node-profile
@@ -40,7 +40,7 @@ otherwise-convenient fallbacks are deliberately absent.
 # Components
 
 **`SyncNodeProfile`** captures one device's vector-clock `hostId`, display name,
-platform, and advertised capabilities: `mlxAudio`, `omlxLlm`, `ollamaLlm`,
+platform, and advertised capabilities: `omlxLlm`, `ollamaLlm`,
 `voxtral`, `whisper`.
 
 Capabilities are auto-detected at startup by
@@ -48,7 +48,6 @@ Capabilities are auto-detected at startup by
 
 | Capability | Detected by |
 |------------|-------------|
-| `mlxAudio` | `Platform.isMacOS` |
 | `omlxLlm` | The local OpenAI-compatible oMLX `/models` endpoint responds at the configured default base URL. **401/403 still counts as reachable**, because inference uses the saved provider key |
 | `ollamaLlm` | A 300 ms request to `127.0.0.1:11434/api/version` succeeds |
 | `voxtral`, `whisper` | Never auto-claimed — they need user-installed binaries the app does not manage |

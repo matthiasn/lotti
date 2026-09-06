@@ -159,7 +159,7 @@ void main() {
         cpuModel: 'Apple M4 Max',
         ramMb: 65536,
         capabilities: const [
-          NodeCapability.mlxAudio,
+          NodeCapability.whisper,
           NodeCapability.ollamaLlm,
         ],
         updatedAt: updatedAt,
@@ -178,7 +178,7 @@ void main() {
       expect(decoded.profile.cpuModel, 'Apple M4 Max');
       expect(decoded.profile.ramMb, 65536);
       expect(decoded.profile.capabilities, [
-        NodeCapability.mlxAudio,
+        NodeCapability.whisper,
         NodeCapability.ollamaLlm,
       ]);
       expect(decoded.profile.updatedAt, updatedAt);
@@ -189,7 +189,7 @@ void main() {
         hostId: 'h',
         displayName: 'A',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
 

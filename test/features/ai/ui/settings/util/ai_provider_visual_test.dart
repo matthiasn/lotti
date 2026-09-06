@@ -200,13 +200,6 @@ void main() {
         ),
         equals('oMLX (local)'),
       );
-      expect(
-        aiProviderDisplayName(
-          type: InferenceProviderType.mlxAudio,
-          messages: messages,
-        ),
-        equals('MLX Audio (local)'),
-      );
     });
   });
 
@@ -222,7 +215,6 @@ void main() {
           InferenceProviderType.omlx,
           InferenceProviderType.melious,
           InferenceProviderType.alibaba,
-          InferenceProviderType.mlxAudio,
         };
         for (final type in InferenceProviderType.values) {
           final tagline = aiProviderTagline(type: type, messages: messages);
@@ -365,7 +357,7 @@ void main() {
         for (final type in const [
           InferenceProviderType.ollama,
           InferenceProviderType.omlx,
-          InferenceProviderType.mlxAudio,
+
           InferenceProviderType.whisper,
           InferenceProviderType.voxtral,
           InferenceProviderType.genericOpenAi,

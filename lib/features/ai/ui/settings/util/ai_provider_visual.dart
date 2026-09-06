@@ -133,7 +133,7 @@ bool isProviderDraft(AiConfigInferenceProvider provider) {
 
 /// Returns the **bare host** of the public console where the user
 /// can obtain an API key for [type], or `null` when no such page
-/// exists (Ollama/MLX Audio run locally; whisper/voxtral are local-only).
+/// exists (Ollama/oMLX run locally; whisper/voxtral are local-only).
 ///
 /// Powers the "Get a key at …" hint rendered next to the API-key
 /// field on the connect form. The host-only form is intentional:
@@ -173,7 +173,6 @@ IconData aiProviderIcon(InferenceProviderType? type) {
     InferenceProviderType.omlx => LottiIcons.memory,
     InferenceProviderType.melious => LottiIcons.eco,
     InferenceProviderType.mistral => LottiIcons.air,
-    InferenceProviderType.mlxAudio => LottiIcons.memory,
     InferenceProviderType.alibaba => LottiIcons.cloud,
     _ => LottiIcons.aiModel,
   };
@@ -194,7 +193,6 @@ String aiProviderDisplayName({
     InferenceProviderType.anthropic => messages.aiProviderAnthropicName,
     InferenceProviderType.ollama => messages.aiProviderOllamaName,
     InferenceProviderType.mistral => messages.aiProviderMistralName,
-    InferenceProviderType.mlxAudio => messages.aiProviderMlxAudioName,
     InferenceProviderType.omlx => messages.aiProviderOmlxName,
     InferenceProviderType.melious => messages.aiProviderMeliousName,
     InferenceProviderType.alibaba => messages.aiProviderAlibabaName,
@@ -221,7 +219,6 @@ String aiProviderTagline({
     InferenceProviderType.openAi => messages.aiProviderTaglineOpenAi,
     InferenceProviderType.anthropic => messages.aiProviderTaglineAnthropic,
     InferenceProviderType.ollama => messages.aiProviderTaglineOllama,
-    InferenceProviderType.mlxAudio => messages.aiProviderTaglineMlxAudio,
     InferenceProviderType.omlx => messages.aiProviderTaglineOmlx,
     InferenceProviderType.melious => messages.aiProviderTaglineMelious,
     InferenceProviderType.alibaba => messages.aiProviderTaglineAlibaba,

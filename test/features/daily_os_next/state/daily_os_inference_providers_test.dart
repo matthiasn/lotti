@@ -72,15 +72,6 @@ void main() {
       );
     });
 
-    test('classifies the embedded MLX Audio provider as on-device', () {
-      expect(
-        dailyOsInferenceEndpointKind(
-          _provider(baseUrl: '', type: InferenceProviderType.mlxAudio),
-        ),
-        DailyOsInferenceEndpointKind.onDevice,
-      );
-    });
-
     test('does not filter or special-case Google endpoints', () {
       expect(
         dailyOsInferenceEndpointKind(

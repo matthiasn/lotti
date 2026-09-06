@@ -2385,7 +2385,7 @@ void main() {
           displayName: 'Studio Mac',
           platform: 'macos',
           capabilities: const [
-            NodeCapability.mlxAudio,
+            NodeCapability.whisper,
             NodeCapability.ollamaLlm,
           ],
           updatedAt: DateTime.utc(2026, 3, 15, 12),

@@ -57,7 +57,7 @@ void main() {
       hostId: 'peer-1',
       displayName: 'Studio Mac',
       platform: 'macos',
-      capabilities: const [NodeCapability.mlxAudio, NodeCapability.ollamaLlm],
+      capabilities: const [NodeCapability.whisper, NodeCapability.ollamaLlm],
       updatedAt: updatedAt,
     );
     when(
@@ -99,14 +99,14 @@ void main() {
         hostId: 'peer-3',
         displayName: 'Newer',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt,
       );
       final stale = SyncNodeProfile(
         hostId: 'peer-3',
         displayName: 'Older',
         platform: 'macos',
-        capabilities: const [NodeCapability.mlxAudio],
+        capabilities: const [NodeCapability.whisper],
         updatedAt: updatedAt.subtract(const Duration(hours: 1)),
       );
 

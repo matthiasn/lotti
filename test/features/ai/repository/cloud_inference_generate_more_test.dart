@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -22,13 +21,10 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/utils/platform.dart' as platform;
-import 'package:lotti/utils/uuid.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
-import '../test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -76,7 +72,6 @@ void main() {
     OmlxTranscriptionRepository? omlxRepository,
   }) {
     return CloudInferenceGenerateMore(
-      ref: container.read(testRefProvider),
       ollamaRepository: ollamaRepo,
       geminiRepository: geminiRepo,
       dashScopeRepository: dashScopeRepo,
@@ -244,43 +239,6 @@ void main() {
         expect(request.fields['model'], equals(omlxWhisperLargeV3ModelId));
       },
     );
-
-    test('routes MLX Audio through the native channel', () async {
-      final originalIsMacOS = platform.isMacOS;
-      platform.isMacOS = true;
-      addTearDown(() => platform.isMacOS = originalIsMacOS);
-
-      const methodChannel = MethodChannel('com.matthiasn.lotti/mlx_audio');
-      final messenger =
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-      addTearDown(
-        () => messenger.setMockMethodCallHandler(methodChannel, null),
-      );
-      messenger.setMockMethodCallHandler(methodChannel, (call) async {
-        expect(call.method, 'transcribeBase64Audio');
-        expect(call.arguments, containsPair('audioBase64', 'local-audio'));
-        return <String, Object?>{'text': 'local transcript'};
-      });
-
-      final mlxProvider = providerOfType(InferenceProviderType.mlxAudio);
-      final chunks = await generateMore
-          .generateWithAudio(
-            prompt,
-            model: 'mlx-qwen',
-            audioBase64: 'local-audio',
-            baseUrl: '',
-            apiKey: '',
-            provider: mlxProvider,
-          )
-          .toList();
-
-      expect(chunks, hasLength(1));
-      const idPrefix = 'mlx-audio-';
-      final id = chunks.single.id;
-      expect(id, startsWith(idPrefix));
-      expect(isUuid(id!.substring(idPrefix.length)), isTrue);
-      expect(chunks.single.choices?.single.delta?.content, 'local transcript');
-    });
 
     test(
       'routes Melious transcription models through Melious repository',

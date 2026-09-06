@@ -9,7 +9,7 @@ part 'ai_config.g.dart';
 ///
 /// Drives request shaping (auth, base URL defaults, payload quirks), the
 /// provider picker chrome, and FTUE presets. Most entries are OpenAI-compatible
-/// cloud APIs; [ollama] and [mlxAudio] run locally on-device. The value is
+/// cloud APIs; [ollama] and [omlx] connect to local services. The value is
 /// persisted as the enum name, so order can change freely but names must not.
 enum InferenceProviderType {
   alibaba,
@@ -18,7 +18,6 @@ enum InferenceProviderType {
   genericOpenAi,
   melious,
   mistral,
-  mlxAudio,
   nebiusAiStudio,
   omlx,
   openAi,

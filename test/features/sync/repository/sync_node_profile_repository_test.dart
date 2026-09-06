@@ -19,7 +19,7 @@ void main() {
     required String hostId,
     required DateTime updatedAt,
     String displayName = 'Node',
-    List<NodeCapability> capabilities = const [NodeCapability.mlxAudio],
+    List<NodeCapability> capabilities = const [NodeCapability.whisper],
   }) {
     return SyncNodeProfile(
       hostId: hostId,
@@ -52,7 +52,7 @@ void main() {
         updatedAt: t0,
         displayName: 'Studio Mac',
         capabilities: const [
-          NodeCapability.mlxAudio,
+          NodeCapability.whisper,
           NodeCapability.ollamaLlm,
         ],
       );
@@ -354,7 +354,7 @@ void main() {
               hostId: op.hostId,
               displayName: op.displayName,
               platform: 'macos',
-              capabilities: const [NodeCapability.mlxAudio],
+              capabilities: const [NodeCapability.whisper],
               updatedAt: op.updatedAt,
             );
             final existing = expected[op.hostId];

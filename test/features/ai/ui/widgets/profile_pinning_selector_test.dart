@@ -50,7 +50,7 @@ AiConfigInferenceProvider _provider({
 SyncNodeProfile _node({
   required String hostId,
   required String displayName,
-  List<NodeCapability> capabilities = const [NodeCapability.mlxAudio],
+  List<NodeCapability> capabilities = const [NodeCapability.whisper],
 }) {
   return SyncNodeProfile(
     hostId: hostId,
@@ -175,13 +175,13 @@ void main() {
             _node(
               hostId: 'host-mlx-only',
               displayName: 'Mac with MLX only',
-              capabilities: const [NodeCapability.mlxAudio],
+              capabilities: const [NodeCapability.whisper],
             ),
             _node(
               hostId: 'host-mlx-ollama',
               displayName: 'Mac with MLX + Ollama',
               capabilities: const [
-                NodeCapability.mlxAudio,
+                NodeCapability.whisper,
                 NodeCapability.ollamaLlm,
               ],
             ),
@@ -377,7 +377,6 @@ void main() {
     // Local-runtime provider types (mapped to node capabilities) plus a few
     // cloud-only ones (mapped to null → never required).
     const localTypes = [
-      InferenceProviderType.mlxAudio,
       InferenceProviderType.ollama,
       InferenceProviderType.voxtral,
       InferenceProviderType.whisper,

@@ -479,15 +479,15 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        final mlxProvider = buildProvider(
-          type: InferenceProviderType.mlxAudio,
-          name: 'MLX Audio',
+        final omlxProvider = buildProvider(
+          type: InferenceProviderType.omlx,
+          name: 'oMLX',
           apiKey: '',
-          baseUrl: '',
+          baseUrl: 'http://localhost:8000/v1',
         );
         final transcriptionModel = buildModel(
           id: 'm-stt',
-          providerId: mlxProvider.id,
+          providerId: omlxProvider.id,
           name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
           providerModelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
         );
@@ -507,7 +507,7 @@ void main() {
 
         await pumpWith(
           tester: tester,
-          provider: mlxProvider,
+          provider: omlxProvider,
           models: [transcriptionModel, thinkingModel],
           profiles: [profile],
         );

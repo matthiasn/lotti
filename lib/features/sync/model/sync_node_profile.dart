@@ -13,7 +13,7 @@ part 'sync_node_profile.g.dart';
 /// without requiring a `NodeCapability.ollama` rename across stored snapshots.
 /// `omlxLlm` follows the same pattern for the local OpenAI-compatible oMLX
 /// runtime.
-enum NodeCapability { mlxAudio, omlxLlm, ollamaLlm, voxtral, whisper }
+enum NodeCapability { omlxLlm, ollamaLlm, voxtral, whisper }
 
 /// Resolves the [NodeCapability] that advertises support for [providerType],
 /// or null when the provider is cloud-only (no node-capability token exists
@@ -22,8 +22,6 @@ NodeCapability? nodeCapabilityFromProviderType(
   InferenceProviderType providerType,
 ) {
   switch (providerType) {
-    case InferenceProviderType.mlxAudio:
-      return NodeCapability.mlxAudio;
     case InferenceProviderType.omlx:
       return NodeCapability.omlxLlm;
     case InferenceProviderType.ollama:
