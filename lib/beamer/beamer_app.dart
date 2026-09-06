@@ -14,6 +14,7 @@ import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
@@ -72,6 +73,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -80,6 +82,8 @@ import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
+import 'package:lotti/widgets/nav_bar/mobile_nav_sheet.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 
@@ -1139,6 +1143,17 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               navService.relationshipsDelegate.currentBeamLocation,
             ));
 
+    final useLauncher =
+        ref
+            .watch(
+              configFlagProvider(enableMobileNavigationLauncherFlag),
+            )
+            .value ??
+        false;
+    final navigationBarHeight = useLauncher
+        ? MobileNavigationLauncher.barHeight(context)
+        : DesignSystemFiveSlotNavBar.barHeight(context);
+
     // The bar fills with as many destinations as fit comfortably at the
     // current window width and text scale. The base line-up is Tasks,
     // Daily OS (when enabled), Logbook, plus More for everything else —
@@ -1151,7 +1166,28 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // through the same NavService indices the IndexedStack uses. Built
     // lazily: on routes that suppress the bar entirely the slot config
     // (and its per-slot closures) is never constructed.
-    DesignSystemBottomNavigationBar buildBottomNavigationBar() {
+    Widget buildBottomNavigationBar() {
+      if (useLauncher) {
+        return MobileNavigationLauncher(
+          onNavigate: () => showMobileNavSheet(
+            context: context,
+            footerTrailing: const SyncQueueCounts(),
+            items: [
+              for (final (i, destination) in destinations.indexed)
+                MobileNavSheetItem(
+                  label: destination.label,
+                  icon: destination.iconBuilder(active: i == index),
+                  active: i == index,
+                  onSelected: () {
+                    final tapIndex = _currentDestinationIndex(destination.kind);
+                    if (tapIndex != null) navService.tapIndex(tapIndex);
+                  },
+                ),
+            ],
+          ),
+        );
+      }
+
       double slotWidth(String label) =>
           DesignSystemFiveSlotNavBar.comfortableSlotWidth(context, label);
       final availableWidth = DesignSystemFiveSlotNavBar.availableRowWidth(
@@ -1275,6 +1311,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           // indicators never cover scroll content or floating actions.
           _MobileNavOverlayHeightScope(
             navBarVisible: showBottomNav,
+            navigationBarHeight: navigationBarHeight,
             // A slid-away bar reserves nothing: the goal agent pages, project
             // details and settings details dock their own pinned surfaces at
             // the bottom edge and must not pad around a bar that is gone.
@@ -1308,7 +1345,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               right: 0,
               bottom: slideNavAway
                   ? MediaQuery.paddingOf(context).bottom
-                  : DesignSystemFiveSlotNavBar.barHeight(context),
+                  : navigationBarHeight,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1582,11 +1619,13 @@ class _NudgeBannerTopLane extends ConsumerWidget {
 class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
+    required this.navigationBarHeight,
     required this.barDocked,
     required this.child,
   });
 
   final bool navBarVisible;
+  final double navigationBarHeight;
 
   /// Whether the bar is docked at the bottom edge rather than slid away;
   /// see [DesignSystemBottomNavigationOverlayHeight.barDocked].
@@ -1633,6 +1672,7 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         }
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
+          navigationBarHeight: navigationBarHeight,
           barDocked: barDocked,
           child: child,
         );

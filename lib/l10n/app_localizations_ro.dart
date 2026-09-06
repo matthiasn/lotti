@@ -15164,4 +15164,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get navTabTitleNavigate => 'Navigare';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher => 'Navigare mobilă nouă';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Deschideți toate secțiunile aplicației cu un singur buton de navigare.';
 }

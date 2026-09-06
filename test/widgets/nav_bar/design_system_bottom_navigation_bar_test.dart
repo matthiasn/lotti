@@ -30,6 +30,54 @@ void main() {
   ];
 
   group('DesignSystemBottomNavigationBar', () {
+    testWidgets(
+      'changing the selected bar height updates existing page padding',
+      (tester) async {
+        final selectedHeight = ValueNotifier<double>(48);
+        addTearDown(selectedHeight.dispose);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ValueListenableBuilder<double>(
+              valueListenable: selectedHeight,
+              child: const DesignSystemBottomNavigationFabPadding(
+                child: SizedBox.square(dimension: 48),
+              ),
+              builder: (context, height, child) =>
+                  DesignSystemBottomNavigationOverlayHeight(
+                    height: 24,
+                    navigationBarHeight: height,
+                    child: child!,
+                  ),
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          ),
+        );
+        final paddingFinder = find.descendant(
+          of: find.byType(DesignSystemBottomNavigationFabPadding),
+          matching: find.byType(Padding),
+        );
+        expect(
+          tester
+              .widget<Padding>(paddingFinder)
+              .padding
+              .resolve(TextDirection.ltr)
+              .bottom,
+          72,
+        );
+        selectedHeight.value = 88;
+        await tester.pump();
+        expect(
+          tester
+              .widget<Padding>(paddingFinder)
+              .padding
+              .resolve(TextDirection.ltr)
+              .bottom,
+          112,
+        );
+      },
+    );
+
     testWidgets('adds no gap or inset of its own around the bar', (
       tester,
     ) async {

@@ -33,7 +33,10 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
     // so its height still counts.
     final barHeight =
         DesignSystemBottomNavigationOverlayHeight.barDockedOf(context)
-        ? DesignSystemFiveSlotNavBar.barHeight(context)
+        ? (DesignSystemBottomNavigationOverlayHeight.navigationBarHeightOf(
+                context,
+              ) ??
+              DesignSystemFiveSlotNavBar.barHeight(context))
         : 0.0;
     return barHeight + DesignSystemBottomNavigationOverlayHeight.of(context);
   }
@@ -55,11 +58,22 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
     required this.height,
     required super.child,
     this.barDocked = true,
+    this.navigationBarHeight,
     super.key,
   });
 
   /// Rendered height of the overlay row; 0 while no indicator is visible.
   final double height;
+
+  /// Rendered height of the selected navigation design. Null uses the legacy
+  /// bar's geometry for standalone pages and previews.
+  final double? navigationBarHeight;
+
+  static double? navigationBarHeightOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<
+        DesignSystemBottomNavigationOverlayHeight
+      >()
+      ?.navigationBarHeight;
 
   /// Whether the nav bar itself is docked at the bottom edge.
   ///
@@ -92,7 +106,10 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
   @override
   bool updateShouldNotify(
     DesignSystemBottomNavigationOverlayHeight oldWidget,
-  ) => height != oldWidget.height || barDocked != oldWidget.barDocked;
+  ) =>
+      height != oldWidget.height ||
+      barDocked != oldWidget.barDocked ||
+      navigationBarHeight != oldWidget.navigationBarHeight;
 }
 
 class DesignSystemBottomNavigationFabPadding extends StatelessWidget {

@@ -14997,4 +14997,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get navTabTitleNavigate => 'Navegar';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher => 'Nova navegação móvel';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Abre todas as secções da app com um único botão de navegação.';
 }

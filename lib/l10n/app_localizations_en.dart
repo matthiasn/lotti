@@ -14772,6 +14772,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get navTabTitleNavigate => 'Navigate';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'New mobile navigation';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Use one Navigate button to open all app sections.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

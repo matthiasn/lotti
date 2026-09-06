@@ -30,7 +30,7 @@ import '../../../../widget_test_utils.dart';
 /// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
 /// `displayedItems`, and asserting against the production list would make this
 /// a tautology.
-const _displayedFlagCount = 12;
+const _displayedFlagCount = 13;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +63,11 @@ void main() {
           const ConfigFlag(
             name: enableNotificationsFlag,
             description: 'Enable notifications?',
+            status: false,
+          ),
+          const ConfigFlag(
+            name: enableMobileNavigationLauncherFlag,
+            description: 'Enable the mobile navigation launcher?',
             status: false,
           ),
           const ConfigFlag(
@@ -332,6 +337,18 @@ void main() {
             ConfigFlag? expectedToggle,
           })
         >[
+          (
+            name: 'mobile-navigation-launcher',
+            title: (m) => m.configFlagEnableMobileNavigationLauncher,
+            description: (m) =>
+                m.configFlagEnableMobileNavigationLauncherDescription,
+            icon: LottiIcons.menu,
+            expectedToggle: const ConfigFlag(
+              name: enableMobileNavigationLauncherFlag,
+              description: 'Enable the mobile navigation launcher?',
+              status: true,
+            ),
+          ),
           (
             name: 'whats-new',
             title: (m) => m.configFlagEnableWhatsNew,

@@ -8,6 +8,7 @@ const enableAiSummaryTtsFlag = 'enable_ai_summary_tts';
 const resendAttachments = 'resend_attachments';
 const enableLoggingFlag = 'enable_logging';
 
+const enableMobileNavigationLauncherFlag = 'enable_mobile_navigation_launcher';
 const enableHabitsPageFlag = 'enable_habits_page';
 const enableDashboardsPageFlag = 'enable_dashboards_page';
 const enableUnifiedGoalsFlag = 'enable_unified_goals';

@@ -74,6 +74,7 @@ void main() {
         resendAttachments: false,
         enableLoggingFlag: false,
         enableNotificationsFlag: false,
+        enableMobileNavigationLauncherFlag: false,
         enableHabitsPageFlag: false,
         enableDashboardsPageFlag: false,
         enableDailyOsPageFlag: false,
@@ -98,6 +99,23 @@ void main() {
           entry.value,
           reason: 'flag default mismatch: ${entry.key}',
         );
+      }
+    });
+
+    test('reinitializing flags preserves launcher opt-in', () async {
+      await initConfigFlags(db, inMemoryDatabase: true);
+      final flag = (await db.getConfigFlagByName(
+        enableMobileNavigationLauncherFlag,
+      ))!;
+      try {
+        await db.upsertConfigFlag(flag.copyWith(status: true));
+        await initConfigFlags(db, inMemoryDatabase: true);
+        expect(
+          await db.getConfigFlag(enableMobileNavigationLauncherFlag),
+          isTrue,
+        );
+      } finally {
+        await db.upsertConfigFlag(flag.copyWith(status: false));
       }
     });
 

@@ -546,6 +546,11 @@ contract:
   ask the app shell to slide the bar away; project, goal, habit, people and
   settings route helpers keep that decision tied to router state rather than
   widget timing.
+- The shell can publish `navigationBarHeight` alongside the recording height
+  in `DesignSystemBottomNavigationOverlayHeight`. Consumers then reserve that
+  selected design's height; without it, the legacy slot-bar calculation applies.
+  Changing the height notifies existing page/FAB consumers without rebuilding
+  their navigation stacks.
 - `DesignSystemFiveSlotNavBar.contentHeight(context)` owns the slot-row height
   contract. It **scales caption line height with `MediaQuery.textScalerOf` and
   rounds fractional line boxes up to the logical pixel Flutter renders**, so

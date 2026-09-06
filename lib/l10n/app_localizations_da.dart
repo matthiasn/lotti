@@ -14860,4 +14860,14 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get navTabTitleNavigate => 'Naviger';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher => 'Ny mobilnavigation';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Åbn alle appens sektioner med én navigationsknap.';
 }

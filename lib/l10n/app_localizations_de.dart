@@ -14965,4 +14965,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get navTabTitleNavigate => 'Navigieren';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Neue mobile Navigation';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Öffne alle App-Bereiche über eine einzige Navigationsschaltfläche.';
 }

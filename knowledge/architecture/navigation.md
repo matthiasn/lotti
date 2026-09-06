@@ -111,7 +111,9 @@ flowchart TD
   Screen --> Chrome{"Form factor"}
   Chrome -->|desktop| Sidebar["DesktopSidebar"]
   Chrome -->|desktop| DayCol["DayViewSidePanel (right-docked day view)"]
-  Chrome -->|mobile| Bar["DesignSystemFiveSlotNavBar + More sheet"]
+  Chrome -->|mobile| NavFlag{"enable_mobile_navigation_launcher"}
+  NavFlag -->|off or unresolved| Bar["DesignSystemFiveSlotNavBar + More sheet"]
+  NavFlag -->|on| Launcher["Glass Navigate button + two-column grid"]
 ```
 
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
@@ -508,10 +510,37 @@ Two consequences worth knowing before adding a settings page:
   URL of the page that pushed them. They escape the nav by pushing onto the root
   navigator through `bottomNavSafeNavigatorOf` instead.
 
-Mobile slot allocation is likewise derived from width. Tasks, Daily OS and
+With the mobile launcher flag off, slot allocation is derived from width. Tasks, Daily OS and
 Journal are the primary destinations that survive the narrowest window; the rest
 start behind a *More* sheet and are promoted into their own slots as width
 allows, until everything fits and the More slot disappears.
+
+## Opt-in mobile launcher
+
+`enable_mobile_navigation_launcher` defaults to false, including while its
+provider is unresolved. Settings → Config Flags exposes it as **New mobile
+navigation**. Startup seeds it with `insertFlagIfNotExists`, preserving an
+existing opt-in. The flag is read only in the mobile shell; desktop keeps its
+existing sidebar and Settings sync counts.
+
+When enabled, `MobileNavigationLauncher` replaces the slot bar with a glass
+Navigate pill. Its backdrop blur and dense theme-aware scrim keep page content
+from competing with the label. `showMobileNavSheet` presents all enabled
+sections in a two-column grid with 16-point horizontal tile padding, the active
+section highlighted, support links on the left and sync counts on the right.
+Selection dismisses the sheet and resolves the destination index at tap time,
+so section flags changing while the sheet is open cannot route to a stale index.
+
+Changing the flag swaps only the chrome, retaining the current tab and its
+navigation stack. `_MobileNavOverlayHeightScope` publishes the selected bar's
+height through `DesignSystemBottomNavigationOverlayHeight.navigationBarHeight`;
+page/FAB clearance and recording indicators therefore follow the visible
+bar. Standalone pages without an explicit height keep the legacy calculation.
+The launcher measures its localized label with `TextPainter`, including
+nonlinear text scaling. Both designs share the existing route-hiding rules.
+
+The new launcher and grid are independent of the legacy slot and More widgets.
+The app shell chooses between them; neither new widget imports the old ones.
 
 ## The Settings row and its counts
 
@@ -559,7 +588,7 @@ factors:
 | Form factor | Where | Suppressed when |
 |-------------|-------|-----------------|
 | Desktop | sidebar `footerBand`, under Settings | the sidebar is collapsed |
-| Mobile | last child of the *More* sheet | never — the sheet is its only home |
+| Mobile | footer of the *More* sheet, or the opt-in *Navigate* grid | never — the sheet is its only home |
 
 **No rule separates it from the rows above, on either surface.** These are the
 quietest controls the app's navigation has, and a divider gave them the weight
@@ -575,7 +604,8 @@ optional status row beneath Settings to displace it. Collapsing the sidebar
 removes the band entirely — the icon-only rail is 72 px, narrower than the four
 glyphs — and the Manual stays reachable from Settings meanwhile.
 
-The actions themselves are one right-aligned group. Email is a plain envelope
+The actions are right-aligned in the sidebar and More sheet. The opt-in
+launcher places the same intrinsic-width group on the left beside sync counts. Email is a plain envelope
 button with the same 44 px target, colour, tooltip and semantics as Manual,
 GitHub and Discord; its localized “Contact Us” wording remains the accessible
 name rather than visible copy. With no label competing for width, all four
@@ -605,6 +635,8 @@ Two rules hold it together:
 | Index, delegate registry, flag gating, state persistence | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
 | Restore hook, awaited before `runApp` | [`lib/get_it.dart`](../../lib/get_it.dart) |
 | Logbook auto-selection, the background-navigation case | [`lib/features/journal/ui/pages/journal_root_page.dart`](../../lib/features/journal/ui/pages/journal_root_page.dart) |
+| Opt-in launcher | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
+| Opt-in destination grid | [`lib/widgets/nav_bar/mobile_nav_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_sheet.dart) |
 | Mobile overflow sheet | [`lib/widgets/nav_bar/mobile_nav_more_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart) |
 | Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |
 | Contact Us footer, presentation | [`lib/features/design_system/components/navigation/design_system_contact_row.dart`](../../lib/features/design_system/components/navigation/design_system_contact_row.dart) |

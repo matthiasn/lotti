@@ -15053,4 +15053,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get navTabTitleNavigate => 'Naviga';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Nuova navigazione mobile';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Apri tutte le sezioni dell’app con un unico pulsante di navigazione.';
 }

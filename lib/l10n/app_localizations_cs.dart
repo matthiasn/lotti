@@ -15057,4 +15057,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get navTabTitleNavigate => 'Navigovat';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Nová mobilní navigace';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Otevírej všechny části aplikace jedním tlačítkem Navigace.';
 }

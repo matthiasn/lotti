@@ -14881,4 +14881,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get navTabTitleNavigate => 'Navigera';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher => 'Ny mobilnavigering';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Öppna alla appens avsnitt med en enda navigeringsknapp.';
 }

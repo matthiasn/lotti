@@ -16,6 +16,7 @@ import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
@@ -73,6 +74,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
@@ -81,6 +83,7 @@ import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart' hide Profile;
@@ -668,6 +671,73 @@ Stream<JournalEntity?> _emptyTimeStream(Invocation _) =>
     const Stream<JournalEntity?>.empty();
 
 void main() {
+  testWidgets(
+    'mobile launcher is opt-in and toggles without changing section',
+    (tester) async {
+      final gate = StreamController<bool>.broadcast();
+      addTearDown(gate.close);
+      final nav = MockNavService()..relationshipsPageEnabled = true;
+      await _stubNavService(
+        nav,
+        indexStream: Stream.value(3),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+        isUnifiedGoalsEnabled: true,
+        isEventsEnabled: () => true,
+      );
+      when(() => nav.index).thenReturn(3);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        extraOverrides: [
+          configFlagProvider(
+            enableMobileNavigationLauncherFlag,
+          ).overrideWith((_) => gate.stream),
+        ],
+      );
+      expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+      expect(find.byType(MobileNavigationLauncher), findsNothing);
+
+      for (final enabled in [true, false, true]) {
+        gate.add(enabled);
+        await tester.pumpAndSettle();
+        expect(
+          find.byType(MobileNavigationLauncher),
+          enabled ? findsOneWidget : findsNothing,
+        );
+        expect(
+          find.byType(DesignSystemBottomNavigationBar),
+          enabled ? findsNothing : findsOneWidget,
+        );
+        final scope = tester.widget<DesignSystemBottomNavigationOverlayHeight>(
+          find.byType(DesignSystemBottomNavigationOverlayHeight),
+        );
+        final rendered = tester
+            .getSize(
+              find.byType(
+                enabled
+                    ? MobileNavigationLauncher
+                    : DesignSystemBottomNavigationBar,
+              ),
+            )
+            .height;
+        expect(scope.navigationBarHeight, closeTo(rendered, 0.01));
+        verifyNever(() => nav.tapIndex(any()));
+      }
+      await tester.tap(find.text('Navigate'));
+      await tester.pumpAndSettle();
+      expect(find.text('People'), findsOneWidget);
+      await tester.tap(find.text('Events'));
+      await tester.pumpAndSettle();
+      verify(() => nav.tapIndex(8)).called(1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   setUpAll(() {
     // The AI provider FTUE path stubs AiConfigRepository.getConfigsByType,
     // whose argument is an AiConfigType — mocktail needs a fallback for `any()`.
@@ -985,53 +1055,67 @@ void main() {
       },
     );
 
-    testWidgets(
-      'More sheet row tapped after its flag was disabled closes the sheet '
-      'without routing',
-      (tester) async {
-        final mockNavService = MockNavService();
-        final indexController = StreamController<int>.broadcast();
-        addTearDown(indexController.close);
+    for (final useLauncher in [false, true]) {
+      testWidgets(
+        'launcher=$useLauncher: More sheet row tapped after its flag was disabled closes the sheet '
+        'without routing',
+        (tester) async {
+          final mockNavService = MockNavService();
+          final indexController = StreamController<int>.broadcast();
+          addTearDown(indexController.close);
 
-        var isProjectsEnabled = true;
-        await _stubNavService(
-          mockNavService,
-          indexStream: indexController.stream,
-          // All flags on: seven destinations cannot fit the phone-width
-          // viewport, so the bar keeps the More overflow this test needs.
-          isProjectsEnabled: () => isProjectsEnabled,
-          isDailyOsEnabled: () => true,
-          isHabitsEnabled: () => true,
-          isDashboardsEnabled: () => true,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
+          var isProjectsEnabled = true;
+          await _stubNavService(
+            mockNavService,
+            indexStream: indexController.stream,
+            // All flags on: seven destinations cannot fit the phone-width
+            // viewport, so the bar keeps the More overflow this test needs.
+            isProjectsEnabled: () => isProjectsEnabled,
+            isDailyOsEnabled: () => true,
+            isHabitsEnabled: () => true,
+            isDashboardsEnabled: () => true,
+          );
+          await _registerAppScreenGetIt(mockNavService);
+          addTearDown(tearDownTestGetIt);
 
-        await _pumpAppScreen(tester, navService: mockNavService);
+          await _pumpAppScreen(
+            tester,
+            navService: mockNavService,
+            extraOverrides: [
+              configFlagProvider(
+                enableMobileNavigationLauncherFlag,
+              ).overrideWith((_) => Stream.value(useLauncher)),
+            ],
+          );
 
-        // Open the More sheet while Projects is still enabled.
-        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-          find.byType(DesignSystemBottomNavigationBar),
-        );
-        navBar.items.last.onTap?.call();
-        await tester.pumpAndSettle();
-        expect(find.text('Projects'), findsOneWidget);
+          // Open the More sheet while Projects is still enabled.
+          if (useLauncher) {
+            await tester.tap(find.text('Navigate'));
+          } else {
+            final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+              find.byType(DesignSystemBottomNavigationBar),
+            );
+            navBar.items.last.onTap?.call();
+          }
+          await tester.pumpAndSettle();
+          expect(find.text('Projects'), findsOneWidget);
 
-        // The flag flips (e.g. synced from another device) while the sheet
-        // is open. The row is still visible, but its tap-time index
-        // resolution now returns null: the sheet closes and the tap is
-        // dropped instead of routing through a stale index.
-        isProjectsEnabled = false;
-        await tester.tap(find.text('Projects'));
-        await tester.pumpAndSettle();
+          // The flag flips (e.g. synced from another device) while the sheet
+          // is open. The row is still visible, but its tap-time index
+          // resolution now returns null: the sheet closes and the tap is
+          // dropped instead of routing through a stale index.
+          isProjectsEnabled = false;
+          await tester.tap(find.text('Projects'));
+          await tester.pumpAndSettle();
 
-        expect(find.text('Projects'), findsNothing);
-        verifyNever(() => mockNavService.tapIndex(any()));
+          expect(find.text('Projects'), findsNothing);
+          verifyNever(() => mockNavService.tapIndex(any()));
 
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+        },
+      );
+    }
   });
 
   group('AppScreen relationships gating', () {
@@ -3600,46 +3684,59 @@ void main() {
       },
     );
 
-    testWidgets(
-      'More-sheet taps resolve indices against the flags at tap time, not '
-      'at sheet-open time',
-      (tester) async {
-        final mockNavService = MockNavService();
-        var projectsEnabled = true;
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => projectsEnabled,
-          isDailyOsEnabled: () => true,
-          isHabitsEnabled: () => true,
-          isDashboardsEnabled: () => true,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
+    for (final useLauncher in [false, true]) {
+      testWidgets(
+        'launcher=$useLauncher: More-sheet taps resolve indices against the flags at tap time, not '
+        'at sheet-open time',
+        (tester) async {
+          final mockNavService = MockNavService();
+          var projectsEnabled = true;
+          await _stubNavService(
+            mockNavService,
+            indexStream: Stream.value(0),
+            isProjectsEnabled: () => projectsEnabled,
+            isDailyOsEnabled: () => true,
+            isHabitsEnabled: () => true,
+            isDashboardsEnabled: () => true,
+          );
+          await _registerAppScreenGetIt(mockNavService);
+          addTearDown(tearDownTestGetIt);
 
-        await _pumpAppScreen(tester, navService: mockNavService);
-        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-          find.byType(DesignSystemBottomNavigationBar),
-        );
+          await _pumpAppScreen(
+            tester,
+            navService: mockNavService,
+            extraOverrides: [
+              configFlagProvider(
+                enableMobileNavigationLauncherFlag,
+              ).overrideWith((_) => Stream.value(useLauncher)),
+            ],
+          );
+          if (useLauncher) {
+            await tester.tap(find.text('Navigate'));
+          } else {
+            final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+              find.byType(DesignSystemBottomNavigationBar),
+            );
+            navBar.items.last.onTap?.call();
+          }
+          await tester.pumpAndSettle();
 
-        navBar.items.last.onTap?.call();
-        await tester.pumpAndSettle();
+          // Projects gets disabled (e.g. a synced settings change) while the
+          // sheet is open: every destination after it shifts down one index.
+          projectsEnabled = false;
 
-        // Projects gets disabled (e.g. a synced settings change) while the
-        // sheet is open: every destination after it shifts down one index.
-        projectsEnabled = false;
+          await tester.tap(find.text('Habits'));
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Habits'));
-        await tester.pumpAndSettle();
+          // Habits resolved to its new index 2 (after Tasks and DailyOS),
+          // not the index 3 it had when the sheet captured its rows.
+          verify(() => mockNavService.tapIndex(2)).called(1);
 
-        // Habits resolved to its new index 2 (after Tasks and DailyOS),
-        // not the index 3 it had when the sheet captured its rows.
-        verify(() => mockNavService.tapIndex(2)).called(1);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+        },
+      );
+    }
   });
 
   group('AppScreen desktop banner lane', () {
