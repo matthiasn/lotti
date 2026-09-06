@@ -749,7 +749,9 @@ void main() {
       final tokens = tester
           .element(find.byType(DesignSystemFloatingActionButton))
           .designTokens;
-      final fab = tester.getRect(
+      // Read layout size directly: subtracting global coordinates can lose
+      // floating-point precision after the navigation clearance moves the FAB.
+      final fab = tester.getSize(
         find.byType(DesignSystemFloatingActionButton),
       );
       // Same height as the Track time pill in the detail pane's action bar,
