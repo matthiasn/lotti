@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -45,6 +46,9 @@ void main() {
     repository = MockAgentRepository();
     sync = MockAgentSyncService();
     db = MockJournalDb();
+    when(
+      () => db.entityById(testTask.id),
+    ).thenAnswer((_) async => toDbEntity(testTask));
     when(
       () => db.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => []);

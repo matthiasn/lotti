@@ -796,7 +796,8 @@ void main() {
           precondition: () async {
             entered.complete();
             await release.future;
-            return await db!.journalEntityById(entry.id) == entry;
+            return (await db!.entityById(entry.id))?.serialized ==
+                jsonEncode(entry);
           },
         );
         await entered.future;

@@ -274,7 +274,9 @@ merely to satisfy ordering. The query has no new index or migration cost.
 `PersistenceLogic.updateDbEntity` forwards an optional read-only `precondition`
 to `JournalDb.updateJournalEntity`. The callback runs inside the same journal
 transaction as vector-clock comparison and the entity write. It may read this
-journal’s rows and links, but must not perform external work or mutations.
+journal’s rows and links through direct queries, but must not perform external
+work or mutations. Shared/coalesced readers can join a wave outside the
+transaction: use `entityById`, not `journalEntityById`, for the guarded snapshot.
 A false result returns `overwritePrevented` without changing the row, conflicts,
 labels or JSON sidecar. The persistence facade burns the unused clock reservation
 and returns before search indexing, notifications, badges, and sync publication.

@@ -7,6 +7,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -265,8 +266,12 @@ class RelationshipToolDispatcher {
       return await persistenceLogic.updateDbEntity(
             task.copyWith(meta: meta),
             precondition: () async {
+              // The public lookup coalesces callers across transaction zones.
+              // Read directly so this snapshot belongs to the write transaction.
+              final current = await journalDb.entityById(task.id);
               if (task.isDeleted ||
-                  await journalDb.journalEntityById(task.id) != task) {
+                  current == null ||
+                  fromDbEntity(current) != task) {
                 return false;
               }
               final links = await journalDb.linksForEntryIdsBidirectional({

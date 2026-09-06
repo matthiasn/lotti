@@ -108,7 +108,8 @@ mixin _JournalDbEntityOps
   ///
   /// [precondition], when supplied, runs inside that same transaction before
   /// any write. It must only read this journal database, without side effects
-  /// or external awaits. Returning false leaves the row and sidecar untouched.
+  /// or external awaits. Use direct queries, not readers that coalesce calls
+  /// across transaction zones. Returning false leaves the row and sidecar untouched.
   ///
   /// The JSON sidecar is written **after** the transaction commits: it is
   /// the sync payload, so it must never describe a row that rolled back,

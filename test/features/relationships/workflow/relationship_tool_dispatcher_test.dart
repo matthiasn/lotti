@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/relationships/workflow/relationship_tool_dispatcher.dart';
 import 'package:mocktail/mocktail.dart';
@@ -52,6 +53,9 @@ void main() {
     cache = MockEntitiesCacheService();
     agents = MockTaskAgentService();
     db = MockJournalDb();
+    when(
+      () => db.entityById(task.id),
+    ).thenAnswer((_) async => toDbEntity(task));
     when(() => db.journalEntityById(any())).thenAnswer(
       (call) async => call.positionalArguments.single == task.id ? task : null,
     );
@@ -782,6 +786,8 @@ void main() {
     ('deleted', task.copyWith(meta: task.meta.copyWith(deletedAt: now))),
   ]) {
     test('transactional removal guard refuses a $name snapshot', () async {
+      // The coalesced public read still reports the original snapshot; only
+      // the direct transactional read sees the change after metadata reservation.
       when(
         () => persistence.updateMetadata(
           task.meta,
@@ -789,8 +795,8 @@ void main() {
         ),
       ).thenAnswer((_) async {
         when(
-          () => db.journalEntityById(task.id),
-        ).thenAnswer((_) async => current);
+          () => db.entityById(task.id),
+        ).thenAnswer((_) async => current == null ? null : toDbEntity(current));
         return task.meta.copyWith(deletedAt: now);
       });
       expect(await dispatcher.removeTask(task), isFalse);
