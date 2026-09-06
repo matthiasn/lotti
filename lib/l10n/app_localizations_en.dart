@@ -10952,6 +10952,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipCreateTitle => 'Add person';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days over',
+      one: '1 day over',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Their check-ins are deleted too. This cannot be undone.';
 
@@ -10964,6 +10975,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String relationshipDueDay(String day) {
     return 'Due $day';
   }
+
+  @override
+  String get relationshipDueToday => 'Due today';
 
   @override
   String get relationshipEditTitle => 'Edit person';
@@ -11127,6 +11141,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'No tasks linked yet.';
 
   @override
+  String get relationshipNotEnrolled => 'Not enrolled';
+
+  @override
   String get relationshipNotFound => 'This person is no longer tracked.';
 
   @override
@@ -11169,7 +11186,41 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add the people you want to stay close to.';
 
   @override
+  String get relationshipsGroupDue => 'Due';
+
+  @override
   String get relationshipsPageTitle => 'People';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Select a person to see their page.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Due now';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count enrolled';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Next due $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'No one due';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people not enrolled',
+      one: '1 person not enrolled',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Active';
@@ -11182,6 +11233,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Just added · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Just added · $cadence · first due $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Staying in touch';

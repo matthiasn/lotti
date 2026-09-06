@@ -723,10 +723,19 @@ void main() {
         ).thenAnswer((_) async => [cara, ben, anna]);
         // Anna was checked in on yesterday — she outranks everyone; Ben's
         // last check-in predates Cara's tracking start.
-        when(() => mockDb.latestCheckInTimes()).thenAnswer(
+        CheckInEntry latest(String relationshipId, DateTime at) => CheckInEntry(
+          meta: meta(
+            'check-$relationshipId',
+          ).copyWith(dateFrom: at, dateTo: at),
+          data: CheckInData(
+            relationshipId: relationshipId,
+            interactionType: CheckInInteractionType.videoCall,
+          ),
+        );
+        when(() => mockDb.latestCheckIns()).thenAnswer(
           (_) async => {
-            'anna': DateTime(2026, 8, 12),
-            'ben': DateTime(2026, 8, 7),
+            'anna': latest('anna', DateTime(2026, 8, 12)),
+            'ben': latest('ben', DateTime(2026, 8, 7)),
           },
         );
 
@@ -737,8 +746,15 @@ void main() {
           ['anna', 'cara', 'ben'],
         );
         expect(items.first.lastCheckInAt, DateTime(2026, 8, 12));
+        // The whole check-in rides along, so the list can say what the last
+        // contact was, not only when.
+        expect(
+          items.first.lastCheckIn?.data.interactionType,
+          CheckInInteractionType.videoCall,
+        );
         // Cara has no check-in: recency is her tracking start.
         expect(items[1].lastCheckInAt, isNull);
+        expect(items[1].lastCheckIn, isNull);
       },
     );
   });

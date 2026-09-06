@@ -11025,6 +11025,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCreateTitle => 'Persoon toevoegen';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen te laat',
+      one: '1 dag te laat',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Ook alle check-ins worden verwijderd. Dit kan niet ongedaan worden gemaakt.';
 
@@ -11037,6 +11048,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String relationshipDueDay(String day) {
     return 'Voor $day';
   }
+
+  @override
+  String get relationshipDueToday => 'Vandaag aan de beurt';
 
   @override
   String get relationshipEditTitle => 'Persoon bewerken';
@@ -11202,6 +11216,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nog geen gekoppelde taken.';
 
   @override
+  String get relationshipNotEnrolled => 'Niet gevolgd';
+
+  @override
   String get relationshipNotFound =>
       'Deze persoon staat niet meer in je lijst.';
 
@@ -11245,7 +11262,41 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voeg de mensen toe met wie je dichtbij wilt blijven.';
 
   @override
+  String get relationshipsGroupDue => 'Aan de beurt';
+
+  @override
   String get relationshipsPageTitle => 'Mensen';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Kies iemand om de pagina te zien.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Nu aan de beurt';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count gevolgd';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Volgende: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Niemand aan de beurt';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personen niet gevolgd',
+      one: '1 persoon niet gevolgd',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Actief';
@@ -11258,6 +11309,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Net toegevoegd · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Net toegevoegd · $cadence · eerste keer voor $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Contact houden';

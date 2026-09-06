@@ -11111,6 +11111,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipCreateTitle => 'Adicionar pessoa';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias de atraso',
+      one: '1 dia de atraso',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Todos os registros dessa pessoa também serão excluídos. Isso não pode ser desfeito.';
 
@@ -11123,6 +11134,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String relationshipDueDay(String day) {
     return 'Até $day';
   }
+
+  @override
+  String get relationshipDueToday => 'Pendente hoje';
 
   @override
   String get relationshipEditTitle => 'Editar pessoa';
@@ -11287,6 +11301,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nenhuma tarefa vinculada ainda.';
 
   @override
+  String get relationshipNotEnrolled => 'Sem acompanhamento';
+
+  @override
   String get relationshipNotFound => 'Esta pessoa não está mais na sua lista.';
 
   @override
@@ -11329,7 +11346,41 @@ class AppLocalizationsPt extends AppLocalizations {
       'Adicione as pessoas de quem você quer ficar perto.';
 
   @override
+  String get relationshipsGroupDue => 'Pendentes';
+
+  @override
   String get relationshipsPageTitle => 'Pessoas';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Escolhe uma pessoa para ver a página dela.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Pendentes agora';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count em acompanhamento';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'A seguir: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Ninguém pendente';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pessoas sem acompanhamento',
+      one: '1 pessoa sem acompanhamento',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Ativo';
@@ -11342,6 +11393,25 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Adicionado agora · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Adicionado agora · $cadence · primeiro prazo $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Manter contato';

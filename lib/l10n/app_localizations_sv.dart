@@ -11018,6 +11018,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCreateTitle => 'Lägg till person';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'försenad med $count dagar',
+      one: 'försenad med 1 dag',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Alla avstämningar tas också bort. Det går inte att ångra.';
 
@@ -11030,6 +11041,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipDueDay(String day) {
     return 'Senast $day';
   }
+
+  @override
+  String get relationshipDueToday => 'Dags i dag';
 
   @override
   String get relationshipEditTitle => 'Redigera person';
@@ -11195,6 +11209,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Inga uppgifter länkade än.';
 
   @override
+  String get relationshipNotEnrolled => 'Följs inte';
+
+  @override
   String get relationshipNotFound => 'Den här personen följs inte längre.';
 
   @override
@@ -11237,7 +11254,47 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägg till människorna du vill hålla kontakten med.';
 
   @override
+  String get relationshipsGroupDue => 'Dags';
+
+  @override
   String get relationshipsPageTitle => 'Personer';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Välj en person för att se deras sida.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Dags nu';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '/ $count följda',
+      one: '/ 1 följd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Nästa: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Ingen väntar';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personer följs inte',
+      one: '1 person följs inte',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Aktiv';
@@ -11250,6 +11307,25 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Nyss tillagd · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Nyss tillagd · $cadence · första gången senast $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Hålla kontakten';

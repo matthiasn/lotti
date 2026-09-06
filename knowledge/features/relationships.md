@@ -20,6 +20,10 @@ sources:
     resource: ../../lib/classes/relationship_data.dart
     title: RelationshipData, RelationshipStatus, ContactChannel
     last_modified: 2026-08-14
+  - id: list-model
+    resource: ../../lib/features/relationships/ui/model/people_list_model.dart
+    title: The People list's bands, pills and summary — pure logic
+    last_modified: 2026-09-06
   - id: adr-0038
     resource: ../../docs/adr/0038-relationship-domain-model.md
     title: ADR 0038 — Relationship domain model
@@ -146,9 +150,51 @@ freshly added person lands at the top rather than the bottom.
 Computing that naively is one query per person. Instead
 `JournalDb.latestCheckInTimes` runs **a single `GROUP BY subtype` aggregate**
 over `type = 'CheckIn'` rows, returning `relationshipId → MAX(dateFrom)` for the
-whole table at once; `getRelationshipsByRecency` joins it in Dart. Both halves
-route through `_queryWithPrivateFilter`, so a hidden check-in does not leak into
-recency ordering.
+whole table at once. The list also needs *what* the last contact was, so
+`latestCheckIns` resolves that aggregate to its rows in **one further query** —
+the ids and the instants as `IN` lists, the exact `(subtype, dateFrom)` pair
+kept on the raw row before deserialising — and `getRelationshipsByRecency`
+joins the result in Dart as `RelationshipListItem.lastCheckIn`. Every half
+routes through `_queryWithPrivateFilter`, so a hidden check-in does not leak
+into recency ordering or into the status line.
+
+# The People list and the desktop split
+
+The list (design 2026-09-06 §2–3) is three bands in display order — **Due**
+(enrolled, cadence lapsed), **On track** (enrolled, not lapsed), **Not
+enrolled** (not important, or dormant/archived) — each most-recent contact
+first, under a summary card that counts the due against the enrolled, names
+who lapses next and on which day, and counts the not-enrolled. *Enrolled*
+means `important` **and** active: the consent switch alone does not enrol a
+dormant person (ADR 0039).
+
+All of that is pure logic in
+[`ui/model/people_list_model.dart`](../../lib/features/relationships/ui/model/people_list_model.dart)
+— bands, the truthful pill (`{n} days over` when lapsed, `Due {weekday}`
+within seven days, `On track`, `Not enrolled`, `Dormant`, `Archived`), the
+summary — covered by Glados properties (partition, per-band order,
+order-invariance, band⇔pill agreement, summary⇔bands agreement). The widgets
+(`PeopleListRow`, `PeopleSummaryCard`) only render what the model says; the
+row's status line composes the interaction label, the mono timestamp and the
+cadence label, and never "Tracking since …".
+
+On desktop `RelationshipsPage` is the Tasks/Projects list-detail split:
+`RelationshipsLocation` mirrors the URL's person id into
+`NavService.desktopSelectedRelationshipId` and pushes no detail page, the list
+pane takes the shared pane-width controller, and the right pane hosts the
+person's page or the empty state. The route stays the single source of truth —
+tapping a row still beams to `/people/<id>`. The chat stacks as its own page on
+every layout. Phones keep the list alone.
+
+```mermaid
+flowchart LR
+  URL["/people/&lt;id&gt;"] --> Loc[RelationshipsLocation]
+  Loc -->|phone| Push[push RelationshipDetailsPage]
+  Loc -->|desktop| Sel[desktopSelectedRelationshipId = id]
+  Sel --> Split[RelationshipsPage split: list pane · divider · detail pane]
+  Split -->|row wears surface.selected| Row[PeopleListRow]
+  Split --> Pane[detail pane: RelationshipDetailsPage or empty state]
+```
 
 # Status lifecycle
 

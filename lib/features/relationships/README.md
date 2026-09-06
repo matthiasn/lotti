@@ -25,7 +25,10 @@ the `enable_relationships` flag):
   (create, edit, delete — relationship deletion cascades to its check-ins,
   ADR 0037 §5) plus the recency-ordered list used by the People tab.
 - `ui/` + `state/` — the flag-gated **People tab** (`/people`, its own
-  beamer location): the relationship list ordered by last-check-in recency,
+  beamer location): the People list — banded *Due · On track · Not enrolled*
+  under a summary card that counts who is due now and names who lapses next,
+  each row naming the last contact (`Call · Today 12:44 · Weekly`) with a
+  truthful cadence pill, and on desktop a list/detail split like Tasks —
   the per-person detail page (status/cadence/nickname chips, contact
   channels, a linked-tasks section — `RelationshipLink` both ways, with a
   task picker that also creates the task when none exists yet, and per-row

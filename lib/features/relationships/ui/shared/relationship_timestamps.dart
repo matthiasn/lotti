@@ -87,6 +87,19 @@ DateTime _dayBefore(DateTime anchor) =>
 /// the date is already implied by the beat's position.
 String relationshipTimeLabel(DateTime at) => _hhMm(at);
 
+/// A mono day label without a time (`Thu 23 Jul`), for a date that is a
+/// deadline rather than an event — the summary card's next due day, the
+/// row's `first due` note.
+String relationshipDayLabel(DateTime at, {String? locale}) =>
+    _shortDayMonth(at, locale);
+
+/// [relationshipDayLabel] resolved against the widget tree's locale.
+String relationshipDayLabelOf(BuildContext context, DateTime at) =>
+    relationshipDayLabel(
+      at,
+      locale: Localizations.localeOf(context).toString(),
+    );
+
 /// A mono weekday-only label (`Thu`), used by the cadence due pill, in the
 /// locale's own abbreviation.
 String relationshipWeekdayLabel(DateTime at, {String? locale}) =>

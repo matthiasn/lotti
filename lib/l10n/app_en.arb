@@ -6348,6 +6348,14 @@
     "description": "Toast shown when the linked contact held nothing the person did not already have"
   },
   "relationshipCreateTitle": "Add person",
+  "relationshipDaysOver": "{count, plural, =1{1 day over} other{{count} days over}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Their check-ins are deleted too. This cannot be undone.",
   "relationshipDeleteConfirmTitle": "Delete {name}?",
   "@relationshipDeleteConfirmTitle": {
@@ -6365,6 +6373,7 @@
       }
     }
   },
+  "relationshipDueToday": "Due today",
   "relationshipEditTitle": "Edit person",
   "relationshipErrorCreateFailed": "Could not save this person. Please try again.",
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
@@ -6499,6 +6508,7 @@
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
   "relationshipNoLinkedTasks": "No tasks linked yet.",
+  "relationshipNotEnrolled": "Not enrolled",
   "relationshipNotFound": "This person is no longer tracked.",
   "relationshipNudgesOn": "nudges on",
   "@relationshipNudgesOn": {
@@ -6543,11 +6553,75 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
+  "relationshipsGroupDue": "Due",
   "relationshipsPageTitle": "People",
+  "relationshipsSelectPersonHint": "Select a person to see their page.",
+  "relationshipsSummaryDueNow": "Due now",
+  "relationshipsSummaryEnrolled": "/ {count} enrolled",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Next due {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "No one due",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person not enrolled} other{{count} people not enrolled}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Active",
   "relationshipStatusArchived": "Archived",
   "relationshipStatusDormant": "Dormant",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStatusLineAdded": "Just added · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Just added · {cadence} · first due {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Staying in touch",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

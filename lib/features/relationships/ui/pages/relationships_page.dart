@@ -1,27 +1,155 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
+import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
+import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
-import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
-import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
+import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
+import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
+import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The People tab (design plan §1): a left-aligned display header with one
-/// add affordance (a 34px teal circle `＋`), and one row per person — persona
-/// avatar, name with an inline star when favorited, a status line (the last
-/// meaningful event or a quiet-streak) with a cadence-state dot, and a
-/// trailing cadence pill. Rows sort due-first then by recency; favorites
-/// are a marker, not a section.
+/// The People tab (design 2026-09-06 §2–3).
+///
+/// Phones show the list scaffold alone; tapping a row beams to
+/// `/people/<id>`. Desktop renders the Tasks/Projects list-detail split: the
+/// list scaffold in a resizable left pane (width from
+/// [paneWidthControllerProvider] via a [ResizableDivider]) and, on the right,
+/// the page of the person selected in
+/// `NavService.desktopSelectedRelationshipId` — written by the location from
+/// the URL, so the route stays the single source of truth — or the empty
+/// state. With a selection the list can move offstage into focus mode while
+/// keeping its state.
 class RelationshipsPage extends ConsumerWidget {
   const RelationshipsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!isDesktopLayout(context)) {
+      return const _PeopleListScaffold(selectedRelationshipId: null);
+    }
+    final tokens = context.designTokens;
+    final paneWidths = ref.watch(paneWidthControllerProvider);
+    // Scales the flat default proportionally on large windows — see
+    // scaledPaneWidth's doc comment. A no-op once the user has dragged the
+    // list pane to any other width.
+    final resolvedListPane = resolvedPaneWidth(
+      storedWidth: paneWidths.listPaneWidth,
+      flatDefault: defaultListPaneWidth,
+      minValue: minListPaneWidth,
+      maxValue: maxListPaneWidth,
+      screenWidth: MediaQuery.sizeOf(context).width,
+      onDelta: (delta) => ref
+          .read(paneWidthControllerProvider.notifier)
+          .updateListPaneWidth(delta, allowWhileCollapsed: true),
+    );
+    final listPaneWidth = resolvedListPane.width;
+    final paneController = ref.read(paneWidthControllerProvider.notifier);
+
+    return ColoredBox(
+      color: tokens.colors.background.level01,
+      child: ValueListenableBuilder<String?>(
+        valueListenable: getIt<NavService>().desktopSelectedRelationshipId,
+        builder: (context, selectedId, _) {
+          final canHideListPane = selectedId != null;
+          final listPaneVisible =
+              !paneWidths.listPaneCollapsed || !canHideListPane;
+          return ListDetailFocusTraversal(
+            debugLabel: 'people-split',
+            listPaneVisible: listPaneVisible,
+            canHideListPane: canHideListPane,
+            onListPaneVisibilityChanged: (visible) {
+              if (visible) {
+                paneController.expandListPane();
+              } else {
+                paneController.collapseListPane();
+              }
+            },
+            listPane: SizedBox(
+              width: listPaneWidth,
+              child: _PeopleListScaffold(selectedRelationshipId: selectedId),
+            ),
+            divider: ResizableDivider(
+              currentValue: listPaneWidth,
+              minValue: minListPaneWidth,
+              maxValue: maxListPaneWidth,
+              onDrag: resolvedListPane.onDrag,
+            ),
+            detailPane: selectedId != null
+                ? _PeopleDetailPane(
+                    key: ValueKey(selectedId),
+                    relationshipId: selectedId,
+                  )
+                : DesktopDetailEmptyState(
+                    message: context.messages.relationshipsSelectPersonHint,
+                    icon: LottiIcons.people,
+                  ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The desktop detail pane: the person's page, plus the show-list-pane
+/// button while the list is folded away (the Projects pane's shape).
+class _PeopleDetailPane extends StatelessWidget {
+  const _PeopleDetailPane({required this.relationshipId, super.key});
+
+  final String relationshipId;
+
+  @override
+  Widget build(BuildContext context) {
+    final splitController = ListDetailFocusTraversal.maybeOf(context);
+    final tokens = context.designTokens;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        RelationshipDetailsPage(relationshipId: relationshipId),
+        if (splitController?.listPaneVisible == false)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: tokens.spacing.step5,
+                  top: tokens.spacing.step4,
+                ),
+                child: TabHeaderIconButton(
+                  key: const ValueKey('people-show-list-pane'),
+                  icon: LottiIcons.sidebar,
+                  tooltip: context.messages.listPaneShowTooltip,
+                  onPressed: splitController!.showListPane,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The list itself: header, summary card, then the rows in their bands.
+class _PeopleListScaffold extends ConsumerWidget {
+  const _PeopleListScaffold({required this.selectedRelationshipId});
+
+  /// The person whose page fills the desktop detail pane; null on phones.
+  final String? selectedRelationshipId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,19 +199,10 @@ class RelationshipsPage extends ConsumerWidget {
                   ),
                 ),
                 [] => SliverToBoxAdapter(child: _EmptyState()),
-                final list => () {
-                  final sorted = sortPeopleForList(list);
-                  return SliverList.separated(
-                    itemCount: sorted.length,
-                    separatorBuilder: (_, _) => Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: tokens.colors.decorative.level01,
-                    ),
-                    itemBuilder: (context, index) =>
-                        _RelationshipRow(item: sorted[index]),
-                  );
-                }(),
+                final list => _PeopleList(
+                  items: list,
+                  selectedRelationshipId: selectedRelationshipId,
+                ),
               },
             ),
           ],
@@ -93,10 +212,79 @@ class RelationshipsPage extends ConsumerWidget {
   }
 }
 
-/// The left-aligned `People` title with a count caption and the single add
-/// affordance (design plan §0.3 / §1). Not a Material `AppBar` — the title is
-/// left-aligned display type, and the import-from-contacts door sits beside
-/// the add circle (a distinct action, not a second add affordance).
+/// The summary card and the banded rows, as one sliver list.
+class _PeopleList extends StatelessWidget {
+  const _PeopleList({
+    required this.items,
+    required this.selectedRelationshipId,
+  });
+
+  final List<RelationshipListItem> items;
+  final String? selectedRelationshipId;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final sections = peopleListSections(items);
+    final children = <Widget>[
+      PeopleSummaryCard(summary: peopleSummaryOf(items)),
+      for (final section in sections) ...[
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step4,
+            tokens.spacing.step5,
+            tokens.spacing.step4,
+            tokens.spacing.step2,
+          ),
+          child: _GroupHeading(
+            group: section.group,
+            count: section.items.length,
+          ),
+        ),
+        for (final item in section.items)
+          PeopleListRow(
+            key: ValueKey('people-row-${item.relationship.id}'),
+            item: item,
+            selected: item.relationship.id == selectedRelationshipId,
+            onTap: () => beamToNamed('/people/${item.relationship.id}'),
+          ),
+      ],
+    ];
+    return SliverList(delegate: SliverChildListDelegate(children));
+  }
+}
+
+/// A band's caption: `Due · 1`, `On track · 3`, `Not enrolled · 1`.
+class _GroupHeading extends StatelessWidget {
+  const _GroupHeading({required this.group, required this.count});
+
+  final PeopleListGroup group;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final label = switch (group) {
+      PeopleListGroup.due => messages.relationshipsGroupDue,
+      PeopleListGroup.onTrack => messages.relationshipCadenceOnTrack,
+      PeopleListGroup.notEnrolled => messages.relationshipNotEnrolled,
+    };
+    return Text(
+      '$label · $count',
+      key: ValueKey('people-group-${group.name}'),
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+        fontWeight: tokens.typography.weight.semiBold,
+      ),
+    );
+  }
+}
+
+/// The left-aligned `People` title with a count caption and the add
+/// affordance: a labelled button on desktop, the teal circle on phones —
+/// beside the import-from-contacts door, which exists only where there is
+/// an address book (ADR 0041 §2).
 class _PeopleHeader extends ConsumerWidget {
   const _PeopleHeader({required this.itemCount});
 
@@ -106,6 +294,7 @@ class _PeopleHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final isDesktop = isDesktopLayout(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -132,9 +321,7 @@ class _PeopleHeader extends ConsumerWidget {
             ),
           ],
           const Spacer(),
-          // Import is a distinct door, not a second add affordance; hidden on
-          // desktop where there is no address book (ADR 0041 §2).
-          if (ref.read(contactsServiceProvider).isSupported)
+          if (ref.read(contactsServiceProvider).isSupported) ...[
             _IconButton(
               icon: LottiIcons.contactImport,
               tooltip: messages.relationshipImportAction,
@@ -144,10 +331,19 @@ class _PeopleHeader extends ConsumerWidget {
                 ),
               ),
             ),
-          SizedBox(width: tokens.spacing.step2),
-          _AddPersonButton(
-            onTap: () => showRelationshipCreateModal(context: context),
-          ),
+            SizedBox(width: tokens.spacing.step2),
+          ],
+          if (isDesktop)
+            DesignSystemButton(
+              key: const ValueKey('people-add-person-button'),
+              label: messages.relationshipCreateTitle,
+              leadingIcon: LottiIcons.add,
+              onPressed: () => showRelationshipCreateModal(context: context),
+            )
+          else
+            _AddPersonButton(
+              onTap: () => showRelationshipCreateModal(context: context),
+            ),
         ],
       ),
     );
@@ -253,249 +449,4 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
-}
-
-/// One person row (design plan §1): 40px persona avatar, name + inline star,
-/// a cadence-state dot + status line, and a trailing cadence pill.
-class _RelationshipRow extends StatelessWidget {
-  const _RelationshipRow({required this.item});
-
-  final RelationshipListItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final relationship = item.relationship;
-    final data = relationship.data;
-    final cadenceDays = data.checkInCadenceDays;
-
-    return InkWell(
-      onTap: () => beamToNamed('/people/${relationship.id}'),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step3,
-        ),
-        child: Row(
-          children: [
-            PersonaAvatar(
-              initial: personaInitial(data.title),
-              id: relationship.id,
-            ),
-            SizedBox(width: tokens.spacing.step4),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          data.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.body.bodyLarge
-                              .copyWith(
-                                fontWeight: tokens.typography.weight.semiBold,
-                                color: tokens.colors.text.highEmphasis,
-                              ),
-                        ),
-                      ),
-                      if (data.important) ...[
-                        SizedBox(width: tokens.spacing.step2),
-                        Icon(
-                          LottiIconsFilled.star,
-                          size: 11,
-                          color: tokens.colors.interactive.enabled,
-                        ),
-                      ],
-                    ],
-                  ),
-                  SizedBox(height: tokens.spacing.step1),
-                  Row(
-                    children: [
-                      _CadenceStateDot(
-                        cadenceDays: cadenceDays,
-                        lastCheckInAt: item.lastCheckInAt,
-                        trackingStartedAt: relationship.meta.dateFrom,
-                      ),
-                      SizedBox(width: tokens.spacing.step2),
-                      Flexible(
-                        child: Text(
-                          _statusLine(
-                            context,
-                            item,
-                            cadenceDays,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            _CadencePill(
-              cadenceDays: cadenceDays,
-              lastCheckInAt: item.lastCheckInAt,
-              trackingStartedAt: relationship.meta.dateFrom,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// The status line: the last meaningful event (with its mono timestamp),
-  /// or the quiet-streak caption. "Tracking since …" is dropped entirely
-  /// (design plan §0.8) — a person added today has not been contacted today.
-  String _statusLine(
-    BuildContext context,
-    RelationshipListItem item,
-    int? cadenceDays,
-  ) {
-    final messages = context.messages;
-    final last = item.lastCheckInAt;
-    if (last != null) {
-      return messages.relationshipCheckedInLabel(
-        relationshipTimestampLabelOf(context, last),
-      );
-    }
-    final streak = quietStreakDays(
-      lastCheckInAt: null,
-      trackingStartedAt: item.relationship.meta.dateFrom,
-    );
-    if (streak == 0) return messages.relationshipJustAdded;
-    return messages.relationshipQuietForDays(streak);
-  }
-}
-
-/// The 7px cadence-state dot: teal when on track, warning when due, neutral
-/// when there is no cadence (design plan §0.6 / §1).
-class _CadenceStateDot extends StatelessWidget {
-  const _CadenceStateDot({
-    required this.cadenceDays,
-    required this.lastCheckInAt,
-    required this.trackingStartedAt,
-  });
-
-  final int? cadenceDays;
-  final DateTime? lastCheckInAt;
-  final DateTime trackingStartedAt;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final overdue = cadenceOverdueDays(
-      lastCheckInAt: lastCheckInAt,
-      trackingStartedAt: trackingStartedAt,
-      cadenceDays: cadenceDays,
-    );
-    final color = switch (overdue) {
-      null => tokens.colors.text.highEmphasis.withValues(alpha: 0.38),
-      <= 0 => tokens.colors.interactive.enabled,
-      _ => tokens.colors.alert.warning.defaultColor,
-    };
-    return Container(
-      width: 7,
-      height: 7,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
-/// The trailing cadence pill: quiet/on-track when not due, warning-tinted
-/// `Due {day}` when overdue (design plan §1).
-class _CadencePill extends StatelessWidget {
-  const _CadencePill({
-    required this.cadenceDays,
-    required this.lastCheckInAt,
-    required this.trackingStartedAt,
-  });
-
-  final int? cadenceDays;
-  final DateTime? lastCheckInAt;
-  final DateTime trackingStartedAt;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-
-    if (cadenceDays == null) return const SizedBox.shrink();
-
-    final due = cadenceDueDate(
-      lastCheckInAt: lastCheckInAt,
-      trackingStartedAt: trackingStartedAt,
-      cadenceDays: cadenceDays,
-    );
-    final overdue = cadenceOverdueDays(
-      lastCheckInAt: lastCheckInAt,
-      trackingStartedAt: trackingStartedAt,
-      cadenceDays: cadenceDays,
-    );
-
-    final dueOverdue = (overdue ?? 0) > 0;
-    final label = dueOverdue
-        ? messages.relationshipDueDay(relationshipWeekdayLabelOf(context, due!))
-        : messages.relationshipCadenceOnTrack;
-    final fg = dueOverdue
-        ? tokens.colors.alert.warning.defaultColor
-        : tokens.colors.text.mediumEmphasis;
-    final bg = dueOverdue
-        ? tokens.colors.alert.warning.defaultColor.withValues(alpha: 0.16)
-        : tokens.colors.surface.enabled;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: fg,
-          fontWeight: tokens.typography.weight.semiBold,
-          height: 1,
-        ),
-      ),
-    );
-  }
-}
-
-/// Sort the list due-first, then by last-contact recency (design plan §1).
-/// Favorites do NOT get a separate section; the star is a marker.
-List<RelationshipListItem> sortPeopleForList(List<RelationshipListItem> items) {
-  final due = <RelationshipListItem>[];
-  final rest = <RelationshipListItem>[];
-  for (final item in items) {
-    final overdue = cadenceOverdueDays(
-      lastCheckInAt: item.lastCheckInAt,
-      trackingStartedAt: item.relationship.meta.dateFrom,
-      cadenceDays: item.relationship.data.checkInCadenceDays,
-    );
-    if ((overdue ?? 0) > 0) {
-      due.add(item);
-    } else {
-      rest.add(item);
-    }
-  }
-  DateTime recency(RelationshipListItem i) =>
-      i.lastCheckInAt ?? i.relationship.meta.dateFrom;
-  due.sort((a, b) => recency(b).compareTo(recency(a)));
-  rest.sort((a, b) => recency(b).compareTo(recency(a)));
-  return [...due, ...rest];
 }

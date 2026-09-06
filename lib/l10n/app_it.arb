@@ -4818,6 +4818,14 @@
   "relationshipContactMissing": "Quel contatto non è su questo dispositivo",
   "relationshipContactNoChanges": "Niente di nuovo da copiare",
   "relationshipCreateTitle": "Aggiungi persona",
+  "relationshipDaysOver": "{count, plural, =1{1 giorno di ritardo} other{{count} giorni di ritardo}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Verranno eliminati anche tutti i contatti registrati. L'azione non si può annullare.",
   "relationshipDeleteConfirmTitle": "Eliminare {name}?",
   "relationshipDueDay": "Entro {day}",
@@ -4828,6 +4836,7 @@
       }
     }
   },
+  "relationshipDueToday": "In scadenza oggi",
   "relationshipEditTitle": "Modifica persona",
   "relationshipErrorCreateFailed": "Impossibile salvare la persona. Riprova.",
   "relationshipErrorDeleteFailed": "Impossibile eliminare la persona. Riprova.",
@@ -4889,6 +4898,7 @@
   "relationshipNicknameLabel": "Soprannome",
   "relationshipNoCheckIns": "Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.",
   "relationshipNoLinkedTasks": "Nessuna attività collegata.",
+  "relationshipNotEnrolled": "Non seguita",
   "relationshipNotFound": "Questa persona non è più nella tua lista.",
   "relationshipNudgesOn": "promemoria attivi",
   "@relationshipNudgesOn": {
@@ -4920,11 +4930,75 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Aggiungi le persone a cui vuoi restare vicino.",
+  "relationshipsGroupDue": "In scadenza",
   "relationshipsPageTitle": "Persone",
+  "relationshipsSelectPersonHint": "Scegli una persona per vedere la sua pagina.",
+  "relationshipsSummaryDueNow": "Da sentire ora",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 seguita} other{/ {count} seguite}}",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Prossima scadenza: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Nessuno in scadenza",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persona non seguita} other{{count} persone non seguite}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Attiva",
   "relationshipStatusArchived": "Archiviata",
   "relationshipStatusDormant": "In pausa",
   "relationshipStatusFieldLabel": "Stato",
+  "relationshipStatusLineAdded": "Appena aggiunto · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Appena aggiunto · {cadence} · prima scadenza {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Restare in contatto",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

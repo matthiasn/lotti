@@ -4818,6 +4818,14 @@
   "relationshipContactMissing": "Den kontakten finns inte på den här enheten",
   "relationshipContactNoChanges": "Inget nytt att kopiera",
   "relationshipCreateTitle": "Lägg till person",
+  "relationshipDaysOver": "{count, plural, =1{försenad med 1 dag} other{försenad med {count} dagar}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Alla avstämningar tas också bort. Det går inte att ångra.",
   "relationshipDeleteConfirmTitle": "Ta bort {name}?",
   "relationshipDueDay": "Senast {day}",
@@ -4828,6 +4836,7 @@
       }
     }
   },
+  "relationshipDueToday": "Dags i dag",
   "relationshipEditTitle": "Redigera person",
   "relationshipErrorCreateFailed": "Personen kunde inte sparas. Försök igen.",
   "relationshipErrorDeleteFailed": "Personen kunde inte tas bort. Försök igen.",
@@ -4889,6 +4898,7 @@
   "relationshipNicknameLabel": "Smeknamn",
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
   "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
+  "relationshipNotEnrolled": "Följs inte",
   "relationshipNotFound": "Den här personen följs inte längre.",
   "relationshipNudgesOn": "påminnelser på",
   "@relationshipNudgesOn": {
@@ -4920,11 +4930,75 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Lägg till människorna du vill hålla kontakten med.",
+  "relationshipsGroupDue": "Dags",
   "relationshipsPageTitle": "Personer",
+  "relationshipsSelectPersonHint": "Välj en person för att se deras sida.",
+  "relationshipsSummaryDueNow": "Dags nu",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 följd} other{/ {count} följda}}",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Nästa: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Ingen väntar",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person följs inte} other{{count} personer följs inte}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Aktiv",
   "relationshipStatusArchived": "Arkiverad",
   "relationshipStatusDormant": "Vilande",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStatusLineAdded": "Nyss tillagd · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Nyss tillagd · {cadence} · första gången senast {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Hålla kontakten",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

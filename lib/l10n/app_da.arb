@@ -4818,6 +4818,14 @@
   "relationshipContactMissing": "Den kontakt findes ikke på denne enhed",
   "relationshipContactNoChanges": "Intet nyt at kopiere",
   "relationshipCreateTitle": "Tilføj person",
+  "relationshipDaysOver": "{count, plural, =1{1 dag forsinket} other{{count} dage forsinket}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Deres check-ins slettes også. Det kan ikke fortrydes.",
   "relationshipDeleteConfirmTitle": "Slet {name}?",
   "relationshipDueDay": "Senest {day}",
@@ -4828,6 +4836,7 @@
       }
     }
   },
+  "relationshipDueToday": "Skal kontaktes i dag",
   "relationshipEditTitle": "Redigér person",
   "relationshipErrorCreateFailed": "Personen kunne ikke gemmes. Prøv igen.",
   "relationshipErrorDeleteFailed": "Personen kunne ikke slettes. Prøv igen.",
@@ -4889,6 +4898,7 @@
   "relationshipNicknameLabel": "Kaldenavn",
   "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",
   "relationshipNoLinkedTasks": "Ingen opgaver linket endnu.",
+  "relationshipNotEnrolled": "Ikke fulgt",
   "relationshipNotFound": "Denne person følges ikke længere.",
   "relationshipNudgesOn": "påmindelser til",
   "@relationshipNudgesOn": {
@@ -4920,11 +4930,75 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Tilføj de mennesker, du vil holde kontakten med.",
+  "relationshipsGroupDue": "Skal kontaktes",
   "relationshipsPageTitle": "Personer",
+  "relationshipsSelectPersonHint": "Vælg en person for at se deres side.",
+  "relationshipsSummaryDueNow": "Skal kontaktes nu",
+  "relationshipsSummaryEnrolled": "/ {count} fulgt",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Næste: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Ingen venter",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 person ikke fulgt} other{{count} personer ikke fulgt}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Aktiv",
   "relationshipStatusArchived": "Arkiveret",
   "relationshipStatusDormant": "Hvilende",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStatusLineAdded": "Lige tilføjet · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Lige tilføjet · {cadence} · første gang senest {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Holde kontakten",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

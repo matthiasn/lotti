@@ -11006,6 +11006,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCreateTitle => 'Tilføj person';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dage forsinket',
+      one: '1 dag forsinket',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Deres check-ins slettes også. Det kan ikke fortrydes.';
 
@@ -11018,6 +11029,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String relationshipDueDay(String day) {
     return 'Senest $day';
   }
+
+  @override
+  String get relationshipDueToday => 'Skal kontaktes i dag';
 
   @override
   String get relationshipEditTitle => 'Redigér person';
@@ -11183,6 +11197,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Ingen opgaver linket endnu.';
 
   @override
+  String get relationshipNotEnrolled => 'Ikke fulgt';
+
+  @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';
 
   @override
@@ -11225,7 +11242,41 @@ class AppLocalizationsDa extends AppLocalizations {
       'Tilføj de mennesker, du vil holde kontakten med.';
 
   @override
+  String get relationshipsGroupDue => 'Skal kontaktes';
+
+  @override
   String get relationshipsPageTitle => 'Personer';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Vælg en person for at se deres side.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Skal kontaktes nu';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    return '/ $count fulgt';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Næste: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Ingen venter';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personer ikke fulgt',
+      one: '1 person ikke fulgt',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Aktiv';
@@ -11238,6 +11289,25 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Lige tilføjet · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Lige tilføjet · $cadence · første gang senest $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Holde kontakten';

@@ -45,7 +45,18 @@ void main() {
 
   RelationshipListItem item(String id, {DateTime? lastCheckInAt}) => (
     relationship: relationship(id),
-    lastCheckInAt: lastCheckInAt,
+    lastCheckIn: lastCheckInAt == null
+        ? null
+        : CheckInEntry(
+            meta: meta('check-$id').copyWith(
+              dateFrom: lastCheckInAt,
+              dateTo: lastCheckInAt,
+            ),
+            data: CheckInData(
+              relationshipId: id,
+              interactionType: CheckInInteractionType.call,
+            ),
+          ),
   );
 
   CheckInEntry checkIn(String id, String relationshipId) => CheckInEntry(

@@ -4315,6 +4315,14 @@
   "relationshipContactMissing": "Acel contact nu se află pe acest dispozitiv",
   "relationshipContactNoChanges": "Nu este nimic nou de copiat",
   "relationshipCreateTitle": "Adăugați o persoană",
+  "relationshipDaysOver": "{count, plural, =1{1 zi de întârziere} few{{count} zile de întârziere} other{{count} de zile de întârziere}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.",
   "relationshipDeleteConfirmTitle": "Ștergeți {name}?",
   "relationshipDueDay": "Până {day}",
@@ -4325,6 +4333,7 @@
       }
     }
   },
+  "relationshipDueToday": "Scadent astăzi",
   "relationshipEditTitle": "Editați persoana",
   "relationshipErrorCreateFailed": "Persoana nu a putut fi salvată. Încercați din nou.",
   "relationshipErrorDeleteFailed": "Persoana nu a putut fi ștearsă. Încercați din nou.",
@@ -4386,6 +4395,7 @@
   "relationshipNicknameLabel": "Poreclă",
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
+  "relationshipNotEnrolled": "Neurmărită",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
   "relationshipNudgesOn": "memento-uri active",
   "@relationshipNudgesOn": {
@@ -4417,11 +4427,75 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
+  "relationshipsGroupDue": "Scadente",
   "relationshipsPageTitle": "Persoane",
+  "relationshipsSelectPersonHint": "Selectați o persoană pentru a-i vedea pagina.",
+  "relationshipsSummaryDueNow": "Scadente acum",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 urmărită} few{/ {count} urmărite} other{/ {count} de urmărite}}",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Urmează: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Nimeni nu este scadent",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persoană neurmărită} few{{count} persoane neurmărite} other{{count} de persoane neurmărite}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Activă",
   "relationshipStatusArchived": "Arhivată",
   "relationshipStatusDormant": "Inactivă",
   "relationshipStatusFieldLabel": "Stare",
+  "relationshipStatusLineAdded": "Adăugat acum · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Adăugat acum · {cadence} · prima scadență {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Menținerea contactului",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

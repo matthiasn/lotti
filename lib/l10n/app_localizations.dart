@@ -18469,6 +18469,12 @@ abstract class AppLocalizations {
   /// **'Add person'**
   String get relationshipCreateTitle;
 
+  /// No description provided for @relationshipDaysOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day over} other{{count} days over}}'**
+  String relationshipDaysOver(int count);
+
   /// No description provided for @relationshipDeleteConfirmMessage.
   ///
   /// In en, this message translates to:
@@ -18486,6 +18492,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Due {day}'**
   String relationshipDueDay(String day);
+
+  /// No description provided for @relationshipDueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get relationshipDueToday;
 
   /// No description provided for @relationshipEditTitle.
   ///
@@ -18733,6 +18745,12 @@ abstract class AppLocalizations {
   /// **'No tasks linked yet.'**
   String get relationshipNoLinkedTasks;
 
+  /// No description provided for @relationshipNotEnrolled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enrolled'**
+  String get relationshipNotEnrolled;
+
   /// No description provided for @relationshipNotFound.
   ///
   /// In en, this message translates to:
@@ -18793,11 +18811,53 @@ abstract class AppLocalizations {
   /// **'Add the people you want to stay close to.'**
   String get relationshipsEmptyState;
 
+  /// No description provided for @relationshipsGroupDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get relationshipsGroupDue;
+
   /// No description provided for @relationshipsPageTitle.
   ///
   /// In en, this message translates to:
   /// **'People'**
   String get relationshipsPageTitle;
+
+  /// No description provided for @relationshipsSelectPersonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a person to see their page.'**
+  String get relationshipsSelectPersonHint;
+
+  /// No description provided for @relationshipsSummaryDueNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due now'**
+  String get relationshipsSummaryDueNow;
+
+  /// No description provided for @relationshipsSummaryEnrolled.
+  ///
+  /// In en, this message translates to:
+  /// **'/ {count} enrolled'**
+  String relationshipsSummaryEnrolled(int count);
+
+  /// No description provided for @relationshipsSummaryNextDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Next due {name} · {day}'**
+  String relationshipsSummaryNextDue(String name, String day);
+
+  /// No description provided for @relationshipsSummaryNoneDue.
+  ///
+  /// In en, this message translates to:
+  /// **'No one due'**
+  String get relationshipsSummaryNoneDue;
+
+  /// No description provided for @relationshipsSummaryNotEnrolled.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person not enrolled} other{{count} people not enrolled}}'**
+  String relationshipsSummaryNotEnrolled(int count);
 
   /// No description provided for @relationshipStatusActive.
   ///
@@ -18822,6 +18882,28 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get relationshipStatusFieldLabel;
+
+  /// No description provided for @relationshipStatusLineAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Just added · {cadence}'**
+  String relationshipStatusLineAdded(String cadence);
+
+  /// No description provided for @relationshipStatusLineAddedFirstDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Just added · {cadence} · first due {day}'**
+  String relationshipStatusLineAddedFirstDue(String cadence, String day);
+
+  /// No description provided for @relationshipStatusLineContacted.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} · {time} · {cadence}'**
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  );
 
   /// Relationships redesign label.
   ///

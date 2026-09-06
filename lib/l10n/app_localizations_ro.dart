@@ -11230,6 +11230,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCreateTitle => 'Adăugați o persoană';
 
   @override
+  String relationshipDaysOver(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile de întârziere',
+      few: '$count zile de întârziere',
+      one: '1 zi de întârziere',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipDeleteConfirmMessage =>
       'Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.';
 
@@ -11242,6 +11254,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipDueDay(String day) {
     return 'Până $day';
   }
+
+  @override
+  String get relationshipDueToday => 'Scadent astăzi';
 
   @override
   String get relationshipEditTitle => 'Editați persoana';
@@ -11411,6 +11426,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipNoLinkedTasks => 'Nicio sarcină asociată încă.';
 
   @override
+  String get relationshipNotEnrolled => 'Neurmărită';
+
+  @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
 
   @override
@@ -11453,7 +11471,49 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adăugați persoanele de care doriți să rămâneți aproape.';
 
   @override
+  String get relationshipsGroupDue => 'Scadente';
+
+  @override
   String get relationshipsPageTitle => 'Persoane';
+
+  @override
+  String get relationshipsSelectPersonHint =>
+      'Selectați o persoană pentru a-i vedea pagina.';
+
+  @override
+  String get relationshipsSummaryDueNow => 'Scadente acum';
+
+  @override
+  String relationshipsSummaryEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '/ $count de urmărite',
+      few: '/ $count urmărite',
+      one: '/ 1 urmărită',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String relationshipsSummaryNextDue(String name, String day) {
+    return 'Urmează: $name · $day';
+  }
+
+  @override
+  String get relationshipsSummaryNoneDue => 'Nimeni nu este scadent';
+
+  @override
+  String relationshipsSummaryNotEnrolled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de persoane neurmărite',
+      few: '$count persoane neurmărite',
+      one: '1 persoană neurmărită',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipStatusActive => 'Activă';
@@ -11466,6 +11526,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stare';
+
+  @override
+  String relationshipStatusLineAdded(String cadence) {
+    return 'Adăugat acum · $cadence';
+  }
+
+  @override
+  String relationshipStatusLineAddedFirstDue(String cadence, String day) {
+    return 'Adăugat acum · $cadence · prima scadență $day';
+  }
+
+  @override
+  String relationshipStatusLineContacted(
+    String type,
+    String time,
+    String cadence,
+  ) {
+    return '$type · $time · $cadence';
+  }
 
   @override
   String get relationshipStayingInTouch => 'Menținerea contactului';

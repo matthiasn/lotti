@@ -4817,6 +4817,14 @@
   "relationshipContactMissing": "Dat contact staat niet op dit apparaat",
   "relationshipContactNoChanges": "Niets nieuws om te kopiëren",
   "relationshipCreateTitle": "Persoon toevoegen",
+  "relationshipDaysOver": "{count, plural, =1{1 dag te laat} other{{count} dagen te laat}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Ook alle check-ins worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
   "relationshipDeleteConfirmTitle": "{name} verwijderen?",
   "relationshipDueDay": "Voor {day}",
@@ -4827,6 +4835,7 @@
       }
     }
   },
+  "relationshipDueToday": "Vandaag aan de beurt",
   "relationshipEditTitle": "Persoon bewerken",
   "relationshipErrorCreateFailed": "Kon de persoon niet opslaan. Probeer het opnieuw.",
   "relationshipErrorDeleteFailed": "Kon de persoon niet verwijderen. Probeer het opnieuw.",
@@ -4888,6 +4897,7 @@
   "relationshipNicknameLabel": "Bijnaam",
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
+  "relationshipNotEnrolled": "Niet gevolgd",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
   "relationshipNudgesOn": "herinneringen aan",
   "@relationshipNudgesOn": {
@@ -4919,11 +4929,75 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
+  "relationshipsGroupDue": "Aan de beurt",
   "relationshipsPageTitle": "Mensen",
+  "relationshipsSelectPersonHint": "Kies iemand om de pagina te zien.",
+  "relationshipsSummaryDueNow": "Nu aan de beurt",
+  "relationshipsSummaryEnrolled": "/ {count} gevolgd",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Volgende: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Niemand aan de beurt",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 persoon niet gevolgd} other{{count} personen niet gevolgd}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Actief",
   "relationshipStatusArchived": "Gearchiveerd",
   "relationshipStatusDormant": "Sluimerend",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStatusLineAdded": "Net toegevoegd · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Net toegevoegd · {cadence} · eerste keer voor {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Contact houden",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."

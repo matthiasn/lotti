@@ -4322,6 +4322,14 @@
   "relationshipContactMissing": "Tento kontakt v tomto zařízení není",
   "relationshipContactNoChanges": "Není co nového zkopírovat",
   "relationshipCreateTitle": "Přidat osobu",
+  "relationshipDaysOver": "{count, plural, =1{1 den po termínu} few{{count} dny po termínu} other{{count} dní po termínu}}",
+  "@relationshipDaysOver": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDeleteConfirmMessage": "Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.",
   "relationshipDeleteConfirmTitle": "Smazat {name}?",
   "relationshipDueDay": "Do {day}",
@@ -4332,6 +4340,7 @@
       }
     }
   },
+  "relationshipDueToday": "Dnes na řadě",
   "relationshipEditTitle": "Upravit osobu",
   "relationshipErrorCreateFailed": "Osobu se nepodařilo uložit. Zkus to prosím znovu.",
   "relationshipErrorDeleteFailed": "Osobu se nepodařilo smazat. Zkus to prosím znovu.",
@@ -4393,6 +4402,7 @@
   "relationshipNicknameLabel": "Přezdívka",
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
+  "relationshipNotEnrolled": "Nesledováno",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
   "relationshipNudgesOn": "připomínky zapnuty",
   "@relationshipNudgesOn": {
@@ -4424,11 +4434,75 @@
     "description": "Relationships redesign label."
   },
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
+  "relationshipsGroupDue": "Na řadě",
   "relationshipsPageTitle": "Lidé",
+  "relationshipsSelectPersonHint": "Vyber osobu a zobrazí se její stránka.",
+  "relationshipsSummaryDueNow": "Teď na řadě",
+  "relationshipsSummaryEnrolled": "{count, plural, =1{/ 1 sledovaná} few{/ {count} sledované} other{/ {count} sledovaných}}",
+  "@relationshipsSummaryEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipsSummaryNextDue": "Další: {name} · {day}",
+  "@relationshipsSummaryNextDue": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipsSummaryNoneDue": "Nikdo není na řadě",
+  "relationshipsSummaryNotEnrolled": "{count, plural, =1{1 nesledovaná osoba} few{{count} nesledované osoby} other{{count} nesledovaných osob}}",
+  "@relationshipsSummaryNotEnrolled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipStatusActive": "Aktivní",
   "relationshipStatusArchived": "Archivované",
   "relationshipStatusDormant": "Spící",
   "relationshipStatusFieldLabel": "Stav",
+  "relationshipStatusLineAdded": "Právě přidáno · {cadence}",
+  "@relationshipStatusLineAdded": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineAddedFirstDue": "Právě přidáno · {cadence} · poprvé do {day}",
+  "@relationshipStatusLineAddedFirstDue": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipStatusLineContacted": "{type} · {time} · {cadence}",
+  "@relationshipStatusLineContacted": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipStayingInTouch": "Udržovat kontakt",
   "@relationshipStayingInTouch": {
     "description": "Relationships redesign label."
