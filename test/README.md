@@ -562,8 +562,11 @@ ordering seed even on failure, and summarizes failures, skips, incomplete tests,
 and durations measured from each test's start to completion. The timing tool is
 `test/tool/analyze_test_timings.dart`; concurrent completion gaps are not test
 durations. The runner logs target-preparation time; the first standard shard
-also enables Flutter's verbose phase timings to distinguish compilation,
-execution, and coverage collection from suite-loading time.
+also enables Dart and Flutter verbose timings to distinguish build hooks,
+compilation, execution, and coverage collection from suite-loading time.
+Native hook outputs and `flutter_scene`'s generated package assets are cached
+together, keyed by runner OS/architecture, `.fvmrc`, and both pubspec manifests.
+The hooks still validate dependencies and build inputs before reusing outputs.
 
 The weekly run shuffles test order using its recorded workflow run number as the
 seed. Workflow dispatch accepts a `seed` to reproduce the order; `0` keeps
