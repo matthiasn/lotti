@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/profile_locality.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -59,18 +60,21 @@ final relationshipAgentServiceProvider = Provider<RelationshipAgentService>(
 );
 
 /// The person's category default profile — the third step of the
-/// relationship-agent resolution chain (ADR 0040 Decision 6). The same
-/// `JournalDb` read the automation resolver uses, so a category's default
-/// routes the briefing exactly as it routes a spoken check-in's transcript.
-Future<String?> relationshipCategoryDefaultProfileId(
-  Ref ref,
-  String categoryId,
-) async {
-  final category = await ref
-      .read(journalDbProvider)
-      .getCategoryById(categoryId);
-  return category?.defaultProfileId;
-}
+/// relationship-agent resolution chain (ADR 0040 Decision 6), shared by the
+/// workflow and the briefing disclosure so both consult the same read: the
+/// `JournalDb` category row the automation resolver uses for a spoken
+/// check-in's transcript, so a category's default routes the briefing
+/// exactly as it routes the transcript.
+final relationshipCategoryProfileLookupProvider =
+    Provider<CategoryProfileLookup>(
+      (ref) => (categoryId) async {
+        final category = await ref
+            .read(journalDbProvider)
+            .getCategoryById(categoryId);
+        return category?.defaultProfileId;
+      },
+      name: 'relationshipCategoryProfileLookupProvider',
+    );
 
 /// Phase B — the lease-elected LLM tier (briefing, banner, chat).
 final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
@@ -83,8 +87,7 @@ final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     domainLogger: ref.watch(domainLoggerProvider),
-    categoryProfileLookup: (categoryId) =>
-        relationshipCategoryDefaultProfileId(ref, categoryId),
+    categoryProfileLookup: ref.watch(relationshipCategoryProfileLookupProvider),
   ),
   name: 'relationshipAgentWorkflowProvider',
 );
@@ -196,8 +199,9 @@ relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
         relationship: relationship,
         agentIdentity: identity is AgentIdentityEntity ? identity : null,
         aiConfigRepository: aiConfigRepository,
-        categoryProfileLookup: (categoryId) =>
-            relationshipCategoryDefaultProfileId(ref, categoryId),
+        categoryProfileLookup: ref.watch(
+          relationshipCategoryProfileLookupProvider,
+        ),
       );
       if (resolved == null) {
         throw StateError(

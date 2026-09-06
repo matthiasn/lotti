@@ -363,6 +363,41 @@ void main() {
     );
   });
 
+  group('relationshipCategoryProfileLookupProvider', () {
+    test(
+      "answers the category's default profile through the journal db, "
+      'and null for a category without one or a category that is gone',
+      () async {
+        final journalDb = MockJournalDb();
+        when(() => journalDb.getCategoryById('cat-with')).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(
+            id: 'cat-with',
+            name: 'Family',
+            defaultProfileId: 'profile-family',
+          ),
+        );
+        when(() => journalDb.getCategoryById('cat-without')).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(
+            id: 'cat-without',
+            name: 'Work',
+          ),
+        );
+        when(
+          () => journalDb.getCategoryById('cat-gone'),
+        ).thenAnswer((_) async => null);
+        final c = ProviderContainer(
+          overrides: [journalDbProvider.overrideWithValue(journalDb)],
+        );
+        addTearDown(c.dispose);
+        final lookup = c.read(relationshipCategoryProfileLookupProvider);
+
+        expect(await lookup('cat-with'), 'profile-family');
+        expect(await lookup('cat-without'), isNull);
+        expect(await lookup('cat-gone'), isNull);
+      },
+    );
+  });
+
   group('relationshipBriefingDisclosureProvider', () {
     const relationshipId = 'person-1';
     const profileId = 'profile-1';
