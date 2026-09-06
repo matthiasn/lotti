@@ -39,4 +39,6 @@ jobs:
       - name: Install pinned Flutter SDK
         run: fvm install
       - name: Compile macOS app
+        env:
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: 'NO'
         run: fvm flutter build macos --debug
