@@ -367,6 +367,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           now,
         );
       }
+      // A wake that never reached the model still failed: stamp it, so the
+      // person page's card reads *Failed* with *Choose a model* instead of
+      // waiting on a briefing that cannot come.
+      await _stampWakeOutcome(agentId: agentId, now: now, succeeded: false);
       return const WakeResult(
         success: false,
         error: 'no inference provider resolves for the relationship agent',

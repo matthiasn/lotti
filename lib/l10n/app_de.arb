@@ -4256,7 +4256,7 @@
   "relationshipAgentNextLook": "Nächster Blick {day}",
   "relationshipAgentNoAgent": "kein Agent für diese Person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Noch kein Briefing. „Jetzt briefen“ schreibt eins, sobald du einen Check-in erfasst hast; Telefonnummer und E-Mail sieht es nie.} =1{Noch kein Briefing. „Jetzt briefen“ schreibt eins aus deinem Check-in; Telefonnummer und E-Mail sieht es nie.} other{Noch kein Briefing. „Jetzt briefen“ schreibt eins aus deinen {count} Check-ins; Telefonnummer und E-Mail sieht es nie.}}",
-  "relationshipAgentNotEnrolledBody": "Markiere {name} als wichtig, um ein Briefing, Erinnerungen nach längerer Funkstille und einen Chat zu bekommen. Aus hält die Person komplett aus der KI heraus.",
+  "relationshipAgentNotEnrolledBody": "Markiere {name} als wichtig, um ein Briefing, Erinnerungen nach längerer Funkstille und einen Chat zu bekommen. Bis dahin läuft nichts von selbst; nur ein Chat, den du selbst startest, nutzt die KI.",
   "relationshipAgentOutOfDateNewCheckIn": "Veraltet · neuer Check-in {day}",
   "relationshipAgentPausedBody": "Briefings pausieren, solange diese Person ruht oder archiviert ist.",
   "relationshipAgentReading": "{count, plural, =0{Liest die Person…} =1{Liest 1 Check-in…} other{Liest {count} Check-ins…}}",

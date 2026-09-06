@@ -18334,7 +18334,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNotEnrolledBody.
   ///
   /// In en, this message translates to:
-  /// **'Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Off keeps them out of AI entirely.'**
+  /// **'Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only a chat you start uses AI.'**
   String relationshipAgentNotEnrolledBody(String name);
 
   /// No description provided for @relationshipAgentOutOfDateNewCheckIn.

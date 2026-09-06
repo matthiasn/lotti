@@ -280,7 +280,15 @@ class _RelationshipBriefingCardState
         tone: DesignSystemToastTone.success,
         title: messages.relationshipBriefingRequested,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      // Only what fails before the wake is queued lands here — disclosure,
+      // agent setup, the enqueue itself; the workflow logs its own failures.
+      developer.log(
+        'Failed to request a relationship briefing',
+        name: 'RelationshipBriefingCard',
+        error: error,
+        stackTrace: stackTrace,
+      );
       if (!mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.error,

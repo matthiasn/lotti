@@ -612,9 +612,10 @@ stateDiagram-v2
 Two runtime details keep the faces honest. Every relationship wake now
 stamps its state row (`_stampWakeOutcome` in the workflow): `lastWakeAt`
 either way, and `consecutiveFailureCount` reset on success or bumped on
-failure — before this, no relationship wake ever wrote either, so the failed
-face could never appear and the internals' Stats tab never knew the last
-wake. And the card arms one timer at the next minute/hour/day boundary of the
+failure, including a wake that found no model to run on and returned before
+inference — before this, no relationship wake ever wrote either, so the
+failed face could never appear and the internals' Stats tab never knew the
+last wake. And the card arms one timer at the next minute/hour/day boundary of the
 briefing's age (`untilNextAgeBucket`, shared with the goal page), so "as of
 just now" does not stay on screen for hours. *Mark important* on the plain
 card also mints the agent through `ensureAgentForRelationship`, the same

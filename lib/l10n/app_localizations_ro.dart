@@ -11099,7 +11099,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipAddChannelButton => 'Adăugați o modalitate de contact';
 
   @override
-  String get relationshipAgentBriefNow => 'Briefing acum';
+  String get relationshipAgentBriefNow => 'Creați briefingul acum';
 
   @override
   String relationshipAgentCall(String name) {
@@ -11144,20 +11144,20 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Niciun briefing încă. „Briefing acum“ scrie unul din cele $count de check-in-uri; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele $count de check-in-uri; nu vede niciodată telefonul sau e-mailul.',
       few:
-          'Niciun briefing încă. „Briefing acum“ scrie unul din cele $count check-in-uri; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Creați briefingul acum“ scrie unul din cele $count check-in-uri; nu vede niciodată telefonul sau e-mailul.',
       one:
-          'Niciun briefing încă. „Briefing acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Creați briefingul acum“ scrie unul din check-in-ul dumneavoastră; nu vede niciodată telefonul sau e-mailul.',
       zero:
-          'Niciun briefing încă. „Briefing acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.',
+          'Niciun briefing încă. „Creați briefingul acum“ scrie unul de îndată ce înregistrați un check-in; nu vede niciodată telefonul sau e-mailul.',
     );
     return '$_temp0';
   }
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat. Dezactivat, persoana rămâne complet în afara AI.';
+    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat. Până atunci nimic nu rulează de la sine; doar un chat pe care îl porniți dumneavoastră folosește AI.';
   }
 
   @override

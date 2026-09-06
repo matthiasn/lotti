@@ -2035,6 +2035,25 @@ void main() {
       expect(stamped().lastWakeAt, now);
     });
 
+    test('a wake that finds no model to run on is stamped as failed too — '
+        'the card must read Failed · Choose a model, not wait for a briefing '
+        'that cannot come', () async {
+      when(
+        () => repository.getAgentState(agentId),
+      ).thenAnswer((_) async => stateRow(failures: 2));
+      // No stubGlmResolution(): the default stubs resolve no profile and no
+      // model, so execution returns before the try block.
+
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('no inference provider'));
+      expect(stamped().consecutiveFailureCount, 3);
+      expect(stamped().lastWakeAt, now);
+    });
+
     test('no state row means nothing to stamp', () async {
       explodingModel();
 

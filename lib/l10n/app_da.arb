@@ -4759,7 +4759,7 @@
   "relationshipAgentNextLook": "Næste kig {day}",
   "relationshipAgentNoAgent": "ingen agent for denne person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{Ingen briefing endnu. „Brief nu“ skriver en, når du har logget et check-in; den ser aldrig telefonnummer eller e-mail.} =1{Ingen briefing endnu. „Brief nu“ skriver en ud fra dit check-in; den ser aldrig telefonnummer eller e-mail.} other{Ingen briefing endnu. „Brief nu“ skriver en ud fra dine {count} check-ins; den ser aldrig telefonnummer eller e-mail.}}",
-  "relationshipAgentNotEnrolledBody": "Markér {name} som vigtig for at få en briefing, påmindelser når der er gået et stykke tid, og en chat. Fra holder personen helt ude af AI.",
+  "relationshipAgentNotEnrolledBody": "Markér {name} som vigtig for at få en briefing, påmindelser når der er gået et stykke tid, og en chat. Indtil da sker der intet af sig selv; kun en chat, du selv starter, bruger AI.",
   "relationshipAgentOutOfDateNewCheckIn": "Forældet · nyt check-in {day}",
   "relationshipAgentPausedBody": "Briefinger holder pause, mens denne person er i dvale eller arkiveret.",
   "relationshipAgentReading": "{count, plural, =0{Læser personen…} =1{Læser 1 check-in…} other{Læser {count} check-ins…}}",

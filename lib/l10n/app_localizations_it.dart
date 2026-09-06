@@ -11018,7 +11018,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipAddChannelButton => 'Aggiungi recapito';
 
   @override
-  String get relationshipAgentBriefNow => 'Briefing ora';
+  String get relationshipAgentBriefNow => 'Crea il briefing ora';
 
   @override
   String relationshipAgentCall(String name) {
@@ -11063,18 +11063,18 @@ class AppLocalizationsIt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Nessun briefing ancora. „Briefing ora“ ne scrive uno dai tuoi $count check-in; non vede mai numero di telefono né e-mail.',
+          'Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno dai tuoi $count check-in; non vede mai numero di telefono né e-mail.',
       one:
-          'Nessun briefing ancora. „Briefing ora“ ne scrive uno dal tuo check-in; non vede mai numero di telefono né e-mail.',
+          'Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno dal tuo check-in; non vede mai numero di telefono né e-mail.',
       zero:
-          'Nessun briefing ancora. „Briefing ora“ ne scrive uno appena registri un check-in; non vede mai numero di telefono né e-mail.',
+          'Nessun briefing ancora. „Crea il briefing ora“ ne scrive uno appena registri un check-in; non vede mai numero di telefono né e-mail.',
     );
     return '$_temp0';
   }
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Segna $name come importante per ricevere un briefing, promemoria quando è passato un po\' di tempo e una chat. Spento la tiene del tutto fuori dall\'IA.';
+    return 'Segna $name come importante per ricevere un briefing, promemoria quando è passato un po\' di tempo e una chat. Fino ad allora nulla parte da solo; solo una chat che avvii tu usa l\'IA.';
   }
 
   @override

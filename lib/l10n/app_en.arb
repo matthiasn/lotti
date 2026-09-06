@@ -6281,7 +6281,7 @@
       }
     }
   },
-  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Off keeps them out of AI entirely.",
+  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only a chat you start uses AI.",
   "@relationshipAgentNotEnrolledBody": {
     "placeholders": {
       "name": {
