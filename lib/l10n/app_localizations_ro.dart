@@ -12860,7 +12860,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Transcrieți pe acest dispozitiv fără server. Descărcați un model mai jos; înregistrările dvs. rămân pe acest dispozitiv.';
+      'Transcrieți pe acest dispozitiv fără server. Descărcați un model mai jos.';
 
   @override
   String get sidebarActiveSectionTitle => 'Activitate';

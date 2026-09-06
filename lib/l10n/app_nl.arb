@@ -5448,7 +5448,7 @@
   "sherpaModelError": "Modelbewerking mislukt. Probeer het opnieuw.",
   "sherpaModelInstalled": "Gedownload",
   "sherpaModelNotInstalled": "Download een model op dit apparaat",
-  "sherpaProviderDescription": "Transcribeer op dit apparaat zonder server. Download hieronder een model; je opnamen blijven op dit apparaat.",
+  "sherpaProviderDescription": "Transcribeer op dit apparaat zonder server. Download hieronder een model.",
   "sidebarActiveSectionTitle": "Activiteit",
   "sidebarActivityCollapseTooltip": "Inklappen",
   "sidebarActivityExpandTooltip": "Activiteiten uitbreiden",

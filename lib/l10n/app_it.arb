@@ -5449,7 +5449,7 @@
   "sherpaModelError": "Operazione sul modello non riuscita. Riprova.",
   "sherpaModelInstalled": "Scaricato",
   "sherpaModelNotInstalled": "Scarica un modello su questo dispositivo",
-  "sherpaProviderDescription": "Trascrivi su questo dispositivo senza un server. Scarica un modello qui sotto; le tue registrazioni restano su questo dispositivo.",
+  "sherpaProviderDescription": "Trascrivi su questo dispositivo senza un server. Scarica un modello qui sotto.",
   "sidebarActiveSectionTitle": "Attività",
   "sidebarActivityCollapseTooltip": "L'attività di colata",
   "sidebarActivityExpandTooltip": "Attività all'estero",

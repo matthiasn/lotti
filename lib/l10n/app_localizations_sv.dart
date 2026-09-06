@@ -12627,7 +12627,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Transkribera på den här enheten utan server. Ladda ner en modell nedan; dina inspelningar stannar på den här enheten.';
+      'Transkribera på den här enheten utan server. Ladda ner en modell nedan.';
 
   @override
   String get sidebarActiveSectionTitle => 'Verksamhet';

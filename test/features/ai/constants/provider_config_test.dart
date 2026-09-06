@@ -3,6 +3,14 @@ import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 
 void main() {
+  test('embedded speech defaults include its name and empty endpoint', () {
+    expect(ProviderConfig.defaultBaseUrls[InferenceProviderType.sherpa], '');
+    expect(
+      ProviderConfig.defaultNames[InferenceProviderType.sherpa],
+      'sherpa-onnx',
+    );
+  });
+
   test('embedded speech is usable without credentials or an endpoint', () {
     final provider = AiConfigInferenceProvider(
       id: 'sherpa',
@@ -40,6 +48,7 @@ void main() {
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
+            InferenceProviderType.sherpa,
           ]),
         );
       });
@@ -113,6 +122,7 @@ void main() {
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
+            InferenceProviderType.sherpa,
           ]),
         );
       });
@@ -172,6 +182,7 @@ void main() {
 
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
+            InferenceProviderType.sherpa,
           ]),
         );
       });

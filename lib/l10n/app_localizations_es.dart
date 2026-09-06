@@ -12791,7 +12791,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Transcribe en este dispositivo sin servidor. Descarga un modelo abajo; tus grabaciones se quedan en este dispositivo.';
+      'Transcribe en este dispositivo sin servidor. Descarga un modelo abajo.';
 
   @override
   String get sidebarActiveSectionTitle => 'Actividad';

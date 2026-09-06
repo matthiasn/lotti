@@ -4913,7 +4913,7 @@
   "sherpaModelError": "Operațiunea asupra modelului a eșuat. Încercați din nou.",
   "sherpaModelInstalled": "Descărcat",
   "sherpaModelNotInstalled": "Descărcați un model pe acest dispozitiv",
-  "sherpaProviderDescription": "Transcrieți pe acest dispozitiv fără server. Descărcați un model mai jos; înregistrările dvs. rămân pe acest dispozitiv.",
+  "sherpaProviderDescription": "Transcrieți pe acest dispozitiv fără server. Descărcați un model mai jos.",
   "sidebarActiveSectionTitle": "Activitate",
   "sidebarActivityCollapseTooltip": "Restrângeți activitatea",
   "sidebarActivityExpandTooltip": "Extindeți activitatea",

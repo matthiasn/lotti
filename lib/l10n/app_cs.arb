@@ -4920,7 +4920,7 @@
   "sherpaModelError": "Operace s modelem se nezdařila. Zkus to znovu.",
   "sherpaModelInstalled": "Staženo",
   "sherpaModelNotInstalled": "Stáhni si model do tohoto zařízení",
-  "sherpaProviderDescription": "Přepisuj na tomto zařízení bez serveru. Stáhni si níže model; tvoje nahrávky zůstanou v tomto zařízení.",
+  "sherpaProviderDescription": "Přepisuj na tomto zařízení bez serveru. Stáhni si níže uvedený model.",
   "sidebarActiveSectionTitle": "Aktivita",
   "sidebarActivityCollapseTooltip": "Sbalit aktivitu",
   "sidebarActivityExpandTooltip": "Rozbalit aktivitu",

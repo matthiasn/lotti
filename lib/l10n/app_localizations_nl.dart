@@ -12639,7 +12639,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Transcribeer op dit apparaat zonder server. Download hieronder een model; je opnamen blijven op dit apparaat.';
+      'Transcribeer op dit apparaat zonder server. Download hieronder een model.';
 
   @override
   String get sidebarActiveSectionTitle => 'Activiteit';

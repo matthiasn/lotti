@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'android/**'
+      - 'lib/**'
       - 'packages/**'
       - 'third_party/**'
       - '.fvmrc'

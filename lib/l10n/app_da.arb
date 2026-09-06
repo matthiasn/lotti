@@ -5449,7 +5449,7 @@
   "sherpaModelError": "Modelhandlingen mislykkedes. Prøv igen.",
   "sherpaModelInstalled": "Downloadet",
   "sherpaModelNotInstalled": "Download en model på denne enhed",
-  "sherpaProviderDescription": "Transskriber på denne enhed uden en server. Download en model nedenfor; dine optagelser bliver på denne enhed.",
+  "sherpaProviderDescription": "Transskriber på denne enhed uden en server. Download en model nedenfor.",
   "sidebarActiveSectionTitle": "Aktivitet",
   "sidebarActivityCollapseTooltip": "Kollapsaktivitet",
   "sidebarActivityExpandTooltip": "Udvid aktiviteten",

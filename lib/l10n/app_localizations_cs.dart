@@ -12778,7 +12778,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Přepisuj na tomto zařízení bez serveru. Stáhni si níže model; tvoje nahrávky zůstanou v tomto zařízení.';
+      'Přepisuj na tomto zařízení bez serveru. Stáhni si níže uvedený model.';
 
   @override
   String get sidebarActiveSectionTitle => 'Aktivita';

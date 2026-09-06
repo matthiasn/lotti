@@ -4913,7 +4913,7 @@
   "sherpaModelError": "L’opération sur le modèle a échoué. Réessaie.",
   "sherpaModelInstalled": "Téléchargé",
   "sherpaModelNotInstalled": "Télécharge un modèle sur cet appareil",
-  "sherpaProviderDescription": "Transcris sur cet appareil sans serveur. Télécharge un modèle ci-dessous ; tes enregistrements restent sur cet appareil.",
+  "sherpaProviderDescription": "Transcris sur cet appareil sans serveur. Télécharge un modèle ci-dessous.",
   "sidebarActiveSectionTitle": "Activité",
   "sidebarActivityCollapseTooltip": "Réduire l’activité",
   "sidebarActivityExpandTooltip": "Développer l’activité",

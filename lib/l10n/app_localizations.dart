@@ -21232,7 +21232,7 @@ abstract class AppLocalizations {
   /// No description provided for @sherpaProviderDescription.
   ///
   /// In en, this message translates to:
-  /// **'Transcribe on this device without a server. Download a model below; your recordings stay on this device.'**
+  /// **'Transcribe on this device without a server. Download a model below.'**
   String get sherpaProviderDescription;
 
   /// No description provided for @sidebarActiveSectionTitle.

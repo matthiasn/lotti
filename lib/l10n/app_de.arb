@@ -4913,7 +4913,7 @@
   "sherpaModelError": "Modellaktion fehlgeschlagen. Versuch es erneut.",
   "sherpaModelInstalled": "Heruntergeladen",
   "sherpaModelNotInstalled": "Lade ein Modell auf dieses Gerät herunter",
-  "sherpaProviderDescription": "Transkribiere auf diesem Gerät ohne Server. Lade unten ein Modell herunter; deine Aufnahmen bleiben auf diesem Gerät.",
+  "sherpaProviderDescription": "Transkribiere auf diesem Gerät ohne Server. Lade unten ein Modell herunter.",
   "sidebarActiveSectionTitle": "Aktivität",
   "sidebarActivityCollapseTooltip": "Aktivität einklappen",
   "sidebarActivityExpandTooltip": "Aktivität ausklappen",

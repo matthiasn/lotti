@@ -5448,7 +5448,7 @@
   "sherpaModelError": "A operação do modelo falhou. Tenta novamente.",
   "sherpaModelInstalled": "Descarregado",
   "sherpaModelNotInstalled": "Transfere um modelo para este dispositivo",
-  "sherpaProviderDescription": "Transcreve neste dispositivo sem um servidor. Descarrega um modelo abaixo; as tuas gravações ficam neste dispositivo.",
+  "sherpaProviderDescription": "Transcreve neste dispositivo sem um servidor. Descarrega um modelo abaixo.",
   "sidebarActiveSectionTitle": "Atividade",
   "sidebarActivityCollapseTooltip": "Recolher atividade",
   "sidebarActivityExpandTooltip": "Expandir atividade",

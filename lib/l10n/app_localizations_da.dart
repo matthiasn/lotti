@@ -12614,7 +12614,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Transskriber på denne enhed uden en server. Download en model nedenfor; dine optagelser bliver på denne enhed.';
+      'Transskriber på denne enhed uden en server. Download en model nedenfor.';
 
   @override
   String get sidebarActiveSectionTitle => 'Aktivitet';

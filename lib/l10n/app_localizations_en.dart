@@ -12539,7 +12539,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Transcribe on this device without a server. Download a model below; your recordings stay on this device.';
+      'Transcribe on this device without a server. Download a model below.';
 
   @override
   String get sidebarActiveSectionTitle => 'Activity';

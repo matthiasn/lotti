@@ -12782,7 +12782,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sherpaProviderDescription =>
-      'Trascrivi su questo dispositivo senza un server. Scarica un modello qui sotto; le tue registrazioni restano su questo dispositivo.';
+      'Trascrivi su questo dispositivo senza un server. Scarica un modello qui sotto.';
 
   @override
   String get sidebarActiveSectionTitle => 'Attività';
