@@ -1,0 +1,56 @@
+name: Flutter Android Build
+
+on:
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'packages/**'
+      - 'third_party/**'
+      - '.fvmrc'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/flutter-android-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Android without publishing
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - name: Install Android NDK
+        run: echo "y" | sudo "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config.outputs.FLUTTER_CHANNEL }}
+          cache: true
+      - name: Install FVM
+        run: dart pub global activate fvm
+      - name: Install pinned Flutter SDK
+        run: fvm install
+      - name: Give AGP a writable Android home
+        run: |
+          mkdir -p "$HOME/.android"
+          echo "ANDROID_USER_HOME=$HOME/.android" >> "$GITHUB_ENV"
+      - name: Compile Android app and merge native libraries
+        run: fvm flutter build apk --debug --target-platform android-arm64
