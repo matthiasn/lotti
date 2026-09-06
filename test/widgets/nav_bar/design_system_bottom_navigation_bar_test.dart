@@ -1,6 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -9,52 +8,55 @@ import 'package:material_ui/material_ui.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
-  const items = [
-    DesignSystemFiveSlotNavBarItem(
-      label: 'Tasks',
-      icon: Icon(LottiIcons.confirmCircled),
-      active: true,
-    ),
-    DesignSystemFiveSlotNavBarItem(
-      label: 'Journal',
-      icon: Icon(LottiIcons.book),
-    ),
-    DesignSystemFiveSlotNavBarItem(
-      label: 'Settings',
-      icon: Icon(LottiIcons.settings),
-    ),
-    DesignSystemFiveSlotNavBarItem(
-      label: 'More',
-      icon: Icon(LottiIcons.more),
-    ),
-  ];
+  void onNavigate() {}
 
   group('DesignSystemBottomNavigationBar', () {
-    testWidgets('adds no gap or inset of its own around the bar', (
+    testWidgets('centers one labeled launcher and dispatches its action', (
       tester,
     ) async {
+      var taps = 0;
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const SizedBox(
-            width: 390,
-            child: DesignSystemBottomNavigationBar(items: items),
-          ),
+          DesignSystemBottomNavigationBar(onNavigate: () => taps++),
           theme: DesignSystemTheme.light(),
         ),
       );
-
-      final containerRect = tester.getRect(
+      final button = tester.getRect(find.byType(DesignSystemButton));
+      final container = tester.getRect(
         find.byType(DesignSystemBottomNavigationBar),
       );
-      final barRect = tester.getRect(find.byType(DesignSystemFiveSlotNavBar));
-
-      // The container contributes zero padding: when the shell pins it to
-      // the screen's bottom edge the bar surface is flush with that edge
-      // and spans the full width.
-      expect(barRect.bottom, containerRect.bottom);
-      expect(barRect.left, containerRect.left);
-      expect(barRect.right, containerRect.right);
+      expect(button.width, lessThan(container.width));
+      expect(button.center.dx, container.center.dx);
+      expect(button.height, greaterThanOrEqualTo(TapTargets.minimum));
+      await tester.tap(find.text('Navigate'));
+      expect(taps, 1);
     });
+
+    for (final scale in [1.3, 2.0, 3.0]) {
+      testWidgets('launcher clearance matches large text at $scale', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemBottomNavigationBar(onNavigate: onNavigate),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: MediaQueryData(
+              size: const Size(390, 844),
+              textScaler: TextScaler.linear(scale),
+              padding: const EdgeInsets.only(bottom: 34),
+            ),
+          ),
+        );
+        final finder = find.byType(DesignSystemBottomNavigationBar);
+        expect(
+          tester.getSize(finder).height,
+          DesignSystemBottomNavigationBar.occupiedHeight(
+            tester.element(finder),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets('occupiedHeight matches the rendered bar extent', (
       tester,
@@ -63,7 +65,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const DesignSystemBottomNavigationBar(items: items),
+          DesignSystemBottomNavigationBar(onNavigate: onNavigate),
           theme: DesignSystemTheme.light(),
           mediaQueryData: noInset,
         ),
@@ -117,20 +119,11 @@ void main() {
               tester.element(find.byType(Scaffold)),
             );
 
-        // The absorbed inset replaces (not stacks onto) the surface's internal
-        // step2 bottom padding, so occupied height grows by the absorbed amount
-        // minus the padding it displaced. iOS trims the decorative home
-        // indicator to bottomInsetFraction; every other platform absorbs the
-        // whole inset, because there it can be the system navigation bar's live
-        // buttons — content padding by this number must clear them too, or a FAB
-        // and the last list row end up under recents/home/back.
-        final expectedAbsorbed = defaultTargetPlatform == TargetPlatform.iOS
-            ? withInset.padding.bottom *
-                  DesignSystemFiveSlotNavBar.bottomInsetFraction
-            : withInset.padding.bottom;
+        // The launcher clears the full system safe area on every platform.
+        final expectedAbsorbed = withInset.padding.bottom;
         expect(
           withInsetHeight - withoutInsetHeight,
-          moreOrLessEquals(expectedAbsorbed - dsTokensLight.spacing.step2),
+          moreOrLessEquals(expectedAbsorbed - dsTokensLight.spacing.step3),
         );
       },
       variant: const TargetPlatformVariant({
@@ -286,7 +279,7 @@ void main() {
       );
 
       await pump(barDocked: true);
-      final barHeight = DesignSystemFiveSlotNavBar.barHeight(
+      final barHeight = DesignSystemBottomNavigationBar.barHeight(
         tester.element(find.byKey(scopedChildKey)),
       );
       // Guards the arithmetic below from passing on a zero-height bar.
@@ -337,7 +330,7 @@ void main() {
       );
       expect(
         DesignSystemBottomNavigationBar.occupiedHeight(context),
-        DesignSystemFiveSlotNavBar.barHeight(context),
+        DesignSystemBottomNavigationBar.barHeight(context),
       );
     });
 
@@ -371,7 +364,7 @@ void main() {
       }
 
       await pump(barDocked: true);
-      final barHeight = DesignSystemFiveSlotNavBar.barHeight(
+      final barHeight = DesignSystemBottomNavigationBar.barHeight(
         tester.element(find.byType(DesignSystemBottomNavigationFabPadding)),
       );
       final docked = bottomPadding();

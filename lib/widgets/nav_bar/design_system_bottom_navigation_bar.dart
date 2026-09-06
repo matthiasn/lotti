@@ -1,46 +1,70 @@
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
+import 'dart:math' as math;
+
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Mobile bottom-navigation container: hosts the five-slot bar
-/// ([DesignSystemFiveSlotNavBar]) docked flush against the screen's bottom
-/// edge. The time/audio recording indicators that ride above the bar are
-/// owned by the mobile shell (`lib/beamer/beamer_app.dart`), not by this
-/// container, so they stay visible when the shell slides the bar away.
+/// A single mobile navigation launcher. The transparent surrounding area leaves
+/// the page visible; the shell owns the recording indicators above the button.
 class DesignSystemBottomNavigationBar extends StatelessWidget {
-  const DesignSystemBottomNavigationBar({
-    required this.items,
-    super.key,
-  });
+  const DesignSystemBottomNavigationBar({required this.onNavigate, super.key});
 
-  /// The bar's slots (at most five — overflow destinations live in the
-  /// More sheet, represented here by their More slot item).
-  final List<DesignSystemFiveSlotNavBarItem> items;
+  final VoidCallback onNavigate;
 
-  /// Vertical screen estate the docked bottom stack occupies: the bar
-  /// (including the bottom safe-area inset it absorbs into its surface)
-  /// plus the rendered height of the shell-owned indicator row riding
-  /// above it, published via
-  /// [DesignSystemBottomNavigationOverlayHeight]. Content scrolling
-  /// behind the bar pads by this amount (see
-  /// [DesignSystemBottomNavigationFabPadding]).
+  /// Height of the small, padded design-system button plus safe-area spacing.
+  /// Shared with the shell so recordings and page actions clear the launcher.
+  static double barHeight(BuildContext context) {
+    final tokens = context.designTokens;
+    final labelHeight = MediaQuery.textScalerOf(
+      context,
+    ).scale(tokens.typography.lineHeight.subtitle2).ceilToDouble();
+    return math.max(
+          TapTargets.minimum,
+          labelHeight + tokens.spacing.step3 * 2,
+        ) +
+        tokens.spacing.step2 +
+        _bottomPadding(context);
+  }
+
+  static double _bottomPadding(BuildContext context) => math.max(
+    MediaQuery.paddingOf(context).bottom,
+    context.designTokens.spacing.step3,
+  );
+
+  /// Page clearance for the visible launcher and shell-owned recording row.
   static double occupiedHeight(BuildContext context) {
-    // In desktop layout the bottom navigation bar is not shown;
-    // the sidebar replaces it, so no bottom inset is needed.
     if (isDesktopLayout(context)) return 0;
-
-    // A slid-away bar occupies nothing; the indicator row above it stays,
-    // so its height still counts.
-    final barHeight =
+    final launcherHeight =
         DesignSystemBottomNavigationOverlayHeight.barDockedOf(context)
-        ? DesignSystemFiveSlotNavBar.barHeight(context)
+        ? barHeight(context)
         : 0.0;
-    return barHeight + DesignSystemBottomNavigationOverlayHeight.of(context);
+    return launcherHeight +
+        DesignSystemBottomNavigationOverlayHeight.of(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return DesignSystemFiveSlotNavBar(items: items);
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        MediaQuery.paddingOf(context).left + tokens.spacing.step3,
+        tokens.spacing.step2,
+        MediaQuery.paddingOf(context).right + tokens.spacing.step3,
+        _bottomPadding(context),
+      ),
+      child: Center(
+        heightFactor: 1,
+        child: DesignSystemButton(
+          label: context.messages.navTabTitleNavigate,
+          onPressed: onNavigate,
+          leadingIcon: LottiIcons.menu,
+          variant: DesignSystemButtonVariant.secondary,
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+      ),
+    );
   }
 }
 

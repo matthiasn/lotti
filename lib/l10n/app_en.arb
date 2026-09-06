@@ -5483,14 +5483,6 @@
   "multiSelectNoItemsFound": "No items found",
   "navSidebarManualBrowserHint": "Opens in your browser",
   "navSidebarManualLabel": "Manual",
-  "navTabMoreSemanticsLabel": "{count, plural, =1{More, 1 additional destination} other{More, {count} additional destinations}}",
-  "@navTabMoreSemanticsLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Events",
   "navTabTitleGoals": "Goals",
@@ -5500,7 +5492,7 @@
   "navTabTitleHabits": "Habits",
   "navTabTitleInsights": "Insights",
   "navTabTitleJournal": "Logbook",
-  "navTabTitleMore": "More",
+  "navTabTitleNavigate": "Navigate",
   "navTabTitlePeople": "People",
   "navTabTitleProjects": "Projects",
   "navTabTitleSettings": "Settings",
