@@ -4020,21 +4020,13 @@
   "multiSelectNoItemsFound": "Inga föremål hittades",
   "navSidebarManualBrowserHint": "Öppnas i din webbläsare",
   "navSidebarManualLabel": "Manuell",
-  "navTabMoreSemanticsLabel": "{count, plural, =1{Mer, 1 ytterligare destination} other{Mer, {count} ytterligare destinationer}}",
-  "@navTabMoreSemanticsLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Evenemang",
   "navTabTitleGoals": "Mål",
   "navTabTitleHabits": "Habiter",
   "navTabTitleInsights": "Insikter",
   "navTabTitleJournal": "Loggbok",
-  "navTabTitleMore": "Mer",
+  "navTabTitleNavigate": "Navigera",
   "navTabTitlePeople": "Personer",
   "navTabTitleProjects": "Projekt",
   "navTabTitleSettings": "Inställningar",

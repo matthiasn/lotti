@@ -39,7 +39,6 @@ import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -853,28 +852,7 @@ Widget _dayShell(ScreenshotDevice device, {required DraftPlan draft}) {
         left: 0,
         right: 0,
         bottom: 0,
-        child: DesignSystemBottomNavigationBar(
-          items: [
-            const DesignSystemFiveSlotNavBarItem(
-              label: 'Daily OS',
-              icon: Icon(LottiIcons.today),
-              activeIcon: Icon(LottiIcons.today),
-              active: true,
-            ),
-            DesignSystemFiveSlotNavBarItem(
-              label: _t('Tasks', 'Aufgaben'),
-              icon: const Icon(LottiIcons.confirmCircled),
-            ),
-            DesignSystemFiveSlotNavBarItem(
-              label: _t('Calendar', 'Kalender'),
-              icon: const Icon(LottiIcons.calendar),
-            ),
-            DesignSystemFiveSlotNavBarItem(
-              label: _t('Settings', 'Einstellungen'),
-              icon: const Icon(LottiIcons.settings),
-            ),
-          ],
-        ),
+        child: DesignSystemBottomNavigationBar(onNavigate: () {}),
       ),
     ],
   );

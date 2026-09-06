@@ -350,7 +350,7 @@ glyph-only external destinations. Email comes first, followed by
 the Manual, GitHub and Discord. The envelope is intentionally no longer a
 labelled or otherwise privileged affordance: all four actions take the same
 target, icon theme, hover treatment, tooltip and semantic construction. The
-desktop sidebar pins the group beneath Settings; the mobile More sheet ends
+desktop sidebar pins the group beneath Settings; the mobile navigation sheet ends
 with it. See [navigation](../../architecture/navigation.md) for why nothing in
 it is an app destination.
 
@@ -359,9 +359,9 @@ together would break the row.** That control pins its target to
 `TapTargets.minimum` and treats the resulting 48×48 as a layout commitment for
 card headers and panel corners — it says in as many words not to put it in a
 dense row. This *is* a dense row, in the narrowest column the app has. It takes
-`DesignSystemFiveSlotNavBar.minTapTarget` instead: the floor the rest of this
-app's navigation chrome already uses, still above the 44 px platform guidance
-for touch.
+`DesignSystemContactRow.minTapTarget` instead: the existing compact 44 px
+target formerly owned by the retired multi-slot mobile bar. Its ownership
+changed without changing the footer geometry.
 
 **The four controls move as one trailing group.** One `Align.centerRight` owns
 the placement, and one `Row(mainAxisSize: min)` owns the uninterrupted action
@@ -529,7 +529,7 @@ screen-level FAB or status overlay hugging the bottom edge therefore needs
 explicit clearance.
 
 The shell and its clearance wrapper live **outside this feature**, in
-`lib/widgets/nav_bar/`, and are only exercised through the DS widgetbook. The
+`lib/widgets/nav_bar/`, and are covered by shell and widget tests as well as the DS widgetbook. The
 contract:
 
 - `DesignSystemBottomNavigationBar.occupiedHeight(context)` defines how much
@@ -546,10 +546,14 @@ contract:
   ask the app shell to slide the bar away; project, goal, habit, people and
   settings route helpers keep that decision tied to router state rather than
   widget timing.
-- `DesignSystemFiveSlotNavBar.contentHeight(context)` owns the slot-row height
-  contract. It **scales caption line height with `MediaQuery.textScalerOf` and
-  rounds fractional line boxes up to the logical pixel Flutter renders**, so
-  accessibility scales such as 1.3× cannot overflow the fixed row.
+- `DesignSystemBottomNavigationBar.barHeight(context)` owns launcher clearance.
+  It measures the large design-system button's localized label with the current
+  text scaler, includes its minimum padded touch target, and clears the full
+  system bottom inset on both platforms. The centered pill blurs content behind
+  its clipped silhouette using the
+  existing glass-strip blur and theme-aware scrim, with the shared glass-chip
+  outline and floating-surface shadow. Its surrounding overlay is transparent.
+
 
 # Accessibility is enforced at construction
 

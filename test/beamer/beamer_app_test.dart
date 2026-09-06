@@ -29,7 +29,6 @@ import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_s
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_view_side_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -822,6 +821,8 @@ void main() {
         navService: mockNavService,
       );
 
+      await tester.tap(find.text('Navigate'));
+      await tester.pumpAndSettle();
       expect(find.text('Projects'), findsNothing);
       expect(find.text('Tasks'), findsOneWidget);
 
@@ -935,7 +936,7 @@ void main() {
     });
 
     testWidgets(
-      'routes Projects into the More sheet after a flag-driven nav update',
+      'routes Projects into the navigation grid after a flag-driven nav update',
       (tester) async {
         final mockNavService = MockNavService();
         final indexController = StreamController<int>.broadcast();
@@ -964,19 +965,18 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Projects never claims a bar slot — it appears in the More sheet.
+        // Projects never claims a bar slot — it appears in the navigation grid.
         expect(find.text('Projects'), findsNothing);
         final navBar = tester.widget<DesignSystemBottomNavigationBar>(
           find.byType(DesignSystemBottomNavigationBar),
         );
-        expect(navBar.items.last.label, 'More');
-        navBar.items.last.onTap?.call();
+        expect(find.text('Navigate'), findsOneWidget);
+        navBar.onNavigate();
         await tester.pumpAndSettle();
 
         expect(find.text('Projects'), findsOneWidget);
 
-        // Sheet rows use the desktop-style trailing slot for the Settings
-        // outbox count instead of cramming the badge over the gear icon.
+        // The mobile footer carries sync counts separately from destinations.
         expect(find.byType(SyncQueueCounts), findsOneWidget);
         expect(find.byType(OutboxBadgeIcon), findsNothing);
 
@@ -986,7 +986,7 @@ void main() {
     );
 
     testWidgets(
-      'More sheet row tapped after its flag was disabled closes the sheet '
+      'navigation grid row tapped after its flag was disabled closes the sheet '
       'without routing',
       (tester) async {
         final mockNavService = MockNavService();
@@ -1009,11 +1009,11 @@ void main() {
 
         await _pumpAppScreen(tester, navService: mockNavService);
 
-        // Open the More sheet while Projects is still enabled.
+        // Open the navigation grid while Projects is still enabled.
         final navBar = tester.widget<DesignSystemBottomNavigationBar>(
           find.byType(DesignSystemBottomNavigationBar),
         );
-        navBar.items.last.onTap?.call();
+        navBar.onNavigate();
         await tester.pumpAndSettle();
         expect(find.text('Projects'), findsOneWidget);
 
@@ -1052,6 +1052,8 @@ void main() {
 
       await _pumpAppScreen(tester, navService: mockNavService);
 
+      await tester.tap(find.text('Navigate'));
+      await tester.pumpAndSettle();
       expect(find.text('People'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -1060,40 +1062,43 @@ void main() {
   });
 
   group('AppScreen events gating', () {
-    testWidgets('surfaces Events in the More sheet when the flag is enabled', (
-      tester,
-    ) async {
-      final mockNavService = MockNavService();
-      await _stubNavService(
-        mockNavService,
-        indexStream: const Stream<int>.empty(),
-        // All optional tabs on so the phone bar keeps the More overflow that
-        // holds the non-primary Events destination.
-        isProjectsEnabled: () => true,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-        isEventsEnabled: () => true,
-      );
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
+    testWidgets(
+      'surfaces Events in the navigation grid when the flag is enabled',
+      (
+        tester,
+      ) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: const Stream<int>.empty(),
+          // All optional tabs on so the phone bar keeps the More overflow that
+          // holds the non-primary Events destination.
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+          isEventsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+        await _pumpAppScreen(tester, navService: mockNavService);
 
-      // Events never claims a primary bar slot — it appears in the More sheet.
-      expect(find.text('Events'), findsNothing);
-      final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-        find.byType(DesignSystemBottomNavigationBar),
-      );
-      expect(navBar.items.last.label, 'More');
-      navBar.items.last.onTap?.call();
-      await tester.pumpAndSettle();
+        // Events never claims a primary bar slot — it appears in the navigation grid.
+        expect(find.text('Events'), findsNothing);
+        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+          find.byType(DesignSystemBottomNavigationBar),
+        );
+        expect(find.text('Navigate'), findsOneWidget);
+        navBar.onNavigate();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Events'), findsOneWidget);
+        expect(find.text('Events'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
 
     testWidgets('keeps Events hidden when the flag is disabled', (
       tester,
@@ -1115,7 +1120,7 @@ void main() {
       final navBar = tester.widget<DesignSystemBottomNavigationBar>(
         find.byType(DesignSystemBottomNavigationBar),
       );
-      navBar.items.last.onTap?.call();
+      navBar.onNavigate();
       await tester.pumpAndSettle();
 
       expect(find.text('Events'), findsNothing);
@@ -1195,226 +1200,89 @@ void main() {
       TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
     });
 
-    // With every flag enabled the full index space is 0 Tasks, 1 DailyOS,
-    // 2 Projects, 3 Habits, 4 Dashboards, 5 Journal, 6 Settings. Tasks,
-    // DailyOS, and Journal hold the bar slots; Projects, Habits,
-    // Dashboards, and Settings live behind the More slot, which takes
-    // their name and the active tint while one of them is on screen.
-    for (final (index, name, moreLabel) in <(int, String, String)>[
-      (0, 'tasks', 'More'),
-      (1, 'dailyOS', 'More'),
-      (2, 'projects', 'Projects'),
-      (3, 'habits', 'Habits'),
-      (4, 'dashboards', 'Insights'),
-      (5, 'journal', 'More'),
-      (6, 'settings', 'Settings'),
-    ]) {
-      testWidgets('uses design-system nav on the $name tab', (tester) async {
-        final mockNavService = MockNavService();
-
+    for (final width in [390.0, 520.0, 800.0]) {
+      testWidgets('keeps one launcher and all destinations at width $width', (
+        tester,
+      ) async {
+        final nav = MockNavService()..relationshipsPageEnabled = true;
         await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(index),
+          nav,
+          indexStream: Stream.value(3),
           isProjectsEnabled: () => true,
           isDailyOsEnabled: () => true,
           isHabitsEnabled: () => true,
           isDashboardsEnabled: () => true,
+          isUnifiedGoalsEnabled: true,
+          isEventsEnabled: () => true,
         );
-        await _registerAppScreenGetIt(mockNavService);
+        when(() => nav.index).thenReturn(3);
+        await _registerAppScreenGetIt(nav);
         addTearDown(tearDownTestGetIt);
-
         await _pumpAppScreen(
           tester,
-          navService: mockNavService,
+          navService: nav,
+          viewportSize: Size(width, 1200),
         );
-
-        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
-        expect(find.byType(DesignSystemFiveSlotNavBar), findsOneWidget);
-
-        // The bar is capped at the three primary destinations plus More
-        // on the right — regardless of how many flag-gated destinations
-        // are enabled.
-        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-          find.byType(DesignSystemBottomNavigationBar),
+        expect(find.text('Navigate'), findsOneWidget);
+        expect(find.text('Goals'), findsNothing);
+        await tester.tap(find.text('Navigate'));
+        await tester.pumpAndSettle();
+        const labels = [
+          'Tasks',
+          'DailyOS',
+          'Projects',
+          'Goals',
+          'Habits',
+          'Insights',
+          'People',
+          'Logbook',
+          'Events',
+          'Settings',
+        ];
+        for (final label in labels) {
+          expect(find.text(label), findsOneWidget);
+        }
+        for (var i = 0; i < labels.length; i += 2) {
+          expect(
+            tester
+                .getRect(
+                  find
+                      .ancestor(
+                        of: find.text(labels[i]),
+                        matching: find.byType(InkWell),
+                      )
+                      .first,
+                )
+                .top,
+            tester
+                .getRect(
+                  find
+                      .ancestor(
+                        of: find.text(labels[i + 1]),
+                        matching: find.byType(InkWell),
+                      )
+                      .first,
+                )
+                .top,
+          );
+          expect(
+            tester.getRect(find.text(labels[i])).left,
+            lessThan(tester.getRect(find.text(labels[i + 1])).left),
+          );
+        }
+        final goalSemantics = tester.widget<Semantics>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics && widget.properties.label == 'Goals',
+          ),
         );
-        expect(navBar.items, hasLength(4));
-        expect(
-          navBar.items.map((item) => item.label),
-          ['Tasks', 'DailyOS', 'Logbook', moreLabel],
-        );
-        // The More slot lights up exactly while an overflow destination is
-        // the active route. Its accessible name keeps the More affordance
-        // alongside the destination name — activating the slot opens the
-        // sheet, not the destination, and that must stay discoverable.
-        final isOverflowActive = (index >= 2 && index <= 4) || index == 6;
-        expect(navBar.items.last.active, isOverflowActive);
-        expect(
-          navBar.items.last.semanticsLabel,
-          isOverflowActive
-              ? '$moreLabel — More, 4 additional destinations'
-              : 'More, 4 additional destinations',
-        );
-
-        // Docked with zero gap: the bar's surface is flush with the
-        // screen's bottom edge and spans the full width.
-        final barRect = tester.getRect(
-          find.byType(DesignSystemFiveSlotNavBar),
-        );
-        final screenSize =
-            tester.view.physicalSize / tester.view.devicePixelRatio;
-        expect(barRect.bottom, screenSize.height);
-        expect(barRect.left, 0);
-        expect(barRect.right, screenSize.width);
+        expect(goalSemantics.properties.selected, isTrue);
+        await tester.tap(find.text('Events'));
+        await tester.pumpAndSettle();
+        verify(() => nav.tapIndex(8)).called(1);
+        expect(find.text('Events'), findsNothing);
       });
     }
-
-    testWidgets(
-      'gives every destination its own slot on wide windows — no More slot',
-      (tester) async {
-        final mockNavService = MockNavService();
-
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(6),
-          isProjectsEnabled: () => true,
-          isDailyOsEnabled: () => true,
-          isHabitsEnabled: () => true,
-          isDashboardsEnabled: () => true,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        await _pumpAppScreen(
-          tester,
-          navService: mockNavService,
-          // Wide mobile window: at/above kNavBarAllDestinationsBreakpoint
-          // but below the desktop breakpoint, so the bottom bar (not the
-          // sidebar) renders — with one slot per destination.
-          viewportSize: const Size(800, 1200),
-        );
-
-        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-          find.byType(DesignSystemBottomNavigationBar),
-        );
-        expect(
-          navBar.items.map((item) => item.label),
-          [
-            'Tasks',
-            'DailyOS',
-            'Projects',
-            'Habits',
-            'Insights',
-            'Logbook',
-            'Settings',
-          ],
-        );
-
-        // Settings — overflow-only on compact windows — owns a regular
-        // slot here: active tint on its own slot, no More semantics.
-        expect(navBar.items.last.active, isTrue);
-        expect(navBar.items.last.semanticsLabel, isNull);
-
-        // Taps route directly through the destination's full index
-        // instead of opening a sheet.
-        navBar.items[2].onTap?.call();
-        verify(() => mockNavService.tapIndex(2)).called(1);
-      },
-    );
-
-    testWidgets(
-      'promotes overflow destinations one by one as window width allows',
-      (tester) async {
-        final mockNavService = MockNavService();
-
-        await _stubNavService(
-          mockNavService,
-          // Projects is the active route AND the promoted destination —
-          // its own slot must light up while More stays plain.
-          indexStream: Stream.value(2),
-          isProjectsEnabled: () => true,
-          isDailyOsEnabled: () => true,
-          isHabitsEnabled: () => true,
-          isDashboardsEnabled: () => true,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        await _pumpAppScreen(
-          tester,
-          navService: mockNavService,
-          // Intermediate band: wider than the phone base line-up, too
-          // narrow for all seven destinations. Exactly one overflow
-          // destination (Projects, first in nav order) fits alongside
-          // the base slots and More.
-          viewportSize: const Size(520, 1200),
-        );
-
-        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-          find.byType(DesignSystemBottomNavigationBar),
-        );
-        // Promoted into its canonical position — between DailyOS and
-        // Logbook — with More pinned last.
-        expect(
-          navBar.items.map((item) => item.label),
-          ['Tasks', 'DailyOS', 'Projects', 'Logbook', 'More'],
-        );
-
-        // The promoted destination owns its highlight; the More slot must
-        // not take its name (it only ever represents what it still hides:
-        // Habits, Insights, and Settings).
-        expect(navBar.items[2].active, isTrue);
-        expect(navBar.items.last.active, isFalse);
-        expect(navBar.items.last.label, 'More');
-        expect(
-          navBar.items.last.semanticsLabel,
-          'More, 3 additional destinations',
-        );
-
-        // The promoted slot taps straight through to the destination.
-        navBar.items[2].onTap?.call();
-        verify(() => mockNavService.tapIndex(2)).called(1);
-      },
-    );
-
-    testWidgets(
-      'keeps the More overflow on a wide window when a large text scale '
-      'widens the labels past the available space',
-      (tester) async {
-        // The fit decision is text-scale-aware: the same 800px window that
-        // fits all seven destinations at scale 1.0 cannot fit their labels
-        // at 3.0, so the bar falls back to the compact More line-up
-        // instead of ellipsizing every caption.
-        tester.platformDispatcher.textScaleFactorTestValue = 3.0;
-        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-
-        final mockNavService = MockNavService();
-
-        await _stubNavService(
-          mockNavService,
-          indexStream: Stream.value(0),
-          isProjectsEnabled: () => true,
-          isDailyOsEnabled: () => true,
-          isHabitsEnabled: () => true,
-          isDashboardsEnabled: () => true,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        await _pumpAppScreen(
-          tester,
-          navService: mockNavService,
-          viewportSize: const Size(800, 1200),
-        );
-
-        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-          find.byType(DesignSystemBottomNavigationBar),
-        );
-        expect(
-          navBar.items.map((item) => item.label),
-          ['Tasks', 'DailyOS', 'Logbook', 'More'],
-        );
-      },
-    );
 
     testWidgets('renders recording indicators directly above the nav bar', (
       tester,
@@ -1460,11 +1328,11 @@ void main() {
             .first,
       );
       final barContext = tester.element(
-        find.byType(DesignSystemFiveSlotNavBar),
+        find.byType(DesignSystemBottomNavigationBar),
       );
       expect(
         positioned.bottom,
-        DesignSystemFiveSlotNavBar.barHeight(barContext),
+        DesignSystemBottomNavigationBar.barHeight(barContext),
       );
 
       // The closest enclosing Row uses center so the indicators meet in
@@ -1508,7 +1376,7 @@ void main() {
         final pageContext = tester.element(find.byType(IndexedStack));
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
-          DesignSystemFiveSlotNavBar.barHeight(pageContext) +
+          DesignSystemBottomNavigationBar.barHeight(pageContext) +
               AudioRecordingIndicatorConstants.indicatorHeight,
         );
       },
@@ -1536,7 +1404,7 @@ void main() {
         final pageContext = tester.element(find.byType(IndexedStack));
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
-          DesignSystemFiveSlotNavBar.barHeight(pageContext),
+          DesignSystemBottomNavigationBar.barHeight(pageContext),
         );
       },
     );
@@ -1601,7 +1469,7 @@ void main() {
         // pushed up by a banner that is nowhere near the bottom edge.
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
-          DesignSystemFiveSlotNavBar.barHeight(pageContext),
+          DesignSystemBottomNavigationBar.barHeight(pageContext),
           reason: 'the top-anchored dock reserves no bottom lane',
         );
 
@@ -1641,7 +1509,7 @@ void main() {
         );
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
-          DesignSystemFiveSlotNavBar.barHeight(pageContext),
+          DesignSystemBottomNavigationBar.barHeight(pageContext),
         );
       },
     );
@@ -1730,42 +1598,6 @@ void main() {
         expect(tester.getRect(find.byType(NudgeBannerDock)).height, 0);
       },
     );
-
-    testWidgets('Tasks bottom-nav item uses plain list icons', (tester) async {
-      final mockNavService = MockNavService();
-
-      await _stubNavService(
-        mockNavService,
-        indexStream: Stream.value(0),
-        isProjectsEnabled: () => true,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-      );
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
-
-      await _pumpAppScreen(
-        tester,
-        navService: mockNavService,
-      );
-
-      final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-        find.byType(DesignSystemBottomNavigationBar),
-      );
-      final tasksItem = navBar.items.first;
-      final icon = tasksItem.icon;
-      final activeIcon = tasksItem.activeIcon;
-
-      expect(tasksItem.label, 'Tasks');
-      expect(icon, isA<Icon>());
-      expect((icon as Icon).icon, LottiIcons.list);
-      expect(activeIcon, isA<Icon>());
-      expect((activeIcon! as Icon).icon, LottiIcons.list);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
 
     testWidgets('disables tickers for inactive mobile tabs', (tester) async {
       final mockNavService = MockNavService();
@@ -3043,7 +2875,7 @@ void main() {
         expect(ignorePointer().ignoring, isTrue);
         expect(find.byType(TimeRecordingIndicator), findsOneWidget);
         final barContext = tester.element(
-          find.byType(DesignSystemFiveSlotNavBar),
+          find.byType(DesignSystemBottomNavigationBar),
         );
         expect(
           indicators().bottom,
@@ -3059,7 +2891,7 @@ void main() {
         expect(ignorePointer().ignoring, isFalse);
         expect(
           indicators().bottom,
-          DesignSystemFiveSlotNavBar.barHeight(barContext),
+          DesignSystemBottomNavigationBar.barHeight(barContext),
         );
         await tester.pump(const Duration(milliseconds: 450));
 
@@ -3518,9 +3350,7 @@ void main() {
   });
 
   group('AppScreen mobile nav item taps', () {
-    // Each bottom-nav slot wires onTap to `navService.tapIndex(i)` with the
-    // destination's full index, even though the bar shows only the primary
-    // slots (Tasks · DailyOS · Logbook · More).
+    // Grid selections route through each destination's current full index.
     setUp(() {
       TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
         ..physicalSize = const Size(800, 1200)
@@ -3552,40 +3382,35 @@ void main() {
       );
     }
 
-    // Bar slot → expected full destination index with all flags enabled.
-    for (final (slot, tabIndex, tabName) in <(int, int, String)>[
-      (0, 0, 'Tasks'),
-      (1, 1, 'DailyOS'),
-      (2, 5, 'Journal'),
+    for (final (tabIndex, tabName) in <(int, String)>[
+      (0, 'Tasks'),
+      (1, 'DailyOS'),
+      (5, 'Logbook'),
+      (6, 'Settings'),
     ]) {
-      testWidgets(
-        'tapping the $tabName slot calls tapIndex($tabIndex)',
-        (tester) async {
-          final mockNavService = MockNavService();
-          final navBar = await pumpNavBar(tester, mockNavService);
-
-          // Invoke the onTap callback directly — tapping in the widget tree
-          // is unreliable for overlapping bottom-sheet-style nav bars.
-          navBar.items[slot].onTap?.call();
-          await tester.pump();
-
-          verify(() => mockNavService.tapIndex(tabIndex)).called(1);
-
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pump();
-        },
-      );
+      testWidgets('selecting $tabName calls tapIndex($tabIndex)', (
+        tester,
+      ) async {
+        final nav = MockNavService();
+        await pumpNavBar(tester, nav);
+        await tester.tap(find.text('Navigate'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(tabName));
+        await tester.pumpAndSettle();
+        verify(() => nav.tapIndex(tabIndex)).called(1);
+        expect(find.text(tabName), findsNothing);
+      });
     }
 
     testWidgets(
-      'selecting Projects in the More sheet dismisses it and calls '
+      'selecting Projects in the navigation grid dismisses it and calls '
       'tapIndex(2)',
       (tester) async {
         final mockNavService = MockNavService();
         final navBar = await pumpNavBar(tester, mockNavService);
 
-        // The More slot opens the overflow sheet instead of navigating.
-        navBar.items.last.onTap?.call();
+        // The launcher opens the destination grid instead of navigating.
+        navBar.onNavigate();
         await tester.pumpAndSettle();
         verifyNever(() => mockNavService.tapIndex(any()));
 
@@ -3601,7 +3426,7 @@ void main() {
     );
 
     testWidgets(
-      'More-sheet taps resolve indices against the flags at tap time, not '
+      'Navigation-grid taps resolve indices against the flags at tap time, not '
       'at sheet-open time',
       (tester) async {
         final mockNavService = MockNavService();
@@ -3622,7 +3447,7 @@ void main() {
           find.byType(DesignSystemBottomNavigationBar),
         );
 
-        navBar.items.last.onTap?.call();
+        navBar.onNavigate();
         await tester.pumpAndSettle();
 
         // Projects gets disabled (e.g. a synced settings change) while the
@@ -4087,8 +3912,8 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // AppScreen should still render with Tasks in the nav despite the error.
-        expect(find.text('Tasks'), findsOneWidget);
+        // AppScreen should still render with the launcher despite the error.
+        expect(find.text('Navigate'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -4121,7 +3946,7 @@ void main() {
         );
 
         // The error arm just logs; AppScreen continues rendering normally.
-        expect(find.text('Tasks'), findsOneWidget);
+        expect(find.text('Navigate'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -4151,7 +3976,7 @@ void main() {
         );
 
         // The error arm just logs; AppScreen continues rendering normally.
-        expect(find.text('Tasks'), findsOneWidget);
+        expect(find.text('Navigate'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -4194,7 +4019,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 1));
         await tester.pump();
 
-        expect(find.text('Tasks'), findsOneWidget);
+        expect(find.text('Navigate'), findsOneWidget);
         expect(
           onboardingBuildCount,
           greaterThan(buildsBeforeTransition),

@@ -9540,17 +9540,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navSidebarManualLabel => 'Manuais';
 
   @override
-  String navTabMoreSemanticsLabel(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Mais, $count destinos adicionais',
-      one: 'Mais, 1 destino adicional',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9569,7 +9558,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navTabTitleJournal => 'Diário de bordo';
 
   @override
-  String get navTabTitleMore => 'Mais';
+  String get navTabTitleNavigate => 'Navegar';
 
   @override
   String get navTabTitlePeople => 'Pessoas';

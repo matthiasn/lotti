@@ -1,4 +1,3 @@
-import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -18,7 +17,7 @@ class DesignSystemContactAction {
   });
 
   /// The glyph. Rendered inside the row's [IconTheme], centred in a tap
-  /// target of [DesignSystemFiveSlotNavBar.minTapTarget].
+  /// target of [DesignSystemContactRow.minTapTarget].
   final Widget icon;
 
   /// Tooltip text and accessible name. A glyph-only control has no visible
@@ -33,10 +32,10 @@ class DesignSystemContactAction {
   final Key? iconKey;
 }
 
-/// The support footer: one right-aligned group of glyph-only destinations.
+/// The support footer: one left-aligned group of glyph-only destinations.
 ///
 /// Both navigation surfaces host it — the desktop sidebar pins it beneath
-/// Settings, the mobile More sheet closes with it — so the two never drift
+/// Settings, the mobile navigation sheet closes with it — so the two never drift
 /// apart in wording, order, or behaviour.
 ///
 /// **There is deliberately no rule above the group.** These are the quietest
@@ -47,7 +46,7 @@ class DesignSystemContactAction {
 ///
 /// Every destination, including email, uses the same compact navigation target
 /// and ambient [IconTheme]. Keeping all four in one [Row] makes their spacing
-/// uniform and lets one trailing [Align] move the group as a unit. At the
+/// uniform and lets one leading [Align] move the group as a unit. At the
 /// sidebar's 200 px minimum, four 44 px targets still fit inside the band's
 /// token inset without wrapping or overflow.
 class DesignSystemContactRow extends StatelessWidget {
@@ -55,6 +54,10 @@ class DesignSystemContactRow extends StatelessWidget {
     required this.actions,
     super.key,
   });
+
+  /// Existing compact navigation target, sized to fit four support actions
+  /// inside the narrow desktop sidebar.
+  static const double minTapTarget = 44;
 
   /// The glyph-only destinations, rendered in the order supplied.
   final List<DesignSystemContactAction> actions;
@@ -76,7 +79,7 @@ class DesignSystemContactRow extends StatelessWidget {
         top: tokens.spacing.step2,
       ),
       child: Align(
-        alignment: Alignment.centerRight,
+        alignment: Alignment.centerLeft,
         // Shrink-wraps vertically. Without this the band takes every pixel the
         // host offers, which on the desktop rail means swallowing the space
         // above Settings rather than sitting at the foot of it.
@@ -108,7 +111,7 @@ class DesignSystemContactRow extends StatelessWidget {
 /// headers and panel corners — it says in as many words not to put it in a
 /// dense row. This footer is a dense row, in a rail whose usable width is 184
 /// px at its minimum: four of those targets would not fit. It takes
-/// [DesignSystemFiveSlotNavBar.minTapTarget] instead — the floor the rest of
+/// [DesignSystemContactRow.minTapTarget] instead — the floor the rest of
 /// this app's navigation chrome already uses, and still above the 44 px
 /// platform guidance for touch.
 ///
@@ -139,8 +142,8 @@ class _ContactIconAction extends StatelessWidget {
               onTap: action.onPressed,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  minWidth: DesignSystemFiveSlotNavBar.minTapTarget,
-                  minHeight: DesignSystemFiveSlotNavBar.minTapTarget,
+                  minWidth: DesignSystemContactRow.minTapTarget,
+                  minHeight: DesignSystemContactRow.minTapTarget,
                 ),
                 child: Center(
                   widthFactor: 1,

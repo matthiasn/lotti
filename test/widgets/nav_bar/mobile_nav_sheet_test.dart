@@ -6,7 +6,7 @@ import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_counts.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
-import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
+import 'package:lotti/widgets/nav_bar/mobile_nav_sheet.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -17,41 +17,125 @@ import '../../widget_test_utils.dart';
 void main() {
   Future<void> pumpAndOpenSheet(
     WidgetTester tester, {
-    required List<MobileNavMoreSheetItem> items,
+    required List<MobileNavSheetItem> items,
     List<Override> overrides = const [],
+    MediaQueryData? mediaQueryData,
+    Widget? footerTrailing,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         Builder(
           builder: (context) => TextButton(
-            onPressed: () => showMobileNavMoreSheet(
+            onPressed: () => showMobileNavSheet(
               context: context,
               items: items,
+              footerTrailing: footerTrailing,
             ),
             child: const Text('open'),
           ),
         ),
         theme: DesignSystemTheme.light(),
         overrides: overrides,
+        mediaQueryData: mediaQueryData,
       ),
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
   }
 
-  group('showMobileNavMoreSheet', () {
-    testWidgets('lists every overflow destination with icon and label', (
+  testWidgets('arranges destinations in two columns in reading order', (
+    tester,
+  ) async {
+    await pumpAndOpenSheet(
+      tester,
+      items: [
+        for (final label in [
+          'Tasks',
+          'DailyOS',
+          'Projects',
+          'Goals',
+          'Settings',
+        ])
+          MobileNavSheetItem(
+            label: label,
+            icon: const Icon(LottiIcons.folder),
+            onSelected: () {},
+          ),
+      ],
+    );
+    final tasks = tester.getRect(find.text('Tasks'));
+    final daily = tester.getRect(find.text('DailyOS'));
+    final projects = tester.getRect(find.text('Projects'));
+    final goals = tester.getRect(find.text('Goals'));
+    expect(tasks.top, daily.top);
+    expect(tasks.left, lessThan(daily.left));
+    expect(projects.top, goals.top);
+    expect(projects.top, greaterThan(tasks.bottom));
+    expect(projects.left, tasks.left);
+    expect(tester.getRect(find.text('Settings')).left, tasks.left);
+  });
+
+  testWidgets(
+    'large text keeps two columns and scrolls to the final destination',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final selected = <String>[];
+      await pumpAndOpenSheet(
+        tester,
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 640),
+          textScaler: TextScaler.linear(2),
+        ),
+        items: [
+          for (final label in [
+            'Tasks',
+            'DailyOS',
+            'Projects',
+            'Goals',
+            'Habits',
+            'Insights',
+            'People',
+            'Logbook',
+            'Events',
+            'Settings',
+          ])
+            MobileNavSheetItem(
+              label: label,
+              icon: const Icon(LottiIcons.folder),
+              onSelected: () => selected.add(label),
+            ),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getRect(find.text('Tasks')).left,
+        lessThan(tester.getRect(find.text('DailyOS')).left),
+      );
+      await tester.ensureVisible(find.text('Settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      expect(selected, ['Settings']);
+      expect(find.byType(WoltModalSheet), findsNothing);
+    },
+  );
+
+  group('showMobileNavSheet', () {
+    testWidgets('lists every destination with icon and label', (
       tester,
     ) async {
       await pumpAndOpenSheet(
         tester,
         items: [
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Projects',
             icon: const Icon(LottiIcons.folder),
             onSelected: () {},
           ),
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Habits',
             icon: const Icon(LottiIcons.checkAll),
             onSelected: () {},
@@ -65,19 +149,19 @@ void main() {
       expect(find.byIcon(LottiIcons.checkAll), findsOneWidget);
     });
 
-    testWidgets('selecting a row dismisses the sheet, then navigates', (
+    testWidgets('selecting a tile dismisses the sheet, then navigates', (
       tester,
     ) async {
       final selections = <String>[];
       await pumpAndOpenSheet(
         tester,
         items: [
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Projects',
             icon: const Icon(LottiIcons.folder),
             onSelected: () => selections.add('projects'),
           ),
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Habits',
             icon: const Icon(LottiIcons.checkAll),
             onSelected: () => selections.add('habits'),
@@ -92,46 +176,32 @@ void main() {
       expect(find.byType(WoltModalSheet), findsNothing);
     });
 
-    testWidgets('renders the trailing widget between label and chevron', (
+    testWidgets('places status beside the links below the destinations', (
       tester,
     ) async {
       await pumpAndOpenSheet(
         tester,
+        footerTrailing: const Text('42', key: Key('trailing-badge')),
         items: [
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Settings',
             icon: const Icon(LottiIcons.settings),
-            trailing: const Text('42', key: Key('trailing-badge')),
             onSelected: () {},
           ),
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Habits',
             icon: const Icon(LottiIcons.checkAll),
             onSelected: () {},
           ),
         ],
       );
-
-      // The trailing widget sits right of the label and left of the
-      // row's chevron — the desktop sidebar's trailing-slot contract.
-      final badgeRect = tester.getRect(find.byKey(const Key('trailing-badge')));
-      final labelRect = tester.getRect(find.text('Settings'));
-      final chevronRect = tester.getRect(
-        find
-            .descendant(
-              of: find.ancestor(
-                of: find.text('Settings'),
-                matching: find.byType(InkWell),
-              ),
-              matching: find.byIcon(LottiIcons.chevronRight),
-            )
-            .first,
+      final badge = tester.getRect(find.byKey(const Key('trailing-badge')));
+      final label = tester.getRect(find.text('Settings'));
+      expect(badge.top, greaterThanOrEqualTo(label.bottom));
+      expect(
+        badge.left,
+        greaterThan(tester.getRect(find.byType(ContactSupportRow)).right),
       );
-      expect(badgeRect.left, greaterThan(labelRect.left));
-      expect(badgeRect.right, lessThan(chevronRect.left));
-
-      // Rows without a trailing widget render nothing extra.
-      expect(find.byKey(const Key('trailing-badge')), findsOneWidget);
     });
 
     testWidgets('gives each row room to breathe, not just a tap target', (
@@ -141,7 +211,7 @@ void main() {
         tester,
         items: [
           for (final label in ['Projects', 'Habits', 'Calendar'])
-            MobileNavMoreSheetItem(
+            MobileNavSheetItem(
               label: label,
               icon: const Icon(LottiIcons.folder),
               onSelected: () {},
@@ -149,9 +219,7 @@ void main() {
         ],
       );
 
-      // The rows sit flush against each other with no separators, so their own
-      // height is the only thing keeping the labels from stacking up. A row
-      // sized to the bare 44px tap target reads as a cramped list.
+      // Grid cells retain the mobile touch-target floor and equal row heights.
       final heights = [
         for (final label in ['Projects', 'Habits', 'Calendar'])
           tester
@@ -166,7 +234,7 @@ void main() {
               .height,
       ];
       for (final height in heights) {
-        expect(height, greaterThanOrEqualTo(52));
+        expect(height, greaterThanOrEqualTo(TapTargets.minimum));
       }
       // And every row is the same height, so the list keeps an even rhythm.
       expect(heights.toSet(), hasLength(1));
@@ -178,13 +246,13 @@ void main() {
       await pumpAndOpenSheet(
         tester,
         items: [
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Projects',
             icon: const Icon(LottiIcons.folder),
             active: true,
             onSelected: () {},
           ),
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Habits',
             icon: const Icon(LottiIcons.checkAll),
             onSelected: () {},
@@ -210,12 +278,12 @@ void main() {
     });
   });
 
-  group('showMobileNavMoreSheet contact footer', () {
+  group('showMobileNavSheet contact footer', () {
     testWidgets('closes the sheet with the Contact Us footer', (tester) async {
       await pumpAndOpenSheet(
         tester,
         items: [
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Projects',
             icon: const Icon(LottiIcons.folder),
             onSelected: () {},
@@ -233,7 +301,7 @@ void main() {
         tester,
         items: [
           for (final label in ['Projects', 'Habits', 'Calendar'])
-            MobileNavMoreSheetItem(
+            MobileNavSheetItem(
               label: label,
               icon: const Icon(LottiIcons.folder),
               onSelected: () {},
@@ -256,7 +324,7 @@ void main() {
       await pumpAndOpenSheet(
         tester,
         items: [
-          MobileNavMoreSheetItem(
+          MobileNavSheetItem(
             label: 'Projects',
             icon: const Icon(LottiIcons.folder),
             onSelected: () {},
@@ -264,8 +332,7 @@ void main() {
         ],
       );
 
-      // Destination rows carry a chevron; nothing in the footer navigates
-      // within the app, so no row down there may imply that it does.
+      // Support actions remain separate from the destination tiles.
       expect(
         find.descendant(
           of: find.byType(ContactSupportRow),
@@ -275,40 +342,67 @@ void main() {
       );
     });
 
-    testWidgets('lays out a real sync-count trailing widget in a sheet row', (
-      tester,
-    ) async {
-      // `_MoreSheetRow` renders `item.trailing` as an *inflexible* child of
-      // its Row, which hands it unbounded horizontal constraints — while
-      // `SyncQueueCounts` lays its two counts out with `Flexible`. This
-      // pins the combination end to end with the real widget rather than a
-      // stand-in, because a stand-in is exactly what would not catch it.
-      await pumpAndOpenSheet(
-        tester,
-        overrides: [
-          journalDbProvider.overrideWithValue(
-            mockJournalDbWithSyncFlag(enabled: true),
-          ),
-          syncDatabaseProvider.overrideWithValue(mockSyncDatabaseWithCount(12)),
-          inboundQueueDepthProvider.overrideWith(
-            (_) => Stream<int>.value(18342),
-          ),
-        ],
-        items: [
-          MobileNavMoreSheetItem(
-            label: 'Settings',
-            icon: const Icon(LottiIcons.settings),
-            trailing: const SyncQueueCounts(),
-            onSelected: () {},
-          ),
-        ],
-      );
+    for (final width in [320.0, 390.0]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets(
+          'lays out sync counts beside links at $width and scale $scale',
+          (
+            tester,
+          ) async {
+            tester.view.physicalSize = Size(width, 844);
+            tester.view.devicePixelRatio = 1;
+            addTearDown(tester.view.resetPhysicalSize);
+            addTearDown(tester.view.resetDevicePixelRatio);
+            // Real counts share a bounded footer with all four support links.
+            await pumpAndOpenSheet(
+              tester,
+              footerTrailing: const SyncQueueCounts(),
+              mediaQueryData: MediaQueryData(
+                size: Size(width, 844),
+                textScaler: TextScaler.linear(scale),
+              ),
+              overrides: [
+                journalDbProvider.overrideWithValue(
+                  mockJournalDbWithSyncFlag(enabled: true),
+                ),
+                syncDatabaseProvider.overrideWithValue(
+                  mockSyncDatabaseWithCount(12),
+                ),
+                inboundQueueDepthProvider.overrideWith(
+                  (_) => Stream<int>.value(18342),
+                ),
+              ],
+              items: [
+                MobileNavSheetItem(
+                  label: 'Settings',
+                  icon: const Icon(LottiIcons.settings),
+                  onSelected: () {},
+                ),
+              ],
+            );
 
-      expect(tester.takeException(), isNull);
-      // The gap is a narrow no-break space (U+202F), not a word space — see
-      // `syncQueueArrowGap`.
-      expect(find.text('↓\u202F18K'), findsOneWidget);
-      expect(find.text('↑\u202F12'), findsOneWidget);
-    });
+            expect(tester.takeException(), isNull);
+            // The gap is a narrow no-break space (U+202F), not a word space — see
+            // `syncQueueArrowGap`.
+            expect(find.text('↓\u202F18K'), findsOneWidget);
+            expect(find.text('↑\u202F12'), findsOneWidget);
+            final links = tester.getRect(find.byType(ContactSupportRow));
+            final counts = tester.getRect(find.byType(SyncQueueCounts));
+            expect(counts.left, greaterThanOrEqualTo(links.right));
+            expect(
+              counts.center.dy,
+              closeTo(
+                tester.getRect(find.byKey(contactSupportEmailKey)).center.dy,
+                0.01,
+              ),
+            );
+            expect(
+              counts.top,
+              greaterThan(tester.getRect(find.text('Settings')).bottom),
+            );
+          },
+        );
+      }
+    }
   });
 }
