@@ -4836,7 +4836,45 @@
       }
     }
   },
+  "relationshipDueSince": "Forfalden siden {day} · {count, plural, =1{1 dag forsinket} other{{count} dage forsinket}}",
+  "@relationshipDueSince": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDueToday": "Skal kontaktes i dag",
+  "relationshipDurationHours": "{hours} t",
+  "@relationshipDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipDurationHoursMinutes": "{hours} t {minutes}",
+  "@relationshipDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDurationMinutes": "{count} min",
+  "@relationshipDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipEditTitle": "Redigér person",
   "relationshipErrorCreateFailed": "Personen kunne ikke gemmes. Prøv igen.",
   "relationshipErrorDeleteFailed": "Personen kunne ikke slettes. Prøv igen.",
@@ -4869,6 +4907,14 @@
     "description": "Relationships redesign label."
   },
   "relationshipLastCheckInLabel": "Seneste check-in {date}",
+  "relationshipLastSpoke": "sidst talt {time}",
+  "@relationshipLastSpoke": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkContact": "Tilknyt kontakt",
   "relationshipLinkedTasksLabel": "Opgaver",
   "relationshipLinkTaskButton": "Link opgave",
@@ -4885,6 +4931,7 @@
       }
     }
   },
+  "relationshipMoreActions": "Flere handlinger",
   "relationshipNameLabel": "Navn",
   "relationshipNameRequired": "Navn er påkrævet",
   "relationshipNextByDay": "næste senest {day}",
@@ -4895,6 +4942,15 @@
       }
     }
   },
+  "relationshipNextDueOn": "Næste gang {day}",
+  "@relationshipNextDueOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeTitle": "Næste gang",
   "relationshipNicknameLabel": "Kaldenavn",
   "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",
   "relationshipNoLinkedTasks": "Ingen opgaver linket endnu.",
@@ -4904,15 +4960,47 @@
   "@relationshipNudgesOn": {
     "description": "Relationships redesign label."
   },
-  "relationshipPostCallBody": "Du tog lige kontakt. Vil du logge et tjek-ind, mens det er friskt?",
+  "relationshipOnTrackCadence": "På sporet · {cadence}",
+  "@relationshipOnTrackCadence": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPayAttentionTo": "Vær opmærksom på",
   "relationshipPostCallConfirm": "Log tjek-ind",
   "relationshipPostCallDismiss": "Ikke nu",
-  "relationshipPostCallTitle": "Hvordan gik det med {name}?",
-  "@relationshipPostCallTitle": {
+  "relationshipPostCallMeta": "startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
+  "@relationshipPostCallMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferCall": "Du ringede til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
+  "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
-        "type": "String",
-        "example": "Anna"
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferMessage": "Du skrev til {name} for {minutes, plural, =0{under et minut} =1{1 minut} other{{minutes} minutter}} siden — skal vi notere det, mens det er frisk?",
+  "@relationshipPostCallOfferMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
       }
     }
   },
@@ -4924,6 +5012,8 @@
       }
     }
   },
+  "relationshipReachPrivacy": "Bliver på denne enhed · deles aldrig med AI'en",
+  "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Tilknyt en anden kontakt",
   "relationshipSeeAllCheckIns": "Se alle check-ins",
   "@relationshipSeeAllCheckIns": {
@@ -5006,6 +5096,14 @@
   "relationshipStayInTouch": "Hold kontakten",
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
+  },
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 tilknyttet} other{{count} tilknyttede}}",
+  "@relationshipTasksLinkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "relationshipTimestampToday": "I dag",
   "relationshipTimestampYesterday": "I går",

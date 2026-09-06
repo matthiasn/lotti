@@ -100,6 +100,24 @@ String relationshipDayLabelOf(BuildContext context, DateTime at) =>
       locale: Localizations.localeOf(context).toString(),
     );
 
+/// A mono duration read-out for a check-in (`11 min`, `1 h`, `1 h 30`), or
+/// null for a check-in that has no duration — a message usually has none,
+/// and the row must then say nothing rather than `0 min`.
+String? relationshipDurationLabelOf(BuildContext context, Duration duration) {
+  final minutes = duration.inMinutes;
+  // Under a minute is not a duration worth a label — and never "0 min".
+  if (minutes <= 0) return null;
+  final messages = context.messages;
+  if (minutes < 60) return messages.relationshipDurationMinutes(minutes);
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  if (rest == 0) return messages.relationshipDurationHours(hours);
+  return messages.relationshipDurationHoursMinutes(
+    hours,
+    rest.toString().padLeft(2, '0'),
+  );
+}
+
 /// A mono weekday-only label (`Thu`), used by the cadence due pill, in the
 /// locale's own abbreviation.
 String relationshipWeekdayLabel(DateTime at, {String? locale}) =>

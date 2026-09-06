@@ -11031,7 +11031,33 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String relationshipDueSince(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dage forsinket',
+      one: '1 dag forsinket',
+    );
+    return 'Forfalden siden $day · $_temp0';
+  }
+
+  @override
   String get relationshipDueToday => 'Skal kontaktes i dag';
+
+  @override
+  String relationshipDurationHours(int hours) {
+    return '$hours t';
+  }
+
+  @override
+  String relationshipDurationHoursMinutes(int hours, String minutes) {
+    return '$hours t $minutes';
+  }
+
+  @override
+  String relationshipDurationMinutes(int count) {
+    return '$count min';
+  }
 
   @override
   String get relationshipEditTitle => 'Redigér person';
@@ -11156,6 +11182,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String relationshipLastSpoke(String time) {
+    return 'sidst talt $time';
+  }
+
+  @override
   String get relationshipLinkContact => 'Tilknyt kontakt';
 
   @override
@@ -11176,6 +11207,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get relationshipMoreActions => 'Flere handlinger';
+
+  @override
   String get relationshipNameLabel => 'Navn';
 
   @override
@@ -11185,6 +11219,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String relationshipNextByDay(String day) {
     return 'næste senest $day';
   }
+
+  @override
+  String relationshipNextDueOn(String day) {
+    return 'Næste gang $day';
+  }
+
+  @override
+  String get relationshipNextTimeTitle => 'Næste gang';
 
   @override
   String get relationshipNicknameLabel => 'Kaldenavn';
@@ -11206,8 +11248,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipNudgesOn => 'påmindelser til';
 
   @override
-  String get relationshipPostCallBody =>
-      'Du tog lige kontakt. Vil du logge et tjek-ind, mens det er friskt?';
+  String relationshipOnTrackCadence(String cadence) {
+    return 'På sporet · $cadence';
+  }
+
+  @override
+  String get relationshipPayAttentionTo => 'Vær opmærksom på';
 
   @override
   String get relationshipPostCallConfirm => 'Log tjek-ind';
@@ -11216,8 +11262,39 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipPostCallDismiss => 'Ikke nu';
 
   @override
-  String relationshipPostCallTitle(String name) {
-    return 'Hvordan gik det med $name?';
+  String relationshipPostCallMeta(String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'cirka $minutes min',
+      one: 'cirka 1 min',
+      zero: 'under et minut',
+    );
+    return 'startede kl. $time · $_temp0';
+  }
+
+  @override
+  String relationshipPostCallOfferCall(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutter',
+      one: '1 minut',
+      zero: 'under et minut',
+    );
+    return 'Du ringede til $name for $_temp0 siden — skal vi notere det, mens det er frisk?';
+  }
+
+  @override
+  String relationshipPostCallOfferMessage(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutter',
+      one: '1 minut',
+      zero: 'under et minut',
+    );
+    return 'Du skrev til $name for $_temp0 siden — skal vi notere det, mens det er frisk?';
   }
 
   @override
@@ -11230,6 +11307,13 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return 'Ingen kontakt $_temp0';
   }
+
+  @override
+  String get relationshipReachPrivacy =>
+      'Bliver på denne enhed · deles aldrig med AI\'en';
+
+  @override
+  String get relationshipReachTitle => 'Kontakt';
 
   @override
   String get relationshipRelinkContact => 'Tilknyt en anden kontakt';
@@ -11314,6 +11398,17 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipStayInTouch => 'Hold kontakten';
+
+  @override
+  String relationshipTasksLinkedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tilknyttede',
+      one: '1 tilknyttet',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipTimestampToday => 'I dag';

@@ -29,11 +29,19 @@ the `enable_relationships` flag):
   under a summary card that counts who is due now and names who lapses next,
   each row naming the last contact (`Call · Today 12:44 · Weekly`) with a
   truthful cadence pill, and on desktop a list/detail split like Tasks —
-  the per-person detail page (status/cadence/nickname chips, contact
-  channels, a linked-tasks section — `RelationshipLink` both ways, with a
-  task picker that also creates the task when none exists yet, and per-row
-  unlink — and the check-in log, with edit and
-  delete actions), the add/edit person modal (name, nickname, importance,
+  the per-person page, a sibling of the task page: a cover-style hero
+  (back · Talk to agent · edit · a menu with link-contact and delete) with
+  the persona avatar hanging off it, a header block (category · Important,
+  the full name, nickname and last contact, then the cadence fact, the
+  health band and the next due day as pills), and section cards in the
+  design's order — Briefing · Next time (what the latest check-in asked to
+  bring up or avoid) · Check-ins (mono `timestamp · type · duration`, the
+  sentiment as a tinted pill, topics as tags) · Reach (channels with the
+  actions the device can service, under the privacy line) · Tasks
+  (`RelationshipLink` both ways, a picker that also creates the task when
+  none exists yet, per-row unlink) — above a sticky action bar: *Log
+  check-in*, a mic that opens the capture sheet already recording, and the
+  first channel the platform can open. The add/edit person modal (name, nickname, importance,
   cadence presets, status, and the manual contact-channel editor — desktop
   parity per ADR 0041 §2), and the check-in capture sheet (interaction
   type, date, user-set sentiment — never AI-filled, ADR 0038 — topics,

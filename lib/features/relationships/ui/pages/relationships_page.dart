@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -90,8 +89,10 @@ class RelationshipsPage extends ConsumerWidget {
               maxValue: maxListPaneWidth,
               onDrag: resolvedListPane.onDrag,
             ),
+            // The page carries its own show-list-pane control in the hero
+            // while the list is folded away, so nothing is overlaid here.
             detailPane: selectedId != null
-                ? _PeopleDetailPane(
+                ? RelationshipDetailsPage(
                     key: ValueKey(selectedId),
                     relationshipId: selectedId,
                   )
@@ -102,44 +103,6 @@ class RelationshipsPage extends ConsumerWidget {
           );
         },
       ),
-    );
-  }
-}
-
-/// The desktop detail pane: the person's page, plus the show-list-pane
-/// button while the list is folded away (the Projects pane's shape).
-class _PeopleDetailPane extends StatelessWidget {
-  const _PeopleDetailPane({required this.relationshipId, super.key});
-
-  final String relationshipId;
-
-  @override
-  Widget build(BuildContext context) {
-    final splitController = ListDetailFocusTraversal.maybeOf(context);
-    final tokens = context.designTokens;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        RelationshipDetailsPage(relationshipId: relationshipId),
-        if (splitController?.listPaneVisible == false)
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: tokens.spacing.step5,
-                  top: tokens.spacing.step4,
-                ),
-                child: TabHeaderIconButton(
-                  key: const ValueKey('people-show-list-pane'),
-                  icon: LottiIcons.sidebar,
-                  tooltip: context.messages.listPaneShowTooltip,
-                  onPressed: splitController!.showListPane,
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

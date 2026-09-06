@@ -4835,7 +4835,45 @@
       }
     }
   },
+  "relationshipDueSince": "Te laat sinds {day} · {count, plural, =1{1 dag te laat} other{{count} dagen te laat}}",
+  "@relationshipDueSince": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDueToday": "Vandaag aan de beurt",
+  "relationshipDurationHours": "{hours} u",
+  "@relationshipDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipDurationHoursMinutes": "{hours} u {minutes}",
+  "@relationshipDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDurationMinutes": "{count} min",
+  "@relationshipDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipEditTitle": "Persoon bewerken",
   "relationshipErrorCreateFailed": "Kon de persoon niet opslaan. Probeer het opnieuw.",
   "relationshipErrorDeleteFailed": "Kon de persoon niet verwijderen. Probeer het opnieuw.",
@@ -4868,6 +4906,14 @@
     "description": "Relationships redesign label."
   },
   "relationshipLastCheckInLabel": "Laatste check-in {date}",
+  "relationshipLastSpoke": "laatst gesproken {time}",
+  "@relationshipLastSpoke": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkContact": "Contact koppelen",
   "relationshipLinkedTasksLabel": "Taken",
   "relationshipLinkTaskButton": "Taak koppelen",
@@ -4884,6 +4930,7 @@
       }
     }
   },
+  "relationshipMoreActions": "Meer acties",
   "relationshipNameLabel": "Naam",
   "relationshipNameRequired": "Een naam is verplicht",
   "relationshipNextByDay": "volgende voor {day}",
@@ -4894,6 +4941,15 @@
       }
     }
   },
+  "relationshipNextDueOn": "Volgende keer {day}",
+  "@relationshipNextDueOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeTitle": "Volgende keer",
   "relationshipNicknameLabel": "Bijnaam",
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
@@ -4903,15 +4959,47 @@
   "@relationshipNudgesOn": {
     "description": "Relationships redesign label."
   },
-  "relationshipPostCallBody": "Je hebt net contact gehad. Wil je een check-in vastleggen nu het nog vers is?",
+  "relationshipOnTrackCadence": "Op schema · {cadence}",
+  "@relationshipOnTrackCadence": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPayAttentionTo": "Let op",
   "relationshipPostCallConfirm": "Check-in vastleggen",
   "relationshipPostCallDismiss": "Niet nu",
-  "relationshipPostCallTitle": "Hoe ging het met {name}?",
-  "@relationshipPostCallTitle": {
+  "relationshipPostCallMeta": "begonnen om {time} · {minutes, plural, =0{minder dan een minuut} =1{ongeveer 1 min} other{ongeveer {minutes} min}}",
+  "@relationshipPostCallMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferCall": "Je hebt {name} {minutes, plural, =0{minder dan een minuut} =1{1 minuut} other{{minutes} minuten}} geleden gebeld — nu vastleggen zolang het vers is?",
+  "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
-        "type": "String",
-        "example": "Anna"
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferMessage": "Je hebt {name} {minutes, plural, =0{minder dan een minuut} =1{1 minuut} other{{minutes} minuten}} geleden geschreven — nu vastleggen zolang het vers is?",
+  "@relationshipPostCallOfferMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
       }
     }
   },
@@ -4923,6 +5011,8 @@
       }
     }
   },
+  "relationshipReachPrivacy": "Blijft op dit apparaat · nooit gedeeld met de AI",
+  "relationshipReachTitle": "Contact",
   "relationshipRelinkContact": "Ander contact koppelen",
   "relationshipSeeAllCheckIns": "Alle check-ins bekijken",
   "@relationshipSeeAllCheckIns": {
@@ -5005,6 +5095,14 @@
   "relationshipStayInTouch": "Contact houden",
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
+  },
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 gekoppeld} other{{count} gekoppeld}}",
+  "@relationshipTasksLinkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "relationshipTimestampToday": "Vandaag",
   "relationshipTimestampYesterday": "Gisteren",

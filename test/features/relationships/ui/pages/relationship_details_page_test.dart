@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -10,15 +11,23 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -33,13 +42,31 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 
+/// Answers the speak flow's pre-flight probe with "no", so the mic test can
+/// prove the form opened in speaking mode without a recorder on screen.
+class _NoTranscription implements CheckInTranscriptionService {
+  @override
+  Future<bool> canTranscribe(String subjectId) async => false;
+
+  @override
+  CheckInTranscriptWait transcribe({
+    required String audioEntryId,
+    required String subjectId,
+    Duration timeout = checkInTranscriptTimeout,
+  }) => throw UnimplementedError();
+}
+
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
+  // The morning after the fixture's date: the cadence pills are computed
+  // against the clock, so every header assertion pumps under this one.
+  final now = DateTime(2026, 8, 14, 10, 30);
 
   late MockRelationshipRepository mockRepository;
   late MockRelationshipAgentService mockAgentService;
   late MockRelationshipReminderService mockReminders;
   late MockUpdateNotifications mockNotifications;
+  late MockEntitiesCacheService mockCache;
   // The post-interaction prompt mounted on this page reads the device-local
   // marker, which lives in settings. A real in-memory db is simpler than a
   // mock here and keeps the prompt's "no marker → renders nothing" default.
@@ -106,13 +133,16 @@ void main() {
     CheckInSentiment? sentiment,
     List<String> topics = const [],
     String? narrative,
+    String? attention,
+    Duration length = Duration.zero,
   }) => CheckInEntry(
-    meta: meta(id),
+    meta: meta(id).copyWith(dateTo: testDate.add(length)),
     data: CheckInData(
       relationshipId: 'rel-1',
       interactionType: CheckInInteractionType.call,
       sentiment: sentiment,
       topics: topics,
+      payAttentionTo: attention,
     ),
     entryText: narrative == null ? null : EntryText(plainText: narrative),
   );
@@ -120,12 +150,25 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
+    // The page is a full scroll — hero, header, cards, then the log — and
+    // the default 800x600 surface leaves the Tasks card and most check-in
+    // rows unbuilt, where a tap lands on nothing. Tall enough for every
+    // section to be on screen at once; desktop tests set their own size.
+    TestWidgetsFlutterBinding.instance.platformDispatcher.views.single
+      ..physicalSize = const Size(1000, 2400)
+      ..devicePixelRatio = 1;
     mockRepository = MockRelationshipRepository();
     mockNotifications = MockUpdateNotifications();
     settingsDb = SettingsDb(inMemoryDatabase: true);
+    // The header's eyebrow and the form's CategoryField resolve the category
+    // name through the cache; the picker reads its sorted categories.
+    mockCache = MockEntitiesCacheService();
+    when(() => mockCache.getCategoryById(any())).thenReturn(null);
+    when(() => mockCache.sortedCategories).thenReturn([]);
     getIt
       ..registerSingleton<UpdateNotifications>(mockNotifications)
-      ..registerSingleton<SettingsDb>(settingsDb);
+      ..registerSingleton<SettingsDb>(settingsDb)
+      ..registerSingleton<EntitiesCacheService>(mockCache);
     // Most tests exercise other sections; linked tasks default to empty.
     when(
       () => mockRepository.getLinkedTasks('rel-1'),
@@ -139,24 +182,53 @@ void main() {
   });
 
   tearDown(() async {
+    TestWidgetsFlutterBinding.instance.platformDispatcher.views.single.reset();
     await getIt.unregister<UpdateNotifications>();
     await getIt.unregister<SettingsDb>();
+    await getIt.unregister<EntitiesCacheService>();
     await settingsDb.close();
   });
 
-  Widget buildPage({List<Override> overrides = const []}) =>
-      makeTestableWidgetNoScroll(
-        const RelationshipDetailsPage(relationshipId: 'rel-1'),
-        overrides: [
-          relationshipRepositoryProvider.overrideWithValue(mockRepository),
-          relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
-          relationshipReminderServiceProvider.overrideWithValue(mockReminders),
-          ...overrides,
-        ],
-      );
+  Widget buildPage({
+    List<Override> overrides = const [],
+    MediaQueryData? mediaQueryData,
+  }) => makeTestableWidgetNoScroll(
+    const RelationshipDetailsPage(relationshipId: 'rel-1'),
+    mediaQueryData: mediaQueryData,
+    overrides: [
+      relationshipRepositoryProvider.overrideWithValue(mockRepository),
+      relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
+      relationshipReminderServiceProvider.overrideWithValue(mockReminders),
+      ...overrides,
+    ],
+  );
+
+  /// Pumps the page under the fixed clock the header pills are read against.
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    List<Override> overrides = const [],
+    MediaQueryData? mediaQueryData,
+  }) => withClock(Clock.fixed(now), () async {
+    await tester.pumpWidget(
+      buildPage(overrides: overrides, mediaQueryData: mediaQueryData),
+    );
+    await tester.pumpAndSettle();
+  });
+
+  /// Delete lives in the hero's overflow menu.
+  Future<void> openDelete(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('person-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(LottiIcons.delete));
+    await tester.pumpAndSettle();
+  }
+
+  DsPill pill(WidgetTester tester, String key) =>
+      tester.widget<DsPill>(find.byKey(ValueKey(key)));
 
   testWidgets(
-    'renders header chips (status, cadence, nickname) and check-in rows',
+    'renders the header block (eyebrow, name, one-liner, pills) and the '
+    'check-in rows',
     (tester) async {
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
         (_) async => relationship(important: true, cadenceDays: 14),
@@ -170,52 +242,150 @@ void main() {
             sentiment: CheckInSentiment.good,
             topics: ['travel'],
             narrative: 'Planned the summer trip.',
+            length: const Duration(minutes: 11),
           ),
         ],
       );
 
-      await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await pumpPage(tester);
 
       expect(find.text('Anna'), findsOneWidget);
-      expect(find.text('Active'), findsOneWidget);
-      expect(find.text('Every two weeks'), findsOneWidget);
-      expect(find.text('Sis'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.star), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+        'Important',
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('person-one-liner')))
+            .data,
+        '"Sis" · last spoke Yesterday 10:30',
+      );
+      expect(
+        pill(tester, 'person-pill-cadence').label,
+        'On track · Every two weeks',
+      );
+      expect(pill(tester, 'person-pill-next-due').label, 'Next due Thu 27 Aug');
+      // The star is gone: importance lives in the eyebrow.
+      expect(find.byIcon(LottiIcons.star), findsNothing);
 
-      expect(find.text('Call'), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('check-in-row-meta')))
+            .data,
+        'Yesterday 10:30 · Call · 11 min',
+      );
       expect(find.text('Good'), findsOneWidget);
       expect(find.text('travel'), findsOneWidget);
       expect(find.text('Planned the summer trip.'), findsOneWidget);
     },
   );
 
+  testWidgets('the eyebrow names the category the person is filed under', (
+    tester,
+  ) async {
+    when(() => mockCache.getCategoryById('cat-1')).thenReturn(
+      CategoryTestUtils.createTestCategory(
+        id: 'cat-1',
+        name: 'Penguin Operations',
+      ),
+    );
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(important: true, categoryId: 'cat-1'),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await pumpPage(tester);
+
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('person-eyebrow'))).data,
+      'Penguin Operations · Important',
+    );
+  });
+
+  testWidgets('a standing briefing puts the health band on the header as a '
+      'pill, beside the briefing card', (tester) async {
+    final agentId = relationshipAgentIdFor('rel-1');
+    final report =
+        AgentDomainEntity.agentReport(
+              id: 'report-1',
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              createdAt: testDate,
+              vectorClock: null,
+              content: 'Anna is in good spirits.',
+              provenance: {
+                RelationshipReportProvenanceKeys.healthBand: 'thriving',
+                RelationshipReportProvenanceKeys.healthRationale: 'Two calls.',
+              },
+            )
+            as AgentReportEntity;
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(important: true),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await pumpPage(
+      tester,
+      overrides: [
+        agentReportProvider(agentId).overrideWith((ref) async => report),
+        agentIdentityProvider(agentId).overrideWith((ref) async => null),
+      ],
+    );
+
+    expect(pill(tester, 'person-pill-health').label, 'Thriving');
+    expect(find.byType(RelationshipBriefingCard), findsOneWidget);
+    expect(find.text('Anna is in good spirits.'), findsOneWidget);
+  });
+
+  testWidgets('the Next time card appears only when the latest check-in '
+      'carries guidance', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer(
+      (_) async => [
+        checkIn('check-2', attention: 'Ask how the move went.'),
+        checkIn('check-1', attention: 'Older guidance.'),
+      ],
+    );
+
+    await pumpPage(tester);
+
+    expect(find.byKey(const ValueKey('person-next-time-card')), findsOne);
+    expect(find.text('Ask how the move went.'), findsOneWidget);
+    expect(find.text('Older guidance.'), findsNothing);
+  });
+
   testWidgets(
     'a synced cadence outside the presets reads as "every N days" rather '
     'than being rounded into one',
     (tester) async {
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
-        (_) async => relationship(cadenceDays: 3),
+        (_) async => relationship(important: true, cadenceDays: 3),
       );
       when(
         () => mockRepository.getCheckInsForRelationship('rel-1'),
       ).thenAnswer((_) async => []);
 
-      await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await pumpPage(tester);
 
-      expect(find.text('Every 3 days'), findsOneWidget);
-      expect(find.text('Weekly'), findsNothing);
+      expect(
+        pill(tester, 'person-pill-cadence').label,
+        'On track · Every 3 days',
+      );
+      expect(find.textContaining('Weekly'), findsNothing);
     },
   );
 
-  testWidgets('the status chip names every status kind', (tester) async {
+  testWidgets('a dormant or archived person wears the status pill; an active '
+      'one wears the cadence fact instead', (tester) async {
     final statuses = <String, RelationshipStatus>{
-      'Active': RelationshipStatus.active(
-        id: 'st-a',
-        createdAt: testDate,
-        utcOffset: 0,
-      ),
       'Dormant': RelationshipStatus.dormant(
         id: 'st-d',
         createdAt: testDate,
@@ -233,24 +403,26 @@ void main() {
 
     for (final entry in statuses.entries) {
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
-        (_) async => relationship(status: entry.value),
+        (_) async => relationship(important: true, status: entry.value),
       );
 
-      await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await pumpPage(tester);
 
-      expect(find.text(entry.key), findsOneWidget, reason: entry.key);
-      for (final other in statuses.keys.where((k) => k != entry.key)) {
-        expect(
-          find.text(other),
-          findsNothing,
-          reason: '$other vs ${entry.key}',
-        );
-      }
+      expect(pill(tester, 'person-pill-status').label, entry.key);
+      expect(find.byKey(const ValueKey('person-pill-cadence')), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
     }
+
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(important: true, cadenceDays: 7),
+    );
+    await pumpPage(tester);
+
+    expect(find.byKey(const ValueKey('person-pill-status')), findsNothing);
+    expect(find.text('Active'), findsNothing);
+    expect(pill(tester, 'person-pill-cadence').label, 'On track · Weekly');
   });
 
   testWidgets('renders the no-check-ins hint when the log is empty', (
@@ -270,8 +442,9 @@ void main() {
       find.text('No check-ins yet — log one after you next talk.'),
       findsOneWidget,
     );
-    // No star in the app bar for an unimportant relationship.
-    expect(find.byIcon(LottiIcons.star), findsNothing);
+    // An unimportant person in no category has no eyebrow at all.
+    expect(find.byKey(const ValueKey('person-eyebrow')), findsNothing);
+    expect(pill(tester, 'person-pill-status').label, 'Not enrolled');
   });
 
   testWidgets('says the person is no longer tracked when the id is gone — '
@@ -303,11 +476,6 @@ void main() {
   testWidgets('edit action opens the form prefilled with the person', (
     tester,
   ) async {
-    // The form's CategoryField resolves the category name through getIt.
-    final cache = MockEntitiesCacheService();
-    when(() => cache.getCategoryById(any())).thenReturn(null);
-    getIt.registerSingleton<EntitiesCacheService>(cache);
-    addTearDown(() => getIt.unregister<EntitiesCacheService>());
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
       (_) async => relationship(cadenceDays: 14),
     );
@@ -318,7 +486,7 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(LottiIcons.edit));
+    await tester.tap(find.byKey(const ValueKey('person-edit')));
     await tester.pumpAndSettle();
 
     // Prefilled name and nickname fields, and the edit-only status picker.
@@ -354,8 +522,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LottiIcons.delete));
-      await tester.pumpAndSettle();
+      await openDelete(tester);
 
       // Confirmation modal names the person; nothing deleted before consent.
       expect(find.text('Delete Anna?'), findsOneWidget);
@@ -401,8 +568,7 @@ void main() {
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(LottiIcons.delete));
-      await tester.pumpAndSettle();
+      await openDelete(tester);
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
 
@@ -430,8 +596,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LottiIcons.delete));
-      await tester.pumpAndSettle();
+      await openDelete(tester);
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
 
@@ -461,8 +626,7 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LottiIcons.delete));
-      await tester.pumpAndSettle();
+      await openDelete(tester);
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
 
@@ -474,8 +638,8 @@ void main() {
   );
 
   testWidgets(
-    'the log-check-in FAB is the design-system primary action, labelled and '
-    'painted in the interactive accent — not a neutral Material pill',
+    'the page ends in the sticky action bar — Log check-in and the mic — and '
+    'no floating button',
     (tester) async {
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
         (_) async => relationship(),
@@ -484,34 +648,155 @@ void main() {
         () => mockRepository.getCheckInsForRelationship('rel-1'),
       ).thenAnswer((_) async => []);
 
-      await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await pumpPage(tester);
 
-      final fab = find.byKey(
-        const ValueKey('relationship-log-check-in-fab'),
-      );
-      expect(fab, findsOneWidget);
+      expect(find.byType(RelationshipActionBar), findsOneWidget);
       expect(
-        find.byType(FloatingActionButton),
-        findsNothing,
-        reason: 'the Material default carried the wrong colour',
+        find.byKey(const ValueKey('person-action-log-check-in')),
+        findsOneWidget,
       );
-
-      final button = tester.widget<DesignSystemFloatingActionButton>(fab);
-      expect(button.label, 'Log check-in');
-      expect(button.icon, LottiIcons.greeting);
-
-      final tokens = tester.element(fab).designTokens;
-      final ink = tester.widget<Ink>(
-        find.descendant(of: fab, matching: find.byType(Ink)),
-      );
+      expect(find.byKey(const ValueKey('person-action-speak')), findsOne);
+      expect(find.byType(FloatingActionButton), findsNothing);
       expect(
-        (ink.decoration! as BoxDecoration).color,
-        tokens.colors.interactive.enabled,
-        reason: 'same accent as Link task and every other primary action',
+        tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
+        isTrue,
+        reason: 'the glass strip blurs the body scrolling under it',
       );
     },
   );
+
+  testWidgets('the mic opens the capture sheet in speaking mode', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await pumpPage(
+      tester,
+      overrides: [
+        checkInTranscriptionServiceProvider.overrideWithValue(
+          _NoTranscription(),
+        ),
+      ],
+    );
+    await tester.tap(find.byKey(const ValueKey('person-action-speak')));
+    await tester.pumpAndSettle();
+
+    final form = tester.widget<CheckInCaptureForm>(
+      find.byType(CheckInCaptureForm),
+    );
+    expect(form.startSpeaking, isTrue);
+    expect(form.relationshipId, 'rel-1');
+  });
+
+  testWidgets("Talk to agent beams to the person's chat", (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await pumpPage(tester);
+    await tester.tap(find.byKey(const ValueKey('person-talk-to-agent')));
+    await tester.pump();
+
+    expect(beamedTo, ['/people/rel-1/chat']);
+  });
+
+  testWidgets('on a phone, back pops the page', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      const RelationshipDetailsPage(relationshipId: 'rel-1'),
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+        overrides: [
+          relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
+          relationshipReminderServiceProvider.overrideWithValue(mockReminders),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RelationshipDetailsPage), findsOneWidget);
+
+    await tester.tap(find.byIcon(LottiIcons.chevronLeft));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RelationshipDetailsPage), findsNothing);
+    expect(find.text('open'), findsOneWidget);
+  });
+
+  testWidgets('on the desktop split, back clears the selection by beaming '
+      'to the list', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
+    setTestSurfaceSize(tester, const Size(1280, 800));
+
+    await pumpPage(
+      tester,
+      mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+    );
+    await tester.tap(find.byIcon(LottiIcons.chevronLeft));
+    await tester.pump();
+
+    expect(beamedTo, ['/people']);
+  });
+
+  testWidgets('on a desktop-wide window every section sits on the centred '
+      'reading column', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    setTestSurfaceSize(tester, const Size(1280, 800));
+
+    await pumpPage(
+      tester,
+      mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+    );
+
+    final card = find.byKey(const ValueKey('person-tasks-card'));
+    final width = tester.getSize(card).width;
+    final left = tester.getTopLeft(card).dx;
+    // 960 reading measure less the two step5 gutters, centred in 1280.
+    expect(width, 960 - 2 * 16);
+    expect(left, (1280 - 960) / 2 + 16);
+  });
 
   testWidgets(
     'check-in topics render as the design-system tag pill, the same read-out '
@@ -531,28 +816,26 @@ void main() {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
+      // The header's own pills are tags too; the hairline is what separates
+      // a topic tag from them and from bare text.
       final pills = tester
           .widgetList<DsPill>(find.byType(DsPill))
-          .where((pill) => pill.shape == DsPillShape.tag)
+          .where((pill) => pill.bordered)
           .toList();
       expect(pills.map((pill) => pill.label), ['design tokens', 'Figma']);
       for (final pill in pills) {
+        expect(pill.shape, DsPillShape.tag);
         expect(pill.variant, DsPillVariant.filled);
-        expect(
-          pill.bordered,
-          isTrue,
-          reason: 'the hairline is what separates a tag from bare text',
-        );
       }
       expect(
-        find.descendant(of: find.byType(Card), matching: find.byType(Chip)),
+        find.byType(Chip),
         findsNothing,
         reason: 'topics were the last Material Chip on the check-in row',
       );
     },
   );
 
-  testWidgets('the FAB opens the check-in capture sheet for this person', (
+  testWidgets('Log check-in opens the capture sheet for this person', (
     tester,
   ) async {
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
@@ -566,6 +849,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         dateFrom: any(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
     ).thenAnswer((_) async => checkIn('check-new'));
 
@@ -594,6 +878,7 @@ void main() {
                 data: captureAny(named: 'data'),
                 entryText: any(named: 'entryText'),
                 dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
               ),
             ).captured.single
             as CheckInData;
@@ -634,8 +919,12 @@ void main() {
     await tester.pumpAndSettle();
 
     for (final entry in glyphs.entries) {
+      // Scoped to the rows: the hero's Talk to agent wears the chat glyph too.
       expect(
-        find.byIcon(entry.value),
+        find.descendant(
+          of: find.byType(CheckInRow),
+          matching: find.byIcon(entry.value),
+        ),
         findsOneWidget,
         reason: '${entry.key} row glyph',
       );
@@ -669,10 +958,9 @@ void main() {
       find.widgetWithText(TextField, 'Planned the summer trip.'),
       findsOneWidget,
     );
-    // Exactly two: the page's own app-bar action, which was already there
-    // before the sheet opened, plus the sheet's edit-only one. `findsWidgets`
-    // here would pass on the app-bar icon alone and prove nothing.
-    expect(find.byIcon(LottiIcons.delete), findsNWidgets(2));
+    // Exactly one: the page's own delete sits inside its closed menu, so
+    // the icon on screen is the sheet's edit-only one.
+    expect(find.byIcon(LottiIcons.delete), findsOneWidget);
   });
 
   testWidgets('renders contact channels with value and label', (tester) async {
@@ -698,7 +986,11 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
-    expect(find.text('Contact channels'), findsOneWidget);
+    expect(find.text('Reach'), findsOneWidget);
+    expect(
+      find.text('Stays on this device · never shared with the AI'),
+      findsOneWidget,
+    );
     expect(find.text('anna@example.com'), findsOneWidget);
     expect(find.text('Personal'), findsOneWidget);
     expect(find.text('+49 151 1234567'), findsOneWidget);
@@ -907,13 +1199,10 @@ void main() {
   group('link task picker -', () {
     late MockJournalDb mockDb;
     late MockFts5Db mockFts5Db;
-    late MockEntitiesCacheService mockCache;
 
     setUp(() {
       mockDb = MockJournalDb();
       mockFts5Db = MockFts5Db();
-      mockCache = MockEntitiesCacheService();
-      when(() => mockCache.sortedCategories).thenReturn([]);
       when(
         () => mockDb.getTasks(
           starredStatuses: any(named: 'starredStatuses'),
@@ -928,8 +1217,7 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<Fts5Db>(mockFts5Db)
-        ..registerSingleton<EntitiesCacheService>(mockCache);
+        ..registerSingleton<Fts5Db>(mockFts5Db);
 
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
         (_) async => relationship(),
@@ -942,7 +1230,6 @@ void main() {
     tearDown(() async {
       await getIt.unregister<JournalDb>();
       await getIt.unregister<Fts5Db>();
-      await getIt.unregister<EntitiesCacheService>();
     });
 
     Future<void> pickTask(WidgetTester tester) async {

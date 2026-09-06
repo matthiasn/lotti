@@ -4340,7 +4340,45 @@
       }
     }
   },
+  "relationshipDueSince": "Po termínu od {day} · {count, plural, =1{1 den po termínu} few{{count} dny po termínu} other{{count} dní po termínu}}",
+  "@relationshipDueSince": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDueToday": "Dnes na řadě",
+  "relationshipDurationHours": "{hours} h",
+  "@relationshipDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipDurationHoursMinutes": "{hours} h {minutes}",
+  "@relationshipDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDurationMinutes": "{count} min",
+  "@relationshipDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipEditTitle": "Upravit osobu",
   "relationshipErrorCreateFailed": "Osobu se nepodařilo uložit. Zkus to prosím znovu.",
   "relationshipErrorDeleteFailed": "Osobu se nepodařilo smazat. Zkus to prosím znovu.",
@@ -4373,6 +4411,14 @@
     "description": "Relationships redesign label."
   },
   "relationshipLastCheckInLabel": "Poslední záznam {date}",
+  "relationshipLastSpoke": "naposledy mluvili {time}",
+  "@relationshipLastSpoke": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkContact": "Propojit kontakt",
   "relationshipLinkedTasksLabel": "Úkoly",
   "relationshipLinkTaskButton": "Propojit úkol",
@@ -4389,6 +4435,7 @@
       }
     }
   },
+  "relationshipMoreActions": "Další akce",
   "relationshipNameLabel": "Jméno",
   "relationshipNameRequired": "Jméno je povinné",
   "relationshipNextByDay": "příští do {day}",
@@ -4399,6 +4446,15 @@
       }
     }
   },
+  "relationshipNextDueOn": "Příště {day}",
+  "@relationshipNextDueOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeTitle": "Příště",
   "relationshipNicknameLabel": "Přezdívka",
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
@@ -4408,15 +4464,47 @@
   "@relationshipNudgesOn": {
     "description": "Relationships redesign label."
   },
-  "relationshipPostCallBody": "Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?",
+  "relationshipOnTrackCadence": "V rytmu · {cadence}",
+  "@relationshipOnTrackCadence": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPayAttentionTo": "Dávej pozor na",
   "relationshipPostCallConfirm": "Zapsat check-in",
   "relationshipPostCallDismiss": "Teď ne",
-  "relationshipPostCallTitle": "Jak to šlo s {name}?",
-  "@relationshipPostCallTitle": {
+  "relationshipPostCallMeta": "začátek v {time} · {minutes, plural, =0{necelá minuta} =1{asi 1 min} other{asi {minutes} min}}",
+  "@relationshipPostCallMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferCall": "Hovor s {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
+  "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
-        "type": "String",
-        "example": "Anna"
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferMessage": "Zpráva pro {name} před {minutes, plural, =0{necelou minutou} =1{1 minutou} other{{minutes} minutami}} — zapíšeme to, dokud je to čerstvé?",
+  "@relationshipPostCallOfferMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
       }
     }
   },
@@ -4428,6 +4516,8 @@
       }
     }
   },
+  "relationshipReachPrivacy": "Zůstává v tomto zařízení · nikdy se nesdílí s AI",
+  "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Propojit jiný kontakt",
   "relationshipSeeAllCheckIns": "Zobrazit všechny záznamy",
   "@relationshipSeeAllCheckIns": {
@@ -4510,6 +4600,14 @@
   "relationshipStayInTouch": "Udržovat kontakt",
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
+  },
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 propojený} few{{count} propojené} other{{count} propojených}}",
+  "@relationshipTasksLinkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "relationshipTimestampToday": "Dnes",
   "relationshipTimestampYesterday": "Včera",

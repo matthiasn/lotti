@@ -6373,7 +6373,45 @@
       }
     }
   },
+  "relationshipDueSince": "Due since {day} · {count, plural, =1{1 day over} other{{count} days over}}",
+  "@relationshipDueSince": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipDueToday": "Due today",
+  "relationshipDurationHours": "{hours} h",
+  "@relationshipDurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipDurationHoursMinutes": "{hours} h {minutes}",
+  "@relationshipDurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipDurationMinutes": "{count} min",
+  "@relationshipDurationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipEditTitle": "Edit person",
   "relationshipErrorCreateFailed": "Could not save this person. Please try again.",
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
@@ -6476,6 +6514,14 @@
       }
     }
   },
+  "relationshipLastSpoke": "last spoke {time}",
+  "@relationshipLastSpoke": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkContact": "Link contact",
   "@relationshipLinkContact": {
     "description": "Action that opens the OS contact picker to copy channels onto a person"
@@ -6495,6 +6541,10 @@
       }
     }
   },
+  "relationshipMoreActions": "More actions",
+  "@relationshipMoreActions": {
+    "description": "Tooltip of the person page's overflow menu (link contact, delete)"
+  },
   "relationshipNameLabel": "Name",
   "relationshipNameRequired": "A name is required",
   "relationshipNextByDay": "next by {day}",
@@ -6505,6 +6555,15 @@
       }
     }
   },
+  "relationshipNextDueOn": "Next due {day}",
+  "@relationshipNextDueOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextTimeTitle": "Next time",
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
   "relationshipNoLinkedTasks": "No tasks linked yet.",
@@ -6514,10 +6573,15 @@
   "@relationshipNudgesOn": {
     "description": "Relationships redesign label."
   },
-  "relationshipPostCallBody": "You reached out a moment ago. Log a check-in while it is fresh?",
-  "@relationshipPostCallBody": {
-    "description": "Body of the prompt offered after returning from a call or message"
+  "relationshipOnTrackCadence": "On track · {cadence}",
+  "@relationshipOnTrackCadence": {
+    "placeholders": {
+      "cadence": {
+        "type": "String"
+      }
+    }
   },
+  "relationshipPayAttentionTo": "Pay attention to",
   "relationshipPostCallConfirm": "Log check-in",
   "@relationshipPostCallConfirm": {
     "description": "Button that opens a pre-filled check-in from the post-call prompt"
@@ -6526,13 +6590,36 @@
   "@relationshipPostCallDismiss": {
     "description": "Button that dismisses the post-call prompt without a trace"
   },
-  "relationshipPostCallTitle": "How did it go with {name}?",
-  "@relationshipPostCallTitle": {
-    "description": "Title of the prompt offered after returning from a call or message",
+  "relationshipPostCallMeta": "started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}",
+  "@relationshipPostCallMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferCall": "You called {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
+  "@relationshipPostCallOfferCall": {
     "placeholders": {
       "name": {
-        "type": "String",
-        "example": "Anna"
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipPostCallOfferMessage": "You wrote to {name} {minutes, plural, =0{less than a minute} =1{1 minute} other{{minutes} minutes}} ago — log it while it is fresh?",
+  "@relationshipPostCallOfferMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
       }
     }
   },
@@ -6544,6 +6631,8 @@
       }
     }
   },
+  "relationshipReachPrivacy": "Stays on this device · never shared with the AI",
+  "relationshipReachTitle": "Reach",
   "relationshipRelinkContact": "Link a different contact",
   "@relationshipRelinkContact": {
     "description": "Menu action that replaces the OS contact a person is linked to"
@@ -6629,6 +6718,14 @@
   "relationshipStayInTouch": "Stay in touch",
   "@relationshipStayInTouch": {
     "description": "Relationships redesign label."
+  },
+  "relationshipTasksLinkedCount": "{count, plural, =1{1 linked} other{{count} linked}}",
+  "@relationshipTasksLinkedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "relationshipTimestampToday": "Today",
   "@relationshipTimestampToday": {

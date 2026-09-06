@@ -11172,7 +11172,33 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String relationshipDueSince(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count giorni di ritardo',
+      one: '1 giorno di ritardo',
+    );
+    return 'In ritardo da $day · $_temp0';
+  }
+
+  @override
   String get relationshipDueToday => 'In scadenza oggi';
+
+  @override
+  String relationshipDurationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String relationshipDurationHoursMinutes(int hours, String minutes) {
+    return '$hours h $minutes';
+  }
+
+  @override
+  String relationshipDurationMinutes(int count) {
+    return '$count min';
+  }
 
   @override
   String get relationshipEditTitle => 'Modifica persona';
@@ -11298,6 +11324,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String relationshipLastSpoke(String time) {
+    return 'ultimo contatto $time';
+  }
+
+  @override
   String get relationshipLinkContact => 'Collega contatto';
 
   @override
@@ -11318,6 +11349,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get relationshipMoreActions => 'Altre azioni';
+
+  @override
   String get relationshipNameLabel => 'Nome';
 
   @override
@@ -11327,6 +11361,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String relationshipNextByDay(String day) {
     return 'prossimo entro $day';
   }
+
+  @override
+  String relationshipNextDueOn(String day) {
+    return 'Prossima scadenza $day';
+  }
+
+  @override
+  String get relationshipNextTimeTitle => 'La prossima volta';
 
   @override
   String get relationshipNicknameLabel => 'Soprannome';
@@ -11349,8 +11391,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipNudgesOn => 'promemoria attivi';
 
   @override
-  String get relationshipPostCallBody =>
-      'Hai appena scritto o chiamato. Vuoi annotare un check-in finché è fresco?';
+  String relationshipOnTrackCadence(String cadence) {
+    return 'In linea · $cadence';
+  }
+
+  @override
+  String get relationshipPayAttentionTo => 'Fai attenzione a';
 
   @override
   String get relationshipPostCallConfirm => 'Annota check-in';
@@ -11359,8 +11405,39 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipPostCallDismiss => 'Non ora';
 
   @override
-  String relationshipPostCallTitle(String name) {
-    return 'Com’è andata con $name?';
+  String relationshipPostCallMeta(String time, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'circa $minutes min',
+      one: 'circa 1 min',
+      zero: 'meno di un minuto',
+    );
+    return 'Inizio: $time · $_temp0';
+  }
+
+  @override
+  String relationshipPostCallOfferCall(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minuti',
+      one: '1 minuto',
+      zero: 'meno di un minuto',
+    );
+    return 'Hai chiamato $name $_temp0 fa — lo annotiamo finché è fresco?';
+  }
+
+  @override
+  String relationshipPostCallOfferMessage(String name, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minuti',
+      one: '1 minuto',
+      zero: 'meno di un minuto',
+    );
+    return 'Hai scritto a $name $_temp0 fa — lo annotiamo finché è fresco?';
   }
 
   @override
@@ -11373,6 +11450,13 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return 'Nessun contatto $_temp0';
   }
+
+  @override
+  String get relationshipReachPrivacy =>
+      'Resta su questo dispositivo · mai condiviso con l\'IA';
+
+  @override
+  String get relationshipReachTitle => 'Contatti';
 
   @override
   String get relationshipRelinkContact => 'Collega un altro contatto';
@@ -11463,6 +11547,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipStayInTouch => 'Restare in contatto';
+
+  @override
+  String relationshipTasksLinkedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count collegate',
+      one: '1 collegata',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get relationshipTimestampToday => 'Oggi';

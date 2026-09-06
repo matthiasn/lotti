@@ -24,7 +24,10 @@ class DetailContentWidth extends StatelessWidget {
     final maxWidth = screenWidth >= kDesktopBreakpoint
         ? kDetailContentMaxWidth
         : double.infinity;
-
+    // Center + ConstrainedBox, not a LayoutBuilder: a `SliverFillRemaining`
+    // asks its child for an intrinsic height, which a LayoutBuilder cannot
+    // answer — and loose constraints let a shrink-wrapping child sit
+    // centred in the column rather than being stretched across it.
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
@@ -37,4 +40,24 @@ class DetailContentWidth extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The same geometry as [DetailContentWidth], as insets: the standard
+/// content gutter plus, on a desktop-breakpoint screen, the centring that
+/// caps the content at [kDetailContentMaxWidth] within [availableWidth] —
+/// the width the caller actually has, which inside a list/detail split is
+/// the detail pane and not the window. For slivers and bars that have to
+/// share the column but cannot be children of that widget; they measure
+/// the width themselves.
+EdgeInsets detailContentInsets(
+  BuildContext context, {
+  required double availableWidth,
+}) {
+  final tokens = context.designTokens;
+  final desktop = MediaQuery.sizeOf(context).width >= kDesktopBreakpoint;
+  final overflow = availableWidth - kDetailContentMaxWidth;
+  final centring = desktop && overflow.isFinite && overflow > 0
+      ? overflow / 2
+      : 0.0;
+  return EdgeInsets.symmetric(horizontal: tokens.spacing.step5 + centring);
 }

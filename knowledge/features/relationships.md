@@ -183,8 +183,11 @@ On desktop `RelationshipsPage` is the Tasks/Projects list-detail split:
 `NavService.desktopSelectedRelationshipId` and pushes no detail page, the list
 pane takes the shared pane-width controller, and the right pane hosts the
 person's page or the empty state. The route stays the single source of truth —
-tapping a row still beams to `/people/<id>`. The chat stacks as its own page on
-every layout. Phones keep the list alone.
+tapping a row still beams to `/people/<id>`, and the page's back control
+beams to `/people` to clear the selection (on a phone it pops). While the
+list pane is folded away, the page's hero carries the control that brings it
+back, so nothing is overlaid on the page's own chrome. The chat stacks as
+its own page on every layout. Phones keep the list alone.
 
 ```mermaid
 flowchart LR
@@ -195,6 +198,39 @@ flowchart LR
   Split -->|row wears surface.selected| Row[PeopleListRow]
   Split --> Pane[detail pane: RelationshipDetailsPage or empty state]
 ```
+
+# The person page
+
+`RelationshipDetailsPage` (design 2026-09-06 §2–3) is one `CustomScrollView`
+in the design's order, above a sticky glass action bar in the Scaffold's
+`bottomNavigationBar` slot with `extendBody` so the bar blurs what scrolls
+under it — the task page's shape, on purpose:
+
+| Sliver | Widget | Notes |
+|---|---|---|
+| Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
+| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill names the **effective** cadence (`effectiveCadenceDaysOf`), i.e. the runtime default when none is set. The health band comes from the same `currentRelationshipReport` rule the briefing card uses. |
+| Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
+| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart) | From the latest check-in's *pay attention to* / *avoid*; `NextTimeCard.hasContent` is the one visibility rule, shared with the page. |
+| Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). |
+| Check-ins | [`CheckInsCardSliver`](../../lib/features/relationships/ui/widgets/check_ins_card.dart) | A `DecoratedSliver` wearing `DesignSystemSectionCard.decoration`, so the unbounded log stays lazy inside a card that matches the boxed ones. Rows supply their own `Material` — there is no card Material above them in a sliver. |
+| Reach · Tasks | `ReachCard`, [`LinkedTasksCard`](../../lib/features/relationships/ui/widgets/linked_tasks_card.dart) | Reach only with channels. |
+
+Every section, the check-in sliver and the action bar sit on
+`detailContentInsets` — the rule `DetailContentWidth` itself is built on: the
+content gutter plus, on a desktop-wide window, the centring that caps the
+column at `kDetailContentMaxWidth` **within the width the caller has**. Both
+the page and the bar measure that with a `LayoutBuilder`, because on the
+split the detail pane is narrower than the window and centring on the window
+would over-inset it. Exposed as a function because a sliver and a
+`bottomNavigationBar` cannot be children of that widget.
+
+The [action bar](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart)
+resolves its third control once when built: the first channel, in the
+person's own order, for which `ContactLauncher.canLaunch` answers yes — a
+call on a phone, email on a desktop with a mail client, nothing where neither
+exists — and launches it through the same `launchContactAction` the Reach
+rows use, so the post-call marker is written the same way from both.
 
 # Status lifecycle
 
@@ -836,7 +872,14 @@ wins) and it expires after `pendingInteractionTtl`, so a call from yesterday
 does not greet the user the next morning. `PostInteractionPrompt` re-resolves
 the person through the repository rather than trusting the marker: a person
 deleted, or hidden while private entries are off, produces no prompt, because
-naming them would leak that they exist.
+naming them would leak that they exist. The offer names its evidence — the
+channel, how many minutes ago, when it started and about how long it has been
+(`You called Pip 11 minutes ago — log it while it is fresh?` · `started
+12:33 · about 11 min`) — so it reads as "log the call you just had". The
+minutes it quotes travel into the capture sheet as `prefilledDuration` and
+are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
+change), so the log's row shows the duration the offer promised; editing a
+check-in keeps its length when the start time moves.
 
 ```mermaid
 stateDiagram-v2

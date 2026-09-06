@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -125,6 +126,8 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
   required String relationshipId,
   CheckInInteractionType? prefilledInteractionType,
   DateTime? prefilledTime,
+  Duration? prefilledDuration,
+  bool startSpeaking = false,
 }) {
   return ModalUtils.showSinglePageModal<CheckInEntry>(
     context: context,
@@ -133,6 +136,8 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
       relationshipId: relationshipId,
       prefilledInteractionType: prefilledInteractionType,
       prefilledTime: prefilledTime,
+      prefilledDuration: prefilledDuration,
+      startSpeaking: startSpeaking,
     ),
   );
 }
@@ -163,6 +168,8 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
     this.initial,
     this.prefilledInteractionType,
     this.prefilledTime,
+    this.prefilledDuration,
+    this.startSpeaking = false,
     super.key,
   });
 
@@ -180,6 +187,19 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
   /// actually placed, rather than when the user got round to logging it.
   final DateTime? prefilledTime;
 
+  /// How long the interaction lasted, when the caller already knows — the
+  /// post-call offer's elapsed time. Persisted as the check-in's end time
+  /// (`dateTo − dateFrom` is the duration; no schema change), so the
+  /// duration the offer quoted is the one the log shows. Ignored while
+  /// editing, where the existing check-in's own length is kept.
+  final Duration? prefilledDuration;
+
+  /// Opens straight into a spoken check-in: the page's mic doorway, which
+  /// means "say it" rather than "show me the form". The recording sheet is
+  /// launched after the first frame; everything else about the form is
+  /// unchanged, and cancelling the recording leaves the form as it was.
+  final bool startSpeaking;
+
   @override
   ConsumerState<CheckInCaptureForm> createState() => _CheckInCaptureFormState();
 }
@@ -192,8 +212,19 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   late CheckInInteractionType _interactionType;
   late CheckInSentiment? _sentiment;
   late DateTime _interactionTime;
+
+  /// The check-in's length; zero means "no duration". Kept across a change
+  /// of the start time so editing when a call began does not erase how
+  /// long it ran.
+  late Duration _duration;
   bool _isSaving = false;
   bool _isTranscribing = false;
+
+  /// Set synchronously the moment a spoken check-in starts and cleared once
+  /// the whole flow has ended, so the page's mic (`startSpeaking`) and a
+  /// press on *Speak* during the pre-flight awaits cannot open the recorder
+  /// twice. [_isTranscribing] only covers the wait that follows a recording.
+  bool _isSpeaking = false;
 
   /// The in-flight transcript wait, so dismissing the sheet stops it instead
   /// of leaving a database listener running out the timeout.
@@ -207,6 +238,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   ProviderSubscription<String?>? _transcriptFailureSubscription;
 
   bool get _isEditing => widget.initial != null;
+
+  /// An existing check-in's length, or null when there is none to keep.
+  static Duration? _lengthOf(CheckInEntry? entry) {
+    if (entry == null) return null;
+    return entry.meta.dateTo.difference(entry.meta.dateFrom);
+  }
 
   @override
   void initState() {
@@ -233,6 +270,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _sentiment = data?.sentiment;
     _interactionTime =
         initial?.meta.dateFrom ?? widget.prefilledTime ?? clock.now();
+    final length =
+        _lengthOf(initial) ?? widget.prefilledDuration ?? Duration.zero;
+    _duration = length.isNegative ? Duration.zero : length;
+    if (widget.startSpeaking) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_handleSpeak());
+      });
+    }
   }
 
   @override
@@ -294,8 +339,18 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// automatic-inference switch: this is a gesture, so it only needs a model,
   /// not the consent gate that governs unattended runs.
   Future<void> _handleSpeak() async {
-    if (_isSaving || _isTranscribing) return;
+    if (_isSaving || _isTranscribing || _isSpeaking) return;
+    setState(() => _isSpeaking = true);
+    try {
+      await _speak();
+    } finally {
+      // Whatever ended the flow — a refused pre-flight, a cancelled
+      // recording, a transcript, an error — the button comes back.
+      if (mounted) setState(() => _isSpeaking = false);
+    }
+  }
 
+  Future<void> _speak() async {
     // Every provider is read up front: each `await` below can outlive this
     // widget, and reading through `ref` after that throws.
     final messages = context.messages;
@@ -425,7 +480,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           entryText: entryText,
           meta: initial.meta.copyWith(
             dateFrom: _interactionTime,
-            dateTo: _interactionTime,
+            dateTo: _interactionTime.add(_duration),
           ),
         );
         final success = await repository.updateCheckIn(updated);
@@ -443,6 +498,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           data: data,
           entryText: entryText,
           dateFrom: _interactionTime,
+          dateTo: _interactionTime.add(_duration),
         );
         if (!mounted) return;
         if (created != null) {
@@ -615,7 +671,9 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             variant: DesignSystemButtonVariant.outlined,
             leadingIcon: LottiIcons.mic,
             isLoading: _isTranscribing,
-            onPressed: _isSaving || _isTranscribing ? null : _handleSpeak,
+            onPressed: _isSaving || _isTranscribing || _isSpeaking
+                ? null
+                : _handleSpeak,
           ),
         ),
         SizedBox(height: tokens.spacing.step5),

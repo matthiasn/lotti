@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,6 +24,10 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
 
   PendingInteraction? _pending;
   int clearCount = 0;
+
+  /// When set, [clear] waits on it — so a test can let the clock move while
+  /// the marker is being cleared.
+  Completer<void>? clearGate;
 
   @override
   Future<void> remember({
@@ -37,6 +46,7 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
 
   @override
   Future<void> clear() async {
+    if (clearGate case final gate?) await gate.future;
     clearCount++;
     _pending = null;
   }
@@ -44,6 +54,8 @@ class _FakePendingInteractionStore implements PendingInteractionStore {
 
 void main() {
   final startedAt = DateTime(2026, 8, 17, 11, 30);
+  // The user comes back eleven minutes after leaving for the call.
+  final now = DateTime(2026, 8, 17, 11, 41);
 
   late MockRelationshipRepository repository;
 
@@ -75,10 +87,11 @@ void main() {
   PendingInteraction marker({
     String relationshipId = 'rel-1',
     CheckInInteractionType type = CheckInInteractionType.call,
+    DateTime? startedAt,
   }) => (
     relationshipId: relationshipId,
     interactionType: type,
-    startedAt: startedAt,
+    startedAt: startedAt ?? DateTime(2026, 8, 17, 11, 30),
   );
 
   Future<_FakePendingInteractionStore> pump(
@@ -91,24 +104,122 @@ void main() {
       () => repository.getRelationshipById(any()),
     ).thenAnswer((_) async => resolves);
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const PostInteractionPrompt(),
-        overrides: [
-          pendingInteractionStoreProvider.overrideWithValue(store),
-          relationshipRepositoryProvider.overrideWithValue(repository),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const PostInteractionPrompt(),
+          overrides: [
+            pendingInteractionStoreProvider.overrideWithValue(store),
+            relationshipRepositoryProvider.overrideWithValue(repository),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
     return store;
   }
 
+  final offer = find.byKey(const ValueKey('person-post-call-offer'));
+
   group('when the prompt appears', () {
-    testWidgets('names the person the user just contacted', (tester) async {
+    testWidgets('names the person, the channel and how long ago', (
+      tester,
+    ) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      expect(find.text('How did it go with Anna Schmidt?'), findsOneWidget);
+      expect(
+        find.text(
+          'You called Anna Schmidt 11 minutes ago — log it while it is fresh?',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(LottiIcons.call), findsOneWidget);
+    });
+
+    testWidgets('states when it started and about how long it has been, in '
+        'the mono meta style', (tester) async {
+      await pump(tester, pending: marker(), resolves: person());
+
+      final meta = tester.widget<Text>(
+        find.byKey(const ValueKey('person-post-call-meta')),
+      );
+      expect(meta.data, 'started 11:30 · about 11 min');
+      expect(meta.style?.fontFamily, 'Inconsolata');
+    });
+
+    testWidgets('a single minute reads in the singular', (tester) async {
+      await pump(
+        tester,
+        pending: marker(startedAt: DateTime(2026, 8, 17, 11, 40)),
+        resolves: person(),
+      );
+
+      expect(
+        find.text(
+          'You called Anna Schmidt 1 minute ago — log it while it is fresh?',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('under a minute reads as such, never as "0 minutes"', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        pending: marker(startedAt: DateTime(2026, 8, 17, 11, 40, 30)),
+        resolves: person(),
+      );
+
+      expect(
+        find.text(
+          'You called Anna Schmidt less than a minute ago — log it while it '
+          'is fresh?',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('started 11:40 · under a minute'), findsOneWidget);
+    });
+
+    testWidgets('a single minute reads in the singular on the meta line too', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        pending: marker(startedAt: DateTime(2026, 8, 17, 11, 40)),
+        resolves: person(),
+      );
+
+      expect(find.text('started 11:40 · about 1 min'), findsOneWidget);
+    });
+
+    testWidgets('a message reads as writing, not calling', (tester) async {
+      await pump(
+        tester,
+        pending: marker(type: CheckInInteractionType.message),
+        resolves: person(),
+      );
+
+      expect(
+        find.text(
+          'You wrote to Anna Schmidt 11 minutes ago — log it while it is '
+          'fresh?',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(LottiIcons.chat), findsOneWidget);
+    });
+
+    testWidgets('wears the interactive wash, not a plain card', (
+      tester,
+    ) async {
+      await pump(tester, pending: marker(), resolves: person());
+
+      final tokens = tester.element(offer).designTokens;
+      final decoration =
+          tester.widget<Container>(offer).decoration! as BoxDecoration;
+      expect(decoration.color, PostInteractionPrompt.washColor(tokens));
+      expect(find.byType(Card), findsNothing);
     });
 
     testWidgets('offers both logging and declining', (tester) async {
@@ -123,7 +234,7 @@ void main() {
     testWidgets('renders nothing when no call was placed', (tester) async {
       await pump(tester, resolves: person());
 
-      expect(find.text('Log check-in'), findsNothing);
+      expect(offer, findsNothing);
     });
 
     testWidgets('renders nothing when the person has since been deleted', (
@@ -132,7 +243,7 @@ void main() {
       await pump(tester, pending: marker());
 
       expect(
-        find.text('Log check-in'),
+        offer,
         findsNothing,
         reason:
             'the marker holds an id written before the user left; the '
@@ -155,7 +266,7 @@ void main() {
       await tester.tap(find.text('Not now'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Log check-in'), findsNothing);
+      expect(offer, findsNothing);
     });
 
     testWidgets('clears the marker, so declining leaves no trace', (
@@ -183,7 +294,7 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
 
-      expect(find.text('Log check-in'), findsNothing);
+      expect(offer, findsNothing);
     });
   });
 
@@ -206,11 +317,7 @@ void main() {
     testWidgets('opens the form already describing the call that happened', (
       tester,
     ) async {
-      await pump(
-        tester,
-        pending: marker(),
-        resolves: person(),
-      );
+      await pump(tester, pending: marker(), resolves: person());
 
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
@@ -228,6 +335,60 @@ void main() {
             'the sheet must open on what actually happened, not on the '
             'in-person default',
       );
+    });
+
+    testWidgets('hands the elapsed minutes to the sheet as the duration, so '
+        'the saved check-in shows what the offer promised', (tester) async {
+      await pump(tester, pending: marker(), resolves: person());
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.tap(find.text('Log check-in'));
+        await tester.pumpAndSettle();
+      });
+
+      final form = tester.widget<CheckInCaptureForm>(
+        find.byType(CheckInCaptureForm),
+      );
+      expect(form.prefilledTime, DateTime(2026, 8, 17, 11, 30));
+      expect(form.prefilledDuration, const Duration(minutes: 11));
+    });
+
+    testWidgets('the minutes handed to the sheet are the ones the offer '
+        'quoted, even when clearing the marker crosses a minute boundary', (
+      tester,
+    ) async {
+      var current = now;
+      final store = _FakePendingInteractionStore(marker());
+      when(
+        () => repository.getRelationshipById(any()),
+      ).thenAnswer((_) async => person());
+      await withClock(Clock(() => current), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const PostInteractionPrompt(),
+            overrides: [
+              pendingInteractionStoreProvider.overrideWithValue(store),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.textContaining('11 minutes ago'), findsOneWidget);
+
+        // Accepting clears the marker first; the clock moves on while that
+        // is in flight.
+        final gate = store.clearGate = Completer<void>();
+        await tester.tap(find.text('Log check-in'));
+        await tester.pump();
+        current = now.add(const Duration(minutes: 5));
+        gate.complete();
+        await tester.pumpAndSettle();
+      });
+
+      final form = tester.widget<CheckInCaptureForm>(
+        find.byType(CheckInCaptureForm),
+      );
+      expect(form.prefilledDuration, const Duration(minutes: 11));
     });
 
     testWidgets('carries a message interaction through instead of a call', (
@@ -290,7 +451,7 @@ void main() {
       tester,
     ) async {
       final store = await pump(tester, resolves: person());
-      expect(find.text('Log check-in'), findsNothing);
+      expect(offer, findsNothing);
 
       await store.remember(
         relationshipId: 'rel-1',
@@ -299,7 +460,8 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
 
-      expect(find.text('How did it go with Anna Schmidt?'), findsOneWidget);
+      expect(offer, findsOneWidget);
+      expect(find.textContaining('You called Anna Schmidt'), findsOneWidget);
     });
 
     testWidgets('ignores lifecycle states other than resumed', (tester) async {
@@ -313,7 +475,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Log check-in'),
+        offer,
         findsNothing,
         reason:
             'going to the background is when the call starts, not when '

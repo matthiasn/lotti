@@ -404,4 +404,63 @@ void main() {
       expect(rendered, 'Do');
     });
   });
+
+  group('relationshipDurationLabelOf', () {
+    Future<String?> labelFor(WidgetTester tester, Duration duration) async {
+      late String? rendered;
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: LegacyMaterialBridge.builder,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              rendered = relationshipDurationLabelOf(context, duration);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return rendered;
+    }
+
+    testWidgets('nothing for a zero or negative duration — a check-in with '
+        'no length shows no duration at all', (tester) async {
+      expect(await labelFor(tester, Duration.zero), isNull);
+      expect(await labelFor(tester, const Duration(minutes: -5)), isNull);
+    });
+
+    testWidgets('minutes under an hour', (tester) async {
+      expect(await labelFor(tester, const Duration(minutes: 11)), '11 min');
+      expect(await labelFor(tester, const Duration(minutes: 59)), '59 min');
+    });
+
+    testWidgets('whole hours', (tester) async {
+      expect(await labelFor(tester, const Duration(hours: 1)), '1 h');
+      expect(await labelFor(tester, const Duration(hours: 3)), '3 h');
+    });
+
+    testWidgets('hours and minutes, minutes zero-padded', (tester) async {
+      expect(
+        await labelFor(tester, const Duration(hours: 1, minutes: 5)),
+        '1 h 05',
+      );
+      expect(
+        await labelFor(tester, const Duration(hours: 2, minutes: 30)),
+        '2 h 30',
+      );
+    });
+
+    testWidgets('seconds do not round up', (tester) async {
+      expect(await labelFor(tester, const Duration(seconds: 59)), isNull);
+      expect(
+        await labelFor(tester, const Duration(minutes: 10, seconds: 59)),
+        '10 min',
+      );
+    });
+  });
 }
