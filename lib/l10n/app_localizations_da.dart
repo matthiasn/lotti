@@ -9447,6 +9447,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get navSidebarManualLabel => 'Manual';
 
   @override
+  String navTabMoreSemanticsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mere, $count yderligere destinationer',
+      one: 'Mere, 1 ekstra destination',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9465,7 +9476,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get navTabTitleJournal => 'Logbog';
 
   @override
-  String get navTabTitleNavigate => 'Naviger';
+  String get navTabTitleMore => 'Mere';
 
   @override
   String get navTabTitlePeople => 'Personer';

@@ -9633,6 +9633,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navSidebarManualLabel => 'Ghid';
 
   @override
+  String navTabMoreSemanticsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mai multe, $count de secțiuni suplimentare',
+      few: 'Mai multe, $count secțiuni suplimentare',
+      one: 'Mai multe, 1 secțiune suplimentară',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9651,7 +9663,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navTabTitleJournal => 'Jurnal';
 
   @override
-  String get navTabTitleNavigate => 'Navigare';
+  String get navTabTitleMore => 'Mai multe';
 
   @override
   String get navTabTitlePeople => 'Persoane';

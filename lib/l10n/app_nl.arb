@@ -4019,13 +4019,21 @@
   "multiSelectNoItemsFound": "Geen items gevonden",
   "navSidebarManualBrowserHint": "Opent in uw browser",
   "navSidebarManualLabel": "Handmatig",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Meer, 1 extra bestemming} other{Meer. {count} aanvullende bestemmingen}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Gebeurtenissen",
   "navTabTitleGoals": "Doelen",
   "navTabTitleHabits": "Gewoontes",
   "navTabTitleInsights": "Inzichten",
   "navTabTitleJournal": "Logboek",
-  "navTabTitleNavigate": "Navigeren",
+  "navTabTitleMore": "Meer",
   "navTabTitlePeople": "Mensen",
   "navTabTitleProjects": "Projecten",
   "navTabTitleSettings": "Instellingen",

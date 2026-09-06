@@ -4020,13 +4020,21 @@
   "multiSelectNoItemsFound": "Ingen genstande fundet",
   "navSidebarManualBrowserHint": "Åbner i din browser",
   "navSidebarManualLabel": "Manual",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Mere, 1 ekstra destination} other{Mere, {count} yderligere destinationer}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Begivenheder",
   "navTabTitleGoals": "Mål",
   "navTabTitleHabits": "Vaner",
   "navTabTitleInsights": "Indsigter",
   "navTabTitleJournal": "Logbog",
-  "navTabTitleNavigate": "Naviger",
+  "navTabTitleMore": "Mere",
   "navTabTitlePeople": "Personer",
   "navTabTitleProjects": "Projekter",
   "navTabTitleSettings": "Indstillinger",

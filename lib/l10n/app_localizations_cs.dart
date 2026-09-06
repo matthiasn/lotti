@@ -9569,6 +9569,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navSidebarManualLabel => 'Příručka';
 
   @override
+  String navTabMoreSemanticsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Více, $count dalších sekcí',
+      few: 'Více, $count další sekce',
+      one: 'Více, 1 další sekce',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9587,7 +9599,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navTabTitleJournal => 'Zápisník';
 
   @override
-  String get navTabTitleNavigate => 'Navigovat';
+  String get navTabTitleMore => 'Více';
 
   @override
   String get navTabTitlePeople => 'Lidé';

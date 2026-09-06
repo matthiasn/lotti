@@ -1,118 +1,46 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/glass_action_bar.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A single mobile navigation launcher on backdrop-blurred glass.
-/// The transparent surrounding area leaves
-/// the page visible; the shell owns the recording indicators above the button.
+/// Mobile bottom-navigation container: hosts the five-slot bar
+/// ([DesignSystemFiveSlotNavBar]) docked flush against the screen's bottom
+/// edge. The time/audio recording indicators that ride above the bar are
+/// owned by the mobile shell (`lib/beamer/beamer_app.dart`), not by this
+/// container, so they stay visible when the shell slides the bar away.
 class DesignSystemBottomNavigationBar extends StatelessWidget {
-  const DesignSystemBottomNavigationBar({required this.onNavigate, super.key});
+  const DesignSystemBottomNavigationBar({
+    required this.items,
+    super.key,
+  });
 
-  final VoidCallback onNavigate;
+  /// The bar's slots (at most five — overflow destinations live in the
+  /// More sheet, represented here by their More slot item).
+  final List<DesignSystemFiveSlotNavBarItem> items;
 
-  /// Height of the large, padded design-system button plus safe-area spacing.
-  /// Shared with the shell so recordings and page actions clear the launcher.
-  static double barHeight(BuildContext context) {
-    final tokens = context.designTokens;
-    final labelPainter = TextPainter(
-      text: TextSpan(
-        text: context.messages.navTabTitleNavigate,
-        style: tokens.typography.styles.subtitle.subtitle1,
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      locale: Localizations.maybeLocaleOf(context),
-      maxLines: 1,
-    )..layout();
-    final labelHeight = math.max(
-      labelPainter.height,
-      tokens.typography.lineHeight.subtitle1,
-    );
-    labelPainter.dispose();
-    return math.max(
-          TapTargets.minimum,
-          labelHeight + tokens.spacing.step4 * 2,
-        ) +
-        tokens.spacing.step2 +
-        _bottomPadding(context);
-  }
-
-  static double _bottomPadding(BuildContext context) => math.max(
-    MediaQuery.paddingOf(context).bottom,
-    context.designTokens.spacing.step6,
-  );
-
-  /// Page clearance for the visible launcher and shell-owned recording row.
+  /// Vertical screen estate the docked bottom stack occupies: the bar
+  /// (including the bottom safe-area inset it absorbs into its surface)
+  /// plus the rendered height of the shell-owned indicator row riding
+  /// above it, published via
+  /// [DesignSystemBottomNavigationOverlayHeight]. Content scrolling
+  /// behind the bar pads by this amount (see
+  /// [DesignSystemBottomNavigationFabPadding]).
   static double occupiedHeight(BuildContext context) {
+    // In desktop layout the bottom navigation bar is not shown;
+    // the sidebar replaces it, so no bottom inset is needed.
     if (isDesktopLayout(context)) return 0;
-    final launcherHeight =
+
+    // A slid-away bar occupies nothing; the indicator row above it stays,
+    // so its height still counts.
+    final barHeight =
         DesignSystemBottomNavigationOverlayHeight.barDockedOf(context)
-        ? barHeight(context)
+        ? DesignSystemFiveSlotNavBar.barHeight(context)
         : 0.0;
-    return launcherHeight +
-        DesignSystemBottomNavigationOverlayHeight.of(context);
+    return barHeight + DesignSystemBottomNavigationOverlayHeight.of(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        MediaQuery.paddingOf(context).left + tokens.spacing.step3,
-        tokens.spacing.step2,
-        MediaQuery.paddingOf(context).right + tokens.spacing.step3,
-        _bottomPadding(context),
-      ),
-      child: Center(
-        heightFactor: 1,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(tokens.radii.xl),
-            boxShadow: DsShadows.floatingSurface,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(tokens.radii.xl),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(
-                sigmaX: DesignSystemGlassStrip.blurSigma,
-                sigmaY: DesignSystemGlassStrip.blurSigma,
-              ),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: DesignSystemGlassStrip.overlayColors(tokens),
-                  ),
-                ),
-                child: DecoratedBox(
-                  position: DecorationPosition.foreground,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(tokens.radii.xl),
-                    border: dsGlassChipBorder(tokens),
-                  ),
-                  child: DesignSystemButton(
-                    label: context.messages.navTabTitleNavigate,
-                    onPressed: onNavigate,
-                    leadingIcon: LottiIcons.menu,
-                    variant: DesignSystemButtonVariant.secondary,
-                    size: DesignSystemButtonSize.large,
-                    tapTargetSize: MaterialTapTargetSize.padded,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return DesignSystemFiveSlotNavBar(items: items);
   }
 }
 

@@ -36,7 +36,7 @@ const contactSupportDiscordKey = Key('contact-support-discord');
 /// The app's Contact Us footer, wired to its real destinations.
 ///
 /// Sits at the bottom of both navigation surfaces: pinned beneath Settings in
-/// the desktop sidebar, and closing the mobile Navigate sheet. Everything visual
+/// the desktop sidebar, and closing the mobile More sheet. Everything visual
 /// lives in [DesignSystemContactRow]; this widget only supplies the localized
 /// wording and the four destinations.
 ///

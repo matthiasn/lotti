@@ -4020,13 +4020,21 @@
   "multiSelectNoItemsFound": "Nessun articolo trovato",
   "navSidebarManualBrowserHint": "Si apre nel tuo browser",
   "navSidebarManualLabel": "Manuale",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Altro, 1 destinazione aggiuntiva} other{Altro, {count} destinazioni aggiuntive}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "Quotidiano",
   "navTabTitleEvents": "Eventi",
   "navTabTitleGoals": "Obiettivi",
   "navTabTitleHabits": "Abitazioni",
   "navTabTitleInsights": "Analisi",
   "navTabTitleJournal": "Regime di registro",
-  "navTabTitleNavigate": "Naviga",
+  "navTabTitleMore": "Altro",
   "navTabTitlePeople": "Persone",
   "navTabTitleProjects": "Progetti",
   "navTabTitleSettings": "Impostazioni",

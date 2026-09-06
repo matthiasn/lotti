@@ -4019,13 +4019,21 @@
   "multiSelectNoItemsFound": "Nenhum item encontrado",
   "navSidebarManualBrowserHint": "Abre no seu navegador",
   "navSidebarManualLabel": "Manuais",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Mais, 1 destino adicional} other{Mais, {count} destinos adicionais}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Eventos",
   "navTabTitleGoals": "Objetivos",
   "navTabTitleHabits": "Hábitos",
   "navTabTitleInsights": "Informações",
   "navTabTitleJournal": "Diário de bordo",
-  "navTabTitleNavigate": "Navegar",
+  "navTabTitleMore": "Mais",
   "navTabTitlePeople": "Pessoas",
   "navTabTitleProjects": "Projetos",
   "navTabTitleSettings": "Configurações",
