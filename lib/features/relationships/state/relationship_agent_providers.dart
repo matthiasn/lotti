@@ -19,6 +19,7 @@ import 'package:lotti/features/relationships/service/relationship_chat_service.d
 import 'package:lotti/features/relationships/service/relationship_reminder_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
 /// The OS-reminder projection of the cadence verdict (ADR 0039, plan v2
 /// phase 8) — durable inbox rows first, OS alarms second.
@@ -57,6 +58,20 @@ final relationshipAgentServiceProvider = Provider<RelationshipAgentService>(
   name: 'relationshipAgentServiceProvider',
 );
 
+/// The person's category default profile — the third step of the
+/// relationship-agent resolution chain (ADR 0040 Decision 6). The same
+/// `JournalDb` read the automation resolver uses, so a category's default
+/// routes the briefing exactly as it routes a spoken check-in's transcript.
+Future<String?> relationshipCategoryDefaultProfileId(
+  Ref ref,
+  String categoryId,
+) async {
+  final category = await ref
+      .read(journalDbProvider)
+      .getCategoryById(categoryId);
+  return category?.defaultProfileId;
+}
+
 /// Phase B — the lease-elected LLM tier (briefing, banner, chat).
 final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
   (ref) => RelationshipAgentWorkflow(
@@ -68,6 +83,8 @@ final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    categoryProfileLookup: (categoryId) =>
+        relationshipCategoryDefaultProfileId(ref, categoryId),
   ),
   name: 'relationshipAgentWorkflowProvider',
 );
@@ -179,6 +196,8 @@ relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
         relationship: relationship,
         agentIdentity: identity is AgentIdentityEntity ? identity : null,
         aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: (categoryId) =>
+            relationshipCategoryDefaultProfileId(ref, categoryId),
       );
       if (resolved == null) {
         throw StateError(
