@@ -295,6 +295,54 @@ void main() {
     },
   );
 
+  testWidgets('Models tab lists only sherpa models verified on this device', (
+    tester,
+  ) async {
+    var installed = <String>{};
+    await pumpWith(
+      tester: tester,
+      providers: [
+        buildProvider(
+          id: 'embedded',
+          type: InferenceProviderType.sherpa,
+          apiKey: '',
+          baseUrl: '',
+        ),
+      ],
+      models: [
+        buildModel(
+          id: 'medium-model',
+          providerId: 'embedded',
+          providerModelId: 'medium',
+        ),
+      ],
+      profiles: [],
+      initialTab: AiSettingsTab.models,
+      additionalOverrides: [
+        sherpaInstalledModelIdsProvider.overrideWith((ref) async => installed),
+      ],
+    );
+    await tester.pump();
+    expect(find.byType(AiModelCard), findsNothing);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(AiSettingsPage)),
+    );
+    installed = {'medium'};
+    container.invalidate(sherpaInstalledModelIdsProvider);
+    await tester.pump();
+    await tester.pump();
+    expect(
+      tester.widget<AiModelCard>(find.byType(AiModelCard)).model.id,
+      'medium-model',
+    );
+    installed = {};
+    container.invalidate(sherpaInstalledModelIdsProvider);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(AiModelCard), findsNothing);
+    await settleTimers(tester);
+  });
+
   group('AiSettingsPage — empty state', () {
     testWidgets(
       'renders the FTUE banner + the No-providers card with four quick-add '

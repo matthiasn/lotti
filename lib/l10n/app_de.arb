@@ -4982,6 +4982,8 @@
   "settingsV2UnimplementedTitle": "Bereich noch nicht verfügbar",
   "settingsWhatsNewSubtitle": "Sieh dir die neuesten Neuigkeiten und Funktionen an",
   "settingsWhatsNewTitle": "Was gibt's Neues",
+  "sherpaAllFamilies": "Alle Familien",
+  "sherpaCatalogMatches": "{count} von {total} Modellen",
   "sherpaDeleteModel": "{model} von diesem Gerät entfernen",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -4999,9 +5001,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Installierte Modelle",
   "sherpaInstallingModel": "Modell wird installiert",
+  "sherpaLanguageCantonese": "Kantonesisch",
+  "sherpaModelCatalogTitle": "Modellkatalog",
   "sherpaModelConfigurationError": "Das Modell wurde heruntergeladen, aber seine Konfiguration konnte nicht gespeichert werden.",
   "sherpaModelError": "Modellaktion fehlgeschlagen. Versuch es erneut.",
+  "sherpaModelFamily": "Modellfamilie",
   "sherpaModelInstalled": "Heruntergeladen",
   "sherpaModelNotInstalled": "Lade ein Modell auf dieses Gerät herunter",
   "sherpaModelSizeGB": "{size} GB · Mehrsprachig",

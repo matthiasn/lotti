@@ -5518,6 +5518,8 @@
   "settingsV2UnimplementedTitle": "Panelen har ännu inte implementerats",
   "settingsWhatsNewSubtitle": "Se de senaste uppdateringarna och funktionerna",
   "settingsWhatsNewTitle": "Vad är nytt",
+  "sherpaAllFamilies": "Alla familjer",
+  "sherpaCatalogMatches": "{count} av {total} modeller",
   "sherpaDeleteModel": "Ta bort {model} från den här enheten",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -5535,9 +5537,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Installerade modeller",
   "sherpaInstallingModel": "Installerar modell",
+  "sherpaLanguageCantonese": "Kantonesiska",
+  "sherpaModelCatalogTitle": "Modellkatalog",
   "sherpaModelConfigurationError": "Modellen har laddats ner, men dess konfiguration kunde inte sparas.",
   "sherpaModelError": "Modellåtgärden misslyckades. Försök igen.",
+  "sherpaModelFamily": "Modellfamilj",
   "sherpaModelInstalled": "Nedladdad",
   "sherpaModelNotInstalled": "Ladda ner en modell på den här enheten",
   "sherpaModelSizeGB": "{size} GB · Flerspråkig",

@@ -5,6 +5,8 @@ import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/sherpa_models_section.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_model_card.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -40,17 +42,19 @@ void main() {
       );
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          DetailBody(
-            provider: provider,
-            models: [model],
-            allModels: [model],
-            profilesUsingProvider: const [],
-            onAddModel: () {},
-            onEdit: () {},
-            onModelTap: (_) {},
-            onDeleteModel: (_) {},
-            onProfileTap: (_) {},
-            onRemove: () {},
+          Material(
+            child: DetailBody(
+              provider: provider,
+              models: [model],
+              allModels: [model],
+              profilesUsingProvider: const [],
+              onAddModel: () {},
+              onEdit: () {},
+              onModelTap: (_) {},
+              onDeleteModel: (_) {},
+              onProfileTap: (_) {},
+              onRemove: () {},
+            ),
           ),
           overrides: [
             sherpaModelRepositoryProvider.overrideWithValue(models),
@@ -65,8 +69,9 @@ void main() {
         find.byType(SherpaModelsSection, skipOffstage: false),
         findsOneWidget,
       );
-      expect(find.text('Download a model on this device'), findsOneWidget);
+      expect(find.text('Download a model on this device'), findsNWidgets(2));
       expect(find.text('1 model'), findsNothing);
+      expect(find.byType(AiModelCard), findsNothing);
       final container = ProviderScope.containerOf(
         tester.element(find.byType(DetailBody)),
       );
@@ -74,11 +79,14 @@ void main() {
       container.invalidate(sherpaInstalledModelIdsProvider);
       await tester.pumpAndSettle();
       expect(find.text('1 model'), findsOneWidget);
+      final card = tester.widget<AiModelCard>(find.byType(AiModelCard));
+      expect(card.model.id, model.id);
+      expect(card.onDelete, isNull);
       expect(find.text('Download a model on this device'), findsNothing);
       installed = {};
       container.invalidate(sherpaInstalledModelIdsProvider);
       await tester.pumpAndSettle();
-      expect(find.text('Download a model on this device'), findsOneWidget);
+      expect(find.text('Download a model on this device'), findsNWidgets(2));
       expect(find.text('1 model'), findsNothing);
     },
   );

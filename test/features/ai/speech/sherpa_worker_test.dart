@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_catalog.dart';
 import 'package:lotti/features/ai/speech/sherpa_worker.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
@@ -31,6 +32,36 @@ Future<void> _failedWorker((SendPort, SherpaWorkerRequest) input) async {
 
 void main() {
   setUpAll(registerAllFallbackValues);
+  for (final model in sherpaModels) {
+    test(
+      '${model.name} wires its verified artifacts to the native recognizer',
+      () {
+        final config = sherpaRecognizerConfig(model, '/models/${model.id}');
+        final json = config.model.toJson();
+        final options =
+            json[model.architecture.configurationKey] as Map<String, dynamic>;
+        for (final role in model.recognizerFiles.entries) {
+          expect(options[role.key], '/models/${model.id}/${role.value}');
+        }
+        if (model.recognizerFiles.containsKey('tokenizer')) {
+          expect(config.model.tokens, isEmpty);
+        } else {
+          expect(
+            config.model.tokens,
+            '/models/${model.id}/${model.tokensFile}',
+          );
+        }
+        if (model.architecture == SherpaModelArchitecture.nemoTransducer) {
+          expect(config.model.modelType, 'nemo_transducer');
+        }
+        if (model.architecture == SherpaModelArchitecture.whisper) {
+          expect(config.model.whisper.task, 'transcribe');
+        }
+        expect(config.model.numThreads, 2);
+      },
+    );
+  }
+
   test(
     'segmentation covers all samples exactly once within the model limit',
     () {

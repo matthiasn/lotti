@@ -96,7 +96,7 @@ String? publisherForCuratedModel(String providerModelId) {
 }
 
 /// Known models for each inference provider type
-const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
+final Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.sherpa: sherpaSpeechModels,
   InferenceProviderType.alibaba: alibabaModels,
   InferenceProviderType.gemini: geminiModels,

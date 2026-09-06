@@ -1,4 +1,5 @@
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_catalog.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
 /// Curated Melious.ai defaults.
@@ -776,32 +777,15 @@ const List<KnownModel> mistralModels = [
 ];
 
 /// Multilingual int8 Whisper exports for embedded, device-local transcription.
-const sherpaSpeechModels = [
-  KnownModel(
-    providerModelId: 'large-v3',
-    name: 'Whisper Large v3',
-    inputModalities: [Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    publisher: 'OpenAI',
-    description: 'OpenAI Whisper Large v3 · ONNX INT8',
-  ),
-  KnownModel(
-    providerModelId: 'tiny',
-    name: 'Whisper Tiny',
-    inputModalities: [Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    publisher: 'OpenAI',
-    description: 'OpenAI Whisper Tiny · ONNX INT8',
-  ),
-  KnownModel(
-    providerModelId: 'base',
-    name: 'Whisper Base',
-    inputModalities: [Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    publisher: 'OpenAI',
-    description: 'OpenAI Whisper Base · ONNX INT8',
-  ),
+final List<KnownModel> sherpaSpeechModels = [
+  for (final model in sherpaModels)
+    KnownModel(
+      providerModelId: model.id,
+      name: model.name,
+      inputModalities: const [Modality.audio],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+      publisher: model.publisher,
+      description: '${model.publisher} ${model.name} · ONNX INT8',
+    ),
 ];

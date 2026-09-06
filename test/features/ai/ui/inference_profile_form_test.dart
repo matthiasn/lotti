@@ -23,6 +23,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
+import '../test_utils.dart' show AiTestDataFactory;
 
 DesignSystemToggle _toggleIn(WidgetTester tester, Finder rowFinder) =>
     tester.widget<DesignSystemToggle>(
@@ -58,9 +59,21 @@ void main() {
   Widget buildSubject({
     AiConfigInferenceProfile? existingProfile,
     List<AiConfig> models = const [],
-    List<AiConfig> providers = const [],
+    List<AiConfig>? providers,
     List<SyncNodeProfile> knownNodes = const [],
   }) {
+    // Normal model fixtures have an owning provider. Tests for missing or
+    // loading providers pass an explicit list instead.
+    final resolvedProviders =
+        providers ??
+        [
+          for (final id
+              in models
+                  .whereType<AiConfigModel>()
+                  .map((model) => model.inferenceProviderId)
+                  .toSet())
+            AiTestDataFactory.createTestProvider(id: id),
+        ];
     when(
       () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
     ).thenAnswer((_) async => models);
@@ -78,7 +91,7 @@ void main() {
         aiConfigByTypeControllerProvider(
           AiConfigType.inferenceProvider,
         ).overrideWith(() {
-          return _FakeAiConfigByTypeController(providers);
+          return _FakeAiConfigByTypeController(resolvedProviders);
         }),
         // Stub the pinning selector's data sources so the form's existing
         // tests don't need to register a real sync stack.

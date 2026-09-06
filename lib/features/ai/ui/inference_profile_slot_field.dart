@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
@@ -48,9 +49,20 @@ class ModelSlotField extends ConsumerWidget {
         .whereType<AiConfigInferenceProvider>()
         .toList();
 
-    final filteredModels = allModels.where(filter).toList();
+    final availableModels = modelsAvailableOnDevice(
+      models: allModels,
+      providers: providers,
+      installedSherpaModelIds:
+          providers.any(
+            (provider) =>
+                provider.inferenceProviderType == InferenceProviderType.sherpa,
+          )
+          ? ref.watch(sherpaInstalledModelIdsProvider).value ?? const {}
+          : const {},
+    );
+    final filteredModels = availableModels.where(filter).toList();
 
-    final selectedModel = resolveModelSlot(modelId, allModels);
+    final selectedModel = resolveModelSlot(modelId, availableModels);
 
     return SettingsPickerField(
       label: '$label${required ? ' *' : ''}',

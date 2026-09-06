@@ -59,6 +59,42 @@ void main() {
     return repo;
   }
 
+  test('installs and verifies nested tokenizer artifacts', () async {
+    final model = SherpaModel(
+      id: 'tokenizer-model',
+      name: 'Tokenizer model',
+      revision: 'pinned',
+      repository: 'exporter/model',
+      files: [
+        SherpaModelFile(
+          'tokenizer/vocab.json',
+          data.length,
+          sha256.convert(data).toString(),
+        ),
+      ],
+    );
+    final repo = SherpaModelRepository(
+      client: MockClient((request) async {
+        expect(
+          request.url.path,
+          '/exporter/model/resolve/pinned/tokenizer/vocab.json',
+        );
+        return http.Response.bytes(data, 200);
+      }),
+      supportDirectory: () async => directory,
+      models: [model],
+    );
+    addTearDown(repo.close);
+    final installed = await repo.install(model.id);
+    expect(
+      await File(p.join(installed, 'tokenizer/vocab.json')).readAsBytes(),
+      data,
+    );
+    expect(await repo.isInstalled(model.id), isTrue);
+    await repo.remove(model.id);
+    expect(await repo.isInstalled(model.id), isFalse);
+  });
+
   MockIoFile trackedFile(File file) {
     final tracked = MockIoFile();
     when(() => tracked.path).thenReturn(file.path);

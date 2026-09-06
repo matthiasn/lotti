@@ -3,8 +3,43 @@ import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:lotti/features/ai/speech/sherpa_model_catalog.dart';
 import 'package:path/path.dart' as p;
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
+
+/// Builds the native configuration from the same pinned manifest downloaded
+/// by settings. Tokenizer directories and external ONNX data remain siblings
+/// of their model files, as required by the upstream exports.
+sherpa.OfflineRecognizerConfig sherpaRecognizerConfig(
+  SherpaModel model,
+  String directory,
+) {
+  final architecture = model.architecture;
+  final options = <String, dynamic>{
+    for (final entry in model.recognizerFiles.entries)
+      entry.key: p.join(directory, entry.value),
+    if (architecture == SherpaModelArchitecture.whisper) 'task': 'transcribe',
+    if (architecture == SherpaModelArchitecture.senseVoice) 'language': 'auto',
+    if (architecture == SherpaModelArchitecture.qwen3Asr) ...{
+      'maxNewTokens': 512,
+      'maxTotalLen': 1024,
+    },
+  };
+  return sherpa.OfflineRecognizerConfig(
+    model: sherpa.OfflineModelConfig.fromJson({
+      architecture.configurationKey: options,
+      'tokens': model.recognizerFiles.containsKey('tokenizer')
+          ? ''
+          : p.join(directory, model.tokensFile),
+      if (architecture == SherpaModelArchitecture.whisper)
+        'modelType': 'whisper',
+      if (architecture == SherpaModelArchitecture.nemoTransducer)
+        'modelType': 'nemo_transducer',
+      'numThreads': 2,
+      'debug': false,
+    }),
+  );
+}
 
 /// File-only input sent to the worker; model pointers never cross isolates.
 class SherpaWorkerRequest {
@@ -83,22 +118,11 @@ Future<void> decodeSherpaSegments(
   sherpa.OfflineRecognizer? recognizer;
   try {
     initialize();
-    final directory = request.modelDirectory;
-    final id = request.modelId;
+    final model = sherpaModels.firstWhere(
+      (model) => model.id == request.modelId,
+    );
     recognizer = createRecognizer(
-      sherpa.OfflineRecognizerConfig(
-        model: sherpa.OfflineModelConfig(
-          whisper: sherpa.OfflineWhisperModelConfig(
-            encoder: p.join(directory, '$id-encoder.int8.onnx'),
-            decoder: p.join(directory, '$id-decoder.int8.onnx'),
-            task: 'transcribe',
-          ),
-          tokens: p.join(directory, '$id-tokens.txt'),
-          modelType: 'whisper',
-          numThreads: 2,
-          debug: false,
-        ),
-      ),
+      sherpaRecognizerConfig(model, request.modelDirectory),
     );
     final wave = readWave(request.wavPath);
     if (wave.sampleRate <= 0 || wave.samples.isEmpty) {

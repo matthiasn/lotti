@@ -12684,6 +12684,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Vad är nytt';
 
   @override
+  String get sherpaAllFamilies => 'Alla familjer';
+
+  @override
+  String sherpaCatalogMatches(int count, int total) {
+    return '$count av $total modeller';
+  }
+
+  @override
   String sherpaDeleteModel(String model) {
     return 'Ta bort $model från den här enheten';
   }
@@ -12697,7 +12705,16 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get sherpaInstalledModelsTitle => 'Installerade modeller';
+
+  @override
   String get sherpaInstallingModel => 'Installerar modell';
+
+  @override
+  String get sherpaLanguageCantonese => 'Kantonesiska';
+
+  @override
+  String get sherpaModelCatalogTitle => 'Modellkatalog';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12705,6 +12722,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get sherpaModelError => 'Modellåtgärden misslyckades. Försök igen.';
+
+  @override
+  String get sherpaModelFamily => 'Modellfamilj';
 
   @override
   String get sherpaModelInstalled => 'Nedladdad';

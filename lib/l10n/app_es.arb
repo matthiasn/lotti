@@ -4982,6 +4982,8 @@
   "settingsV2UnimplementedTitle": "Panel aún no disponible",
   "settingsWhatsNewSubtitle": "Mira las últimas actualizaciones y funciones",
   "settingsWhatsNewTitle": "Novedades",
+  "sherpaAllFamilies": "Todas las familias",
+  "sherpaCatalogMatches": "{count} de {total} modelos",
   "sherpaDeleteModel": "Eliminar {model} de este dispositivo",
   "@sherpaDeleteModel": {
     "placeholders": {
@@ -4999,9 +5001,13 @@
       }
     }
   },
+  "sherpaInstalledModelsTitle": "Modelos instalados",
   "sherpaInstallingModel": "Instalando modelo",
+  "sherpaLanguageCantonese": "Cantonés",
+  "sherpaModelCatalogTitle": "Catálogo de modelos",
   "sherpaModelConfigurationError": "El modelo se ha descargado, pero no se ha podido guardar su configuración.",
   "sherpaModelError": "La operación del modelo falló. Inténtalo de nuevo.",
+  "sherpaModelFamily": "Familia de modelos",
   "sherpaModelInstalled": "Descargado",
   "sherpaModelNotInstalled": "Descarga un modelo en este dispositivo",
   "sherpaModelSizeGB": "{size} GB · Multilingüe",

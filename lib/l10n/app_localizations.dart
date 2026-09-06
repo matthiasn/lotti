@@ -21281,6 +21281,18 @@ abstract class AppLocalizations {
   /// **'What\'s New'**
   String get settingsWhatsNewTitle;
 
+  /// No description provided for @sherpaAllFamilies.
+  ///
+  /// In en, this message translates to:
+  /// **'All families'**
+  String get sherpaAllFamilies;
+
+  /// Number of search matches in the downloadable model catalog.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total} models'**
+  String sherpaCatalogMatches(int count, int total);
+
   /// No description provided for @sherpaDeleteModel.
   ///
   /// In en, this message translates to:
@@ -21299,11 +21311,29 @@ abstract class AppLocalizations {
   /// **'Download {model}'**
   String sherpaDownloadModel(String model);
 
+  /// No description provided for @sherpaInstalledModelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed models'**
+  String get sherpaInstalledModelsTitle;
+
   /// No description provided for @sherpaInstallingModel.
   ///
   /// In en, this message translates to:
   /// **'Installing model'**
   String get sherpaInstallingModel;
+
+  /// No description provided for @sherpaLanguageCantonese.
+  ///
+  /// In en, this message translates to:
+  /// **'Cantonese'**
+  String get sherpaLanguageCantonese;
+
+  /// No description provided for @sherpaModelCatalogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model catalog'**
+  String get sherpaModelCatalogTitle;
 
   /// No description provided for @sherpaModelConfigurationError.
   ///
@@ -21316,6 +21346,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Model operation failed. Try again.'**
   String get sherpaModelError;
+
+  /// No description provided for @sherpaModelFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Model family'**
+  String get sherpaModelFamily;
 
   /// No description provided for @sherpaModelInstalled.
   ///

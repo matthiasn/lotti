@@ -12591,6 +12591,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsWhatsNewTitle => 'What\'s New';
 
   @override
+  String get sherpaAllFamilies => 'All families';
+
+  @override
+  String sherpaCatalogMatches(int count, int total) {
+    return '$count of $total models';
+  }
+
+  @override
   String sherpaDeleteModel(String model) {
     return 'Remove $model from this device';
   }
@@ -12604,7 +12612,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get sherpaInstalledModelsTitle => 'Installed models';
+
+  @override
   String get sherpaInstallingModel => 'Installing model';
+
+  @override
+  String get sherpaLanguageCantonese => 'Cantonese';
+
+  @override
+  String get sherpaModelCatalogTitle => 'Model catalog';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12612,6 +12629,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sherpaModelError => 'Model operation failed. Try again.';
+
+  @override
+  String get sherpaModelFamily => 'Model family';
 
   @override
   String get sherpaModelInstalled => 'Downloaded';

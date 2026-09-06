@@ -12785,6 +12785,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Novidades';
 
   @override
+  String get sherpaAllFamilies => 'Todas as famílias';
+
+  @override
+  String sherpaCatalogMatches(int count, int total) {
+    return '$count de $total modelos';
+  }
+
+  @override
   String sherpaDeleteModel(String model) {
     return 'Remover $model deste dispositivo';
   }
@@ -12798,7 +12806,16 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get sherpaInstalledModelsTitle => 'Modelos instalados';
+
+  @override
   String get sherpaInstallingModel => 'Instalando modelo';
+
+  @override
+  String get sherpaLanguageCantonese => 'Cantonês';
+
+  @override
+  String get sherpaModelCatalogTitle => 'Catálogo de modelos';
 
   @override
   String get sherpaModelConfigurationError =>
@@ -12807,6 +12824,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get sherpaModelError =>
       'A operação do modelo falhou. Tenta novamente.';
+
+  @override
+  String get sherpaModelFamily => 'Família de modelos';
 
   @override
   String get sherpaModelInstalled => 'Descarregado';

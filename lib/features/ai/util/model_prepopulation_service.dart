@@ -34,6 +34,11 @@ class ModelPrepopulationService {
   Future<int> prepopulateModelsForProvider(
     AiConfigInferenceProvider provider,
   ) async {
+    // Embedded models are configured only after an explicit, verified download.
+    if (provider.inferenceProviderType == InferenceProviderType.sherpa) {
+      return 0;
+    }
+
     // Get known models for this provider type
     final knownModels = knownModelsByProvider[provider.inferenceProviderType];
     if (knownModels == null || knownModels.isEmpty) {

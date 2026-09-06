@@ -64,7 +64,9 @@ class GeneratedPrepopulationScenario {
 
   List<KnownModel> get modelsToCreate => [
     for (var i = 0; i < knownModels.length; i++)
-      if (!existingKnownModelIndexes.contains(i)) knownModels[i],
+      if (providerType != InferenceProviderType.sherpa &&
+          !existingKnownModelIndexes.contains(i))
+        knownModels[i],
   ];
 
   List<String> get expectedCreatedIds => [
