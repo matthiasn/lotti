@@ -1830,10 +1830,10 @@ packages:
     dependency: "direct main"
     description:
       name: lucide_icons_flutter
-      sha256: "6e2eb4a11137851be84a57e936fc864d565709ec0ae854b786b15397d1b66276"
+      sha256: "9a2e1708ade2ab587bee5034d939686fb89820426c41b4ffb9d97a698b526ceb"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.17"
+    version: "3.1.18"
   markdown:
     dependency: transitive
     description:
@@ -2190,10 +2190,10 @@ packages:
     dependency: "direct dev"
     description:
       name: permission_handler_platform_interface
-      sha256: a5c8a97ecf5616112a5b16d4b8e9ec0e5ae90ef63ac69c0d7b8ae240be760b23
+      sha256: ed86a61c190258fdd65de395ea0632822e3415c1faec38eae0c31b479c28a531
       url: "https://pub.dev"
     source: hosted
-    version: "4.4.0"
+    version: "4.4.1"
   permission_handler_windows:
     dependency: transitive
     description:
@@ -3324,10 +3324,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: "436fd029bd1c1e303b2d95ebd76948893f3c28dab286e7235ba9dd7b22533bf0"
+      sha256: "2fc56e537324a19eb649fca991aa308ac961b5406292876fa657b062de461fd8"
       url: "https://pub.dev"
     source: hosted
-    version: "2.11.1"
+    version: "2.12.0"
   video_player_platform_interface:
     dependency: transitive
     description:
