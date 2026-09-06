@@ -600,6 +600,124 @@ void main() {
     });
   });
 
+  group('the channel editor rows', () {
+    testWidgets("changing a row's type keeps the value that was typed", (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(2), 'ada@example.com');
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byType(DropdownButtonFormField<ContactChannelType>),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Email').last);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      final data =
+          verify(
+                () => mockRepository.createRelationship(
+                  data: captureAny(named: 'data'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).captured.single
+              as RelationshipData;
+      expect(data.contactChannels, hasLength(1));
+      expect(data.contactChannels.single.type, ContactChannelType.email);
+      expect(data.contactChannels.single.value, 'ada@example.com');
+    });
+
+    testWidgets('removing a row drops it from what is saved', (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.tap(find.byKey(const ValueKey('person-form-add-channel')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(2), '+1 555');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('+1 555'), findsNothing);
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      final data =
+          verify(
+                () => mockRepository.createRelationship(
+                  data: captureAny(named: 'data'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).captured.single
+              as RelationshipData;
+      expect(data.contactChannels, isEmpty);
+    });
+
+    testWidgets('the category row opens the picker and takes the pick', (
+      tester,
+    ) async {
+      final family = CategoryDefinition(
+        id: 'cat-1',
+        name: 'Family',
+        private: false,
+        active: true,
+        color: '#00FF00',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      );
+      when(() => mockCacheService.sortedCategories).thenReturn([family]);
+      when(() => mockCacheService.getCategoryById('cat-1')).thenReturn(family);
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('person-form-category')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Family').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Family'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('person-form-category-dot')),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('adding channels from the address book', () {
     testWidgets('is not offered on a device without one', (tester) async {
       contactsService.supported = false;

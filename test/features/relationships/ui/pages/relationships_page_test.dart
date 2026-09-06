@@ -805,6 +805,15 @@ void main() {
         findsOneWidget,
       );
 
+      // Back from the chat routes to the person, so the URL and the pane
+      // stay in step rather than the pane closing behind the address bar.
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await tester.tap(find.byKey(const ValueKey('person-chat-back')));
+      await tester.pump();
+      expect(navigated, ['/people/rel-anna']);
+
       // Closing the chat returns the person's page to the same pane.
       chatOpen.value = false;
       await tester.pumpAndSettle();
