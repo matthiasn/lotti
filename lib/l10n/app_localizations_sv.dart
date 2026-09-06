@@ -11461,7 +11461,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipProposalEvidence(String date) {
-    return 'Från kontakten den $date';
+    return 'Från avstämningen den $date';
   }
 
   @override

@@ -11470,7 +11470,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipProposalEvidence(String date) {
-    return 'Uit het contact van $date';
+    return 'Uit de check-in van $date';
   }
 
   @override

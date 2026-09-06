@@ -268,7 +268,9 @@ class _RelationshipSuggestionsBandState
                 confirmAllPulse: _confirmed.contains(_key(row)) ? 1 : 0,
                 pendingCount: current.length,
                 settling:
-                    _resolving.isNotEmpty && !_resolving.containsKey(_key(row)),
+                    _bulkBusy ||
+                    (_resolving.isNotEmpty &&
+                        !_resolving.containsKey(_key(row))),
                 onResolveStart: _start,
                 onResolveEnd: _end,
                 onConfirm: () => _confirm(row),

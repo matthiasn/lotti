@@ -4982,7 +4982,7 @@
     }
   },
   "relationshipProposalAdded": "Tillagd → {title}",
-  "relationshipProposalEvidence": "Från kontakten den {date}",
+  "relationshipProposalEvidence": "Från avstämningen den {date}",
   "relationshipProposalUndoFailed": "Kunde inte ångra. Uppgiften kan ha ändrats.",
   "relationshipReachPrivacy": "Stannar på den här enheten · delas aldrig med AI:n",
   "relationshipReachTitle": "Kontakt",

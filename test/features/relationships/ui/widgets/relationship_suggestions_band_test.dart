@@ -427,4 +427,53 @@ void main() {
       },
     );
   }
+
+  testWidgets(
+    'bulk confirmation ignores row buttons and swipes until all writes finish',
+    (tester) async {
+      final rows = [proposal(0), proposal(1)];
+      final first = Completer<ToolExecutionResult>();
+      final second = Completer<ToolExecutionResult>();
+      when(
+        () => service.confirm(rows[0].changeSet, 0),
+      ).thenAnswer((_) => first.future);
+      when(
+        () => service.confirm(rows[1].changeSet, 0),
+      ).thenAnswer((_) => second.future);
+      when(() => service.reject(any(), any())).thenAnswer((_) async => true);
+      await pump(
+        tester,
+        () => RelationshipProposalSnapshot(
+          suggestions: UnifiedSuggestionList(open: rows, activity: const []),
+        ),
+      );
+      await tester.tap(find.text('Confirm all'));
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.confirm).first);
+      await tester.tap(find.byIcon(LottiIcons.close).first);
+      await tester.drag(
+        find.textContaining('Commitment 1'),
+        const Offset(-200, 0),
+      );
+      await tester.pump();
+      verify(() => service.confirm(rows[0].changeSet, 0)).called(1);
+      verifyNever(() => service.reject(any(), any()));
+      first.complete(
+        const ToolExecutionResult(success: true, output: 'Created'),
+      );
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.confirm).last);
+      await tester.tap(find.byIcon(LottiIcons.close).last);
+      verify(() => service.confirm(rows[1].changeSet, 0)).called(1);
+      verifyNever(() => service.reject(any(), any()));
+      second.complete(
+        const ToolExecutionResult(success: true, output: 'Created'),
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('Commitment 0'), findsNothing);
+      expect(find.textContaining('Commitment 1'), findsNothing);
+    },
+  );
 }

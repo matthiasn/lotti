@@ -11555,7 +11555,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String relationshipProposalEvidence(String date) {
-    return 'Do contacto de $date';
+    return 'Do check-in de $date';
   }
 
   @override

@@ -728,7 +728,8 @@ reads the agent/person ledger and receipt decisions. Ledger entries carry their
 originating run key from the existing query, avoiding a per-history-row read. The band retains previous
 async data and resolving rows while their shared task-card animations finish.
 It folds after three pending rows, offers bulk confirmation only for a single
-kind, links evidence to the check-in editor, and provides handled history and
+kind, keeps per-row buttons and swipes inert during bulk writes, links evidence
+to the check-in editor, and provides handled history and
 undo. Confirmation briefly highlights the created task in the Tasks card.
 It does not use the task-specific `ChangeSetNotificationService`.
 

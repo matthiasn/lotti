@@ -4981,7 +4981,7 @@
     }
   },
   "relationshipProposalAdded": "Toegevoegd → {title}",
-  "relationshipProposalEvidence": "Uit het contact van {date}",
+  "relationshipProposalEvidence": "Uit de check-in van {date}",
   "relationshipProposalUndoFailed": "Ongedaan maken is mislukt. De taak is mogelijk gewijzigd.",
   "relationshipReachPrivacy": "Blijft op dit apparaat · nooit gedeeld met de AI",
   "relationshipReachTitle": "Contact",
