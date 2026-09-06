@@ -10,9 +10,11 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_time_picker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -78,6 +80,16 @@ class _FixedRecorderController extends AudioRecorderController {
     modalVisible: false,
     enableSpeechRecognition: enableSpeechRecognition,
   );
+}
+
+/// Serves a fixed duration ranking, so a sheet test names the chip it taps
+/// instead of standing up a database.
+class _FixedDurationSuggestions extends CheckInDurationSuggestionsController {
+  _FixedDurationSuggestions(this.values);
+  final List<Duration> values;
+
+  @override
+  Future<List<Duration>> build() async => values;
 }
 
 void main() {
@@ -549,6 +561,41 @@ void main() {
         expect(updated.entryText?.plainText, 'Planned the trip.');
       },
     );
+
+    testWidgets('the time picker moves the time of day and keeps the day', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.textContaining('10 Aug'));
+      await tester.tap(find.textContaining('10 Aug'));
+      await tester.pumpAndSettle();
+      // Confirm the day as it is; the time picker follows.
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      tester
+          .widget<DesignSystemTimePicker>(
+            find.byKey(const ValueKey('check-in-time-picker')),
+          )
+          .onTimeChanged(const TimeOfDay(hour: 8, minute: 15));
+      await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('08:15'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
+      await tester.pumpAndSettle();
+
+      final updated =
+          verify(
+                () => mockRepository.updateCheckIn(captureAny()),
+              ).captured.single
+              as CheckInEntry;
+      expect(updated.meta.dateFrom, DateTime(2026, 8, 10, 8, 15));
+    });
 
     testWidgets('tapping the Started tile opens the date picker', (
       tester,
@@ -1477,6 +1524,78 @@ void main() {
   });
 
   group('duration', () {
+    Widget buildFormWithRanking() => makeTestableWidgetWithScaffold(
+      withBar(
+        (handle) =>
+            CheckInCaptureForm(relationshipId: 'rel-001', handle: handle),
+      ),
+      mediaQueryData: tallForm,
+      overrides: [
+        relationshipRepositoryProvider.overrideWithValue(mockRepository),
+        checkInDurationSuggestionsControllerProvider.overrideWith(
+          () => _FixedDurationSuggestions(const [
+            Duration(minutes: 11),
+            Duration(minutes: 45),
+          ]),
+        ),
+      ],
+    );
+
+    testWidgets('the Duration tile opens the picker, and a chip sets the '
+        'length that is then persisted as the end time', (tester) async {
+      setTestSurfaceSize(tester, const Size(1000, 1400));
+      await tester.pumpWidget(buildFormWithRanking());
+      await tester.pumpAndSettle();
+      expect(find.text('No duration'), findsOneWidget);
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('check-in-duration')),
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-duration')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('check-in-duration-pick-45')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('45 min'), findsOneWidget);
+      expect(find.text('No duration'), findsNothing);
+
+      await tester.ensureVisible(find.text('Save check-in'));
+      await tester.tap(find.text('Save check-in'));
+      await tester.pumpAndSettle();
+
+      final captured = verify(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: captureAny(named: 'dateFrom'),
+          dateTo: captureAny(named: 'dateTo'),
+        ),
+      ).captured;
+      expect(
+        captured[1],
+        (captured[0] as DateTime).add(const Duration(minutes: 45)),
+      );
+    });
+
+    testWidgets('backing out of the picker with Done keeps the length as it '
+        'was', (tester) async {
+      setTestSurfaceSize(tester, const Size(1000, 1400));
+      await tester.pumpWidget(buildFormWithRanking());
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('check-in-duration')),
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-duration')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No duration'), findsOneWidget);
+    });
+
     testWidgets('a prefilled duration is persisted as the end time, so the '
         'log shows what the post-call offer promised', (tester) async {
       setTestSurfaceSize(tester, const Size(1000, 1400));
