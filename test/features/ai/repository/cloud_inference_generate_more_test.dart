@@ -128,6 +128,7 @@ void main() {
           baseUrl: '',
           apiKey: '',
           provider: providerOfType(InferenceProviderType.sherpa),
+          speechDictionaryTerms: ['Lotti'],
         )
         .toList();
     expect(result, [chunk]);

@@ -64,6 +64,9 @@ class CloudInferenceGenerateMore {
   final CloudInferenceRequestHelpers _helpers;
   final SherpaTranscriptionRepository Function() _sherpaRepository;
 
+  /// Routes audio to the selected provider. Embedded sherpa transcription does
+  /// not apply [speechDictionaryTerms] or task-context prompts: its current
+  /// Whisper bindings do not expose prompt conditioning.
   Stream<CreateChatCompletionStreamResponse> generateWithAudio(
     String prompt, {
     required String model,
