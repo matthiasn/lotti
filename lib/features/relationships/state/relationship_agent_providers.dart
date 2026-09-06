@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/profile_locality.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/relationships/service/relationship_chat_service.d
 import 'package:lotti/features/relationships/service/relationship_reminder_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
 /// The OS-reminder projection of the cadence verdict (ADR 0039, plan v2
 /// phase 8) — durable inbox rows first, OS alarms second.
@@ -57,6 +59,23 @@ final relationshipAgentServiceProvider = Provider<RelationshipAgentService>(
   name: 'relationshipAgentServiceProvider',
 );
 
+/// The person's category default profile — the third step of the
+/// relationship-agent resolution chain (ADR 0040 Decision 6), shared by the
+/// workflow and the briefing disclosure so both consult the same read: the
+/// `JournalDb` category row the automation resolver uses for a spoken
+/// check-in's transcript, so a category's default routes the briefing
+/// exactly as it routes the transcript.
+final relationshipCategoryProfileLookupProvider =
+    Provider<CategoryProfileLookup>(
+      (ref) => (categoryId) async {
+        final category = await ref
+            .read(journalDbProvider)
+            .getCategoryById(categoryId);
+        return category?.defaultProfileId;
+      },
+      name: 'relationshipCategoryProfileLookupProvider',
+    );
+
 /// Phase B — the lease-elected LLM tier (briefing, banner, chat).
 final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
   (ref) => RelationshipAgentWorkflow(
@@ -68,6 +87,7 @@ final relationshipAgentWorkflowProvider = Provider<RelationshipAgentWorkflow>(
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    categoryProfileLookup: ref.watch(relationshipCategoryProfileLookupProvider),
   ),
   name: 'relationshipAgentWorkflowProvider',
 );
@@ -179,6 +199,9 @@ relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
         relationship: relationship,
         agentIdentity: identity is AgentIdentityEntity ? identity : null,
         aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: ref.watch(
+          relationshipCategoryProfileLookupProvider,
+        ),
       );
       if (resolved == null) {
         throw StateError(

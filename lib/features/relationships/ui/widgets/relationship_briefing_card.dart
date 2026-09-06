@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -121,7 +123,17 @@ class _RelationshipBriefingCardState
         tone: DesignSystemToastTone.success,
         title: messages.relationshipBriefingRequested,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      // The toast is generic on purpose (the card has no inline error
+      // state yet); the reason — most often "no inference provider
+      // resolves" — must at least reach the log, or the failure is
+      // undiagnosable from a device.
+      developer.log(
+        'Failed to request a briefing',
+        name: 'RelationshipBriefingCard',
+        error: error,
+        stackTrace: stackTrace,
+      );
       if (!mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.error,

@@ -1518,6 +1518,234 @@ void main() {
     expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
   });
 
+  group('resolveRelationshipAgentModel — the chain (ADR 0040 Decision 6)', () {
+    final anthropicProvider =
+        AiConfig.inferenceProvider(
+              id: 'anthropic-provider',
+              baseUrl: 'https://api.anthropic.com',
+              apiKey: 'key',
+              name: 'Anthropic',
+              createdAt: DateTime(2026),
+              inferenceProviderType: InferenceProviderType.anthropic,
+            )
+            as AiConfigInferenceProvider;
+    final claudeModel =
+        AiConfig.model(
+              id: 'model-claude',
+              name: 'Claude',
+              providerModelId: 'claude-x',
+              inferenceProviderId: 'anthropic-provider',
+              createdAt: DateTime(2026),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: true,
+              supportsFunctionCalling: true,
+              description: 'claude',
+            )
+            as AiConfigModel;
+
+    RelationshipEntry personInCategory({String? profileId}) =>
+        relationship(profileId: profileId).copyWith(
+          meta: meta(relationshipId).copyWith(categoryId: 'cat-1'),
+        );
+
+    /// The catalogue holds ONLY the category profile's model, so a resolved
+    /// route proves the category step and nothing else.
+    void stubCategoryProfileOnClaude() {
+      when(() => aiConfigRepository.getConfigById('profile-cat')).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: 'profile-cat',
+          name: 'Family profile',
+          createdAt: DateTime(2026),
+          thinkingModelId: 'model-claude',
+        ),
+      );
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [claudeModel]);
+      when(
+        () => aiConfigRepository.getConfigById('anthropic-provider'),
+      ).thenAnswer((_) async => anthropicProvider);
+    }
+
+    Future<String?> categoryLookup(String categoryId) async =>
+        categoryId == 'cat-1' ? 'profile-cat' : null;
+
+    test("the category's default profile routes when neither the person nor "
+        'the agent pins one — the ordinary setup', () async {
+      stubCategoryProfileOnClaude();
+
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: personInCategory(),
+        agentIdentity: identity(),
+        aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: categoryLookup,
+      );
+
+      expect(resolved?.profileId, 'profile-cat');
+      expect(resolved?.modelId, 'claude-x');
+      expect(resolved?.provider.id, 'anthropic-provider');
+    });
+
+    test('without a category lookup the same person has no route at all — '
+        'the chain "Brief me" used to hit', () async {
+      stubCategoryProfileOnClaude();
+
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: personInCategory(),
+        agentIdentity: identity(),
+        aiConfigRepository: aiConfigRepository,
+      );
+
+      expect(resolved, isNull);
+    });
+
+    test(
+      "the person's own profile still wins over the category default",
+      () async {
+        stubCategoryProfileOnClaude();
+        // The person's profile routes through the melious default model.
+        when(() => aiConfigRepository.getConfigById('profile-1')).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Mine',
+            createdAt: DateTime(2026),
+            thinkingModelId: 'model-glm',
+          ),
+        );
+        when(
+          () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [claudeModel, glmModel]);
+        when(
+          () => aiConfigRepository.getConfigById('melious-provider'),
+        ).thenAnswer((_) async => meliousProvider);
+
+        final resolved = await resolveRelationshipAgentModel(
+          relationship: personInCategory(profileId: 'profile-1'),
+          agentIdentity: identity(),
+          aiConfigRepository: aiConfigRepository,
+          categoryProfileLookup: categoryLookup,
+        );
+
+        expect(resolved?.profileId, 'profile-1');
+        expect(resolved?.provider.id, 'melious-provider');
+      },
+    );
+
+    test('a dangling category default falls through to the validated default '
+        'model', () async {
+      stubGlmResolution();
+
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: personInCategory(),
+        agentIdentity: identity(),
+        aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: (_) async => 'gone',
+      );
+
+      expect(resolved?.profileId, isNull);
+      expect(resolved?.provider.id, 'melious-provider');
+    });
+
+    test('an explicit profile resolves before the category lookup runs — a '
+        'failing category read cannot take down a pinned route', () async {
+      stubGlmResolution();
+      when(() => aiConfigRepository.getConfigById('profile-1')).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Mine',
+          createdAt: DateTime(2026),
+          thinkingModelId: 'model-glm',
+        ),
+      );
+
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: personInCategory(profileId: 'profile-1'),
+        agentIdentity: identity(),
+        aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: (_) async =>
+            throw StateError('the category read failed'),
+      );
+
+      expect(resolved?.profileId, 'profile-1');
+    });
+
+    test('a person without a category never consults the lookup', () async {
+      stubGlmResolution();
+
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: relationship(),
+        agentIdentity: identity(),
+        aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: (_) async =>
+            throw StateError('lookup must not run without a category'),
+      );
+
+      expect(resolved?.provider.id, 'melious-provider');
+    });
+
+    test('the workflow routes a run through its own category lookup — a '
+        'briefing lands for a category-routed person where the two-step '
+        'chain failed', () async {
+      stubCategoryProfileOnClaude();
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => personInCategory());
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async {
+            expect(model, 'claude-x');
+            expect(provider.name, 'Anthropic');
+            await strategy!.processToolCalls(
+              toolCalls: [
+                toolCall(
+                  RelationshipAgentToolNames.updateRelationshipReport,
+                  briefingArgs(),
+                ),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+      final tokens = {relationshipEscalationWorkspaceKey('2026-08-08')};
+
+      // The default construction (no lookup) is the regression: no route.
+      final unwired = await run(tokens: tokens);
+      expect(unwired.success, isFalse);
+      expect(unwired.error, contains('no inference provider'));
+
+      workflow = RelationshipAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        phaseA: RelationshipAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          relationshipRepository: relationshipRepository,
+        ),
+        relationshipRepository: relationshipRepository,
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: MockCloudInferenceRepository(),
+        aiConfigRepository: aiConfigRepository,
+        categoryProfileLookup: categoryLookup,
+      );
+      upserts.clear();
+      final wired = await run(tokens: tokens);
+      expect(wired.success, isTrue);
+      expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
+    });
+  });
+
   group('with the consumption pair registered', () {
     late MockAiAttributionService attribution;
 

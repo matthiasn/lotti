@@ -419,14 +419,25 @@ removed:
   completion stream (shutdown, runtime teardown) fails the turn rather than
   leaving the caller on a future that can no longer complete, which would
   strand the composer disabled.
+- **One resolution chain, first resolvable wins.**
+  `resolveRelationshipAgentModel` routes inference through the person's own
+  profile (`RelationshipData.profileId`), then the agent config's profile,
+  then the **default profile of the person's category** (the `JournalDb`
+  read the automation resolver uses for a spoken check-in's transcript), then
+  the validated default model (ADR 0040 Decision 6, ADR 0059 Decision 7).
+  The category step is the one an ordinary setup actually reaches: no screen
+  pins a profile on a person and agent creation sets none, so without it a
+  user who routes the category through their own profile had no route at
+  all and "Brief me" failed with a generic toast. A dangling id at any step
+  falls through to the next.
 - **Disclosure fails closed.** The "Brief me" card resolves the agent's
-  model to a provider name; a cloud provider is named in a consent dialog
-  first (ADR 0037), and an unresolvable profile is treated as cloud. The
-  relationship read is unfiltered — Phase B resolves through the person's
-  own profile whatever this device's private-entry display preference, so
-  the dialog must see the same row — and a route that resolves to nothing
-  at all throws (the card surfaces the failure) rather than reading as
-  "local, proceed silently".
+  model to a provider name through that same chain; a cloud provider is
+  named in a consent dialog first (ADR 0037), and an unresolvable profile is
+  treated as cloud. The relationship read is unfiltered — Phase B resolves
+  through the person's own profile whatever this device's private-entry
+  display preference, so the dialog must see the same row — and a route that
+  resolves to nothing at all throws (the card surfaces the failure and logs
+  the reason) rather than reading as "local, proceed silently".
 
 ## The briefing wears the shared AI panel
 

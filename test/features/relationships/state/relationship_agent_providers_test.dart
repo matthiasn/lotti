@@ -24,10 +24,12 @@ import 'package:lotti/features/relationships/service/relationship_chat_service.d
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../categories/test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -361,6 +363,41 @@ void main() {
     );
   });
 
+  group('relationshipCategoryProfileLookupProvider', () {
+    test(
+      "answers the category's default profile through the journal db, "
+      'and null for a category without one or a category that is gone',
+      () async {
+        final journalDb = MockJournalDb();
+        when(() => journalDb.getCategoryById('cat-with')).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(
+            id: 'cat-with',
+            name: 'Family',
+            defaultProfileId: 'profile-family',
+          ),
+        );
+        when(() => journalDb.getCategoryById('cat-without')).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(
+            id: 'cat-without',
+            name: 'Work',
+          ),
+        );
+        when(
+          () => journalDb.getCategoryById('cat-gone'),
+        ).thenAnswer((_) async => null);
+        final c = ProviderContainer(
+          overrides: [journalDbProvider.overrideWithValue(journalDb)],
+        );
+        addTearDown(c.dispose);
+        final lookup = c.read(relationshipCategoryProfileLookupProvider);
+
+        expect(await lookup('cat-with'), 'profile-family');
+        expect(await lookup('cat-without'), isNull);
+        expect(await lookup('cat-gone'), isNull);
+      },
+    );
+  });
+
   group('relationshipBriefingDisclosureProvider', () {
     const relationshipId = 'person-1';
     const profileId = 'profile-1';
@@ -368,6 +405,7 @@ void main() {
     late MockAiConfigRepository aiConfigRepository;
     late MockRelationshipRepository relationshipRepository;
     late MockAgentRepository agentRepository;
+    late MockJournalDb journalDb;
 
     final meliousProvider =
         AiConfig.inferenceProvider(
@@ -414,25 +452,27 @@ void main() {
             )
             as AiConfigInferenceProfile;
 
-    RelationshipEntry person({String? withProfileId}) => RelationshipEntry(
-      meta: Metadata(
-        id: relationshipId,
-        createdAt: DateTime(2026, 8),
-        updatedAt: DateTime(2026, 8),
-        dateFrom: DateTime(2026, 8),
-        dateTo: DateTime(2026, 8),
-      ),
-      data: RelationshipData(
-        title: 'Anna',
-        important: true,
-        profileId: withProfileId,
-        status: RelationshipStatus.active(
-          id: 'status-1',
-          createdAt: DateTime(2026, 8),
-          utcOffset: 0,
-        ),
-      ),
-    );
+    RelationshipEntry person({String? withProfileId, String? categoryId}) =>
+        RelationshipEntry(
+          meta: Metadata(
+            id: relationshipId,
+            createdAt: DateTime(2026, 8),
+            updatedAt: DateTime(2026, 8),
+            dateFrom: DateTime(2026, 8),
+            dateTo: DateTime(2026, 8),
+            categoryId: categoryId,
+          ),
+          data: RelationshipData(
+            title: 'Anna',
+            important: true,
+            profileId: withProfileId,
+            status: RelationshipStatus.active(
+              id: 'status-1',
+              createdAt: DateTime(2026, 8),
+              utcOffset: 0,
+            ),
+          ),
+        );
 
     setUp(() {
       aiConfigRepository = MockAiConfigRepository();
@@ -447,6 +487,10 @@ void main() {
       when(
         () => agentRepository.getEntity(any()),
       ).thenAnswer((_) async => null);
+      journalDb = MockJournalDb();
+      when(
+        () => journalDb.getCategoryById(any()),
+      ).thenAnswer((_) async => null);
     });
 
     Future<String?> disclosure() {
@@ -457,6 +501,7 @@ void main() {
             relationshipRepository,
           ),
           agentRepositoryProvider.overrideWithValue(agentRepository),
+          journalDbProvider.overrideWithValue(journalDb),
         ],
       );
       addTearDown(c.dispose);
@@ -570,6 +615,74 @@ void main() {
       ).thenAnswer((_) async => [acmeProvider, meliousProvider]);
 
       expect(await disclosure(), 'Acme');
+    });
+
+    test("the category's default profile routes when neither the person nor "
+        'the agent pins one — the ordinary setup, and the one that used to '
+        'throw (ADR 0040 Decision 6)', () async {
+      // The category routes through Acme; the validated default model is
+      // not in the catalogue, so a named provider proves the category step.
+      final acmeProvider =
+          AiConfig.inferenceProvider(
+                id: 'acme-provider',
+                baseUrl: 'https://api.acme.ai',
+                apiKey: 'key',
+                name: 'Acme',
+                createdAt: DateTime(2026),
+                inferenceProviderType: InferenceProviderType.melious,
+              )
+              as AiConfigInferenceProvider;
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => person(categoryId: 'cat-1'));
+      when(() => journalDb.getCategoryById('cat-1')).thenAnswer(
+        (_) async => CategoryTestUtils.createTestCategory(
+          id: 'cat-1',
+          name: 'Family',
+          defaultProfileId: profileId,
+        ),
+      );
+      when(
+        () => aiConfigRepository.getConfigById(profileId),
+      ).thenAnswer((_) async => profile('model-acme'));
+      when(
+        () => aiConfigRepository.getConfigById('model-acme'),
+      ).thenAnswer((_) async => model('model-acme', 'acme-provider'));
+      when(
+        () => aiConfigRepository.getConfigById('acme-provider'),
+      ).thenAnswer((_) async => acmeProvider);
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model('model-acme', 'acme-provider')]);
+      when(
+        () => aiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) async => [acmeProvider]);
+
+      expect(await disclosure(), 'Acme');
+    });
+
+    test('a category with no default profile leaves the chain where it was: '
+        'no route resolves and the provider throws', () async {
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => person(categoryId: 'cat-1'));
+      when(() => journalDb.getCategoryById('cat-1')).thenAnswer(
+        (_) async => CategoryTestUtils.createTestCategory(
+          id: 'cat-1',
+          name: 'Family',
+        ),
+      );
+
+      await expectLater(disclosure(), throwsStateError);
+      // The shared stubs make every route fail, so the throw alone would
+      // pass without the category branch ever running: prove it ran.
+      verify(() => journalDb.getCategoryById('cat-1')).called(1);
     });
 
     test('a dangling profile id falls through to the default cloud model '

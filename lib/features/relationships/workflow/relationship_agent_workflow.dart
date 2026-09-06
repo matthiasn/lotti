@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -73,30 +74,60 @@ typedef RelationshipModelResolution = ({
   String? profileId,
 });
 
-/// The single model-resolution chain for relationship-agent inference: the
-/// relationship's own AI profile (`RelationshipData.profileId`, ADR 0059
-/// Decision 7 / plan D6), then the agent config's profile, then the
-/// validated default model. Phase B and the briefing disclosure both
-/// resolve through here so the provider a consent surface names is the one
-/// that actually runs.
+/// The single model-resolution chain for relationship-agent inference
+/// (ADR 0040 Decision 6, ADR 0059 Decision 7 / plan D6), first resolvable
+/// wins: the relationship's own AI profile (`RelationshipData.profileId`),
+/// then the agent config's profile, then the **default profile of the
+/// person's category** (looked up through [categoryProfileLookup]), then the
+/// validated default model. Phase B and the briefing disclosure both resolve
+/// through here so the provider a consent surface names is the one that
+/// actually runs.
+///
+/// The category step is what makes "Brief me" work for the ordinary setup:
+/// no screen pins a profile on a person, agent creation sets none on the
+/// agent, and the validated default is one specific cloud model — a user
+/// whose category routes everything else through their own profile was
+/// left with no route at all, and the card reported only "could not request
+/// the briefing". A dangling id at any step falls through to the next. The
+/// category lookup runs only once the explicit profiles have failed to
+/// resolve — it is a database read, and a transient failure there must not
+/// take down a route the person or the agent already pins. The lookup is
+/// optional so callers without a category source keep the two-step chain.
 Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   required RelationshipEntry? relationship,
   required AgentIdentityEntity? agentIdentity,
   required AiConfigRepository aiConfigRepository,
+  CategoryProfileLookup? categoryProfileLookup,
 }) async {
-  final profileId =
-      relationship?.data.profileId ?? agentIdentity?.config.profileId;
-  if (profileId != null) {
-    final profile = await ProfileResolver(
-      aiConfigRepository: aiConfigRepository,
-    ).resolveByProfileId(profileId);
-    if (profile != null) {
-      return (
-        modelId: profile.thinkingModelId,
-        provider: profile.thinkingProvider,
-        geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
-        profileId: profileId,
-      );
+  final profileResolver = ProfileResolver(
+    aiConfigRepository: aiConfigRepository,
+  );
+  Future<RelationshipModelResolution?> viaProfile(String profileId) async {
+    final profile = await profileResolver.resolveByProfileId(profileId);
+    if (profile == null) return null;
+    return (
+      modelId: profile.thinkingModelId,
+      provider: profile.thinkingProvider,
+      geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
+      profileId: profileId,
+    );
+  }
+
+  final explicitProfileIds = <String>{
+    ?relationship?.data.profileId,
+    ?agentIdentity?.config.profileId,
+  };
+  for (final profileId in explicitProfileIds) {
+    final resolved = await viaProfile(profileId);
+    if (resolved != null) return resolved;
+  }
+  final categoryId = relationship?.meta.categoryId;
+  if (categoryId != null && categoryProfileLookup != null) {
+    final categoryProfileId = await categoryProfileLookup(categoryId);
+    if (categoryProfileId != null &&
+        !explicitProfileIds.contains(categoryProfileId)) {
+      final resolved = await viaProfile(categoryProfileId);
+      if (resolved != null) return resolved;
     }
   }
   final direct = await resolveInferenceProviderWithModel(
@@ -134,6 +165,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     required this._aiConfigRepository,
     this._factsRenderer = const RelationshipFactsRenderer(),
     this._domainLogger,
+    this._categoryProfileLookup,
   });
 
   final AgentRepository _repository;
@@ -145,6 +177,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   final AiConfigRepository _aiConfigRepository;
   final RelationshipFactsRenderer _factsRenderer;
   final DomainLogger? _domainLogger;
+
+  /// The person's category default profile, the third step of
+  /// [resolveRelationshipAgentModel]. Null keeps the chain at two steps.
+  final CategoryProfileLookup? _categoryProfileLookup;
 
   @override
   DomainLogger? get domainLogger => _domainLogger;
@@ -317,6 +353,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       relationship: relationship,
       agentIdentity: agentIdentity,
       aiConfigRepository: _aiConfigRepository,
+      categoryProfileLookup: _categoryProfileLookup,
     );
     if (resolved == null) {
       // The escalation record is already consumed and Phase A will not
