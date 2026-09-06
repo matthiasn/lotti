@@ -10916,6 +10916,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.';
 
   @override
+  String get relationshipAgentFailedPlain => 'Mislukt';
+
+  @override
   String relationshipAgentLastRunFailed(String time) {
     return 'laatste run mislukt · $time';
   }

@@ -711,6 +711,25 @@ void main() {
       expect(find.text(context.messages.taskAgentSetupTitle), findsOneWidget);
     });
 
+    testWidgets('a failure with no wake time yet reads plainly', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        state: agentState(failures: 1),
+      );
+
+      expect(
+        find.text(
+          'The last briefing run failed. Details are in the Activity tab.',
+        ),
+        findsWidgets,
+      );
+      expect(statusText(tester), 'Failed');
+      expect(find.text('Try again'), findsOneWidget);
+    });
+
     testWidgets('with a model, the action is Try again, which requests a '
         'briefing', (tester) async {
       await pump(
@@ -844,6 +863,38 @@ void main() {
       expect(find.text('Show less'), findsOneWidget);
     });
 
+    testWidgets('every band reads as its own label on its own tint', (
+      tester,
+    ) async {
+      const bands = {
+        'steady': RelationshipHealthBand.steady,
+        'needsAttention': RelationshipHealthBand.needsAttention,
+        'strained': RelationshipHealthBand.strained,
+      };
+      for (final entry in bands.entries) {
+        await pump(
+          tester,
+          checkIns: onTrackCheckIns,
+          current: report(band: entry.key),
+        );
+        final chip = tester.widget<DsPill>(
+          find.byKey(const ValueKey('relationship-health-chip')),
+        );
+        final context = tester.element(find.byType(RelationshipBriefingCard));
+        expect(
+          chip.label,
+          relationshipHealthBandLabel(context, entry.value),
+          reason: entry.key,
+        );
+        expect(
+          chip.color,
+          relationshipHealthBandColor(context.designTokens, entry.value),
+          reason: entry.key,
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    });
+
     testWidgets('a report with no parseable band shows no chip', (
       tester,
     ) async {
@@ -900,6 +951,18 @@ void main() {
     });
   });
 
+  group('out of date without a check-in on file', () {
+    testWidgets('says only that it is out of date', (tester) async {
+      await pump(
+        tester,
+        current: report(),
+        state: agentState(staleAt: DateTime(2026, 8, 13, 13)),
+      );
+
+      expect(statusText(tester), 'Out of date');
+    });
+  });
+
   group('due', () {
     testWidgets('the cadence pill turns warning and the footer offers Log '
         'check-in and Call', (tester) async {
@@ -932,6 +995,53 @@ void main() {
 
       expect(launcher.launched, [(mobile, ContactAction.call)]);
       expect(store.remembered?.relationshipId, relationshipId);
+    });
+
+    testWidgets('a channel that arrives later is offered — the card '
+        're-resolves when the channels change', (tester) async {
+      final launcher = _FakeContactLauncher(
+        launchable: const {ContactAction.call},
+      );
+      Widget card(List<ContactChannel> channels) =>
+          makeTestableWidgetWithScaffold(
+            RelationshipBriefingCard(
+              relationship: relationship(channels: channels),
+              checkIns: lapsedCheckIns,
+            ),
+            overrides: [
+              agentReportProvider(
+                agentId,
+              ).overrideWith((ref) async => report()),
+              agentStateProvider(agentId).overrideWith((ref) async => null),
+              agentIsRunningProvider(
+                agentId,
+              ).overrideWith((ref) => Stream.value(false)),
+              agentIdentityProvider(agentId).overrideWith((ref) async => null),
+              taskAgentResolvedSetupProvider(
+                agentId,
+              ).overrideWith((ref) async => resolvedSetup()),
+              agentTokenUsageSummariesProvider(
+                agentId,
+              ).overrideWith((ref) async => const []),
+              relationshipAgentServiceProvider.overrideWithValue(agentService),
+              relationshipBriefingDisclosureProvider(
+                relationshipId,
+              ).overrideWith((ref) async => null),
+              relationshipRepositoryProvider.overrideWithValue(repository),
+              contactLauncherProvider.overrideWithValue(launcher),
+              pendingInteractionStoreProvider.overrideWithValue(store),
+            ],
+          );
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.pumpWidget(card(const []));
+        await tester.pumpAndSettle();
+        expect(find.text('Call Pip'), findsNothing);
+
+        await tester.pumpWidget(card(const [mobile]));
+        await tester.pumpAndSettle();
+        expect(find.text('Call Pip'), findsOneWidget);
+      });
     });
 
     testWidgets('Log check-in opens the capture sheet for this person', (

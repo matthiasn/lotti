@@ -10845,6 +10845,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.';
 
   @override
+  String get relationshipAgentFailedPlain => 'Failed';
+
+  @override
   String relationshipAgentLastRunFailed(String time) {
     return 'last run failed · $time';
   }

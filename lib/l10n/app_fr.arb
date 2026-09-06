@@ -4250,6 +4250,7 @@
   "relationshipAgentFailed": "Échec · {time}",
   "relationshipAgentFailedBody": "La dernière exécution du briefing a échoué. Les détails sont dans l'onglet Activité.",
   "relationshipAgentFailedNoModel": "Aucun modèle n'est configuré pour les briefings. Choisis-en un dans Réglages IA › Agents. Les détails sont dans l'onglet Activité.",
+  "relationshipAgentFailedPlain": "Échec",
   "relationshipAgentLastRunFailed": "dernière exécution échouée · {time}",
   "relationshipAgentMarkImportant": "Marquer comme important",
   "relationshipAgentNextLook": "Prochain regard {day}",

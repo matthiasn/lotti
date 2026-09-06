@@ -4257,6 +4257,7 @@
   "relationshipAgentFailed": "Selhalo · {time}",
   "relationshipAgentFailedBody": "Poslední běh briefingu selhal. Podrobnosti najdeš na kartě Aktivita.",
   "relationshipAgentFailedNoModel": "Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.",
+  "relationshipAgentFailedPlain": "Selhalo",
   "relationshipAgentLastRunFailed": "poslední běh selhal · {time}",
   "relationshipAgentMarkImportant": "Označit jako důležité",
   "relationshipAgentNextLook": "Další pohled {day}",

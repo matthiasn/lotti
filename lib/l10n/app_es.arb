@@ -4250,6 +4250,7 @@
   "relationshipAgentFailed": "Falló · {time}",
   "relationshipAgentFailedBody": "La última ejecución del briefing falló. Los detalles están en la pestaña Actividad.",
   "relationshipAgentFailedNoModel": "No hay ningún modelo configurado para briefings. Elige uno en Ajustes de IA › Agentes. Los detalles están en la pestaña Actividad.",
+  "relationshipAgentFailedPlain": "Falló",
   "relationshipAgentLastRunFailed": "última ejecución fallida · {time}",
   "relationshipAgentMarkImportant": "Marcar como importante",
   "relationshipAgentNextLook": "Próximo vistazo {day}",

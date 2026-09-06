@@ -10909,6 +10909,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen modell är inställd för briefingar. Välj en under AI-inställningar › Agenter. Detaljer finns under fliken Aktivitet.';
 
   @override
+  String get relationshipAgentFailedPlain => 'Misslyckades';
+
+  @override
   String relationshipAgentLastRunFailed(String time) {
     return 'senaste körningen misslyckades · $time';
   }

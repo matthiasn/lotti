@@ -11039,6 +11039,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun modello è configurato per i briefing. Scegline uno in Impostazioni IA › Agenti. I dettagli sono nella scheda Attività.';
 
   @override
+  String get relationshipAgentFailedPlain => 'Fallito';
+
+  @override
   String relationshipAgentLastRunFailed(String time) {
     return 'ultima esecuzione fallita · $time';
   }

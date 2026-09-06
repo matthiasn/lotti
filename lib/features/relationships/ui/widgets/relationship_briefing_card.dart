@@ -351,17 +351,13 @@ class _RelationshipBriefingCardState
     relationshipId: widget.relationship.meta.id,
   );
 
-  Future<void> _call() {
-    final reachable = _reachable;
-    if (reachable == null) return Future.value();
-    return launchContactAction(
-      context,
-      ref,
-      relationshipId: widget.relationship.meta.id,
-      channel: reachable.channel,
-      action: reachable.action,
-    );
-  }
+  Future<void> _call(ReachableChannel reachable) => launchContactAction(
+    context,
+    ref,
+    relationshipId: widget.relationship.meta.id,
+    channel: reachable.channel,
+    action: reachable.action,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -454,7 +450,10 @@ class _RelationshipBriefingCardState
         agentId: agentId,
       ),
       onLogCheckIn: _logCheckIn,
-      onCall: _reachable == null ? null : _call,
+      onCall: switch (_reachable) {
+        null => null,
+        final reachable => () => _call(reachable),
+      },
     );
   }
 }
@@ -664,7 +663,10 @@ class _AgentCard extends StatelessWidget {
             ).format(totalTokens),
           ),
       ].join(' · '),
-      RelationshipAgentCardState.notEnrolled => '',
+      // Unreachable by construction: the card returns the plain
+
+      // _NotEnrolledCard before this widget is ever built.
+      RelationshipAgentCardState.notEnrolled => '', // coverage:ignore-line
     };
   }
 
@@ -734,7 +736,10 @@ class _AgentCard extends StatelessWidget {
         onToggle: onToggleExpanded,
         onOpenInternals: onOpenInternals,
       ),
-      RelationshipAgentCardState.notEnrolled => const SizedBox.shrink(),
+      // Unreachable by construction, see _subtitle.
+
+      RelationshipAgentCardState.notEnrolled =>
+        const SizedBox.shrink(), // coverage:ignore-line
     };
 
     final due = peopleDueDateOf(item);
@@ -777,7 +782,7 @@ class _AgentCard extends StatelessWidget {
             status: _StatusLine(
               icon: LottiIcons.error,
               label: lastWake == null
-                  ? messages.commonError
+                  ? messages.relationshipAgentFailedPlain
                   : messages.relationshipAgentFailed(
                       relationshipTimeLabel(lastWake),
                     ),
@@ -850,7 +855,10 @@ class _AgentCard extends StatelessWidget {
               onPressed: onBrief,
             ),
           ),
+          // Unreachable by construction, see _subtitle.
+
           RelationshipAgentCardState.notEnrolled => (
+            // coverage:ignore-line
             status: null,
             leading: null,
             action: null,

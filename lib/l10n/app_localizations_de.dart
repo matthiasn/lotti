@@ -10965,6 +10965,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Für Briefings ist kein Modell eingerichtet. Wähle eins unter KI-Einstellungen › Agenten. Details stehen im Aktivitäts-Tab.';
 
   @override
+  String get relationshipAgentFailedPlain => 'Fehlgeschlagen';
+
+  @override
   String relationshipAgentLastRunFailed(String time) {
     return 'letzter Lauf fehlgeschlagen · $time';
   }

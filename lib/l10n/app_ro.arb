@@ -4250,6 +4250,7 @@
   "relationshipAgentFailed": "Eșuat · {time}",
   "relationshipAgentFailedBody": "Ultima rulare a briefingului a eșuat. Detaliile sunt în fila Activitate.",
   "relationshipAgentFailedNoModel": "Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.",
+  "relationshipAgentFailedPlain": "Eșuat",
   "relationshipAgentLastRunFailed": "ultima rulare a eșuat · {time}",
   "relationshipAgentMarkImportant": "Marchează ca important",
   "relationshipAgentNextLook": "Următoarea privire {day}",

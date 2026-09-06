@@ -11120,6 +11120,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.';
 
   @override
+  String get relationshipAgentFailedPlain => 'Eșuat';
+
+  @override
   String relationshipAgentLastRunFailed(String time) {
     return 'ultima rulare a eșuat · $time';
   }

@@ -4250,6 +4250,7 @@
   "relationshipAgentFailed": "Fehlgeschlagen · {time}",
   "relationshipAgentFailedBody": "Der letzte Briefing-Lauf ist fehlgeschlagen. Details stehen im Aktivitäts-Tab.",
   "relationshipAgentFailedNoModel": "Für Briefings ist kein Modell eingerichtet. Wähle eins unter KI-Einstellungen › Agenten. Details stehen im Aktivitäts-Tab.",
+  "relationshipAgentFailedPlain": "Fehlgeschlagen",
   "relationshipAgentLastRunFailed": "letzter Lauf fehlgeschlagen · {time}",
   "relationshipAgentMarkImportant": "Als wichtig markieren",
   "relationshipAgentNextLook": "Nächster Blick {day}",

@@ -4752,6 +4752,7 @@
   "relationshipAgentFailed": "Mislukt · {time}",
   "relationshipAgentFailedBody": "De laatste briefing-run is mislukt. Details staan op het tabblad Activiteit.",
   "relationshipAgentFailedNoModel": "Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.",
+  "relationshipAgentFailedPlain": "Mislukt",
   "relationshipAgentLastRunFailed": "laatste run mislukt · {time}",
   "relationshipAgentMarkImportant": "Als belangrijk markeren",
   "relationshipAgentNextLook": "Volgende blik {day}",

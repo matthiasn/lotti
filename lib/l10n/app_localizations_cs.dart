@@ -11061,6 +11061,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.';
 
   @override
+  String get relationshipAgentFailedPlain => 'Selhalo';
+
+  @override
   String relationshipAgentLastRunFailed(String time) {
     return 'poslední běh selhal · $time';
   }

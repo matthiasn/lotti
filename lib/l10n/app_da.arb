@@ -4753,6 +4753,7 @@
   "relationshipAgentFailed": "Mislykkedes · {time}",
   "relationshipAgentFailedBody": "Den seneste briefing-kørsel mislykkedes. Detaljer findes under fanen Aktivitet.",
   "relationshipAgentFailedNoModel": "Der er ikke sat en model op til briefinger. Vælg en under AI-indstillinger › Agenter. Detaljer findes under fanen Aktivitet.",
+  "relationshipAgentFailedPlain": "Mislykkedes",
   "relationshipAgentLastRunFailed": "seneste kørsel mislykkedes · {time}",
   "relationshipAgentMarkImportant": "Markér som vigtig",
   "relationshipAgentNextLook": "Næste kig {day}",

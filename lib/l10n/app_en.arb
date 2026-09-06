@@ -6254,6 +6254,7 @@
   },
   "relationshipAgentFailedBody": "The last briefing run failed. Details are in the Activity tab.",
   "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
+  "relationshipAgentFailedPlain": "Failed",
   "relationshipAgentLastRunFailed": "last run failed · {time}",
   "@relationshipAgentLastRunFailed": {
     "placeholders": {

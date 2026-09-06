@@ -4753,6 +4753,7 @@
   "relationshipAgentFailed": "Misslyckades · {time}",
   "relationshipAgentFailedBody": "Den senaste briefing-körningen misslyckades. Detaljer finns under fliken Aktivitet.",
   "relationshipAgentFailedNoModel": "Ingen modell är inställd för briefingar. Välj en under AI-inställningar › Agenter. Detaljer finns under fliken Aktivitet.",
+  "relationshipAgentFailedPlain": "Misslyckades",
   "relationshipAgentLastRunFailed": "senaste körningen misslyckades · {time}",
   "relationshipAgentMarkImportant": "Markera som viktig",
   "relationshipAgentNextLook": "Nästa titt {day}",
