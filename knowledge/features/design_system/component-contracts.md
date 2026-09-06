@@ -529,8 +529,12 @@ screen-level FAB or status overlay hugging the bottom edge therefore needs
 explicit clearance.
 
 The shell and its clearance wrapper live **outside this feature**, in
-`lib/widgets/nav_bar/`, and are only exercised through the DS widgetbook. The
-contract:
+`lib/widgets/nav_bar/`. The DS widgetbook demonstrates the components;
+[`design_system_bottom_navigation_bar_test.dart`](../../../test/widgets/nav_bar/design_system_bottom_navigation_bar_test.dart)
+tests the shell and clearance wrapper directly, and
+[`beamer_app_test.dart`](../../../test/beamer/beamer_app_test.dart) exercises
+their integration with the app shell, including both navigation flag states.
+The contract:
 
 - `DesignSystemBottomNavigationBar.occupiedHeight(context)` defines how much
   vertical space the shell consumes — the bar including safe-area inset, plus the

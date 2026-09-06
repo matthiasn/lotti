@@ -55,6 +55,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableMobileNavigationLauncherFlag,
+    description: 'Enable the mobile navigation launcher?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableHabitsPageFlag,
     description: 'Enable Habits Page?',
     status: false,
