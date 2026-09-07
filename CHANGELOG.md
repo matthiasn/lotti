@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Settings → Config Flags to try a glass Navigate button and a two-column
   section grid. The existing bottom navigation remains the default.
 
+### Fixed
+
+- **The Android app opened to a blank white screen and never loaded.** The
+  on-device speech recognition added in this release brought its own copy of
+  the ONNX Runtime, built against a marginally different release than the one
+  the on-device voice already used. Android ships a single copy of that
+  runtime, so whichever of the two was kept, the other could no longer load
+  it — and that one failure stopped every part of the app from starting,
+  leaving it running but unable to draw anything at all. Both features now use
+  the same runtime release, and the app starts normally again.
+
 ## [1.1.4]
 
 ### Added
