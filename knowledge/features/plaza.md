@@ -1,802 +1,334 @@
 ---
 type: Feature Module
 title: Project plaza
-description: "The developer-only 3D project map: a merge-stable street folded into a district, a frontier plaza of billboards and tickers, an attention score driving lanterns, beacons and billboards, flights between curated poses, a facade LOD over live Flutter widgets, and the tour and bench modes of the harness."
+description: Scoped journal snapshots generate task timelines and category avenues, rendered through a reusable Flutter GPU explorer with bounded facade detail, status lights, overdue flames and ambient penguins.
 resource: ../../lib/features/plaza
-tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, visualization, prototype]
+tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, projects, categories]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-08T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-08T12:00:00Z }
 stale_after: 2027-03-01
 sources:
-  - id: street
-    resource: ../../lib/features/plaza/domain/street_layout.dart
-    title: StreetLayout, the merge-stable placement function with the fold
-    last_modified: 2026-09-04
-  - id: plaza-layout
-    resource: ../../lib/features/plaza/domain/plaza_layout.dart
-    title: Frontier plaza, billboard slots, street furniture, beacons and task poses
-    last_modified: 2026-09-05
-  - id: attention
-    resource: ../../lib/features/plaza/domain/attention.dart
-    title: The attention score and the lantern state
-    last_modified: 2026-09-04
-  - id: flight
-    resource: ../../lib/features/plaza/domain/flight.dart
-    title: Camera flights
-    last_modified: 2026-09-04
-  - id: walk
-    resource: ../../lib/features/plaza/domain/morning_walk.dart
-    title: The morning walk playlist
-    last_modified: 2026-09-04
-  - id: collider
-    resource: ../../lib/features/plaza/domain/walk_collider.dart
-    title: The walker collider with merged footprints
-    last_modified: 2026-09-04
-  - id: solid
-    resource: ../../lib/features/plaza/domain/solid.dart
-    title: A footprint with its height band, for the collider and the flights
-    last_modified: 2026-09-04
-  - id: network
-    resource: ../../lib/features/plaza/domain/street_network.dart
-    title: The street network a flight follows between two stops
-    last_modified: 2026-09-04
-  - id: scenery
-    resource: ../../lib/features/plaza/domain/scenery.dart
-    title: The seeded scenery and the furniture footprints
-    last_modified: 2026-09-05
+  - id: repository
+    resource: ../../lib/features/plaza/data/plaza_repository.dart
+    title: Scoped reads and checklist writes
+    last_modified: 2026-09-08
+  - id: providers
+    resource: ../../lib/features/plaza/state/project_plaza_provider.dart
+    title: Coalesced snapshots and UTC attention clock
+    last_modified: 2026-09-08
+  - id: project-generator
+    resource: ../../lib/features/plaza/scene/project_world_generator.dart
+    title: Configurable project generation
+    last_modified: 2026-09-08
+  - id: category-generator
+    resource: ../../lib/features/plaza/scene/category_world_generator.dart
+    title: Category project portals and avenue assignments
+    last_modified: 2026-09-08
   - id: world
     resource: ../../lib/features/plaza/scene/plaza_world.dart
-    title: PlazaWorld, everything derived once from tasks and the clock
+    title: Shared CPU scene description
+    last_modified: 2026-09-08
+  - id: street
+    resource: ../../lib/features/plaza/domain/street_layout.dart
+    title: Deterministic timeline placement
+    last_modified: 2026-09-08
+  - id: view
+    resource: ../../lib/features/plaza/ui/plaza_view.dart
+    title: GPU boot, camera and frame lifecycle
+    last_modified: 2026-09-08
+  - id: scene
+    resource: ../../lib/features/plaza/scene/plaza_scene.dart
+    title: Geometry and static batching
     last_modified: 2026-09-05
   - id: lod
     resource: ../../lib/features/plaza/scene/facade_lod_manager.dart
-    title: FacadeLodManager, tier assignment and promotion scheduling
-    last_modified: 2026-09-05
-  - id: scene
-    resource: ../../lib/features/plaza/scene/plaza_scene.dart
-    title: PlazaSceneController, the scene graph builder
-    last_modified: 2026-09-05
-  - id: boxes
-    resource: ../../lib/features/plaza/scene/plaza_boxes.dart
-    title: Shared unit geometry and immutable solid materials
-    last_modified: 2026-09-05
-  - id: primitives
-    resource: ../../lib/features/plaza/scene/plaza_primitives.dart
-    title: Quad geometry and linear HDR colours
-    last_modified: 2026-09-05
-  - id: bindings
-    resource: ../../lib/features/plaza/scene/plaza_scene_records.dart
-    title: Scene records and shared layer bindings
-    last_modified: 2026-09-05
-  - id: static-batches
-    resource: ../../lib/features/plaza/scene/plaza_static_meshes.dart
-    title: Spatial opaque mesh baking
-    last_modified: 2026-09-05
-  - id: pacer
-    resource: ../../lib/features/plaza/ui/plaza_frame_pacer.dart
-    title: Idle frame scheduling and lifecycle
-    last_modified: 2026-09-05
-  - id: repaint
-    resource: ../../lib/features/plaza/ui/plaza_repaint.dart
-    title: Scene repaint without hosted widget rebuilds
-    last_modified: 2026-09-05
-  - id: frame-window
-    resource: ../../lib/features/plaza/ui/plaza_frame_window.dart
-    title: Bounded frame statistics
+    title: Facade promotion and capture budgets
     last_modified: 2026-09-05
   - id: captures
     resource: ../../lib/features/plaza/scene/surface_captures.dart
-    title: Manual capture acknowledgement and cadence
+    title: Capture acknowledgement and invalidation
     last_modified: 2026-09-05
-  - id: surfaces
-    resource: ../../lib/features/plaza/scene/plaza_surfaces.dart
-    title: PlazaSurfaces, the non-facade widget surfaces and their capture intervals
-    last_modified: 2026-09-05
-  - id: sprites
-    resource: ../../lib/features/plaza/scene/plaza_sprites.dart
-    title: PlazaSprites, lanterns, beacons, lamps and chase lights
-    last_modified: 2026-09-05
+  - id: fire
+    resource: ../../lib/features/plaza/scene/plaza_fire.dart
+    title: Bounded overdue flame instances
+    last_modified: 2026-09-08
   - id: character-loop
     resource: ../../lib/features/plaza/domain/character_loop.dart
     title: Obstacle-cleared companion circuit
   - id: character-population
     resource: ../../lib/features/plaza/domain/character_population.dart
-    title: Street population, paired routes and conversational attention
-  - id: population-tests
-    resource: ../../test/features/plaza/domain/character_population_test.dart
-    title: District coverage, route clearance, pair formation and social timing
+    title: Street population and conversational attention
   - id: character-gait
     resource: ../../lib/features/plaza/domain/character_gait.dart
     title: World-space foot contacts and walking mechanics
   - id: characters
     resource: ../../lib/features/plaza/scene/plaza_characters.dart
-    title: Skinned companions and two-bone inverse kinematics
+    title: Skinned companions and inverse kinematics
   - id: penguin-model
     resource: ../../tool/plaza/build_penguin.py
     title: Original penguin mesh and skin generator
-  - id: character-tests
-    resource: ../../test/features/plaza/scene/plaza_characters_test.dart
-    title: Full-lap contact, clone binding, pause and visibility checks
-  - id: gait-tests
-    resource: ../../test/features/plaza/domain/character_gait_test.dart
-    title: Foot contact and walking support invariants
-  - id: picker
-    resource: ../../lib/features/plaza/scene/plaza_picker.dart
-    title: PlazaPicker, tap resolution
-    last_modified: 2026-09-05
-  - id: camera
-    resource: ../../lib/features/plaza/ui/fly_camera_controller.dart
-    title: FlyCameraController, walking, flights and the landing flight
-    last_modified: 2026-09-04
-  - id: harness
-    resource: ../../lib/features/plaza/dev_main.dart
-    title: The dev harness, input, flights, walk, tour, bench
-    last_modified: 2026-09-05
-  - id: pointer
-    resource: ../../lib/features/plaza/ui/plaza_pointer_controller.dart
-    title: Tap, drag and pointer cancellation state
-    last_modified: 2026-09-05
-  - id: tour
-    resource: ../../lib/features/plaza/ui/plaza_tour.dart
-    title: The tour stops
-    last_modified: 2026-09-04
-  - id: capture
-    resource: ../../tool/plaza/capture_tour.py
-    title: The X11 screenshot capture script
-    last_modified: 2026-09-03
-  - id: street-tests
-    resource: ../../test/features/plaza/domain/street_layout_test.dart
-    title: The layout invariants, as tests
-    last_modified: 2026-09-04
-  - id: handover
-    resource: ../../docs/plaza/HANDOVER.md
-    title: Handover (status, operation, limits)
-    last_modified: 2026-09-04
 ---
 
-The prototype behind the plan to replace the knowledge-graph hairball with a
-spatial map of a project. **It is a developer harness, not a feature**: not
-routed, not registered in DI, not reading the database. How to run and drive
-it, what is missing and the known limits are in the
-[handover](../../docs/plaza/HANDOVER.md); the design it implements is
-[DESIGN.md](../../docs/plaza/DESIGN.md). This concept is the map of what
-actually runs, with the numbers as they stand in the code.
+# Entry and data boundaries
 
-# Derivation and data flow
+Desktop project details open `ProjectPlazaPage`. The Projects overview forwards
+category actions through `ProjectsOverviewContent`, `ProjectsOverviewSliverList`
+and `ProjectGroupSection` to `CategoryPlazaPage`. The existing projects feature
+flag controls access to those parent surfaces. Task ontology remains separate.
 
 ```mermaid
-flowchart LR
-  subgraph pure ["Pure Dart, tested without a GPU"]
-    Demo["demo_world_projection<br/>penguin world at manualDemoNow"] --> Tasks["List of PlazaTask"]
-    Tasks --> World["PlazaWorld"]
-    Clock["now, UTC day"] --> World
-    World --> Plan["StreetPlan<br/>segments and placements"]
-    World --> Att["TaskAttention per task<br/>anomalies, billboard candidates"]
-    World --> Plaza["FrontierPlaza<br/>home, overview, pylons"]
-    World --> Overlays["mounts, roof billboards, banners, lamps,<br/>gantry, jumbotron, spires, week signs"]
-    World --> Beacons["Beacons"]
-    World --> Scenery["Scenery<br/>fillers, hero towers, jumbotron tower, skyline, plaza furniture"]
-    World --> Solids["solids, each with a height band<br/>plots and roof kit, spires, scenery boxes, pylon posts and signs,<br/>roof panels, gantry legs and beam, lamp posts"]
-    Scenery --> Solids
-    Solids -->|"at walk height"| Collider["WalkCollider"]
-    Solids -->|"all, for the sweep"| Flight["Flight.plan / Flight.route"]
-    Plan --> Network["StreetNetwork<br/>the street, the mouth, the axis to home"]
-    Plaza --> Circuit["CharacterLoop: swept route clearance"]
-    Solids --> Circuit
-    Circuit --> Gait["CharacterGait: world foot contacts and body motion"]
-    Plaza --> Network
-    Network --> Flight
-  end
-  subgraph scene ["Scene, needs a GPU context"]
-    Plan --> Ctl["PlazaSceneController<br/>sky, fog, ground, road, plaza, buildings, fillers, skyline"]
-    Scenery --> Ctl
-    Plaza --> Ctl
-    Overlays --> Ctl
-    Walls["WallTextures"] --> Ctl
-    Ctl --> LOD["FacadeLodManager<br/>far, sign, live"]
-    Ctl --> Surfaces["PlazaSurfaces<br/>billboards, tickers, markers, signs, banners, jumbotron"]
-    Ctl --> Sprites["PlazaSprites<br/>lanterns, beacons, lamps, spires, chase lights"]
-    Beacons --> Sprites
-    Ctl -->|after static baking| Characters["PlazaCharacters: skinned models and leg IK"]
-    Gait --> Characters
-  end
-  subgraph harness ["Harness, dev_main.dart"]
-    Cam["FlyCameraController<br/>walk, Flight, landing"] -->|eye| LOD
-    Cam -->|eye| Surfaces
-    Cam -->|eye| Ctl
-    Cam -->|camera| Sprites
-    Cam -->|distance visibility| Characters
-    Picker["PlazaPicker"] --> Cam
-    Walk["MorningWalk"] --> Cam
-    Collider --> Cam
-    Flight --> Cam
-  end
+flowchart TD
+  Projects[Projects list category action] --> CategoryPage[CategoryPlazaPage]
+  Details[Project details action] --> ProjectPage[ProjectPlazaPage]
+  CategoryPage --> CategoryProvider[categoryPlazaProvider]
+  ProjectPage --> ProjectProvider[projectPlazaProvider]
+  CategoryProvider --> Repo[PlazaRepository]
+  ProjectProvider --> Repo
+  Repo --> DB[JournalDb private-filtered reads]
+  Repo --> Cache[EntitiesCacheService categories and locks]
+  DB --> CategoryData[CategoryPlazaData project summaries]
+  DB --> ProjectData[ProjectPlazaData tasks and checklist IDs]
+  CategoryData --> CategoryGen[generateCategoryWorld]
+  ProjectData --> ProjectGen[generateProjectWorld]
+  CategoryGen --> World[PlazaWorld]
+  ProjectGen --> World
+  Day[plazaDayProvider UTC midnight and resume] --> World
+  Locale[PlazaCopy active locale] --> World
+  World --> View[PlazaView]
+  View --> Portal[Project portal]
+  Portal --> ProjectPage
+  View --> TaskPage[Regular TaskDetailsPage]
+  View --> Write[ChecklistTicks optimistic edit]
+  Write --> Repo
+  Repo --> Persistence[PersistenceLogic]
 ```
 
-`PlazaWorld` is built once per scene from the task list, the clock, a project
-label, the category labels and a `StreetLayout`. Its constructor derives the
-plan, the plaza, the attention verdicts, the anomalies, the billboard
-candidates, the beacons, every piece of street furniture, the scenery, the
-solids and the collider over the ones at walk height, so the scene, the
-HUD, the search sheet, the flights and the tour all read from one object.
-It also composes the two ticker strings: `countsText` (project label,
-attention count, in-progress count, done of live, built-week count) for the
-gantry, and `tickerText` (the same with the top three anomaly headlines) for
-every other band.
+`loadProject` first resolves the requested project through the journal's
+private-status filter and checks its category lock. It queries denormalized
+project membership, excludes deleted tasks, and rejects stale links whose task
+category or normalized privacy differs from the project. It never queries all
+projects or pulls linked tasks from another project into the world.
 
-The harness scores the penguin world against the demo fixture clock
-(`manualDemoNow`, 2026-07-17 10:30) because the world's due dates are
-authored relative to it. The project label is `Project Waddle`.
+Checklist and cover entities, then checklist items, are read in batches bounded
+by the repository's SQLite parameter budget. Deleted/archived checklist content
+is excluded by the projection. Links are bidirectional, deduplicated and kept
+only when both endpoints are visible members; hidden and deleted edges are
+excluded. Dependency IDs include unresolved children and filtered membership so
+late sync arrivals and membership corrections can refresh the snapshot.
 
-Every frame the harness advances the bench or the tour, the morning walk and
-the camera, hands the eye to the LOD manager, the surface layer and the scene
-controller (light-pool fade), hands the camera to the sprite layer, and
-publishes a rolling 120-frame window to the debug overlay four times a
-second. `PlazaFrameWindow` overwrites a fixed circular buffer and maintains
-a running sum; only publishing the HUD scans for the worst frame. The HUD
-keeps the manager's `FacadeLodStats` object instead of copying each of its fields.
+`projectPlazaTask` is shared with the fixture projection. It computes progress
+from the complete deduplicated checklist while capping the open preview. The
+preview carries durable item IDs parallel to its titles; its length is never
+used as the completed count. Local covers use file URIs, including escaped
+spaces. The repository does not need a GPU.
 
-# The street: nothing ever moves
+`loadCategory` queries exactly one category, including closed projects. It reads
+lightweight task facts for those projects and defers checklist, link and cover
+hydration until drilldown. It checks category membership again rather than
+trusting a stale query result. Locked/deleted categories yield no world.
+`ProjectPlazaPage.categoryId` constrains a category drilldown even if sync later
+moves the project: the page removes the scene instead of following it outside
+the selected scope.
 
-Lotti is local-first with concurrent task creation on several devices, so
-there is no global creation order to lay a street out by. `StreetLayout.plan`
-is a pure function of data that merges identically everywhere.
+# Snapshot and edit lifecycle
 
-- Tasks sort by `(createdAt, id)` and fall into **UTC week buckets** anchored
-  on Monday 00:00 UTC (`weekStart`). Week zero is the Monday of the earliest
-  task unless an `epoch` is passed; a task older than an explicit epoch lands
-  in bucket zero. One built bucket is a `groupLength` (40 m) segment; an
-  empty week collapses to a `gapLength` (4 m) segment drawn darker.
-- Inside a bucket, tasks alternate road sides in order (even index left) and
-  split the usable length (`groupLength` minus 2 × `sideMargin` of 1.5 m) by
-  a per-id FNV-1a weight (`widthFactorFor`, 0.5 to 1.5, from `stableHash`;
-  `String.hashCode` is not stable across VM versions). A building is
-  `min(0.95 × slot, clamp(0.9 × slot, 2.5, 18))` wide and `0.8 × plotDepth`
-  (8 m) deep, its centre `roadWidth / 2 + plotDepth / 2` off the axis,
-  facing the road.
-- **The fold.** After every `foldEvery` (4) buckets the road turns 90°,
-  runs a `connectorLength` (44 m) connector segment (`isGap` and
-  `isConnector`, no buildings) and turns 90° again, so rows alternate
-  direction as a serpentine. `foldAfter(bucketIndex)` depends on the bucket
-  index alone: even rows turn one way, odd rows the other. No fold follows
-  the last bucket, and a street shorter than one row never folds (the
-  penguin world is one straight lane).
-- **Height is weight.** `heightFor` is
-  `minBuildingHeight + priorityWeight × 4.2 × ln(1 + heft)` clamped to
-  `[minBuildingHeight, maxBuildingHeight]`, where `heft` is links +
-  checklist items + open items and the priority weight is 1.6 (urgent),
-  1.3 (high), 1.0 (medium), 0.8 (low). A wordy title changes nothing. The
-  week's heaviest task (ties by id) is its **landmark** and stands
-  `landmarkFactor` (1.3) taller, capped at 1.3 × `maxBuildingHeight`.
-- Deleted tasks keep their plot as a fenced empty lot.
+Both scoped stream providers share a serialized reload loop. Notifications that
+intersect dependencies, project/link/category changes and private visibility
+changes trigger reads. During discovery any notification invalidates the pending
+read because child IDs are not known yet. A burst schedules one replacement;
+superseded results never publish.
 
-`StreetLayout` defaults are `roadWidth` 18, `maxBuildingHeight` 32,
-`minBuildingHeight` 6, `plotDepth` 10, `pxPerMeter` 90. **The harness passes
-three of them from `PlazaLayoutKnobs`**: `roadWidth` 25, `maxHeight` 14,
-`pxPerMeter` 90, so in the running prototype the road is 25 m wide and no
-building exceeds 14 m (a landmark 18.2 m). `projectSeed` (1337 in the
-harness) is carried but does not enter placement.
+```mermaid
+stateDiagram-v2
+  [*] --> Reading
+  Reading --> Reading: notification marks replacement pending
+  Reading --> Reading: superseded result discarded, replacement read
+  Reading --> Ready: current snapshot emitted
+  Ready --> Reading: relevant notification
+  Reading --> Failed: current read error emitted
+  Failed --> Reading: next relevant notification
+  Ready --> Reading: private toggle clears visible snapshot first
+  Reading --> Disposed: last route unsubscribes
+  Ready --> Disposed: last route unsubscribes
+  Failed --> Disposed: last route unsubscribes
+  Disposed --> [*]
+```
 
-The tests in `street_layout_test.dart` pin: shuffled arrival yields an
-identical street, appending never moves an existing building, a late-syncing
-task jostles only its own bucket, crowded weeks never overlap, empty weeks
-are gaps, the fold is a function of bucket index and not of tasks, and height
-follows links and open items but not words. **Known edge**: a task syncing
-into a previously empty week turns the gap into a plot group and shifts
-everything downstream; accepted for the prototype and documented in the
-tests.
+Pages retain their scene during ordinary refreshes and background errors. Null
+snapshots remove inaccessible content, and a deliberate private toggle clears
+old content before the replacement read, including when that read fails. Search
+re-filters its current query when tasks change. Scope changes clear cached scene
+data. Locale/day changes regenerate localized facts; wall textures also refresh
+when the renderer's locale changes.
 
-# The frontier plaza and the street furniture
+`plazaDayProvider` schedules the next UTC midnight and invalidates on application
+resume. Its timer and lifecycle listener are disposed with the last consumer.
+`PlazaView.didUpdateWidget` preserves camera pose and the camera back stack while
+rebuilding scene bindings for a new world. It disarms live facades and stops the
+current tour/walk state on replacement.
 
-Everything beyond the street is derived from the `StreetPlan` (and, for
-attention, from task data plus the day). None of it moves a building.
+`ChecklistTicks` optimistically toggles by item ID, coalesces repeated clicks
+while a write is pending, and rolls back false/failed writes. A refreshed preview
+cannot redirect an in-flight edit to another item. Before persisting, the
+repository rereads the task and item, verifies current project membership and
+checklist membership, and rejects deleted, archived or locked content. It copies
+fresh item data, stamps user provenance and updates metadata through
+`PersistenceLogic`, preserving a concurrent title change. Failures produce a
+localized toast. Category portals have no editable checklist.
 
-**Plaza geometry** (`frontierPlazaFor`): the square starts `plazaSetback`
-(7 m) past the end of the newest segment, is `plazaDepth` (72 m) deep and
-`plazaWidth` (62 m) wide, in the last segment's frame. On a folded street
-the last row runs back alongside an earlier one, so the whole plaza frame is
-shifted sideways by `plazaFoldClearance` (`plazaWidth / 2 + 11` = 42 m)
-toward the district's outside, away from the centroid of every plot
-(`plazaLateralOffsetFor`). A straight street keeps the plaza on its axis.
+# Generation and spatial memory
 
-- **Home** stands 73 m past the street end, at `eyeHeight` (2.2 m), looking
-  back down the street.
-- **Overview** (`overviewPoseFor`) is the map shot: the bounding box of every
-  placement, every segment start, the street end and a point 85 m past the
-  street end (the jumbotron) gives an `extent` (clamped 120 to 2000 m). The
-  camera stands `0.58 × extent` behind the box centre along the last
-  heading, `0.72 × extent` up, yawed along the heading and pitched
-  `-atan2(0.72, 0.5)` (about 55° down), so the whole district and the
-  jumbotron fit a 60° field of view.
-- **Pylons**: four slots in plaza-local metres (lateral, along, width,
-  height, bottom): `(-14, 20, 16, 9, 4.5)`, `(14, 23, 13, 7.5, 5.5)`,
-  `(-19, 38, 11, 6.2, 11.5)`, `(19, 41, 9.5, 5.4, 11.5)`. Every panel faces
-  the point `(0, 52)` so all four read from home. Slot order is attention
-  rank; only the content changes.
-- **Mounts** (`plazaMounts`, `mountedSlotsFor`): the newest building on each
-  side carries a screen (ranks 4 and 5, `min(9.6, 1.2 × depth)` wide, 7 m
-  tall, bottom 2.6 m) on its plaza-facing end wall and a ticker band under it
-  (`1.1 × depth` wide, 1.3 m tall, bottom 1.2 m, 3.5 or 2.8 m/s).
-- `PlazaWorld.billboardSlots` is the four pylons then the mounted screens,
-  six in all (`billboardSlots`); slot i shows billboard candidate i, and a
-  slot with no candidate stays empty. `builtBillboards` and `roofPanels`
-  pair each built slot with its attention record once. `MountedPanel` keeps
-  a task ID, screen and ticker together; sibling layers do not zip them by
-  index. Pylon presets, `FurnitureKind` and `SpireStyle` own their dimensions
-  so the renderers and collision footprints use the same values.
+`ProjectWorldConfig` controls seed, minimum plot spacing, completed setback,
+weeks per row and ambient creature budget. `generateProjectWorld` anchors the
+timeline to the project's start date; neither generator mutates journal data.
+`PlazaWorld` derives placements, attention, billboards, beacons, street furniture,
+scenery, collision solids, walking routes and localized ticker text once per
+snapshot. It needs Flutter text/date libraries but no GPU context.
 
-**Roof billboards** (`roofBillboardsFor`): one panel above each anomalous
-building (most urgent first, at most 12), `0.95 × width` wide, `clamp(2.6 +
-0.45 × score, 3, 6)` tall, bottom at the roof plus 0.5 m, facing the street,
-with a glow cycle of `clamp(3.6 - 0.4 × score, 1.2, 3)` seconds.
+Task placement sorts by creation date and ID, using Monday-aligned UTC week
+buckets. Tasks older than the project epoch land in week zero. Empty weeks
+collapse into gaps. Alternating sides split a week's usable frontage by a stable
+per-ID weight. Busy weeks lengthen enough to retain readable plot widths; turns
+and connectors fold the timeline into rows and leave room for completed setbacks.
+Height follows priority and checklist/link weight, rather than title length.
 
-**Banners** (`bannersFor`): buildings at least 12 m tall carry a vertical
-neon banner (`min(1.8, 0.3 × depth)` wide, `0.7 × height` tall from
-`0.15 × height`) on the end wall facing along their row.
+This is deterministic, not immutable placement. Adding tasks inside a week can
+move its siblings; crossing a density threshold or filling a previously empty
+week can move downstream geometry. Completed tasks retain their week and move
+laterally away from the road. Default low-level layout parameters preserve the
+older fixture contracts; integrated generators enable density and priority
+scaling. Renderer debug tuning preserves the remaining generator parameters.
 
-**Lamp posts** (`lampPostsFor`): `roadWidth / 2 - kerbFixtureInset` (1.6 m)
-off the axis on both kerbs at a `lampRhythm` (18 m) beat, each beat
-snapped into the nearest gap between buildings that is at least 2.5 m
-wide (never in front of a facade) and dropped when it would stand within
-a third of the beat of another post, plus `blockHeadAlong` (1.5 m) into
-every built block on the left kerb (the week sign hangs from it). Each
-post throws a 5 m pool.
+Priority scales facade and attention billboard dimensions within their mounts:
+urgent is full size, with successively smaller factors for high, medium and low.
+Mount centers and orientation remain fixed. Completed walls are muted green;
+completed roof lights stay clearly green and do not pulse. Cancellation remains
+a neutral, distinct status. Overview framing grows with the full district;
+the camera's far plane grows with it rather than clipping to the prototype size.
 
-**Week signs** (`weekSignsFor`): a 5 × 1.4 m sign hung at 3.2 m from the
-left-hand block-head lamp post (same inset and along as the post, no post
-of its own), facing whoever walks in; the right kerb is left clear because
-that is where the plaza's pylons show past a block's mouth. The scene also lays a **block marker**
-(20 × 6.5 m) on the road 9 m into each built block, oriented to the last
-row's heading rather than the row's own so it reads the right way up from
-the overview.
+Category generation assigns one named avenue per project using explicit layout
+buckets, while portal records retain actual creation dates. Since Home sits at
+the street frontier, completed/archived avenues are ordered at the opposite end.
+Within each completion group, creation date and ID determine order. Portals carry
+real project status, total/done task counts and attention/overdue counts. They
+reuse the building renderer, but project labels and actions stay distinct from
+task labels. Entering pushes a project route above the category, preserving the
+category camera on return.
 
-**Home** looks a little up (`homePitch`, 6°) so the masthead and the rear
-pylons sit in the upper frame and the paving stops filling the lower
-half. The rear pylon pair stands on 11.5 m legs so, seen from home, each
-panel clears the front pair's top edge and the masthead clears both; the
-layout test projects every panel's corners into the frame and asserts no
-two overlap and none is cut.
+# Attention and navigation
 
-**Gantry** (`gantryTickerFor`): a ticker spanning the street mouth 3 m past
-the street end, `roadWidth + 4` wide, 1.8 m tall at 10.5 m, 4.5 m/s, facing
-home; it shows `countsText`. `PlazaWorld.tickerTexts` gives every band its
-line: a band on a plaza-mount building speaks for that building (its
-state word with a glyph, then the reason or the due date, short enough
-for a narrow band), the gantry counts the district, the hero rooflines
-carry `tickerText`.
+`attentionFor` evaluates UTC calendar days. Done, cancelled and deleted items
+score zero. Blocked and overdue work earn the strongest signals; overdue age,
+near deadlines, stale activity, high priority and old heavy work contribute.
+The highest scores populate the frontier billboards and the Morning walk.
+Category portal attention additionally reflects unfinished overdue/attention
+counts inside the project. Closed projects never burn for old deadlines.
+`PlazaCopy` turns these facts into translated labels and localized dates; task
+and project titles remain user content.
 
-**Jumbotron** (`jumbotronSlotFor`): a 30 × 16 m screen with its bottom at
-`jumbotronBottom` (35 m, above the raised rear pylon on its side as seen
-from home) on a tower beside the
-plaza's mouth: `jumbotronAlong` (6 m) past the street end and
-`jumbotronLateralClearance` (6 m) outside the plaza's edge on the district's
-outside (the side the plaza shifted toward; the left on a straight street),
-turned to face home, so the masthead sits over the billboards in the first
-frame and marks the way out. `JumbotronWidget` cycles the project card and
-the top three headlines every 5 s over the billboard tasks' cover art, and
-holds the project card while `PlazaSurfaces.pinJumbotron` is true (the
-tour's jumbotron stop pins it).
-
-**Spires** (`spiresFor`): the two tallest buildings carry a mast with a
-blinking warning light, as does the jumbotron tower, which is itself a
-building: windowed on every face over a trading shopfront parade, a teal
-crown and teal corner strips, and a pool at its foot.
-
-**Roofline tickers** (`rooflineTickerFor`): the two tallest buildings that
-carry no roof billboard (`PlazaWorld.heroes`) get a band along their
-roofline (1.9 m tall, 4.2 or 3.4 m/s) showing `tickerText`.
-
-**Facing pose** (`PlazaSurfaces.facingPose`): before a billboard at
-`max(14 m, 1.25 × width)` unless a distance is given, pitched at the
-panel's centre but never more than 12°, so the posts and the paving stay
-in frame and verticals stay near vertical. The task pose caps its pitch at
-`maxTaskPitch` (14°) for the same reason: a landmark loses its roof
-signage before it loses its street.
-
-**Task pose** (`taskPoseFor`): on the road in front of a facade at eye
-height, `max(16, 1.2 × width, 0.9 × (height + roofSignageHeight + 3))`
-metres back (`roofSignageHeight` 6.5), capped at `maxTaskStandOff` (24 m,
-inside the live range and the street: farther out the camera lands among
-the next row's buildings, which then take the live slots), yawed at the
-wall and pitched at the midpoint of wall plus signage. Used by attention
-beacons, facade taps, search results, billboard taps and the morning walk.
-
-The tests in `plaza_layout_test.dart` pin that appending to the newest week
-does not move the plaza, that a straight street keeps it on the axis, that
-the pylons face the focal point, and the positions of mounts, banners,
-lamps, gantry, jumbotron and spires.
-
-# Attention and lanterns
-
-`attentionFor(task, now)` works on the UTC calendar day (`_day`), so every
-device flags the same tasks on the same date. Done, cancelled and deleted
-tasks score zero. Otherwise it sums:
-
-| Signal | Points |
-|---|---|
-| blocked | 3 |
-| overdue | `clamp(3 + weeks overdue, 3, 6)` |
-| due within `dueSoonWindow` (3 days) | 2 |
-| in progress and untouched for `staleAfter` (14 days) | 2 |
-| priority urgent or high (`priority <= 1`) and state open | 1 |
-| `heft >= 6` and created at least `oldAfter` (56 days) ago | 1 |
-
-The `reason` is the first that applies of blocked, overdue since a date,
-quiet for N days, due on a date, each in the same problem-then-action
-grammar (`blocked — needs a decision`, `overdue since Jul 14 — finish or
-move it`, `quiet for 14 days — pick it back up`, `due today — finish it`
-with `tomorrow` or `in N days` as the case may be); it is the headline on
-billboards, tickers and the jumbotron, and the live facade repeats it
-under its checklist. Score at or above `anomalyThreshold` (3) makes an
-**anomaly**: attention beacon, pulsing lantern, roof billboard, billboard
-candidate. Score at or above `billboardThreshold` (2) may fill a spare
-plaza slot; `billboardCandidates` sorts by score then id and takes six.
-
-The **lantern state** is the first that applies of off (finished), blocked,
-overdue, inProgress, open. It drives every state colour in the scene
-(`PlazaStyle.lantern`): the roof lantern, the billboard frame and rim, the
-light pool in front of the facade, the wall window texture, the beacon
-colour of an attention beacon and the chip on facades and panels.
-
-# Beacons
-
-`beaconsFor` emits, in this order: **Home** (the plaza's home pose), then
-walking the segments newest first, a **Corner** beacon at the start of each
-connector looking along it and a **Block** beacon for each built week, then
-one **Attention** beacon per anomaly. A block beacon stands `blockBeaconInset`
-(20 m) *before* the block start, looking down it with a 0.05 rad upward
-pitch, so the first pair of facades fits the frame. An attention beacon's
-pose is `taskPoseFor` its building. Markers hang 1.6 m above the road
-(1.8 m for attention). There is no overview beacon: the overview is
-reached by key, button or the morning walk. Attention and home beacons are
-visible within 450 m, block and corner within 320 m.
-
-# Camera: walking, flying, landing
+The frontier plaza, mounts, furniture and camera poses come from
+`domain/plaza_layout.dart`. `StreetNetwork` joins the folded street to Home.
+`WalkCollider` precomputes rotated footprints and merges nearby aligned ones so
+narrow gaps cannot trap the walker. `Solid` also carries height, letting flights
+clear pylons, signs, roof structures and buildings while walkers pass beneath
+suspended geometry.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Walking: boot at Home
-  Walking --> Flying: flyTo from a beacon, facade or billboard tap, Tab, H, M, Backspace, search or a walk stop
-  Walking --> Flying: movement key while above eye height plus 1.5 m, a landing flight straight down
-  Flying --> Walking: flight lands, onArrived
-  Flying --> Walking: drag look, or a movement key below landing height, cancelled in place
-  Flying --> Flying: movement key above landing height (mid arc, or cruising down the street), replaced by a landing flight
-  Walking --> Walking: WASD and shift, the collider keeps the walker out of every solid
+  Walking --> Flying: beacon, billboard, search, Home or Overview
+  Walking --> Flying: movement at altitude starts a safe landing
+  Flying --> Walking: arrival
+  Flying --> Walking: manual movement or drag cancels
+  Flying --> Flying: high movement replaces flight with landing
+  Walking --> Walking: collision-constrained movement
 ```
 
-`FlyCameraController` walks at `walkSpeed` 3.4 m/s (shift × 2.5) with a
-0.12 s velocity blend, at a 60° vertical field of view and a 1400 m far
-plane. Drag look is 0.0032 rad per pixel of yaw and 0.0028 of pitch, pitch
-clamped to ±1.25 rad. Walking always happens at `eyeHeight`; a pose set from
-above (overview, tour) keeps its height until the next step, and that step
-first plans a **landing flight** to eye height rather than dropping in one
-frame. Pressed keys are reconciled with `HardwareKeyboard` every frame so a
-key-up lost to a focus change cannot latch the camera walking. Starting a
-flight clears the previous walking velocity; arriving at the overview cannot
-resume stale momentum and drop the camera. Drag look notifies `onMovement`,
-which abandons the morning walk whether it is flying or holding at a stop.
-
-A `Flight` is planned once, as a chain of straight **legs** with one
-**speed profile** over the whole way, and is evaluated by normalised time:
-
-- **Two kinds.** `Flight.plan` is the direct line, one leg, cruising at
-  `directSpeed` (36 m/s): a climb to the overview, a dive back, or any
-  flight in a world without a street. `Flight.route` follows the street
-  between two stops on the ground: the controller asks the
-  `StreetNetwork` for the way (`pathBetween`), every point of it becomes a
-  via point at `streetFlightHeight` (5 m, over the parade and level with
-  the screens, under every sign and the gantry), and the flight cruises at
-  `streetSpeed` (10 m/s) so the facades and the billboards pass by. A
-  flight is routed when both ends are no higher than
-  `FlyCameraController.groundCeiling` (the street height plus a metre).
-  A target at the current position uses a direct turn, avoiding a trip out
-  to the street and back merely to change heading.
-- **The S-curve** (`_Profile`): speed ramps up over `rampSeconds` (1.6 s)
-  on a smoothstep, holds the cruise, and ramps down the same way, so
-  acceleration starts and ends at zero; a way shorter than one cruise-ramp
-  (`cruise × ramp`) shrinks both ramps to `sqrt(length × ramp / cruise)`
-  and never reaches the cruise. Base duration is `2 × ramp + (length −
-  cruise × ramp) / cruise`. `cruiseSpeed` and `rampTime` describe this base
-  profile; `distanceAt(t)` includes the extra time for turns.
-- **Turn timing** (`_TurnTiming`): a table samples the original plan at
-  120 Hz, capped at 4096 intervals. Each interval takes at least enough time
-  for its yaw change at 45°/s and pitch change at 30°/s. Only sections that
-  exceed these limits slow down; position still follows the exact lifted
-  path. Heading interpolates between the table's knots, keeping rotation
-  bounded between samples, including at street corners and the ±π seam.
-  A turn in place gets an eased timeline even with zero travel distance.
-  `duration` includes this added time. The table is built once per flight;
-  each frame locates its interval with a binary search.
-- **The lift of a leg**: `arc × profile(s)` over the leg's straight line,
-  where `s` is the fraction of the leg and the profile is a smoothstep
-  climb over the first `rampStart` of it, a cruise, and a smoothstep
-  descent over the last `rampEnd`. With nothing on the leg the ramps are
-  `defaultRamp` (0.35) each and, on a direct flight over `arcThreshold`
-  (60 m), the arc is the **district arc** `min(45, 0.22 × distance) ×
-  horizontalFraction`; a climb gets none, and a routed leg none.
-- **The sweep over the solids**, per leg: the line is clipped against
-  every solid's footprint (`_span`, a slab test in the footprint's frame)
-  and any solid whose band of height the line would enter, `clearance`
-  (1.5 m) included, is lifted over: the ramps shrink to `rampFit` (0.85)
-  of the way to the first such solid and from the last (never under
-  `minRamp`), and the arc becomes the largest `top + clearance − line
-  height` over those spans. Lifting can raise the line into a solid it
-  passed under (the gantry beam), so the lifted set grows until it holds.
-  A solid the line already passes over or under asks for nothing. The
-  pitch dips `-atan2(lift, 40) × 0.9` so the camera looks down at what it
-  crosses. Down a street nothing needs lifting; the test on the fixture
-  asserts every routed walk leg has `arc == 0`.
-- **Yaw.** On a direct flight with at least `lookAlongThreshold` (8 m) of
-  ground and at least 55 % horizontal, yaw turns into the travel heading
-  over the first ramp's distance, holds it, and settles onto the target
-  yaw over the last ramp's distance; shorter or mostly vertical trips
-  blend yaw directly. On a routed flight the yaw looks at the point
-  `lookAhead` (12 m) further along the way, which turns a corner before
-  reaching it. A routed flight keeps where its way leaves the road as a
-  distance along the flight (`_wayEnd`, the whole length for a stop on
-  the road): the look-ahead never reaches past it, so when the stop stands
-  beside the road the last leg is the **arrival** hop off the way and the
-  camera holds the road's heading through the hop, then turns onto the
-  stop's own heading over the last ramp, instead of swinging toward the
-  stop and back. Each ramp blends between two *fixed* headings (the way's
-  heading where the ramp ends, or where it starts, both computed once),
-  so the side the camera turns to is settled for the whole ramp, and a
-  blend is a slerp of the two direction vectors (`_blendHeading`), so a
-  heading that crosses the ±π seam of `atan2` between two frames is no
-  turn at all; only exactly opposite headings fall back to the angle
-  blend. The pitch is level between the two stops' own pitches.
-- **Joins.** A stop beside the road merges onto it and pulls off it on a
-  diagonal: `pathBetween(a, b, join:)` slides both projections
-  `joinDistance` (8 m) along the way, never past the next vertex and never
-  past each other, so the first and last legs are slants, not right-angled
-  hops. A vertex within `mergeDistance` of a projection counts as reached:
-  a stop at a corner, or at home, joins the way there and never slides
-  round the corner onto the next stretch.
-
-The street network (`domain/street_network.dart`) is the polyline of
-every segment, gaps and fold connectors included, continued through the
-plaza's mouth (its front edge on its axis, which the fold offsets from the
-street's end) up the axis to home. `project` finds the nearest point and
-how far along it lies; `pathBetween` is both projections and every vertex
-between, in travel order, leaving out the projection of a stop already on
-the network. A stop off the network (every task pose stands a few metres
-off the crown) gets a short first or last leg to its projection. A direct
-flight goes *over* what stands on its line, never round it; a stop a step
-from a wall the line crosses gets a near-vertical drop beside that wall,
-which is the only path there is. The stop poses stand outside every solid
-by the walker's clearance (`maxTaskStandOff` keeps a task pose short of
-the far pavement's lamp line, tested against the layout), so a pose never
-asks for a lift the profile cannot give. The one shape the model cannot
-fix is a climb that starts *under* a solid in the air and rises into it;
-no stop stands under a sign or the beam.
-
-Every flight pushes the departure pose onto a back stack in the harness;
-Backspace flies the reverse without pushing. The destination building of a
-facade flight is pre-promoted to the sign tier (`prepare`); nearby signs
-also load under the [flight promotion budget](#facade-tiers-and-the-budget). `Tab` cycles the navigation
-beacons (everything but attention); when cycling toward older weeks a block
-or corner pose is turned round so the walk reads as walking, not reversing.
-
-# The morning walk
+`Flight.route` follows street segments between low poses; `Flight.plan` handles
+climbs and dives. Both use smooth speed profiles, bounded turn timing and swept
+height clearance against solids. Starting flight clears walking velocity, and
+hardware key state prevents a lost key-up from leaving movement latched.
+Camera history returns through prior poses before the route exits.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Flying: Morning walk button, fly to the first stop
-  Flying --> Holding: flight lands, arrived
-  Holding --> Flying: hold elapsed and a stop remains
-  Holding --> Holding: Space toggles paused, the hold timer freezes
-  Holding --> Finished: hold elapsed on the last stop
-  Flying --> Finished: any movement input or Esc, abandon
-  Holding --> Finished: any movement input or Esc, abandon
+  [*] --> Flying: start Morning walk
+  Flying --> Holding: arrive
+  Holding --> Flying: hold completes, next stop
+  Holding --> Holding: pause or resume
+  Holding --> Finished: final hold completes
+  Flying --> Finished: manual movement or Escape
+  Holding --> Finished: manual movement or Escape
   Finished --> [*]
 ```
 
-`morningWalkStops` is the overview (4 s hold), up to three anomalies at
-their task poses (3.2 s each) and home (1 ms). `MorningWalk.tick` returns
-the next stop when a hold is over; the harness flies there and calls
-`arrived` when the flight lands. The HUD chip reports the stop index and
-whether Space will pause or resume.
+The walk visits Overview, up to three attention stops and Home. A nearby facade
+tap activates its live controls; distant taps and search fly to the facade.
+Project portals open project worlds, app task details delegate to the existing
+task page, and the independent fixture retains its local summary panel.
 
-# The walk collider
+# Rendering and bounded work
 
-A `Solid` (`domain/solid.dart`) is a `Footprint` (a rectangle on the
-ground: centre, rotation about +Y, width along local X, depth along local
-Z) with the band of height it fills, `bottom` to `top`. `PlazaWorld.solids`
-contains the scene’s stationary obstacles: the plots up to their roof kit
-(`plotSolidFor`, `roofKitHeight`), the spires (`plotSpireSolidFor`, and the
-hero and jumbotron towers add their own through `SceneryBox.solids`),
-every scenery box (fillers, hero towers, the jumbotron tower, the skyline
-ring, the plaza furniture), the built pylons' posts and signs
-(`pylonSolidsFor`), the roof panels (`signSolidFor`), the gantry's legs and
-beam (`gantrySolidsFor`) and the lamp posts (`lampPostSolidsFor`). The
-scene reads the same constants (`lampPostHeight`, `gantryTopFor`, the spire
-sizes), so a box on screen and a box in the list are one thing.
+`PlazaView` checks Flutter GPU before initializing shared shader resources and
+handles unavailable renderers with a localized exit shell. Desktop runners enable
+GPU at startup. Frame pacing stops when the route is hidden or the app is
+backgrounded. Scene repainting uses `PlazaRepaint`; hosted widget subtrees don't
+rebuild with every camera frame. The fixed `PlazaFrameWindow` buffer publishes
+statistics periodically rather than allocating a new history each frame.
 
-`WalkCollider` keeps the walker out of every solid `atWalkHeight` (bottom
-below eye level) with a `solidClearance` (0.6 m) margin: a
-point-versus-rotated-rectangle push through the nearest face. Each
-footprint's frame (its sine and cosine, its half extents with the margin)
-is fixed once when the collider is built, and a footprint whose corner is
-nearer its centre than the walker is rejected on the squared distance
-before it is rotated into. A solid in the air, a pylon's sign or the
-gantry's beam, is not in it: you walk under those, and only a flight has
-to clear them. Two neighbours in a crowded week can stand closer than
-twice the margin, and resolving them one after the other never settles,
-so **aligned footprints are merged** first (`_mergeAligned`): same facing,
-same row line, same depth, and clearances that overlap become one
-footprint, repeatedly, so the alley between them is solid. `footprints`
-exposes the merged set for the tests.
+`PlazaSceneController` builds geometry through library parts and shared bindings.
+`PlazaBoxes` shares unit meshes and immutable materials. Static opaque meshes are
+baked by spatial cell and compatible material/UV/picking state; pick anchors and
+dynamic groups keep their identity. Translucent pools and individual status
+sprites keep depth ordering. Fog and ground washes recede with altitude, leaving
+road markers and status lights readable in Overview.
 
-Every rotation between a road's or a footprint's frame and the world goes
-through `frameToWorld` / `worldToFrame` (`domain/street_layout.dart`):
-local X is the right-hand normal of the facing, local Z the facing itself.
-`Footprint.local`, `Footprint.toWorld` and `Footprint.contains` wrap them,
-and the layout, the scenery, the tour and the collider build on those
-rather than expanding the rotation by hand. Square posts (spires, pylon
-footings, gantry legs, lamp posts) are `Solid.post`.
-
-# The scenery
-
-`domain/scenery.dart` places every seeded solid, in pure Dart, and the
-scene only builds what it is handed: a position the scene invented on its
-own would be a box the collider cannot know, and a wall you walk through.
-Every box is a `SceneryBox` (id, centre, yaw, width along local X, depth
-along local Z, height); sizes come from `stableUnit(id, salt)`, never from
-task data.
-
-- **Fillers** (`fillerBlocksFor`): behind the plots of every built row,
-  both sides, from 2 m along the row: frontage 7 to 16 m, reach 8 to 16 m,
-  height 12 to 34 m with a seeded quarter at 40 to 60 m (the fabric is
-  the tall layer behind the shops, with mid-rise landmarks so the roofline
-  behind a row is jagged), alleys of 2 to 6 m, the near face `roadWidth /
-  2 + plotDepth + 4` from the axis plus up to 4 m; nothing inside the plaza
-  plus 12 m, and **nothing in any street**: every segment has a corridor
-  (`streetCorridorFor`: the road with its plots, or the road alone on a gap
-  or a connector, plus `fillerCorridorMargin` of 2 m) and a block that
-  would overlap one (`footprintsOverlap`, a separating-axis test) has its
-  reach cut back a metre at a time, keeping its near face, until it fits
-  or falls under `fillerMinReach` (4 m) and is left out. With the default
-  fold (`connectorLength` 44 m) two rows' corridors leave 2 m between them,
-  so the sides of a row that face another row carry no fillers at all and
-  the fabric stands on the district's outside; a dropped block never
-  shifts its neighbours. A filler's yaw is the road heading, so its
-  `depth` is the frontage.
-- **Hero towers** (`heroTowersFor`): one per row that folds, 90 m past the
-  row end on its axis, facing back down it, 26 to 34 m wide, 0.8 × as
-  deep, 70 to 86 m tall.
-- **Jumbotron tower** (`jumbotronTowerFor`): 3.5 m behind the screen's
-  plane, 2 m wider than the screen each side, 6 m deep, 14 m above the
-  screen's top.
-- **Skyline** (`skylineFor`): 48 towers on a ring 50 m beyond the farthest
-  plot from `planCenterOf` (or the plaza plus 60 m), spread up to 90 m
-  further out, 16 to 42 m wide, 0.8 × as deep, 24 to 78 m tall, each
-  turned to face the centre.
-- **Plaza furniture** (`plazaFurnitureFor`): benches (0.6 × 2 × 0.9 m) and
-  planters (1.4 m square, 0.8 m) alternating every 12 m down both long
-  sides, 4 m in from the edge, a bench and a planter `nearHomeAhead` (6 m)
-  ahead of home at `nearHomeLateral` (±7 m) as the first frame's
-  foreground, and one kiosk (3 × 2.4 × 3.2 m) at plaza-local (−21, 20)
-  facing the axis: out of the home pose's frame and off every line from
-  home to a pylon. All solid.
-- **Furniture footprints**: the pylon posts stand `pylonPostSetback` (0.6 m)
-  behind the panel at `pylonPostSpread` (0.4) of its width either side on
-  1.6 m footings; the gantry legs are 0.5 m square at the ends of its span;
-  a lamp post is 0.16 m square. The scene builds the posts from the same
-  constants.
-
-# Facade tiers and the budget
-
-```mermaid
-flowchart TD
-  Far["far<br/>plate, neon strips, light bar, lantern<br/>no widget"] -->|"within 140 m, sign cap 80, paced promotions"| Sign["sign<br/>FacadeWidget sign variant<br/>initial capture and cover completion, manual input"]
-  Far -->|"tapped within live range, in front and in view, live budget available"| Live["live<br/>FacadeWidget live variant<br/>captured every 50 ms, automatic input"]
-  Sign -->|"tapped within live range, in front and in view, live budget available"| Live
-  Live -->|"on flight start, or out of budget, range or view"| Sign
-  Sign -->|"immediately"| Far
-  Far -->|"prepare on flight start, the destination only"| Sign
-```
-
-`FacadeLodConfig` defaults: `liveCap` 4, `signCap` 80, `liveDistance` 26 m,
-`signDistance` 140 m, `promotionsPerFrame` 1. When the camera or budget changes,
-or a promotion remains pending, the buildings are ranked by ground distance to the eye with a sticky factor (a surface already
-above far ranks as if 15 % closer), and the budget is handed out in that
-order. A nearby tap activates one building via `activate`; merely walking
-up to it leaves its sign static. Live also needs the eye on the street side
-of the wall and the wall ahead of the camera. Leaving live range, turning
-away or activating another wall disarms the previous one; returning needs
-a new tap. A distant tap still flies to the building first.
-Promotions are rate-limited to one per frame. During flight only static
-signs are created, at most one every 100 ms (`flightPromotionInterval`),
-within the same distance and surface caps. This starts cover loading before
-an approaching facade is reached without creating a frame-time burst.
-Starting a flight disarms the active wall; landing requires a new tap.
-Demotions are immediate. `forceAllLive` (the
-overlay's stress switch) makes every facade live and ignores the per-frame
-budget. The nearest live building is the **focused** one: its teal ring
-node is shown, and it is the wall whose checkboxes and details button
-work. Ticks live in a shared `ChecklistTicks` so the wall and the side
-panel agree; nothing is persisted.
-
-A sign surface takes an initial capture (`WidgetUpdatePolicy.manual`); the
-manager keeps requesting it until the texture lands, because the host
-attaches a frame after the component does. `FacadeWidget.onCoverChanged`
-invalidates that texture after its image has painted or failed, so a late
-network image reaches the sign without a tier change or continuous polling.
-`SurfaceCaptures.invalidate` first primes a new recording, then waits for a
-capture requested on a subsequent painted frame. flutter_scene can drain an
-old pending layer on the first request; that acknowledgement must not settle
-the refreshed image. Callbacks from a detached component are ignored.
-Widget subtrees keep their full logical size: facade world size × `pxPerMeter`
-(the plate is `0.92 × width` by `0.9 × height`). Sign captures use pixel ratio
-0.5 and live captures use 1, quartering static texture pixels without changing
-text layout or pointer coordinates.
+Facade tiers are geometry-only far, captured sign, and activated live. The LOD
+manager caps sign/live counts, uses range/view hysteresis and paces promotions.
+A flight preloads its destination and disarms live controls. Live captures use a
+short interval; still posters capture initially and when cover content changes.
+Local cover arrival retries the image and invalidates its captured texture;
+failed live image-cache entries are evicted before retry.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Pending: register new host and target next capture
-  Pending --> Settled: target capture lands
-  Settled --> Unprimed: content invalidates
-  Pending --> Unprimed: content invalidates
-  Unprimed --> Primed: request capture and fresh recording
-  Primed --> Pending: next frame targets a fresh capture
-  Pending --> [*]: forget surface
-  Settled --> [*]: forget surface
-  Unprimed --> [*]: forget surface
-  Primed --> [*]: forget surface
+  [*] --> Far
+  Far --> Sign: visible within sign budget
+  Sign --> Live: nearby tap and live budget
+  Far --> Live: nearby tap and live budget
+  Live --> Sign: flight, distance, view or budget change
+  Sign --> Far: outside sign budget
+  Far --> Sign: preload flight destination
 ```
 
-Each LOD surface keeps its building, distance, component and tier together.
-Ranking sorts references to these records; the seven-field budget has one
-construction path shared by normal and stress operation.
+`SurfaceCaptures` waits for actual capture acknowledgements. Invalidating a
+surface primes a fresh recording, then requests another capture on a subsequent
+frame: an old recorded layer landing first must not settle the refresh. Tickers
+scroll one captured period by UV offset; the jumbotron's slow shared clock only
+advances when capture is requested. Window/shopfront texture families are shared,
+and temporary canvas images are disposed after upload.
 
-# Widget surfaces and their capture intervals
+```mermaid
+stateDiagram-v2
+  [*] --> Pending: register initial capture
+  Pending --> Settled: target capture acknowledged
+  Settled --> Unprimed: content invalidated
+  Pending --> Unprimed: content invalidated
+  Unprimed --> Primed: request host recording
+  Primed --> Pending: next frame sets fresh capture target
+  Pending --> Pending: request until acknowledged
+  Settled --> [*]: surface forgotten
+  Pending --> [*]: surface forgotten
+  Unprimed --> [*]: surface forgotten
+  Primed --> [*]: surface forgotten
+```
 
-Every widget surface is a `WidgetComponent` on a `ccwQuad` with an
-`OpaqueSurface` material: widget content here is fully opaque, and an
-opaque surface depth-tests like geometry, whereas the default alpha-blended
-surface sorted unreliably (a banner sixty metres away drew over a pylon
-fourteen metres away).
-
-| Surface | Widget | Capture |
-|---|---|---|
-| activated facade (one normally; all in stress mode) | `FacadeWidget` live | every 50 ms, preserving press feedback |
-| sign facade (at most 80) | `FacadeWidget` sign | initially and after cover completion |
-| pylon, mounted and roof billboards | `BillboardWidget` | once, and again when the cover lands; hidden beyond the plaza range. The frame's breathing is the scene's glow quad, not the widget |
-| mounted, gantry and roofline tickers | `TickerWidget`, one period of text | once; the band's material scrolls the texture by UV offset every frame (`PlazaSurfaces.update`) and repeats it, on a `fadedQuad` whose ends darken by vertex colour; hidden beyond the plaza range |
-| jumbotron | `JumbotronWidget` at 0.5 × px/m | every 1 s |
-| skyline screens | `BillboardWidget` at 0.35 × px/m | once, and again when the cover lands |
-| ticker housing | a dark track and a teal rim with end caps behind every band (geometry, not a widget) | — |
-| block markers, week signs | `BlockMarkerWidget` | once |
-| banners | `BannerWidget` | once |
-| filler signs | `BannerWidget` at 0.6 × px/m | once |
-
-The **plaza range** is `max(180 m, distance from the plaza centre to the
-overview pose + 60 m)`, so the map shot still sees the pylons lit. A hidden
-surface is not captured, which is what stops the plaza's animation costing
-anything from the far end of the street. The bookkeeping is
-`SurfaceCaptures` (`scene/surface_captures.dart`), shared by
-`PlazaSurfaces` and the LOD manager: `hostedSurface` builds every widget
-component the same way (manual capture, manual input unless live), a
-`CaptureCadence` holds the surfaces on one interval and the clock their
-widgets read, `requestDue` throttles per surface (the first capture is
-free) and skips a surface the camera cannot see (`TimedSurface.seenFrom`:
-centre behind the eye by more than a few metres, or eye behind the
-surface's front), and `requestPending` re-requests the one-off captures
-until their requested capture counts land, then removes the pending requests. `PlazaSurfaces.facingPose`
-gives the pose in front of a billboard slot (14 m by default), used by the
-tour. No widget owns an animation controller: a billboard's glow, a
-ticker's scroll and the jumbotron's slides all read their cadence's clock,
-which advances only when a capture is requested.
-
-The **sign** facade variant reuses `BillboardWidget` as a photo-led poster:
-cover art fills the panel, including short ground-floor signs, with its
-existing scrim behind the title, reason and compact state chip. It hides the
-billboard navigation hint because a nearby facade activates in place.
-Finished posters retain readable titles and use the subdued done chip and
-frame. The **live** variant uses its checklist layout with the due and links
-line, as many open checklist items as the wall has room for, a smaller cover
-band when space permits, the state chip, a details button (opens the side
-panel) and the done count.
+Roof lanterns have a minimum screen size, so completed green and blocked red
+remain visible from altitude. Chase bulbs share a draw per lightbox.
+`PlazaFireBuffer` ranks flame sources intermittently and animates only a fixed
+nearest-source budget in one instance buffer. Conservative bounds are reserved
+once, and distant sources fade out. The shared procedural texture forms flame
+tongues above overdue facades and billboards; no completed/cancelled item burns.
 
 # Ambient companions
 
@@ -822,7 +354,7 @@ another on straights and briefly stagger through turns. Narrow or obstructed
 pair routes fall back to solo walkers. Groups on the same circuit share pace
 and evenly spaced phases; different regions can use different paces. Each
 region repeats its full solo/pair mix twice, with six groups on streets and
-eight in the plaza. This produces 78 penguins in the default demo world.
+eight in the plaza. The resulting population follows the generated street network.
 
 `PlazaCharacters` attaches the population **after** static mesh baking. Each
 instance has its own skeleton; geometry and token materials are shared. All
@@ -914,11 +446,11 @@ stateDiagram-v2
   Opening --> Open: lid returns to resting aperture
 ```
 
-The harness supplies its existing active clock; no extra ticker is created.
+The reusable explorer supplies its existing active clock; no extra ticker is created.
 `MediaQuery.disableAnimations` freezes the entire pose and travel without a
 catch-up jump when re-enabled. Characters beyond `visibleRange` stop rendering
 and leave the 30 Hz animation budget. Resuming visibility samples the current
-route time. Rebuilding the world or disposing the harness detaches the old rigs.
+route time. Rebuilding the world or disposing the explorer detaches the old rigs.
 `PLAZA_HIDE=characters` omits the layer for scene isolation.
 
 Tests load the shipped GLB hierarchy, inverse bind matrices and actual morph
@@ -933,390 +465,12 @@ independent blink timing. A separate junction regression checks independently
 timed crowds for collisions. Rendered appearance still requires a
 native Flutter GPU review; these tests cannot judge animation appeal.
 
-# Sprites
+# Validation boundaries
 
-`PlazaSprites` keeps lanterns, beacons, lamp bulbs/halos and spire lights
-as individually sorted sprites (`raycastable = false`). The chase bulbs
-around each billboard share one `BillboardGeometry` and `SpriteMaterial`:
-one draw per frame instead of twenty. Each batch stays local to its panel,
-so its bounds and translucent draw order remain tied to that lightbox;
-unrelated alpha-blended halos and beacons are not merged into global batches.
-`PlazaLightBuffer` stores the fixed world positions and updates only size and
-HDR colour. Bounds are committed once using `maxChaseBulbSize` (0.45 m),
-then the actual sizes are restored; the geometry uploads the current buffer
-on each draw without a bounds refit.
-
-- **Lanterns**, one per building at roof + 0.7 m, coloured by lantern state,
-  sized to `clamp(9 × 60 / d, 5, 22)` logical pixels, scaled by 2.2 when
-  lit and 1.2 when dark, pulsing in alpha on a 3 s cycle when anomalous.
-- **Beacons**, 8 px shrinking to half at their visible range, alpha 0.9 to
-  0.3 with distance; attention beacons add an expanding ring on a 2.2 s
-  cycle. Colours: home white, attention its task's lantern colour, the rest
-  teal.
-- **Lamp bulbs and halos**; the halo fades out between 30 m and 8 m so it
-  never sits on a facade being read.
-- **Spire lights** blink on for 0.55 s of a 1.6 s cycle.
-- **Chase lights**, 20 warm-white bulbs around every billboard and jumbotron
-  frame, a bright head with a three-bulb fading tail over a dim rest,
-  running round at the panel's pulse period (clamped 1.2 to 4 s).
-
-The glow (soft halo) and bulb (hard disc) textures are painted with the
-Flutter canvas and uploaded once by `loadGlow`; sprites are square dots
-until it lands. `PlazaSpriteView` caches the eye, viewport and field of view:
-lantern sizing, lamp distance fades and beacon visibility/size rerun only when
-those change. Pulses, rings, blinks and chase heads still animate. Surface
-range checks cache the eye, and map visibility updates only when its altitude
-threshold changes.
-
-# Scene composition
-
-`PlazaSceneController` owns scene resources and builds the `Scene` on
-construction. Primitives live in `plaza_primitives.dart`; records and the
-shared `PlazaSceneBindings` live in `plaza_scene_records.dart`. The controller,
-surfaces, sprites and picker share these bindings rather than forwarding
-thirteen independent collections. Fixture builders are library parts for
-walls, ground, furniture, buildings, billboards, lights and skyline.
-
-After wall textures and sibling layers attach, `bakeStaticMeshes` replaces
-compatible stationary opaque meshes with spatial batches. Vertices carry
-transformed positions, original UVs and effective linear HDR colour; texture,
-UV transform, depth bias and draw/picking flags partition the batches.
-Materials awaiting shared widget captures, such as billboard backs, are
-explicitly excluded and retain their later texture updates. Cells
-span two street groups, retaining useful culling. Picking anchors, component
-hosts and visibility groups keep their identity. Focus rings, neon groups and
-pickable backing subtrees can batch locally within their preserved anchor.
-Empty static branches are removed. Static walls remain raycastable, so they
-still occlude taps. Uploads finish before each group's source graph changes.
-Translucent pools, washes and glows retain individual depth ordering and their
-animated material references; merging these into global blended meshes would
-change which overlapping surface draws last.
-
-The builder creates:
-
-- **Shared box resources**: `PlazaBoxes` owns one plain unit cube and one
-  face-tinted unit cube per scene. Every box has an unscaled logical anchor
-  and a scaled mesh child, so attachments and ancestor-based picking keep
-  their coordinates. Matching solid colours and depth biases reuse material
-  instances, allowing the renderer to instance compatible opaque draws.
-  Shared materials are never animated or textured; surfaces with changing
-  material state keep their own instances. The helper accepts only unlit
-  materials, avoiding lighting changes from nonuniform normal transforms.
-- **Post-processing**: real HDR **bloom** (`scene.postProcess.bloom`,
-  threshold `bloomThreshold` 1.0, intensity `bloomIntensity` 0.3, scatter
-  0.6) and a soft **vignette** (0.32 at radius 0.82). Widget whites sit at
-  1.0 and stay sharp; only what `emissiveColor` pushes past white blooms:
-  neon strips, the skyline rooflines (`neonBoost` 1.6) and the chase heads
-  (1.6). The glow quads stay as the
-  near-field halo the bloom's blur cannot give a thin strip.
-- **Shaded boxes**: every massing box (buildings, upper storeys, fillers,
-  hero and skyline towers, the jumbotron tower, the kiosk, the planters)
-  is a `shadedCuboid`: per-face vertex tints (top 1.0, front and back
-  0.86, sides 0.7, bottom 0.5) multiplied into the unlit base colour, so a
-  box keeps its silhouette from every camera height.
-- **Map layer**: from `poolFadeStart` up, a teal ribbon (`_ribbon`) shows
-  down the axis of every road segment, connectors included, and the week
-  markers appear; washes fade to nothing by `poolFadeTop` and pools to
-  `poolFloor` (0.15), so the overview reads as a route with lanterns.
-- **Sky**: a `GradientSkySource` (near-black zenith, desaturated indigo
-  horizon, no sun): the night is cool so amber signage sits warm against
-  it, and the magenta lives in the hero towers' domes alone. **Fog**:
-  exponential, start 8 m, height 0 with falloff 0.028, in an indigo close
-  to the horizon, so the street dissolves into the sky. It is
-  **camera-driven**: `updateForCamera` lerps the density from
-  `fogDensityLow` (0.0055) to `fogDensityHigh` (0.002) and the max opacity
-  from 0.92 to 0.6 as the eye climbs through the pool-fade range, so the
-  map shot sees a lit district instead of a wash.
-- **Ground**: a 6000 × 6000 m slab at the plan centre. Per segment a road
-  slab (`roadWidth` wide, a step darker and bluer than the pavements,
-  darker again for gaps), 3 m pavements with a raised 0.35 × 0.18 m kerb
-  stone on both sides, a dashed centre line every 6 m on built segments,
-  and an asphalt grain overlay (a 2 m tile of dim grit). Every plot stands
-  on a pavement apron 1.5 m wider than its box on each side. The plaza's
-  kerb is open at the street mouth with a flush threshold band across the
-  opening. The plaza is a slab in the ground colour with the
-  grain, a paving-joint overlay (`WallTextures.paving`, a 4 m tile of four
-  slabs), a raised kerb round its edge open at the street mouth (0.16 m,
-  steppable, not a solid), a teal home ring with a soft warm pool under it,
-  and the benches (three slats on a dark frame), planters (a low shaded
-  crown of leaves under a lit warm rim) and kiosk (a lit sign, a warm
-  hatch and its own pool) from `Scenery.furniture`. Every beacon dot
-  stands on a slim post over a small pool in its own colour.
-- **Light pools**: one `ccwQuad` with a radial falloff texture (a hot
-  core and a short skirt, dark again inside the radius) per lit facade
-  (radius 0.55 × facade width), lamp post (3 m), pylon
-  (`0.45 × max(width, 8)`), gantry (0.3 × width) and jumbotron (0.3 × width,
-  alpha 0.12), so the walker stands on dark paving; and a wide faint
-  **wash** in the frame colour before every large emitter (pylon 1.5 ×
-  width at 0.07, jumbotron 1.2 × width at 0.05, hero screen 1.2 × screen
-  width at 0.06) so the emitters connect to the ground. A blocked or
-  overdue building spills its lantern colour in four pools round its
-  walls. **Washes** (`_addWash`, the pool texture over a rectangle): a
-  reflection streak on the paving before every pylon and the jumbotron, a
-  streak in the state colour before an alarmed facade, a warm strip under
-  every trading facade and along every filler's street side. The plaza
-  paving overlay fades with altitude like the pools. `updateForCamera` fades
-  every pool and glow quad with the eye's altitude from `poolFadeStart`
-  (12 m) to `poolFadeTop` (70 m) down to `poolFloor` (0.15), so the overview
-  is carried by lanterns, not discs.
-- **Buildings**: a category-tinted box whose depth varies by hash
-  (`0.78 to 1.1 × plot depth`, anchored to the street side), side and back
-  walls built by `_windowedWall`: a **shopfront band** at the foot
-  (`min(4 m, 0.45 × height)`) under tiled **window textures** by lantern
-  state (`WallTextures`: a 12 × 12 m tile of 4 floors × 10 bays, panes
-  0.46 × 0.5 of a 3 m cell so a window is visibly smaller than a shop
-  door; lit ratio inProgress 0.62, blocked and overdue 0.5, open 0.36,
-  off 0.2; a lit pane tops out at 0.8 alpha so screens and signs stay the
-  brightest thing on a wall; three **tile families** by `stableUnit(id,
-  'kit')`: mixed flats, a residential stack with one dark floor and one
-  lit edge to edge, a cool office grid with few blinds). The upper wall is
-  stacked in **whole storeys** from the band up (`vRepeat = floors / 4`, `vOffset` so a
-  floor slab lands on the fascia) and the remainder is a dark **cornice**
-  band at the top, so no cut row ever sits on the shops;
-  per-wall tile offset), a plinth,
-  a stepped-back upper storey at 14 m and above, a roof slab and trim, the
-  facade plate (the only pickable part of a building; on a building at
-  least `paradeWallHeight` (12 m) tall it is 0.8 × the wall wide and hangs
-  `panelY` above a street-level parade on the street face, with a storey
-  of windows either side, so the wall owns its screen; a shorter building
-  is all sign), a progress **light
-  bar** along the base (done fills it, a checklist fills its fraction, in
-  progress without a checklist shows 0.35), **neon edge strips** with glow
-  quads (emissive 0.22 off, 0.7 open, 1.0 otherwise) in the category's
-  neon, except that on an alarm (blocked or overdue) the two verticals and
-  their glow burn in the lantern colour and the roofline keeps the
-  category at half power, a seeded **roof kit** (parapet, one or two plant boxes, a
-  water tank on 40 % of buildings wider than 5 m, a mast on a third), the
-  hidden focus ring (in the lantern colour at `neonBoost`, so the faced
-  building keeps the far-tier colour language; a live wall's panel takes
-  12 % of the lantern colour so it reads as a lit screen, and a finished
-  one is dark but not unrendered), the facade anchor and the lantern
-  anchor. The neon
-  strips and their glow sit in one group that the LOD manager hides while
-  the focus ring shows, so a faced facade has one frame. The light bar
-  sits on the plinth on a full-width track a shade above the panel with
-  quarter ticks, filling from the walker's left (a +Z face's +X, where the
-  widget quads put their texture's left edge), so the lit part reads as
-  progress along a scale.
-- **Texture density**: fifteen window tiles are 480 × 192 px and fifteen
-  shopfront strips are 1584 × 192 px. Both painters keep their original
-  96-unit artwork coordinates and scale the entire canvas by one half, so
-  fine mullions, floor slabs, sign strokes and metre-sized shapes retain
-  their proportions. These thirty RGBA8 textures
-  occupy approximately 30 MiB including a full mip chain, versus 121 MiB at
-  twice the dimensions. This is a pixel-storage estimate, not a measurement
-  of process peak memory. Ground grain, paving and pool textures are separate.
-- **Shopfronts** (`WallTextures.shopfront(state, variant)`): the band is
-  one 33 × 4 m strip, a parade of six trades of different widths (café,
-  record shop, bar, noodle bar, arcade, florist) plus one 3 m **vacant
-  unit** (papered, TO LET, whatever the neighbours do), in a warm register
-  (amber, coral, salmon, orange, gold) with the arcade's teal as the one
-  cool accent; each shop has its own door side, window contents and, on
-  three of them, an awning. There are **three parade orders**
-  (`paradeVariants`), a wall picks one by `stableUnit(id, 'parade')` and
-  starts at its own offset, so neighbours never show the same run. The
-  strip is painted once **per state and order**, so the ground floor says
-  what the task is doing, in words as well as dressing: **in progress**
-  trades (lit signs, lit glass, people inside, lit transoms); **overdue**
-  trades late, the interior flooded in the lantern amber and every sign
-  reading OPEN LATE; **open** is not open yet (papered glass, OPENING
-  SOON on a builder's board and on the door notice, a work light some
-  nights); **blocked** is shuttered behind alarm tape in the lantern red,
-  BLOCKED glowing in every dark sign box, NEEDS A DECISION on the
-  shutter, a red lamp with a halo over each door; **off** is shuttered
-  for the night, CLOSED in every sign box, CLOSED FOR THE NIGHT on the
-  shutter, a security light over each door. Fillers, the hero towers and
-  the jumbotron tower always trade: they are the city, not tasks.
-- **Billboards**: pylons get two braced posts on footings and a catwalk; roof
-  panels get two struts; every panel gets a dark lightbox, a glow quad and
-  chase-light points around the frame; the panel's own border (the widget's)
-  is the one frame, and the glow quad behind the lightbox is what breathes:
-  `PlazaSurfaces.update` writes its alpha once per frame from the slot's
-  pulse (`BillboardSlot.glowAt`, floor 0.55) times the scene's `poolFade`,
-  and only when it moved, so a billboard costs no capture at rest. A
-  pylon's or a roof panel's lightbox is translucent: its back is a
-  `backQuad` (the front's vertices and UVs wound the other way, so the
-  eye reads the picture mirrored) sharing the panel's capture through
-  `OpaqueSurface.shared`, dimmed to `PlazaBillboard.backTint`; a wall
-  screen and the jumbotron have no back to see. A roof
-  panel sits over its own facade,
-  which carries the title, so it leads with the reason on a solid band in
-  the state colour across its top, panel-dark ink, the title small on the
-  scrim, and drops its 'fly there' (`BillboardWidget.reasonFirst`). On a
-  pylon the reason is one voice with the facade's (the state colour,
-  semibold) and 'fly there' is a teal chip beside the state chip. The
-  backing box is the pickable node.
-- **Fillers** (`Scenery.fillers`): dark blocks behind the plots, every
-  face a trading shopfront parade under open-state windows; about a third
-  carry a neon category sign named after one of the week's own tasks.
-- **Skyline** (`Scenery.skyline`): the ring of towers, a shade lighter
-  than the fillers so they read against the sky, with two windowed faces
-  toward the district and a lit roofline (warm and teal by turns) along
-  the district-facing edge; every fourth carries a screen that shows the
-  anomalies in rotation.
-- **Hero towers** (`Scenery.heroTowers`, built with the skyline): one past
-  the far end of every row that folds, windowed on all four faces, with a teal
-  crown, a 14 m spire with a blinking light, a screen across the upper
-  face toward the street showing the top anomaly and a warm glow dome
-  behind it, so every row has a lit horizon to walk toward. The last row's
-  far end has the jumbotron
-  instead.
-
-`PLAZA_HIDE` (see the README) drops the gantry, jumbotron, fillers,
-skyline, pylons or windowed walls at build time to isolate what a screenshot
-shows.
-
-# Picking and input
-
-The harness delegates gesture state to `PlazaPointerController`: a primary
-press that moves more than 6 px is a drag (look); a release within 0.25 s
-that never dragged is a tap. Release, cancellation and loss of pressed
-buttons clear the active pointer and drag flag. Unrelated pointers cannot
-end the gesture. Auto pacing can therefore settle back to its idle cap.
-`PlazaPicker.pick` resolves beacon dots first in screen space (within
-`beaconHitPx` 14), because sprites are skipped by the raycaster, then casts a
-ray up to `maxTapDistance` (160 m). Navigation skips hosted widget quads
-(their live input is handled by `SceneView`) to reach the physical backing,
-while ordinary and batched walls still block the ray. It walks up from that
-hit node to a
-billboard backing or a facade plate. A beacon tap flies to its pose, a
-nearby building tap activates its facade, a distant building tap flies to
-its task pose, and a billboard tap flies to the task it shows. Only the primary button is used; input
-for keyboard and scene navigation is ignored in tour and bench modes.
-
-# Tour, bench and capture
-
-- **Tour** (`PLAZA_TOUR=1`): the harness sets the camera to each pose in
-  `plazaTourStops` in turn (no flight), prints `PLAZA_TOUR stop <i> start
-  <name>`, then `PLAZA_TOUR ready <i> <name>` after 5 s, and moves on after
-  9 s; a stop whose pose is null for this world is skipped, and
-  `PLAZA_TOUR_ONLY` restricts the run to named stops. `PLAZA_TOUR done` ends
-  it. Poses are functions of the world, so the tour tracks layout changes.
-- **Bench** (`PLAZA_BENCH=1`): `PlazaBench` auto-walks the penguin street
-  from home through six LOD phases of 14 s (4 s warm-up each) and prints one
-  `PLAZA_BENCH result` line per phase with fps average, mean, p99 and worst
-  frame time and the tier counts. Bench mode wins over tour mode when both
-  are set.
-- **Capture** (`tool/plaza/capture_tour.py`): launches the built Linux
-  bundle with `GDK_BACKEND=x11`, `PLAZA_TOUR=1`, the Flutter GPU engine
-  switch and `LOTTI_WINDOW_SIZE` (1600x1000 unless set), passes every other
-  `PLAZA_*` variable through (dropping `PLAZA_BENCH`), grabs the window with
-  `XGetImage` on each `ready` line, optionally clicks a `PLAZA_CLICK` point
-  and grabs a second `-ticked` frame, and stops on `done` or a 240 s
-  watchdog. Tour mode ignores navigation and facade input; a scripted
-  `PLAZA_CLICK` screenshot does not verify live interaction. Exercise that
-  separately in interactive mode.
-
-# Gotchas
-
-- **Await `Scene.initializeStaticResources()` before building anything.**
-  Sprites and `GradientSkySource` touch the base shader library; `_boot`
-  awaits it, then loads `WallTextures` and the penguin GLB, then builds the
-  world. `PLAZA_HIDE=characters` skips the model load.
-- **Flutter GPU must be enabled.** `--enable-flutter-gpu` is a `flutter run`
-  flag; a built binary needs `FLUTTER_ENGINE_SWITCHES=1
-  FLUTTER_ENGINE_SWITCH_1=enable-flutter-gpu` in its environment (the
-  capture script sets them).
-- **Widget quads must wind counter-clockwise.** `flutter_scene` 0.23 flipped
-  the engine's front face to CCW but `WidgetComponent`'s built-in quad still
-  winds CW, so it is back-face culled and never shows; every surface here
-  uses `ccwQuad` (or `tiledQuad`). Drop them when upstream fixes the
-  primitive.
-- **`flutter_scene` pins `code_assets ^1.2.1`.** `code_assets` and
-  `native_toolchain_c` are held current under `dependency_overrides` in
-  `pubspec.yaml`; re-check on every `flutter_scene` bump.
-- **Scene classes need a GPU context.** `PlazaSceneController` builds meshes
-  on construction; the LOD manager, surfaces and sprites create GPU-backed
-  components as they run. `codecov.yml` excludes `lib/features/plaza/scene/**`
-  and `dev_main.dart`; `PlazaWorld` is the one scene-directory class that is
-  pure domain projection. Capture scheduling, LOD, static mesh baking and
-  sprite buffers and penguin skeletons also have GPU-free test seams; texture painters are checked
-  pixel by pixel because the dressing is a contract.
-- **Xvfb cannot render the widget textures.** Under a virtual framebuffer the
-  facades and billboards come out as flat slabs (observed in capture runs, not
-  something the code checks); capture on a real X11 or XWayland display.
-- **Colours are sRGB in widgets, linear in materials.** `linearColor`
-  converts; feeding a widget colour straight into `baseColorFactor` renders
-  washed out.
-- **Alpha-blended widget surfaces sort unreliably.** Use `OpaqueSurface` for
-  every widget quad; keep `AlphaMode.blend` for pools and glow quads only.
-- **Layers centimetres apart fight in the depth buffer far out.** A
-  facade's window wall, far plate, neon glows and widget surface sit 1–3 cm
-  apart along the wall's normal; past ~200 m the depth buffer (near plane
-  0.3 m, far 1400 m) cannot separate them and they flicker as the camera
-  flies. Each layer carries a `Material.depthBias` (world metres toward
-  the eye: plate `plateDepthBias` 0.05, glows and ring `glowDepthBias`
-  0.1, every widget surface `widgetDepthBias` 0.15) so the order is fixed
-  at any distance. Raise the bias, not the spacing, when adding a layer.
-- **Sprites are skipped by the raycaster**, so the picker resolves beacons in
-  screen space first.
-- **The harness clock is the demo fixture clock**, not `DateTime.now()`; the
-  attention verdicts only make sense against `manualDemoNow`.
-- **The facade palette is local on purpose.** `PlazaStyle` is scene content
-  in a dev harness, mapped to Lotti's dark semantics; it moves onto
-  design-system tokens only if the prototype graduates.
-- **Every solid is placed in `domain/scenery.dart`, never in the scene.**
-  `PlazaWorld.solids` is what the collider and the flight planner know; the
-  scene builds its fillers, towers, spires, posts, signs, legs and the beam
-  from the same records and constants, so a box the scene invents on its
-  own is a box you can walk or fly through. `PLAZA_HIDE` hides geometry,
-  not its footprint.
-- **A flight leg is a straight line with a lift.** Between two stops on
-  the ground the route is the street network, so the legs run down the
-  road; a direct flight clears what stands on its line by going over it.
-  A stop pose that stands inside a solid, or under one in the air with a
-  climb ahead, is a pose the planner cannot rescue. The tests hold every
-  walk stop and beacon clear of every solid, fly the whole walk against
-  the fixture's solids both ways, and expect no lift at all down the
-  streets.
-- **The harness paces its own frames.** `SceneView(autoTick: false)` stays
-  mounted beneath `PlazaRepaint`. The frame listenable marks this render
-  boundary for paint without rebuilding the hosted Flutter subtrees.
-  `PlazaFramePacer` requests one scheduler callback at a time. Uncapped
-  movement requests the next vsync; capped rendering waits on a cancellable
-  timer before requesting another frame. Its deadline starts at the last
-  frame request, so engine delivery and frame preparation consume the same
-  interval instead of adding drift. Input cancels the wait and coalesces
-  into one immediate frame. There is no repeating idle `Ticker` waking the
-  engine on every skipped vsync. `auto` follows the display while moving
-  (flight, walk, held key or drag) and for 0.6 s after movement or input.
-  With a settled camera, an active live facade or a nearby moving penguin
-  retains 30 Hz; the remaining decorative effects use 15 Hz. Startup gets the same brief display-rate
-  window so initial captures and promotions can settle promptly. Animation
-  phases still use elapsed time: the lower cadence changes smoothness, not
-  ticker speed or pulse duration. `60` and `30` are fixed caps; tour and bench
-  remain uncapped.
-  Hidden/inactive lifecycle states cancel both timer and pending callback;
-  resume excludes the hidden duration from the animation clock.
-- **Engine and painted rates are distinct.** The HUD reports harness paints
-  and engine frame timings (`addTimingsCallback`, removed on disposal).
-  Timings arrive in batches, so short HUD windows may differ even at rest.
-  Another widget's animation or capture request can also produce a frame.
-  All plaza surfaces therefore use manual capture policies: an upstream
-  `everyFrame` or `interval` policy would run its own engine frame pump.
-  `SurfaceCaptures` requests live walls every 50 ms and the jumbotron every
-  second when visible; static surfaces capture initially and on content
-  completion. Cadence clocks advance only on requests. Tickers scroll a
-  captured period through the material UV offset and own no animation
-  controller. One cadence notification may rebuild multiple listeners,
-  including a culled surface, but only visible surfaces are captured.
-  `PLAZA_FPS=auto|60|30` selects the initial cap; the HUD can change it.
-
-```mermaid
-stateDiagram-v2
-  [*] --> Stopped
-  Stopped --> Scheduled: start or resume
-  Scheduled --> Painting: engine frame callback
-  Painting --> Scheduled: uncapped, overdue or input requests frame
-  Painting --> Waiting: capped
-  Waiting --> Scheduled: timer expires or input wakes
-  Waiting --> Stopped: hide or dispose
-  Scheduled --> Stopped: hide or dispose
-  Painting --> Stopped: stop during callback
-  Stopped --> [*]: dispose
-```
-
-- **Fixtures are the demo world only.** The harness projects
-  `ManualDemoWorld.penguinLogistics`; the synthetic generator lives in
-  `test/features/plaza/plaza_fixtures.dart` for the tests and nowhere else.
-  Never point the harness at user data.
+Repository/provider, generation, navigation, checklist edits, image arrivals,
+flights and widget copy run in targeted headless tests. GPU geometry and native
+texture interop still require the fixture on a supported renderer. The Linux VM
+virtual display used during integration corrupts widget textures; it cannot
+validate native visuals or the reported macOS frame rate. Commands, screenshot
+rules and measurement interpretation belong in the
+[operator notes](../../docs/plaza/HANDOVER.md).

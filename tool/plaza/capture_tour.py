@@ -8,13 +8,14 @@ client). Build the harness first:
 
 Then, from the repo root:
 
-    python3 tool/plaza/capture_tour.py docs/plaza/screenshots_v2
+    python3 tool/plaza/capture_tour.py /tmp/lotti-pr-screenshots/plaza/after
 
 Optional: PLAZA_CLICK="<stop-name>:<x>,<y>" clicks that window-relative point
 after capturing the named stop and grabs a second frame as <stop>-ticked.png
 (used for the live-checkbox screenshot). Any other PLAZA_* variable is
-passed through to the harness. Output PNGs land in a directory named
-`screenshots_v2`, which .gitignore keeps out of the repository.
+passed through to the harness. Always stage output outside the repository.
+For headless smoke checks, wrap this command in xvfb-run. Virtual GPU widget
+textures may be corrupt; those captures are not visual or FPS evidence.
 
 The script keys on the `PLAZA_TOUR ready <i> <name>` lines the harness prints
 once a stop has settled, writes <out_dir>/<name>.png, and exits after
@@ -49,18 +50,20 @@ proc = subprocess.Popen([str(bundle)], env=env,
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 d = display.Display()
 root = d.screen().root
+pid_atom = d.intern_atom('_NET_WM_PID')
 
 def find_window():
     def walk(w):
         try:
-            name = w.get_wm_name()
+            owner = w.get_full_property(pid_atom, X.AnyPropertyType)
+            if owner is not None and len(owner.value) and int(owner.value[0]) == proc.pid:
+                g = w.get_geometry()
+                if g.width > 400:
+                    return w
+            children = w.query_tree().children
         except Exception:
-            name = None
-        if name and 'lotti' in str(name).lower():
-            g = w.get_geometry()
-            if g.width > 400:
-                return w
-        for c in w.query_tree().children:
+            return None
+        for c in children:
             r = walk(c)
             if r: return r
         return None

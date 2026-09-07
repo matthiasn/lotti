@@ -136,6 +136,7 @@ import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
+import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -1615,3 +1616,5 @@ class MockSherpaStream extends Mock implements sherpa.OfflineStream {}
 
 class MockRelationshipProposalService extends Mock
     implements RelationshipProposalService {}
+
+class MockPlazaRepository extends Mock implements PlazaRepository {}

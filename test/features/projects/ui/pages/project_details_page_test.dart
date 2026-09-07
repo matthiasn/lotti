@@ -19,6 +19,8 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
+import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -266,6 +268,35 @@ void main() {
     await tester.pump();
     await tester.pump();
   }
+
+  testWidgets('project explorer opens only the selected project and returns', (
+    tester,
+  ) async {
+    await pumpPageWithData(
+      tester,
+      controllerState: ProjectDetailState.initial().copyWith(
+        project: testProject,
+        isLoading: false,
+      ),
+      record: testRecord,
+      extraOverrides: [
+        projectPlazaProvider(
+          _projectId,
+        ).overrideWith((ref) => Stream.value(null)),
+      ],
+    );
+    await tester.tap(find.text('Explore project'));
+    await tester.pumpAndSettle();
+    final plaza = tester.widget<ProjectPlazaPage>(
+      find.byType(ProjectPlazaPage),
+    );
+    expect(plaza.projectId, _projectId);
+    expect(find.text('Project not found'), findsOneWidget);
+    Navigator.of(tester.element(find.byType(ProjectPlazaPage))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectPlazaPage), findsNothing);
+    expect(find.text(testProject.data.title), findsWidgets);
+  });
 
   group('ProjectDetailsPage', () {
     test(

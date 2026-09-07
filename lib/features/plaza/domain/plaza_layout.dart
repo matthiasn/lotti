@@ -117,6 +117,21 @@ class BillboardSlot {
   /// World-space centre of the panel.
   double get centerY => bottom + height / 2;
 
+  /// Resizes within this mount while preserving its centre, heading and pulse.
+  BillboardSlot scaled(double scale) => scale == 1
+      ? this
+      : BillboardSlot(
+          rank: rank,
+          x: x,
+          z: z,
+          facingRadians: facingRadians,
+          width: width * scale,
+          height: height * scale,
+          bottom: centerY - height * scale / 2,
+          mount: mount,
+          pulseSeconds: pulseSeconds,
+        );
+
   /// The frame's glow at [seconds] of an anomaly's breathing: up over half
   /// a [pulseSeconds] cycle and down over the other half, eased at both
   /// ends, between [glowFloor] and 1.
@@ -414,7 +429,7 @@ CameraPose overviewPoseFor(StreetPlan plan) {
   maxZ = math.max(maxZ, fz);
   final cx = (minX + maxX) / 2;
   final cz = (minZ + maxZ) / 2;
-  final extent = math.max(maxX - minX, maxZ - minZ).clamp(120.0, 2000.0);
+  final extent = math.max(120, math.max(maxX - minX, maxZ - minZ));
   // Aim a little short of the centre (toward the near rows) and stand off
   // by the extent, so the nearest row and the jumbotron both fit with
   // headroom at a 60° field of view.
@@ -846,6 +861,8 @@ List<Beacon> beaconsFor(
   List<TaskAttention> anomalies, {
   required String projectLabel,
   required String Function(int bucketIndex) weekLabel,
+  String homeLabel = 'Home',
+  String Function(String week)? cornerLabel,
 }) {
   final beacons = <Beacon>[];
   if (plaza != null) {
@@ -853,7 +870,7 @@ List<Beacon> beaconsFor(
       Beacon(
         id: 'home',
         kind: BeaconKind.home,
-        label: 'Home — $projectLabel',
+        label: '$homeLabel — $projectLabel',
         pose: plaza.home,
         markerX: plaza.home.x,
         markerY: _markerHeight,
@@ -867,7 +884,9 @@ List<Beacon> beaconsFor(
         Beacon(
           id: 'corner-${segment.bucketIndex}',
           kind: BeaconKind.corner,
-          label: 'Corner after ${weekLabel(segment.bucketIndex)}',
+          label:
+              cornerLabel?.call(weekLabel(segment.bucketIndex)) ??
+              'Corner after ${weekLabel(segment.bucketIndex)}',
           pose: CameraPose(
             x: segment.startX,
             y: eyeHeight,

@@ -1,3 +1,4 @@
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -47,41 +48,35 @@ abstract final class PlazaStyle {
 
   /// Chip fill and ink per state. Overdue overrides the state (an overdue
   /// open task reads OVERDUE), matching the design prototype.
-  static ({Color fill, Color ink, String label}) chip(TaskAttention a) {
+  static ({Color fill, Color ink}) chip(TaskAttention a) {
     if (a.task.state == PlazaTaskState.blocked) {
       return (
         fill: const Color(0xFFD65E5C),
         ink: const Color(0xFF14060A),
-        label: 'BLOCKED',
       );
     }
     if (a.overdue) {
       return (
         fill: const Color(0xFFFBA336),
         ink: const Color(0xFF1C1206),
-        label: 'OVERDUE',
       );
     }
     return switch (a.task.state) {
       PlazaTaskState.inProgress => (
         fill: const Color(0xFF4AB6E8),
         ink: const Color(0xFF06141C),
-        label: 'IN PROGRESS',
       ),
       PlazaTaskState.done => (
-        fill: const Color(0x29FFFFFF),
-        ink: const Color(0xCCFFFFFF),
-        label: 'DONE',
+        fill: dsTokensDark.colors.alert.success.defaultColor,
+        ink: dsTokensDark.colors.text.onInteractiveAlert,
       ),
       PlazaTaskState.cancelled => (
         fill: const Color(0x29FFFFFF),
         ink: const Color(0xCCFFFFFF),
-        label: 'CANCELLED',
       ),
       PlazaTaskState.open || PlazaTaskState.blocked => (
         fill: const Color(0xFFD7D7D7),
         ink: const Color(0xFF1A1A1A),
-        label: 'OPEN',
       ),
     };
   }
@@ -96,9 +91,11 @@ abstract final class PlazaStyle {
   };
 
   /// The progress light bar along the facade base.
-  static Color lightBar(TaskAttention a) => a.lantern == LanternState.off
-      ? const Color(0xFF7AB889)
+  static Color taskColor(TaskAttention a) => a.task.state == PlazaTaskState.done
+      ? dsTokensDark.colors.alert.success.defaultColor
       : lantern(a.lantern);
+
+  static Color lightBar(TaskAttention a) => taskColor(a);
 
   /// The neon version of a category colour: saturated and bright, for edge
   /// strips and banners. Greys stay grey (a neutral category is not
@@ -137,8 +134,14 @@ abstract final class PlazaStyle {
   /// darker roof tint. Derived from the task's category colour so the demo
   /// world's categories tint their own blocks.
   static Color categoryBright(PlazaTask task) => Color(task.categoryColor);
-  static Color categoryWall(PlazaTask task) =>
-      Color.lerp(const Color(0xFF3B3F4A), Color(task.categoryColor), 0.28)!;
-  static Color categoryRoof(PlazaTask task) =>
-      Color.lerp(const Color(0xFF262A33), Color(task.categoryColor), 0.22)!;
+  static Color categoryWall(PlazaTask task) => task.state == PlazaTaskState.done
+      ? Color.lerp(
+          dsTokensDark.colors.background.level01,
+          dsTokensDark.colors.alert.success.defaultColor,
+          SurfaceAlphas.muted,
+        )!
+      : Color.lerp(const Color(0xFF3B3F4A), Color(task.categoryColor), 0.28)!;
+  static Color categoryRoof(PlazaTask task) => task.state == PlazaTaskState.done
+      ? dsTokensDark.colors.alert.success.defaultColor
+      : Color.lerp(const Color(0xFF262A33), Color(task.categoryColor), 0.22)!;
 }

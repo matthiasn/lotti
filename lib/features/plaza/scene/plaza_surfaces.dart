@@ -146,7 +146,7 @@ class PlazaSurfaces {
       final task = byId[taskId];
       if (task == null) continue;
       final label = world.categoryLabels.isEmpty
-          ? 'open late'
+          ? world.copy.messages.plazaOpenLate
           : world.categoryLabelOf(task);
       _once(
         anchor,
@@ -174,7 +174,7 @@ class PlazaSurfaces {
       final task = byId[banner.taskId];
       if (anchor == null || task == null) continue;
       final label = world.categoryLabels.isEmpty
-          ? PlazaStyle.chip(world.attentionOf(task)).label
+          ? world.copy.state(world.attentionOf(task)).toUpperCase()
           : world.categoryLabelOf(task);
       _once(
         anchor,
@@ -204,6 +204,7 @@ class PlazaSurfaces {
     final component = hostedSurface(
       child: JumbotronWidget(
         projectLabel: world.projectLabel,
+        isCategory: world.isCategory,
         taskCount: world.liveTaskCount,
         attentionCount: world.anomalies.length,
         headlines: world.anomalies,

@@ -61,6 +61,7 @@ class TaskAttention {
     required this.overdue,
     required this.dueSoon,
     required this.stale,
+    this.daysSinceActivity = 0,
   });
 
   final PlazaTask task;
@@ -75,6 +76,7 @@ class TaskAttention {
   final bool overdue;
   final bool dueSoon;
   final bool stale;
+  final int daysSinceActivity;
 
   bool get anomalous => score >= anomalyThreshold;
 }
@@ -106,6 +108,12 @@ TaskAttention attentionFor(PlazaTask task, DateTime now) {
   var reason = '';
 
   if (!finished) {
+    if ((task.project?.overdueCount ?? 0) > 0) {
+      overdue = true;
+      score += 3;
+    } else if ((task.project?.attentionCount ?? 0) > 0) {
+      score += 3;
+    }
     if (task.state == PlazaTaskState.blocked) {
       score += 3;
       reason = 'blocked — needs a decision';
@@ -167,6 +175,7 @@ TaskAttention attentionFor(PlazaTask task, DateTime now) {
     overdue: overdue,
     dueSoon: dueSoon,
     stale: stale,
+    daysSinceActivity: today.difference(_day(task.activityAt)).inDays,
   );
 }
 

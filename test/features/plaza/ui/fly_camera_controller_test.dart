@@ -42,6 +42,17 @@ FlyCameraController _controller({WalkCollider? collider}) =>
     FlyCameraController(pose: _origin, collider: collider);
 
 void main() {
+  test('large worlds can extend the camera clipping plane', () {
+    final controller = _controller();
+    final normal = controller.camera().projection as PerspectiveProjection;
+    final extended =
+        controller.camera(farClip: 12000).projection as PerspectiveProjection;
+    expect(normal.far, 1400);
+    expect(extended.far, 12000);
+    expect(extended.near, normal.near);
+    expect(extended.fovRadiansY, normal.fovRadiansY);
+  });
+
   group('walking', () {
     testWidgets('W walks forward along the view direction', (tester) async {
       final camera = _controller();

@@ -1,7 +1,12 @@
 import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Title search over the project's tasks, at most six matches.
@@ -36,21 +41,24 @@ class PlazaSearchSheet extends StatefulWidget {
 
 class _PlazaSearchSheetState extends State<PlazaSearchSheet> {
   final _controller = TextEditingController();
-  final _focus = FocusNode();
   late List<PlazaTask> _results = searchPlazaTasks(widget.tasks, '');
   int _selected = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _focus.requestFocus();
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    _focus.dispose();
-    super.dispose();
+  void didUpdateWidget(PlazaSearchSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.tasks, widget.tasks)) {
+      _results = searchPlazaTasks(widget.tasks, _controller.text);
+      _selected = _results.isEmpty
+          ? 0
+          : _selected.clamp(0, _results.length - 1);
+    }
   }
 
   void _onQuery(String q) => setState(() {
@@ -80,133 +88,97 @@ class _PlazaSearchSheetState extends State<PlazaSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Align(
-      alignment: const Alignment(0, -0.75),
-      child: Container(
-        width: 540,
-        clipBehavior: Clip.hardEdge,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1D2028),
-          border: Border.all(color: const Color(0x1FFFFFFF)),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0xB3000000),
-              blurRadius: 64,
-              offset: Offset(0, 24),
-            ),
-          ],
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: tokens.spacing.step10,
+          left: tokens.spacing.step4,
+          right: tokens.spacing.step4,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0x14FFFFFF))),
-              ),
-              child: Row(
-                children: [
-                  const Text(
-                    '/',
-                    style: TextStyle(
-                      fontFamily: PlazaStyle.fontMono,
-                      fontSize: 16,
-                      color: PlazaStyle.teal,
-                    ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kDetailContentMaxWidth),
+          child: DesignSystemSectionCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Focus(
+                  onKeyEvent: _onKey,
+                  child: DesignSystemTextInput(
+                    controller: _controller,
+                    autofocus: true,
+                    onChanged: _onQuery,
+                    hintText: context.messages.plazaSearchHint,
+                    leadingIcon: LottiIcons.search,
+                    trailingIcon: LottiIcons.close,
+                    onTrailingIconTap: widget.onClose,
+                    trailingIconTooltip:
+                        context.messages.tasksLabelsDialogClose,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Focus(
-                      onKeyEvent: _onKey,
-                      child: TextField(
-                        controller: _controller,
-                        focusNode: _focus,
-                        onChanged: _onQuery,
-                        style: const TextStyle(
-                          fontFamily: PlazaStyle.fontText,
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: 'Search tasks, enter to fly',
-                          hintStyle: TextStyle(color: Color(0x73FFFFFF)),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'esc to close',
-                    style: TextStyle(
-                      fontFamily: PlazaStyle.fontText,
-                      fontSize: 11,
-                      color: Color(0x73FFFFFF),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            for (final (i, task) in _results.indexed)
-              InkWell(
-                onTap: () => widget.onPick(task),
-                hoverColor: PlazaStyle.teal.withValues(alpha: 0.16),
-                child: Container(
-                  color: i == _selected
-                      ? PlazaStyle.teal.withValues(alpha: 0.16)
-                      : Colors.transparent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 11,
-                  ),
-                  child: Row(
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
                     children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: PlazaStyle.lantern(
-                            widget.attentionOf(task).lantern,
+                      for (final (i, task) in _results.indexed)
+                        InkWell(
+                          onTap: () => widget.onPick(task),
+                          child: Container(
+                            color: i == _selected
+                                ? tokens.colors.surface.selected
+                                : null,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: tokens.spacing.step3,
+                              vertical: tokens.spacing.step3,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  LottiIcons.map,
+                                  color: PlazaStyle.taskColor(
+                                    widget.attentionOf(task),
+                                  ),
+                                ),
+                                SizedBox(width: tokens.spacing.step3),
+                                Expanded(
+                                  child: Text(
+                                    task.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .body
+                                        .bodyMedium,
+                                  ),
+                                ),
+                                SizedBox(width: tokens.spacing.step3),
+                                Text(
+                                  widget.weekOf(task),
+                                  style:
+                                      tokens.typography.styles.others.caption,
+                                ),
+                                SizedBox(width: tokens.spacing.step3),
+                                Text(
+                                  context.messages.plazaFlyThere,
+                                  style: tokens.typography.styles.others.caption
+                                      .copyWith(
+                                        color:
+                                            tokens.colors.interactive.enabled,
+                                      ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          task.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: PlazaStyle.fontText,
-                            fontSize: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        widget.weekOf(task),
-                        style: const TextStyle(
-                          fontFamily: PlazaStyle.fontMono,
-                          fontSize: 12,
-                          color: Color(0x80FFFFFF),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '↵ fly',
-                        style: TextStyle(
-                          fontFamily: PlazaStyle.fontText,
-                          fontSize: 11,
-                          color: PlazaStyle.teal,
-                        ),
-                      ),
                     ],
                   ),
                 ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

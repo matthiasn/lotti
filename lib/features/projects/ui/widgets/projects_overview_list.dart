@@ -13,12 +13,14 @@ class ProjectsOverviewSliverList extends StatelessWidget {
     required this.groups,
     required this.onProjectTap,
     this.selectedProjectId,
+    this.onExploreCategory,
     this.bottomPadding = 24,
     super.key,
   });
 
   final List<ProjectCategoryGroup> groups;
   final ValueChanged<ProjectListItemData> onProjectTap;
+  final ValueChanged<String>? onExploreCategory;
   final String? selectedProjectId;
   final double bottomPadding;
 
@@ -38,6 +40,11 @@ class ProjectsOverviewSliverList extends StatelessWidget {
                   group: groups[index],
                   selectedProjectId: selectedProjectId,
                   onProjectSelected: onProjectTap,
+                  onExplorePlaza:
+                      onExploreCategory == null ||
+                          groups[index].categoryId == null
+                      ? null
+                      : () => onExploreCategory!(groups[index].categoryId!),
                 ),
               ),
             ),

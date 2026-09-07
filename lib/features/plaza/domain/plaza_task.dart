@@ -1,8 +1,7 @@
-/// Domain model for the project plaza prototype.
+/// GPU-independent presentation data for task buildings and project portals.
 ///
-/// Pure Dart on purpose: the layout and generator layers depend only on this
-/// file, so they can be unit-tested without Flutter and lifted out wholesale
-/// if the prototype graduates.
+/// Pure Dart on purpose: alternative layouts can consume these facts without
+/// a GPU or access to the journal database.
 library;
 
 /// Lifecycle state of a task as the plaza renders it.
@@ -16,18 +15,38 @@ enum PlazaTaskState {
   /// Waiting on something else.
   blocked,
 
-  /// Finished — green and quiet, lights off.
+  /// Finished — green and quiet.
   done,
 
   /// Abandoned without completion.
   cancelled,
 }
 
+enum PlazaProjectState { open, active, monitoring, onHold, completed, archived }
+
+/// Aggregate facts on a category's project portal. A portal has no editable
+/// checklist: its progress counts completed tasks in the project.
+class PlazaProjectInfo {
+  const PlazaProjectInfo({
+    required this.state,
+    required this.taskCount,
+    required this.doneCount,
+    required this.attentionCount,
+    required this.overdueCount,
+  });
+
+  final PlazaProjectState state;
+  final int taskCount;
+  final int doneCount;
+  final int attentionCount;
+  final int overdueCount;
+}
+
 /// One task, projected into plaza terms.
 ///
-/// Placement depends on `(createdAt, id)` alone — merge-stable under sync
-/// (see the spec's invariant: nothing ever moves). Everything else drives
-/// the surface only.
+/// Timeline placement is ordered by `(createdAt, id)`. Generator parameters
+/// control density and completed-work setbacks; category portals use explicit
+/// avenue assignments while keeping the real creation dates here.
 class PlazaTask {
   const PlazaTask({
     required this.id,
@@ -41,9 +60,11 @@ class PlazaTask {
     this.due,
     this.coverImageUrl,
     this.openChecklistItems = const [],
+    this.openChecklistItemIds = const [],
     this.deleted = false,
     this.priority = 2,
     this.lastActivityAt,
+    this.project,
   });
 
   /// Placement tiebreak within a week bucket.
@@ -54,11 +75,15 @@ class PlazaTask {
 
   final String title;
   final PlazaTaskState state;
+  final PlazaProjectInfo? project;
   final DateTime? due;
 
   /// 0..1 for checklist-bearing tasks; 0 when [checklistItems] is 0.
   final double progress;
   final int checklistItems;
+
+  /// Full progress, independent of the capped list of open preview items.
+  int get completedItems => (progress.clamp(0, 1) * checklistItems).round();
   final List<String> linkedTaskIds;
 
   /// ARGB, kept as an int so this layer stays Flutter-free.
@@ -68,11 +93,15 @@ class PlazaTask {
   final String? coverImageUrl;
 
   /// Titles of the still-open checklist items, shown on the facade.
-  /// Drives building height together with the title (content-sized
-  /// facades, no filler).
   final List<String> openChecklistItems;
 
-  /// Deleted tasks leave a fenced empty lot; the street never closes up.
+  /// Persisted IDs in the same order as [openChecklistItems]. Synthetic
+  /// scene fixtures can omit them; app actions must use these IDs rather
+  /// than treating a preview position as durable item identity.
+  final List<String> openChecklistItemIds;
+
+  /// Synthetic fixtures may retain a deleted task as a fenced empty lot.
+  /// Live repository projections omit deleted tasks entirely.
   final bool deleted;
 
   /// 0 = urgent, 1 = high, 2 = medium, 3 = low (mirrors `TaskPriority`).

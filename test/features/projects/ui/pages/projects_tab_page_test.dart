@@ -19,6 +19,8 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
+import 'package:lotti/features/plaza/ui/category_plaza_page.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
@@ -204,6 +206,36 @@ void main() {
   tearDown(() async {
     beamToNamedOverride = null;
     await tearDownTestGetIt();
+  });
+
+  testWidgets('category plaza action opens only the chosen category', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [buildWorkGroup(), buildStudyGroup()],
+      extraOverrides: [
+        categoryPlazaProvider('work').overrideWith((ref) => Stream.value(null)),
+      ],
+    );
+    final label = tester
+        .element(find.byType(ProjectsTabPage))
+        .messages
+        .plazaExploreCategory;
+    await tester.tap(find.text(label).first);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<CategoryPlazaPage>(find.byType(CategoryPlazaPage))
+          .categoryId,
+      'work',
+    );
+    expect(find.text('This category has no visible projects.'), findsOneWidget);
+    final context = tester.element(find.byType(CategoryPlazaPage));
+    Navigator.of(context).pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(CategoryPlazaPage), findsNothing);
+    expect(find.text('Device Sync'), findsOneWidget);
   });
 
   testWidgets('renders grouped projects with an enabled search bar', (

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -22,6 +23,22 @@ PlazaTask _task(PlazaTaskState state, {int color = 0xFF5C9DFF}) => PlazaTask(
 
 void main() {
   final now = DateTime.utc(2026, 7, 15);
+
+  test(
+    'done is visibly green on billboards and roofs, cancelled is neutral',
+    () {
+      final done = _task(PlazaTaskState.done);
+      final cancelled = _task(PlazaTaskState.cancelled);
+      final success = dsTokensDark.colors.alert.success.defaultColor;
+      expect(PlazaStyle.chip(attentionFor(done, now)).fill, success);
+      expect(PlazaStyle.categoryRoof(done), success);
+      expect(
+        PlazaStyle.chip(attentionFor(cancelled, now)).fill,
+        isNot(success),
+      );
+      expect(PlazaStyle.lightBar(attentionFor(cancelled, now)), isNot(success));
+    },
+  );
 
   test('the light bar is green on a finished shop, the state colour else', () {
     final done = attentionFor(_task(PlazaTaskState.done), now);

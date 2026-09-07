@@ -10248,6 +10248,145 @@ class AppLocalizationsIt extends AppLocalizations {
       'Molto leggermente o non affatto';
 
   @override
+  String get plazaBlockedReason => 'bloccata — serve una decisione';
+
+  @override
+  String get plazaCategoryEmpty => 'Questa categoria non ha progetti visibili.';
+
+  @override
+  String get plazaClosedForNight => 'CHIUSO PER LA NOTTE';
+
+  @override
+  String get plazaCloseHint => 'Esc per chiudere';
+
+  @override
+  String get plazaControls =>
+      'WASD cammina · trascina per guardare · Tab prossimo segnale · H inizio · M panoramica · / cerca · ⌘[ indietro';
+
+  @override
+  String plazaCornerAfter(String week) {
+    return 'Svolta dopo $week';
+  }
+
+  @override
+  String get plazaDebug => 'Debug';
+
+  @override
+  String get plazaDecisionStrip => 'SERVE UNA DECISIONE';
+
+  @override
+  String plazaDoneCount(int done, int total) {
+    return '$done di $total completate';
+  }
+
+  @override
+  String plazaDueOn(String date) {
+    return 'scadenza $date';
+  }
+
+  @override
+  String plazaDueSoonReason(String date) {
+    return 'scadenza $date — completala';
+  }
+
+  @override
+  String get plazaEmpty =>
+      'Aggiungi un’attività per iniziare a costruire la piazza di questo progetto.';
+
+  @override
+  String get plazaEnterProject => 'Entra nel progetto';
+
+  @override
+  String get plazaExploreCategory => 'Esplora categoria';
+
+  @override
+  String get plazaExploreProject => 'Esplora progetto';
+
+  @override
+  String get plazaFlyThere => 'Vola lì ›';
+
+  @override
+  String plazaInProgressCount(int count) {
+    return 'In corso: $count';
+  }
+
+  @override
+  String plazaLinks(int count) {
+    return 'collegamenti $count';
+  }
+
+  @override
+  String get plazaMorningWalk => 'Passeggiata mattutina';
+
+  @override
+  String plazaNeedsAttention(int count) {
+    return 'Richiedono attenzione: $count';
+  }
+
+  @override
+  String get plazaOpeningSoon => 'PROSSIMA APERTURA';
+
+  @override
+  String get plazaOpenLate => 'APERTO FINO A TARDI';
+
+  @override
+  String plazaOverdueSince(String date) {
+    return 'scaduta dal $date — completala o rimandala';
+  }
+
+  @override
+  String get plazaOverview => 'Panoramica';
+
+  @override
+  String get plazaPaused => 'In pausa';
+
+  @override
+  String plazaProjectOverdue(int count) {
+    return 'Attività scadute: $count';
+  }
+
+  @override
+  String get plazaSearchHint => 'Cerca attività, Invio per volare';
+
+  @override
+  String plazaStaleReason(int days) {
+    return 'ferma da $days giorni — riprendila';
+  }
+
+  @override
+  String plazaStats(int tasks, int weeks, int attention) {
+    return '$tasks attività · $weeks settimane · $attention richiedono attenzione';
+  }
+
+  @override
+  String plazaTaskCount(int count) {
+    return 'Attività: $count';
+  }
+
+  @override
+  String get plazaTitle => 'Piazza';
+
+  @override
+  String get plazaToLet => 'AFFITTASI';
+
+  @override
+  String get plazaTourControls => 'Spazio: pausa · muoviti per uscire';
+
+  @override
+  String get plazaUnavailable =>
+      'Questo dispositivo non può mostrare il mondo 3D.';
+
+  @override
+  String plazaWeek(int week, String date) {
+    return 'S$week · $date';
+  }
+
+  @override
+  String plazaWeekShort(int week) {
+    return 'S$week';
+  }
+
+  @override
   String get privateLabel => 'Privato';
 
   @override

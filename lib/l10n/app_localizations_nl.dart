@@ -10133,6 +10133,146 @@ class AppLocalizationsNl extends AppLocalizations {
   String get panasScaleVerySlightlyOrNotAtAll => 'Zeer licht of helemaal niet';
 
   @override
+  String get plazaBlockedReason => 'geblokkeerd — een beslissing is nodig';
+
+  @override
+  String get plazaCategoryEmpty =>
+      'Deze categorie heeft geen zichtbare projecten.';
+
+  @override
+  String get plazaClosedForNight => 'GESLOTEN VOOR DE NACHT';
+
+  @override
+  String get plazaCloseHint => 'Esc om te sluiten';
+
+  @override
+  String get plazaControls =>
+      'WASD lopen · sleep om rond te kijken · Tab volgend baken · H start · M overzicht · / zoeken · ⌘[ terug';
+
+  @override
+  String plazaCornerAfter(String week) {
+    return 'Bocht na $week';
+  }
+
+  @override
+  String get plazaDebug => 'Debuggen';
+
+  @override
+  String get plazaDecisionStrip => 'BESLISSING NODIG';
+
+  @override
+  String plazaDoneCount(int done, int total) {
+    return '$done van $total afgerond';
+  }
+
+  @override
+  String plazaDueOn(String date) {
+    return 'deadline $date';
+  }
+
+  @override
+  String plazaDueSoonReason(String date) {
+    return 'deadline $date — rond het af';
+  }
+
+  @override
+  String get plazaEmpty =>
+      'Voeg een taak toe om het plein van dit project op te bouwen.';
+
+  @override
+  String get plazaEnterProject => 'Project betreden';
+
+  @override
+  String get plazaExploreCategory => 'Categorie verkennen';
+
+  @override
+  String get plazaExploreProject => 'Project verkennen';
+
+  @override
+  String get plazaFlyThere => 'Vlieg erheen ›';
+
+  @override
+  String plazaInProgressCount(int count) {
+    return 'Bezig: $count';
+  }
+
+  @override
+  String plazaLinks(int count) {
+    return 'koppelingen $count';
+  }
+
+  @override
+  String get plazaMorningWalk => 'Ochtendwandeling';
+
+  @override
+  String plazaNeedsAttention(int count) {
+    return 'Aandacht nodig: $count';
+  }
+
+  @override
+  String get plazaOpeningSoon => 'BINNENKORT OPEN';
+
+  @override
+  String get plazaOpenLate => 'LAAT OPEN';
+
+  @override
+  String plazaOverdueSince(String date) {
+    return 'te laat sinds $date — rond af of verplaats';
+  }
+
+  @override
+  String get plazaOverview => 'Overzicht';
+
+  @override
+  String get plazaPaused => 'Gepauzeerd';
+
+  @override
+  String plazaProjectOverdue(int count) {
+    return 'Achterstallige taken: $count';
+  }
+
+  @override
+  String get plazaSearchHint => 'Zoek taken, Enter om erheen te vliegen';
+
+  @override
+  String plazaStaleReason(int days) {
+    return 'al $days dagen stil — pak het weer op';
+  }
+
+  @override
+  String plazaStats(int tasks, int weeks, int attention) {
+    return '$tasks taken · $weeks weken · $attention vragen aandacht';
+  }
+
+  @override
+  String plazaTaskCount(int count) {
+    return 'Taken: $count';
+  }
+
+  @override
+  String get plazaTitle => 'Plein';
+
+  @override
+  String get plazaToLet => 'TE HUUR';
+
+  @override
+  String get plazaTourControls => 'Spatie: pauze · beweeg om te stoppen';
+
+  @override
+  String get plazaUnavailable =>
+      'Dit apparaat kan de 3D-wereld niet weergeven.';
+
+  @override
+  String plazaWeek(int week, String date) {
+    return 'W$week · $date';
+  }
+
+  @override
+  String plazaWeekShort(int week) {
+    return 'W$week';
+  }
+
+  @override
   String get privateLabel => 'Privé';
 
   @override

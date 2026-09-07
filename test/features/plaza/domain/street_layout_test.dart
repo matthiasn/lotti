@@ -55,6 +55,113 @@ Matcher _samePlacementAs(PlotPlacement expected) => predicate<PlotPlacement>(
 );
 
 void main() {
+  test('dense weeks expand instead of producing overlapping slivers', () {
+    final layout = StreetLayout(projectSeed: 1, minimumPlotSpacing: 6);
+    final date = DateTime.utc(2026, 9, 7);
+    for (final count in [1, 2, 30, 500]) {
+      final tasks = [for (var i = 0; i < count; i++) _task('dense-$i', date)];
+      final plan = layout.plan(tasks);
+      expect(plan.placements.length, count);
+      expect(
+        plan.placements.values.map((p) => p.width),
+        everyElement(greaterThanOrEqualTo(5.4 - 1e-9)),
+      );
+      final shuffled = layout.plan(tasks.reversed.toList());
+      for (final p in plan.placements.values) {
+        expect(shuffled.placements[p.taskId], _samePlacementAs(p));
+      }
+      final plots = plan.placements.values.toList();
+      for (var i = 1; i < plots.length; i++) {
+        if (plots[i].side != plots[i - 1].side) continue;
+        expect(
+          footprintsOverlap(plots[i].footprint, plots[i - 1].footprint),
+          isFalse,
+        );
+      }
+    }
+  });
+
+  test(
+    'done moves only its own plot back while retaining its timeline week',
+    () {
+      final date = DateTime.utc(2026, 9, 7);
+      final active = _task('task', date);
+      final done = PlazaTask(
+        id: active.id,
+        createdAt: date,
+        title: active.title,
+        state: PlazaTaskState.done,
+        progress: 1,
+        checklistItems: 0,
+        linkedTaskIds: const [],
+        categoryColor: active.categoryColor,
+      );
+      final neighbour = _task('neighbour', date);
+      final layout = StreetLayout(projectSeed: 1, completedSetback: 12);
+      final before = layout.plan([active, neighbour]);
+      final after = layout.plan([done, neighbour]);
+      expect(
+        after.placements[neighbour.id],
+        _samePlacementAs(before.placements[neighbour.id]!),
+      );
+      final a = before.placements[active.id]!;
+      final b = after.placements[active.id]!;
+      expect(b.bucketIndex, a.bucketIndex);
+      expect(b.z, a.z);
+      expect(b.x.abs() - a.x.abs(), 12);
+      expect(b.width, a.width);
+    },
+  );
+
+  test('tuning preserves density, completion distance and priority sizing', () {
+    final layout = StreetLayout(
+      projectSeed: 19,
+      completedSetback: 12,
+      minimumPlotSpacing: 6,
+      scaleBillboardsByPriority: true,
+      foldEvery: 3,
+    );
+    final tuned = layout.copyWith(
+      roadWidth: 25,
+      pxPerMeter: 60,
+      maxBuildingHeight: 20,
+    );
+    expect(
+      (tuned.roadWidth, tuned.pxPerMeter, tuned.maxBuildingHeight),
+      (25, 60, 20),
+    );
+    expect(
+      (
+        tuned.projectSeed,
+        tuned.completedSetback,
+        tuned.minimumPlotSpacing,
+        tuned.foldEvery,
+      ),
+      (19, 12, 6, 3),
+    );
+    final scales = [
+      for (var priority = 0; priority < 4; priority++)
+        tuned.billboardScaleFor(
+          PlazaTask(
+            id: 'p',
+            createdAt: DateTime.utc(2026),
+            title: '',
+            state: PlazaTaskState.open,
+            progress: 0,
+            checklistItems: 0,
+            linkedTaskIds: const [],
+            categoryColor: 0,
+            priority: priority,
+          ),
+        ),
+    ];
+    for (var i = 1; i < scales.length; i++) {
+      expect(scales[i], lessThan(scales[i - 1]));
+    }
+    expect(scales.first, lessThanOrEqualTo(1));
+    expect(scales.last, greaterThan(0));
+  });
+
   group('stableUnit', () {
     test('is deterministic, in 0..1, and salt-sensitive', () {
       expect(stableUnit('a', 'w'), stableUnit('a', 'w'));

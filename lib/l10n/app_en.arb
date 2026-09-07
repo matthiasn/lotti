@@ -5787,6 +5787,152 @@
   "panasScaleModerately": "Moderately",
   "panasScaleQuiteABit": "Quite a bit",
   "panasScaleVerySlightlyOrNotAtAll": "Very slightly or not at all",
+  "plazaBlockedReason": "blocked — needs a decision",
+  "plazaCategoryEmpty": "This category has no visible projects.",
+  "plazaClosedForNight": "CLOSED FOR THE NIGHT",
+  "plazaCloseHint": "Esc to close",
+  "plazaControls": "WASD walk · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back",
+  "plazaCornerAfter": "Corner after {week}",
+  "@plazaCornerAfter": {
+    "placeholders": {
+      "week": {
+        "type": "String"
+      }
+    }
+  },
+  "plazaDebug": "Debug",
+  "plazaDecisionStrip": "NEEDS A DECISION",
+  "plazaDoneCount": "{done} of {total} done",
+  "@plazaDoneCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaDueOn": "due {date}",
+  "@plazaDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "plazaDueSoonReason": "due {date} — finish it",
+  "@plazaDueSoonReason": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "plazaEmpty": "Add a task to start building this project’s plaza.",
+  "plazaEnterProject": "Enter project",
+  "plazaExploreCategory": "Explore category",
+  "plazaExploreProject": "Explore project",
+  "plazaFlyThere": "Fly there ›",
+  "plazaInProgressCount": "{count} in progress",
+  "@plazaInProgressCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaLinks": "links {count}",
+  "@plazaLinks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaMorningWalk": "Morning walk",
+  "plazaNeedsAttention": "{count} need attention",
+  "@plazaNeedsAttention": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaOpeningSoon": "OPENING SOON",
+  "plazaOpenLate": "OPEN LATE",
+  "plazaOverdueSince": "overdue since {date} — finish or move it",
+  "@plazaOverdueSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "plazaOverview": "Overview",
+  "plazaPaused": "Paused",
+  "plazaProjectOverdue": "Overdue tasks: {count}",
+  "@plazaProjectOverdue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaSearchHint": "Search tasks, Enter to fly",
+  "plazaStaleReason": "quiet for {days} days — pick it back up",
+  "@plazaStaleReason": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaStats": "{tasks} tasks · {weeks} weeks · {attention} need attention",
+  "@plazaStats": {
+    "placeholders": {
+      "tasks": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "int"
+      },
+      "attention": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaTaskCount": "Tasks: {count}",
+  "@plazaTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plazaTitle": "Plaza",
+  "plazaToLet": "TO LET",
+  "plazaTourControls": "Space: pause · move to exit",
+  "plazaUnavailable": "This device cannot display the 3D world.",
+  "plazaWeek": "W{week} · {date}",
+  "@plazaWeek": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "plazaWeekShort": "W{week}",
+  "@plazaWeekShort": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
   "privateLabel": "Private",
   "privateSwitchDescription": "Only visible when private entries are shown",
   "projectActionAddTask": "Add task",

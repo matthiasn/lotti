@@ -1,15 +1,16 @@
-# Project plaza (prototype)
+# Project plaza
 
-A walkable 3D "project plaza": one project rendered as a night-time district
-of task buildings whose street-facing walls are live Flutter widgets. What
-needs attention is lit where it stands and repeated on a Times-Square-like
-frontier plaza of billboards, tickers and a jumbotron; roof lanterns show
-project health from the sky; beacons fly the camera to curated poses; a
-morning walk visits the anomalies; search and a side panel get you to any
-task. Tap a nearby facade to enable its checklist and details; moving away
-returns it to a static sign. Built on `flutter_scene` (Flutter GPU / Impeller). It is the
-exploration meant to replace the knowledge-graph hairball with a spatial,
-memorable map of a project.
+Plaza turns a desktop project into a walkable nighttime district. Each task
+has a building and a billboard showing its title, status, due date and checklist
+progress. Larger signs emphasize priority; overdue work burns above its signs.
+Completed tasks have quiet green buildings set back from the street, with green
+roof lights that remain readable in the aerial overview.
+
+Open **Explore project** from a project's details, or **Explore category**
+under a category in the Projects list. A category has an avenue for each
+project. Entering a project opens its own task world; Back returns to the
+category. Completed projects occupy the more distant avenues. Category worlds
+only show projects within the selected category and the current privacy scope.
 
 Black-and-white penguin companions stroll through the streets and open square,
 alone or in pairs, with balancing flippers and orange webbed feet. Companions
@@ -18,99 +19,43 @@ the turn and independent blinks. A mix of compact, standard and upright builds
 gives the crowd variety. They are ambient scene characters; reduced-motion
 settings pause them.
 
-This is a **developer harness only**. It is not wired into app routes,
-dependency injection or the database, and it never shows user data: it
-projects the penguin demo world (`Project Waddle`) and nothing else.
+The existing walk, drag-to-look, beacon navigation, search, Home, Overview and
+Morning walk remain available. Nearby task facades offer checklist edits and
+open the regular task details page. Animated penguin companions walk through the streets and plaza, alone or in pairs.
+They respect the system reduced-motion preference.
 
-## Run it
+The feature targets desktop Flutter GPU / Impeller. Unsupported renderers show
+an unavailable message with a way back. Mobile controls and agent-directed world
+regeneration remain future work.
 
-```sh
-fvm flutter run --enable-flutter-gpu -t lib/features/plaza/dev_main.dart -d macos
-```
+## Ownership
 
-`-d linux` works too. Flutter GPU must be enabled; `--enable-flutter-gpu`
-is a `flutter run` flag only, and a built binary takes the engine switch
-from its environment instead (see the handover).
+Plaza owns scene generation, the street and flight geometry, status presentation,
+billboards, facade detail levels, camera controls, ambient animation and the
+world's navigation routes. Generation accepts configuration rather than fixed
+placements, leaving room for alternative layouts.
 
-The [handover](../../../docs/plaza/HANDOVER.md) covers controls, environment
-switches, screenshot tours and benchmarks.
+It delegates project membership and privacy filtering to the journal database,
+category definitions to the entity cache, checklist persistence to the existing
+persistence service, and task editing to the regular task details page. Rendering
+and widget textures belong to `flutter_scene`.
 
-## What it owns and what it delegates
+## Code map
 
-Owns: the task projection model, the merge-stable street layout and its
-fold, the frontier plaza and street furniture, the seeded scenery, the
-attention score, beacons, flights, the morning walk, the walker collider
-over every solid, the scene graph, the facade
-LOD, the widget surfaces, the sprites, the picker, the camera, the HUD, the
-search sheet, the side panel, the debug overlay, the tour and the bench.
+- `data/task_projection.dart` projects journal task/checklist facts.
+- `data/plaza_repository.dart` reads scoped project and category snapshots.
+- `state/project_plaza_provider.dart` refreshes snapshots and the attention clock.
+- `scene/project_world_generator.dart` and `category_world_generator.dart`
+  generate task timelines and project avenues.
+- `domain/` holds geometry, attention, routes, collisions and the Morning walk.
+- `scene/` builds geometry, manages facade detail and captures, and animates
+  status lights, flames and ambient life.
+- `ui/project_plaza_page.dart` and `category_plaza_page.dart` connect app data
+  and navigation to the reusable `ui/plaza_view.dart` renderer.
+- `ui/` also contains the captured billboard/facade widgets and localized chrome.
+- `dev_main.dart` is a separate penguin-fixture launcher for visual review and
+  measurements; shipping routes never depend on its demo projection.
 
-Delegates: the fixture data to `lib/features/demo` (the penguin world and
-its media catalogue), rendering to `flutter_scene`, the window size on Linux
-to the runner. Nothing in here is reachable from the shipping app.
-
-## Where the code sits
-
-```
-lib/features/plaza/
-  dev_main.dart          the harness: boot, input, flights, walk, tour, bench
-  data/
-    demo_world_projection.dart   penguin demo world to plaza tasks
-  domain/                pure Dart, tested without a GPU
-    plaza_task.dart      PlazaTask and PlazaTaskState
-    street_layout.dart   the merge-stable street with the fold
-    plaza_layout.dart    plaza, billboards, furniture, beacons, task poses
-    attention.dart       the attention score and lantern state
-    character_loop.dart  smooth, obstacle-cleared routes for companions
-    character_gait.dart  foot contacts, recovery steps and body weight
-    character_population.dart  district walkers, pairs and conversational glances
-    flight.dart          camera flights: an S-curve speed profile, the
-                         street route between stops, a lift over every
-                         solid on the line
-    street_network.dart  the street polyline a routed flight follows
-    morning_walk.dart    the walk playlist
-    solid.dart           a footprint with its height band
-    walk_collider.dart   keeps the walker out of every solid at walk height
-    scenery.dart         the seeded fillers, towers and skyline, and the
-                         solids of the pylons, the gantry, the lamps, the
-                         roof panels and the spires
-  scene/                 flutter_scene, needs a GPU context
-    plaza_world.dart     everything derived from tasks and the clock (pure)
-    plaza_scene.dart     scene ownership; fixture builders in library parts
-    plaza_scene_records.dart     records and shared bindings for sibling layers
-    plaza_primitives.dart        quad geometry and HDR colours
-    plaza_static_meshes.dart     static opaque mesh baking
-    plaza_boxes.dart     shared unit geometry and solid materials for boxes
-    facade_lod_manager.dart      far, sign and live facade tiers
-    plaza_surfaces.dart  billboards, tickers, markers, signs, banners, jumbotron
-    surface_captures.dart        the shared capture bookkeeping and cadences
-    plaza_sprites.dart   lanterns, beacons, lamps, spire and chase lights
-    plaza_characters.dart        skinned penguin companions and leg IK
-    wall_textures.dart   window-grid, light-pool and grain textures
-    plaza_picker.dart    tap resolution
-    plaza_bench.dart     the benchmark phases
-  ui/
-    facade_widget.dart, billboard_widget.dart, jumbotron_widget.dart,
-    ticker_widget.dart, banner_widget.dart, block_marker_widget.dart
-    fly_camera_controller.dart   walk camera and flights
-    plaza_pointer_controller.dart   tap, drag and cancellation
-    plaza_hud.dart, plaza_search_sheet.dart, task_side_panel.dart,
-    debug_overlay.dart, checklist_ticks.dart, plaza_style.dart,
-    plaza_chip.dart, cover_image.dart
-    plaza_frame_pacer.dart, plaza_repaint.dart, plaza_frame_window.dart
-                         frame scheduling, scene painting and bounded stats
-    plaza_tour.dart      the tour stops
-tool/plaza/capture_tour.py       X11 screenshot capture for the tour
-tool/plaza/build_penguin.py     builds the original assets/plaza/penguin.glb
-test/features/plaza/             one test file per pure source file
-```
-
-## Read next
-
-- [docs/plaza/HANDOVER.md](../../../docs/plaza/HANDOVER.md): what is
-  implemented, how to drive it, the tour stops, capturing screenshots, what
-  is missing and the known limits.
-- [docs/plaza/DESIGN.md](../../../docs/plaza/DESIGN.md): the design this
-  implements, with the places where the code departs from it.
-- [knowledge/features/plaza.md](../../../knowledge/features/plaza.md): how
-  it runs, with the layout invariants, the geometry, the attention score,
-  the flight model, the facade tiers and the gotchas.
+For fixture commands, headless checks and measurement limits, see the
+[operator notes](../../../docs/plaza/HANDOVER.md). Runtime flow and invariants
+live in [the Plaza concept](../../../knowledge/features/plaza.md).

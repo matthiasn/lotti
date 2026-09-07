@@ -6,6 +6,7 @@ import 'dart:ui' show Color;
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
+import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
@@ -84,7 +85,7 @@ class PlazaSprites {
       );
     }
     for (final building in bindings.buildings) {
-      final color = PlazaStyle.lantern(building.attention.lantern);
+      final color = PlazaStyle.taskColor(building.attention);
       final sprite = Sprite(color: linearColor(color));
       final node = Node(mesh: sprite.mesh)..raycastable = false;
       building.lanternAnchor.add(node);
@@ -99,7 +100,9 @@ class PlazaSprites {
           ),
           color: linearColor(color),
           pulses: building.attention.anomalous,
-          lit: building.attention.lantern != LanternState.off,
+          lit:
+              building.attention.lantern != LanternState.off ||
+              building.task.state == PlazaTaskState.done,
         ),
       );
     }
@@ -164,8 +167,17 @@ class PlazaSprites {
         stops,
       );
     canvas.drawCircle(const ui.Offset(size / 2, size / 2), size / 2, paint);
-    final image = await recorder.endRecording().toImage(size, size);
-    return Texture2D.fromImage(image);
+    final picture = recorder.endRecording();
+    try {
+      final image = await picture.toImage(size, size);
+      try {
+        return await Texture2D.fromImage(image);
+      } finally {
+        image.dispose();
+      }
+    } finally {
+      picture.dispose();
+    }
   }
 
   /// Paints and uploads both textures once.

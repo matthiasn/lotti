@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/plaza_hud.dart';
 import 'package:material_ui/material_ui.dart';
@@ -9,6 +11,7 @@ void main() {
   late int walks;
   late int overviews;
   late int homes;
+  late int exits;
   late PlazaFrameRate frameRate;
   late bool showDebug;
 
@@ -16,6 +19,7 @@ void main() {
     walks = 0;
     overviews = 0;
     homes = 0;
+    exits = 0;
     frameRate = PlazaFrameRate.sixty;
     showDebug = false;
   });
@@ -30,6 +34,7 @@ void main() {
         onMorningWalk: () => walks++,
         onOverview: () => overviews++,
         onHome: () => homes++,
+        onExit: () => exits++,
         frameRate: frameRate,
         onFrameRateChanged: (rate) => frameRate = rate,
         showDebug: showDebug,
@@ -45,14 +50,20 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(host());
-    expect(find.text('Project Waddle — plaza'), findsOneWidget);
+    expect(find.text('Project Waddle — Plaza'), findsOneWidget);
     expect(find.text('28 tasks · 6 weeks · 4 need attention'), findsOneWidget);
-    for (final key in ['WASD', 'Tab', 'H', 'M', '/', '⌫']) {
-      expect(find.text(key), findsOneWidget);
-    }
-    for (final state in ['in progress', 'open', 'blocked', 'overdue', 'done']) {
+    expect(find.textContaining('WASD'), findsOneWidget);
+    for (final state in ['In Progress', 'Open', 'Blocked', 'Overdue', 'Done']) {
       expect(find.text(state), findsOneWidget);
     }
+    final done = tester.widget<DsPill>(
+      find.ancestor(
+        of: find.text('Done'),
+        matching: find.byType(DsPill),
+      ),
+    );
+    final context = tester.element(find.text('Done'));
+    expect(done.color, context.designTokens.colors.alert.success.defaultColor);
   });
 
   testWidgets('the three buttons fire their callbacks', (tester) async {
@@ -60,7 +71,9 @@ void main() {
     await tester.tap(find.text('Morning walk'));
     await tester.tap(find.text('Overview'));
     await tester.tap(find.text('Home'));
+    await tester.tap(find.text('Back'));
     expect((walks, overviews, homes), (1, 1, 1));
+    expect(exits, 1);
   });
 
   testWidgets('toast and walk chip appear only when set', (tester) async {
@@ -89,10 +102,10 @@ void main() {
     // that reserves the selected width.
     expect(find.text('auto'), findsNWidgets(2));
     expect(find.text('60'), findsNWidgets(2));
-    await tester.tap(find.text('30').first);
+    await tester.tap(find.text('30').hitTestable().first);
     await tester.pump();
     expect(frameRate, PlazaFrameRate.thirty);
-    await tester.tap(find.text('auto').first);
+    await tester.tap(find.text('auto').hitTestable().first);
     await tester.pump();
     expect(frameRate, PlazaFrameRate.auto);
     expect(showDebug, isFalse);

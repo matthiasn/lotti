@@ -51,10 +51,10 @@ void main() {
       closed = 0;
     });
 
-    Widget host() => makeTestableWidget2(
+    Widget host({List<PlazaTask>? tasks}) => makeTestableWidget2(
       Scaffold(
         body: PlazaSearchSheet(
-          tasks: _tasks,
+          tasks: tasks ?? _tasks,
           attentionOf: (t) => attentionFor(t, _now),
           weekOf: (t) => 'W1',
           onPick: picked.add,
@@ -68,7 +68,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(host());
-      expect(find.text('↵ fly'), findsNWidgets(6));
+      expect(find.text('Fly there ›'), findsNWidgets(6));
       await tester.enterText(find.byType(TextField), 'sardine');
       await tester.pump();
       expect(find.text('Load the sardine cargo pods'), findsOneWidget);
@@ -102,5 +102,28 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       expect(closed, 1);
     });
+
+    testWidgets(
+      'refresh removes inaccessible results while keeping the query',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(host());
+        await tester.enterText(find.byType(TextField), 'sardine');
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+        await tester.pumpWidget(host(tasks: [_tasks[2]]));
+        expect(find.text('Stock the sardine cold ring'), findsNothing);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          'sardine',
+        );
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        expect(picked.map((t) => t.id), ['3']);
+        await tester.pumpWidget(host(tasks: const []));
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        expect(picked.map((t) => t.id), ['3']);
+      },
+    );
   });
 }

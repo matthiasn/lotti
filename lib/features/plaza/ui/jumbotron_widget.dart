@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/ui/cover_image.dart';
+import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The giant screen behind the plaza: the project's name over the hero's
@@ -18,6 +21,7 @@ class JumbotronWidget extends StatelessWidget {
     required this.pxPerMeter,
     required this.clock,
     this.pinProjectCard,
+    this.isCategory = false,
     super.key,
   });
 
@@ -28,6 +32,7 @@ class JumbotronWidget extends StatelessWidget {
   final String projectLabel;
   final int taskCount;
   final int attentionCount;
+  final bool isCategory;
 
   /// The top anomalies, most urgent first.
   final List<TaskAttention> headlines;
@@ -65,11 +70,7 @@ class JumbotronWidget extends StatelessWidget {
               if (cover != null)
                 Opacity(
                   opacity: 0.55,
-                  child: Image.network(
-                    cover,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const SizedBox(),
-                  ),
+                  child: CoverImage(url: cover),
                 ),
               const DecoratedBox(
                 decoration: BoxDecoration(
@@ -93,7 +94,13 @@ class JumbotronWidget extends StatelessWidget {
                     alignment: Alignment.bottomLeft,
                     child: SizedBox(
                       width: constraints.maxWidth,
-                      child: _slide(pinned ? 0 : cycle, titlePx, bodyPx, m),
+                      child: _slide(
+                        pinned ? 0 : cycle,
+                        titlePx,
+                        bodyPx,
+                        m,
+                        PlazaCopy(context.messages),
+                      ),
                     ),
                   ),
                 ),
@@ -110,6 +117,7 @@ class JumbotronWidget extends StatelessWidget {
     double titlePx,
     double bodyPx,
     double Function(double) m,
+    PlazaCopy copy,
   ) {
     final slides = headlines.take(3).length + 1;
     final slide = cycle % slides;
@@ -139,8 +147,7 @@ class JumbotronWidget extends StatelessWidget {
           ),
           SizedBox(height: m(0.35)),
           Text(
-            '$taskCount tasks · '
-            '$attentionCount need attention',
+            '${isCategory ? copy.messages.projectCountSummary(taskCount) : copy.messages.plazaTaskCount(taskCount)} · ${copy.messages.plazaNeedsAttention(attentionCount)}',
             style: TextStyle(
               fontFamily: PlazaStyle.fontMono,
               fontSize: bodyPx * 2,
@@ -151,7 +158,7 @@ class JumbotronWidget extends StatelessWidget {
       );
     }
     final a = headlines[slide - 1];
-    final frame = PlazaStyle.lantern(a.lantern);
+    final frame = PlazaStyle.taskColor(a);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -160,7 +167,7 @@ class JumbotronWidget extends StatelessWidget {
         // headlines turn.
         Text(
           '$projectLabel  ·  '
-          '$attentionCount need attention',
+          '${copy.messages.plazaNeedsAttention(attentionCount)}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -173,7 +180,7 @@ class JumbotronWidget extends StatelessWidget {
         // One status glyph, one word, in the display voice: the state's
         // mark, heavy, like the facade's marquee band.
         Text(
-          '${PlazaStyle.glyph(a)} ${PlazaStyle.chip(a).label}',
+          '${PlazaStyle.glyph(a)} ${copy.state(a).toUpperCase()}',
           style: TextStyle(
             fontFamily: PlazaStyle.fontText,
             fontSize: bodyPx * 1.8,
@@ -197,10 +204,10 @@ class JumbotronWidget extends StatelessWidget {
             color: PlazaStyle.text,
           ),
         ),
-        if (a.reason.isNotEmpty) ...[
+        if (copy.reason(a).isNotEmpty) ...[
           SizedBox(height: m(0.3)),
           Text(
-            a.reason,
+            copy.reason(a),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -214,7 +221,7 @@ class JumbotronWidget extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            'fly there ›',
+            copy.messages.plazaFlyThere,
             style: TextStyle(
               fontFamily: PlazaStyle.fontText,
               fontSize: bodyPx * 1.7,

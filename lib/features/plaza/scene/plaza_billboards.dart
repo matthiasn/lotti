@@ -43,7 +43,7 @@ extension _PlazaBillboardsBuilder on PlazaSceneController {
       localTransform: Matrix4.translation(Vector3(slot.x, 0, slot.z))
         ..rotateY(slot.facingRadians),
     );
-    final frame = PlazaStyle.lantern(attention.lantern);
+    final frame = PlazaStyle.taskColor(attention);
     if (slot.mount == BillboardMount.roof) {
       // Two short struts on the roof.
       for (final side in [-1.0, 1.0]) {

@@ -270,7 +270,7 @@ class FlyCameraController {
   }
 
   /// The camera for this frame.
-  Camera camera() {
+  Camera camera({double farClip = 1400}) {
     final eye = position;
     return PerspectiveCamera(
       position: eye,
@@ -280,7 +280,7 @@ class FlyCameraController {
       // three times the default triples the depth precision far out,
       // where a facade's layers are centimetres apart.
       fovNear: 0.3,
-      fovFar: 1400,
+      fovFar: farClip,
     );
   }
 }

@@ -63,7 +63,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
         attention.lantern == LanternState.blocked ||
         attention.lantern == LanternState.overdue;
     if (alarm) {
-      final spill = PlazaStyle.lantern(attention.lantern);
+      final spill = PlazaStyle.taskColor(attention);
       final sinF = math.sin(facing);
       final cosF = math.cos(facing);
       final cx = placement.x + normal.x * setback;
@@ -110,10 +110,11 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // storey of windows either side of it, so the wall owns the screen
     // instead of being one; a short one is all sign, as before.
     final hasParade = h >= PlazaSceneController.paradeWallHeight;
-    final facadeW = hasParade ? w * 0.8 : w * 0.92;
-    final facadeH = hasParade
-        ? h - PlazaSceneController.shopfrontHeight - 1
-        : h * 0.9;
+    final scale = world.layout.billboardScaleFor(task);
+    final facadeW = (hasParade ? w * 0.8 : w * 0.92) * scale;
+    final facadeH =
+        (hasParade ? h - PlazaSceneController.shopfrontHeight - 1 : h * 0.9) *
+        scale;
     final panelY = hasParade
         ? (PlazaSceneController.shopfrontHeight + 0.4 - 0.6) / 2
         : 0.0;
@@ -232,7 +233,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // One colour rule: on an anomaly the state owns the brightest register
     // (the two verticals and their glow burn in the lantern colour); the
     // category survives on the roofline at half power.
-    final stateNeon = PlazaStyle.lantern(attention.lantern);
+    final stateNeon = PlazaStyle.taskColor(attention);
     // Lit neon goes past white so the bloom pass carries it; a dark shop's
     // strips stay under the threshold.
     final boost = emissive >= 0.7 ? PlazaSceneController.neonBoost : 1.0;
@@ -320,7 +321,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
           placement.z + normal.z * (placement.depth / 2 + facadeW * 0.3),
         ),
         radius: facadeW * 0.55,
-        color: PlazaStyle.lantern(attention.lantern),
+        color: PlazaStyle.taskColor(attention),
         alpha: attention.lantern == LanternState.open ? 0.13 : 0.26,
       );
     }
@@ -334,7 +335,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // the far-tier colour language on arrival.
     final ringMaterial = UnlitMaterial()
       ..baseColorFactor = emissiveColor(
-        PlazaStyle.lantern(attention.lantern),
+        PlazaStyle.taskColor(attention),
         PlazaSceneController.neonBoost,
       )
       ..depthBias = PlazaSceneController.glowDepthBias;

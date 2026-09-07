@@ -57,13 +57,13 @@ void main() {
     final pin = ValueNotifier<bool>(true);
     addTearDown(pin.dispose);
     await tester.pumpWidget(host(pin: pin));
-    expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
+    expect(find.text('Tasks: 28 · 7 need attention'), findsOneWidget);
     clock.value += 5;
     await tester.pump();
     clock.value += 5;
     await tester.pump();
     // Still the card, where an unpinned screen would show a headline.
-    expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
+    expect(find.text('Tasks: 28 · 7 need attention'), findsOneWidget);
     expect(find.textContaining('Headline'), findsNothing);
     // Release: the headlines come back on the next frame.
     pin.value = false;
@@ -109,7 +109,7 @@ void main() {
       clock.value += 5;
       await tester.pump();
       expect(find.text('blocked — needs a decision'), findsOneWidget);
-      expect(find.text('fly there ›'), findsOneWidget);
+      expect(find.text('Fly there ›'), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'height $height');
     }
   });
@@ -119,7 +119,7 @@ void main() {
   ) async {
     await tester.pumpWidget(host());
     expect(find.text('Project Waddle'), findsOneWidget);
-    expect(find.text('28 tasks · 7 need attention'), findsOneWidget);
+    expect(find.text('Tasks: 28 · 7 need attention'), findsOneWidget);
     expect(find.textContaining('Headline'), findsNothing);
     expect(find.byType(Image), findsNothing);
     for (var i = 0; i < 3; i++) {
