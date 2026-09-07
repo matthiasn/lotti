@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
@@ -32,7 +33,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -242,6 +245,137 @@ void main() {
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isTrue);
+  });
+
+  group('the mobile navigation launcher owns the create action', () {
+    List<Override> launcher({required bool enabled}) => [
+      configFlagProvider(
+        enableMobileNavigationLauncherFlag,
+      ).overrideWith((_) => Stream.value(enabled)),
+    ];
+
+    testWidgets('the projects list drops its floating button so the launcher '
+        'can dock the same action on its own row', (tester) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        extraOverrides: launcher(enabled: true),
+      );
+      // The Scaffold animates its floating button out, so it outlives the
+      // rebuild that dropped it.
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+      expect(find.byType(DesignSystemBottomNavigationFabPadding), findsNothing);
+    });
+
+    testWidgets('the floating button stays with the flag off', (tester) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        extraOverrides: launcher(enabled: false),
+      );
+
+      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets('a desktop window keeps the floating button even with the '
+        'flag on', (tester) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        extraOverrides: launcher(enabled: true),
+      );
+
+      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets(
+      'projectsTabDockAction is a glyph action named for the create modal it '
+      'opens, and needs nothing from the overview query the floating button '
+      'waits for — a chip arriving late would shove Navigate sideways',
+      (tester) async {
+        // Deliberately no page and no `projectsOverviewProvider`: the factory
+        // is a pure function of context, which is what makes the docked
+        // action available from the first frame.
+        MobileNavDockAction? action;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Consumer(
+              builder: (context, ref, _) {
+                action = projectsTabDockAction(context, ref);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Glyph, not worded: the page is titled Projects and lists projects.
+        expect(action, isNotNull);
+        expect(action!.worded, isFalse);
+        expect(action!.icon, LottiIcons.add);
+        expect(
+          action!.label,
+          tester.element(find.byType(Consumer)).messages.projectCreateButton,
+        );
+
+        // ...and it opens the same modal the floating button opens.
+        action!.onPressed();
+        await tester.pumpAndSettle();
+        expect(find.byType(ProjectCreateForm), findsOneWidget);
+      },
+    );
+
+    double listBottomPadding(WidgetTester tester) => tester
+        .widget<ProjectsOverviewContent>(find.byType(ProjectsOverviewContent))
+        .listBottomPadding;
+
+    testWidgets(
+      "and stops reserving the floating button's footprint, so the docked "
+      'chip leaves no empty gutter above it',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          extraOverrides: launcher(enabled: true),
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final context = tester.element(find.byType(ProjectsTabPage));
+        final occupied = DesignSystemBottomNavigationBar.occupiedHeight(
+          context,
+        );
+        // A zero here would make the assertion below vacuous. The
+        // with-a-button value (occupied + step12) is pinned by
+        // 'list bottom padding clears the docked nav bar plus the FAB
+        // footprint'.
+        expect(occupied, greaterThan(0));
+        expect(listBottomPadding(tester), occupied);
+      },
+    );
+
+    testWidgets(
+      'the page still withholds its own floating button until the overview '
+      'resolves',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          overrideVisibleGroups: false,
+          extraOverrides: [
+            ...launcher(enabled: false),
+            visibleProjectGroupsProvider.overrideWith(
+              (ref) => const AsyncValue<List<ProjectCategoryGroup>>.loading(),
+            ),
+          ],
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+      },
+    );
   });
 
   testWidgets(

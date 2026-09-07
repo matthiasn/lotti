@@ -192,6 +192,38 @@ class DsGlassPill extends StatelessWidget {
   /// a pill and round buttons line up on the same action row.
   static const double defaultHeight = DsGlassRoundButton.defaultDiameter;
 
+  /// Width this pill takes when it hugs its content: the horizontal padding,
+  /// the glyph and its gap when [hasIcon], and [label] laid out at the
+  /// caller's text scale.
+  ///
+  /// Exposed because a caller that budgets a row of pills against a width —
+  /// the mobile navigation launcher deciding whether two labelled chips fit
+  /// beside each other — otherwise has to restate the padding and gap that
+  /// live in [build], and drifts silently the day either changes.
+  static double intrinsicWidth(
+    BuildContext context, {
+    required String label,
+    bool hasIcon = true,
+    double iconSize = DsGlassRoundButton.defaultIconSize,
+  }) {
+    final tokens = context.designTokens;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: tokens.typography.styles.subtitle.subtitle2,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+      maxLines: 1,
+    )..layout();
+    final labelWidth = painter.width;
+    painter.dispose();
+    return tokens.spacing.step5 * 2 +
+        (hasIcon ? iconSize + tokens.spacing.step2 : 0) +
+        labelWidth;
+  }
+
   final String label;
   final VoidCallback onTap;
   final IconData? icon;

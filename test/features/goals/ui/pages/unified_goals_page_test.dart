@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -28,9 +30,13 @@ import 'package:lotti/features/habits/ui/widgets/habits_summary_card.dart';
 import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_card.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/device_region.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -419,6 +425,136 @@ void main() {
     await tester.tap(find.byType(DesignSystemFloatingActionButton));
     await tester.pump();
     expect(navigated, ['/goals/create']);
+  });
+
+  group('the mobile navigation launcher owns the create action', () {
+    List<Override> launcher({required bool enabled}) => [
+      configFlagProvider(
+        enableMobileNavigationLauncherFlag,
+      ).overrideWith((_) => Stream.value(enabled)),
+    ];
+
+    testWidgets('the goals list drops its floating button so the launcher '
+        'can dock the same action on its own row', (tester) async {
+      // The default viewport is 800 wide — below `kDesktopBreakpoint`, so the
+      // page is in its mobile layout where the launcher exists.
+      await pump(
+        tester,
+        baseState(),
+        extraOverrides: launcher(enabled: true),
+      );
+
+      expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+      expect(find.byType(DesignSystemBottomNavigationFabPadding), findsNothing);
+    });
+
+    testWidgets('the floating button stays with the flag off', (tester) async {
+      await pump(
+        tester,
+        baseState(),
+        extraOverrides: launcher(enabled: false),
+      );
+
+      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets('a desktop window keeps the floating button even with the '
+        'flag on', (tester) async {
+      await pump(
+        tester,
+        baseState(),
+        viewport: const Size(1280, 2600),
+        extraOverrides: launcher(enabled: true),
+      );
+
+      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+    });
+
+    // Read off the page's own scroll padding: the first SliverPadding is the
+    // one wrapping the goals column.
+    double listBottomPadding(WidgetTester tester) => tester
+        .widgetList<SliverPadding>(find.byType(SliverPadding))
+        .first
+        .padding
+        .resolve(TextDirection.ltr)
+        .bottom;
+
+    testWidgets(
+      "the list reserves the floating button's own footprint while it "
+      'floats one',
+      (tester) async {
+        await pump(
+          tester,
+          baseState(),
+          extraOverrides: launcher(enabled: false),
+        );
+
+        final context = tester.element(find.byType(UnifiedGoalsPage));
+        final tokens = context.designTokens;
+        final occupied = DesignSystemBottomNavigationBar.occupiedHeight(
+          context,
+        );
+        // A zero here would make the assertion below vacuous.
+        expect(occupied, greaterThan(0));
+        expect(
+          listBottomPadding(tester),
+          tokens.spacing.step6 + occupied + tokens.spacing.step12,
+        );
+      },
+    );
+
+    testWidgets(
+      'and stops reserving it once the launcher owns the action, so the '
+      'docked chip leaves no empty gutter above it',
+      (tester) async {
+        await pump(
+          tester,
+          baseState(),
+          extraOverrides: launcher(enabled: true),
+        );
+
+        final context = tester.element(find.byType(UnifiedGoalsPage));
+        final tokens = context.designTokens;
+        final occupied = DesignSystemBottomNavigationBar.occupiedHeight(
+          context,
+        );
+        expect(occupied, greaterThan(0));
+        // The bar's own height stays reserved; only the button's footprint
+        // goes, because there is no button.
+        expect(listBottomPadding(tester), tokens.spacing.step6 + occupied);
+      },
+    );
+
+    testWidgets('unifiedGoalsDockAction is a glyph action opening the same '
+        'wizard as the floating button', (tester) async {
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      MobileNavDockAction? action;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Consumer(
+            builder: (context, ref, _) {
+              action = unifiedGoalsDockAction(context, ref);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Glyph, not worded: the page is titled Goals and lists goals.
+      expect(action!.worded, isFalse);
+      expect(action!.icon, LottiIcons.add);
+      expect(
+        action!.label,
+        tester.element(find.byType(Consumer)).messages.agentsCreateGoal,
+      );
+
+      action!.onPressed();
+      expect(navigated, ['/goals/create']);
+    });
   });
 
   testWidgets('the later filter arm selects the pending-later bucket', (

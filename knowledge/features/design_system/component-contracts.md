@@ -559,6 +559,29 @@ The contract:
   contract. It **scales caption line height with `MediaQuery.textScalerOf` and
   rounds fractional line boxes up to the logical pixel Flutter renders**, so
   accessibility scales such as 1.3× cannot overflow the fixed row.
+- `MobileNavigationLauncher.barHeight(context)` owns launcher clearance, and is
+  `chipHeight` plus one `spacing.step2` and the bottom inset (never less than
+  `spacing.step6`). `chipHeight` measures the localized Navigate label at the
+  current text scaler inside symmetric `spacing.step4` padding and never falls
+  below `TapTargets.minimum`. **Docking a page action does not change it** —
+  both chips share that one height, and so does the round button the action
+  collapses to — so a page's clearance never moves as it gains or loses its
+  action. The chips are `DsGlassPill` / `DsGlassRoundButton`
+  ([glass_action_bar.dart](../../../lib/features/design_system/components/glass_action_bar.dart)):
+  no launcher-local fill, radius or alpha exists. Each translucent chip owns
+  its own `BackdropFilter` inside its clip, never the row, so the transparent
+  gap between chips stays unblurred.
+- `MobileNavigationLauncher.labelsFit(context, action)` decides between the
+  two-label row and the glyph-only companion, budgeting `DsGlassPill.intrinsicWidth`
+  against `availableRowWidth` the way the slot bar budgets slots. The pill
+  measures itself — padding, glyph, gap and label at the current text scale —
+  because a caller that restated that arithmetic would drift silently the day
+  the pill's own padding changed. The page
+  action is the half that gives: Navigate names the shell and has no icon-only
+  reading, while a `+` beside a list still reads as "add". It is consulted
+  only for a `MobileNavDockAction.worded` action — the two constructors carry
+  the page's own decision about wording, the same one its floating button
+  made, and a `.glyph` action is a `DsGlassRoundButton` at every width.
 
 # Accessibility is enforced at construction
 

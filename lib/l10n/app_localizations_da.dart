@@ -3391,6 +3391,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Aktivér Matrix-integrationen for at synkronisere dine poster på tværs af enheder og med andre Matrix-brugere.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher => 'Ny mobilnavigation';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Åbn alle appens sektioner med én navigationsknap.';
+
+  @override
   String get configFlagEnableNotifications => 'Aktivere notifikationer?';
 
   @override
@@ -9479,6 +9486,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get navTabTitleMore => 'Mere';
 
   @override
+  String get navTabTitleNavigate => 'Naviger';
+
+  @override
   String get navTabTitlePeople => 'Personer';
 
   @override
@@ -14860,14 +14870,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get navTabTitleNavigate => 'Naviger';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher => 'Ny mobilnavigation';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Åbn alle appens sektioner med én navigationsknap.';
 }

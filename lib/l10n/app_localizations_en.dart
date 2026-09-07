@@ -3375,6 +3375,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable the Matrix integration to sync your entries across devices and with other Matrix users.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'New mobile navigation';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Use one Navigate button to open all app sections.';
+
+  @override
   String get configFlagEnableNotifications => 'Enable notifications?';
 
   @override
@@ -9439,6 +9447,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navTabTitleMore => 'More';
 
   @override
+  String get navTabTitleNavigate => 'Navigate';
+
+  @override
   String get navTabTitlePeople => 'People';
 
   @override
@@ -14772,17 +14783,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get navTabTitleNavigate => 'Navigate';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'New mobile navigation';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Use one Navigate button to open all app sections.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

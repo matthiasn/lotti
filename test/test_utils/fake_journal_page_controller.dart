@@ -48,10 +48,15 @@ class FakeJournalPageController extends JournalPageController {
   @override
   JournalPageState build() => _initialState;
 
-  @override
-  JournalPageState get state => _initialState;
-
-  /// Update state for testing - this updates Riverpod's internal state
+  /// Moves the controller to [newState] and notifies every listener, the way
+  /// a real filter change does.
+  ///
+  /// There is deliberately no `state` getter override here. One used to
+  /// return [_initialState] unconditionally, which made this method a silent
+  /// no-op: the write landed on the notifier and every read — including
+  /// Riverpod's own — got the original state back, so a test that moved the
+  /// state and asserted the consequence passed without the widget ever
+  /// seeing the change.
   // ignore: use_setters_to_change_properties
   void updateState(JournalPageState newState) => state = newState;
 

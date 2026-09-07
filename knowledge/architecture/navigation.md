@@ -113,7 +113,7 @@ flowchart TD
   Chrome -->|desktop| DayCol["DayViewSidePanel (right-docked day view)"]
   Chrome -->|mobile| NavFlag{"enable_mobile_navigation_launcher"}
   NavFlag -->|off or unresolved| Bar["DesignSystemFiveSlotNavBar + More sheet"]
-  NavFlag -->|on| Launcher["Glass Navigate button + two-column grid"]
+  NavFlag -->|on| Launcher["Glass Navigate chip (+ docked page action) + two-column grid"]
 ```
 
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
@@ -523,9 +523,8 @@ navigation**. Startup seeds it with `insertFlagIfNotExists`, preserving an
 existing opt-in. The flag is read only in the mobile shell; desktop keeps its
 existing sidebar and Settings sync counts.
 
-When enabled, `MobileNavigationLauncher` replaces the slot bar with a glass
-Navigate pill. Its backdrop blur and dense theme-aware scrim keep page content
-from competing with the label. `showMobileNavSheet` presents all enabled
+When enabled, `MobileNavigationLauncher` replaces the slot bar with a floating
+row of glass chips. `showMobileNavSheet` presents all enabled
 sections in a two-column grid with 16-point horizontal tile padding, the active
 section highlighted, support links on the left and sync counts on the right.
 Selection dismisses the sheet and resolves the destination index at tap time,
@@ -541,6 +540,105 @@ nonlinear text scaling. Both designs share the existing route-hiding rules.
 
 The new launcher and grid are independent of the legacy slot and More widgets.
 The app shell chooses between them; neither new widget imports the old ones.
+
+### The launcher's row, and the page action docked on it
+
+The launcher is not a bar. It is a transparent strip holding a centred row of
+chips built from the shared glass primitives in
+[`glass_action_bar.dart`](../../lib/features/design_system/components/glass_action_bar.dart)
+— the same `DsGlassPill` / `DsGlassRoundButton` vocabulary the task action bar
+uses, so every floating glass row in the app has one silhouette, one fill
+alpha, one hairline and one `spacing.step4` gap. Navigate is translucent and
+self-blurring: the `BackdropFilter` lives inside each chip's `ClipRRect` rather
+than around the row, because a filter spanning the row would also blur the
+transparent gap between the chips and smear the page the launcher exists to
+leave visible.
+
+`MobileNavigationLauncher.pageAction` is the second slot. The **shell** decides
+who fills it, from the active destination alone
+(`_AppScreenState._launcherDockAction`) — exactly the five destinations whose
+list page floats a create button:
+
+| Destination | Factory | Chip |
+|---|---|---|
+| Tasks | `tasksTabDockAction` | worded — "Add a task" |
+| Logbook | `logbookDockAction` | glyph |
+| Projects | `projectsTabDockAction` | glyph |
+| Goals | `unifiedGoalsDockAction` | glyph |
+| Habits | `habitsTabDockAction` | glyph |
+| Daily OS, Dashboards, People, Events, Settings | — | none |
+
+Nothing is registered from inside a page: the `IndexedStack` keeps every tab
+mounted, so a page-owned registry would keep its action docked on every other
+tab too.
+
+Each page decides its own wording, through the two `MobileNavDockAction`
+constructors, and it is the decision its floating button already made. The task
+list words its action because the app creates tasks, entries, habits, goals and
+projects from one glyph and the plus alone does not say which; the lists whose
+heading already answers that stay glyph-only.
+
+Docked actions resolve their page state at *tap* time, not when the shell built
+the row — `createTaskFromTaskListFilters` reads the task list's filters,
+`logbookCreateCategoryId` the feed's single-category selection — so a filter
+changed since the last shell rebuild still applies.
+
+The same predicate decides both halves of the handover:
+`mobileNavigationLauncherOwnsPageActions(context, ref)` — the flag, and a
+non-desktop window — is read by the shell to pick the launcher and by each of
+the five pages to drop its own `DesignSystemFloatingActionButton`. One rule,
+one place; the action moves onto the row rather than being duplicated above it.
+
+It decides a third thing on the two lists that reserve scroll clearance for
+their floating button on top of the bar's own height — Goals and Projects both
+add a `spacing.step12` allowance to
+`DesignSystemBottomNavigationBar.occupiedHeight`. With the action docked there
+is no floating button to clear, and that allowance is an empty gutter, so the
+same predicate drops it.
+
+Two deliberate divergences from what the floating button did:
+
+- **The Logbook keeps its docked action during the first-run zero state**,
+  where the page withholds the corner button so its inline "Create new entry"
+  CTA is the single primary action. In the corner a second copy competed; on
+  the rail the create chip is persistent chrome beside Navigate, and dropping
+  it only there would make the rail inconsistent across tabs.
+- **Projects docks unconditionally**, where the floating button waits for
+  `visibleProjectGroupsProvider`. The create modal needs nothing from that
+  query, and a chip arriving one beat late would shove Navigate sideways under
+  the user's thumb; on its own layer in the corner the same delay cost nothing.
+
+Route sensitivity is needed in one place only. Projects, Goals and Habits
+slide the whole launcher away on their detail routes (`slideNavAway`), so a
+stale action there is off screen anyway. The journal tab keeps the bar on an
+entry's page — and that page owns a *different* action, an `add linked entry`
+button with its own glyph — so `isLogbookEntryDetailRoute` drops the logbook's
+action from the rail there and lets the detail page keep floating its own.
+That check is why `navService.journalDelegate` joins `_routeChangeListenable`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Centred
+  Centred --> Worded: Tasks becomes active
+  Centred --> Glyph: Logbook, Projects, Goals or Habits becomes active
+  Worded --> Centred: a destination with no create action becomes active
+  Glyph --> Centred: a destination with no create action becomes active
+  Worded --> Glyph: both labels no longer fit the row
+  Glyph --> Worded: labels fit again, on a worded action
+  Centred: Navigate alone, centred
+  Worded: Navigate + accent-filled labelled pill, pair centred
+  Glyph: Navigate + accent round button, pair centred
+```
+
+`labelsFit` measures both labels with a `TextPainter` at the current scaler
+against `availableRowWidth`, exactly as the slot bar budgets its slots. It is
+consulted only for a `MobileNavDockAction.worded` action; a `.glyph` one is
+round at every width. Below the threshold a worded action drops to
+`DsGlassRoundButton` at the same diameter as the row's chip height — it keeps
+its place, its accent and its accessible name, and only its word goes. The
+row's height is `chipHeight` in every case, so `barHeight` — and every
+clearance derived from it — does not move when an action docks, undocks or
+collapses.
 
 ## The Settings row and its counts
 

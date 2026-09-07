@@ -25,6 +25,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/signals/health_signal_refresh_service.dart';
 import 'package:lotti/logic/signals/signal_needs.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Top-level habits tab: a dashboard on the calm [dsPageSurface] canvas, driven
@@ -299,13 +300,20 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         ),
       },
       child: Scaffold(
-        floatingActionButton: DesignSystemBottomNavigationFabPadding(
-          child: DesignSystemFloatingActionButton(
-            key: const ValueKey('habits-create-fab'),
-            semanticLabel: messages.habitEditorCreateTitle,
-            onPressed: () => openHabitEditor(context),
-          ),
-        ),
+        // Null while the mobile navigation launcher carries this page's
+        // create action on its own row (see [habitsTabDockAction]); a
+        // floating copy above it would put two create affordances in the
+        // same corner.
+        floatingActionButton:
+            mobileNavigationLauncherOwnsPageActions(context, ref)
+            ? null
+            : DesignSystemBottomNavigationFabPadding(
+                child: DesignSystemFloatingActionButton(
+                  key: const ValueKey('habits-create-fab'),
+                  semanticLabel: messages.habitEditorCreateTitle,
+                  onPressed: () => openHabitEditor(context),
+                ),
+              ),
         backgroundColor: dsPageSurface(context),
         body: SafeArea(
           // The navigation bar's occupied height already includes the system
@@ -473,3 +481,15 @@ class _CollapsibleRowState extends State<_CollapsibleRow>
     );
   }
 }
+
+/// The habits list's create action as the mobile navigation launcher shows
+/// it.
+///
+/// Glyph-only, like the floating button it replaces: this page is titled
+/// Habits and lists habits, so the plus needs no word to say what it makes.
+MobileNavDockAction habitsTabDockAction(BuildContext context, WidgetRef ref) =>
+    MobileNavDockAction.glyph(
+      label: context.messages.habitEditorCreateTitle,
+      icon: LottiIcons.add,
+      onPressed: () => openHabitEditor(context),
+    );

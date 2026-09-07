@@ -32,6 +32,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The unified Goals tab (flag: `enable_unified_goals`; design handover
@@ -267,14 +268,26 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
       );
     }
 
+    // While the mobile navigation launcher carries this page's create action
+    // on its own row (see [unifiedGoalsDockAction]) the page floats no button
+    // of its own — a copy above the launcher would put two create affordances
+    // in the same corner — and the list stops reserving that button's
+    // footprint at the bottom of its scroll.
+    final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
+      context,
+      ref,
+    );
+
     return Scaffold(
       backgroundColor: dsPageSurface(context),
-      floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: DesignSystemFloatingActionButton(
-          semanticLabel: messages.agentsCreateGoal,
-          onPressed: () => beamToNamed(goalCreatePath),
-        ),
-      ),
+      floatingActionButton: launcherOwnsCreateAction
+          ? null
+          : DesignSystemBottomNavigationFabPadding(
+              child: DesignSystemFloatingActionButton(
+                semanticLabel: messages.agentsCreateGoal,
+                onPressed: createGoalFromGoalsList,
+              ),
+            ),
       body: SafeArea(
         // Centered against the ACTUAL pane, not the window: in desktop layout
         // this page renders beside the navigation sidebar, and window-width
@@ -296,7 +309,9 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                         DesignSystemBottomNavigationBar.occupiedHeight(
                           context,
                         ) +
-                        tokens.spacing.step12,
+                        // The floating button's own footprint — nothing to
+                        // clear once the launcher owns the action.
+                        (launcherOwnsCreateAction ? 0 : tokens.spacing.step12),
                   ),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
@@ -418,7 +433,7 @@ class _NoGoalsYet extends StatelessWidget {
             label: context.messages.agentsCreateGoal,
             leadingIcon: LottiIcons.add,
             variant: DesignSystemButtonVariant.secondary,
-            onPressed: () => beamToNamed(goalCreatePath),
+            onPressed: createGoalFromGoalsList,
           ),
         ],
       ),
@@ -515,3 +530,22 @@ class _GoalsHeader extends StatelessWidget {
     );
   }
 }
+
+/// Opens the goal creation route. The one entry point every create
+/// affordance on this page goes through — the floating button, the empty
+/// state's inline call to action, and the mobile navigation launcher's
+/// docked action — so none of them can drift from the others.
+void createGoalFromGoalsList() => beamToNamed(goalCreatePath);
+
+/// The goals list's create action as the mobile navigation launcher shows it.
+///
+/// Glyph-only, like the floating button it replaces: this page is titled
+/// Goals and lists goals, so the plus needs no word to say what it makes.
+MobileNavDockAction unifiedGoalsDockAction(
+  BuildContext context,
+  WidgetRef ref,
+) => MobileNavDockAction.glyph(
+  label: context.messages.agentsCreateGoal,
+  icon: LottiIcons.add,
+  onPressed: createGoalFromGoalsList,
+);
