@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Optional mobile navigation launcher.** Enable New mobile navigation in
-  Settings → Config Flags to try a glass Navigate button and a two-column
-  section grid. The existing bottom navigation remains the default.
+  Settings → Advanced → Config Flags to try a glass Navigate button and a
+  two-column section grid. The existing bottom navigation remains the default.
 
 ### Fixed
 
