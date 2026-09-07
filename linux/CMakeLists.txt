@@ -84,8 +84,8 @@ if(_LOTTI_CMAKE_WARN_DEPRECATED_WAS_SET)
     CACHE CMAKE_WARN_DEPRECATED PROPERTY VALUE)
 endif()
 set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
-# Match sherpa_onnx 1.13.7's runtime when flutter_onnxruntime needs headers.
-set(ONNXRUNTIME_VERSION "1.27.1" CACHE STRING "Shared speech runtime" FORCE)
+# Match sherpa_onnx 1.13.4's runtime when flutter_onnxruntime needs headers.
+set(ONNXRUNTIME_VERSION "1.27.0" CACHE STRING "Shared speech runtime" FORCE)
 include(flutter/generated_plugins.cmake)
 
 # Flutter copies plugin files rather than installing their targets. Avoid

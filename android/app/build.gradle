@@ -44,7 +44,9 @@ android {
 
     packaging {
         jniLibs {
-            // TTS and sherpa both supply the compatible ORT 1.27 runtime.
+            // TTS and sherpa each contribute a libonnxruntime.so. The
+            // pubspec pins keep both at the same ORT release (1.27.0), so
+            // collapsing the duplicate is safe — see android/build.gradle.
             pickFirsts += ['**/libonnxruntime.so']
         }
     }

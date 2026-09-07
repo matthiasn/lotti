@@ -23,8 +23,14 @@ buildscript {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    // sherpa_onnx 1.13.7 needs the ORT 1.27 C API. Keep the Java/JNI
-    // dependency used by TTS on the same API (1.27.1 has no Maven artifact).
+    // sherpa's platform packages and the Java/JNI bridge that Supertonic TTS
+    // loads share the one packaged libonnxruntime.so. ORT exports its C API
+    // with ELF symbol versioning and the version node must match exactly: a
+    // runtime tagged VERS_1.27.1 does not satisfy a consumer asking for
+    // VERS_1.27.0, and the loader fails with "cannot locate symbol
+    // OrtGetApiBase". sherpa is pinned to 1.13.4, whose runtime is 1.27.0, so
+    // force the JNI artifact to the same release. Bump only in lockstep with
+    // the sherpa_onnx_* pins in pubspec.yaml.
     configurations.configureEach {
         resolutionStrategy.force 'com.microsoft.onnxruntime:onnxruntime-android:1.27.0'
     }

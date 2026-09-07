@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 1.1.5+4380
+version: 1.1.5+4381
 
 msix_config:
   display_name: LottiApp
@@ -122,7 +122,7 @@ dependencies:
   rxdart: ^0.28.0
   share_plus: ^12.0.0
   shared_preferences: ^2.3.2
-  sherpa_onnx: 1.13.7
+  sherpa_onnx: 1.13.4
   sliver_tools: ^0.2.12
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^3.5.1
@@ -164,6 +164,28 @@ dependency_overrides:
   # See: https://github.com/flutter/flutter/issues/178915
   path_provider_foundation: 2.5.1
   rxdart: ^0.28.0
+  # sherpa_onnx's platform packages ship the native ONNX Runtime, and
+  # `sherpa_onnx: 1.13.4` only constrains them to `^1.13.4` — which resolves to
+  # 1.13.7 and reintroduces the mismatch below. Pin them exactly.
+  #
+  # ORT exports its C API with ELF symbol versioning, and the version node must
+  # match exactly: a `libonnxruntime.so` tagged VERS_1.27.1 does not satisfy a
+  # consumer that asks for VERS_1.27.0. Android packages a single
+  # `libonnxruntime.so` shared by sherpa's `libsherpa-onnx-c-api.so` and by the
+  # `libonnxruntime4j_jni.so` that Supertonic TTS loads, so both must want the
+  # same node. sherpa 1.13.5+ ships VERS_1.27.1, which has no
+  # `com.microsoft.onnxruntime:onnxruntime-android` artifact on Maven Central,
+  # leaving the JNI side unsatisfiable; 1.13.4 ships VERS_1.27.0, which Maven
+  # publishes. Bump these only in lockstep with the version forced in
+  # android/build.gradle and pinned in linux/CMakeLists.txt.
+  sherpa_onnx_android_arm64: 1.13.4
+  sherpa_onnx_android_armeabi: 1.13.4
+  sherpa_onnx_android_x86: 1.13.4
+  sherpa_onnx_android_x86_64: 1.13.4
+  sherpa_onnx_ios: 1.13.4
+  sherpa_onnx_linux: 1.13.4
+  sherpa_onnx_macos: 1.13.4
+  sherpa_onnx_windows: 1.13.4
 
 dev_dependencies:
   # Parses Dart directives in test/architecture/feature_import_direction_test.dart.

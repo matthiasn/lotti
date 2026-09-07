@@ -105,13 +105,13 @@ modules:
       - type: archive
         only-arches:
           - x86_64
-        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.1/onnxruntime-linux-x64-1.27.1.tgz
-        sha256: 25b1ef1fea1acd210d63f8f24dc870ad6e077795ce1f54876252c6d3803c15af
+        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.0/onnxruntime-linux-x64-1.27.0.tgz
+        sha256: 547e40a48f1fe73e3f812d7c88a948612c23f896b91e4e2ee1e232d7b468246f
       - type: archive
         only-arches:
           - aarch64
-        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.1/onnxruntime-linux-aarch64-1.27.1.tgz
-        sha256: 33c67e33d1e25b816878366ea276589a024f71f000e7ff955c4b33224d639edd
+        url: https://github.com/microsoft/onnxruntime/releases/download/v1.27.0/onnxruntime-linux-aarch64-1.27.0.tgz
+        sha256: 3e4d83ac06924a32a07b6d7f91ce6f852876153fc0bbdf931bf517a140bfbe48
   # NOTE: No separate flutter-sdk module - Flutter is included in lotti sources for flatpak-flutter
   - name: lotti
     buildsystem: simple

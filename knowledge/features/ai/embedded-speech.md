@@ -192,18 +192,38 @@ every model in an incoming profile has been downloaded on that node.
 
 # Native packaging
 
-`sherpa_onnx` is pinned to 1.13.7. Its native platform packages supply the C API
-and binaries, including Linux x64/ARM64, Apple platforms, Android, and Windows.
-The existing ONNX plugin continues to own Supertonic TTS.
+`sherpa_onnx` is pinned to 1.13.4, and its native platform packages are pinned
+to the same version in `dependency_overrides` — the package itself only
+constrains them to `^1.13.4`, which resolves higher and silently swaps the
+binaries out. Those packages supply the C API and binaries for Linux x64/ARM64,
+Apple platforms, Android and Windows. The existing ONNX plugin continues to own
+Supertonic TTS.
+
+ONNX Runtime exports its C API under **ELF symbol versioning**, and a version
+node must match exactly: a `libonnxruntime.so` tagged `VERS_1.27.1` does not
+satisfy a consumer that asks for `VERS_1.27.0`. Sharing one runtime between
+sherpa and TTS therefore demands a single ORT *release*, not merely a compatible
+1.27 API level.
 
 Linux packages one ONNX Runtime from sherpa. Its `libonnxruntime.so` also has a
 `libonnxruntime.so.1` symlink for the TTS plugin's SONAME dependency. The official
-ORT headers/download and Flatpak runtime are pinned to the matching 1.27.1
-release; Flatpak's declared sources keep configuration offline. Android aligns
-TTS's Java/JNI dependency to the published 1.27.0 artifact (there is no 1.27.1
-Maven artifact), sharing the compatible 1.27 API with sherpa's runtime. Duplicate
+ORT headers/download and Flatpak runtime are pinned to the matching 1.27.0
+release; Flatpak's declared sources keep configuration offline. Android packages
+one `libonnxruntime.so` shared by sherpa's `libsherpa-onnx-c-api.so` and by the
+`libonnxruntime4j_jni.so` that TTS loads, so `android/build.gradle` forces the
+Java/JNI artifact to the published 1.27.0 release and the duplicate
 `libonnxruntime.so` inputs are merged into one packaged library. Apple's sherpa
 frameworks hide their internal ORT symbols.
+
+sherpa 1.13.5 and later ship a `VERS_1.27.1` runtime, and Maven Central
+publishes no `onnxruntime-android:1.27.1`. Taking that bump without a matching
+Java artifact leaves the JNI bridge unsatisfiable: `OrtEnvironment`'s static
+initialiser throws `UnsatisfiedLinkError` out of
+`GeneratedPluginRegistrant.registerWith`, so *no* plugin registers and the app
+hangs on a white screen rather than crashing. That shipped as 1.1.5+4380. Bump
+the `sherpa_onnx_*` pins, the forced Maven version in `android/build.gradle`,
+`ONNXRUNTIME_VERSION` in `linux/CMakeLists.txt` and the Flatpak ORT sources only
+in lockstep, and only to a release Maven Central actually publishes.
 
 Flatpak copies the bundle with `--remove-destination`: its build-time ORT
 installation links `.so` to `.so.1`, while the bundle links `.so.1` to `.so`.
