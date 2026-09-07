@@ -4,7 +4,7 @@ import 'dart:ui' show Color;
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/character_gait.dart';
-import 'package:lotti/features/plaza/domain/character_loop.dart';
+import 'package:lotti/features/plaza/domain/character_population.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
 import 'package:vector_math/vector_math.dart';
 
@@ -14,12 +14,11 @@ import 'package:vector_math/vector_math.dart';
 class PlazaCharacters {
   PlazaCharacters({
     required Node parent,
-    required this.loop,
+    required List<CharacterCompanion> population,
     required Node? model,
     Texture2D? shadowTexture,
   }) {
-    final circuit = loop;
-    if (circuit == null || model == null) return;
+    if (population.isEmpty || model == null) return;
     final shadow = shadowTexture == null
         ? null
         : Mesh(
@@ -32,17 +31,19 @@ class PlazaCharacters {
                 alpha: SurfaceAlphas.linework,
               ),
           );
-    for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed) {
+    for (final companion in population) {
       final penguin = _Penguin(
         model.clone(),
-        gait: CharacterGait(loop: circuit, scale: scale, phase: i / 4 + 0.05),
+        companion: companion,
       );
       _penguins.add(penguin);
       root.add(penguin.root);
       if (shadow != null) {
         final node = Node(mesh: shadow, name: 'contact-shadow')
           ..raycastable = false
-          ..localTransform = (Matrix4.identity()..rotateX(-math.pi / 2));
+          // Three millimetres above the surface avoids coplanar depth flicker.
+          ..localTransform = (Matrix4.translationValues(0, 0.003, 0)
+            ..rotateX(-math.pi / 2));
         penguin.root.add(node);
       }
       penguin.pose(0);
@@ -51,7 +52,6 @@ class PlazaCharacters {
   }
 
   static const asset = 'assets/plaza/penguin.glb';
-  final CharacterLoop? loop;
   final root = Node(name: 'plaza-characters');
   final List<_Penguin> _penguins = [];
   static const visibleRange = 90.0;
@@ -106,10 +106,7 @@ class PlazaCharacters {
     }
     _hasVisibleMotion = false;
     for (final penguin in _penguins) {
-      final pose = penguin.gait.loop.at(
-        _animationSeconds,
-        phase: penguin.gait.phase,
-      );
+      final pose = penguin.companion.positionAt(_animationSeconds);
       final dx = eye.x - pose.x;
       final dz = eye.z - pose.z;
       penguin.root.visible =
@@ -127,7 +124,7 @@ class PlazaCharacters {
 }
 
 class _Penguin {
-  _Penguin(Node model, {required this.gait}) {
+  _Penguin(Node model, {required this.companion}) {
     root.add(model);
     // Node.clone rebinds skins but does not copy picking flags. All surfaces
     // use the same skeleton, so also share one joint upload per character.
@@ -151,7 +148,8 @@ class _Penguin {
     }
   }
 
-  final CharacterGait gait;
+  final CharacterCompanion companion;
+  CharacterGait get gait => companion.gait;
   final root = Node(name: 'penguin');
   late final Node pelvis;
   late final Node spine;
@@ -167,25 +165,27 @@ class _Penguin {
     final scale = gait.scale;
     root.localTransform =
         Matrix4.translation(
-            Vector3(pose.root.x, CharacterGait.ground, pose.root.z),
+            Vector3(pose.root.x, gait.loop.ground, pose.root.z),
           )
           ..rotateY(pose.root.yaw)
           ..scaleByDouble(scale, scale, scale, 1);
     final waddle = math.sin(phase);
+    final weight = pose.weightShift;
+    final attention = companion.attentionAt(seconds);
     pelvis.position =
-        pelvisRest + Vector3(-0.025 * waddle, pose.bounce / scale, 0);
+        pelvisRest + Vector3(0.065 * weight, pose.bounce / scale, 0);
     // Short steps shift weight over the supporting foot. The head counters
     // the torso roll; flippers spread for balance and their tips follow.
-    pelvis.rotation = Quaternion.euler(0.02 * waddle, 0, 0.035 * waddle);
+    pelvis.rotation = Quaternion.euler(0.02 * waddle, 0, -0.035 * weight);
     spine.rotation = Quaternion.euler(
       -0.03 * waddle,
       0.055,
-      pose.bank + 0.055 * waddle,
+      pose.bank - 0.065 * weight,
     );
     head.rotation = Quaternion.euler(
-      0.025 * math.sin(phase - 0.25),
-      -0.04,
-      -pose.bank * 0.65 - 0.07 * waddle,
+      attention.yaw + 0.012 * math.sin(phase - 0.25),
+      -0.055 + attention.nod,
+      -pose.bank * 0.65 + 0.08 * weight,
     );
     for (var i = 0; i < flippers.length; i++) {
       final flipperPhase = phase + i * math.pi;

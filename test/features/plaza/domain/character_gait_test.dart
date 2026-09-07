@@ -31,31 +31,24 @@ void main() {
         expect(distance(footA, footB), lessThan(1e-10));
         expect(footA.yaw, footB.yaw);
         expect(footA.pitch, 0);
-        expect(footA.y, CharacterGait.ground + CharacterGait.ankleHeight);
+        expect(footA.y, loop.ground + CharacterGait.ankleHeight);
       }
     }
   });
 
-  test('compression precedes push-off and a ballistic aerial phase', () {
-    final contact = gait.at(0);
-    final down = gait.at(gait.period * CharacterGait.stance / 2);
-    final flight = gait.at(gait.period * (CharacterGait.stance + 0.5) / 2);
-    final nextContact = gait.at(gait.period / 2);
-    expect(contact.left.planted, isTrue);
-    expect(contact.right.planted, isFalse);
-    expect(down.bounce, lessThan(0));
-    expect(flight.left.planted || flight.right.planted, isFalse);
-    expect(flight.bounce, greaterThan(0));
-    expect(nextContact.right.planted, isTrue);
-    expect(nextContact.bounce, closeTo(contact.bounce, 1e-10));
-    const dt = 0.0001;
-    final mid = gait.period * (CharacterGait.stance + 0.5) / 2;
-    final acceleration =
-        (gait.at(mid + dt).bounce -
-            2 * gait.at(mid).bounce +
-            gait.at(mid - dt).bounce) /
-        (dt * dt);
-    expect(acceleration, closeTo(-CharacterGait.gravity, 1e-6));
+  test('walking always has support and transfers through double stance', () {
+    var doubleSupport = 0;
+    for (var frame = 0; frame < 100; frame++) {
+      final pose = gait.at(frame / 100 * gait.period);
+      expect(
+        pose.left.planted || pose.right.planted,
+        isTrue,
+        reason: 'Walking must not have an aerial phase at frame $frame',
+      );
+      if (pose.left.planted && pose.right.planted) doubleSupport++;
+      expect(pose.bounce.abs(), lessThan(0.02));
+    }
+    expect(doubleSupport, inInclusiveRange(15, 25));
   });
 
   test(
@@ -110,12 +103,12 @@ void main() {
         gait.period * (CharacterGait.stance + (1 - CharacterGait.stance) / 3),
       );
       final reach = gait.at(gait.period * 0.9);
-      const groundAnkle = CharacterGait.ground + CharacterGait.ankleHeight;
-      expect(recovery.left.y - groundAnkle, greaterThan(0.15));
-      expect(recovery.left.pitch, greaterThan(0.28));
-      expect(recovery.left.y - groundAnkle, lessThan(0.18));
+      final groundAnkle = loop.ground + CharacterGait.ankleHeight;
+      expect(recovery.left.y - groundAnkle, greaterThan(0.06));
+      expect(recovery.left.pitch, greaterThan(0.14));
+      expect(recovery.left.y - groundAnkle, lessThan(0.09));
       expect(reach.left.y - groundAnkle, lessThan(0.04));
-      expect(reach.left.pitch, lessThan(0));
+      expect(reach.left.pitch, closeTo(0, 1e-10));
     },
   );
 
@@ -132,20 +125,20 @@ void main() {
         expect(
           foot.y,
           greaterThanOrEqualTo(
-            CharacterGait.ground + CharacterGait.ankleHeight,
+            loop.ground + CharacterGait.ankleHeight,
           ),
         );
         expect(
           foot.y,
           lessThanOrEqualTo(
-            CharacterGait.ground +
+            loop.ground +
                 CharacterGait.ankleHeight +
                 CharacterGait.recoveryLift,
           ),
         );
       }
       expect(first.bank.abs(), lessThan(0.2));
-      expect(first.left.planted && first.right.planted, isFalse);
+      expect(first.left.planted || first.right.planted, isTrue);
     },
     tags: 'glados',
   );

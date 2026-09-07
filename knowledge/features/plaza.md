@@ -99,9 +99,15 @@ sources:
   - id: character-loop
     resource: ../../lib/features/plaza/domain/character_loop.dart
     title: Obstacle-cleared companion circuit
+  - id: character-population
+    resource: ../../lib/features/plaza/domain/character_population.dart
+    title: Street population, paired routes and conversational attention
+  - id: population-tests
+    resource: ../../test/features/plaza/domain/character_population_test.dart
+    title: District coverage, route clearance, pair formation and social timing
   - id: character-gait
     resource: ../../lib/features/plaza/domain/character_gait.dart
-    title: World-space foot contacts and running mechanics
+    title: World-space foot contacts and walking mechanics
   - id: characters
     resource: ../../lib/features/plaza/scene/plaza_characters.dart
     title: Skinned companions and two-bone inverse kinematics
@@ -113,7 +119,7 @@ sources:
     title: Full-lap contact, clone binding, pause and visibility checks
   - id: gait-tests
     resource: ../../test/features/plaza/domain/character_gait_test.dart
-    title: Foot contact and ballistic motion invariants
+    title: Foot contact and walking support invariants
   - id: picker
     resource: ../../lib/features/plaza/scene/plaza_picker.dart
     title: PlazaPicker, tap resolution
@@ -794,15 +800,31 @@ panel) and the done count.
 
 # Ambient companions
 
-`CharacterLoop.forPlaza` derives a stadium circuit in the plaza's frame and
-checks its swept envelope against `PlazaWorld.solids`. Samples are at most
-0.5 m apart with another 0.25 m of obstacle clearance covering the intervals.
-A missing plaza, insufficient paving, or an obstructed route produces no
-companions. High signs above the character envelope do not block the route.
-Characters are ambient visual content, not collider solids or pick targets.
+`CharacterPopulation.forWorld` distributes solo walkers and pairs through the
+street segments and frontier plaza. Each street gets a stadium circuit in its
+own frame, including connectors with sufficient clear space. Routes stay within
+the asphalt, excluding pavement and kerbs. End caps stay outside adjoining
+streets at folded junctions so independently timed groups cannot collide there.
+When nearby buildings block a wide circuit, smaller routes on either side of
+the street are tried before omitting that region. The plaza uses
+`CharacterLoop.forPlaza`; a missing or obstructed plaza does not remove street
+walkers. Region IDs, scales, phases and pace are deterministic.
 
-`PlazaCharacters` attaches four scaled instances **after** static mesh baking.
-Their quarter-lap separation and common world speed keep them apart. Each
+All routes check their swept envelope against `PlazaWorld.solids`. Samples are
+at most 0.5 m apart with another 0.25 m clearance covering the intervals. High
+signs above the character envelope do not block routes. Characters are ambient
+visual content, not collider solids or pick targets.
+
+Pairs share route progress and pace but have independent stride phases and
+scales. Their identical stadiums are translated across the fixed street frame,
+maintaining separation and equal travel distance. They walk alongside one
+another on straights and briefly stagger through turns. Narrow or obstructed
+pair routes fall back to solo walkers. Groups on the same circuit share pace
+and evenly spaced phases; different regions can use different paces. Each
+region repeats its full solo/pair mix twice, with six groups on streets and
+eight in the plaza. This produces 78 penguins in the default demo world.
+
+`PlazaCharacters` attaches the population **after** static mesh baking. Each
 instance has its own skeleton; geometry and token materials are shared. All
 surfaces in one instance share one skin upload. `Node.clone` does not preserve
 raycast flags, so construction reapplies them to the cloned mesh nodes.
@@ -813,7 +835,8 @@ forms the egg-shaped body, tapered flippers and short legs. Its 13-joint skin
 has a pelvis, spine, head, two joints per flipper and three per leg. Broad
 webbed feet have three toe lobes; the short bill has a closed mouth seam.
 Feet below the ankle follow the ankle rigidly so shin deformation does not
-bend their soles through the paving. White belly and face patches are assigned
+bend their soles through the paving. The implicit surface is intersected with
+its ground plane so smooth unions cannot inflate the soles below contact. White belly and face patches are assigned
 to surface triangles, not protruding primitives. The imported model root
 is retained without the importer's coordinate-conversion wrapper because the
 model is authored in Plaza's +Z-forward frame. Materials use the existing
@@ -824,13 +847,14 @@ the head joint.
 
 `CharacterGait` derives the cycle from total distance and scales the short
 stride length with character size. Low heel recovery keeps the feet below
-the belly while the penguins hurry across the square. Route distance wraps;
-the gait cycle never resets at the route seam. Each leg alternates between
-fixed world-space contact and recovery;
-the other leg is half a cycle ahead. Stance occupies less than half a cycle,
-leaving an aerial interval. Recovery uses a quintic horizontal interpolation,
-an early heel recovery followed by a forward reach, and ankle pitch. Feet
-land with zero horizontal velocity.
+the belly. Route distance wraps; the gait cycle never resets at the seam.
+Each leg alternates between fixed world-space contact and recovery; the other
+leg is half a cycle ahead. Stance occupies 60% of a cycle, so walking always
+has at least one supporting foot and transfers through double support.
+Recovery uses a quintic horizontal interpolation and an early heel lift,
+returning the sole flat before landing with zero horizontal velocity. Ground
+height belongs to the route: street asphalt and plaza paving use their actual
+surface elevations for both ankle targets and contact shadows.
 
 ```mermaid
 stateDiagram-v2
@@ -839,16 +863,23 @@ stateDiagram-v2
   Recovery --> Stance: next stride contact
 ```
 
-Body compression during support meets a ballistic flight arc with continuous
-vertical velocity. A short centered tangent sample banks the torso into bends.
-A lateral pelvis shift and torso roll move weight toward the supporting foot.
-The head counters the torso tilt, and the spread flippers balance the body;
-their tips follow with a phase offset. Two-bone inverse kinematics
-solves each leg in world space, including the sideways displacement of turns;
-the ankle then cancels its parent rotation to preserve the contact orientation.
-`vector_math.Quaternion.rotated` applies the inverse rotation: conjugating it
-again when converting a world vector into a parent frame breaks foot locking.
-The solver also retains tiny rotations rather than rounding them to zero.
+The body is lowest through double support and rises through passing. A lateral
+pelvis shift and torso roll move weight toward the supporting foot. A short
+centered tangent sample banks the torso into bends. The head counters torso
+tilt, and the spread flippers balance the body; their tips follow with a phase
+offset. Two-bone inverse kinematics solves each leg in world space, including
+sideways displacement on turns; the ankle cancels its parent rotation to
+preserve contact orientation. `vector_math.Quaternion.rotated` applies the
+inverse rotation: conjugating it again when converting world vectors into a
+parent frame breaks foot locking. The solver retains tiny rotations rather
+than rounding them to zero.
+
+`CharacterCompanion.attentionAt` occasionally turns the head toward its partner.
+Each seeded 9–13 second interval contains an eased glance, a short hold and an
+eased return. The second partner responds 0.55 seconds later. A small nod has
+zero angular velocity at its endpoints, and a continuous facing gate suppresses
+conversation through U-turns. Social animation affects the head without moving
+foot contacts or changing route progress.
 
 The harness supplies its existing active clock; no extra ticker is created.
 `MediaQuery.disableAnimations` freezes the entire pose and travel without a
@@ -861,8 +892,10 @@ Tests load the shipped GLB hierarchy and inverse bind matrices through the
 shared scene test helper, using empty geometry to avoid GPU uploads. They check
 cloned joint references, contact targets and ankle orientation through a full
 lap at every scale, plus reduced motion, visibility and node disposal. Pure
-gait tests check contact continuity, support/flight timing, ballistic
-acceleration and deterministic sampling. Rendered appearance still requires a
+gait tests check contact continuity, double support, recovery clearance and
+deterministic sampling. Population tests cover every district in demo and
+folded fixtures, obstacles, asphalt bounds, formation and conversational timing.
+A separate junction regression checks independently timed crowds for collisions. Rendered appearance still requires a
 native Flutter GPU review; these tests cannot judge animation appeal.
 
 # Sprites

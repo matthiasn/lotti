@@ -13,6 +13,8 @@ class CharacterLoop {
     required this.heading,
     required this.radius,
     required this.halfStraight,
+    this.pace = speed,
+    this.ground = 0.08,
   }) : assert(radius > 0, 'radius must be positive'),
        assert(halfStraight >= 0, 'straight length cannot be negative');
 
@@ -21,11 +23,15 @@ class CharacterLoop {
   final double heading;
   final double radius;
   final double halfStraight;
+  final double pace;
+
+  /// Surface elevation, including the paving overlay, in world metres.
+  final double ground;
 
   /// Envelope of the largest penguin, including its balancing flippers.
   static const clearance = 1.8;
   static const height = 3.2;
-  static const speed = 1.8;
+  static const speed = 1.12;
 
   double get length => 4 * halfStraight + 2 * math.pi * radius;
 
@@ -49,30 +55,48 @@ class CharacterLoop {
       radius: radius,
       halfStraight: halfStraight,
     );
+    return loop.clears(solids) ? loop : null;
+  }
+
+  /// Checks the complete swept route, including the spaces between samples.
+  bool clears(List<Solid> solids, {double envelope = clearance}) {
     // Half-metre samples with a half-step of extra clearance cover the
     // entire curve, including any obstacle between two sampled positions.
     const sampleStep = 0.5;
-    final samples = (loop.length / sampleStep).ceil();
+    final samples = (length / sampleStep).ceil();
     final obstacles = solids.where((s) => s.bottom < height && s.top > 0);
     for (var i = 0; i < samples; i++) {
-      final pose = loop.at(0, phase: i / samples);
+      final pose = at(0, phase: i / samples);
       for (final solid in obstacles) {
         if (solid.footprint.contains(
           pose.x,
           pose.z,
-          clearance: clearance + sampleStep / 2,
+          clearance: envelope + sampleStep / 2,
         )) {
-          return null;
+          return false;
         }
       }
     }
-    return loop;
+    return true;
   }
+
+  /// Translates an identical route in the fixed street frame. Partners share
+  /// distance and speed, staying beside each other on the long straights and
+  /// briefly staggering through the caps without sliding their feet.
+  CharacterLoop translated(double lateral) => CharacterLoop(
+    x: x + math.cos(heading) * lateral,
+    z: z - math.sin(heading) * lateral,
+    heading: heading,
+    radius: radius,
+    halfStraight: halfStraight,
+    pace: pace,
+    ground: ground,
+  );
 
   /// Samples the route without a frame delta.
   /// [phase] is a fraction of the circuit; the caller owns the paused clock.
   CharacterPose at(double seconds, {double phase = 0}) {
-    final travel = seconds * speed + phase * length;
+    final travel = seconds * pace + phase * length;
     var distance = travel % length;
     final straight = 2 * halfStraight;
     final arc = math.pi * radius;

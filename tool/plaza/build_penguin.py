@@ -75,7 +75,9 @@ def field(p):
     for value, _ in distances(p):
         h = max(0.09 - abs(result - value), 0) / 0.09
         result = min(result, value) - h * h * 0.09 * 0.25
-    return result
+    # Smooth unions inflate the webbed feet below the ellipsoids' own soles.
+    # Intersect the finished surface with y >= 0 to retain a flat contact sole.
+    return max(result, -p[1])
 
 
 def normal(p):

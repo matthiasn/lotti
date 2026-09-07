@@ -30,7 +30,7 @@ import 'package:flutter_scene/scene.dart' hide FlyCameraController;
 import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
-import 'package:lotti/features/plaza/domain/character_loop.dart';
+import 'package:lotti/features/plaza/domain/character_population.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -348,12 +348,18 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       parent: _sceneController.scene.root,
       model: _penguinModel,
       shadowTexture: walls?.pool,
-      loop: _hidden.contains('characters')
-          ? null
-          : CharacterLoop.forPlaza(_world.plaza, _world.solids),
+      population: _hidden.contains('characters')
+          ? const []
+          : CharacterPopulation.forWorld(
+              plan: _world.plan,
+              plaza: _world.plaza,
+              solids: _world.solids,
+              roadWidth: _world.layout.roadWidth,
+            ),
     );
     debugPrint(
-      'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches}',
+      'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches} '
+      'penguins=${_characters.root.children.length}',
     );
     _picker = PlazaPicker(controller: _sceneController, sprites: _sprites);
     final home =

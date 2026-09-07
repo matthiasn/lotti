@@ -11,8 +11,10 @@ returns it to a static sign. Built on `flutter_scene` (Flutter GPU / Impeller). 
 exploration meant to replace the knowledge-graph hairball with a spatial,
 memorable map of a project.
 
-Black-and-white penguin companions hurry around the open square with balancing
-flippers, orange webbed feet and a waddling run. They are ambient scene characters;
+Black-and-white penguin companions stroll through the streets and open square,
+alone or in pairs, with balancing flippers and orange webbed feet. Companions
+occasionally glance toward one another as if in conversation. They are ambient
+scene characters;
 reduced-motion settings pause them.
 
 This is a **developer harness only**. It is not wired into app routes,
@@ -59,6 +61,7 @@ lib/features/plaza/
     attention.dart       the attention score and lantern state
     character_loop.dart  smooth, obstacle-cleared routes for companions
     character_gait.dart  foot contacts, recovery steps and body weight
+    character_population.dart  district walkers, pairs and conversational glances
     flight.dart          camera flights: an S-curve speed profile, the
                          street route between stops, a lift over every
                          solid on the line

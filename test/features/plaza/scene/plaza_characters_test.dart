@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/character_gait.dart';
 import 'package:lotti/features/plaza/domain/character_loop.dart';
+import 'package:lotti/features/plaza/domain/character_population.dart';
 import 'package:lotti/features/plaza/scene/plaza_characters.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
 import 'package:vector_math/vector_math.dart';
@@ -34,7 +35,18 @@ void main() {
     parent = Node();
     model = loadPenguinWithoutGpu();
     PlazaCharacters.styleModel(model);
-    characters = PlazaCharacters(parent: parent, loop: loop, model: model);
+    characters = PlazaCharacters(
+      parent: parent,
+      population: [
+        for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed)
+          CharacterCompanion(
+            id: 'test-$i',
+            region: 'test',
+            gait: CharacterGait(loop: loop, scale: scale, phase: i / 4 + 0.05),
+          ),
+      ],
+      model: model,
+    );
   });
 
   tearDown(() => characters.dispose());
@@ -157,42 +169,70 @@ void main() {
     },
   );
 
-  test(
-    'IK reaches both feet through a complete lap at every character scale',
-    () {
-      tick(0);
-      for (var frame = 0; frame < 600; frame++) {
-        final seconds = frame / 600 * loop.length / CharacterLoop.speed;
-        tick(seconds);
-        for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed) {
-          final penguin = characters.root.children[i];
-          final gait = CharacterGait(
-            loop: loop,
-            scale: scale,
-            phase: i / 4 + 0.05,
-          ).at(seconds);
-          for (final (name, target) in [
-            ('left-ankle', gait.left),
-            ('right-ankle', gait.right),
-          ]) {
-            final ankle = penguin.getChildByName(name)!;
-            final actual = ankle.globalTransform.getTranslation();
-            expect(
-              actual.distanceTo(Vector3(target.x, target.y, target.z)),
-              lessThan(2e-5),
-              reason: 'frame $frame actor $i $name',
-            );
-            final up = ankle.globalTransform.getColumn(1);
-            expect(up.y, closeTo(scale * math.cos(target.pitch), 2e-5));
-            if (target.planted) {
-              expect(up.x, closeTo(0, 2e-5));
-              expect(up.z, closeTo(0, 2e-5));
+  for (final street in [false, true]) {
+    test(
+      'IK reaches both feet on ${street ? 'tight street bends' : 'the plaza'} at every scale',
+      () {
+        final route = street
+            ? const CharacterLoop(
+                x: 0,
+                z: 0,
+                heading: -math.pi / 2,
+                radius: 2.45,
+                halfStraight: 5,
+                pace: 1.17,
+                ground: CharacterPopulation.streetGround,
+              )
+            : loop;
+        final cast = [
+          for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed)
+            CharacterCompanion(
+              id: '$i',
+              region: 'test',
+              gait: CharacterGait(
+                loop: route,
+                scale: scale,
+                phase: i / 4 + 0.05,
+                stepPhase: street ? 0.31 : 0,
+              ),
+            ),
+        ];
+        characters.dispose();
+        characters = PlazaCharacters(
+          parent: parent,
+          population: cast,
+          model: model,
+        );
+        tick(0);
+        for (var frame = 0; frame < 600; frame++) {
+          final seconds = frame / 600 * route.length / route.pace;
+          tick(seconds);
+          for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed) {
+            final penguin = characters.root.children[i];
+            final gait = cast[i].gait.at(seconds);
+            for (final (name, target) in [
+              ('left-ankle', gait.left),
+              ('right-ankle', gait.right),
+            ]) {
+              final ankle = penguin.getChildByName(name)!;
+              final actual = ankle.globalTransform.getTranslation();
+              expect(
+                actual.distanceTo(Vector3(target.x, target.y, target.z)),
+                lessThan(2e-5),
+                reason: 'frame $frame actor $i $name',
+              );
+              final up = ankle.globalTransform.getColumn(1);
+              expect(up.y, closeTo(scale * math.cos(target.pitch), 2e-5));
+              if (target.planted) {
+                expect(up.x, closeTo(0, 2e-5));
+                expect(up.z, closeTo(0, 2e-5));
+              }
             }
           }
         }
-      }
-    },
-  );
+      },
+    );
+  }
 
   test(
     'reduced motion freezes every joint and resumes without catching up',
@@ -254,15 +294,66 @@ void main() {
     final later = ankle.globalTransform.getTranslation();
     expect(
       planted.y,
-      closeTo(CharacterGait.ground + CharacterGait.ankleHeight, 1e-5),
+      closeTo(loop.ground + CharacterGait.ankleHeight, 1e-5),
     );
     expect(later.distanceTo(planted), lessThan(1e-5));
   });
 
+  test(
+    'conversation turns the head, preserves footsteps and pauses with travel',
+    () {
+      const gait = CharacterGait(loop: loop, scale: 1, phase: 0);
+      characters.dispose();
+      characters = PlazaCharacters(
+        parent: parent,
+        model: model,
+        population: [
+          CharacterCompanion(
+            id: 'talking',
+            region: 'test',
+            gait: gait,
+            partnerLoop: loop.translated(CharacterPopulation.pairSeparation),
+          ),
+          const CharacterCompanion(id: 'quiet', region: 'test', gait: gait),
+        ],
+      );
+      expect(characters.root.children, hasLength(2));
+      final talking = characters.root.children.first;
+      final quiet = characters.root.children.last;
+      final head = talking.getChildByName('head')!;
+      final quietHead = quiet.getChildByName('head')!;
+      tick(0);
+      tick(0.45);
+      // +Z is forward and +X points toward this partner. The glance is a head
+      // turn, not a lateral roll or a change to either foot's contact target.
+      expect(
+        head.globalTransform.getColumn(2).x,
+        greaterThan(quietHead.globalTransform.getColumn(2).x + 0.3),
+      );
+      for (final joint in ['pelvis', 'left-ankle', 'right-ankle']) {
+        expect(
+          talking.getChildByName(joint)!.globalTransform,
+          quiet.getChildByName(joint)!.globalTransform,
+        );
+      }
+      final held = head.localTransform.clone();
+      tick(100, animate: false);
+      tick(500, animate: false);
+      expect(head.localTransform, held);
+      tick(500.1);
+      expect(head.localTransform, isNot(held));
+      tick(505);
+      expect(head.localTransform, quietHead.localTransform);
+    },
+  );
+
   test('a missing route needs no GPU resources or recurring motion', () {
     final emptyParent = Node();
-    final empty = PlazaCharacters(parent: emptyParent, loop: null, model: null)
-      ..update(seconds: 10, eye: Vector3.zero(), animate: true);
+    final empty = PlazaCharacters(
+      parent: emptyParent,
+      population: const [],
+      model: null,
+    )..update(seconds: 10, eye: Vector3.zero(), animate: true);
     expect(emptyParent.children, isEmpty);
     expect(empty.hasVisibleMotion, isFalse);
     empty.dispose();
