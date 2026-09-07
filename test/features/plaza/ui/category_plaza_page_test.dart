@@ -7,6 +7,7 @@ import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/category_plaza_page.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
+import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
@@ -31,9 +32,9 @@ void main() {
   setUp(() => snapshots = StreamController<CategoryPlazaData?>());
   tearDown(() => unawaited(snapshots.close()));
 
-  Widget page() => makeTestableWidgetNoScroll(
+  Widget page({String? categoryId}) => makeTestableWidgetNoScroll(
     CategoryPlazaPage(
-      categoryId: category.id,
+      categoryId: categoryId ?? category.id,
       sceneBuilder:
           ({
             required world,
@@ -65,6 +66,9 @@ void main() {
       categoryPlazaProvider(
         category.id,
       ).overrideWith((ref) => snapshots.stream),
+      categoryPlazaProvider(
+        'other',
+      ).overrideWith((ref) => const Stream.empty()),
       projectPlazaProvider(project.meta.id).overrideWith(
         (ref) => Stream.value(
           ProjectPlazaData(
@@ -76,6 +80,44 @@ void main() {
       ),
     ],
   );
+
+  testWidgets('initial category errors explain the failure and recover', (
+    tester,
+  ) async {
+    await tester.pumpWidget(page());
+    snapshots.addError(StateError('offline'));
+    await tester.pump();
+    await tester.pump();
+    final error = tester.widget<ErrorStateWidget>(
+      find.byType(ErrorStateWidget),
+    );
+    expect(error.error, 'Error');
+    expect(error.mode, ErrorDisplayMode.inline);
+    snapshots.add(snapshot);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(ErrorStateWidget), findsNothing);
+    expect(categoryWorld.tasks.single.id, project.meta.id);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('changing category scope removes the old avenue while loading', (
+    tester,
+  ) async {
+    await tester.pumpWidget(page());
+    snapshots.add(snapshot);
+    await tester.pump();
+    await tester.pump();
+    final oldWorld = categoryWorld;
+    await tester.pumpWidget(page());
+    expect(categoryWorld, same(oldWorld));
+    await tester.pumpWidget(page(categoryId: 'other'));
+    await tester.pump();
+    expect(find.text('Enter'), findsNothing);
+    expect(find.text(project.data.title), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets(
     'portal enters only its project and Back restores the category scene',

@@ -32,6 +32,10 @@ void main() {
       final success = dsTokensDark.colors.alert.success.defaultColor;
       expect(PlazaStyle.chip(attentionFor(done, now)).fill, success);
       expect(PlazaStyle.categoryRoof(done), success);
+      final wall = HSLColor.fromColor(PlazaStyle.categoryWall(done));
+      final roof = HSLColor.fromColor(success);
+      expect(wall.hue, closeTo(roof.hue, 2));
+      expect(wall.lightness, lessThan(roof.lightness));
       expect(
         PlazaStyle.chip(attentionFor(cancelled, now)).fill,
         isNot(success),

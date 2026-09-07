@@ -24,27 +24,29 @@ void main() {
     showDebug = false;
   });
 
-  Widget host({String? toast, String? walkChip}) => makeTestableWidget2(
-    Scaffold(
-      body: PlazaHud(
-        projectLabel: 'Project Waddle',
-        taskCount: 28,
-        weekCount: 6,
-        attentionCount: 4,
-        onMorningWalk: () => walks++,
-        onOverview: () => overviews++,
-        onHome: () => homes++,
-        onExit: () => exits++,
-        frameRate: frameRate,
-        onFrameRateChanged: (rate) => frameRate = rate,
-        showDebug: showDebug,
-        onShowDebugChanged: (show) => showDebug = show,
-        toast: toast,
-        walkChip: walkChip,
-      ),
-    ),
-    mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
-  );
+  Widget host({String? toast, String? walkChip, bool isCategory = false}) =>
+      makeTestableWidget2(
+        Scaffold(
+          body: PlazaHud(
+            projectLabel: 'Project Waddle',
+            taskCount: 28,
+            weekCount: 6,
+            isCategory: isCategory,
+            attentionCount: 4,
+            onMorningWalk: () => walks++,
+            onOverview: () => overviews++,
+            onHome: () => homes++,
+            onExit: () => exits++,
+            frameRate: frameRate,
+            onFrameRateChanged: (rate) => frameRate = rate,
+            showDebug: showDebug,
+            onShowDebugChanged: (show) => showDebug = show,
+            toast: toast,
+            walkChip: walkChip,
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+      );
 
   testWidgets('shows the project, the counts and the legends', (
     tester,
@@ -64,6 +66,14 @@ void main() {
     );
     final context = tester.element(find.text('Done'));
     expect(done.color, context.designTokens.colors.alert.success.defaultColor);
+  });
+
+  testWidgets('category totals count projects without fictitious task weeks', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host(isCategory: true));
+    expect(find.text('28 projects · 4 need attention'), findsOneWidget);
+    expect(find.textContaining('6 weeks'), findsNothing);
   });
 
   testWidgets('the three buttons fire their callbacks', (tester) async {

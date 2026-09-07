@@ -1,14 +1,20 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
 
 void main() {
@@ -44,6 +50,72 @@ void main() {
   tearDown(() {
     container.dispose();
     unawaited(updates.close());
+  });
+
+  testWidgets(
+    'production providers resolve services and stream scoped category updates',
+    (tester) async {
+      final cache = MockEntitiesCacheService();
+      final persistence = MockPersistenceLogic();
+      final services = await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<EntitiesCacheService>(cache)
+            ..registerSingleton<PersistenceLogic>(persistence);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => services.updateNotifications.updateStream,
+      ).thenAnswer((_) => updates.stream);
+      final category = ManualDemoWorld.penguinLogistics(
+        now: manualDemoNow,
+      ).categories.first;
+      when(() => cache.getCategoryById(category.id)).thenReturn(category);
+      when(() => cache.lockedCategoryIds).thenReturn({});
+      when(
+        () => services.journalDb.getProjectsForCategory(category.id),
+      ).thenAnswer((_) async => []);
+      final live = ProviderContainer.test();
+      addTearDown(live.dispose);
+      final subscription = live.listen(
+        categoryPlazaProvider(category.id),
+        (_, _) {},
+      );
+      await tester.pump();
+      expect(subscription.read().value!.category, category);
+      expect(subscription.read().value!.projects, isEmpty);
+      when(() => cache.lockedCategoryIds).thenReturn({category.id});
+      updates.add({categoriesNotification});
+      await tester.pump();
+      expect(subscription.read().hasValue, isTrue);
+      expect(subscription.read().value, isNull);
+      verify(
+        () => services.journalDb.getProjectsForCategory(category.id),
+      ).called(1);
+    },
+  );
+
+  testWidgets('resuming after suspension refreshes the attention day', (
+    tester,
+  ) async {
+    var now = DateTime.utc(2026, 9, 8);
+    await withClock(Clock(() => now), () async {
+      final subscription = container.listen(plazaDayProvider, (_, _) {});
+      expect(subscription.read(), now);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      now = DateTime.utc(2026, 9, 10);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(subscription.read(), now);
+      subscription.close();
+      container.dispose();
+      await tester.pump();
+    });
   });
 
   testWidgets('loads once and ignores unrelated task notifications', (

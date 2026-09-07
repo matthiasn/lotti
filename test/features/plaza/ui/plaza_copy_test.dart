@@ -6,7 +6,11 @@ import 'package:lotti/l10n/app_localizations_de.dart';
 
 void main() {
   final now = DateTime.utc(2026, 9, 8);
-  PlazaTask task(PlazaTaskState state, {DateTime? due}) => PlazaTask(
+  PlazaTask task(
+    PlazaTaskState state, {
+    DateTime? due,
+    PlazaProjectInfo? project,
+  }) => PlazaTask(
     id: 'waddle',
     createdAt: now.subtract(const Duration(days: 30)),
     title: 'Pack the shuttle',
@@ -16,6 +20,7 @@ void main() {
     checklistItems: 0,
     linkedTaskIds: const ['peer'],
     categoryColor: 0,
+    project: project,
   );
   final english = PlazaCopy.english;
   final german = PlazaCopy(AppLocalizationsDe());
@@ -69,6 +74,27 @@ void main() {
       english.reason(attentionFor(task(PlazaTaskState.open), now)),
       isEmpty,
     );
+  });
+
+  test('project portals describe status, progress and aggregate attention', () {
+    for (final archived in [false, true]) {
+      final portal = task(
+        archived ? PlazaTaskState.done : PlazaTaskState.open,
+        project: PlazaProjectInfo(
+          state: archived ? PlazaProjectState.archived : PlazaProjectState.open,
+          taskCount: 9,
+          doneCount: 4,
+          attentionCount: 2,
+          overdueCount: 0,
+        ),
+      );
+      final attention = attentionFor(portal, now);
+      expect(english.state(attention), archived ? 'Archived' : 'Open');
+      expect(english.reason(attention), archived ? '' : '2 need attention');
+      expect(english.metaBits(portal), ['Tasks: 9', '4 of 9 done', 'links 1']);
+      expect(attention.score, archived ? 0 : 3);
+      expect(attention.overdue, isFalse);
+    }
   });
 
   test('metadata and week markers format dates in the viewer locale', () {

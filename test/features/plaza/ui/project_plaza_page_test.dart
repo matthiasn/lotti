@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/features/plaza/data/task_projection.dart';
+import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -32,6 +35,7 @@ void main() {
   );
   final snapshot = ProjectPlazaData(
     project: project,
+    category: demo.categories.first,
     tasks: [task],
     dependencyIds: {project.meta.id, task.id},
   );
@@ -39,6 +43,7 @@ void main() {
   late MockPlazaRepository repository;
   late PlazaWorld renderedWorld;
   late ChecklistTicks renderedTicks;
+  late ValueChanged<PlazaTask> openTask;
 
   setUp(() {
     snapshots = StreamController<ProjectPlazaData?>();
@@ -47,12 +52,12 @@ void main() {
 
   tearDown(() => unawaited(snapshots.close()));
 
-  Widget page({String? categoryId}) => makeTestableWidget(
+  Widget page({String? categoryId, String? projectId}) => makeTestableWidget(
     SizedBox(
       width: 800,
       height: 600,
       child: ProjectPlazaPage(
-        projectId: project.meta.id,
+        projectId: projectId ?? project.meta.id,
         categoryId: categoryId,
         sceneBuilder:
             ({
@@ -63,7 +68,10 @@ void main() {
             }) {
               renderedWorld = world;
               renderedTicks = ticks;
-              return Text(world.projectLabel, key: const ValueKey('scene'));
+              openTask = onOpenTask;
+              return Scaffold(
+                body: Text(world.projectLabel, key: const ValueKey('scene')),
+              );
             },
       ),
     ),
@@ -71,6 +79,7 @@ void main() {
       projectPlazaProvider(
         project.meta.id,
       ).overrideWith((ref) => snapshots.stream),
+      projectPlazaProvider('other').overrideWith((ref) => const Stream.empty()),
       plazaRepositoryProvider.overrideWithValue(repository),
     ],
   );
@@ -87,6 +96,10 @@ void main() {
       expect(renderedWorld.tasks, same(snapshot.tasks));
       expect(renderedWorld.now.isAtSameMomentAs(manualDemoNow), isTrue);
       expect(renderedWorld.plan.placements.keys, [task.id]);
+      expect(
+        renderedWorld.categoryLabels[task.categoryColor.toRadixString(16)],
+        demo.categories.first.name,
+      );
       when(
         () => repository.setChecklistItemChecked(
           projectId: project.meta.id,
@@ -108,6 +121,86 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   });
+
+  testWidgets('failed checklist edits roll back and explain the failure', (
+    tester,
+  ) async {
+    await tester.pumpWidget(page());
+    snapshots.add(snapshot);
+    await tester.pump();
+    await tester.pump();
+    when(
+      () => repository.setChecklistItemChecked(
+        projectId: project.meta.id,
+        taskId: task.id,
+        itemId: task.openChecklistItemIds.first,
+        checked: true,
+      ),
+    ).thenAnswer((_) async => false);
+    renderedTicks.toggle(task.id, 0);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final toast = tester.widget<DesignSystemToast>(
+      find.byType(DesignSystemToast),
+    );
+    expect(toast.tone, DesignSystemToastTone.error);
+    expect(toast.title, 'Error');
+    expect(renderedTicks.isTicked(task.id, 0), isFalse);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+    'changing project scope clears the old scene and checklist bindings',
+    (tester) async {
+      await tester.pumpWidget(page());
+      snapshots.add(snapshot);
+      await tester.pump();
+      await tester.pump();
+      final ticks = renderedTicks;
+      await tester.pumpWidget(page(projectId: 'other'));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('scene')), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      ticks.toggle(task.id, 0);
+      verifyNever(
+        () => repository.setChecklistItemChecked(
+          projectId: any(named: 'projectId'),
+          taskId: any(named: 'taskId'),
+          itemId: any(named: 'itemId'),
+          checked: any(named: 'checked'),
+        ),
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'opening a billboard pushes the existing details route with its task ID',
+    (tester) async {
+      await tester.pumpWidget(page());
+      snapshots.add(snapshot);
+      await tester.pump();
+      await tester.pump();
+      final context = tester.element(find.byKey(const ValueKey('scene')));
+      final navigator = Navigator.of(context);
+      openTask(task);
+      Route<void>? pushed;
+      navigator.popUntil((route) {
+        pushed = route;
+        return true;
+      });
+      // Inspect the destination without mounting TaskDetailsPage's separate
+      // provider graph. Its own tests exercise the details UI.
+      final destination =
+          (pushed! as MaterialPageRoute<void>).builder(context)
+              as TaskDetailsPage;
+      expect(destination.taskId, task.id);
+      navigator.removeRoute(pushed!);
+      await tester.pump();
+      expect(find.text('Project Waddle'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets('background error retains the mounted scene then recovers', (
     tester,

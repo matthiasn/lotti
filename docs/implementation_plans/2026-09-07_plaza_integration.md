@@ -31,7 +31,8 @@ category avenues and completed-work distance, then optional ambient creatures.
   a commit exists.
 - The standalone prototype requires Flutter GPU at engine startup. Integration
   must handle unsupported rendering gracefully and configure the macOS runner.
-- The user authorized a local commit on September 8. No push or PR was requested.
+- Draft PR [#4200](https://github.com/matthiasn/lotti/pull/4200) targets `main`
+  from `feat/project-plaza-integration`; the user requested it on September 8.
 
 ## Verification record — September 8, 2026
 
@@ -54,6 +55,25 @@ category avenues and completed-work distance, then optional ambient creatures.
   validator's 25 tests passed. `make changelog_check` passed.
 - Capture-script window selection was checked with synthetic window trees:
   only the launched process's full-size window is selected. No app was opened.
+
+## Draft PR follow-up
+
+- The first CI run passed all ten unit/widget shards, Glados property tests,
+  analysis, Android compilation and macOS compilation. Native rendering and
+  sustained FPS still need target-device verification.
+- Codecov identified the extracted GPU host plus uncovered integration paths.
+  The host follows the existing native-GPU exclusion; pages, providers and
+  independent input/frame controllers remain subject to the 99% patch target.
+  Added tests cover category refresh, resume-time attention, scope changes,
+  task-detail routing, failed checklist writes, cover paths and portal copy.
+- A reported Back-navigation crash was reproduced headlessly: reattaching a
+  retained scroll region beneath a new route translation asserted `hasSize`.
+  Viewport-relative measurement fixes that path; the regression fails with
+  global measurement and all 27 scroll-stability tests pass with the fix.
+- Follow-up validation: 107 targeted tests passed across the nine touched test
+  files; the full analyzer has no diagnostics. The crash regression was rerun
+  with the fix reverted and reproduced the same `RenderFractionalTranslation`
+  assertion before restoration.
 
 ## CPU generation measurements
 

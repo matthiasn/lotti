@@ -443,31 +443,34 @@ class _ViewportStableAnimatedSizeState
     _holdIfFullyAboveViewport();
   }
 
-  double? _bottomGlobal() {
+  /// Measures only inside the viewport. During route reattachment, ancestors
+  /// above it (notably Cupertino's FractionalTranslation) may not have a size
+  /// yet, even though the retained region and viewport have both been laid out.
+  double? _bottomInViewport() {
     final renderObject = context.findRenderObject();
     if (renderObject is! RenderBox ||
         !renderObject.attached ||
         !renderObject.hasSize) {
       return null;
     }
+    final RenderObject? viewport = RenderAbstractViewport.maybeOf(renderObject);
+    if (viewport is! RenderBox || !viewport.attached || !viewport.hasSize) {
+      return null;
+    }
     return renderObject
         .localToGlobal(
           Offset(0, renderObject.size.height),
+          ancestor: viewport,
         )
         .dy;
   }
 
-  double? _viewportTopGlobal() {
-    return viewportTopGlobal(context.findRenderObject());
-  }
-
   void _holdIfFullyAboveViewport() {
     _shouldReportHeightDelta = false;
-    final bottom = _bottomGlobal();
-    final viewportTop = _viewportTopGlobal();
-    if (bottom == null || viewportTop == null) return;
+    final bottom = _bottomInViewport();
+    if (bottom == null) return;
     final controller = _controller;
-    if (bottom <= viewportTop && controller is ViewportStableScrollController) {
+    if (bottom <= 0 && controller is ViewportStableScrollController) {
       _shouldReportHeightDelta = true;
       controller._holdAnimatedSize(widget.duration + MotionDurations.short2);
     }

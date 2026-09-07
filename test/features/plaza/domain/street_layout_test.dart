@@ -121,6 +121,9 @@ void main() {
       scaleBillboardsByPriority: true,
       foldEvery: 3,
     );
+    final wider = layout.copyWith(roadWidth: 25);
+    expect(wider.roadWidth, 25);
+    expect(wider.pxPerMeter, layout.pxPerMeter);
     final tuned = layout.copyWith(
       roadWidth: 25,
       pxPerMeter: 60,

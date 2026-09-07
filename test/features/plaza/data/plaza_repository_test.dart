@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
 
 void main() {
@@ -59,6 +63,43 @@ void main() {
       () => db.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => []);
   });
+
+  test(
+    'cover paths escape spaces and deleted covers disappear from the world',
+    () async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<Directory>(Directory('/fixture data'));
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      final image = world.images.first.copyWith(
+        data: world.images.first.data.copyWith(
+          imageDirectory: '/images/plaza/',
+          imageFile: 'cover art.png',
+        ),
+      );
+      final withCover = task.copyWith(
+        data: task.data.copyWith(coverArtId: image.id),
+      );
+      when(
+        () => db.getTasksForProject(project.id),
+      ).thenAnswer((_) async => [withCover]);
+      entities[image.id] = image;
+      final visible = (await repository.loadProject(project.id))!;
+      expect(
+        visible.tasks.single.coverImageUrl,
+        'file:///fixture%20data/images/plaza/cover%20art.png',
+      );
+      expect(visible.dependencyIds, contains(image.id));
+      entities[image.id] = image.copyWith(
+        meta: image.meta.copyWith(deletedAt: manualDemoNow),
+      );
+      final removed = (await repository.loadProject(project.id))!;
+      expect(removed.tasks.single.coverImageUrl, isNull);
+      expect(removed.dependencyIds, contains(image.id));
+    },
+  );
 
   test(
     'category reads stay scoped and defer checklist and cover hydration',
