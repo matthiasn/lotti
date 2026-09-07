@@ -12,16 +12,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Settings → Advanced → Config Flags to try a glass Navigate button and a
   two-column section grid. The existing bottom navigation remains the default.
 
+### Changed
+
+- **The Android download is around 4 MB smaller.** Lotti no longer ships its
+  own copy of OpenSSL. The encryption it was there for now comes from the
+  Matrix package directly, so that library — and the C++ runtime it pulled
+  along with it — are gone.
+- **The optional mobile Navigate button now looks like glass, and each list's
+  create button sits beside it instead of above it.** With *New mobile
+  navigation* switched on, Navigate used to be a solid grey button on a
+  frosted slab, and on Tasks, the Logbook, Projects, Goals and Habits a second
+  button floated in the bottom-right corner just above it — two controls in
+  the same corner, neither of them looking placed. Navigate is now a single
+  translucent pill that lets the page show through it, and while one of those
+  lists is open its create button joins Navigate on the same row as an
+  accent-coloured companion, the pair centred together. Open a page that
+  creates nothing — Daily OS, Insights, People, Events, Settings — and
+  Navigate returns to the centre on its own. At the largest text sizes a
+  worded companion keeps its place as a round button rather than squeezing
+  both labels into unreadable stubs.
+
 ### Fixed
 
 - **The Android app opened to a blank white screen and never loaded.** The
   on-device speech recognition added in this release brought its own copy of
   the ONNX Runtime, built against a marginally different release than the one
   the on-device voice already used. Android ships a single copy of that
-  runtime, so whichever of the two was kept, the other could no longer load
-  it — and that one failure stopped every part of the app from starting,
-  leaving it running but unable to draw anything at all. Both features now use
-  the same runtime release, and the app starts normally again.
+  runtime, so whichever of the two was kept, the other could no longer load it
+  — and that one failure stopped every part of the app from starting, leaving
+  it running but unable to draw anything at all. Both features now use the
+  same runtime release, and the app starts normally again.
+- **Audio transcription could fail on Android devices that use 16 KB memory
+  pages.** Lotti encodes a recording to MP3 before sending it off to be
+  transcribed, and that encoder was still built for the older 4 KB memory
+  layout — which newer 64-bit Android devices refuse to load at all. Every
+  native library Lotti bundles for 64-bit Android is now built for 16 KB
+  pages, so transcription works on current hardware again.
 
 ## [1.1.4]
 
