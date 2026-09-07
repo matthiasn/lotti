@@ -42,7 +42,7 @@
   <releases>
     <release version="1.1.5" date="2026-09-07">
       <description>
-        <p>Added: optional mobile navigation launcher. Enable New mobile navigation in Settings → Config Flags to try a glass Navigate button and a two-column section grid. The existing bottom navigation remains the default.</p>
+        <p>Added: optional mobile navigation launcher. Enable New mobile navigation in Settings → Advanced → Config Flags to try a glass Navigate button and a two-column section grid. The existing bottom navigation remains the default.</p>
         <p>Fixed: the Android app opened to a blank white screen and never loaded. The on-device speech recognition added in this release brought its own copy of the ONNX Runtime, built against a marginally different release than the one the on-device voice already used. Android ships a single copy of that runtime, so whichever of the two was kept, the other could no longer load it, and that one failure stopped every part of the app from starting. Both features now use the same runtime release, and the app starts normally again.</p>
       </description>
     </release>
