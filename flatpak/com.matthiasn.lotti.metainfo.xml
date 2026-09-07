@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.5" date="2026-09-07">
+      <description>
+        <p>Added: optional mobile navigation launcher. Enable New mobile navigation in Settings → Config Flags to try a glass Navigate button and a two-column section grid. The existing bottom navigation remains the default.</p>
+      </description>
+    </release>
     <release version="1.1.4" date="2026-09-07">
       <description>
         <p>Added: turn check-in commitments into linked tasks. Your relationship agent can suggest tasks on a person's card and in chat, with the source check-in and any proposed due date visible before confirmation. Review suggestions individually or together, see their history, and undo task creation while the task is still unchanged.</p>
