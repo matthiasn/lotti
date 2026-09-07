@@ -11,11 +11,14 @@ Future<int> runTestSuites(
   required String packageRoot,
   required String flutterExecutable,
 }) async {
+  final selection = _shardArguments(arguments);
   stdout.writeln('Preparing test targets...');
   final preparation = Stopwatch()..start();
   await generateTestOptimizer(
     packageRoot: packageRoot,
     excludedSuiteTags: _excludedSuiteTags(arguments),
+    totalShards: selection.total,
+    shardIndex: selection.index,
   );
   final targets =
       (jsonDecode(
@@ -32,11 +35,50 @@ Future<int> runTestSuites(
   );
   final process = await Process.start(
     flutterExecutable,
-    ['test', ...arguments, ...targets],
+    ['test', ...selection.remaining, ...targets],
     workingDirectory: packageRoot,
     mode: ProcessStartMode.inheritStdio,
   );
   return process.exitCode;
+}
+
+// Consume the shard flags here: forwarding them would shard the already
+// partitioned files a second time and silently omit tests.
+({int total, int index, List<String> remaining}) _shardArguments(
+  List<String> arguments,
+) {
+  final remaining = <String>[];
+  final values = <String, int>{};
+  for (var i = 0; i < arguments.length; i++) {
+    final argument = arguments[i];
+    if (argument == '--') {
+      remaining.addAll(arguments.skip(i));
+      break;
+    }
+    final name = argument.split('=').first;
+    if (name != '--total-shards' && name != '--shard-index') {
+      remaining.add(argument);
+      continue;
+    }
+    final raw = argument.contains('=')
+        ? argument.substring(name.length + 1)
+        : i + 1 < arguments.length
+        ? arguments[++i]
+        : '';
+    final value = int.tryParse(raw);
+    if (value == null || values.containsKey(name)) {
+      throw ArgumentError('Invalid or repeated $name: $raw');
+    }
+    values[name] = value;
+  }
+  if (values.length == 1) {
+    throw ArgumentError('Specify both --total-shards and --shard-index');
+  }
+  return (
+    total: values['--total-shards'] ?? 1,
+    index: values['--shard-index'] ?? 0,
+    remaining: remaining,
+  );
 }
 
 // Positive disjunctions are safe to apply before discovering child-test tags:

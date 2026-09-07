@@ -537,7 +537,14 @@ CI runs two parallel test lanes — a ten-shard standard matrix plus a Glados jo
 - **Glados Property Tests** — tagged property tests with separate coverage.
 - **Performance Budgets** — tagged stopwatch tests, scheduled weekly and available through workflow dispatch. Deterministic query-count gates stay in the standard lane.
 
-All lanes use `tool/ci/run_tests.dart`. It generates a sorted optimized bundle
+All lanes use `tool/ci/run_tests.dart`. Shard flags are consumed by this runner
+before Flutter starts. It assigns whole files greedily by source size, largest
+first, with path tie-breaks, then generates imports only for that shard. The
+assignment is deterministic for a checkout and every eligible file belongs to
+exactly one shard. Flutter receives no shard flags, avoiding double filtering.
+Source size is a balancing heuristic, not a prediction of test duration.
+
+The runner generates a sorted optimized bundle
 plus `test/.test_targets.json`. A suite with library metadata (`@Tags`,
 `@Timeout`, `@TestOn`, `@Skip`, and other annotations) runs as a standalone file
 so the test runner receives the original metadata. Opting out of optimization

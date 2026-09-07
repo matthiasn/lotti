@@ -6,12 +6,36 @@ import 'package:path/path.dart' as path;
 import '../../../tool/ci/run_tests.dart';
 
 void main() {
+  for (final arguments in [
+    ['--total-shards=2'],
+    ['--shard-index=0'],
+    ['--total-shards'],
+    ['--total-shards=abc', '--shard-index=0'],
+    ['--total-shards=2', '--total-shards=2', '--shard-index=0'],
+    ['--total-shards=2', '--shard-index=2'],
+  ]) {
+    test(
+      'rejects invalid sharding $arguments before launching Flutter',
+      () async {
+        await expectLater(
+          runTestSuites(
+            arguments,
+            packageRoot: '/missing',
+            flutterExecutable: '/missing',
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+  }
   for (final (arguments, excluded, status) in [
-    (['--exclude-tags', 'glados || performance', '--shard-index=3'], true, 0),
+    (['--exclude-tags', 'glados || performance', '--no-pub'], true, 0),
     (['--exclude-tags= performance || eval-live '], true, 17),
     (['--exclude-tags', 'glados', '--exclude-tags=performance'], true, 0),
     (['--tags', 'performance'], false, 0),
     (['--tags=glados'], false, 0),
+    (['--total-shards=1', '--shard-index=0'], false, 0),
+    (['--total-shards', '1', '--shard-index', '0'], false, 0),
     (['--exclude-tags', 'performance && slow'], false, 0),
     (['--exclude-tags', '!slow'], false, 0),
     (['--exclude-tags', '(performance || slow)'], false, 0),
@@ -55,7 +79,7 @@ exit $status
           await File(path.join(root.path, 'arguments.txt')).readAsLines(),
           [
             'test',
-            ...arguments,
+            if (!arguments.first.startsWith('--total-shards')) ...arguments,
             'test/.test_optimizer.dart',
             'test/mixed_test.dart',
             if (!excluded) 'test/tagged_test.dart',
