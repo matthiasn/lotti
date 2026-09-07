@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
+import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
@@ -68,6 +69,7 @@ import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -734,6 +736,240 @@ void main() {
       await tester.tap(find.text('Events'));
       await tester.pumpAndSettle();
       verify(() => nav.tapIndex(8)).called(1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'the launcher docks the task list create action only while Tasks is the '
+    'active tab',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final nav = MockNavService();
+      await _stubNavService(
+        nav,
+        indexStream: indexController.stream,
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => false,
+        isDashboardsEnabled: () => false,
+      );
+      var index = 0;
+      when(() => nav.index).thenAnswer((_) => index);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        extraOverrides: [
+          configFlagProvider(
+            enableMobileNavigationLauncherFlag,
+          ).overrideWith((_) => Stream.value(true)),
+        ],
+      );
+
+      indexController.add(0);
+      await tester.pumpAndSettle();
+      final onTasks = tester
+          .widget<MobileNavigationLauncher>(
+            find.byType(MobileNavigationLauncher),
+          )
+          .pageAction;
+      expect(onTasks, isNotNull);
+      expect(onTasks!.icon, LottiIcons.add);
+      expect(
+        onTasks.label,
+        tester
+            .element(find.byType(MobileNavigationLauncher))
+            .messages
+            .addActionCreateTask,
+      );
+      expect(find.bySemanticsLabel(onTasks.label), findsOneWidget);
+
+      // Daily OS sits at index 1 and contributes nothing: the Navigate
+      // control goes back to being alone in the centre.
+      index = 1;
+      indexController.add(1);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<MobileNavigationLauncher>(
+              find.byType(MobileNavigationLauncher),
+            )
+            .pageAction,
+        isNull,
+      );
+      expect(find.bySemanticsLabel(onTasks.label), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'every destination whose list floats a create button docks it on the '
+    'launcher instead, and no other destination docks anything',
+    (tester) async {
+      final indexController = StreamController<int>.broadcast();
+      addTearDown(indexController.close);
+      final nav = MockNavService()..relationshipsPageEnabled = true;
+      await _stubNavService(
+        nav,
+        indexStream: indexController.stream,
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+        isUnifiedGoalsEnabled: true,
+        isEventsEnabled: () => true,
+      );
+      var index = 0;
+      when(() => nav.index).thenAnswer((_) => index);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        extraOverrides: [
+          configFlagProvider(
+            enableMobileNavigationLauncherFlag,
+          ).overrideWith((_) => Stream.value(true)),
+        ],
+      );
+
+      MobileNavDockAction? dockedAt(int destination) {
+        index = destination;
+        indexController.add(destination);
+        return null;
+      }
+
+      // Destination order is fixed by `_buildNavigationDestinations`:
+      // Tasks, Daily OS, Projects, Goals, Habits, Dashboards, People,
+      // Logbook, Events, Settings.
+      final messages = tester
+          .element(find.byType(MobileNavigationLauncher))
+          .messages;
+      final expected = <int, ({String? label, bool worded})>{
+        0: (label: messages.addActionCreateTask, worded: true),
+        1: (label: null, worded: false),
+        2: (label: messages.projectCreateButton, worded: false),
+        3: (label: messages.agentsCreateGoal, worded: false),
+        4: (label: messages.habitEditorCreateTitle, worded: false),
+        5: (label: null, worded: false),
+        6: (label: null, worded: false),
+        7: (label: messages.createEntryLabel, worded: false),
+        8: (label: null, worded: false),
+        9: (label: null, worded: false),
+      };
+
+      for (final entry in expected.entries) {
+        dockedAt(entry.key);
+        await tester.pumpAndSettle();
+        final action = tester
+            .widget<MobileNavigationLauncher>(
+              find.byType(MobileNavigationLauncher),
+            )
+            .pageAction;
+        if (entry.value.label == null) {
+          expect(action, isNull, reason: 'destination ${entry.key}');
+          continue;
+        }
+        expect(action, isNotNull, reason: 'destination ${entry.key}');
+        expect(
+          action!.label,
+          entry.value.label,
+          reason: 'destination ${entry.key}',
+        );
+        expect(action.icon, LottiIcons.add, reason: 'destination ${entry.key}');
+        expect(
+          action.worded,
+          entry.value.worded,
+          reason: 'destination ${entry.key}',
+        );
+      }
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  group('isLogbookEntryDetailRoute', () {
+    BeamLocation<dynamic> journalAt(String path) =>
+        JournalLocation(RouteInformation(uri: Uri.parse(path)));
+
+    test('the logbook feed is not an entry detail', () {
+      expect(isLogbookEntryDetailRoute(journalAt('/journal')), isFalse);
+    });
+
+    test('an entry uuid is', () {
+      expect(
+        isLogbookEntryDetailRoute(journalAt('/journal/${const Uuid().v4()}')),
+        isTrue,
+      );
+    });
+
+    test('a non-uuid segment is not — /journal/fill_survey greedily matches '
+        'the same pattern', () {
+      expect(
+        isLogbookEntryDetailRoute(journalAt('/journal/fill_survey/cfq11')),
+        isFalse,
+      );
+    });
+
+    test("another tab's location is not", () {
+      expect(
+        isLogbookEntryDetailRoute(
+          TasksLocation(
+            RouteInformation(uri: Uri.parse('/tasks/${const Uuid().v4()}')),
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('no location at all is not', () {
+      expect(isLogbookEntryDetailRoute(null), isFalse);
+    });
+  });
+
+  testWidgets(
+    'the docked action never reaches the legacy slot bar — with the launcher '
+    'flag off the task list keeps its own floating button',
+    (tester) async {
+      final nav = MockNavService();
+      await _stubNavService(
+        nav,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => false,
+        isDashboardsEnabled: () => false,
+      );
+      when(() => nav.index).thenReturn(0);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        extraOverrides: [
+          configFlagProvider(
+            enableMobileNavigationLauncherFlag,
+          ).overrideWith((_) => Stream.value(false)),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+      expect(find.byType(MobileNavigationLauncher), findsNothing);
+      expect(
+        find.bySemanticsLabel(
+          tester
+              .element(find.byType(DesignSystemBottomNavigationBar))
+              .messages
+              .addActionCreateTask,
+        ),
+        findsNothing,
+      );
+
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

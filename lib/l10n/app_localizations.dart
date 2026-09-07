@@ -5766,6 +5766,18 @@ abstract class AppLocalizations {
   /// **'Enable the Matrix integration to sync your entries across devices and with other Matrix users.'**
   String get configFlagEnableMatrixDescription;
 
+  /// No description provided for @configFlagEnableMobileNavigationLauncher.
+  ///
+  /// In en, this message translates to:
+  /// **'New mobile navigation'**
+  String get configFlagEnableMobileNavigationLauncher;
+
+  /// No description provided for @configFlagEnableMobileNavigationLauncherDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use one Navigate button to open all app sections.'**
+  String get configFlagEnableMobileNavigationLauncherDescription;
+
   /// No description provided for @configFlagEnableNotifications.
   ///
   /// In en, this message translates to:
@@ -16093,6 +16105,12 @@ abstract class AppLocalizations {
   /// **'More'**
   String get navTabTitleMore;
 
+  /// No description provided for @navTabTitleNavigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get navTabTitleNavigate;
+
   /// No description provided for @navTabTitlePeople.
   ///
   /// In en, this message translates to:
@@ -24778,24 +24796,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @navTabTitleNavigate.
-  ///
-  /// In en, this message translates to:
-  /// **'Navigate'**
-  String get navTabTitleNavigate;
-
-  /// No description provided for @configFlagEnableMobileNavigationLauncher.
-  ///
-  /// In en, this message translates to:
-  /// **'New mobile navigation'**
-  String get configFlagEnableMobileNavigationLauncher;
-
-  /// No description provided for @configFlagEnableMobileNavigationLauncherDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Use one Navigate button to open all app sections.'**
-  String get configFlagEnableMobileNavigationLauncherDescription;
 }
 
 class _AppLocalizationsDelegate

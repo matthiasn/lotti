@@ -3447,6 +3447,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați integrarea Matrix pentru a sincroniza intrările dvs. între dispozitive și cu alți utilizatori Matrix.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher => 'Navigare mobilă nouă';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Deschideți toate secțiunile aplicației cu un singur buton de navigare.';
+
+  @override
   String get configFlagEnableNotifications =>
       'Activați notificările pe desktop?';
 
@@ -9666,6 +9673,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navTabTitleMore => 'Mai multe';
 
   @override
+  String get navTabTitleNavigate => 'Navigare';
+
+  @override
   String get navTabTitlePeople => 'Persoane';
 
   @override
@@ -15164,14 +15174,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get navTabTitleNavigate => 'Navigare';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher => 'Navigare mobilă nouă';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Deschideți toate secțiunile aplicației cu un singur buton de navigare.';
 }

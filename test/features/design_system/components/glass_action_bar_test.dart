@@ -198,6 +198,99 @@ void main() {
   });
 
   group('DsGlassPill', () {
+    group('intrinsicWidth', () {
+      // The launcher budgets two pills against a row width with this; if the
+      // formula ever drifts from what `build` lays out, the row starts
+      // ellipsising (or collapsing) at the wrong width with nothing failing.
+      // These pin the two together.
+      testWidgets('matches the width the pill actually renders at', (
+        tester,
+      ) async {
+        for (final label in ['Add', 'Add a task', 'Add a task to this list']) {
+          await _pump(
+            tester,
+            DsGlassPill(label: label, icon: LottiIcons.add, onTap: () {}),
+          );
+
+          final context = tester.element(find.byType(DsGlassPill));
+          expect(
+            DsGlassPill.intrinsicWidth(context, label: label),
+            closeTo(tester.getSize(find.byType(DsGlassPill)).width, 0.01),
+            reason: label,
+          );
+        }
+      });
+
+      testWidgets('matches a pill rendered without a glyph', (tester) async {
+        await _pump(tester, DsGlassPill(label: 'Save', onTap: () {}));
+
+        final context = tester.element(find.byType(DsGlassPill));
+        expect(
+          DsGlassPill.intrinsicWidth(context, label: 'Save', hasIcon: false),
+          closeTo(tester.getSize(find.byType(DsGlassPill)).width, 0.01),
+        );
+      });
+
+      testWidgets('grows with the text scale, so a budget made at one scale '
+          'is not spent at another', (tester) async {
+        await _pump(
+          tester,
+          DsGlassPill(label: 'Add a task', icon: LottiIcons.add, onTap: () {}),
+        );
+        final unscaled = DsGlassPill.intrinsicWidth(
+          tester.element(find.byType(DsGlassPill)),
+          label: 'Add a task',
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DsGlassPill(
+              label: 'Add a task',
+              icon: LottiIcons.add,
+              onTap: () {},
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: const MediaQueryData(
+              size: Size(390, 844),
+              textScaler: TextScaler.linear(2),
+            ),
+          ),
+        );
+        final scaled = DsGlassPill.intrinsicWidth(
+          tester.element(find.byType(DsGlassPill)),
+          label: 'Add a task',
+        );
+
+        expect(scaled, greaterThan(unscaled));
+        expect(
+          scaled,
+          closeTo(tester.getSize(find.byType(DsGlassPill)).width, 0.01),
+        );
+      });
+
+      testWidgets('counts the glyph and its gap', (tester) async {
+        await _pump(
+          tester,
+          DsGlassPill(label: 'Add', icon: LottiIcons.add, onTap: () {}),
+        );
+
+        final context = tester.element(find.byType(DsGlassPill));
+        final tokens = context.designTokens;
+        expect(
+          DsGlassPill.intrinsicWidth(context, label: 'Add') -
+              DsGlassPill.intrinsicWidth(
+                context,
+                label: 'Add',
+                hasIcon: false,
+              ),
+          closeTo(
+            DsGlassRoundButton.defaultIconSize + tokens.spacing.step2,
+            0.01,
+          ),
+        );
+      });
+    });
+
     testWidgets('renders label and leading icon and fires onTap', (
       tester,
     ) async {

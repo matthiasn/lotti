@@ -30,6 +30,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Top-level Projects tab.
@@ -247,13 +248,23 @@ class _ProjectsListScaffold extends ConsumerWidget {
               currentProjectStatusFilterIds,
             )) ||
         filter.sortMode != ProjectsSortMode.actionable;
+    // While the mobile navigation launcher carries this page's create action
+    // on its own row (see [projectsTabDockAction]) the page floats no button
+    // of its own — a copy above the launcher would put two create affordances
+    // in the same corner.
+    final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
+      context,
+      ref,
+    );
     // Reserve room so the floating create button never lands on top of the
     // last project card. The FAB is lifted above the bottom nav by
     // `occupiedHeight`, so the scroll content must clear that plus the FAB's
     // own footprint (step12) — same clearance the AI settings list uses.
+    // With the action docked on the launcher there is no floating button to
+    // clear, and that allowance would be an empty gutter.
     final listBottomPadding =
         DesignSystemBottomNavigationBar.occupiedHeight(context) +
-        tokens.spacing.step12;
+        (launcherOwnsCreateAction ? 0 : tokens.spacing.step12);
     final categories = overview == null
         ? const <CategoryDefinition>[]
         : _filterCategoriesFromOverview(overview.groups);
@@ -266,7 +277,8 @@ class _ProjectsListScaffold extends ConsumerWidget {
         ) &&
         filter.selectedCategoryIds.isEmpty &&
         filter.textQuery.trim().isEmpty;
-    final floatingActionButton = visibleGroupsAsync.value == null
+    final floatingActionButton =
+        visibleGroupsAsync.value == null || launcherOwnsCreateAction
         ? null
         : DesignSystemFloatingActionButton(
             semanticLabel: context.messages.projectCreateButton,
@@ -544,3 +556,24 @@ List<CategoryDefinition> _filterCategoriesFromOverview(
       .whereType<CategoryDefinition>()
       .toList(growable: false);
 }
+
+/// The projects list's create action as the mobile navigation launcher shows
+/// it.
+///
+/// Glyph-only, like the floating button it replaces: this page is titled
+/// Projects and lists projects, so the plus needs no word to say what it
+/// makes.
+///
+/// Unconditional, where the floating button waits for the overview to load:
+/// the modal needs nothing from that query, and a chip appearing on the
+/// launcher's row one beat after the page would shift Navigate sideways
+/// under the user's thumb. On its own layer in the corner the same delay
+/// cost nothing.
+MobileNavDockAction projectsTabDockAction(
+  BuildContext context,
+  WidgetRef ref,
+) => MobileNavDockAction.glyph(
+  label: context.messages.projectCreateButton,
+  icon: LottiIcons.add,
+  onPressed: () => showProjectCreateModal(context: context),
+);

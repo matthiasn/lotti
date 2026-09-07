@@ -3440,6 +3440,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Activer l\'intégration Matrix pour synchroniser tes entrées sur plusieurs appareils et avec d\'autres utilisateurs Matrix.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Nouvelle navigation mobile';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Ouvre toutes les sections de l’app avec un seul bouton de navigation.';
+
+  @override
   String get configFlagEnableNotifications => 'Activer les notifications ?';
 
   @override
@@ -9650,6 +9658,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navTabTitleMore => 'Plus';
 
   @override
+  String get navTabTitleNavigate => 'Naviguer';
+
+  @override
   String get navTabTitlePeople => 'Proches';
 
   @override
@@ -15111,15 +15122,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get navTabTitleNavigate => 'Naviguer';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Nouvelle navigation mobile';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Ouvre toutes les sections de l’app avec un seul bouton de navigation.';
 }

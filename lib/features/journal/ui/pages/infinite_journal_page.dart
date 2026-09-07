@@ -25,6 +25,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The infinitely-scrolling journal feed (the non-tasks list, `showTasks ==
@@ -78,10 +79,21 @@ class InfiniteJournalPage extends ConsumerWidget {
           // Time Analysis): a calm page canvas a step darker than the cards,
           // instead of the near-black default scaffold.
           backgroundColor: dsPageSurface(context),
+          // Null while the mobile navigation launcher carries this page's
+          // create action on its own row (see [logbookDockAction]); a
+          // floating copy above it would put two create affordances in the
+          // same corner.
+          //
           // During the first-run zero-state the inline "Create new entry" CTA
           // is the single primary action — a second, identical affordance
-          // floating in the corner would just compete with it.
-          floatingActionButton: state.pagingController == null
+          // floating in the corner would just compete with it. That applies
+          // to the corner only: on the launcher's row the create chip is
+          // persistent chrome beside Navigate, the same as on every other
+          // tab, so the shell keeps docking it there.
+          floatingActionButton:
+              mobileNavigationLauncherOwnsPageActions(context, ref)
+              ? null
+              : state.pagingController == null
               ? FloatingAddActionButton(categoryId: categoryId)
               : ValueListenableBuilder<PagingState<int, JournalEntity>>(
                   valueListenable: state.pagingController!,
@@ -328,4 +340,35 @@ class _InfiniteJournalPageBodyState
       ),
     );
   }
+}
+
+/// The logbook's create action as the mobile navigation launcher shows it.
+///
+/// Glyph-only, like the floating button it replaces: the logbook's own
+/// heading says what gets added, and the modal it opens names every entry
+/// kind it can make.
+///
+/// The category the list is filtered to rides along, exactly as it does from
+/// the page's own button, so an entry created from a single-category feed
+/// lands in that category. Resolved at tap time, not when the shell built
+/// the row: the filter can change under a launcher the shell has not
+/// rebuilt.
+MobileNavDockAction logbookDockAction(BuildContext context, WidgetRef ref) =>
+    MobileNavDockAction.glyph(
+      label: context.messages.createEntryLabel,
+      icon: LottiIcons.add,
+      onPressed: () => CreateEntryModal.show(
+        context: context,
+        linkedFromId: null,
+        categoryId: logbookCreateCategoryId(ref),
+      ),
+    );
+
+/// The category a logbook create inherits: the one the feed is filtered to,
+/// or null whenever the feed spans none or several.
+String? logbookCreateCategoryId(WidgetRef ref) {
+  final selected = ref
+      .read(journalPageControllerProvider(false))
+      .selectedCategoryIds;
+  return selected.length == 1 ? selected.first : null;
 }

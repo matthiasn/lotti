@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -26,6 +28,7 @@ import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -34,6 +37,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -894,6 +898,156 @@ void main() {
         expect(fab.categoryId, isNull);
       },
     );
+
+    group('the mobile navigation launcher owns the create action', () {
+      const feedState = JournalPageState(
+        match: '',
+        filters: <DisplayFilter>{},
+        showPrivateEntries: false,
+        showTasks: false,
+        selectedEntryTypes: <String>[],
+        fullTextMatches: <String>{},
+        pagingController: null,
+        taskStatuses: <String>[],
+        selectedTaskStatuses: <String>{},
+        selectedCategoryIds: {'cat-only-one'},
+        selectedLabelIds: <String>{},
+        selectedPriorities: <String>{},
+      );
+
+      Future<void> pumpLogbook(
+        WidgetTester tester, {
+        required bool launcherEnabled,
+        JournalPageState state = feedState,
+        MediaQueryData? mediaQueryData,
+      }) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const InfiniteJournalPage(),
+            mediaQueryData: mediaQueryData,
+            overrides: [
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(() => FakeJournalPageController(state)),
+              configFlagProvider(
+                enableMobileNavigationLauncherFlag,
+              ).overrideWith((_) => Stream.value(launcherEnabled)),
+            ],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 16));
+        // The Scaffold animates its floating button out, so it outlives the
+        // rebuild that dropped it.
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+
+      testWidgets('the logbook drops its floating button so the launcher can '
+          'dock the same action on its own row', (tester) async {
+        await pumpLogbook(tester, launcherEnabled: true);
+
+        expect(find.byType(FloatingAddActionButton), findsNothing);
+      });
+
+      testWidgets('the floating button stays with the flag off', (
+        tester,
+      ) async {
+        await pumpLogbook(tester, launcherEnabled: false);
+
+        expect(find.byType(FloatingAddActionButton), findsOneWidget);
+      });
+
+      testWidgets('a desktop window keeps the floating button even with the '
+          'flag on', (tester) async {
+        await pumpLogbook(
+          tester,
+          launcherEnabled: true,
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        );
+
+        expect(find.byType(FloatingAddActionButton), findsOneWidget);
+      });
+
+      testWidgets('logbookDockAction is a glyph action named for the create '
+          'modal it opens', (tester) async {
+        MobileNavDockAction? action;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Consumer(
+              builder: (context, ref, _) {
+                action = logbookDockAction(context, ref);
+                return const SizedBox.shrink();
+              },
+            ),
+            overrides: [
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(() => FakeJournalPageController(feedState)),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        // Glyph, not worded: the logbook's own heading says what gets added,
+        // and the modal names every entry kind it can make.
+        expect(action!.worded, isFalse);
+        expect(action!.icon, LottiIcons.add);
+        expect(
+          action!.label,
+          tester.element(find.byType(Consumer)).messages.createEntryLabel,
+        );
+
+        // ...and it opens the same modal the floating button opens.
+        final messages = tester.element(find.byType(Consumer)).messages;
+        action!.onPressed();
+        await tester.pumpAndSettle();
+        expect(find.text(messages.createEntryTitle), findsOneWidget);
+      });
+
+      testWidgets(
+        'logbookCreateCategoryId inherits a single-category feed and nothing '
+        'else, resolved when the action is tapped',
+        (tester) async {
+          final controller = FakeJournalPageController(feedState);
+          late WidgetRef probeRef;
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Consumer(
+                builder: (context, ref, _) {
+                  ref.watch(journalPageControllerProvider(false));
+                  probeRef = ref;
+                  return const SizedBox.shrink();
+                },
+              ),
+              overrides: [
+                journalPageScopeProvider.overrideWithValue(false),
+                journalPageControllerProvider(
+                  false,
+                ).overrideWith(() => controller),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          expect(logbookCreateCategoryId(probeRef), 'cat-only-one');
+
+          // The feed widens after the shell built the launcher's row: a
+          // create must not inherit a category the feed no longer spans.
+          controller.updateState(
+            feedState.copyWith(selectedCategoryIds: {'cat-one', 'cat-two'}),
+          );
+          await tester.pump();
+          expect(logbookCreateCategoryId(probeRef), isNull);
+
+          controller.updateState(
+            feedState.copyWith(selectedCategoryIds: const <String>{}),
+          );
+          await tester.pump();
+          expect(logbookCreateCategoryId(probeRef), isNull);
+        },
+      );
+    });
 
     testWidgets('commands refresh, create, and focus journal search', (
       tester,

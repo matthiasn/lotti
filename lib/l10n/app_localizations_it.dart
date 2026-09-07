@@ -3433,6 +3433,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Abilitare l\'integrazione Matrix per sincronizzare le voci tra i dispositivi e con altri utenti Matrix.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Nuova navigazione mobile';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Apri tutte le sezioni dell’app con un unico pulsante di navigazione.';
+
+  @override
   String get configFlagEnableNotifications => 'Attivare le notifiche?';
 
   @override
@@ -9605,6 +9613,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navTabTitleMore => 'Altro';
 
   @override
+  String get navTabTitleNavigate => 'Naviga';
+
+  @override
   String get navTabTitlePeople => 'Persone';
 
   @override
@@ -15053,15 +15064,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get navTabTitleNavigate => 'Naviga';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Nuova navigazione mobile';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Apri tutte le sezioni dell’app con un unico pulsante di navigazione.';
 }

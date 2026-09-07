@@ -3433,6 +3433,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolit integraci s Matrix pro synchronizaci vašich záznamů mezi zařízeními a s ostatními uživateli Matrix.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Nová mobilní navigace';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Otevírej všechny části aplikace jedním tlačítkem Navigace.';
+
+  @override
   String get configFlagEnableNotifications => 'Povolit oznámení?';
 
   @override
@@ -9602,6 +9610,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navTabTitleMore => 'Více';
 
   @override
+  String get navTabTitleNavigate => 'Navigovat';
+
+  @override
   String get navTabTitlePeople => 'Lidé';
 
   @override
@@ -15057,15 +15068,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get navTabTitleNavigate => 'Navigovat';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Nová mobilní navigace';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Otevírej všechny části aplikace jedním tlačítkem Navigace.';
 }

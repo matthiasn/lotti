@@ -3399,6 +3399,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Aktivera Matrix-integrationen för att synkronisera dina poster mellan enheter och med andra Matrix-användare.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher => 'Ny mobilnavigering';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Öppna alla appens avsnitt med en enda navigeringsknapp.';
+
+  @override
   String get configFlagEnableNotifications => 'Aktivera notiser?';
 
   @override
@@ -9488,6 +9495,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navTabTitleMore => 'Mer';
 
   @override
+  String get navTabTitleNavigate => 'Navigera';
+
+  @override
   String get navTabTitlePeople => 'Personer';
 
   @override
@@ -14881,14 +14891,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get navTabTitleNavigate => 'Navigera';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher => 'Ny mobilnavigering';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Öppna alla appens avsnitt med en enda navigeringsknapp.';
 }

@@ -9,12 +9,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
+import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
@@ -33,6 +33,9 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
+import 'package:lotti/features/habits/ui/habits_page.dart';
+import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -49,6 +52,7 @@ import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
+import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
@@ -59,6 +63,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indic
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
+import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -73,7 +78,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -115,6 +119,18 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   if (activeTabIndex != 0) return false;
   if (location is! TasksLocation) return false;
   return isUuid(location.state.pathParameters['taskId']);
+}
+
+/// Whether the journal tab is showing one entry's detail page rather than
+/// the logbook feed.
+///
+/// The logbook's create action docks on the mobile navigation launcher; an
+/// entry's own page creates a *linked* entry instead — a different action
+/// with a different glyph — and keeps floating its own button, so the
+/// logbook's must not stay on the rail underneath it.
+bool isLogbookEntryDetailRoute(BeamLocation<dynamic>? location) {
+  if (location is! JournalLocation) return false;
+  return isUuid(location.state.pathParameters['entryId']);
 }
 
 /// Layout allowance for the docked day-view column on the desktop shell:
@@ -475,6 +491,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.goalsDelegate,
     navService.habitsDelegate,
     navService.relationshipsDelegate,
+    // Not for hiding the bar — the journal tab keeps it on an entry's page —
+    // but so the launcher drops the logbook's docked create action there.
+    // See [isLogbookEntryDetailRoute].
+    navService.journalDelegate,
   ]);
 
   /// Identity for the tab content across the desktop/mobile breakpoint.
@@ -1143,13 +1163,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               navService.relationshipsDelegate.currentBeamLocation,
             ));
 
-    final useLauncher =
-        ref
-            .watch(
-              configFlagProvider(enableMobileNavigationLauncherFlag),
-            )
-            .value ??
-        false;
+    final useLauncher = mobileNavigationLauncherOwnsPageActions(context, ref);
     final navigationBarHeight = useLauncher
         ? MobileNavigationLauncher.barHeight(context)
         : DesignSystemFiveSlotNavBar.barHeight(context);
@@ -1169,6 +1183,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     Widget buildBottomNavigationBar() {
       if (useLauncher) {
         return MobileNavigationLauncher(
+          pageAction: _launcherDockAction(context, destinations[index].kind),
           onNavigate: () => showMobileNavSheet(
             context: context,
             footerTrailing: const SyncQueueCounts(),
@@ -1371,6 +1386,47 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       ),
     );
   }
+
+  /// The active page's primary action, docked on the mobile navigation
+  /// launcher's row instead of floating in the page's own corner.
+  ///
+  /// Exactly the destinations whose list page floats a create button today:
+  /// leaving it in the corner would stack two floating controls above the
+  /// centred launcher, neither of them looking placed. Daily OS, Dashboards,
+  /// People, Events and Settings float nothing, so they leave the launcher
+  /// centred alone — which is what makes a docked action read as belonging
+  /// to the page rather than to the shell.
+  ///
+  /// The page decides the chip's wording, not this switch: the task list
+  /// words its action, the lists whose own heading says what gets added keep
+  /// the bare glyph (see [MobileNavDockAction]).
+  ///
+  /// Route-sensitive only where a tab's detail page keeps the bar *and* owns
+  /// a different action: an entry's own page creates a linked entry, so the
+  /// logbook's action leaves the rail there. The projects, goals and habits
+  /// tabs slide the whole launcher away on their detail routes, so their
+  /// actions need no such check.
+  MobileNavDockAction? _launcherDockAction(
+    BuildContext context,
+    _AppNavigationDestinationKind kind,
+  ) => switch (kind) {
+    _AppNavigationDestinationKind.tasks => tasksTabDockAction(context, ref),
+    _AppNavigationDestinationKind.journal =>
+      isLogbookEntryDetailRoute(navService.journalDelegate.currentBeamLocation)
+          ? null
+          : logbookDockAction(context, ref),
+    _AppNavigationDestinationKind.goals => unifiedGoalsDockAction(context, ref),
+    _AppNavigationDestinationKind.habits => habitsTabDockAction(context, ref),
+    _AppNavigationDestinationKind.projects => projectsTabDockAction(
+      context,
+      ref,
+    ),
+    _AppNavigationDestinationKind.dailyOs ||
+    _AppNavigationDestinationKind.dashboards ||
+    _AppNavigationDestinationKind.people ||
+    _AppNavigationDestinationKind.events ||
+    _AppNavigationDestinationKind.settings => null,
+  };
 
   /// The banner surface a destination maps onto, or null where no dock
   /// mounts — Settings and the Logbook are deliberately excluded, and goal

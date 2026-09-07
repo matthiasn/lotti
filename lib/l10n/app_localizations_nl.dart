@@ -3402,6 +3402,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Schakel de integratie van Matrix in om uw items te synchroniseren tussen apparaten en met andere Matrix-gebruikers.';
 
   @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Nieuwe mobiele navigatie';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Open alle onderdelen van de app met één navigatieknop.';
+
+  @override
   String get configFlagEnableNotifications =>
       'Notificatieberichten inschakelen?';
 
@@ -9498,6 +9506,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navTabTitleMore => 'Meer';
 
   @override
+  String get navTabTitleNavigate => 'Navigeren';
+
+  @override
   String get navTabTitlePeople => 'Mensen';
 
   @override
@@ -14899,15 +14910,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get navTabTitleNavigate => 'Navigeren';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncher =>
-      'Nieuwe mobiele navigatie';
-
-  @override
-  String get configFlagEnableMobileNavigationLauncherDescription =>
-      'Open alle onderdelen van de app met één navigatieknop.';
 }

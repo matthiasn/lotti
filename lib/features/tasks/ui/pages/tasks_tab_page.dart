@@ -50,6 +50,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Signature for the create-task action invoked by the [TasksTabPage] FAB.
@@ -211,6 +212,13 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(journalPageControllerProvider(true));
     final filterContext = TaskCreationFilterContext.fromPageState(state);
+    // The mobile navigation launcher docks this page's create action on its
+    // own row (see [tasksTabDockAction]); floating a second copy of it above
+    // the launcher would stack two labelled pills in the same corner.
+    final launcherOwnsCreateAction = mobileNavigationLauncherOwnsPageActions(
+      context,
+      ref,
+    );
     final floatingActionButton = DesignSystemFloatingActionButton(
       semanticLabel: context.messages.addActionCreateTask,
       // Worded, not a bare `+`: this pane creates tasks while the app's other
@@ -262,9 +270,11 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
           floatingActionButtonLocation: _ActionBarAlignedFabLocation(
             bottomMargin: context.designTokens.spacing.step4,
           ),
-          floatingActionButton: DesignSystemBottomNavigationFabPadding(
-            child: floatingActionButton,
-          ),
+          floatingActionButton: launcherOwnsCreateAction
+              ? null
+              : DesignSystemBottomNavigationFabPadding(
+                  child: floatingActionButton,
+                ),
           body: _TasksTabPageBody(
             searchFocusNode: _searchFocusNode,
             collapseController: _collapseController,
@@ -1072,6 +1082,36 @@ Future<void> _defaultCreateTaskPressed(
   await autoAssignCategoryAgentWith(agentService, task);
   getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
 }
+
+/// Creates a task from the task list's *current* filters and opens it.
+///
+/// The launcher's docked action resolves the filter context at tap time
+/// rather than capturing it when the row was built: the row lives in the app
+/// shell, outside this page, and a filter changed since the last shell
+/// rebuild would otherwise create a task under the previous selection.
+Future<void> createTaskFromTaskListFilters(WidgetRef ref) {
+  return _defaultCreateTaskPressed(
+    ref,
+    TaskCreationFilterContext.fromPageState(
+      ref.read(journalPageControllerProvider(true)),
+    ),
+  );
+}
+
+/// The task list's create action as the mobile navigation launcher shows it.
+///
+/// The launcher docks it beside Navigate while the Tasks tab is on screen,
+/// which is why this page drops its own floating button there — the action
+/// does not disappear, it moves onto the launcher's row. It keeps the FAB's
+/// wording for the same reason the FAB has one: the app creates entries,
+/// habits and goals from the same glyph elsewhere, so a bare plus would not
+/// say what this one makes.
+MobileNavDockAction tasksTabDockAction(BuildContext context, WidgetRef ref) =>
+    MobileNavDockAction.worded(
+      label: context.messages.addActionCreateTask,
+      icon: LottiIcons.add,
+      onPressed: () => unawaited(createTaskFromTaskListFilters(ref)),
+    );
 
 /// End-aligned floating location that sits [bottomMargin] above the content
 /// edge instead of the framework's fixed [kFloatingActionButtonMargin].
