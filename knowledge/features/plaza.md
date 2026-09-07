@@ -5,7 +5,7 @@ description: "The developer-only 3D project map: a merge-stable street folded in
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, visualization, prototype]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-05T00:00:08Z }
+generated: { by: codex/gpt-6, at: 2026-09-08T00:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: street
@@ -96,6 +96,24 @@ sources:
     resource: ../../lib/features/plaza/scene/plaza_sprites.dart
     title: PlazaSprites, lanterns, beacons, lamps and chase lights
     last_modified: 2026-09-05
+  - id: character-loop
+    resource: ../../lib/features/plaza/domain/character_loop.dart
+    title: Obstacle-cleared companion circuit
+  - id: character-gait
+    resource: ../../lib/features/plaza/domain/character_gait.dart
+    title: World-space foot contacts and running mechanics
+  - id: characters
+    resource: ../../lib/features/plaza/scene/plaza_characters.dart
+    title: Skinned companions and two-bone inverse kinematics
+  - id: penguin-model
+    resource: ../../tool/plaza/build_penguin.py
+    title: Original penguin mesh and skin generator
+  - id: character-tests
+    resource: ../../test/features/plaza/scene/plaza_characters_test.dart
+    title: Full-lap contact, clone binding, pause and visibility checks
+  - id: gait-tests
+    resource: ../../test/features/plaza/domain/character_gait_test.dart
+    title: Foot contact and ballistic motion invariants
   - id: picker
     resource: ../../lib/features/plaza/scene/plaza_picker.dart
     title: PlazaPicker, tap resolution
@@ -157,6 +175,9 @@ flowchart LR
     Solids -->|"at walk height"| Collider["WalkCollider"]
     Solids -->|"all, for the sweep"| Flight["Flight.plan / Flight.route"]
     Plan --> Network["StreetNetwork<br/>the street, the mouth, the axis to home"]
+    Plaza --> Circuit["CharacterLoop: swept route clearance"]
+    Solids --> Circuit
+    Circuit --> Gait["CharacterGait: world foot contacts and body motion"]
     Plaza --> Network
     Network --> Flight
   end
@@ -170,12 +191,15 @@ flowchart LR
     Ctl --> Surfaces["PlazaSurfaces<br/>billboards, tickers, markers, signs, banners, jumbotron"]
     Ctl --> Sprites["PlazaSprites<br/>lanterns, beacons, lamps, spires, chase lights"]
     Beacons --> Sprites
+    Ctl -->|after static baking| Characters["PlazaCharacters: skinned models and leg IK"]
+    Gait --> Characters
   end
   subgraph harness ["Harness, dev_main.dart"]
     Cam["FlyCameraController<br/>walk, Flight, landing"] -->|eye| LOD
     Cam -->|eye| Surfaces
     Cam -->|eye| Ctl
     Cam -->|camera| Sprites
+    Cam -->|distance visibility| Characters
     Picker["PlazaPicker"] --> Cam
     Walk["MorningWalk"] --> Cam
     Collider --> Cam
@@ -269,7 +293,7 @@ shifted sideways by `plazaFoldClearance` (`plazaWidth / 2 + 11` = 42 m)
 toward the district's outside, away from the centroid of every plot
 (`plazaLateralOffsetFor`). A straight street keeps the plaza on its axis.
 
-- **Home** stands 68 m past the street end, at `eyeHeight` (2.2 m), looking
+- **Home** stands 73 m past the street end, at `eyeHeight` (2.2 m), looking
   back down the street.
 - **Overview** (`overviewPoseFor`) is the map shot: the bounding box of every
   placement, every segment start, the street end and a point 85 m past the
@@ -280,7 +304,7 @@ toward the district's outside, away from the centroid of every plot
   jumbotron fit a 60° field of view.
 - **Pylons**: four slots in plaza-local metres (lateral, along, width,
   height, bottom): `(-14, 20, 16, 9, 4.5)`, `(14, 23, 13, 7.5, 5.5)`,
-  `(-19, 38, 11, 6.2, 3.5)`, `(19, 41, 9.5, 5.4, 5.5)`. Every panel faces
+  `(-19, 38, 11, 6.2, 11.5)`, `(19, 41, 9.5, 5.4, 11.5)`. Every panel faces
   the point `(0, 52)` so all four read from home. Slot order is attention
   rank; only the content changes.
 - **Mounts** (`plazaMounts`, `mountedSlotsFor`): the newest building on each
@@ -572,7 +596,7 @@ whether Space will pause or resume.
 A `Solid` (`domain/solid.dart`) is a `Footprint` (a rectangle on the
 ground: centre, rotation about +Y, width along local X, depth along local
 Z) with the band of height it fills, `bottom` to `top`. `PlazaWorld.solids`
-is **everything the scene builds**: the plots up to their roof kit
+contains the scene’s stationary obstacles: the plots up to their roof kit
 (`plotSolidFor`, `roofKitHeight`), the spires (`plotSpireSolidFor`, and the
 hero and jumbotron towers add their own through `SceneryBox.solids`),
 every scenery box (fillers, hero towers, the jumbotron tower, the skyline
@@ -768,6 +792,79 @@ line, as many open checklist items as the wall has room for, a smaller cover
 band when space permits, the state chip, a details button (opens the side
 panel) and the done count.
 
+# Ambient companions
+
+`CharacterLoop.forPlaza` derives a stadium circuit in the plaza's frame and
+checks its swept envelope against `PlazaWorld.solids`. Samples are at most
+0.5 m apart with another 0.25 m of obstacle clearance covering the intervals.
+A missing plaza, insufficient paving, or an obstructed route produces no
+companions. High signs above the character envelope do not block the route.
+Characters are ambient visual content, not collider solids or pick targets.
+
+`PlazaCharacters` attaches four scaled instances **after** static mesh baking.
+Their quarter-lap separation and common world speed keep them apart. Each
+instance has its own skeleton; geometry and token materials are shared. All
+surfaces in one instance share one skin upload. `Node.clone` does not preserve
+raycast flags, so construction reapplies them to the cloned mesh nodes.
+
+The original model is `assets/plaza/penguin.glb`, generated with the Python
+standard library by `tool/plaza/build_penguin.py`. A smooth implicit mesh
+forms the egg-shaped body, tapered flippers and short legs. Its 13-joint skin
+has a pelvis, spine, head, two joints per flipper and three per leg. Broad
+webbed feet have three toe lobes; the short bill has a closed mouth seam.
+Feet below the ankle follow the ankle rigidly so shin deformation does not
+bend their soles through the paving. White belly and face patches are assigned
+to surface triangles, not protruding primitives. The imported model root
+is retained without the importer's coordinate-conversion wrapper because the
+model is authored in Plaza's +Z-forward frame. Materials use the existing
+dark background tokens for charcoal plumage, the light background token for
+white patches, and the warning accent for the orange bill and feet. Colours
+are converted to linear space with zero metallic response. Face details follow
+the head joint.
+
+`CharacterGait` derives the cycle from total distance and scales the short
+stride length with character size. Low heel recovery keeps the feet below
+the belly while the penguins hurry across the square. Route distance wraps;
+the gait cycle never resets at the route seam. Each leg alternates between
+fixed world-space contact and recovery;
+the other leg is half a cycle ahead. Stance occupies less than half a cycle,
+leaving an aerial interval. Recovery uses a quintic horizontal interpolation,
+an early heel recovery followed by a forward reach, and ankle pitch. Feet
+land with zero horizontal velocity.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Stance
+  Stance --> Recovery: leg phase reaches stance fraction
+  Recovery --> Stance: next stride contact
+```
+
+Body compression during support meets a ballistic flight arc with continuous
+vertical velocity. A short centered tangent sample banks the torso into bends.
+A lateral pelvis shift and torso roll move weight toward the supporting foot.
+The head counters the torso tilt, and the spread flippers balance the body;
+their tips follow with a phase offset. Two-bone inverse kinematics
+solves each leg in world space, including the sideways displacement of turns;
+the ankle then cancels its parent rotation to preserve the contact orientation.
+`vector_math.Quaternion.rotated` applies the inverse rotation: conjugating it
+again when converting a world vector into a parent frame breaks foot locking.
+The solver also retains tiny rotations rather than rounding them to zero.
+
+The harness supplies its existing active clock; no extra ticker is created.
+`MediaQuery.disableAnimations` freezes the entire pose and travel without a
+catch-up jump when re-enabled. Characters beyond `visibleRange` stop rendering
+and leave the 30 Hz animation budget. Resuming visibility samples the current
+route time. Rebuilding the world or disposing the harness detaches the old rigs.
+`PLAZA_HIDE=characters` omits the layer for scene isolation.
+
+Tests load the shipped GLB hierarchy and inverse bind matrices through the
+shared scene test helper, using empty geometry to avoid GPU uploads. They check
+cloned joint references, contact targets and ankle orientation through a full
+lap at every scale, plus reduced motion, visibility and node disposal. Pure
+gait tests check contact continuity, support/flight timing, ballistic
+acceleration and deterministic sampling. Rendered appearance still requires a
+native Flutter GPU review; these tests cannot judge animation appeal.
+
 # Sprites
 
 `PlazaSprites` keeps lanterns, beacons, lamp bulbs/halos and spire lights
@@ -892,7 +989,7 @@ The builder creates:
   every trading facade and along every filler's street side. The plaza
   paving overlay fades with altitude like the pools. `updateForCamera` fades
   every pool and glow quad with the eye's altitude from `poolFadeStart`
-  (12 m) to `poolFadeTop` (70 m) down to `poolFloor` (0.4), so the overview
+  (12 m) to `poolFadeTop` (70 m) down to `poolFloor` (0.15), so the overview
   is carried by lanterns, not discs.
 - **Buildings**: a category-tinted box whose depth varies by hash
   (`0.78 to 1.1 × plot depth`, anchored to the street side), side and back
@@ -1046,7 +1143,8 @@ for keyboard and scene navigation is ignored in tour and bench modes.
 
 - **Await `Scene.initializeStaticResources()` before building anything.**
   Sprites and `GradientSkySource` touch the base shader library; `_boot`
-  awaits it, then `WallTextures.load()`, then builds the world.
+  awaits it, then loads `WallTextures` and the penguin GLB, then builds the
+  world. `PLAZA_HIDE=characters` skips the model load.
 - **Flutter GPU must be enabled.** `--enable-flutter-gpu` is a `flutter run`
   flag; a built binary needs `FLUTTER_ENGINE_SWITCHES=1
   FLUTTER_ENGINE_SWITCH_1=enable-flutter-gpu` in its environment (the
@@ -1064,7 +1162,7 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   components as they run. `codecov.yml` excludes `lib/features/plaza/scene/**`
   and `dev_main.dart`; `PlazaWorld` is the one scene-directory class that is
   pure domain projection. Capture scheduling, LOD, static mesh baking and
-  sprite buffers also have GPU-free test seams; texture painters are checked
+  sprite buffers and penguin skeletons also have GPU-free test seams; texture painters are checked
   pixel by pixel because the dressing is a contract.
 - **Xvfb cannot render the widget textures.** Under a virtual framebuffer the
   facades and billboards come out as flat slabs (observed in capture runs, not
@@ -1114,8 +1212,8 @@ for keyboard and scene navigation is ignored in tour and bench modes.
   into one immediate frame. There is no repeating idle `Ticker` waking the
   engine on every skipped vsync. `auto` follows the display while moving
   (flight, walk, held key or drag) and for 0.6 s after movement or input.
-  With a settled camera, an active live facade retains 30 Hz while purely
-  decorative animation uses 15 Hz. Startup gets the same brief display-rate
+  With a settled camera, an active live facade or a nearby moving penguin
+  retains 30 Hz; the remaining decorative effects use 15 Hz. Startup gets the same brief display-rate
   window so initial captures and promotions can settle promptly. Animation
   phases still use elapsed time: the lower cadence changes smoothness, not
   ticker speed or pulse duration. `60` and `30` are fixed caps; tour and bench

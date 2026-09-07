@@ -11,6 +11,10 @@ returns it to a static sign. Built on `flutter_scene` (Flutter GPU / Impeller). 
 exploration meant to replace the knowledge-graph hairball with a spatial,
 memorable map of a project.
 
+Black-and-white penguin companions hurry around the open square with balancing
+flippers, orange webbed feet and a waddling run. They are ambient scene characters;
+reduced-motion settings pause them.
+
 This is a **developer harness only**. It is not wired into app routes,
 dependency injection or the database, and it never shows user data: it
 projects the penguin demo world (`Project Waddle`) and nothing else.
@@ -53,6 +57,8 @@ lib/features/plaza/
     street_layout.dart   the merge-stable street with the fold
     plaza_layout.dart    plaza, billboards, furniture, beacons, task poses
     attention.dart       the attention score and lantern state
+    character_loop.dart  smooth, obstacle-cleared routes for companions
+    character_gait.dart  foot contacts, recovery steps and body weight
     flight.dart          camera flights: an S-curve speed profile, the
                          street route between stops, a lift over every
                          solid on the line
@@ -74,6 +80,7 @@ lib/features/plaza/
     plaza_surfaces.dart  billboards, tickers, markers, signs, banners, jumbotron
     surface_captures.dart        the shared capture bookkeeping and cadences
     plaza_sprites.dart   lanterns, beacons, lamps, spire and chase lights
+    plaza_characters.dart        skinned penguin companions and leg IK
     wall_textures.dart   window-grid, light-pool and grain textures
     plaza_picker.dart    tap resolution
     plaza_bench.dart     the benchmark phases
@@ -89,6 +96,7 @@ lib/features/plaza/
                          frame scheduling, scene painting and bounded stats
     plaza_tour.dart      the tour stops
 tool/plaza/capture_tour.py       X11 screenshot capture for the tour
+tool/plaza/build_penguin.py     builds the original assets/plaza/penguin.glb
 test/features/plaza/             one test file per pure source file
 ```
 

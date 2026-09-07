@@ -16,6 +16,15 @@ checkout. Both materialize native libraries under `build/native_assets/`;
 overlapping builds can remove a library while another test process is loading
 it. Use separate checkouts for concurrent desktop and VM runs.
 
+## Plaza skeleton tests
+
+`test/features/plaza/scene/test_utils.dart` reads the shipped penguin's node
+hierarchy and inverse bind matrices without allocating GPU buffers. Use this
+fixture for skeleton and IK checks; a native Flutter GPU run is still needed
+for skin deformation and appearance. Sample the gait with explicit seconds,
+never wall-clock delays. The animation concept and its invariants live in
+[Project plaza](../knowledge/features/plaza.md#ambient-companions).
+
 ## Standalone Material UI
 
 Widget tests use `package:material_ui/material_ui.dart` and the shared app

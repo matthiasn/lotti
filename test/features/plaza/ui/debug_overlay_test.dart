@@ -144,6 +144,14 @@ void main() {
     expect(PlazaFrameRate.auto.capFor(moving: true), isNull);
     expect(PlazaFrameRate.auto.capFor(moving: false), 15);
     expect(
+      PlazaFrameRate.auto.capFor(moving: false, activeAnimation: true),
+      30,
+    );
+    expect(
+      PlazaFrameRate.auto.capFor(moving: true, activeAnimation: true),
+      isNull,
+    );
+    expect(
       PlazaFrameRate.auto.capFor(moving: false, activeSurface: true),
       30,
     );
@@ -155,6 +163,10 @@ void main() {
       for (final moving in [false, true]) {
         expect(
           rate.capFor(moving: moving, activeSurface: true),
+          rate.capFor(moving: moving),
+        );
+        expect(
+          rate.capFor(moving: moving, activeAnimation: true),
           rate.capFor(moving: moving),
         );
       }

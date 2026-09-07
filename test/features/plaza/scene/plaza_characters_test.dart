@@ -1,0 +1,270 @@
+import 'dart:math' as math;
+
+import 'package:flutter_scene/scene.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/plaza/domain/character_gait.dart';
+import 'package:lotti/features/plaza/domain/character_loop.dart';
+import 'package:lotti/features/plaza/scene/plaza_characters.dart';
+import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
+import 'package:vector_math/vector_math.dart';
+
+import 'test_utils.dart';
+
+Iterable<Node> _nodes(Node root) sync* {
+  yield root;
+  for (final child in root.children) {
+    yield* _nodes(child);
+  }
+}
+
+void main() {
+  const loop = CharacterLoop(
+    x: 0,
+    z: 0,
+    heading: 0,
+    radius: 6,
+    halfStraight: 6,
+  );
+  late Node parent;
+  late Node model;
+  late PlazaCharacters characters;
+
+  setUp(() {
+    parent = Node();
+    model = loadPenguinWithoutGpu();
+    PlazaCharacters.styleModel(model);
+    characters = PlazaCharacters(parent: parent, loop: loop, model: model);
+  });
+
+  tearDown(() => characters.dispose());
+
+  void tick(double seconds, {bool animate = true, Vector3? eye}) =>
+      characters.update(
+        seconds: seconds,
+        eye: eye ?? Vector3(0, 2, 0),
+        animate: animate,
+      );
+
+  test(
+    'four rigs share geometry and token materials without blocking taps',
+    () {
+      expect(characters.root.children, hasLength(4));
+      final parts = _nodes(
+        characters.root,
+      ).where((n) => n.mesh != null).toList();
+      expect(parts, isNotEmpty);
+      final materials = <Material>{};
+      for (final part in parts) {
+        expect(part.raycastable, isFalse);
+        final primitive = part.mesh!.primitives.single;
+        final source = model.getChildByName(part.name)!;
+        expect(
+          primitive.geometry,
+          same(source.mesh!.primitives.single.geometry),
+        );
+        expect(part.skin, isNot(same(source.skin)));
+        expect(part.skin!.joints, hasLength(13));
+        final actor = part.parent!.parent!;
+        for (final joint in part.skin!.joints) {
+          expect(_nodes(actor), contains(joint));
+        }
+        materials.add(primitive.material);
+      }
+      expect(materials, hasLength(7));
+      final torso = parts.firstWhere((n) => n.name == 'body-surface');
+      final material =
+          torso.mesh!.primitives.single.material as PhysicallyBasedMaterial;
+      expect(
+        material.baseColorFactor,
+        linearColor(dsTokensDark.colors.background.level02),
+      );
+      expect(material.metallicFactor, 0);
+      final eye = parts.firstWhere((n) => n.name == 'eyes-surface');
+      final pupil = parts.firstWhere((n) => n.name == 'pupils-surface');
+      final eyeMaterial =
+          eye.mesh!.primitives.single.material as PhysicallyBasedMaterial;
+      final pupilMaterial =
+          pupil.mesh!.primitives.single.material as PhysicallyBasedMaterial;
+      expect(eyeMaterial.baseColorFactor, Vector4.all(1));
+      expect(pupilMaterial.baseColorFactor.x, lessThan(0.05));
+    },
+  );
+
+  test('travel and articulation advance without replacing meshes or nodes', () {
+    tick(100);
+    final before = _nodes(characters.root).toList();
+    final penguin = characters.root.children.first;
+    final position = penguin.position;
+    final joints = before
+        .where(
+          (n) => {
+            'left-hip',
+            'left-flipper',
+            'left-flipper-tip',
+            'spine',
+            'head',
+          }.contains(n.name),
+        )
+        .toList();
+    final transforms = [for (final node in joints) node.localTransform.clone()];
+    expect(joints, hasLength(20));
+    tick(100.1);
+    expect(
+      penguin.position.distanceTo(position),
+      closeTo(CharacterLoop.speed * 0.1, 0.001),
+    );
+    for (var i = 0; i < joints.length; i++) {
+      expect(joints[i].localTransform, isNot(transforms[i]));
+    }
+    expect(_nodes(characters.root).toList(), before);
+    expect(characters.hasVisibleMotion, isTrue);
+  });
+
+  test(
+    'penguins have tuxedo plumage, flippers and an orange bill and feet',
+    () {
+      final penguin = characters.root.children.first;
+      Vector4 color(String name) =>
+          (penguin
+                      .getChildByName('$name-surface')!
+                      .mesh!
+                      .primitives
+                      .single
+                      .material
+                  as PhysicallyBasedMaterial)
+              .baseColorFactor;
+      expect(
+        color('body'),
+        linearColor(dsTokensDark.colors.background.level02),
+      );
+      expect(
+        color('belly'),
+        linearColor(dsTokensLight.colors.background.level01),
+      );
+      expect(
+        color('beak'),
+        linearColor(dsTokensDark.colors.alert.warning.defaultColor),
+      );
+      expect(color('feet'), color('beak'));
+      expect(penguin.getChildByName('left-flipper')!.position.x, lessThan(0));
+      expect(
+        penguin.getChildByName('right-flipper')!.position.x,
+        greaterThan(0),
+      );
+      expect(penguin.getChildByName('tail-tip'), isNull);
+      expect(penguin.getChildByName('left-wrist'), isNull);
+    },
+  );
+
+  test(
+    'IK reaches both feet through a complete lap at every character scale',
+    () {
+      tick(0);
+      for (var frame = 0; frame < 600; frame++) {
+        final seconds = frame / 600 * loop.length / CharacterLoop.speed;
+        tick(seconds);
+        for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed) {
+          final penguin = characters.root.children[i];
+          final gait = CharacterGait(
+            loop: loop,
+            scale: scale,
+            phase: i / 4 + 0.05,
+          ).at(seconds);
+          for (final (name, target) in [
+            ('left-ankle', gait.left),
+            ('right-ankle', gait.right),
+          ]) {
+            final ankle = penguin.getChildByName(name)!;
+            final actual = ankle.globalTransform.getTranslation();
+            expect(
+              actual.distanceTo(Vector3(target.x, target.y, target.z)),
+              lessThan(2e-5),
+              reason: 'frame $frame actor $i $name',
+            );
+            final up = ankle.globalTransform.getColumn(1);
+            expect(up.y, closeTo(scale * math.cos(target.pitch), 2e-5));
+            if (target.planted) {
+              expect(up.x, closeTo(0, 2e-5));
+              expect(up.z, closeTo(0, 2e-5));
+            }
+          }
+        }
+      }
+    },
+  );
+
+  test(
+    'reduced motion freezes every joint and resumes without catching up',
+    () {
+      tick(10);
+      tick(10.2);
+      final nodes = _nodes(characters.root).toList();
+      final frozen = [for (final node in nodes) node.localTransform.clone()];
+      tick(200, animate: false);
+      tick(600, animate: false);
+      expect(characters.hasVisibleMotion, isFalse);
+      for (var i = 0; i < nodes.length; i++) {
+        expect(nodes[i].localTransform, frozen[i]);
+      }
+      final before = characters.root.children.first.position;
+      tick(600.1);
+      expect(
+        characters.root.children.first.position.distanceTo(before),
+        closeTo(CharacterLoop.speed * 0.1, 0.001),
+      );
+      expect(characters.hasVisibleMotion, isTrue);
+    },
+  );
+
+  test(
+    'distant rigs leave the animation frame budget and reappear in place',
+    () {
+      tick(0);
+      tick(1, eye: Vector3(0, 200, 0));
+      expect(characters.hasVisibleMotion, isFalse);
+      expect(characters.root.children.every((n) => !n.visible), isTrue);
+      tick(2);
+      expect(characters.hasVisibleMotion, isTrue);
+      expect(characters.root.children.every((n) => n.visible), isTrue);
+      final expected = loop.at(2, phase: 0.05);
+      final actual = characters.root.children.first.position;
+      expect(actual.x, closeTo(expected.x, 1e-5));
+      expect(actual.z, closeTo(expected.z, 1e-5));
+      characters.dispose();
+      expect(parent.children, isEmpty);
+      expect(characters.hasVisibleMotion, isFalse);
+    },
+  );
+
+  test('a planted foot stays fixed while the body travels past it', () {
+    tick(0);
+    final phaseTravel = loop.length * 0.05;
+    final contactTravel =
+        (phaseTravel / CharacterGait.strideLength).ceil() *
+            CharacterGait.strideLength +
+        CharacterGait.strideLength * 0.1;
+    final seconds = (contactTravel - phaseTravel) / CharacterLoop.speed;
+    tick(seconds);
+    final ankle = _nodes(
+      characters.root.children.first,
+    ).firstWhere((node) => node.name == 'left-ankle');
+    final planted = ankle.globalTransform.getTranslation();
+    tick(seconds + 0.025);
+    final later = ankle.globalTransform.getTranslation();
+    expect(
+      planted.y,
+      closeTo(CharacterGait.ground + CharacterGait.ankleHeight, 1e-5),
+    );
+    expect(later.distanceTo(planted), lessThan(1e-5));
+  });
+
+  test('a missing route needs no GPU resources or recurring motion', () {
+    final emptyParent = Node();
+    final empty = PlazaCharacters(parent: emptyParent, loop: null, model: null)
+      ..update(seconds: 10, eye: Vector3.zero(), animate: true);
+    expect(emptyParent.children, isEmpty);
+    expect(empty.hasVisibleMotion, isFalse);
+    empty.dispose();
+  });
+}

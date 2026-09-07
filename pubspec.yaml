@@ -276,6 +276,7 @@ flutter:
         - asset: assets/fonts/LottiFilled/LottiFilled.ttf
 
   assets:
+    - assets/plaza/
     - assets/design_system/
     - assets/icons/
     - assets/icon/
