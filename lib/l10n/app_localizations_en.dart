@@ -9407,6 +9407,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSidebarManualLabel => 'Manual';
 
   @override
+  String navTabMoreSemanticsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'More, $count additional destinations',
+      one: 'More, 1 additional destination',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -9425,7 +9436,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navTabTitleJournal => 'Logbook';
 
   @override
-  String get navTabTitleNavigate => 'Navigate';
+  String get navTabTitleMore => 'More';
 
   @override
   String get navTabTitlePeople => 'People';
@@ -14761,6 +14772,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get navTabTitleNavigate => 'Navigate';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'New mobile navigation';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Use one Navigate button to open all app sections.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

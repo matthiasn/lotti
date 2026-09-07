@@ -16045,6 +16045,12 @@ abstract class AppLocalizations {
   /// **'Manual'**
   String get navSidebarManualLabel;
 
+  /// No description provided for @navTabMoreSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{More, 1 additional destination} other{More, {count} additional destinations}}'**
+  String navTabMoreSemanticsLabel(int count);
+
   /// No description provided for @navTabTitleCalendar.
   ///
   /// In en, this message translates to:
@@ -16081,11 +16087,11 @@ abstract class AppLocalizations {
   /// **'Logbook'**
   String get navTabTitleJournal;
 
-  /// No description provided for @navTabTitleNavigate.
+  /// No description provided for @navTabTitleMore.
   ///
   /// In en, this message translates to:
-  /// **'Navigate'**
-  String get navTabTitleNavigate;
+  /// **'More'**
+  String get navTabTitleMore;
 
   /// No description provided for @navTabTitlePeople.
   ///
@@ -24772,6 +24778,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// No description provided for @navTabTitleNavigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate'**
+  String get navTabTitleNavigate;
+
+  /// No description provided for @configFlagEnableMobileNavigationLauncher.
+  ///
+  /// In en, this message translates to:
+  /// **'New mobile navigation'**
+  String get configFlagEnableMobileNavigationLauncher;
+
+  /// No description provided for @configFlagEnableMobileNavigationLauncherDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use one Navigate button to open all app sections.'**
+  String get configFlagEnableMobileNavigationLauncherDescription;
 }
 
 class _AppLocalizationsDelegate

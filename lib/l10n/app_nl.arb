@@ -1645,6 +1645,8 @@
   "configFlagEnableLoggingDescription": "Schakel gedetailleerde logging in voor debugdoeleinden. Dit kan de prestaties beïnvloeden.",
   "configFlagEnableMatrix": "Matrix-synchronisatie inschakelen",
   "configFlagEnableMatrixDescription": "Schakel de integratie van Matrix in om uw items te synchroniseren tussen apparaten en met andere Matrix-gebruikers.",
+  "configFlagEnableMobileNavigationLauncher": "Nieuwe mobiele navigatie",
+  "configFlagEnableMobileNavigationLauncherDescription": "Open alle onderdelen van de app met één navigatieknop.",
   "configFlagEnableNotifications": "Notificatieberichten inschakelen?",
   "configFlagEnableNotificationsDescription": "Ontvang meldingen voor herinneringen, updates en belangrijke gebeurtenissen.",
   "configFlagEnableProjects": "Projecten inschakelen",
@@ -4019,12 +4021,21 @@
   "multiSelectNoItemsFound": "Geen items gevonden",
   "navSidebarManualBrowserHint": "Opent in uw browser",
   "navSidebarManualLabel": "Handmatig",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Meer, 1 extra bestemming} other{Meer. {count} aanvullende bestemmingen}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Gebeurtenissen",
   "navTabTitleGoals": "Doelen",
   "navTabTitleHabits": "Gewoontes",
   "navTabTitleInsights": "Inzichten",
   "navTabTitleJournal": "Logboek",
+  "navTabTitleMore": "Meer",
   "navTabTitleNavigate": "Navigeren",
   "navTabTitlePeople": "Mensen",
   "navTabTitleProjects": "Projecten",

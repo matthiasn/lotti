@@ -21,8 +21,8 @@ sources:
     title: ContactSupportRow — the Contact Us footer, wired to its destinations
     last_modified: 2026-08-05
   - id: more-sheet
-    resource: ../../lib/widgets/nav_bar/mobile_nav_sheet.dart
-    title: Mobile destination grid
+    resource: ../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart
+    title: Mobile More overflow sheet
     last_modified: 2026-08-05
   - id: settings-location
     resource: ../../lib/beamer/locations/settings_location.dart
@@ -111,7 +111,9 @@ flowchart TD
   Screen --> Chrome{"Form factor"}
   Chrome -->|desktop| Sidebar["DesktopSidebar"]
   Chrome -->|desktop| DayCol["DayViewSidePanel (right-docked day view)"]
-  Chrome -->|mobile| Bar["Navigate launcher + two-column destination grid"]
+  Chrome -->|mobile| NavFlag{"enable_mobile_navigation_launcher"}
+  NavFlag -->|off or unresolved| Bar["DesignSystemFiveSlotNavBar + More sheet"]
+  NavFlag -->|on| Launcher["Glass Navigate button + two-column grid"]
 ```
 
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
@@ -508,38 +510,37 @@ Two consequences worth knowing before adding a settings page:
   URL of the page that pushed them. They escape the nav by pushing onto the root
   navigator through `bottomNavSafeNavigatorOf` instead.
 
-## Mobile destination launcher
+With the mobile launcher flag off, slot allocation is derived from width. Tasks, Daily OS and
+Journal are the primary destinations that survive the narrowest window; the rest
+start behind a *More* sheet and are promoted into their own slots as width
+allows, until everything fits and the More slot disappears.
 
-A single **Navigate** button opens every enabled destination in a two-column
-sheet. The order is Tasks, Daily OS, Projects, Goals, Habits, Insights, People,
-Logbook, Events, Settings. Disabled destinations are omitted and the remaining
-items fill the grid in reading order; an odd final destination occupies the
-leading column. Width no longer promotes destinations into the bottom bar.
+## Opt-in mobile launcher
 
-The current destination has a selected surface, accent label/icon and selected
-semantics. The launcher always retains its Navigate label. Tapping a tile
-closes the modal and resolves its destination index against the current feature
-flags before calling `NavService.tapIndex`; a destination disabled while the
-sheet is open is a no-op. The per-destination stacks above continue to retain
-routes and working state. The shared modal owns dismissal and scrolling; grid
-rows size to their tallest cell so translated labels and large text can wrap.
-Mobile sync counts occupy the right side of the footer, with support links
-on the left below the grid. Tile content uses the `spacing.step5` horizontal
-inset; desktop sync counts remain beside Settings.
+`enable_mobile_navigation_launcher` defaults to false, including while its
+provider is unresolved. Settings → Config Flags exposes it as **New mobile
+navigation**. Startup seeds it with `insertFlagIfNotExists`, preserving an
+existing opt-in. The flag is read only in the mobile shell; desktop keeps its
+existing sidebar and Settings sync counts.
 
-```mermaid
-stateDiagram-v2
-  [*] --> Section
-  Section --> Launcher: tap Navigate
-  Launcher --> Section: dismiss without switching
-  Launcher --> Section: select enabled destination / restore its stack
-  Launcher --> Section: select newly disabled destination / keep current section
-```
+When enabled, `MobileNavigationLauncher` replaces the slot bar with a glass
+Navigate pill. Its backdrop blur and dense theme-aware scrim keep page content
+from competing with the label. `showMobileNavSheet` presents all enabled
+sections in a two-column grid with 16-point horizontal tile padding, the active
+section highlighted, support links on the left and sync counts on the right.
+Selection dismisses the sheet and resolves the destination index at tap time,
+so section flags changing while the sheet is open cannot route to a stale index.
 
-`DesignSystemBottomNavigationBar.barHeight` includes the localized button's
-scaled label height, minimum touch target and full bottom system inset. The
-shell places recording indicators above that height; detail-route hiding and
-page clearance still use the existing shell scopes.
+Changing the flag swaps only the chrome, retaining the current tab and its
+navigation stack. `_MobileNavOverlayHeightScope` publishes the selected bar's
+height through `DesignSystemBottomNavigationOverlayHeight.navigationBarHeight`;
+page/FAB clearance and recording indicators therefore follow the visible
+bar. Standalone pages without an explicit height keep the legacy calculation.
+The launcher measures its localized label with `TextPainter`, including
+nonlinear text scaling. Both designs share the existing route-hiding rules.
+
+The new launcher and grid are independent of the legacy slot and More widgets.
+The app shell chooses between them; neither new widget imports the old ones.
 
 ## The Settings row and its counts
 
@@ -587,7 +588,7 @@ factors:
 | Form factor | Where | Suppressed when |
 |-------------|-------|-----------------|
 | Desktop | sidebar `footerBand`, under Settings | the sidebar is collapsed |
-| Mobile | last child of the *Navigate* sheet | never — the sheet is its only home |
+| Mobile | footer of the *More* sheet, or the opt-in *Navigate* grid | never — the sheet is its only home |
 
 **No rule separates it from the rows above, on either surface.** These are the
 quietest controls the app's navigation has, and a divider gave them the weight
@@ -603,7 +604,8 @@ optional status row beneath Settings to displace it. Collapsing the sidebar
 removes the band entirely — the icon-only rail is 72 px, narrower than the four
 glyphs — and the Manual stays reachable from Settings meanwhile.
 
-The actions themselves are one left-aligned group. Email is a plain envelope
+The actions are right-aligned in the sidebar and More sheet. The opt-in
+launcher places the same intrinsic-width group on the left beside sync counts. Email is a plain envelope
 button with the same 44 px target, colour, tooltip and semantics as Manual,
 GitHub and Discord; its localized “Contact Us” wording remains the accessible
 name rather than visible copy. With no label competing for width, all four
@@ -633,7 +635,9 @@ Two rules hold it together:
 | Index, delegate registry, flag gating, state persistence | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
 | Restore hook, awaited before `runApp` | [`lib/get_it.dart`](../../lib/get_it.dart) |
 | Logbook auto-selection, the background-navigation case | [`lib/features/journal/ui/pages/journal_root_page.dart`](../../lib/features/journal/ui/pages/journal_root_page.dart) |
-| Mobile destination grid | [`lib/widgets/nav_bar/mobile_nav_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_sheet.dart) |
+| Opt-in launcher | [`lib/widgets/nav_bar/mobile_navigation_launcher.dart`](../../lib/widgets/nav_bar/mobile_navigation_launcher.dart) |
+| Opt-in destination grid | [`lib/widgets/nav_bar/mobile_nav_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_sheet.dart) |
+| Mobile overflow sheet | [`lib/widgets/nav_bar/mobile_nav_more_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart) |
 | Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |
 | Contact Us footer, presentation | [`lib/features/design_system/components/navigation/design_system_contact_row.dart`](../../lib/features/design_system/components/navigation/design_system_contact_row.dart) |
 | External addresses | [`lib/utils/support_links.dart`](../../lib/utils/support_links.dart) |

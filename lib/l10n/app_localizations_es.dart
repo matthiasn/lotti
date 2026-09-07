@@ -9593,6 +9593,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navSidebarManualLabel => 'Manual';
 
   @override
+  String navTabMoreSemanticsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Más, $count destinos adicionales',
+      one: 'Más, 1 destino adicional',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navTabTitleCalendar => 'Daily OS';
 
   @override
@@ -9611,7 +9622,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navTabTitleJournal => 'Diario';
 
   @override
-  String get navTabTitleNavigate => 'Navegar';
+  String get navTabTitleMore => 'Más';
 
   @override
   String get navTabTitlePeople => 'Personas';
@@ -15055,4 +15066,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String get navTabTitleNavigate => 'Navegar';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncher =>
+      'Nueva navegación móvil';
+
+  @override
+  String get configFlagEnableMobileNavigationLauncherDescription =>
+      'Abre todas las secciones de la app con un único botón de navegación.';
 }

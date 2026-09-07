@@ -72,6 +72,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableMobileNavigationLauncherFlag,
+      description: 'Enable the mobile navigation launcher?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableHabitsPageFlag,
       description: 'Enable Habits Page?',
       status: false,

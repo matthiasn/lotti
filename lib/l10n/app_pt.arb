@@ -1645,6 +1645,8 @@
   "configFlagEnableLoggingDescription": "Habilite o registro detalhado para fins de depuração. Isso pode afetar o desempenho.",
   "configFlagEnableMatrix": "Ativar sincronização Matrix",
   "configFlagEnableMatrixDescription": "Habilite a integração do Matrix para sincronizar suas entradas entre dispositivos e com outros usuários do Matrix.",
+  "configFlagEnableMobileNavigationLauncher": "Nova navegação móvel",
+  "configFlagEnableMobileNavigationLauncherDescription": "Abre todas as secções da app com um único botão de navegação.",
   "configFlagEnableNotifications": "Ativar notificações?",
   "configFlagEnableNotificationsDescription": "Receba notificações de lembretes, atualizações e eventos importantes.",
   "configFlagEnableProjects": "Habilitar projetos",
@@ -4019,12 +4021,21 @@
   "multiSelectNoItemsFound": "Nenhum item encontrado",
   "navSidebarManualBrowserHint": "Abre no seu navegador",
   "navSidebarManualLabel": "Manuais",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Mais, 1 destino adicional} other{Mais, {count} destinos adicionais}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Eventos",
   "navTabTitleGoals": "Objetivos",
   "navTabTitleHabits": "Hábitos",
   "navTabTitleInsights": "Informações",
   "navTabTitleJournal": "Diário de bordo",
+  "navTabTitleMore": "Mais",
   "navTabTitleNavigate": "Navegar",
   "navTabTitlePeople": "Pessoas",
   "navTabTitleProjects": "Projetos",

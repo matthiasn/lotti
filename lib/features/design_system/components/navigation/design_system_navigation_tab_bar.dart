@@ -23,8 +23,11 @@ class DesignSystemNavigationTabBarItem {
 
 /// Content-hugging pill tab bar from the design handoff.
 ///
-/// Used by design-handoff showcase mockups and widgetbook artboards. Mobile
-/// app navigation uses a single launcher in `DesignSystemBottomNavigationBar`.
+/// No longer the app's mobile bottom navigation — the shell uses
+/// `DesignSystemFiveSlotNavBar` (fixed slot count, equal flex, docked)
+/// instead, because this pill shrinks via `FittedBox` when too many tabs
+/// are visible. It survives for the design-handoff showcase mockups and
+/// the widgetbook artboards that depict the original handoff spec.
 class DesignSystemNavigationTabBar extends StatelessWidget {
   const DesignSystemNavigationTabBar({
     required this.items,

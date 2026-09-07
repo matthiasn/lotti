@@ -1,5 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -8,60 +9,100 @@ import 'package:material_ui/material_ui.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
-  void onNavigate() {}
+  const items = [
+    DesignSystemFiveSlotNavBarItem(
+      label: 'Tasks',
+      icon: Icon(LottiIcons.confirmCircled),
+      active: true,
+    ),
+    DesignSystemFiveSlotNavBarItem(
+      label: 'Journal',
+      icon: Icon(LottiIcons.book),
+    ),
+    DesignSystemFiveSlotNavBarItem(
+      label: 'Settings',
+      icon: Icon(LottiIcons.settings),
+    ),
+    DesignSystemFiveSlotNavBarItem(
+      label: 'More',
+      icon: Icon(LottiIcons.more),
+    ),
+  ];
 
   group('DesignSystemBottomNavigationBar', () {
-    testWidgets('centers one labeled launcher and dispatches its action', (
+    testWidgets(
+      'changing the selected bar height updates existing page padding',
+      (tester) async {
+        final selectedHeight = ValueNotifier<double>(48);
+        addTearDown(selectedHeight.dispose);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ValueListenableBuilder<double>(
+              valueListenable: selectedHeight,
+              child: const DesignSystemBottomNavigationFabPadding(
+                child: SizedBox.square(dimension: 48),
+              ),
+              builder: (context, height, child) =>
+                  DesignSystemBottomNavigationOverlayHeight(
+                    height: 24,
+                    navigationBarHeight: height,
+                    child: child!,
+                  ),
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          ),
+        );
+        final paddingFinder = find.descendant(
+          of: find.byType(DesignSystemBottomNavigationFabPadding),
+          matching: find.byType(Padding),
+        );
+        expect(
+          tester
+              .widget<Padding>(paddingFinder)
+              .padding
+              .resolve(TextDirection.ltr)
+              .bottom,
+          72,
+        );
+        selectedHeight.value = 88;
+        await tester.pump();
+        expect(
+          tester
+              .widget<Padding>(paddingFinder)
+              .padding
+              .resolve(TextDirection.ltr)
+              .bottom,
+          112,
+        );
+      },
+    );
+
+    testWidgets('adds no gap or inset of its own around the bar', (
       tester,
     ) async {
-      var taps = 0;
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DesignSystemBottomNavigationBar(onNavigate: () => taps++),
+          const SizedBox(
+            width: 390,
+            child: DesignSystemBottomNavigationBar(items: items),
+          ),
           theme: DesignSystemTheme.light(),
         ),
       );
-      final button = tester.getRect(find.byType(DesignSystemButton));
-      final container = tester.getRect(
+
+      final containerRect = tester.getRect(
         find.byType(DesignSystemBottomNavigationBar),
       );
-      expect(button.width, lessThan(container.width));
-      expect(button.center.dx, container.center.dx);
-      expect(button.height, greaterThanOrEqualTo(TapTargets.minimum));
-      await tester.tap(find.text('Navigate'));
-      expect(taps, 1);
-    });
+      final barRect = tester.getRect(find.byType(DesignSystemFiveSlotNavBar));
 
-    for (final scaler in const [
-      TextScaler.linear(1.3),
-      TextScaler.linear(2),
-      TextScaler.linear(3),
-      _NonlinearTextScaler(),
-    ]) {
-      testWidgets('launcher clearance matches large text at $scaler', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            DesignSystemBottomNavigationBar(onNavigate: onNavigate),
-            theme: DesignSystemTheme.light(),
-            mediaQueryData: MediaQueryData(
-              size: const Size(390, 844),
-              textScaler: scaler,
-              padding: const EdgeInsets.only(bottom: 34),
-            ),
-          ),
-        );
-        final finder = find.byType(DesignSystemBottomNavigationBar);
-        expect(
-          tester.getSize(finder).height,
-          DesignSystemBottomNavigationBar.occupiedHeight(
-            tester.element(finder),
-          ),
-        );
-        expect(tester.takeException(), isNull);
-      });
-    }
+      // The container contributes zero padding: when the shell pins it to
+      // the screen's bottom edge the bar surface is flush with that edge
+      // and spans the full width.
+      expect(barRect.bottom, containerRect.bottom);
+      expect(barRect.left, containerRect.left);
+      expect(barRect.right, containerRect.right);
+    });
 
     testWidgets('occupiedHeight matches the rendered bar extent', (
       tester,
@@ -70,7 +111,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          DesignSystemBottomNavigationBar(onNavigate: onNavigate),
+          const DesignSystemBottomNavigationBar(items: items),
           theme: DesignSystemTheme.light(),
           mediaQueryData: noInset,
         ),
@@ -124,11 +165,20 @@ void main() {
               tester.element(find.byType(Scaffold)),
             );
 
-        // The launcher clears the full system safe area on every platform.
-        final expectedAbsorbed = withInset.padding.bottom;
+        // The absorbed inset replaces (not stacks onto) the surface's internal
+        // step2 bottom padding, so occupied height grows by the absorbed amount
+        // minus the padding it displaced. iOS trims the decorative home
+        // indicator to bottomInsetFraction; every other platform absorbs the
+        // whole inset, because there it can be the system navigation bar's live
+        // buttons — content padding by this number must clear them too, or a FAB
+        // and the last list row end up under recents/home/back.
+        final expectedAbsorbed = defaultTargetPlatform == TargetPlatform.iOS
+            ? withInset.padding.bottom *
+                  DesignSystemFiveSlotNavBar.bottomInsetFraction
+            : withInset.padding.bottom;
         expect(
           withInsetHeight - withoutInsetHeight,
-          moreOrLessEquals(expectedAbsorbed - dsTokensLight.spacing.step6),
+          moreOrLessEquals(expectedAbsorbed - dsTokensLight.spacing.step2),
         );
       },
       variant: const TargetPlatformVariant({
@@ -284,7 +334,7 @@ void main() {
       );
 
       await pump(barDocked: true);
-      final barHeight = DesignSystemBottomNavigationBar.barHeight(
+      final barHeight = DesignSystemFiveSlotNavBar.barHeight(
         tester.element(find.byKey(scopedChildKey)),
       );
       // Guards the arithmetic below from passing on a zero-height bar.
@@ -335,7 +385,7 @@ void main() {
       );
       expect(
         DesignSystemBottomNavigationBar.occupiedHeight(context),
-        DesignSystemBottomNavigationBar.barHeight(context),
+        DesignSystemFiveSlotNavBar.barHeight(context),
       );
     });
 
@@ -369,7 +419,7 @@ void main() {
       }
 
       await pump(barDocked: true);
-      final barHeight = DesignSystemBottomNavigationBar.barHeight(
+      final barHeight = DesignSystemFiveSlotNavBar.barHeight(
         tester.element(find.byType(DesignSystemBottomNavigationFabPadding)),
       );
       final docked = bottomPadding();
@@ -408,16 +458,4 @@ void main() {
       );
     });
   });
-}
-
-/// Smaller fonts grow proportionally more, as in accessibility text scaling.
-class _NonlinearTextScaler extends TextScaler {
-  const _NonlinearTextScaler();
-
-  @override
-  double scale(double fontSize) =>
-      fontSize <= 16 ? fontSize * 2 : fontSize * 1.5 + 8;
-
-  @override
-  double get textScaleFactor => 2;
 }

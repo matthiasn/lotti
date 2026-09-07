@@ -2,6 +2,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_contact_row.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -127,7 +128,7 @@ void main() {
   });
 
   group('DesignSystemContactRow layout', () {
-    testWidgets('left-aligns four uniform targets as one contiguous group', (
+    testWidgets('right-aligns four uniform targets as one contiguous group', (
       tester,
     ) async {
       await tester.pumpWidget(wrap(buildRow()));
@@ -137,7 +138,7 @@ void main() {
         for (final key in actionKeys) tester.getRect(find.byKey(key)),
       ];
       const expectedSize = Size.square(
-        DesignSystemContactRow.minTapTarget,
+        DesignSystemFiveSlotNavBar.minTapTarget,
       );
 
       for (final target in targets) {
@@ -149,8 +150,8 @@ void main() {
       }
 
       expect(
-        targets.first.left,
-        closeTo(dsTokensDark.spacing.step3, 0.5),
+        targets.last.right,
+        closeTo(_wideRow - dsTokensDark.spacing.step3, 0.5),
       );
     });
 
@@ -179,12 +180,12 @@ void main() {
       await tester.pump();
 
       final row = tester.getRect(find.byType(DesignSystemContactRow));
-      final firstAction = tester.getRect(find.byKey(emailKey));
+      final lastAction = tester.getRect(find.byKey(discordKey));
 
       // `step3`, not the rail's `step5` gutter: four 44 px targets need
       // 176 px and a step5-inset 200 px rail leaves only 168 px, so the group
       // would wrap. This is the reason the band is full-bleed at all.
-      expect(firstAction.left - row.left, dsTokensDark.spacing.step3);
+      expect(row.right - lastAction.right, dsTokensDark.spacing.step3);
     });
   });
 

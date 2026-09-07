@@ -1646,6 +1646,8 @@
   "configFlagEnableLoggingDescription": "Aktivér detaljeret logning til fejlfindingsformål. Dette kan påvirke ydeevnen.",
   "configFlagEnableMatrix": "Aktivér Matrix-synkronisering",
   "configFlagEnableMatrixDescription": "Aktivér Matrix-integrationen for at synkronisere dine poster på tværs af enheder og med andre Matrix-brugere.",
+  "configFlagEnableMobileNavigationLauncher": "Ny mobilnavigation",
+  "configFlagEnableMobileNavigationLauncherDescription": "Åbn alle appens sektioner med én navigationsknap.",
   "configFlagEnableNotifications": "Aktivere notifikationer?",
   "configFlagEnableNotificationsDescription": "Modtag notifikationer om påmindelser, opdateringer og vigtige begivenheder.",
   "configFlagEnableProjects": "Muliggør projekter",
@@ -4020,12 +4022,21 @@
   "multiSelectNoItemsFound": "Ingen genstande fundet",
   "navSidebarManualBrowserHint": "Åbner i din browser",
   "navSidebarManualLabel": "Manual",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Mere, 1 ekstra destination} other{Mere, {count} yderligere destinationer}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Begivenheder",
   "navTabTitleGoals": "Mål",
   "navTabTitleHabits": "Vaner",
   "navTabTitleInsights": "Indsigter",
   "navTabTitleJournal": "Logbog",
+  "navTabTitleMore": "Mere",
   "navTabTitleNavigate": "Naviger",
   "navTabTitlePeople": "Personer",
   "navTabTitleProjects": "Projekter",

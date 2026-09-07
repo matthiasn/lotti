@@ -104,6 +104,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
+    enableMobileNavigationLauncherFlag,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
     enableUnifiedGoalsFlag,
@@ -166,6 +167,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return LottiIcons.sync;
       case resendAttachments:
         return LottiIcons.refresh;
+      case enableMobileNavigationLauncherFlag:
+        return LottiIcons.menu;
       case enableHabitsPageFlag:
         return LottiIcons.repeat;
       case enableDashboardsPageFlag:
@@ -217,6 +220,10 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableMatrixDescription;
       case resendAttachments:
         return context.messages.configFlagResendAttachmentsDescription;
+      case enableMobileNavigationLauncherFlag:
+        return context
+            .messages
+            .configFlagEnableMobileNavigationLauncherDescription;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:
@@ -268,6 +275,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableMatrix;
       case resendAttachments:
         return context.messages.configFlagResendAttachments;
+      case enableMobileNavigationLauncherFlag:
+        return context.messages.configFlagEnableMobileNavigationLauncher;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPage;
       case enableDashboardsPageFlag:

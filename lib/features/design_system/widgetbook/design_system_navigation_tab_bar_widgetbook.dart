@@ -1,4 +1,5 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
@@ -91,7 +92,7 @@ class _BottomNavigationShellShowcase extends StatelessWidget {
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: DesignSystemBottomNavigationBar(
-                    onNavigate: () {},
+                    items: _shellItems(context),
                   ),
                 ),
                 const Align(
@@ -111,6 +112,35 @@ class _BottomNavigationShellShowcase extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// The compact line-up: always-visible destinations plus a More slot
+  /// for the overflow. On windows where every destination's label fits
+  /// (see [DesignSystemFiveSlotNavBar.allSlotsFit]) the shell renders one
+  /// slot per destination instead.
+  List<DesignSystemFiveSlotNavBarItem> _shellItems(BuildContext context) {
+    return [
+      DesignSystemFiveSlotNavBarItem(
+        label: context.messages.navTabTitleTasks,
+        icon: const Icon(LottiIcons.confirmCircled),
+        activeIcon: const Icon(LottiIcons.confirmCircled),
+        active: true,
+      ),
+      DesignSystemFiveSlotNavBarItem(
+        label: context.messages.navTabTitleJournal,
+        icon: const Icon(LottiIcons.book),
+        activeIcon: const Icon(LottiIcons.book),
+      ),
+      DesignSystemFiveSlotNavBarItem(
+        label: context.messages.navTabTitleSettings,
+        icon: const Icon(LottiIcons.settings),
+        activeIcon: const Icon(LottiIcons.settings),
+      ),
+      DesignSystemFiveSlotNavBarItem(
+        label: context.messages.navTabTitleMore,
+        icon: const Icon(LottiIcons.more),
+      ),
+    ];
   }
 }
 

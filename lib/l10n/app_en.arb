@@ -2016,6 +2016,8 @@
   "configFlagEnableLoggingDescription": "Enable detailed logging for debugging purposes. This may impact performance.",
   "configFlagEnableMatrix": "Enable Matrix sync",
   "configFlagEnableMatrixDescription": "Enable the Matrix integration to sync your entries across devices and with other Matrix users.",
+  "configFlagEnableMobileNavigationLauncher": "New mobile navigation",
+  "configFlagEnableMobileNavigationLauncherDescription": "Use one Navigate button to open all app sections.",
   "configFlagEnableNotifications": "Enable notifications?",
   "configFlagEnableNotificationsDescription": "Receive notifications for reminders, updates, and important events.",
   "configFlagEnableProjects": "Enable Projects",
@@ -5483,6 +5485,14 @@
   "multiSelectNoItemsFound": "No items found",
   "navSidebarManualBrowserHint": "Opens in your browser",
   "navSidebarManualLabel": "Manual",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{More, 1 additional destination} other{More, {count} additional destinations}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Events",
   "navTabTitleGoals": "Goals",
@@ -5492,6 +5502,7 @@
   "navTabTitleHabits": "Habits",
   "navTabTitleInsights": "Insights",
   "navTabTitleJournal": "Logbook",
+  "navTabTitleMore": "More",
   "navTabTitleNavigate": "Navigate",
   "navTabTitlePeople": "People",
   "navTabTitleProjects": "Projects",
