@@ -533,7 +533,8 @@ spine lean into the quadruped pose; the head counters the lean. On rising, the
 hind paws support the body and alternate pivot steps while forepaws hang close
 to the belly with downward-facing digits. Fur uses the existing warm neutral
 lantern palette. Skin geometry and materials are shared; clone joints and
-eyelid morphs remain independent.
+eyelid morphs remain independent. Each update samples the gait once per meerkat
+and reuses that pose for distance culling and the visible rig transforms.
 
 `MeerkatLookout` turns the stationary body toward the camera at a bounded
 angular rate. The head and eyes lead the turn; hind paws alternate short pivot

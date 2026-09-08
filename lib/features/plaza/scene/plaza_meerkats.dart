@@ -45,7 +45,7 @@ class PlazaMeerkats {
               ..rotateX(-math.pi / 2)),
         );
       }
-      meerkat.pose(0);
+      meerkat.pose(motion.at(0));
     }
     parent.add(root);
   }
@@ -114,7 +114,7 @@ class PlazaMeerkats {
           dx * dx + eye.y * eye.y + dz * dz <= visibleRange * visibleRange;
       if (!meerkat.root.visible) continue;
       meerkat.pose(
-        time,
+        pose,
         eye: eye,
         dt: animate && previous != null ? math.max(0, seconds - previous) : 0,
       );
@@ -178,10 +178,9 @@ class _Meerkat {
   final lookout = MeerkatLookout();
   Vector3? _lastEye;
 
-  void pose(double seconds, {Vector3? eye, double dt = 0}) {
+  void pose(MeerkatPose pose, {Vector3? eye, double dt = 0}) {
     if (eye != null && (dt > 0 || _lastEye == null)) _lastEye = eye.clone();
     final cameraEye = _lastEye;
-    final pose = motion.at(seconds);
     final scale = motion.scale;
     final facing = cameraEye == null
         ? null
