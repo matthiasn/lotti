@@ -7,8 +7,8 @@ import 'package:lotti/features/plaza/scene/plaza_characters.dart';
 import 'package:vector_math/vector_math.dart';
 
 /// Reads the shipped penguin's hierarchy and bind matrices without GPU
-/// uploads. Empty geometry stands in for its vertex buffers; skeletons,
-/// materials and transforms retain the asset's actual structure.
+/// uploads. Empty geometry stands in for its base vertex buffers; skeletons,
+/// morph deltas, materials and transforms retain the asset's actual structure.
 Node loadPenguinWithoutGpu() {
   final bytes = File(PlazaCharacters.asset).readAsBytesSync();
   final data = ByteData.sublistView(bytes);
@@ -17,6 +17,20 @@ Node loadPenguinWithoutGpu() {
       jsonDecode(utf8.decode(bytes.sublist(20, 20 + jsonLength)))
           as Map<String, dynamic>;
   final binary = 28 + jsonLength;
+  final accessors = (doc['accessors'] as List<dynamic>)
+      .cast<Map<String, dynamic>>();
+  final views = (doc['bufferViews'] as List<dynamic>)
+      .cast<Map<String, dynamic>>();
+  Float32List floats(int index, int components) {
+    final accessor = accessors[index];
+    final view = views[accessor['bufferView'] as int];
+    final offset = binary + (view['byteOffset'] as int);
+    return Float32List.fromList([
+      for (var i = 0; i < (accessor['count'] as int) * components; i++)
+        data.getFloat32(offset + i * 4, Endian.little),
+    ]);
+  }
+
   final specs = (doc['nodes'] as List<dynamic>).cast<Map<String, dynamic>>();
   final nodes = [for (final spec in specs) Node(name: spec['name'] as String)];
   for (final (i, spec) in specs.indexed) {
@@ -54,9 +68,39 @@ Node loadPenguinWithoutGpu() {
   }
   for (final (i, spec) in specs.indexed) {
     if (spec['mesh'] == null) continue;
+    final mesh =
+        (doc['meshes'] as List<dynamic>)[spec['mesh'] as int]
+            as Map<String, dynamic>;
+    final primitive =
+        (mesh['primitives'] as List<dynamic>).single as Map<String, dynamic>;
+    final targets = (primitive['targets'] as List<dynamic>?)
+        ?.cast<Map<String, dynamic>>();
+    final Geometry geometry;
+    if (targets == null) {
+      geometry = UnskinnedGeometry();
+    } else {
+      geometry = MorphedUnskinnedGeometry(
+        MorphTargetData(
+          vertexCount:
+              accessors[targets.first['POSITION'] as int]['count'] as int,
+          targetCount: targets.length,
+          positionDeltas: Float32List.fromList([
+            for (final target in targets)
+              ...floats(target['POSITION'] as int, 3),
+          ]),
+          normalDeltas: Float32List.fromList([
+            for (final target in targets) ...floats(target['NORMAL'] as int, 3),
+          ]),
+          targetNames:
+              ((mesh['extras'] as Map<String, dynamic>)['targetNames']
+                      as List<dynamic>)
+                  .cast<String>(),
+        ),
+      );
+    }
     nodes[i]
       ..mesh = Mesh(
-        UnskinnedGeometry(),
+        geometry,
         PhysicallyBasedMaterial()..metallicFactor = 0,
       )
       ..skin = skin;

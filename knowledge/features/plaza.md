@@ -808,7 +808,7 @@ streets at folded junctions so independently timed groups cannot collide there.
 When nearby buildings block a wide circuit, smaller routes on either side of
 the street are tried before omitting that region. The plaza uses
 `CharacterLoop.forPlaza`; a missing or obstructed plaza does not remove street
-walkers. Region IDs, scales, phases and pace are deterministic.
+walkers. Region IDs, builds, scales, phases and pace are deterministic.
 
 All routes check their swept envelope against `PlazaWorld.solids`. Samples are
 at most 0.5 m apart with another 0.25 m clearance covering the intervals. High
@@ -831,19 +831,36 @@ raycast flags, so construction reapplies them to the cloned mesh nodes.
 
 The original model is `assets/plaza/penguin.glb`, generated with the Python
 standard library by `tool/plaza/build_penguin.py`. A smooth implicit mesh
-forms the egg-shaped body, tapered flippers and short legs. Its 13-joint skin
-has a pelvis, spine, head, two joints per flipper and three per leg. Broad
-webbed feet have three toe lobes; the short bill has a closed mouth seam.
+forms the egg-shaped body, tapered flippers and short legs. Its 15-joint skin
+has a pelvis, spine, head, two joints per flipper, three per leg and one gaze
+joint per eye. Broad webbed feet have three toe lobes; the short beak is a
+rounded taper with a narrow seam following its surface.
 Feet below the ankle follow the ankle rigidly so shin deformation does not
 bend their soles through the paving. The implicit surface is intersected with
-its ground plane so smooth unions cannot inflate the soles below contact. White belly and face patches are assigned
+its ground plane so smooth unions cannot inflate the soles below contact.
+White belly and face patches are assigned
 to surface triangles, not protruding primitives. The imported model root
 is retained without the importer's coordinate-conversion wrapper because the
 model is authored in Plaza's +Z-forward frame. Materials use the existing
 dark background tokens for charcoal plumage, the light background token for
 white patches, and the warning accent for the orange bill and feet. Colours
-are converted to linear space with zero metallic response. Face details follow
-the head joint.
+are converted to linear space with zero metallic response.
+
+Standard, compact and upright builds share the same geometry. Body-only morph
+targets carry position and normal deltas, fading above the pelvis and below
+the head. Uniform head-joint scaling and a small rest-height offset carry the
+face together without changing leg lengths. Each exported surface contains
+only its used vertices; importing morphs therefore does not duplicate the
+entire character vertex buffer for every face detail. Clone morph weights are
+independent even though their geometry is shared.
+
+The eyes are shallow insets. Their upper lids are cylindrical shells whose
+front depth depends only on horizontal position, remaining outside the eye
+envelope while the lower edge closes vertically. Open-to-closed morphing
+therefore avoids cutting through the eye along an ellipsoid chord. The pupil
+and catchlight of each eye share a gaze joint; the beak seam stays head-bound.
+Facial morphing happens before skinning, so changing head proportions also
+carries the eyelids and gaze without separate expression corrections.
 
 `CharacterGait` derives the cycle from total distance and scales the short
 stride length with character size. Low heel recovery keeps the feet below
@@ -866,20 +883,36 @@ stateDiagram-v2
 The body is lowest through double support and rises through passing. A lateral
 pelvis shift and torso roll move weight toward the supporting foot. A short
 centered tangent sample banks the torso into bends. The head counters torso
-tilt, and the spread flippers balance the body; their tips follow with a phase
-offset. Two-bone inverse kinematics solves each leg in world space, including
+tilt, and the spread flippers balance the body; their restrained tips follow
+the stroke by 80 ms. Two-bone inverse kinematics solves each leg in world space, including
 sideways displacement on turns; the ankle cancels its parent rotation to
 preserve contact orientation. `vector_math.Quaternion.rotated` applies the
 inverse rotation: conjugating it again when converting world vectors into a
 parent frame breaks foot locking. The solver retains tiny rotations rather
 than rounding them to zero.
 
-`CharacterCompanion.attentionAt` occasionally turns the head toward its partner.
+`CharacterCompanion.attentionAt` occasionally looks toward its partner.
 Each seeded 9–13 second interval contains an eased glance, a short hold and an
 eased return. The second partner responds 0.55 seconds later. A small nod has
 zero angular velocity at its endpoints, and a continuous facing gate suppresses
-conversation through U-turns. Social animation affects the head without moving
-foot contacts or changing route progress.
+conversation through U-turns. Eyes lead the head into the glance and back to
+forward attention, then settle as the head takes over. Residual eye yaw is
+bounded so pupils remain inside their eye openings. Social animation affects
+the face and head without moving foot contacts or changing route progress.
+
+`blinkAt` samples independent, jittered blink events from the companion ID
+and event number. Each closes quickly, holds briefly, and reopens more slowly.
+Partners share conversational timing but not blink schedules. Both eyes of
+one penguin close together, covering pupils and catchlights.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Open
+  Open --> Closing: seeded blink event
+  Closing --> Closed: lid reaches full closure
+  Closed --> Opening: brief hold ends
+  Opening --> Open: lid returns to resting aperture
+```
 
 The harness supplies its existing active clock; no extra ticker is created.
 `MediaQuery.disableAnimations` freezes the entire pose and travel without a
@@ -888,14 +921,16 @@ and leave the 30 Hz animation budget. Resuming visibility samples the current
 route time. Rebuilding the world or disposing the harness detaches the old rigs.
 `PLAZA_HIDE=characters` omits the layer for scene isolation.
 
-Tests load the shipped GLB hierarchy and inverse bind matrices through the
-shared scene test helper, using empty geometry to avoid GPU uploads. They check
+Tests load the shipped GLB hierarchy, inverse bind matrices and actual morph
+deltas through the shared scene test helper, using empty base geometry to avoid GPU uploads. They check
 cloned joint references, contact targets and ankle orientation through a full
-lap at every scale, plus reduced motion, visibility and node disposal. Pure
+lap at every scale and build, plus independent expressions, closed-lid reduced
+motion, visibility and node disposal. Pure
 gait tests check contact continuity, double support, recovery clearance and
 deterministic sampling. Population tests cover every district in demo and
-folded fixtures, obstacles, asphalt bounds, formation and conversational timing.
-A separate junction regression checks independently timed crowds for collisions. Rendered appearance still requires a
+folded fixtures, obstacles, asphalt bounds, formation, eye/head sequencing and
+independent blink timing. A separate junction regression checks independently
+timed crowds for collisions. Rendered appearance still requires a
 native Flutter GPU review; these tests cannot judge animation appeal.
 
 # Sprites

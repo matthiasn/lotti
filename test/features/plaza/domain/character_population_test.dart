@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
 import 'package:lotti/features/plaza/domain/character_gait.dart';
@@ -12,6 +13,61 @@ import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 
 import '../plaza_fixtures.dart';
+
+CharacterCompanion _conversationActor({
+  String id = 'left',
+  double side = -1.3,
+  double delay = 0,
+  double heading = 0,
+  double phase = 0,
+}) {
+  final loop = CharacterLoop(
+    x: 0,
+    z: 0,
+    heading: heading,
+    radius: 5,
+    halfStraight: 100,
+  );
+  return CharacterCompanion(
+    id: id,
+    region: 'test',
+    gait: CharacterGait(loop: loop.translated(side), scale: 1, phase: phase),
+    partnerLoop: loop.translated(-side),
+    responseDelay: delay,
+  );
+}
+
+List<({double start, double firstClosed, double lastClosed, double end})>
+_blinkEvents(CharacterCompanion actor) {
+  final events =
+      <({double start, double firstClosed, double lastClosed, double end})>[];
+  double? start;
+  var firstClosed = 0.0;
+  var lastClosed = 0.0;
+  for (var millis = 0; millis <= 35000; millis++) {
+    final t = millis / 1000;
+    final closure = actor.blinkAt(t);
+    if (closure > 0 && start == null) {
+      start = t;
+      firstClosed = 0;
+      lastClosed = 0;
+    }
+    if (closure == 1) {
+      if (firstClosed == 0) firstClosed = t;
+      lastClosed = t;
+    }
+    if (closure == 0 && start != null) {
+      events.add((
+        start: start,
+        firstClosed: firstClosed,
+        lastClosed: lastClosed,
+        end: t,
+      ));
+      start = null;
+    }
+  }
+  return events;
+}
 
 void main() {
   List<CharacterCompanion> population(PlazaWorld world) =>
@@ -43,6 +99,7 @@ void main() {
         expect(cast.where((c) => c.region == 'plaza'), hasLength(12));
         expect(cast.any((c) => c.partnerLoop != null), isTrue);
         expect(cast.any((c) => c.partnerLoop == null), isTrue);
+        expect(cast.map((c) => c.build).toSet(), CharacterBuild.values.toSet());
         for (final segment in district.plan.segments.where(
           (s) => s.length >= 30,
         )) {
@@ -82,6 +139,7 @@ void main() {
         for (var i = 0; i < cast.length; i++) {
           expect(reordered[i].positionAt(43).x, cast[i].positionAt(43).x);
           expect(reordered[i].positionAt(43).z, cast[i].positionAt(43).z);
+          expect(reordered[i].build, cast[i].build);
         }
         for (final actor in cast) {
           for (var sample = 0; sample < 150; sample++) {
@@ -274,25 +332,11 @@ void main() {
   test(
     'conversation is occasional, inward, smoothly held and answered later',
     () {
-      const loop = CharacterLoop(
-        x: 0,
-        z: 0,
-        heading: 0,
-        radius: 5,
-        halfStraight: 100,
-      );
-      CharacterCompanion actor(double side, double delay) => CharacterCompanion(
-        id: '$side',
-        region: 'test',
-        gait: CharacterGait(loop: loop.translated(side), scale: 1, phase: 0),
-        partnerLoop: loop.translated(-side),
-        responseDelay: delay,
-      );
-      final left = actor(-1.3, 0);
-      final right = actor(1.3, 0.55);
-      expect(left.attentionAt(0.4).yaw, closeTo(0.48, 1e-9));
+      final left = _conversationActor();
+      final right = _conversationActor(id: 'right', side: 1.3, delay: 0.55);
+      expect(left.attentionAt(0.5).yaw, closeTo(0.48, 1e-9));
       expect(right.attentionAt(0.4).yaw, 0);
-      expect(right.attentionAt(0.95).yaw, closeTo(-0.48, 1e-9));
+      expect(right.attentionAt(1.05).yaw, closeTo(-0.48, 1e-9));
       expect(left.attentionAt(5).yaw, 0);
       var glancing = 0;
       for (var frame = 0; frame < 900; frame++) {
@@ -311,7 +355,135 @@ void main() {
         region: 'test',
         gait: left.gait,
       );
-      expect(solo.attentionAt(0.4), (yaw: 0.0, nod: 0.0));
+      expect(solo.attentionAt(0.4), (yaw: 0.0, nod: 0.0, eyeYaw: 0.0));
     },
+  );
+
+  test('eyes acquire attention before the head and lead its return', () {
+    final actor = _conversationActor();
+    final lead = actor.attentionAt(0.06);
+    expect(lead.eyeYaw, greaterThan(0.1));
+    expect(lead.yaw, 0);
+    final held = actor.attentionAt(0.6);
+    expect(held.yaw, closeTo(0.48, 1e-9));
+    expect(held.yaw + held.eyeYaw, closeTo(0.58, 1e-9));
+    expect(actor.attentionAt(1).eyeYaw, closeTo(held.eyeYaw, 1e-9));
+    final returning = actor.attentionAt(1.37);
+    expect(returning.yaw, closeTo(held.yaw, 1e-9));
+    expect(returning.eyeYaw, lessThan(-0.05));
+    expect(actor.attentionAt(2), (yaw: 0.0, nod: 0.0, eyeYaw: 0.0));
+  });
+
+  test('head and eyes face partners in either street direction', () {
+    for (final heading in [0.0, math.pi]) {
+      for (final phase in [0.0, 0.5]) {
+        for (final side in [-1.3, 1.3]) {
+          final actor = _conversationActor(
+            heading: heading,
+            phase: phase,
+            side: side,
+          );
+          final sign = -side.sign * (phase == 0 ? 1 : -1);
+          final pose = actor.attentionAt(0.6);
+          expect(pose.yaw * sign, closeTo(0.48, 1e-9));
+          expect((pose.yaw + pose.eyeYaw) * sign, closeTo(0.58, 1e-9));
+        }
+      }
+    }
+    const loop = CharacterLoop(
+      x: 0,
+      z: 0,
+      heading: 0,
+      radius: 5,
+      halfStraight: 3,
+    );
+    final capDistance = 2 * loop.halfStraight + math.pi / 2 * loop.radius;
+    final turning = CharacterCompanion(
+      id: 'turning',
+      region: 'test',
+      gait: CharacterGait(
+        loop: loop,
+        scale: 1,
+        phase: (capDistance - 0.6 * loop.pace) / loop.length,
+      ),
+      partnerLoop: loop.translated(2.6),
+    );
+    expect(turning.attentionAt(0.6), (yaw: 0.0, nod: 0.0, eyeYaw: 0.0));
+  });
+
+  test(
+    'blinks vary independently and close fully before a slower reopening',
+    () {
+      final left = _conversationActor();
+      final right = _conversationActor(id: 'right', side: 1.3, delay: 0.55);
+      final leftEvents = _blinkEvents(left);
+      final rightEvents = _blinkEvents(right);
+      expect(leftEvents.length, inInclusiveRange(5, 7));
+      expect(rightEvents.length, inInclusiveRange(5, 7));
+      expect(
+        leftEvents.map((e) => e.start),
+        isNot(rightEvents.map((e) => e.start)),
+      );
+      for (final events in [leftEvents, rightEvents]) {
+        final gaps = <int>{};
+        for (var i = 1; i < events.length; i++) {
+          final gap = events[i].start - events[i - 1].start;
+          expect(gap, inInclusiveRange(3.1, 8.1));
+          gaps.add((gap * 100).round());
+        }
+        expect(gaps.length, greaterThan(1));
+        for (final event in events) {
+          expect(event.end - event.start, inInclusiveRange(0.195, 0.245));
+          expect(
+            event.lastClosed - event.firstClosed,
+            inInclusiveRange(0.033, 0.045),
+          );
+          final closing = event.firstClosed - event.start;
+          final opening = event.end - event.lastClosed;
+          expect(closing, greaterThan(0.05));
+          expect(opening, greaterThan(1.8 * closing));
+        }
+      }
+    },
+  );
+
+  test('blink transitions ease into their open and closed holds', () {
+    final actor = _conversationActor();
+    final events = _blinkEvents(actor);
+    expect(events.length, greaterThanOrEqualTo(5));
+    expect(actor.blinkAt(0), 0);
+    for (final event in events) {
+      expect(actor.blinkAt(event.start), lessThan(0.0001));
+      expect(actor.blinkAt(event.firstClosed - 0.001), greaterThan(0.9999));
+      expect(actor.blinkAt(event.lastClosed + 0.001), greaterThan(0.9999));
+      expect(actor.blinkAt(event.end - 0.001), lessThan(0.0001));
+    }
+    var previous = 0.0;
+    for (var millis = 0; millis <= 35000; millis++) {
+      final closure = actor.blinkAt(millis / 1000);
+      expect(closure, inInclusiveRange(0, 1));
+      expect((closure - previous).abs(), lessThan(0.04));
+      previous = closure;
+    }
+  });
+
+  glados.Glados(glados.any.int, glados.ExploreConfig(numRuns: 80)).test(
+    'expression sampling is independent of frame order and stays bounded',
+    (value) {
+      final actor = _conversationActor();
+      final t = (value % 1000000) / 97;
+      final attention = actor.attentionAt(t);
+      final blink = actor.blinkAt(t);
+      actor
+        ..attentionAt(t + 100)
+        ..blinkAt(t - 100);
+      expect(actor.attentionAt(t), attention);
+      expect(actor.blinkAt(t), blink);
+      expect(attention.yaw.abs(), lessThanOrEqualTo(0.48));
+      expect(attention.eyeYaw.abs(), lessThanOrEqualTo(0.18));
+      expect(attention.nod, inInclusiveRange(0, 0.045));
+      expect(blink, inInclusiveRange(0, 1));
+    },
+    tags: ['glados'],
   );
 }
