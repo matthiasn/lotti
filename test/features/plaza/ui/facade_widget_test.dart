@@ -87,6 +87,28 @@ void main() {
   });
   tearDownAll(() => coverImage.dispose());
 
+  testWidgets('capped checklist previews never inflate the completed count', (
+    tester,
+  ) async {
+    final ticks = ChecklistTicks();
+    addTearDown(ticks.dispose);
+    await tester.pumpWidget(
+      _host(
+        _task(
+          checklistItems: 40,
+          progress: 0.25,
+          openItems: [for (var i = 0; i < 8; i++) 'Open item $i'],
+        ),
+        ticks: ticks,
+      ),
+    );
+    expect(find.text('10/40'), findsOneWidget);
+    expect(find.text('32/40'), findsNothing);
+    ticks.toggle('facade-test', 0);
+    await tester.pump();
+    expect(find.text('11/40'), findsOneWidget);
+  });
+
   testWidgets('a short street facade keeps its photo across the panel', (
     tester,
   ) async {
@@ -111,7 +133,7 @@ void main() {
     final title = tester.getRect(find.text('Negotiate sardine futures'));
     expect(facade.contains(title.topLeft), isTrue);
     expect(facade.contains(title.bottomRight), isTrue);
-    expect(find.text('fly there ›'), findsNothing);
+    expect(find.text('Fly there ›'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -283,7 +305,7 @@ void main() {
     );
     expect(find.text('Negotiate sardine futures'), findsOneWidget);
     expect(find.textContaining('IN PROGRESS'), findsOneWidget);
-    expect(find.textContaining('due Jul 17'), findsNothing);
+    expect(find.text('0/2 · due Jul 17'), findsOneWidget);
     expect(find.text('Check bay two'), findsNothing);
     expect(find.text('DETAILS ›'), findsNothing);
     // Cover art stays: it is what makes a street read from a distance.
@@ -292,7 +314,7 @@ void main() {
     final poster = tester.getRect(find.byType(FacadeWidget));
     expect(art.width, greaterThan(poster.width * 0.9));
     expect(art.height, greaterThan(poster.height * 0.9));
-    expect(find.text('fly there ›'), findsNothing);
+    expect(find.text('Fly there ›'), findsNothing);
   });
 
   testWidgets('overdue overrides the chip', (tester) async {

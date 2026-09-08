@@ -31,6 +31,57 @@ void main() {
     );
   });
 
+  testWidgets(
+    'reattaching beneath an unlaid-out route translation preserves scroll stability',
+    (tester) async {
+      final translated = ValueNotifier(false);
+      addTearDown(translated.dispose);
+      final key = GlobalKey<_StableSizeHarnessState>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          ValueListenableBuilder<bool>(
+            valueListenable: translated,
+            child: _StableSizeHarness(key: key),
+            builder: (context, value, child) => value
+                ? FractionalTranslation(
+                    translation: const Offset(0.1, 0),
+                    child: child,
+                  )
+                : child!,
+          ),
+        ),
+      );
+      await tester.pump();
+      final state = key.currentState!..controller.jumpTo(500);
+      await tester.pump();
+      final markerTop = tester.getTopLeft(find.byKey(_markerKey)).dy;
+
+      // Cupertino route transitions reattach a retained page below a fresh
+      // FractionalTranslation before that ancestor receives its first layout.
+      // AnimatedSize.attach invalidates layout while the child still has its
+      // former size, so reading global coordinates here used to assert.
+      translated.value = true;
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(key.currentState, same(state));
+      expect(state.controller.offset, 500);
+      expect(
+        tester.getTopLeft(find.byKey(_markerKey)).dy,
+        closeTo(markerTop, 1),
+      );
+
+      state.resizeDescendant(250);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(state.controller.offset, closeTo(700, 1));
+      expect(
+        tester.getTopLeft(find.byKey(_markerKey)).dy,
+        closeTo(markerTop, 1),
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
   testWidgets('is a direct pass-through outside the task scroll scope', (
     tester,
   ) async {

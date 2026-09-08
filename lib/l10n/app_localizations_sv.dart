@@ -10125,6 +10125,148 @@ class AppLocalizationsSv extends AppLocalizations {
       'Mycket lite grann eller inte alls';
 
   @override
+  String get plazaBlockedReason => 'blockerad — behöver ett beslut';
+
+  @override
+  String get plazaCategoryEmpty =>
+      'Den här kategorin har inga synliga projekt.';
+
+  @override
+  String get plazaClosedForNight => 'STÄNGT FÖR NATTEN';
+
+  @override
+  String get plazaCloseHint => 'Esc för att stänga';
+
+  @override
+  String get plazaControls =>
+      'WASD gå · dra för att se dig omkring · Tab nästa fyr · H hem · M översikt · / sök · ⌘[ tillbaka';
+
+  @override
+  String plazaCornerAfter(String week) {
+    return 'Sväng efter $week';
+  }
+
+  @override
+  String get plazaDebug => 'Felsökning';
+
+  @override
+  String get plazaDecisionStrip => 'BEHÖVER ETT BESLUT';
+
+  @override
+  String plazaDoneCount(int done, int total) {
+    return '$done av $total klara';
+  }
+
+  @override
+  String plazaDueOn(String date) {
+    return 'förfaller $date';
+  }
+
+  @override
+  String plazaDueSoonReason(String date) {
+    return 'förfaller $date — slutför den';
+  }
+
+  @override
+  String get plazaEmpty =>
+      'Lägg till en uppgift för att börja bygga projektets torg.';
+
+  @override
+  String get plazaEnterProject => 'Gå in i projektet';
+
+  @override
+  String get plazaExploreCategory => 'Utforska kategori';
+
+  @override
+  String get plazaExploreProject => 'Utforska projekt';
+
+  @override
+  String get plazaFlyThere => 'Flyg dit ›';
+
+  @override
+  String plazaInProgressCount(int count) {
+    return 'Pågår: $count';
+  }
+
+  @override
+  String plazaLinks(int count) {
+    return 'länkar $count';
+  }
+
+  @override
+  String get plazaMorningWalk => 'Morgonpromenad';
+
+  @override
+  String plazaNeedsAttention(int count) {
+    return 'Behöver uppmärksamhet: $count';
+  }
+
+  @override
+  String get plazaOpeningSoon => 'ÖPPNAR SNART';
+
+  @override
+  String get plazaOpenLate => 'ÖPPET SENT';
+
+  @override
+  String plazaOverdueSince(String date) {
+    return 'försenad sedan $date — slutför eller flytta';
+  }
+
+  @override
+  String get plazaOverview => 'Överblick';
+
+  @override
+  String get plazaPaused => 'Pausad';
+
+  @override
+  String plazaProjectOverdue(int count) {
+    return 'Försenade uppgifter: $count';
+  }
+
+  @override
+  String get plazaSearchHint => 'Sök uppgifter, Enter för att flyga';
+
+  @override
+  String get plazaShowPenguins => 'Pingviner';
+
+  @override
+  String plazaStaleReason(int days) {
+    return 'ingen aktivitet på $days dagar — ta upp den igen';
+  }
+
+  @override
+  String plazaStats(int tasks, int weeks, int attention) {
+    return '$tasks uppgifter · $weeks veckor · $attention kräver uppmärksamhet';
+  }
+
+  @override
+  String plazaTaskCount(int count) {
+    return 'Uppgifter: $count';
+  }
+
+  @override
+  String get plazaTitle => 'Torg';
+
+  @override
+  String get plazaToLet => 'UTHYRES';
+
+  @override
+  String get plazaTourControls => 'Mellanslag: paus · rör dig för att avsluta';
+
+  @override
+  String get plazaUnavailable => 'Den här enheten kan inte visa 3D-världen.';
+
+  @override
+  String plazaWeek(int week, String date) {
+    return 'V$week · $date';
+  }
+
+  @override
+  String plazaWeekShort(int week) {
+    return 'V$week';
+  }
+
+  @override
   String get privateLabel => 'Privat';
 
   @override

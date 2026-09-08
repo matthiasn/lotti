@@ -56,6 +56,8 @@ dependencies:
   # entered manually.
   flutter_contacts: ^2.3.1
   flutter_form_builder: ^11.0.0
+  flutter_gpu:
+    sdk: flutter
   flutter_image_compress: ^2.0.3
   flutter_lame: 1.0.3
   flutter_linkify: ^6.0.0

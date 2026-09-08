@@ -115,7 +115,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
           bindings.fillerSigns.add((anchor, 1.6, bh * 0.6, weekTasks[pick]));
         }
       }
-      scene.add(node);
+      _cityContext.add(node);
     }
   }
 
@@ -269,7 +269,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
         tint: PlazaSceneController._tower,
         perFaceOffset: false,
       );
-      scene.add(node);
+      _cityContext.add(node);
     }
   }
 }

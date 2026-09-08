@@ -3,6 +3,9 @@
 /// again: a network image decodes after the first capture.
 library;
 
+import 'dart:io';
+
+import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:material_ui/material_ui.dart';
 
 class CoverImage extends StatefulWidget {
@@ -19,20 +22,34 @@ class CoverImage extends StatefulWidget {
   final double opacity;
 
   /// Called once, after the frame that paints the decoded image (or the
-  /// error fallback), and again only for a new [url].
+  /// error fallback), and again when a missing local file arrives or [url]
+  /// changes.
   final VoidCallback? onLoaded;
 
   @override
   State<CoverImage> createState() => _CoverImageState();
 }
 
-class _CoverImageState extends State<CoverImage> {
+class _CoverImageState extends State<CoverImage>
+    with FileWatcherMixin<CoverImage> {
   bool _notified = false;
+  bool _waitingForFile = false;
+  int _revision = 0;
 
   @override
   void didUpdateWidget(CoverImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) _notified = false;
+    if (oldWidget.url != widget.url) {
+      _notified = false;
+      _waitingForFile = false;
+      disposeFileWatcher();
+    }
+  }
+
+  @override
+  void dispose() {
+    disposeFileWatcher();
+    super.dispose();
   }
 
   void _loaded() {
@@ -46,10 +63,19 @@ class _CoverImageState extends State<CoverImage> {
 
   @override
   Widget build(BuildContext context) {
+    final uri = Uri.tryParse(widget.url);
+    final file = uri?.scheme == 'file' ? File.fromUri(uri!) : null;
+    if (_waitingForFile && fileExists) {
+      _waitingForFile = false;
+      _notified = false;
+      _revision++;
+      disposeFileWatcher();
+    }
     return Opacity(
       opacity: widget.opacity,
-      child: Image.network(
-        widget.url,
+      child: Image(
+        key: ValueKey((widget.url, _revision)),
+        image: file != null ? FileImage(file) : NetworkImage(widget.url),
         width: double.infinity,
         fit: BoxFit.cover,
         frameBuilder: (_, child, frame, _) {
@@ -57,6 +83,13 @@ class _CoverImageState extends State<CoverImage> {
           return child;
         },
         errorBuilder: (_, _, _) {
+          if (file != null && !file.existsSync()) {
+            // A live failed completer can otherwise win the next lookup even
+            // after the file arrives and a fresh Image widget is mounted.
+            PaintingBinding.instance.imageCache.evict(FileImage(file));
+            _waitingForFile = true;
+            setupFileWatcher(file.path);
+          }
           _loaded();
           return const SizedBox();
         },

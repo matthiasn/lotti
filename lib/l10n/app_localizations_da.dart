@@ -10116,6 +10116,149 @@ class AppLocalizationsDa extends AppLocalizations {
   String get panasScaleVerySlightlyOrNotAtAll => 'Meget lidt eller slet ikke';
 
   @override
+  String get plazaBlockedReason => 'blokeret — kræver en beslutning';
+
+  @override
+  String get plazaCategoryEmpty =>
+      'Denne kategori har ingen synlige projekter.';
+
+  @override
+  String get plazaClosedForNight => 'LUKKET FOR NATTEN';
+
+  @override
+  String get plazaCloseHint => 'Esc for at lukke';
+
+  @override
+  String get plazaControls =>
+      'WASD gå · træk for at se dig omkring · Tab næste fyr · H hjem · M overblik · / søg · ⌘[ tilbage';
+
+  @override
+  String plazaCornerAfter(String week) {
+    return 'Drej efter $week';
+  }
+
+  @override
+  String get plazaDebug => 'Fejlfinding';
+
+  @override
+  String get plazaDecisionStrip => 'KRÆVER EN BESLUTNING';
+
+  @override
+  String plazaDoneCount(int done, int total) {
+    return '$done af $total færdige';
+  }
+
+  @override
+  String plazaDueOn(String date) {
+    return 'frist $date';
+  }
+
+  @override
+  String plazaDueSoonReason(String date) {
+    return 'frist $date — afslut den';
+  }
+
+  @override
+  String get plazaEmpty =>
+      'Tilføj en opgave for at begynde at bygge projektets plads.';
+
+  @override
+  String get plazaEnterProject => 'Gå ind i projektet';
+
+  @override
+  String get plazaExploreCategory => 'Udforsk kategori';
+
+  @override
+  String get plazaExploreProject => 'Udforsk projekt';
+
+  @override
+  String get plazaFlyThere => 'Flyv dertil ›';
+
+  @override
+  String plazaInProgressCount(int count) {
+    return 'I gang: $count';
+  }
+
+  @override
+  String plazaLinks(int count) {
+    return 'links $count';
+  }
+
+  @override
+  String get plazaMorningWalk => 'Morgentur';
+
+  @override
+  String plazaNeedsAttention(int count) {
+    return 'Kræver opmærksomhed: $count';
+  }
+
+  @override
+  String get plazaOpeningSoon => 'ÅBNER SNART';
+
+  @override
+  String get plazaOpenLate => 'SENT ÅBENT';
+
+  @override
+  String plazaOverdueSince(String date) {
+    return 'forsinket siden $date — afslut eller flyt den';
+  }
+
+  @override
+  String get plazaOverview => 'Overblik';
+
+  @override
+  String get plazaPaused => 'På pause';
+
+  @override
+  String plazaProjectOverdue(int count) {
+    return 'Forsinkede opgaver: $count';
+  }
+
+  @override
+  String get plazaSearchHint => 'Søg efter opgaver, Enter for at flyve';
+
+  @override
+  String get plazaShowPenguins => 'Pingviner';
+
+  @override
+  String plazaStaleReason(int days) {
+    return 'stille i $days dage — tag fat igen';
+  }
+
+  @override
+  String plazaStats(int tasks, int weeks, int attention) {
+    return '$tasks opgaver · $weeks uger · $attention kræver opmærksomhed';
+  }
+
+  @override
+  String plazaTaskCount(int count) {
+    return 'Opgaver: $count';
+  }
+
+  @override
+  String get plazaTitle => 'Plads';
+
+  @override
+  String get plazaToLet => 'TIL LEJE';
+
+  @override
+  String get plazaTourControls =>
+      'Mellemrum: pause · bevæg dig for at afslutte';
+
+  @override
+  String get plazaUnavailable => 'Denne enhed kan ikke vise 3D-verdenen.';
+
+  @override
+  String plazaWeek(int week, String date) {
+    return 'U$week · $date';
+  }
+
+  @override
+  String plazaWeekShort(int week) {
+    return 'U$week';
+  }
+
+  @override
   String get privateLabel => 'Privat';
 
   @override

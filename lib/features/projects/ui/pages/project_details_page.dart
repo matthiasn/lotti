@@ -14,6 +14,7 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/service/project_lifecycle_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -27,6 +28,7 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
@@ -148,6 +150,13 @@ class ProjectDetailsPage extends ConsumerWidget {
                 record.project,
               ),
               onAddTask: () => _addTask(context, ref),
+              onOpenPlaza: isDesktop
+                  ? () => Navigator.of(context, rootNavigator: true).push<void>(
+                      MaterialPageRoute(
+                        builder: (_) => ProjectPlazaPage(projectId: projectId),
+                      ),
+                    )
+                  : null,
               onRefreshReport: identity == null
                   ? null
                   : () => ref

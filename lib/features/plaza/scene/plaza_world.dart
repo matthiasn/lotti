@@ -1,4 +1,5 @@
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/domain/building_architecture.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/domain/street_network.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
+import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 
 /// Everything the scene and the HUD need about one project, derived once
 /// from the task list and the clock: the street plan, the plaza, the
@@ -18,9 +20,23 @@ class PlazaWorld {
     required this.now,
     required this.projectLabel,
     required this.layout,
+    this.epoch,
     this.categoryLabels = const {},
-  }) {
-    plan = layout.plan(tasks);
+    this.avenueLabels = const {},
+    this.avenueByProjectId = const {},
+    this.ambientCreatures = 24,
+    this.architecture = const ArchitectureConfig(),
+    PlazaCopy? copy,
+  }) : copy = copy ?? PlazaCopy.english {
+    plan = layout.plan(tasks, epoch: epoch, bucketOverrides: avenueByProjectId);
+    architectureByTaskId = Map.unmodifiable({
+      for (final task in tasks)
+        task.id: BuildingArchitecture.forPlot(
+          plan.placements[task.id]!,
+          config: architecture,
+          billboardScale: layout.billboardScaleFor(task),
+        ),
+    });
     plaza = frontierPlazaFor(plan);
     final verdicts = attentionForAll(tasks, now);
     attention = {for (final a in verdicts) a.task.id: a};
@@ -32,8 +48,13 @@ class PlazaWorld {
       anomalies,
       projectLabel: projectLabel,
       weekLabel: weekLabel,
+      homeLabel: this.copy.messages.designSystemBreadcrumbHomeLabel,
+      cornerLabel: this.copy.messages.plazaCornerAfter,
     );
-    roofBillboards = roofBillboardsFor(plan, anomalies);
+    roofBillboards = [
+      for (final slot in roofBillboardsFor(plan, anomalies))
+        slot.scaled(layout.billboardScaleFor(anomalies[slot.rank].task)),
+    ];
     banners = bannersFor(plan);
     lampPosts = lampPostsFor(plan, roadWidth: layout.roadWidth);
     gantry = gantryTickerFor(plan, roadWidth: layout.roadWidth);
@@ -81,6 +102,13 @@ class PlazaWorld {
   final DateTime now;
   final String projectLabel;
   final StreetLayout layout;
+  final DateTime? epoch;
+  final PlazaCopy copy;
+  final int ambientCreatures;
+  final ArchitectureConfig architecture;
+  final Map<int, String> avenueLabels;
+  final Map<String, int> avenueByProjectId;
+  bool get isCategory => avenueByProjectId.isNotEmpty;
 
   /// Category names keyed by colour hex, for the side panel.
   final Map<String, String> categoryLabels;
@@ -102,16 +130,17 @@ class PlazaWorld {
     final a = attention[taskId];
     if (a == null) return countsText;
     final parts = <String>[
-      '${a.lantern.glyph} ${a.lantern.word}',
-      if (a.reason.isNotEmpty)
-        a.reason
+      '${a.lantern.glyph} ${copy.state(a).toLowerCase()}',
+      if (copy.reason(a).isNotEmpty)
+        copy.reason(a)
       else if (a.task.due != null)
-        'due ${shortDate(a.task.due!)}',
+        copy.messages.plazaDueOn(copy.date(a.task.due!)),
     ];
     return parts.join(_separator);
   }
 
   late final StreetPlan plan;
+  late final Map<String, BuildingArchitecture> architectureByTaskId;
   late final FrontierPlaza? plaza;
   late final Map<String, TaskAttention> attention;
   late final List<TaskAttention> anomalies;
@@ -193,22 +222,30 @@ class PlazaWorld {
   /// Only populated slots, with their assigned task; unused mounts stay empty.
   late final List<BillboardAssignment> builtBillboards = [
     for (final (i, slot) in billboardSlots.take(billboards.length).indexed)
-      (slot: slot, attention: billboards[i]),
+      (
+        slot: slot.scaled(layout.billboardScaleFor(billboards[i].task)),
+        attention: billboards[i],
+      ),
   ];
 
   TaskAttention attentionOf(PlazaTask task) => attention[task.id]!;
 
   /// `W3 · Jun 22`
-  String weekLabel(int bucketIndex) => weekLabelFor(plan.epoch, bucketIndex);
+  String weekLabel(int bucketIndex) =>
+      avenueLabels[bucketIndex] ?? copy.week(plan.epoch, bucketIndex);
 
   /// `W3` for the week the task was created in.
   String weekOf(PlazaTask task) {
     final placement = plan.placements[task.id];
-    return placement == null ? '' : 'W${placement.bucketIndex + 1}';
+    return placement == null
+        ? ''
+        : avenueLabels[placement.bucketIndex] ??
+              copy.messages.plazaWeekShort(placement.bucketIndex + 1);
   }
 
   String categoryLabelOf(PlazaTask task) =>
-      categoryLabels[task.categoryColor.toRadixString(16)] ?? 'task';
+      categoryLabels[task.categoryColor.toRadixString(16)] ??
+      copy.messages.entryTypeLabelTask.toLowerCase();
 
   int get builtWeeks => plan.segments.where((s) => !s.isGap).length;
 
@@ -217,7 +254,7 @@ class PlazaWorld {
   /// The project and its attention count: how every district band opens.
   List<String> get _opening => [
     projectLabel,
-    '${anomalies.length} need attention',
+    copy.messages.plazaNeedsAttention(anomalies.length),
   ];
 
   /// The progress counts every district band carries.
@@ -226,19 +263,26 @@ class PlazaWorld {
         .where((t) => t.state == PlazaTaskState.inProgress)
         .length;
     final done = tasks.where((t) => t.state == PlazaTaskState.done).length;
-    return ['$inProgress in progress', '$done of $liveTaskCount done'];
+    return [
+      copy.messages.plazaInProgressCount(inProgress),
+      copy.messages.plazaDoneCount(done, liveTaskCount),
+    ];
   }
 
   /// The gantry's line: the project's numbers, no headlines (those are on
   /// the pylons and the mounted screens already).
-  String get countsText =>
-      [..._opening, ..._progress, 'W$builtWeeks'].join(_separator);
+  String get countsText => [
+    ..._opening,
+    ..._progress,
+    if (!isCategory) copy.messages.plazaWeekShort(builtWeeks),
+    if (isCategory) copy.messages.projectCountSummary(liveTaskCount),
+  ].join(_separator);
 
   /// The scrolling headline: project, attention count, the top three
   /// reasons, progress counts.
   String get tickerText => [
     ..._opening,
-    for (final a in anomalies.take(3)) '${a.task.title} — ${a.reason}',
+    for (final a in anomalies.take(3)) '${a.task.title} — ${copy.reason(a)}',
     ..._progress,
   ].join(_separator);
 
@@ -246,7 +290,14 @@ class PlazaWorld {
   List<WalkStop>? get walkStops {
     final p = plaza;
     if (p == null) return null;
-    return morningWalkStops(plan, p, anomalies, projectLabel: projectLabel);
+    return morningWalkStops(
+      plan,
+      p,
+      anomalies,
+      projectLabel: projectLabel,
+      homeLabel: copy.messages.designSystemBreadcrumbHomeLabel,
+      overviewLabel: copy.messages.plazaOverview,
+    );
   }
 }
 

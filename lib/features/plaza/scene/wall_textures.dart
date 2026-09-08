@@ -3,7 +3,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_scene/scene.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 
 /// Window-grid textures for the side and back walls, one per lantern
 /// state, tiled across every wall: the cheapest way to turn a cuboid into
@@ -71,27 +73,35 @@ class WallTextures {
 
   /// Paints and uploads the fifteen window tiles, fifteen shopfront strips,
   /// the light-pool falloff, the asphalt grain and the plaza paving.
-  static Future<WallTextures> load() async {
+  static Future<WallTextures> load({PlazaCopy? copy}) async {
     final map = <(LanternState, int), Texture2D>{};
     final shops = <(LanternState, int), Texture2D>{};
     for (final state in LanternState.values) {
       for (var f = 0; f < tileFamilies; f++) {
-        map[(state, f)] = await Texture2D.fromImage(
+        map[(state, f)] = await _upload(
           paintWindows(state, family: f),
         );
       }
       for (var v = 0; v < paradeVariants; v++) {
-        shops[(state, v)] = await Texture2D.fromImage(
-          paintShopfront(state, variant: v),
+        shops[(state, v)] = await _upload(
+          paintShopfront(state, variant: v, copy: copy),
         );
       }
     }
     final textures = WallTextures._(map)
-      ..pool = await Texture2D.fromImage(_paintPool())
-      ..grain = await Texture2D.fromImage(_paintGrain())
-      ..paving = await Texture2D.fromImage(_paintPaving())
+      ..pool = await _upload(_paintPool())
+      ..grain = await _upload(_paintGrain())
+      ..paving = await _upload(paintPaving())
       .._shopfronts = shops;
     return textures;
+  }
+
+  static Future<Texture2D> _upload(ui.Image image) async {
+    try {
+      return await Texture2D.fromImage(image);
+    } finally {
+      image.dispose();
+    }
   }
 
   /// The window tile for [state] in tile [family].
@@ -145,7 +155,11 @@ class WallTextures {
   /// Paints the shopfront strip for [state] in parade order [variant];
   /// public so the dressing can be checked pixel by pixel without a GPU.
   @visibleForTesting
-  static ui.Image paintShopfront(LanternState state, {int variant = 0}) {
+  static ui.Image paintShopfront(
+    LanternState state, {
+    int variant = 0,
+    PlazaCopy? copy,
+  }) {
     const w = shopfrontWidth * _px;
     const h = shopfrontHeight * _px;
     final recorder = ui.PictureRecorder();
@@ -159,7 +173,15 @@ class WallTextures {
     final dressing = _Dressing.forState(state);
     var left = 0.0;
     for (final shop in _parades[variant % _parades.length]) {
-      _paintShop(canvas, rng, shop, left, _m(shop.width), dressing);
+      _paintShop(
+        canvas,
+        rng,
+        shop,
+        left,
+        _m(shop.width),
+        dressing,
+        copy ?? PlazaCopy.english,
+      );
       left += _m(shop.width);
     }
     return recorder.endRecording().toImageSync(
@@ -221,6 +243,7 @@ class WallTextures {
     double left,
     double width,
     _Dressing dressing,
+    PlazaCopy copy,
   ) {
     const h = shopfrontHeight * _px;
     final lit = dressing.lit;
@@ -255,7 +278,7 @@ class WallTextures {
           // Trading late says so on every sign.
           _paintWord(
             canvas,
-            'OPEN LATE',
+            copy.messages.plazaOpenLate.toUpperCase(),
             sign.deflate(_m(0.05)),
             const ui.Color(0xE607060D),
             sizePx: sign.height * 0.5,
@@ -263,7 +286,7 @@ class WallTextures {
         } else if (shop.trade == _Trade.vacant) {
           _paintWord(
             canvas,
-            'TO LET',
+            copy.messages.plazaToLet.toUpperCase(),
             sign.deflate(_m(0.05)),
             const ui.Color(0xB3EDE6D6),
             sizePx: sign.height * 0.45,
@@ -305,10 +328,10 @@ class WallTextures {
         _paintWord(
           canvas,
           shop.trade == _Trade.vacant
-              ? 'TO LET'
+              ? copy.messages.plazaToLet.toUpperCase()
               : alarm
-              ? 'BLOCKED'
-              : 'CLOSED',
+              ? copy.messages.taskStatusBlocked.toUpperCase()
+              : copy.messages.plazaClosedForNight.toUpperCase(),
           sign.deflate(_m(0.05)),
           alarm ? _alarm : const ui.Color(0xFF6E6A80),
           sizePx: sign.height * 0.5,
@@ -327,7 +350,9 @@ class WallTextures {
       canvas.drawRect(board, ui.Paint()..color = const ui.Color(0xFF2A2734));
       _paintWord(
         canvas,
-        shop.trade == _Trade.vacant ? 'TO LET' : 'OPENING SOON',
+        shop.trade == _Trade.vacant
+            ? copy.messages.plazaToLet.toUpperCase()
+            : copy.messages.plazaOpeningSoon.toUpperCase(),
         board.deflate(_m(0.05)),
         const ui.Color(0xFF9A94A8),
         sizePx: board.height * 0.5,
@@ -365,7 +390,14 @@ class WallTextures {
       case _Dressing.late when vacant:
       case _Dressing.fittingOut:
         _paintPapered(canvas, rng, glass);
-        _paintDoor(canvas, door, accent, lit: false, dressing: dressing);
+        _paintDoor(
+          canvas,
+          door,
+          accent,
+          lit: false,
+          dressing: dressing,
+          copy: copy,
+        );
         canvas.drawRect(riser, ui.Paint()..color = _riser);
       case _Dressing.trading:
       case _Dressing.late:
@@ -376,7 +408,14 @@ class WallTextures {
           shop,
           late: dressing == _Dressing.late,
         );
-        _paintDoor(canvas, door, accent, lit: true, dressing: dressing);
+        _paintDoor(
+          canvas,
+          door,
+          accent,
+          lit: true,
+          dressing: dressing,
+          copy: copy,
+        );
         canvas.drawRect(riser, ui.Paint()..color = _riser);
         if (shop.awning) _paintAwning(canvas, glass, accent);
       case _Dressing.shuttered:
@@ -386,6 +425,7 @@ class WallTextures {
           glass,
           door,
           alarm: dressing == _Dressing.shuttered,
+          copy: copy,
         );
     }
     // Pilaster: the dark column between one shop and the next.
@@ -498,6 +538,7 @@ class WallTextures {
     ui.Color accent, {
     required bool lit,
     required _Dressing dressing,
+    required PlazaCopy copy,
   }) {
     canvas.drawRect(door.inflate(_m(0.06)), ui.Paint()..color = _frame);
     if (lit) {
@@ -532,7 +573,9 @@ class WallTextures {
         ..drawRect(notice, ui.Paint()..color = const ui.Color(0xFFEDE6D6));
       _paintWord(
         canvas,
-        dressing == _Dressing.fittingOut ? 'OPENING SOON' : 'TO LET',
+        dressing == _Dressing.fittingOut
+            ? copy.messages.plazaOpeningSoon.toUpperCase()
+            : copy.messages.plazaToLet.toUpperCase(),
         notice.deflate(_m(0.03)),
         const ui.Color(0xFF2A2734),
         sizePx: notice.height * 0.4,
@@ -593,6 +636,7 @@ class WallTextures {
     ui.Rect glass,
     ui.Rect door, {
     required bool alarm,
+    required PlazaCopy copy,
   }) {
     const h = shopfrontHeight * _px;
     final span = ui.Rect.fromLTRB(
@@ -638,7 +682,7 @@ class WallTextures {
       canvas.drawRect(label, ui.Paint()..color = const ui.Color(0xFF14121F));
       _paintWord(
         canvas,
-        'NEEDS A DECISION',
+        copy.messages.plazaDecisionStrip.toUpperCase(),
         label.deflate(_m(0.03)),
         _alarm,
         sizePx: label.height * 0.6,
@@ -674,7 +718,7 @@ class WallTextures {
       canvas.drawRect(notice, ui.Paint()..color = const ui.Color(0xFFD9D2C2));
       _paintWord(
         canvas,
-        'CLOSED FOR THE NIGHT',
+        copy.messages.plazaClosedForNight.toUpperCase(),
         notice.deflate(_m(0.03)),
         const ui.Color(0xFF2A2734),
         sizePx: notice.height * 0.45,
@@ -1067,44 +1111,33 @@ class WallTextures {
     }
   }
 
-  static ui.Image _paintPaving() {
+  /// Restrained, staggered stone joints; transparent slab centres preserve
+  /// the ground's shared material instead of making a checkerboard of lights.
+  @visibleForTesting
+  static ui.Image paintPaving() {
     const size = 256;
-    const half = size / 2;
+    const course = size / 4;
     final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(recorder)
-      ..drawRect(
-        ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
-        ui.Paint()..color = const ui.Color(0x00000000),
+    final canvas = ui.Canvas(recorder);
+    final colors = dsTokensDark.colors;
+    final joint = ui.Paint()
+      ..color = colors.background.level01.withValues(
+        alpha: SurfaceAlphas.muted,
       );
-    final rng = math.Random(9001);
-    // Four slabs, each a faintly different shade, so the grid is not flat.
-    for (final (x, y) in [(0.0, 0.0), (half, 0.0), (0.0, half), (half, half)]) {
-      canvas.drawRect(
-        ui.Rect.fromLTWH(x, y, half, half),
-        ui.Paint()
-          ..color = ui.Color.fromARGB(10 + rng.nextInt(16), 255, 255, 255),
+    final edge = ui.Paint()
+      ..color = colors.text.highEmphasis.withValues(
+        alpha: SurfaceAlphas.tint,
       );
-    }
-    // Joints: a dark line with a lit edge, the way wet paving catches light.
-    final joint = ui.Paint()..color = const ui.Color(0x66000000);
-    final edge = ui.Paint()..color = const ui.Color(0x14FFFFFF);
-    for (final at in [0.0, half]) {
+    // Texture-space dimensions describe mortar, not widget layout spacing.
+    for (var row = 0; row < 4; row++) {
+      final y = row * course;
       canvas
-        ..drawRect(ui.Rect.fromLTWH(at, 0, 3, size.toDouble()), joint)
-        ..drawRect(ui.Rect.fromLTWH(at + 3, 0, 1.5, size.toDouble()), edge)
-        ..drawRect(ui.Rect.fromLTWH(0, at, size.toDouble(), 3), joint)
-        ..drawRect(ui.Rect.fromLTWH(0, at + 3, size.toDouble(), 1.5), edge);
-    }
-    for (var i = 0; i < 300; i++) {
-      canvas.drawRect(
-        ui.Rect.fromLTWH(
-          rng.nextDouble() * size,
-          rng.nextDouble() * size,
-          1.5,
-          1,
-        ),
-        ui.Paint()..color = ui.Color.fromARGB(20 + rng.nextInt(40), 0, 0, 0),
-      );
+        ..drawRect(ui.Rect.fromLTWH(0, y, size.toDouble(), 2), joint)
+        ..drawRect(ui.Rect.fromLTWH(0, y + 2, size.toDouble(), 1), edge);
+      final x = row.isEven ? 0.0 : size / 2;
+      canvas
+        ..drawRect(ui.Rect.fromLTWH(x, y, 2, course), joint)
+        ..drawRect(ui.Rect.fromLTWH(x + 2, y + 2, 1, course - 2), edge);
     }
     return recorder.endRecording().toImageSync(size, size);
   }

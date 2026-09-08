@@ -1,9 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
+import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A photo-led plaza poster, used by billboards and static facades:
@@ -53,10 +56,18 @@ class BillboardWidget extends StatelessWidget {
     final w = widthMeters;
     final task = attention.task;
     final chip = PlazaStyle.chip(attention);
-    final frame = PlazaStyle.lantern(attention.lantern);
+    final copy = PlazaCopy(context.messages);
+    final tokens = context.designTokens;
+    final facts = [
+      if (task.checklistItems > 0)
+        '${task.completedItems}/${task.checklistItems}',
+      ...copy.metaBits(task),
+    ].join(' · ');
+    final frame = PlazaStyle.taskColor(attention);
     final aspect = heightMeters / w;
     final showCover = task.coverImageUrl != null;
-    final showReason = attention.reason.isNotEmpty && aspect >= reasonAspect;
+    final showReason =
+        copy.reason(attention).isNotEmpty && aspect >= reasonAspect;
     // Squat panels scale by height instead of width so nothing overflows.
     final pad = m(math.min(0.06 * w, 0.1 * heightMeters));
     // The title is the largest text on every panel: sized from the
@@ -75,7 +86,8 @@ class BillboardWidget extends StatelessWidget {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: PlazaChip(
-                label: '${PlazaStyle.glyph(attention)}  ${chip.label}',
+                label:
+                    '${PlazaStyle.glyph(attention)}  ${copy.state(attention).toUpperCase()}',
                 fill: chip.fill,
                 ink: chip.ink,
                 fontPx: chipPx,
@@ -87,7 +99,7 @@ class BillboardWidget extends StatelessWidget {
         if (!reasonFirst && showNavigationHint)
           // The call to action is a chip like the state, not loose type.
           PlazaChip(
-            label: 'fly there ›',
+            label: context.messages.plazaFlyThere,
             fill: PlazaStyle.teal,
             ink: const Color(0xFF0D0D0D),
             fontPx: chipPx,
@@ -97,7 +109,7 @@ class BillboardWidget extends StatelessWidget {
     // A roof panel over its own facade leads with the reason on a solid
     // band across the top in the state colour, the way the sign-tier
     // facade wears its marquee band; the title sits small on the scrim.
-    final lead = reasonFirst && attention.reason.isNotEmpty;
+    final lead = reasonFirst && copy.reason(attention).isNotEmpty;
     final leadPx = m(math.min(0.05 * w, 0.16 * heightMeters));
     final title = Text(
       task.title,
@@ -128,7 +140,7 @@ class BillboardWidget extends StatelessWidget {
         ? null
         : showReason
         ? Text(
-            attention.reason,
+            copy.reason(attention),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             // One voice for the reason everywhere: the state colour,
@@ -194,7 +206,7 @@ class BillboardWidget extends StatelessWidget {
                     vertical: leadPx * 0.35,
                   ),
                   child: Text(
-                    attention.reason,
+                    copy.reason(attention),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
@@ -233,6 +245,21 @@ class BillboardWidget extends StatelessWidget {
                     reasonText,
                   ],
                   SizedBox(height: m(0.35)),
+                  if (!reasonFirst && facts.isNotEmpty)
+                    SizedBox(
+                      height: chipPx,
+                      width: double.infinity,
+                      child: FittedBox(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          facts,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                      ),
+                    ),
                   chipRow,
                 ],
               ),

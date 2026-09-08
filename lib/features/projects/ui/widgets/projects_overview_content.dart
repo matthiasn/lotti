@@ -21,6 +21,7 @@ class ProjectsOverviewContent extends StatefulWidget {
     this.query = '',
     this.searchEnabled = true,
     this.selectedProjectId,
+    this.onExploreCategory,
     this.onSearchChanged,
     this.onSearchCleared,
     this.onSearchPressed,
@@ -41,6 +42,7 @@ class ProjectsOverviewContent extends StatefulWidget {
   final String title;
   final List<ProjectCategoryGroup> groups;
   final ValueChanged<ProjectListItemData> onProjectTap;
+  final ValueChanged<String>? onExploreCategory;
   final String query;
   final bool searchEnabled;
   final String? selectedProjectId;
@@ -138,6 +140,7 @@ class _ProjectsOverviewContentState extends State<ProjectsOverviewContent> {
                     groups: widget.groups,
                     selectedProjectId: widget.selectedProjectId,
                     onProjectTap: widget.onProjectTap,
+                    onExploreCategory: widget.onExploreCategory,
                     bottomPadding: widget.listBottomPadding,
                   ),
               ],

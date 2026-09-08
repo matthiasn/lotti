@@ -10,7 +10,6 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -32,9 +31,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/app_prefs_service.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
@@ -167,13 +164,10 @@ void main() {
 
   // Font downloads are centrally configured in test/flutter_test_config.dart
 
-  late MockLoggingService mockLoggingService;
   late MockAudioRecorderRepository mockAudioRecorderRepository;
   late MockCategoryRepository mockCategoryRepository;
   late MockEditorStateService mockEditorStateService;
-  late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
-  late MockUpdateNotifications mockUpdateNotifications;
   late MockTimeService mockTimeService;
   late MockNavService mockNavService;
   late MockPlayer mockPlayer;
@@ -186,16 +180,16 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FakePlayable());
     registerFallbackValue(Duration.zero);
+    // Exercise the inherited service state used by shared-isolate CI, too.
+    ensureThemingServicesRegistered();
   });
 
-  setUp(() {
-    mockLoggingService = MockLoggingService();
+  setUp(() async {
+    await setUpTestGetIt();
     mockAudioRecorderRepository = MockAudioRecorderRepository();
     mockCategoryRepository = MockCategoryRepository();
     mockEditorStateService = MockEditorStateService();
-    mockJournalDb = MockJournalDb();
     mockPersistenceLogic = MockPersistenceLogic();
-    mockUpdateNotifications = MockUpdateNotifications();
     mockTimeService = MockTimeService();
     mockNavService = MockNavService();
     mockPlayer = MockPlayer();
@@ -255,21 +249,17 @@ void main() {
 
     // Register mocks with GetIt
     getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<EditorStateService>(mockEditorStateService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<NavService>(mockNavService);
-    ensureDomainLoggerRegistered();
   });
 
   tearDown(() async {
     await positionController.close();
     await bufferController.close();
     await completedController.close();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   Widget createTestWidget({

@@ -10311,6 +10311,148 @@ class AppLocalizationsRo extends AppLocalizations {
   String get panasScaleVerySlightlyOrNotAtAll => 'Deloc sau foarte puțin';
 
   @override
+  String get plazaBlockedReason => 'blocată — este necesară o decizie';
+
+  @override
+  String get plazaCategoryEmpty =>
+      'Această categorie nu are proiecte vizibile.';
+
+  @override
+  String get plazaClosedForNight => 'ÎNCHIS PESTE NOAPTE';
+
+  @override
+  String get plazaCloseHint => 'Esc pentru a închide';
+
+  @override
+  String get plazaControls =>
+      'WASD mers · trageți pentru a privi · Tab următorul reper · H acasă · M vedere de ansamblu · / căutare · ⌘[ înapoi';
+
+  @override
+  String plazaCornerAfter(String week) {
+    return 'Viraj după $week';
+  }
+
+  @override
+  String get plazaDebug => 'Depanare';
+
+  @override
+  String get plazaDecisionStrip => 'ESTE NECESARĂ O DECIZIE';
+
+  @override
+  String plazaDoneCount(int done, int total) {
+    return 'Finalizate: $done din $total';
+  }
+
+  @override
+  String plazaDueOn(String date) {
+    return 'termen $date';
+  }
+
+  @override
+  String plazaDueSoonReason(String date) {
+    return 'termen $date — finalizați-o';
+  }
+
+  @override
+  String get plazaEmpty =>
+      'Adăugați o sarcină pentru a începe construirea pieței acestui proiect.';
+
+  @override
+  String get plazaEnterProject => 'Intrați în proiect';
+
+  @override
+  String get plazaExploreCategory => 'Explorați categoria';
+
+  @override
+  String get plazaExploreProject => 'Explorați proiectul';
+
+  @override
+  String get plazaFlyThere => 'Zburați acolo ›';
+
+  @override
+  String plazaInProgressCount(int count) {
+    return 'În desfășurare: $count';
+  }
+
+  @override
+  String plazaLinks(int count) {
+    return 'legături $count';
+  }
+
+  @override
+  String get plazaMorningWalk => 'Plimbare de dimineață';
+
+  @override
+  String plazaNeedsAttention(int count) {
+    return 'Necesită atenție: $count';
+  }
+
+  @override
+  String get plazaOpeningSoon => 'DESCHIDERE ÎN CURÂND';
+
+  @override
+  String get plazaOpenLate => 'DESCHIS PÂNĂ TÂRZIU';
+
+  @override
+  String plazaOverdueSince(String date) {
+    return 'întârziată din $date — finalizați sau amânați';
+  }
+
+  @override
+  String get plazaOverview => 'Vedere de ansamblu';
+
+  @override
+  String get plazaPaused => 'În pauză';
+
+  @override
+  String plazaProjectOverdue(int count) {
+    return 'Sarcini întârziate: $count';
+  }
+
+  @override
+  String get plazaSearchHint => 'Căutați sarcini, Enter pentru a zbura';
+
+  @override
+  String get plazaShowPenguins => 'Pinguini';
+
+  @override
+  String plazaStaleReason(int days) {
+    return 'fără activitate de $days zile — reluați-o';
+  }
+
+  @override
+  String plazaStats(int tasks, int weeks, int attention) {
+    return '$tasks sarcini · $weeks săptămâni · $attention necesită atenție';
+  }
+
+  @override
+  String plazaTaskCount(int count) {
+    return 'Sarcini: $count';
+  }
+
+  @override
+  String get plazaTitle => 'Piață';
+
+  @override
+  String get plazaToLet => 'DE ÎNCHIRIAT';
+
+  @override
+  String get plazaTourControls => 'Spațiu: pauză · mișcați-vă pentru a ieși';
+
+  @override
+  String get plazaUnavailable => 'Acest dispozitiv nu poate afișa lumea 3D.';
+
+  @override
+  String plazaWeek(int week, String date) {
+    return 'S$week · $date';
+  }
+
+  @override
+  String plazaWeekShort(int week) {
+    return 'S$week';
+  }
+
+  @override
   String get privateLabel => 'Privat';
 
   @override

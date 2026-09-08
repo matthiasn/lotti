@@ -1,7 +1,9 @@
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
+import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The task detail raised by OPEN: a panel over the world, which keeps
@@ -24,7 +26,8 @@ class TaskSidePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final task = attention.task;
     final chip = PlazaStyle.chip(attention);
-    final meta = taskMetaBits(task).join(' · ');
+    final copy = PlazaCopy(context.messages);
+    final meta = copy.metaBits(task).join(' · ');
     return Positioned(
       right: 16,
       top: 60,
@@ -64,7 +67,7 @@ class TaskSidePanel extends StatelessWidget {
                     const Spacer(),
                     IconButton(
                       onPressed: onClose,
-                      tooltip: 'Close',
+                      tooltip: context.messages.tasksLabelsDialogClose,
                       icon: const Icon(
                         LottiIcons.close,
                         color: Color(0x99FFFFFF),
@@ -98,7 +101,7 @@ class TaskSidePanel extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        chip.label,
+                        copy.state(attention).toUpperCase(),
                         style: TextStyle(
                           fontFamily: PlazaStyle.fontText,
                           fontSize: 11,
@@ -176,10 +179,9 @@ class TaskSidePanel extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
-                const Text(
-                  'The world keeps rendering behind this panel. '
-                  'Esc or ✕ returns to the same pose.',
-                  style: TextStyle(
+                Text(
+                  context.messages.plazaCloseHint,
+                  style: const TextStyle(
                     fontFamily: PlazaStyle.fontText,
                     fontSize: 12,
                     color: Color(0x73FFFFFF),

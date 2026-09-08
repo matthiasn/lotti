@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_interactions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
@@ -63,12 +64,14 @@ class ProjectGroupSection extends StatefulWidget {
     required this.group,
     required this.selectedProjectId,
     required this.onProjectSelected,
+    this.onExplorePlaza,
     super.key,
   });
 
   final ProjectCategoryGroup group;
   final String? selectedProjectId;
   final ValueChanged<ProjectListItemData> onProjectSelected;
+  final VoidCallback? onExplorePlaza;
 
   @override
   State<ProjectGroupSection> createState() => _ProjectGroupSectionState();
@@ -124,6 +127,17 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
         ),
         if (_expanded) ...[
           SizedBox(height: tokens.spacing.step2),
+          if (widget.onExplorePlaza != null &&
+              widget.group.category != null) ...[
+            DesignSystemButton(
+              label: context.messages.plazaExploreCategory,
+              leadingIcon: LottiIcons.map,
+              size: DesignSystemButtonSize.dense,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: widget.onExplorePlaza,
+            ),
+            SizedBox(height: tokens.spacing.step2),
+          ],
           DecoratedBox(
             key: ValueKey(
               'project-group-card-${widget.group.categoryId ?? 'unassigned'}',

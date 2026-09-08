@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
@@ -50,6 +51,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onArchive,
     this.onDelete,
     this.onAddTask,
+    this.onOpenPlaza,
     this.onRefreshReport,
     this.onCancelScheduledReportWake,
     this.onAssignAgent,
@@ -74,6 +76,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final VoidCallback? onArchive;
   final FutureOr<void> Function()? onDelete;
   final Future<void> Function()? onAddTask;
+  final VoidCallback? onOpenPlaza;
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
   final Future<void> Function()? onAssignAgent;
@@ -278,6 +281,24 @@ class _ProjectMobileDetailContentState
                             SliverToBoxAdapter(
                               child: SizedBox(height: tokens.spacing.step4),
                             ),
+                            if (widget.onOpenPlaza != null) ...[
+                              SliverToBoxAdapter(
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: DesignSystemButton(
+                                    label: context.messages.plazaExploreProject,
+                                    variant: DesignSystemButtonVariant.outlined,
+                                    leadingIcon: LottiIcons.map,
+                                    onPressed: isMutating
+                                        ? null
+                                        : widget.onOpenPlaza,
+                                  ),
+                                ),
+                              ),
+                              SliverToBoxAdapter(
+                                child: SizedBox(height: tokens.spacing.step4),
+                              ),
+                            ],
                             if (description.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: _ProjectDescription(

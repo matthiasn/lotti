@@ -92,6 +92,27 @@ const _glassTop = 0.9;
 const _glassBottom = 3.5;
 
 void main() {
+  test(
+    'paving preserves unlit slab centres and alternates mortar joints',
+    () async {
+      final image = WallTextures.paintPaving();
+      addTearDown(image.dispose);
+      final pixels = (await image.toByteData())!;
+      int alphaAt(int x, int y) =>
+          pixels.getUint8((y * image.width + x) * 4 + 3);
+      expect((image.width, image.height), (256, 256));
+      for (final y in [32, 96, 160, 224]) {
+        expect(alphaAt(64, y), 0);
+        expect(alphaAt(192, y), 0);
+      }
+      expect(alphaAt(0, 32), greaterThan(0));
+      expect(alphaAt(128, 32), 0);
+      expect(alphaAt(128, 96), greaterThan(0));
+      expect(alphaAt(0, 96), 0);
+      expect(alphaAt(64, 64), greaterThan(0));
+    },
+  );
+
   test('window and shopfront tiles fit the reduced texture budget', () {
     final window = WallTextures.paintWindows(LanternState.open);
     final shops = WallTextures.paintShopfront(LanternState.open);

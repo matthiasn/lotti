@@ -23,11 +23,13 @@ List<WalkStop> morningWalkStops(
   FrontierPlaza plaza,
   List<TaskAttention> anomalies, {
   required String projectLabel,
+  String homeLabel = 'Home',
+  String overviewLabel = 'Overview',
 }) {
   final stops = <WalkStop>[
     WalkStop(
       pose: plaza.overview,
-      label: 'Overview — $projectLabel',
+      label: '$overviewLabel — $projectLabel',
       hold: const Duration(seconds: 4),
     ),
   ];
@@ -45,7 +47,7 @@ List<WalkStop> morningWalkStops(
   stops.add(
     WalkStop(
       pose: plaza.home,
-      label: 'Home — $projectLabel',
+      label: '$homeLabel — $projectLabel',
       hold: const Duration(milliseconds: 1),
     ),
   );

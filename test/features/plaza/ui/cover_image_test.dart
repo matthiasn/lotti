@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,74 @@ void main() {
   });
   tearDownAll(() => image.dispose());
 
+  testWidgets(
+    'local cover paths use the file cache and report decoded pixels',
+    (
+      tester,
+    ) async {
+      final file = File('/tmp/plaza fixture/cover.png');
+      final provider = FileImage(file);
+      final decoded = Completer<ImageInfo>();
+      PaintingBinding.instance.imageCache.putIfAbsent(
+        provider,
+        () => OneFrameImageStreamCompleter(decoded.future),
+      );
+      addTearDown(provider.evict);
+      var loads = 0;
+      await tester.pumpWidget(
+        _host(file.uri.toString(), onLoaded: () => loads++),
+      );
+      expect(tester.widget<Image>(find.byType(Image)).image, provider);
+      decoded.complete(ImageInfo(image: image.clone()));
+      await tester.pump();
+      expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull);
+      expect(loads, 1);
+    },
+  );
+
+  testWidgets('a local cover arriving after sync replaces the error fallback', (
+    tester,
+  ) async {
+    final directory = Directory.systemTemp.createTempSync(
+      'plaza-cover-arrival-',
+    );
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final file = File('${directory.path}/cover.png');
+    final provider = FileImage(file);
+    final failed = Completer<ImageInfo>();
+    PaintingBinding.instance.imageCache.putIfAbsent(
+      provider,
+      () => OneFrameImageStreamCompleter(failed.future),
+    );
+    addTearDown(provider.evict);
+    var loads = 0;
+    await tester.pumpWidget(
+      _host(file.uri.toString(), onLoaded: () => loads++),
+    );
+    failed.completeError(const FileSystemException('not downloaded'));
+    await tester.pump();
+    expect(loads, 1);
+    expect(find.byType(RawImage), findsNothing);
+    final arrived = Completer<ImageInfo>();
+    PaintingBinding.instance.imageCache.putIfAbsent(
+      provider,
+      () => OneFrameImageStreamCompleter(arrived.future),
+    );
+    file.writeAsBytesSync([1]);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      tester.widget<Image>(find.byType(Image)).key,
+      ValueKey((file.uri.toString(), 1)),
+      reason: 'arrival must replace the failed Image stream',
+    );
+    arrived.complete(ImageInfo(image: image.clone()));
+    await tester.pump();
+    await tester.pump();
+    expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull);
+    expect(loads, 2);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('reports once, after the frame that paints the picture', (
     tester,
   ) async {
@@ -68,6 +137,7 @@ void main() {
     expect(find.byType(RawImage), findsNothing);
     await tester.pumpWidget(_host(second, onLoaded: () => loads++));
     landing.complete(ImageInfo(image: image.clone()));
+    await tester.pump();
     await tester.pump();
     expect(loads, 2);
   });

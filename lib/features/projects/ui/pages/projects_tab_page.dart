@@ -17,6 +17,7 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/plaza/ui/category_plaza_page.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
@@ -29,6 +30,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
@@ -358,6 +360,19 @@ class _ProjectsListScaffold extends ConsumerWidget {
                       title: context.messages.navTabTitleProjects,
                       renderHeader: false,
                       groups: groups,
+                      onExploreCategory: isDesktop
+                          ? (categoryId) {
+                              Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).push<void>(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      CategoryPlazaPage(categoryId: categoryId),
+                                ),
+                              );
+                            }
+                          : null,
                       query: filter.textQuery,
                       selectedProjectId: activeProjectId,
                       scrollController: scrollController,

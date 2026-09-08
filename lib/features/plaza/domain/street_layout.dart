@@ -288,10 +288,58 @@ class StreetLayout {
     this.foldEvery = 4,
     this.connectorLength = 44,
     this.minBuildingHeight = 6,
+    this.completedSetback = 0,
+    this.minimumPlotSpacing = 0,
+    this.scaleBillboardsByPriority = false,
   });
 
   final int projectSeed;
   final double roadWidth;
+
+  /// Extra world metres between the road and completed work. Its week stays
+  /// unchanged; a completion moves only that plot into the quieter rear row.
+  final double completedSetback;
+
+  /// Minimum allocation along the road per task. Busy weeks grow to preserve
+  /// readable plots instead of squeezing an arbitrary task count into 40 m.
+  /// Zero retains the fixed-length prototype configuration.
+  final double minimumPlotSpacing;
+  final bool scaleBillboardsByPriority;
+
+  /// Fits inside each existing mount, so lower priorities recede without
+  /// larger signs colliding with their neighbours. Urgent uses the full mount.
+  double billboardScaleFor(PlazaTask task) => !scaleBillboardsByPriority
+      ? 1
+      : switch (task.priority) {
+          <= 0 => 1,
+          1 => 0.9,
+          2 => 0.8,
+          _ => 0.7,
+        };
+
+  /// Developer tuning preserves the generator's timeline/density settings.
+  StreetLayout copyWith({
+    double? roadWidth,
+    double? pxPerMeter,
+    double? maxBuildingHeight,
+  }) => StreetLayout(
+    projectSeed: projectSeed,
+    roadWidth: roadWidth ?? this.roadWidth,
+    pxPerMeter: pxPerMeter ?? this.pxPerMeter,
+    maxBuildingHeight: maxBuildingHeight ?? this.maxBuildingHeight,
+    groupLength: groupLength,
+    gapLength: gapLength,
+    plotDepth: plotDepth,
+    sideMargin: sideMargin,
+    minBuildingWidth: minBuildingWidth,
+    maxBuildingWidth: maxBuildingWidth,
+    foldEvery: foldEvery,
+    connectorLength: connectorLength,
+    minBuildingHeight: minBuildingHeight,
+    completedSetback: completedSetback,
+    minimumPlotSpacing: minimumPlotSpacing,
+    scaleBillboardsByPriority: scaleBillboardsByPriority,
+  );
 
   /// Road length one non-empty week occupies.
   final double groupLength;
@@ -386,7 +434,11 @@ class StreetLayout {
   ///
   /// Input order is irrelevant: tasks are sorted by `(createdAt, id)`
   /// internally, so shuffled arrival produces an identical street.
-  StreetPlan plan(List<PlazaTask> tasks, {DateTime? epoch}) {
+  StreetPlan plan(
+    List<PlazaTask> tasks, {
+    DateTime? epoch,
+    Map<String, int> bucketOverrides = const {},
+  }) {
     if (tasks.isEmpty) {
       return StreetPlan(
         epoch: epoch ?? DateTime(2000),
@@ -407,8 +459,10 @@ class StreetLayout {
 
     // A task older than an explicit epoch lands in bucket zero rather than
     // being silently dropped to a negative bucket the street never renders.
-    int bucketOf(PlazaTask task) =>
-        math.max(0, task.createdAt.difference(anchor).inDays ~/ 7);
+    int bucketOf(PlazaTask task) => math.max(
+      0,
+      bucketOverrides[task.id] ?? task.createdAt.difference(anchor).inDays ~/ 7,
+    );
 
     final byBucket = <int, List<PlazaTask>>{};
     for (final task in ordered) {
@@ -426,7 +480,7 @@ class StreetLayout {
     for (var bucket = 0; bucket <= lastBucket; bucket++) {
       final weekTasks = byBucket[bucket];
       final isGap = weekTasks == null;
-      final length = isGap ? gapLength : groupLength;
+      final length = isGap ? gapLength : _lengthFor(weekTasks);
 
       segments.add(
         RoadSegment(
@@ -446,6 +500,7 @@ class StreetLayout {
           startX: x,
           startZ: z,
           heading: heading,
+          length: length,
           into: placements,
         );
       }
@@ -462,13 +517,17 @@ class StreetLayout {
             startX: x,
             startZ: z,
             headingRadians: heading,
-            length: connectorLength,
+            length: math.max(
+              connectorLength,
+              roadWidth + 2 * plotDepth + 2 * completedSetback,
+            ),
             isGap: true,
             isConnector: true,
           ),
         );
-        x += math.sin(heading) * connectorLength;
-        z += math.cos(heading) * connectorLength;
+        final connector = segments.last.length;
+        x += math.sin(heading) * connector;
+        z += math.cos(heading) * connector;
         heading += turn;
       }
     }
@@ -486,9 +545,10 @@ class StreetLayout {
     required double startX,
     required double startZ,
     required double heading,
+    required double length,
     required Map<String, PlotPlacement> into,
   }) {
-    final usable = groupLength - 2 * sideMargin;
+    final usable = length - 2 * sideMargin;
 
     // The week's landmark: its heaviest task (ties by id) stands taller.
     PlazaTask? landmark;
@@ -524,7 +584,11 @@ class StreetLayout {
         );
 
         final sideSign = side == PlotSide.left ? -1.0 : 1.0;
-        final lateral = sideSign * (roadWidth / 2 + plotDepth / 2);
+        final lateral =
+            sideSign *
+            (roadWidth / 2 +
+                plotDepth / 2 +
+                (task.state == PlazaTaskState.done ? completedSetback : 0));
         // Lateral axis is the road's right-hand normal.
         final (x, z) = frameToWorld(
           startX,
@@ -554,5 +618,26 @@ class StreetLayout {
         cursor += slot;
       }
     }
+  }
+
+  double _lengthFor(List<PlazaTask> tasks) {
+    var length = groupLength;
+    if (minimumPlotSpacing <= 0) return length;
+    for (var side = 0; side < 2; side++) {
+      var sum = 0.0;
+      var minimum = double.infinity;
+      for (var i = side; i < tasks.length; i += 2) {
+        final weight = widthFactorFor(tasks[i].id);
+        sum += weight;
+        minimum = math.min(minimum, weight);
+      }
+      if (sum > 0) {
+        length = math.max(
+          length,
+          2 * sideMargin + sum / minimum * minimumPlotSpacing,
+        );
+      }
+    }
+    return length;
   }
 }

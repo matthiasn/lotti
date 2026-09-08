@@ -20,8 +20,14 @@ class CharacterPopulation {
     required FrontierPlaza? plaza,
     required List<Solid> solids,
     required double roadWidth,
+    int? maxCount,
   }) {
-    final result = <CharacterCompanion>[];
+    assert(
+      maxCount == null || maxCount >= 0,
+      'population budget cannot be negative',
+    );
+    if (maxCount == 0) return const [];
+    final regions = <List<List<CharacterCompanion>>>[];
     // Pavement occupies 3 m per side, plus half the 0.35 m kerb width.
     final usable = roadWidth / 2 - 3 - 0.175;
     for (final (index, segment) in plan.segments.indexed) {
@@ -82,7 +88,7 @@ class CharacterPopulation {
               paired: pair,
             );
             if (walkers.isEmpty) continue;
-            result.addAll(walkers);
+            regions.add(walkers);
             placed = true;
             break;
           }
@@ -92,14 +98,33 @@ class CharacterPopulation {
     }
     final square = CharacterLoop.forPlaza(plaza, solids);
     if (square != null) {
-      result.addAll(
-        _populate('plaza', square, solids, groups: 4, paired: true),
-      );
+      final home = _populate('plaza', square, solids, groups: 4, paired: true);
+      if (maxCount != null) {
+        final first = home.indexWhere((group) => group.length <= maxCount);
+        if (first > 0) home.insert(0, home.removeAt(first));
+      }
+      regions.insert(0, home);
+    }
+    // Whole conversation groups, round-robin across regions. Start at Home
+    // so a small budget is visible on arrival; odd budgets can use a solo
+    // without leaving a paired character talking to an absent partner.
+    final result = <CharacterCompanion>[];
+    final rounds = regions.fold(0, (n, groups) => math.max(n, groups.length));
+    for (var round = 0; round < rounds; round++) {
+      for (final groups in regions) {
+        if (round >= groups.length) continue;
+        final group = groups[round];
+        if (maxCount != null && result.length + group.length > maxCount) {
+          continue;
+        }
+        result.addAll(group);
+        if (result.length == maxCount) return List.unmodifiable(result);
+      }
     }
     return List.unmodifiable(result);
   }
 
-  static List<CharacterCompanion> _populate(
+  static List<List<CharacterCompanion>> _populate(
     String id,
     CharacterLoop loop,
     List<Solid> solids, {
@@ -111,7 +136,7 @@ class CharacterPopulation {
     final right = loop.translated(pairSeparation / 2);
     final pairsFit = paired && left.clears(solids) && right.clears(solids);
     final seed = stableHash(id) & 0xFFFF;
-    final result = <CharacterCompanion>[];
+    final result = <List<CharacterCompanion>>[];
     // Repeat the entire solo/pair mix, spreading twice as many groups around
     // the circuit without putting a second penguin on an existing position.
     final groupCount = groups * 2;
@@ -120,9 +145,10 @@ class CharacterPopulation {
       final phase = group / groupCount + 0.05 + (seed % 17) / 1000;
       final conversation = seed + group * 31;
       final count = pair ? 2 : 1;
+      final companions = <CharacterCompanion>[];
       for (var member = 0; member < count; member++) {
         final route = pair ? (member == 0 ? left : right) : loop;
-        result.add(
+        companions.add(
           CharacterCompanion(
             id: '$id-$group-$member',
             region: id,
@@ -140,6 +166,7 @@ class CharacterPopulation {
           ),
         );
       }
+      result.add(companions);
     }
     return result;
   }

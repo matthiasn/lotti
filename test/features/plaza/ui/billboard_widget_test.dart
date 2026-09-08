@@ -16,13 +16,15 @@ PlazaTask _task({
   PlazaTaskState state = PlazaTaskState.open,
   DateTime? due,
   String? cover,
+  int checklistItems = 0,
+  double progress = 0,
 }) => PlazaTask(
   id: 'bb',
   createdAt: DateTime.utc(2026, 7),
   title: 'Fuel the shuttle',
   state: state,
-  progress: 0,
-  checklistItems: 0,
+  progress: progress,
+  checklistItems: checklistItems,
   linkedTaskIds: const [],
   categoryColor: 0xFF4AB6E8,
   due: due,
@@ -86,7 +88,7 @@ void main() {
     await tester.pumpWidget(
       _host(_task(state: PlazaTaskState.blocked), reasonFirst: true),
     );
-    expect(find.text('fly there ›'), findsNothing);
+    expect(find.text('Fly there ›'), findsNothing);
     // The reason sits on a solid band in the state colour, in the
     // panel's own dark ink; the title is a small line on the scrim.
     final reason = tester.widget<Text>(find.text('blocked — needs a decision'));
@@ -112,7 +114,7 @@ void main() {
     await tester.pumpWidget(_host(_task(), reasonFirst: true));
     final title = tester.widget<Text>(find.text('Fuel the shuttle'));
     expect(title.style!.color, PlazaStyle.text);
-    expect(find.text('fly there ›'), findsNothing);
+    expect(find.text('Fly there ›'), findsNothing);
   });
 
   testWidgets('a blocked task: title, reason, chip, fly-there, red frame', (
@@ -122,7 +124,7 @@ void main() {
     expect(find.text('Fuel the shuttle'), findsOneWidget);
     expect(find.text('blocked — needs a decision'), findsOneWidget);
     expect(find.text('✕  BLOCKED'), findsOneWidget);
-    expect(find.text('fly there ›'), findsOneWidget);
+    expect(find.text('Fly there ›'), findsOneWidget);
     final framed = tester
         .widgetList<Container>(find.byType(Container))
         .map((c) => c.decoration)
@@ -133,6 +135,27 @@ void main() {
       PlazaStyle.lantern(LanternState.blocked),
     );
   });
+
+  testWidgets(
+    'billboard includes the real due date and full checklist progress',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          _task(
+            due: DateTime.utc(2026, 7, 20),
+            checklistItems: 40,
+            progress: 0.25,
+          ),
+        ),
+      );
+      expect(find.text('10/40 · due Jul 20'), findsOneWidget);
+      final panel = tester.getRect(find.byType(BillboardWidget));
+      final metadata = tester.getRect(find.text('10/40 · due Jul 20'));
+      expect(panel.contains(metadata.topLeft), isTrue);
+      expect(panel.contains(metadata.bottomRight), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets("the face is still: an anomaly's frame is at full glow", (
     tester,
@@ -147,7 +170,7 @@ void main() {
 
   testWidgets('a due-soon task shows its date at full glow', (tester) async {
     await tester.pumpWidget(_host(_task(due: _now)));
-    expect(find.text('due today — finish it'), findsOneWidget);
+    expect(find.text('due Jul 15 — finish it'), findsOneWidget);
     expect(_frameAlpha(tester), 1);
   });
 

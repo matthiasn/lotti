@@ -78,6 +78,22 @@ void main() {
       },
     );
 
+    test('overview keeps scaling beyond the prototype district size', () {
+      final wide = StreetLayout(
+        projectSeed: 1337,
+        groupLength: 5000,
+      ).plan(tasks.take(1).toList());
+      final wider = StreetLayout(
+        projectSeed: 1337,
+        groupLength: 10000,
+      ).plan(tasks.take(1).toList());
+      final first = overviewPoseFor(wide);
+      final second = overviewPoseFor(wider);
+      expect(first.y, greaterThan(2000));
+      expect(second.y / first.y, greaterThan(1.9));
+      expect(second.pitch, first.pitch);
+    });
+
     test('from home no pylon panel hides another, and the masthead clears '
         'the rear pair', () {
       // Project every panel's four corners from the home eye into yaw and

@@ -6,56 +6,78 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     final attention = world.attentionOf(task);
     final w = placement.width;
     final h = placement.height;
-    // Massing: plots vary in depth (hashed, never moving) and the box is
-    // anchored to the street side, so the row is not a picket fence.
-    final d = placement.depth * (0.78 + 0.32 * stableUnit(task.id, 'depth'));
-    final setback = (placement.depth - d) / 2;
+    final architecture = world.architectureByTaskId[task.id]!;
+    final d = placement.depth;
+    const setback = 0.0;
     final facing = placement.facingRadians;
     final normal = Vector3(math.sin(facing), 0, math.cos(facing));
-
-    final node = _boxes.node(
-      Vector3(w, h, d),
-      _boxes.solid(linearColor(PlazaStyle.categoryWall(task))),
-      transform: Matrix4.translation(
-        Vector3(
-          placement.x + normal.x * setback,
-          h / 2,
-          placement.z + normal.z * setback,
-        ),
+    // Keep the original plot frame for picking and widget surfaces. Separate
+    // volumes reveal the setbacks; no full-height cuboid fills them back in.
+    final node = Node(
+      name: '${architecture.family.name}-${task.id}',
+      localTransform: Matrix4.translation(
+        Vector3(placement.x, h / 2, placement.z),
       )..rotateY(facing),
-      shaded: true,
     );
     final parade = stableIndex(task.id, 'parade', WallTextures.paradeVariants);
     final kit = stableIndex(task.id, 'kit', WallTextures.tileFamilies);
-
-    // A pavement apron round the plot, so the building stands on a street
-    // and not on a speckled void.
+    final colors = dsTokensDark.colors;
+    final wallTint = linearColor(PlazaStyle.categoryWall(task));
+    final stone = _boxes.solid(wallTint);
+    final cornice = _boxes.solid(linearColor(colors.background.level03));
+    for (final (index, volume) in architecture.volumes.indexed) {
+      final tier = _boxes.node(
+        Vector3(volume.width, volume.height, volume.depth),
+        stone,
+        transform: Matrix4.translation(
+          Vector3(
+            volume.x,
+            volume.bottom + volume.height / 2 - h / 2,
+            volume.z,
+          ),
+        ),
+        shaded: true,
+      );
+      node.add(tier);
+      if (_shown('walls')) {
+        _windowedBox(
+          tier,
+          id: '${task.id}-$index',
+          w: volume.width,
+          d: volume.depth,
+          height: volume.height,
+          state: attention.lantern,
+          groundFloor: index == 0,
+          tint: wallTint,
+          variant: parade,
+          family: kit,
+        );
+      }
+      // Continuous cornices tie the family together, with a recessed crown
+      // rather than roof clutter extending beyond the reserved solid.
+      _rim(
+        tier,
+        w: volume.width,
+        d: volume.depth,
+        y: volume.height / 2 - 0.1,
+        thickness: 0.2,
+        material: cornice,
+      );
+    }
     _box(
       node,
       Vector3(0, -h / 2 + 0.02, 0),
       Vector3(w + 3, 0.04, d + 3),
       PlazaSceneController._pavementMaterial,
     );
-    // Side and back walls: window grids in the state's lit ratio over
-    // the shopfront parade dressed for the state, tiled by the wall's
-    // size; a hashed tile offset per wall so each starts at its own shop.
-    final wallTint = linearColor(
-      Color.lerp(PlazaStyle.categoryWall(task), const Color(0xFF0B0A14), 0.5)!,
+    // A canopy shadows the recessed entrances without entering the street.
+    _box(
+      node,
+      Vector3(0, architecture.entranceHeight - h / 2, d / 2 - 0.4),
+      Vector3(w, 0.25, 0.8),
+      cornice,
     );
-    if (_shown('walls')) {
-      _windowedBox(
-        node,
-        id: task.id,
-        w: w,
-        d: d,
-        height: h,
-        faces: const [_Face.left, _Face.right, _Face.back],
-        state: attention.lantern,
-        tint: wallTint,
-        variant: parade,
-        family: kit,
-      );
-    }
+
     // An alarmed building spills its state colour onto the ground round
     // every wall: the coral or amber under the doors is what a walker
     // sees first.
@@ -63,7 +85,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
         attention.lantern == LanternState.blocked ||
         attention.lantern == LanternState.overdue;
     if (alarm) {
-      final spill = PlazaStyle.lantern(attention.lantern);
+      final spill = PlazaStyle.taskColor(attention);
       final sinF = math.sin(facing);
       final cosF = math.cos(facing);
       final cx = placement.x + normal.x * setback;
@@ -91,67 +113,10 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
       _boxes.solid(linearColor(const Color(0xFF0A0910))),
     );
 
-    // Tall buildings step back to an upper storey with its own roof.
-    if (h >= 14) {
-      final upperH = h * 0.22;
-      node.add(
-        _boxes.node(
-          Vector3(w * 0.68, upperH, d * 0.7),
-          _boxes.solid(linearColor(PlazaStyle.categoryRoof(task))),
-          transform: Matrix4.translation(
-            Vector3(0, h / 2 + upperH / 2, -d * 0.12),
-          ),
-          shaded: true,
-        ),
-      );
-    }
+    final facadeW = architecture.facadeWidth;
+    final facadeH = architecture.facadeHeight;
+    final panelY = architecture.facadeCenterY - h / 2;
 
-    // A tall building's screen hangs above a street-level parade, a
-    // storey of windows either side of it, so the wall owns the screen
-    // instead of being one; a short one is all sign, as before.
-    final hasParade = h >= PlazaSceneController.paradeWallHeight;
-    final facadeW = hasParade ? w * 0.8 : w * 0.92;
-    final facadeH = hasParade
-        ? h - PlazaSceneController.shopfrontHeight - 1
-        : h * 0.9;
-    final panelY = hasParade
-        ? (PlazaSceneController.shopfrontHeight + 0.4 - 0.6) / 2
-        : 0.0;
-    if (hasParade) {
-      _windowedWall(
-        node,
-        dx: 0,
-        dz: d / 2 + 0.015,
-        yaw: 0,
-        width: w,
-        height: h,
-        state: attention.lantern,
-        tint: wallTint,
-        uOffset: stableUnit(task.id, 'tilefront') * 3,
-        variant: stableIndex(
-          task.id,
-          'paradefront',
-          WallTextures.paradeVariants,
-        ),
-        family: kit,
-      );
-    }
-
-    // Roof: a darker slab so the top reads apart from the walls.
-    _box(
-      node,
-      Vector3(0, h / 2 + 0.02, 0),
-      Vector3(w + 0.04, 0.04, d + 0.04),
-      _boxes.solid(
-        linearColor(
-          Color.lerp(
-            PlazaStyle.categoryRoof(task),
-            const Color(0xFF07060D),
-            0.5,
-          )!,
-        ),
-      ),
-    );
     // Far-tier surface: an always-present dark plate; the lantern carries
     // the state colour, the plate only says "there is a facade here".
     // The plate, the neon glows and the widget surface stand 1–3 cm apart
@@ -161,7 +126,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // facade never flickers between its layers during a flight.
     final plate = _box(
       node,
-      Vector3(0, panelY, d / 2 + 0.03),
+      Vector3(0, panelY, architecture.front + 0.03),
       Vector3(facadeW, facadeH, 0.02),
       _boxes.solid(
         PlazaSceneController._panelBack,
@@ -183,7 +148,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     final plinthY = -h / 2 + 0.35;
     _box(
       node,
-      Vector3(0, plinthY, d / 2 + 0.1),
+      Vector3(0, plinthY, architecture.front + 0.1),
       Vector3(facadeW, 0.28, 0.1),
       _boxes.solid(
         linearColor(
@@ -197,7 +162,11 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     if (pct > 0) {
       _box(
         node,
-        Vector3(facadeW / 2 - facadeW * pct / 2, plinthY, d / 2 + 0.12),
+        Vector3(
+          facadeW / 2 - facadeW * pct / 2,
+          plinthY,
+          architecture.front + 0.12,
+        ),
         Vector3(facadeW * pct, 0.28, 0.12),
         _boxes.solid(linearColor(PlazaStyle.lightBar(attention))),
       );
@@ -206,7 +175,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     for (final q in [0.25, 0.5, 0.75]) {
       _box(
         node,
-        Vector3(facadeW / 2 - facadeW * q, plinthY, d / 2 + 0.16),
+        Vector3(facadeW / 2 - facadeW * q, plinthY, architecture.front + 0.16),
         Vector3(0.06, 0.28, 0.04),
         _boxes.solid(linearColor(const Color(0xFF07060D))),
       );
@@ -232,7 +201,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // One colour rule: on an anomaly the state owns the brightest register
     // (the two verticals and their glow burn in the lantern colour); the
     // category survives on the roofline at half power.
-    final stateNeon = PlazaStyle.lantern(attention.lantern);
+    final stateNeon = PlazaStyle.taskColor(attention);
     // Lit neon goes past white so the bloom pass carries it; a dark shop's
     // strips stay under the threshold.
     final boost = emissive >= 0.7 ? PlazaSceneController.neonBoost : 1.0;
@@ -293,22 +262,19 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
         alpha: alarm ? 0.09 : 0.07,
       );
     }
-    // Roof outline: the top edge lit dimly on all four sides so height
-    // reads from above.
-    final roofTrim = UnlitMaterial()
-      ..baseColorFactor = linearColor(
-        Color.lerp(const Color(0xFF0B0A14), neonColor, 0.55)!,
-      );
-    _rim(
-      node,
-      w: w,
-      d: d,
-      y: h / 2 + 0.08,
-      overhang: 0.2,
-      thickness: 0.14,
-      material: roofTrim,
+    // The topmost crown is also the map's status tile. Its entire roof reads
+    // green for done, red for blocked, and amber for overdue; the lantern
+    // remains above it and supplies a second, screen-sized status cue.
+    final crown = architecture.volumes.last;
+    final statusRoof = _boxes.solid(
+      linearColor(PlazaStyle.taskColor(attention)),
     );
-    _addRoofKit(node, task, w, h, d);
+    _box(
+      node,
+      Vector3(crown.x, h / 2 + 0.02, crown.z),
+      Vector3(crown.width, 0.04, crown.depth),
+      statusRoof,
+    );
     // Light pool on the street in front of a lit facade: the wet-street
     // reflection, without a reflection. Sits above the pavement so it
     // never fights the slab.
@@ -320,7 +286,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
           placement.z + normal.z * (placement.depth / 2 + facadeW * 0.3),
         ),
         radius: facadeW * 0.55,
-        color: PlazaStyle.lantern(attention.lantern),
+        color: PlazaStyle.taskColor(attention),
         alpha: attention.lantern == LanternState.open ? 0.13 : 0.26,
       );
     }
@@ -328,13 +294,15 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // Focus ring: four teal slats just outside the facade, hidden until
     // the walker faces this building.
     final ring = Node(
-      localTransform: Matrix4.translation(Vector3(0, panelY, d / 2 + 0.07)),
+      localTransform: Matrix4.translation(
+        Vector3(0, panelY, architecture.front + 0.07),
+      ),
     )..visible = false;
     // The ring burns in the state's own colour: the faced building keeps
     // the far-tier colour language on arrival.
     final ringMaterial = UnlitMaterial()
       ..baseColorFactor = emissiveColor(
-        PlazaStyle.lantern(attention.lantern),
+        PlazaStyle.taskColor(attention),
         PlazaSceneController.neonBoost,
       )
       ..depthBias = PlazaSceneController.glowDepthBias;
@@ -352,7 +320,9 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
 
     // Anchor for the live/sign widget surface, in front of the plate.
     final facadeAnchor = Node(
-      localTransform: Matrix4.translation(Vector3(0, panelY, d / 2 + 0.1)),
+      localTransform: Matrix4.translation(
+        Vector3(0, panelY, architecture.front + 0.1),
+      ),
     );
     node.add(facadeAnchor);
 
@@ -398,60 +368,5 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
         )..rotateY(placement.facingRadians),
       ),
     );
-  }
-
-  /// Seeded roof clutter: a parapet lip, one or two plant boxes, a water
-  /// tank on some, an antenna mast on a third. Hashed from the task id so
-  /// it never changes under the user's feet.
-  void _addRoofKit(Node node, PlazaTask task, double w, double h, double d) {
-    final dark = UnlitMaterial()
-      ..baseColorFactor = linearColor(const Color(0xFF14121E));
-    final top = h / 2;
-    // Parapet lip.
-    _rim(
-      node,
-      w: w,
-      d: d,
-      y: top + 0.25,
-      inset: 0.15,
-      thickness: 0.3,
-      height: 0.5,
-      material: dark,
-    );
-    final plantCount = 1 + (stableUnit(task.id, 'plant') < 0.5 ? 1 : 0);
-    for (var i = 0; i < plantCount; i++) {
-      final bw = math.min(w * 0.3, 2.4);
-      final bd = math.min<double>(d * 0.3, 2);
-      final bx = (stableUnit(task.id, 'px$i') - 0.5) * (w - bw - 1);
-      final bz = (stableUnit(task.id, 'pz$i') - 0.5) * (d - bd - 1);
-      _box(node, Vector3(bx, top + 0.7, bz), Vector3(bw, 1.4, bd), dark);
-    }
-    if (stableUnit(task.id, 'tank') < 0.4 && w > 5) {
-      final tx = (stableUnit(task.id, 'tx') - 0.5) * (w - 3);
-      final tz = (stableUnit(task.id, 'tz') - 0.5) * (d - 3);
-      node.add(
-        Node(
-          localTransform: Matrix4.translation(Vector3(tx, top + 1.5, tz)),
-          mesh: Mesh(
-            CylinderGeometry(
-              bottomRadius: 0.9,
-              topRadius: 0.9,
-              height: 2.2,
-              radialSegments: 8,
-            ),
-            dark,
-          ),
-        ),
-      );
-    }
-    if (stableUnit(task.id, 'mast') < 0.33) {
-      final mx = (stableUnit(task.id, 'mx') - 0.5) * (w - 1);
-      _box(
-        node,
-        Vector3(mx, top + roofKitHeight / 2, 0),
-        Vector3(0.12, roofKitHeight, 0.12),
-        dark,
-      );
-    }
   }
 }

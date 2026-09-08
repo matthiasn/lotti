@@ -6,11 +6,10 @@
 /// never user data).
 library;
 
-import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
+import 'package:lotti/features/plaza/data/task_projection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 
 /// Fallback category color when the demo category has none.
@@ -37,16 +36,16 @@ List<PlazaTask> plazaTasksFromDemoWorld({DateTime? now}) {
   };
 
   // Checklist items per task, resolved through the checklist layer.
-  final itemById = <String, ChecklistItemData>{
-    for (final item in world.checklistItems) item.meta.id: item.data,
+  final itemById = <String, ChecklistItem>{
+    for (final item in world.checklistItems) item.meta.id: item,
   };
-  final itemsByTask = <String, List<ChecklistItemData>>{};
+  final itemsByTask = <String, List<ChecklistItem>>{};
   for (final checklist in world.checklists) {
     for (final taskId in checklist.data.linkedTasks) {
       final items = itemsByTask.putIfAbsent(taskId, () => []);
       for (final itemId in checklist.data.linkedChecklistItems) {
         final item = itemById[itemId];
-        if (item != null && !item.isArchived) items.add(item);
+        if (item != null) items.add(item);
       }
     }
   }
@@ -61,60 +60,18 @@ List<PlazaTask> plazaTasksFromDemoWorld({DateTime? now}) {
 
   return [
     for (final task in world.tasks)
-      _project(
+      projectPlazaTask(
         task: task,
-        items: itemsByTask[task.meta.id] ?? const [],
-        links: linksByTask[task.meta.id] ?? const {},
+        checklistItems: itemsByTask[task.meta.id] ?? const [],
+        linkedTaskIds: linksByTask[task.meta.id] ?? const {},
         categoryColor: categoryColors[task.meta.categoryId] ?? _fallbackColor,
+        coverImageUrl: demoMediaAssets
+            .where((asset) => asset.taskId == task.meta.id && asset.isCover)
+            .firstOrNull
+            ?.uri
+            .toString(),
       ),
   ];
-}
-
-PlazaTask _project({
-  required Task task,
-  required List<ChecklistItemData> items,
-  required Set<String> links,
-  required int categoryColor,
-}) {
-  final checked = items.where((i) => i.isChecked).length;
-  // Demo cover art lives in the public immutable R2 catalog; the harness
-  // loads it straight over HTTP, no hydrator or app storage involved.
-  final cover = demoMediaAssets
-      .where((asset) => asset.taskId == task.meta.id && asset.isCover)
-      .firstOrNull;
-  return PlazaTask(
-    id: task.meta.id,
-    createdAt: task.meta.createdAt,
-    coverImageUrl: cover?.uri.toString(),
-    openChecklistItems: [
-      for (final item in items)
-        if (!item.isChecked) item.title,
-    ].take(8).toList(),
-    title: task.data.title,
-    state: mapTaskStatusToPlazaState(task.data.status),
-    due: task.data.due,
-    progress: items.isEmpty ? 0 : checked / items.length,
-    checklistItems: items.length,
-    linkedTaskIds: links.toList()..sort(),
-    categoryColor: categoryColor,
-    deleted: task.meta.deletedAt != null,
-    priority: task.data.priority.index,
-    lastActivityAt: task.meta.updatedAt,
-  );
-}
-
-/// Maps the app's task status union onto the plaza's surface states.
-///
-/// Public so every arm is directly testable — the demo world does not
-/// exercise all of them.
-PlazaTaskState mapTaskStatusToPlazaState(TaskStatus status) {
-  return switch (status) {
-    TaskOpen() || TaskGroomed() => PlazaTaskState.open,
-    TaskInProgress() => PlazaTaskState.inProgress,
-    TaskBlocked() || TaskOnHold() => PlazaTaskState.blocked,
-    TaskDone() => PlazaTaskState.done,
-    TaskRejected() => PlazaTaskState.cancelled,
-  };
 }
 
 int? _parseHexColor(String? hex) {

@@ -5,7 +5,7 @@ description: The band order on the detail page, the header's two lanes and edit 
 resource: ../../../lib/features/tasks/ui/header
 tags: [tasks, detail, header, scroll-stability, design-tokens]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-09T22:06:53Z }
+generated: { by: codex/gpt-6, at: 2026-09-08T12:00:00Z }
 stale_after: 2027-02-02
 sources:
   - id: header
@@ -47,7 +47,7 @@ sources:
   - id: scroll-stability
     resource: ../../../lib/features/tasks/ui/widgets/viewport_stable_animated_size.dart
     title: TaskScrollStabilityScope and ViewportStableScrollController
-    last_modified: 2026-08-28
+    last_modified: 2026-09-08
   - id: estimate-quick-pick
     resource: ../../../lib/features/tasks/ui/header/estimate_quick_pick_chips.dart
     title: Estimate quick-pick chips
@@ -559,6 +559,14 @@ three region-adapter modes over one `ViewportStableScrollController`:
 | `ViewportStableAnimatedSize` | Animates generated entry text and nested AI-response height, arming only when the region is fully above the viewport |
 | `ViewportStableSizeReporter` | No motion — used by the header band and the AI card band while a suggestion-resolution hold is armed, because their content already owns its own animations. Whichever edge the page pins lies *below* both bands, so their deltas are absorbed unconditionally |
 | `ViewportStableSizeReporter(offscreenOnly: true)` | Wraps the checklist and linked-tasks bands, reporting only while the page armed the hold with `includeOffscreenRegions` — i.e. while the card is fully above the viewport and `_belowCardAnchor` pins the linked-entries seam. While the card is visible, a checklist or linked task growing *below* it is the visible reflow — new content appearing, only what lies under it moving |
+
+The animated adapter measures its bottom edge in the containing viewport's own
+coordinate space. It does not traverse route transforms above that viewport:
+when Back reattaches a retained page, Cupertino's new `FractionalTranslation`
+can still be unsized while `AnimatedSize.attach` invalidates the retained
+region. Measuring globally at that point asserts before the route can lay out.
+Detached or unsized regions/viewports do not arm a hold; subsequent off-screen
+resizes retain the usual pre-paint correction.
 
 The offscreen-only reporters **deliberately do not compute the offscreen
 predicate themselves**: the page has to pick a matching `ScrollAnchor` from the

@@ -7,7 +7,9 @@ import 'package:lotti/features/plaza/ui/billboard_widget.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/cover_image.dart';
 import 'package:lotti/features/plaza/ui/plaza_chip.dart';
+import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Which range a facade is drawn for.
@@ -98,11 +100,12 @@ class FacadeWidget extends StatelessWidget {
     final chipM = (0.14 * titleM).clamp(0.5, 1.1);
     final pad = m(0.08 * w);
     final chip = PlazaStyle.chip(attention);
+    final copy = PlazaCopy(context.messages);
     final items = task.openChecklistItems;
     final tickedCount = t?.tickedCount(task.id) ?? 0;
     final total = task.checklistItems;
-    final done = task.checklistItems - items.length + tickedCount;
-    final metaBits = taskMetaBits(task);
+    final done = task.completedItems + tickedCount;
+    final metaBits = copy.metaBits(task);
 
     // A finished shop is dark: everything on it steps down.
     final quiet = attention.lantern == LanternState.off;
@@ -114,7 +117,7 @@ class FacadeWidget extends StatelessWidget {
           ? const Color(0xFF0E0D16)
           : Color.lerp(
               PlazaStyle.panel,
-              PlazaStyle.lantern(attention.lantern),
+              PlazaStyle.taskColor(attention),
               0.12,
             )!,
       child: Container(
@@ -189,20 +192,21 @@ class FacadeWidget extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (attention.reason.isNotEmpty && !tight) ...[
+                            if (copy.reason(attention).isNotEmpty &&
+                                !tight) ...[
                               SizedBox(height: gap),
                               // The wall you fly to says what the billboard
                               // said, as loudly: the reason leads, in the
                               // state colour.
                               Text(
-                                attention.reason,
+                                copy.reason(attention),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontFamily: PlazaStyle.fontMono,
                                   fontSize: m(itemM),
                                   fontWeight: FontWeight.w500,
-                                  color: PlazaStyle.lantern(attention.lantern),
+                                  color: PlazaStyle.taskColor(attention),
                                 ),
                               ),
                             ],
@@ -302,7 +306,7 @@ class FacadeWidget extends StatelessWidget {
                                                 PlazaChip(
                                                   label:
                                                       '${PlazaStyle.glyph(attention)} '
-                                                      '${chip.label}',
+                                                      '${copy.state(attention).toUpperCase()}',
                                                   fill: chip.fill,
                                                   ink: chip.ink,
                                                   fontPx: m(chipM),
@@ -310,7 +314,8 @@ class FacadeWidget extends StatelessWidget {
                                                 if (onOpen != null) ...[
                                                   SizedBox(width: m(0.3)),
                                                   PlazaChip(
-                                                    label: 'DETAILS ›',
+                                                    label:
+                                                        '${(task.project == null ? context.messages.taskMetaDetailsButton : context.messages.plazaEnterProject).toUpperCase()} ›',
                                                     fill: PlazaStyle.teal,
                                                     ink: const Color(
                                                       0xFF0D0D0D,

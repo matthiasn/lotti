@@ -17161,6 +17161,228 @@ abstract class AppLocalizations {
   /// **'Very slightly or not at all'**
   String get panasScaleVerySlightlyOrNotAtAll;
 
+  /// No description provided for @plazaBlockedReason.
+  ///
+  /// In en, this message translates to:
+  /// **'blocked — needs a decision'**
+  String get plazaBlockedReason;
+
+  /// No description provided for @plazaCategoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This category has no visible projects.'**
+  String get plazaCategoryEmpty;
+
+  /// No description provided for @plazaClosedForNight.
+  ///
+  /// In en, this message translates to:
+  /// **'CLOSED FOR THE NIGHT'**
+  String get plazaClosedForNight;
+
+  /// No description provided for @plazaCloseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Esc to close'**
+  String get plazaCloseHint;
+
+  /// No description provided for @plazaControls.
+  ///
+  /// In en, this message translates to:
+  /// **'WASD walk · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back'**
+  String get plazaControls;
+
+  /// No description provided for @plazaCornerAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Corner after {week}'**
+  String plazaCornerAfter(String week);
+
+  /// No description provided for @plazaDebug.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug'**
+  String get plazaDebug;
+
+  /// No description provided for @plazaDecisionStrip.
+  ///
+  /// In en, this message translates to:
+  /// **'NEEDS A DECISION'**
+  String get plazaDecisionStrip;
+
+  /// No description provided for @plazaDoneCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String plazaDoneCount(int done, int total);
+
+  /// No description provided for @plazaDueOn.
+  ///
+  /// In en, this message translates to:
+  /// **'due {date}'**
+  String plazaDueOn(String date);
+
+  /// No description provided for @plazaDueSoonReason.
+  ///
+  /// In en, this message translates to:
+  /// **'due {date} — finish it'**
+  String plazaDueSoonReason(String date);
+
+  /// No description provided for @plazaEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task to start building this project’s plaza.'**
+  String get plazaEmpty;
+
+  /// No description provided for @plazaEnterProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter project'**
+  String get plazaEnterProject;
+
+  /// No description provided for @plazaExploreCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore category'**
+  String get plazaExploreCategory;
+
+  /// No description provided for @plazaExploreProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore project'**
+  String get plazaExploreProject;
+
+  /// No description provided for @plazaFlyThere.
+  ///
+  /// In en, this message translates to:
+  /// **'Fly there ›'**
+  String get plazaFlyThere;
+
+  /// No description provided for @plazaInProgressCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} in progress'**
+  String plazaInProgressCount(int count);
+
+  /// No description provided for @plazaLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'links {count}'**
+  String plazaLinks(int count);
+
+  /// No description provided for @plazaMorningWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning walk'**
+  String get plazaMorningWalk;
+
+  /// No description provided for @plazaNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} need attention'**
+  String plazaNeedsAttention(int count);
+
+  /// No description provided for @plazaOpeningSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'OPENING SOON'**
+  String get plazaOpeningSoon;
+
+  /// No description provided for @plazaOpenLate.
+  ///
+  /// In en, this message translates to:
+  /// **'OPEN LATE'**
+  String get plazaOpenLate;
+
+  /// No description provided for @plazaOverdueSince.
+  ///
+  /// In en, this message translates to:
+  /// **'overdue since {date} — finish or move it'**
+  String plazaOverdueSince(String date);
+
+  /// No description provided for @plazaOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get plazaOverview;
+
+  /// No description provided for @plazaPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get plazaPaused;
+
+  /// No description provided for @plazaProjectOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue tasks: {count}'**
+  String plazaProjectOverdue(int count);
+
+  /// No description provided for @plazaSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tasks, Enter to fly'**
+  String get plazaSearchHint;
+
+  /// No description provided for @plazaShowPenguins.
+  ///
+  /// In en, this message translates to:
+  /// **'Penguins'**
+  String get plazaShowPenguins;
+
+  /// No description provided for @plazaStaleReason.
+  ///
+  /// In en, this message translates to:
+  /// **'quiet for {days} days — pick it back up'**
+  String plazaStaleReason(int days);
+
+  /// No description provided for @plazaStats.
+  ///
+  /// In en, this message translates to:
+  /// **'{tasks} tasks · {weeks} weeks · {attention} need attention'**
+  String plazaStats(int tasks, int weeks, int attention);
+
+  /// No description provided for @plazaTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks: {count}'**
+  String plazaTaskCount(int count);
+
+  /// No description provided for @plazaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plaza'**
+  String get plazaTitle;
+
+  /// No description provided for @plazaToLet.
+  ///
+  /// In en, this message translates to:
+  /// **'TO LET'**
+  String get plazaToLet;
+
+  /// No description provided for @plazaTourControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Space: pause · move to exit'**
+  String get plazaTourControls;
+
+  /// No description provided for @plazaUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This device cannot display the 3D world.'**
+  String get plazaUnavailable;
+
+  /// No description provided for @plazaWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'W{week} · {date}'**
+  String plazaWeek(int week, String date);
+
+  /// No description provided for @plazaWeekShort.
+  ///
+  /// In en, this message translates to:
+  /// **'W{week}'**
+  String plazaWeekShort(int week);
+
   /// No description provided for @privateLabel.
   ///
   /// In en, this message translates to:

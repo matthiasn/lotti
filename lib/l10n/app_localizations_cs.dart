@@ -10244,6 +10244,148 @@ class AppLocalizationsCs extends AppLocalizations {
   String get panasScaleVerySlightlyOrNotAtAll => 'Vůbec nebo jen velmi málo';
 
   @override
+  String get plazaBlockedReason => 'blokováno — čeká na rozhodnutí';
+
+  @override
+  String get plazaCategoryEmpty =>
+      'V této kategorii nejsou žádné viditelné projekty.';
+
+  @override
+  String get plazaClosedForNight => 'NA NOC ZAVŘENO';
+
+  @override
+  String get plazaCloseHint => 'Esc zavře';
+
+  @override
+  String get plazaControls =>
+      'WASD chůze · tažením se rozhlížej · Tab další maják · H domů · M přehled · / hledat · ⌘[ zpět';
+
+  @override
+  String plazaCornerAfter(String week) {
+    return 'Odbočka za $week';
+  }
+
+  @override
+  String get plazaDebug => 'Ladění';
+
+  @override
+  String get plazaDecisionStrip => 'ČEKÁ NA ROZHODNUTÍ';
+
+  @override
+  String plazaDoneCount(int done, int total) {
+    return 'Hotovo: $done z $total';
+  }
+
+  @override
+  String plazaDueOn(String date) {
+    return 'termín $date';
+  }
+
+  @override
+  String plazaDueSoonReason(String date) {
+    return 'termín $date — dokonči to';
+  }
+
+  @override
+  String get plazaEmpty =>
+      'Přidej úkol a začni budovat náměstí tohoto projektu.';
+
+  @override
+  String get plazaEnterProject => 'Vstoupit do projektu';
+
+  @override
+  String get plazaExploreCategory => 'Prozkoumat kategorii';
+
+  @override
+  String get plazaExploreProject => 'Prozkoumat projekt';
+
+  @override
+  String get plazaFlyThere => 'Přeletět sem ›';
+
+  @override
+  String plazaInProgressCount(int count) {
+    return 'Probíhá: $count';
+  }
+
+  @override
+  String plazaLinks(int count) {
+    return 'odkazy $count';
+  }
+
+  @override
+  String get plazaMorningWalk => 'Ranní procházka';
+
+  @override
+  String plazaNeedsAttention(int count) {
+    return 'Vyžaduje pozornost: $count';
+  }
+
+  @override
+  String get plazaOpeningSoon => 'BRZY OTEVŘEME';
+
+  @override
+  String get plazaOpenLate => 'OTEVŘENO DO NOCI';
+
+  @override
+  String plazaOverdueSince(String date) {
+    return 'po termínu od $date — dokonči nebo přesuň';
+  }
+
+  @override
+  String get plazaOverview => 'Přehled';
+
+  @override
+  String get plazaPaused => 'Pozastaveno';
+
+  @override
+  String plazaProjectOverdue(int count) {
+    return 'Úkoly po termínu: $count';
+  }
+
+  @override
+  String get plazaSearchHint => 'Hledej úkoly, Enter pro přelet';
+
+  @override
+  String get plazaShowPenguins => 'Tučňáci';
+
+  @override
+  String plazaStaleReason(int days) {
+    return 'bez aktivity $days dní — vrať se k tomu';
+  }
+
+  @override
+  String plazaStats(int tasks, int weeks, int attention) {
+    return '$tasks úkolů · $weeks týdnů · $attention vyžaduje pozornost';
+  }
+
+  @override
+  String plazaTaskCount(int count) {
+    return 'Úkoly: $count';
+  }
+
+  @override
+  String get plazaTitle => 'Náměstí';
+
+  @override
+  String get plazaToLet => 'K PRONÁJMU';
+
+  @override
+  String get plazaTourControls => 'Mezerník: pauza · pohybem ukončíš';
+
+  @override
+  String get plazaUnavailable => 'Toto zařízení nedokáže zobrazit 3D svět.';
+
+  @override
+  String plazaWeek(int week, String date) {
+    return 'T$week · $date';
+  }
+
+  @override
+  String plazaWeekShort(int week) {
+    return 'T$week';
+  }
+
+  @override
   String get privateLabel => 'Soukromé';
 
   @override

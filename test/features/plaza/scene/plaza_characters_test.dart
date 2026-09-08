@@ -60,6 +60,43 @@ void main() {
       );
 
   test(
+    'visibility pauses rigs immediately and resumes without a catch-up jump',
+    () {
+      tick(10);
+      tick(11);
+      final nodes = _nodes(characters.root).toList();
+      final transforms = [
+        for (final node in nodes) node.localTransform.clone(),
+      ];
+      expect(characters.hasVisibleMotion, isTrue);
+      characters.enabled = false;
+      expect(characters.enabled, isFalse);
+      expect(characters.root.visible, isFalse);
+      expect(characters.hasVisibleMotion, isFalse);
+      tick(1000);
+      characters
+        ..enabled = false
+        ..enabled = true;
+      expect(characters.root.visible, isTrue);
+      tick(2000);
+      expect(_nodes(characters.root), nodes);
+      for (var i = 0; i < nodes.length; i++) {
+        expect(nodes[i].localTransform, transforms[i]);
+      }
+      tick(2000.1);
+      expect(nodes[1].localTransform, isNot(transforms[1]));
+      characters
+        ..enabled = false
+        ..dispose()
+        ..enabled = true;
+      tick(3000);
+      expect(characters.root.parent, isNull);
+      expect(characters.hasVisibleMotion, isFalse);
+      expect(characters.enabled, isFalse);
+    },
+  );
+
+  test(
     'four rigs share geometry and token materials without blocking taps',
     () {
       expect(characters.root.children, hasLength(4));

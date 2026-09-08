@@ -69,6 +69,36 @@ void main() {
   }
 
   group('ProjectMobileDetailContent', () {
+    testWidgets(
+      'opens the project plaza and disables the action during saves',
+      (
+        tester,
+      ) async {
+        var requests = 0;
+        Widget content({bool saving = false}) => wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28),
+            onOpenPlaza: () => requests++,
+            isSaving: saving,
+          ),
+        );
+        await tester.pumpWidget(content());
+        await tester.tap(find.text('Explore project'));
+        expect(requests, 1);
+        await tester.pumpWidget(content(saving: true));
+        final button = tester.widget<DesignSystemButton>(
+          find.ancestor(
+            of: find.text('Explore project'),
+            matching: find.byType(DesignSystemButton),
+          ),
+        );
+        expect(button.onPressed, isNull);
+        await tester.tap(find.text('Explore project'));
+        expect(requests, 1);
+      },
+    );
+
     testWidgets('composes project work with one unified agent surface', (
       tester,
     ) async {

@@ -57,6 +57,13 @@ ignore:
   # can only be exercised by running the real harness.
   - "lib/features/plaza/dev_main.dart"
   - "lib/features/plaza/scene/**"
+  # The native scene host was extracted from the excluded dev entrypoint.
+  # Successful boot, rendering and hosted texture teardown still require a
+  # live Flutter GPU context. Headless tests cover its unavailable-GPU shell;
+  # the scoped pages, providers and extracted input/frame controllers remain
+  # included and are exercised independently. Native scene validation is
+  # recorded separately; this exclusion does not establish renderer coverage.
+  - "lib/features/plaza/ui/plaza_view.dart"
   # Integration glue that embeds the app's real task/entry detail widgets
   # (TaskForm / EntryDetailsWidget) in the graph's side panel. Those widgets
   # carry their own extensive tests and pull the whole app's provider/getIt
