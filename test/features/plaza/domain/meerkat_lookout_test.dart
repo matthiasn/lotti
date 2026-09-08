@@ -52,6 +52,39 @@ void main() {
     },
   );
 
+  test('skipping a moving phase resamples contacts at the new stop', () {
+    final turn = MeerkatLookout();
+    final oldPose = motion.at(5);
+    for (var frame = 0; frame < 150; frame++) {
+      turn.update(
+        pose: oldPose,
+        eyeX: oldPose.root.x - 5 * math.sin(oldPose.root.yaw),
+        eyeZ: oldPose.root.z - 5 * math.cos(oldPose.root.yaw),
+        dt: 1 / 60,
+        scale: motion.scale,
+      );
+    }
+    final next = motion.at(MeerkatMotion.cycleDuration + 5);
+    final facing = turn.update(
+      pose: next,
+      eyeX: next.root.x + 5 * math.sin(next.root.yaw),
+      eyeZ: next.root.z + 5 * math.cos(next.root.yaw),
+      dt: 0,
+      scale: motion.scale,
+    );
+    expect(facing.yaw, next.root.yaw);
+    for (final pair in [
+      (facing.left, next.rearLeft),
+      (facing.right, next.rearRight),
+    ]) {
+      expect(pair.$1.planted, isTrue);
+      expect(
+        (pair.$1.x, pair.$1.y, pair.$1.z),
+        (pair.$2.x, pair.$2.y, pair.$2.z),
+      );
+    }
+  });
+
   test(
     'returns to route facing before the forepaws land and freezes with no delta',
     () {

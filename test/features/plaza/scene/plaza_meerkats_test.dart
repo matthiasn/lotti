@@ -169,6 +169,68 @@ void main() {
     },
   );
 
+  for (final distanceCulled in [true, false]) {
+    test(
+      'resumes a ${distanceCulled ? 'distant' : 'hidden'} lookout at its new stop',
+      () {
+        final motion = motions.first;
+        final oldPose = motion.at(5);
+        for (var frame = 0; frame < 150; frame++) {
+          characters.update(
+            seconds: frame / 60,
+            eye: Vector3(
+              oldPose.root.x - 5 * math.sin(oldPose.root.yaw),
+              2,
+              oldPose.root.z - 5 * math.cos(oldPose.root.yaw),
+            ),
+            animate: true,
+            clockFor: (_) => 5,
+          );
+        }
+        const nextTime = MeerkatMotion.cycleDuration + 5;
+        final next = motion.at(nextTime);
+        final eye = Vector3(
+          next.root.x + 5 * math.sin(next.root.yaw),
+          2,
+          next.root.z + 5 * math.cos(next.root.yaw),
+        );
+        for (var frame = 150; frame < 210; frame++) {
+          characters.update(
+            seconds: frame / 60,
+            eye: distanceCulled ? Vector3(0, 2, 1000) : eye,
+            animate: true,
+            visible: distanceCulled,
+            clockFor: (_) => nextTime,
+          );
+        }
+        final rig = characters.root.children.first;
+        expect(rig.visible, isFalse);
+        characters.update(
+          seconds: 3.5,
+          eye: eye,
+          animate: true,
+          clockFor: (_) => nextTime,
+        );
+        expect(rig.visible, isTrue);
+        for (final (name, paw) in [
+          ('left-ankle', next.rearLeft),
+          ('right-ankle', next.rearRight),
+        ]) {
+          final actual = rig
+              .getChildByName(name)!
+              .globalTransform
+              .getTranslation();
+          expect(
+            actual.distanceTo(Vector3(paw.x, paw.y, paw.z)),
+            lessThan(1e-4),
+            reason:
+                '$name must use the current stop on the first visible frame',
+          );
+        }
+      },
+    );
+  }
+
   test('traffic clocks hold the actual rig and gate safe reappearance', () {
     for (final seconds in [0.0, 10.0, 20.0]) {
       characters.update(

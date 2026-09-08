@@ -494,7 +494,7 @@ remaining circuits across the district. Candidate positions avoid the initial pe
 shared traffic reservations handle later encounters. Foraging loops exclude
 parallel overlaps with narrow penguin lanes, where fixed routes would leave no
 room to pass; transverse route crossings remain possible. Each species has its
-own localized HUD checkbox, disabled by default to preserve idle rendering.
+own localized HUD checkbox; both species start hidden to preserve idle rendering.
 
 `MeerkatMotion` integrates an eased velocity over a 3.2-second scamper. Ten
 whole diagonal strides end with all four paws planted, followed by settling, a
@@ -540,6 +540,9 @@ angular rate. The head and eyes lead the turn; hind paws alternate short pivot
 steps, retaining at least one supporting contact without sliding. As the body
 lowers, the same controller turns back toward the route. Reduced motion freezes
 both these contacts and the camera target.
+Contacts belong to their sampled route stop. If culling skips the moving phase,
+the next sample at a different stop resets the cached yaw and hind-paw contacts
+before posing the visible skeleton.
 
 ```mermaid
 stateDiagram-v2

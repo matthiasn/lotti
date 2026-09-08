@@ -10,7 +10,10 @@ class MeerkatLookout {
   double? _yaw;
   _PivotFoot? _left;
   _PivotFoot? _right;
+  ({double x, double z, double yaw})? _stop;
 
+  /// Contacts belong to one route stop. Resample if skipped/off-screen poses
+  /// moved the root without sampling the scamper that normally resets them.
   ({double yaw, CharacterFootPose left, CharacterFootPose right}) update({
     required MeerkatPose pose,
     required double eyeX,
@@ -18,11 +21,17 @@ class MeerkatLookout {
     required double dt,
     required double scale,
   }) {
-    if (pose.action == MeerkatAction.scamper ||
-        pose.action == MeerkatAction.settle) {
+    final moving =
+        pose.action == MeerkatAction.scamper ||
+        pose.action == MeerkatAction.settle;
+    final stop = (x: pose.root.x, z: pose.root.z, yaw: pose.root.yaw);
+    if (moving || _stop != stop) {
       _yaw = null;
       _left = null;
       _right = null;
+      _stop = stop;
+    }
+    if (moving) {
       return (yaw: pose.root.yaw, left: pose.rearLeft, right: pose.rearRight);
     }
     _yaw ??= pose.root.yaw;
