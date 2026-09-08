@@ -20,6 +20,8 @@ import 'package:lotti/features/relationships/service/relationship_agent_service.
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -275,6 +277,12 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
 
   bool get _isEditing => widget.initial != null;
 
+  /// The person as last read. Starts as [RelationshipForm.initial] and is
+  /// re-read after every write the Photo card makes, because those land
+  /// *before* Save: a Save built from the entry the form opened with would
+  /// write the old photo back over the new one.
+  RelationshipEntry? _person;
+
   @override
   void initState() {
     super.initState();
@@ -285,9 +293,24 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     _cadenceDays = data?.checkInCadenceDays;
     _statusKind = data != null ? _kindOf(data.status) : _StatusKind.active;
     _categoryId = widget.initial?.meta.categoryId;
+    _person = widget.initial;
     _channels.addAll(
       (data?.contactChannels ?? const []).map(_ChannelDraft.fromChannel),
     );
+  }
+
+  @override
+  void didUpdateWidget(RelationshipForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A host that re-supplies the form with a different person — or a person
+    // where there was none — is handing over a persisted entry, which is what
+    // `_person` tracks. The same person re-supplied is not adopted: the
+    // re-read after a Photo card write is at least as fresh as the host's
+    // opening snapshot.
+    final initial = widget.initial;
+    if (initial != null && initial.id != _person?.id) {
+      _person = initial;
+    }
   }
 
   @override
@@ -328,6 +351,18 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     };
   }
 
+  /// Re-reads the person after the Photo card wrote, so Save and the card
+  /// itself work from what is persisted rather than from the form's opening
+  /// snapshot.
+  Future<void> _reloadPerson() async {
+    final id = _person?.id;
+    if (id == null) return;
+    final fresh = await ref
+        .read(relationshipRepositoryProvider)
+        .getRelationshipById(id);
+    if (mounted && fresh != null) setState(() => _person = fresh);
+  }
+
   Future<void> _handleSave() async {
     if (_isSaving) return;
 
@@ -356,7 +391,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
 
     try {
       if (_isEditing) {
-        final initial = widget.initial!;
+        final initial = _person!;
         var data = initial.data.copyWith(
           title: name,
           nickname: nickname.isEmpty ? null : nickname,
@@ -549,6 +584,21 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Photo — only for a person who already exists: its actions write
+        // straight away, and there is nothing to write to before the first
+        // Save. A new person gets their pictures from the page's avatar.
+        if (_isEditing) ...[
+          PersonPhotoCard(
+            person: _person!,
+            actions: productionPersonPhotoActions(
+              ref,
+              context: context,
+              relationship: _person!,
+            ),
+            onChanged: _reloadPerson,
+          ),
+          gap(tokens.spacing.step4),
+        ],
         // Who — identity, and the category as a colour dot rather than a
         // second large avatar competing with the person's own.
         DesignSystemSectionCard(

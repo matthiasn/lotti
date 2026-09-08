@@ -11435,10 +11435,28 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipPayAttentionTo => 'Var uppmärksam på';
 
   @override
+  String get relationshipPhotoAddBanner => 'Lägg till banner';
+
+  @override
   String get relationshipPhotoAdjustCrop => 'Justera beskärning';
 
   @override
+  String get relationshipPhotoBanner => 'Banner';
+
+  @override
+  String get relationshipPhotoCardTitle => 'Foto';
+
+  @override
+  String get relationshipPhotoChange => 'Byt';
+
+  @override
   String get relationshipPhotoChoose => 'Välj från biblioteket';
+
+  @override
+  String get relationshipPhotoDragToReposition => 'Dra för att flytta';
+
+  @override
+  String get relationshipPhotoFace => 'Ansikte';
 
   @override
   String get relationshipPhotoPrivacy =>
@@ -11446,6 +11464,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipPhotoRemove => 'Ta bort foto';
+
+  @override
+  String get relationshipPhotoRemoveAction => 'Ta bort';
 
   @override
   String get relationshipPhotoSaveFailed => 'Det gick inte att spara fotot';

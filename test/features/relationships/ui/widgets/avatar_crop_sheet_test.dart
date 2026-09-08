@@ -5,7 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/relationships/ui/shared/avatar_crop_geometry.dart';
+import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
 import 'package:lotti/get_it.dart';
@@ -209,8 +209,8 @@ void main() {
       await tester.drag(viewport, const Offset(-30, 12));
       await tester.pump();
 
-      const geometry = AvatarCropGeometry(
-        imageSize: Size(160, 160),
+      final geometry = CoverCropGeometry.circle(
+        imageSize: const Size(160, 160),
         diameter: 300,
       );
       final expected = geometry.panBy(

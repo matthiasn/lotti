@@ -734,6 +734,33 @@ void main() {
     });
   }
 
+  /// Warms a decode whose key depends on a laid-out size: opens the surface
+  /// once to measure [measure], closes it, evicts the completer the dry run
+  /// left under the fake clock, precaches [keyFor] that size on the real
+  /// event loop, and leaves the surface closed for the caller to reopen.
+  ///
+  /// The before-mount rule the avatars follow, applied after a measurement —
+  /// for the crop surface's viewport and the Photo card's banner strip, whose
+  /// widths only exist once the modal has laid them out.
+  Future<void> warmAfterDryRun(
+    WidgetTester tester, {
+    required Future<void> Function() open,
+    required Future<void> Function() close,
+    required Finder measure,
+    required ImageProvider Function(Size) keyFor,
+  }) async {
+    await open();
+    final size = tester.getSize(measure);
+    await close();
+    await tester.pumpAndSettle();
+    final key = keyFor(size);
+    final context = tester.element(find.byKey(const ValueKey('open-modal')));
+    await tester.runAsync(() async {
+      await key.evict();
+      await precacheImage(key, context);
+    });
+  }
+
   /// Pumps [home] in the app shell under the fixed clock and settles it.
   Future<void> pumpSurface(
     WidgetTester tester, {
@@ -1308,12 +1335,30 @@ void main() {
         brightness: Brightness.dark,
         overrides: personOverrides(),
       );
+      // The Photo card's banner strip decodes at the card's width.
+      await warmAfterDryRun(
+        tester,
+        open: () => openModal(tester),
+        close: () =>
+            tester.tap(find.byKey(const ValueKey('person-form-cancel'))),
+        measure: find.byKey(const ValueKey('person-form-banner-preview')),
+        keyFor: (strip) => boundedFileImage(
+          getFullImagePath(_pipPhoto),
+          bounds: strip,
+          devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
+        ),
+      );
       await openModal(tester);
 
       expect(
         find.text('Commander Pip Frostbeak'),
         findsOneWidget,
         reason: 'the edit form is prefilled from the person',
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-photo-card')),
+        findsOneWidget,
+        reason: 'editing an existing person offers the Photo card',
       );
       expect(
         find.byKey(const ValueKey('person-form-save')),
@@ -1434,28 +1479,18 @@ void main() {
         overrides: personOverrides(),
       );
 
-      // The surface decodes the picture at its own viewport size, which is
-      // only known once laid out. Open once to measure, close, warm that
-      // exact key on the real event loop, then open again to capture — the
-      // same before-mount rule the avatars follow, applied after a dry run.
-      await open();
-      final viewportSide = tester
-          .getSize(find.byKey(const ValueKey('avatar-crop-viewport')))
-          .width;
-      await tester.tap(find.byKey(const ValueKey('avatar-crop-cancel')));
-      await tester.pumpAndSettle();
-      final key = cappedFileImage(
-        getFullImagePath(_pipPhoto),
-        size: viewportSide,
-        devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
+      await warmAfterDryRun(
+        tester,
+        open: open,
+        close: () =>
+            tester.tap(find.byKey(const ValueKey('avatar-crop-cancel'))),
+        measure: find.byKey(const ValueKey('avatar-crop-viewport')),
+        keyFor: (viewport) => cappedFileImage(
+          getFullImagePath(_pipPhoto),
+          size: viewport.width,
+          devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
+        ),
       );
-      final context = tester.element(find.byKey(const ValueKey('open-modal')));
-      await tester.runAsync(() async {
-        // The dry run left a completer bound to the fake clock under this
-        // key; evict it so the precache starts a fresh one here.
-        await key.evict();
-        await precacheImage(key, context);
-      });
       await open();
 
       expect(find.text('Choose the face'), findsOneWidget);

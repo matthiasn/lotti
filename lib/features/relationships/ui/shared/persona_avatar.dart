@@ -196,7 +196,7 @@ class _TintedInitial extends StatelessWidget {
 /// same point, which is what keeps the circle full for any stored value:
 /// a covering image scaled up about a point inside the box still covers the
 /// box, so no combination of alignment and zoom in range can show an edge.
-/// `AvatarCropGeometry` is this arithmetic written out, for the surface
+/// `CoverCropGeometry` is this arithmetic written out, for the surface
 /// that edits the crop; the two must agree, and sharing the widget is what
 /// makes the surface's big square and the list's 40 px circle the same
 /// framing.

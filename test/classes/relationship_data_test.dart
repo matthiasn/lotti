@@ -232,7 +232,7 @@ void main() {
         clamped.scale,
         inInclusiveRange(minAvatarCropScale, maxAvatarCropScale),
       );
-    });
+    }, tags: 'glados');
 
     glados.Glados(
       glados.any.double,
@@ -242,7 +242,7 @@ void main() {
     ) {
       final once = AvatarCrop(x: value, y: value, scale: value).clamped;
       expect(once.clamped, once);
-    });
+    }, tags: 'glados');
   });
 
   group('cropFractionFromJson', () {
@@ -263,7 +263,7 @@ void main() {
       glados.ExploreConfig(numRuns: 300),
     ).test('always lands in 0…1', (value) {
       expect(cropFractionFromJson(value), inInclusiveRange(0, 1));
-    });
+    }, tags: 'glados');
   });
 
   group('RelationshipImageFraming', () {

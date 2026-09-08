@@ -11598,10 +11598,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipPayAttentionTo => 'Dávej pozor na';
 
   @override
+  String get relationshipPhotoAddBanner => 'Přidat banner';
+
+  @override
   String get relationshipPhotoAdjustCrop => 'Upravit ořez';
 
   @override
+  String get relationshipPhotoBanner => 'Banner';
+
+  @override
+  String get relationshipPhotoCardTitle => 'Fotka';
+
+  @override
+  String get relationshipPhotoChange => 'Změnit';
+
+  @override
   String get relationshipPhotoChoose => 'Vybrat z knihovny';
+
+  @override
+  String get relationshipPhotoDragToReposition => 'Tažením posuneš';
+
+  @override
+  String get relationshipPhotoFace => 'Obličej';
 
   @override
   String get relationshipPhotoPrivacy =>
@@ -11609,6 +11627,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipPhotoRemove => 'Odebrat fotku';
+
+  @override
+  String get relationshipPhotoRemoveAction => 'Odebrat';
 
   @override
   String get relationshipPhotoSaveFailed => 'Fotku se nepodařilo uložit';

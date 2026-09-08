@@ -19039,17 +19039,53 @@ abstract class AppLocalizations {
   /// **'Pay attention to'**
   String get relationshipPayAttentionTo;
 
+  /// No description provided for @relationshipPhotoAddBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Add banner'**
+  String get relationshipPhotoAddBanner;
+
   /// No description provided for @relationshipPhotoAdjustCrop.
   ///
   /// In en, this message translates to:
   /// **'Adjust crop'**
   String get relationshipPhotoAdjustCrop;
 
+  /// No description provided for @relationshipPhotoBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Banner'**
+  String get relationshipPhotoBanner;
+
+  /// No description provided for @relationshipPhotoCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get relationshipPhotoCardTitle;
+
+  /// No description provided for @relationshipPhotoChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get relationshipPhotoChange;
+
   /// No description provided for @relationshipPhotoChoose.
   ///
   /// In en, this message translates to:
   /// **'Choose from library'**
   String get relationshipPhotoChoose;
+
+  /// No description provided for @relationshipPhotoDragToReposition.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reposition'**
+  String get relationshipPhotoDragToReposition;
+
+  /// No description provided for @relationshipPhotoFace.
+  ///
+  /// In en, this message translates to:
+  /// **'Face'**
+  String get relationshipPhotoFace;
 
   /// No description provided for @relationshipPhotoPrivacy.
   ///
@@ -19062,6 +19098,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove photo'**
   String get relationshipPhotoRemove;
+
+  /// No description provided for @relationshipPhotoRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get relationshipPhotoRemoveAction;
 
   /// No description provided for @relationshipPhotoSaveFailed.
   ///

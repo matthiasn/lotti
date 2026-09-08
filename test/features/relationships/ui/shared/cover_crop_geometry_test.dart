@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/relationships/ui/shared/avatar_crop_geometry.dart';
+import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 
 /// Any picture a phone or a desktop could hand the picker, any square the
 /// crop surface could be laid out in, any crop the model allows.
@@ -16,6 +16,13 @@ extension _AnyCrop on glados.Any {
 
   glados.Generator<double> get diameter =>
       glados.IntAnys(this).intInRange(1, 400).map((d) => d.toDouble());
+
+  glados.Generator<Size> get viewportSize =>
+      glados.any.combine2<int, int, Size>(
+        glados.IntAnys(this).intInRange(1, 800),
+        glados.IntAnys(this).intInRange(1, 400),
+        (w, h) => Size(w.toDouble(), h.toDouble()),
+      );
 
   glados.Generator<AvatarCrop> get crop =>
       glados.any.combine3<int, int, int, AvatarCrop>(
@@ -33,28 +40,34 @@ extension _AnyCrop on glados.Any {
 }
 
 void main() {
-  const square = AvatarCropGeometry(imageSize: Size(400, 200), diameter: 100);
+  final square = CoverCropGeometry.circle(
+    imageSize: const Size(400, 200),
+    diameter: 100,
+  );
 
   group('coveredSize', () {
     test('cover-fits: the short side meets the square, the long side '
         'overflows', () {
       expect(square.coveredSize, const Size(200, 100));
-      const portrait = AvatarCropGeometry(
-        imageSize: Size(100, 300),
+      final portrait = CoverCropGeometry.circle(
+        imageSize: const Size(100, 300),
         diameter: 60,
       );
       expect(portrait.coveredSize, const Size(60, 180));
     });
 
     test('a square picture covers the square exactly', () {
-      const g = AvatarCropGeometry(imageSize: Size(50, 50), diameter: 80);
+      final g = CoverCropGeometry.circle(
+        imageSize: const Size(50, 50),
+        diameter: 80,
+      );
       expect(g.coveredSize, const Size(80, 80));
       expect(g.overflow(1), Offset.zero);
     });
 
     test('a degenerate picture size is treated as the square rather than '
         'dividing by zero', () {
-      const g = AvatarCropGeometry(imageSize: Size.zero, diameter: 80);
+      final g = CoverCropGeometry.circle(imageSize: Size.zero, diameter: 80);
       expect(g.coveredSize, const Size(80, 80));
     });
   });
@@ -103,7 +116,7 @@ void main() {
   group('zoomBy', () {
     test('multiplies the scale and keeps the alignment', () {
       const crop = AvatarCrop(x: 0.2, y: 0.9, scale: 1.5);
-      final zoomed = AvatarCropGeometry.zoomBy(crop, 2);
+      final zoomed = CoverCropGeometry.zoomBy(crop, 2);
       expect(zoomed.scale, 3);
       expect(zoomed.x, 0.2);
       expect(zoomed.y, 0.9);
@@ -111,11 +124,11 @@ void main() {
 
     test('is clamped to the range the surface offers', () {
       expect(
-        AvatarCropGeometry.zoomBy(const AvatarCrop(scale: 3), 10).scale,
+        CoverCropGeometry.zoomBy(const AvatarCrop(scale: 3), 10).scale,
         maxAvatarCropScale,
       );
       expect(
-        AvatarCropGeometry.zoomBy(const AvatarCrop(scale: 1.2), 0.1).scale,
+        CoverCropGeometry.zoomBy(const AvatarCrop(scale: 1.2), 0.1).scale,
         minAvatarCropScale,
       );
     });
@@ -146,7 +159,67 @@ void main() {
     });
   });
 
+  group('a wide viewport — the banner strip', () {
+    const strip = CoverCropGeometry(
+      imageSize: Size(160, 160),
+      viewport: Size(400, 100),
+    );
+
+    test('a square picture cover-fitted into a wide strip fills the width '
+        'and overflows only vertically', () {
+      expect(strip.coveredSize, const Size(400, 400));
+      expect(strip.overflow(1), const Offset(0, 300));
+    });
+
+    test('only a picture wider than the strip has horizontal room, which is '
+        'what a reposition drags against', () {
+      const exact = CoverCropGeometry(
+        imageSize: Size(1200, 300),
+        viewport: Size(400, 100),
+      );
+      expect(exact.overflow(1), Offset.zero);
+      const wide = CoverCropGeometry(
+        imageSize: Size(1600, 300),
+        viewport: Size(400, 100),
+      );
+      const room = 400 * 4 / 3 - 400;
+      expect(wide.overflow(1).dx, closeTo(room, 1e-9));
+      expect(wide.overflow(1).dy, 0);
+      final moved = wide.panBy(const AvatarCrop(), const Offset(-40, 0));
+      expect(moved.x, closeTo(0.5 + 40 / room, 1e-9));
+      expect(moved.y, 0.5, reason: 'no vertical room');
+    });
+
+    test('the visible window is the middle of a tall picture at rest', () {
+      final seen = strip.visibleFraction(const AvatarCrop());
+      expect(seen.left, 0);
+      expect(seen.right, 1);
+      expect(seen.top, closeTo(0.375, 1e-9));
+      expect(seen.bottom, closeTo(0.625, 1e-9));
+    });
+  });
+
   group('properties', () {
+    glados.Glados3(
+      glados.any.pictureSize,
+      glados.any.viewportSize,
+      glados.any.crop,
+      glados.ExploreConfig(numRuns: 400),
+    ).test('a rectangle is never empty either — the banner strip', (
+      Size picture,
+      Size viewport,
+      AvatarCrop crop,
+    ) {
+      final seen = CoverCropGeometry(
+        imageSize: picture,
+        viewport: viewport,
+      ).visibleFraction(crop);
+      expect(seen.left, greaterThanOrEqualTo(-1e-6));
+      expect(seen.top, greaterThanOrEqualTo(-1e-6));
+      expect(seen.right, lessThanOrEqualTo(1 + 1e-6));
+      expect(seen.bottom, lessThanOrEqualTo(1 + 1e-6));
+    }, tags: 'glados');
+
     glados.Glados3(
       glados.any.pictureSize,
       glados.any.diameter,
@@ -154,11 +227,14 @@ void main() {
       glados.ExploreConfig(numRuns: 400),
     ).test('the circle is never empty: every crop in range shows picture '
         'everywhere in the square, for any picture and any square', (
-      picture,
-      diameter,
-      crop,
+      Size picture,
+      double diameter,
+      AvatarCrop crop,
     ) {
-      final g = AvatarCropGeometry(imageSize: picture, diameter: diameter);
+      final g = CoverCropGeometry.circle(
+        imageSize: picture,
+        diameter: diameter,
+      );
       final seen = g.visibleFraction(crop);
       const eps = 1e-6;
       expect(seen.left, greaterThanOrEqualTo(-eps));
@@ -167,7 +243,7 @@ void main() {
       expect(seen.bottom, lessThanOrEqualTo(1 + eps));
       expect(seen.width, greaterThan(0));
       expect(seen.height, greaterThan(0));
-    });
+    }, tags: 'glados');
 
     glados.Glados3(
       glados.any.pictureSize,
@@ -176,7 +252,10 @@ void main() {
       glados.ExploreConfig(numRuns: 300),
     ).test('a drag never leaves the range, and dragging back returns home '
         'when it did not hit an edge', (picture, diameter, crop) {
-      final g = AvatarCropGeometry(imageSize: picture, diameter: diameter);
+      final g = CoverCropGeometry.circle(
+        imageSize: picture,
+        diameter: diameter,
+      );
       const delta = Offset(7, -3);
       final there = g.panBy(crop, delta);
       expect(there.x, inInclusiveRange(0, 1));
@@ -192,7 +271,7 @@ void main() {
           (there.y == 0 || there.y == 1 || crop.y == 0 || crop.y == 1);
       if (!clampedX) expect(back.x, closeTo(crop.x, 1e-6));
       if (!clampedY) expect(back.y, closeTo(crop.y, 1e-6));
-    });
+    }, tags: 'glados');
 
     glados.Glados2(
       glados.any.crop,
@@ -202,13 +281,13 @@ void main() {
       crop,
       factor,
     ) {
-      final zoomed = AvatarCropGeometry.zoomBy(crop, factor);
+      final zoomed = CoverCropGeometry.zoomBy(crop, factor);
       expect(
         zoomed.scale,
         inInclusiveRange(minAvatarCropScale, maxAvatarCropScale),
       );
       expect(zoomed.x, crop.x);
       expect(zoomed.y, crop.y);
-    });
+    }, tags: 'glados');
   });
 }

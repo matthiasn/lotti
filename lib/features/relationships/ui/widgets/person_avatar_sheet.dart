@@ -5,12 +5,9 @@ import 'package:lotti/features/design_system/components/action_modal/ds_action_r
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
-import 'package:lotti/features/relationships/ui/widgets/avatar_photo_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/image_import.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the sheet under a person's avatar (design 2026-09-08 turn 2): the
@@ -20,12 +17,12 @@ import 'package:material_ui/material_ui.dart';
 /// [context] is the *page's*: every row closes the sheet before it acts, and
 /// the picker and the crop surface then open over the page, which is still
 /// there. Resolves once the flow has finished, to what it came to.
-Future<AvatarPhotoOutcome?> showPersonAvatarSheet({
+Future<PersonPhotoOutcome?> showPersonAvatarSheet({
   required BuildContext context,
   required RelationshipEntry relationship,
 }) async {
   final pageContext = context;
-  final outcome = await DsActionModal.show<AvatarPhotoOutcome>(
+  final outcome = await DsActionModal.show<PersonPhotoOutcome>(
     context: context,
     title: context.messages.relationshipPhotoSheetTitle(
       relationship.data.title,
@@ -38,7 +35,7 @@ Future<AvatarPhotoOutcome?> showPersonAvatarSheet({
   // The one outcome the user has to hear about: they chose and cropped, and
   // the write was refused. Backing out says nothing, and success shows
   // itself — the avatar changes.
-  if (outcome == AvatarPhotoOutcome.failed && pageContext.mounted) {
+  if (outcome == PersonPhotoOutcome.failed && pageContext.mounted) {
     pageContext.showToast(
       tone: DesignSystemToastTone.error,
       title: pageContext.messages.relationshipPhotoSaveFailed,
@@ -46,27 +43,6 @@ Future<AvatarPhotoOutcome?> showPersonAvatarSheet({
   }
   return outcome;
 }
-
-/// The real picker and crop surface, opened over [pageContext].
-AvatarPhotoActions _productionActions(
-  WidgetRef ref, {
-  required BuildContext pageContext,
-  required RelationshipEntry relationship,
-}) => AvatarPhotoActions(
-  relationships: ref.read(relationshipRepositoryProvider),
-  journal: ref.read(journalRepositoryProvider),
-  pickImage: () => pickSingleImageEntry(
-    pageContext,
-    linkedId: relationship.id,
-    categoryId: relationship.meta.categoryId,
-  ),
-  chooseCrop: (imageId, initial) => showAvatarCropSheet(
-    context: pageContext,
-    relationship: relationship,
-    imageId: imageId,
-    initial: initial,
-  ),
-);
 
 /// The rows of the avatar sheet. Each one pops the sheet with the outcome
 /// of the flow it started, so the caller of [showPersonAvatarSheet] learns
@@ -87,7 +63,7 @@ class PersonAvatarSheet extends ConsumerWidget {
 
   /// The flows behind the rows. Null builds the real ones over
   /// [pageContext]; a test hands in fakes so no picker opens.
-  final AvatarPhotoActions? actions;
+  final PersonPhotoActions? actions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -96,16 +72,16 @@ class PersonAvatarSheet extends ConsumerWidget {
     final hasPhoto = relationship.data.avatarImageId != null;
     final actions =
         this.actions ??
-        _productionActions(
+        productionPersonPhotoActions(
           ref,
-          pageContext: pageContext,
+          context: pageContext,
           relationship: relationship,
         );
 
     /// Closes the sheet, runs [flow] over the page, and reports its outcome
     /// through the sheet's own result.
     Future<void> run(
-      Future<AvatarPhotoOutcome> Function(RelationshipEntry) flow,
+      Future<PersonPhotoOutcome> Function(RelationshipEntry) flow,
     ) async {
       final navigator = Navigator.of(context);
       final outcome = await flow(relationship);
@@ -132,7 +108,7 @@ class PersonAvatarSheet extends ConsumerWidget {
           title: messages.relationshipPhotoChoose,
           tone: DsActionRowTone.accent,
           trailing: DsActionRowTrailing.chevron,
-          onTap: () => run(actions.choose),
+          onTap: () => run(actions.chooseAvatar),
         ),
         if (hasPhoto) ...[
           DsActionRow(
@@ -142,14 +118,14 @@ class PersonAvatarSheet extends ConsumerWidget {
             icon: LottiIcons.edit,
             title: messages.relationshipPhotoAdjustCrop,
             trailing: DsActionRowTrailing.chevron,
-            onTap: () => run(actions.adjust),
+            onTap: () => run(actions.adjustAvatar),
           ),
           DsActionRow(
             key: const ValueKey('person-photo-remove'),
             icon: LottiIcons.delete,
             title: messages.relationshipPhotoRemove,
             tone: DsActionRowTone.destructive,
-            onTap: () => run(actions.remove),
+            onTap: () => run(actions.removeAvatar),
           ),
         ],
       ],

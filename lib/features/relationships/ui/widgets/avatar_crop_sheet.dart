@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -8,9 +7,10 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/ui/shared/avatar_crop_geometry.dart';
+import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/media/file_image_size.dart';
 import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -114,13 +114,6 @@ class AvatarCropForm extends StatefulWidget {
 }
 
 class _AvatarCropFormState extends State<AvatarCropForm> {
-  /// The picture's own size, once decoded. Until then a drag has no
-  /// geometry to move against and is ignored; zoom needs no size.
-  Size? _imageSize;
-  String? _probedPath;
-  ImageStream? _stream;
-  ImageStreamListener? _listener;
-
   /// The scale the current pinch started from, so each update is applied
   /// as a ratio rather than compounding.
   double _gestureScale = 1;
@@ -128,54 +121,20 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
   AvatarCrop get _crop => widget.handle.value;
   set _crop(AvatarCrop value) => widget.handle.value = value;
 
-  @override
-  void dispose() {
-    _stopProbe();
-    super.dispose();
-  }
-
-  void _stopProbe() {
-    final listener = _listener;
-    if (listener != null) _stream?.removeListener(listener);
-    _stream = null;
-    _listener = null;
-  }
-
-  /// Learns the picture's size from the file on disk, once per path. Started
-  /// after the frame so a synchronously cached picture cannot set state in
-  /// the middle of a build.
-  void _probeSize(String path) {
-    if (_probedPath == path) return;
-    _probedPath = path;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _stopProbe();
-      final stream = FileImage(File(path)).resolve(ImageConfiguration.empty);
-      final listener = ImageStreamListener((info, _) {
-        if (!mounted) return;
-        setState(() {
-          _imageSize = Size(
-            info.image.width.toDouble(),
-            info.image.height.toDouble(),
-          );
-        });
-        info.dispose();
-      });
-      _stream = stream;
-      _listener = listener;
-      stream.addListener(listener);
-    });
-  }
-
-  void _pan(Offset delta, double side) {
-    final size = _imageSize;
-    if (size == null) return;
-    final geometry = AvatarCropGeometry(imageSize: size, diameter: side);
+  /// A drag needs the picture's own size to move against; until the file
+  /// has decoded ([FileImageSize] hands null) it is ignored. Zoom needs no
+  /// size.
+  void _pan(Offset delta, double side, Size? imageSize) {
+    if (imageSize == null) return;
+    final geometry = CoverCropGeometry.circle(
+      imageSize: imageSize,
+      diameter: side,
+    );
     setState(() => _crop = geometry.panBy(_crop, delta));
   }
 
   void _zoom(double factor) {
-    setState(() => _crop = AvatarCropGeometry.zoomBy(_crop, factor));
+    setState(() => _crop = CoverCropGeometry.zoomBy(_crop, factor));
   }
 
   @override
@@ -209,61 +168,63 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
                     _zoom(math.exp(-event.scrollDelta.dy / _wheelPixelsPerE));
                   }
                 },
-                child: GestureDetector(
-                  key: const ValueKey('avatar-crop-viewport'),
-                  behavior: HitTestBehavior.opaque,
-                  onScaleStart: (_) => _gestureScale = 1,
-                  onScaleUpdate: (details) {
-                    // One finger drags; two fingers only zoom. Two fingers
-                    // arrive as separate events, each shifting the focal
-                    // point, and panning on those would drift the picture
-                    // through every pinch.
-                    if (details.pointerCount == 1 &&
-                        details.focalPointDelta != Offset.zero) {
-                      _pan(details.focalPointDelta, side);
+                child: JournalImageResolver(
+                  imageId: widget.imageId,
+                  builder: (context, resolved) {
+                    if (resolved == null || resolved.hasNothingToShow) {
+                      return ColoredBox(
+                        color: tokens.colors.background.level02,
+                      );
                     }
-                    if (details.scale != _gestureScale) {
-                      _zoom(details.scale / _gestureScale);
-                      _gestureScale = details.scale;
-                    }
-                  },
-                  child: ClipRect(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        JournalImageResolver(
-                          imageId: widget.imageId,
-                          builder: (context, resolved) {
-                            if (resolved == null || resolved.hasNothingToShow) {
-                              return ColoredBox(
-                                color: tokens.colors.background.level02,
-                              );
-                            }
-                            if (resolved.fileExists) {
-                              _probeSize(resolved.path);
-                            }
-                            return AvatarCropPicture(
+                    Widget surface(Size? imageSize) => GestureDetector(
+                      key: const ValueKey('avatar-crop-viewport'),
+                      behavior: HitTestBehavior.opaque,
+                      onScaleStart: (_) => _gestureScale = 1,
+                      onScaleUpdate: (details) {
+                        // One finger drags; two fingers only zoom. Two
+                        // fingers arrive as separate events, each shifting
+                        // the focal point, and panning on those would drift
+                        // the picture through every pinch.
+                        if (details.pointerCount == 1 &&
+                            details.focalPointDelta != Offset.zero) {
+                          _pan(details.focalPointDelta, side, imageSize);
+                        }
+                        if (details.scale != _gestureScale) {
+                          _zoom(details.scale / _gestureScale);
+                          _gestureScale = details.scale;
+                        }
+                      },
+                      child: ClipRect(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            AvatarCropPicture(
                               resolved: resolved,
                               crop: _crop,
                               size: side,
-                            );
-                          },
-                        ),
-                        IgnorePointer(
-                          child: CustomPaint(
-                            painter: _CircleMaskPainter(
-                              scrim: ModalUtils.getModalBarrierColor(
-                                isDark:
-                                    Theme.of(context).brightness ==
-                                    Brightness.dark,
-                                context: context,
+                            ),
+                            IgnorePointer(
+                              child: CustomPaint(
+                                painter: _CircleMaskPainter(
+                                  scrim: ModalUtils.getModalBarrierColor(
+                                    isDark:
+                                        Theme.of(context).brightness ==
+                                        Brightness.dark,
+                                    context: context,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                    if (!resolved.fileExists) return surface(null);
+                    return FileImageSize(
+                      path: resolved.path,
+                      builder: (context, imageSize) => surface(imageSize),
+                    );
+                  },
                 ),
               ),
             );

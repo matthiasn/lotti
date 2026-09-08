@@ -29,12 +29,16 @@ sources:
     title: JournalImageResolver — file, stand-in or nothing, and when that changes
     last_modified: 2026-09-08
   - id: avatar-actions
-    resource: ../../lib/features/relationships/ui/widgets/avatar_photo_actions.dart
-    title: AvatarPhotoActions — choose, re-crop, remove, with the surfaces injected
+    resource: ../../lib/features/relationships/ui/widgets/person_photo_actions.dart
+    title: PersonPhotoActions — choose, re-crop, remove, with the surfaces injected
     last_modified: 2026-09-08
   - id: crop-geometry
-    resource: ../../lib/features/relationships/ui/shared/avatar_crop_geometry.dart
-    title: AvatarCropGeometry — the renderer's model, for the surface that edits it
+    resource: ../../lib/features/relationships/ui/shared/cover_crop_geometry.dart
+    title: CoverCropGeometry — the renderer's model, for the surface that edits it
+    last_modified: 2026-09-08
+  - id: photo-card
+    resource: ../../lib/features/relationships/ui/widgets/person_photo_card.dart
+    title: PersonPhotoCard — face and banner in the person form
     last_modified: 2026-09-08
   - id: list-model
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
@@ -206,7 +210,7 @@ token spacing does not have.
 **Choosing the avatar.** Tapping the hero avatar (only while the band is
 open — a folded hero's faded avatar takes no taps) opens the avatar sheet:
 the privacy line, *Choose from library*, and once there is a photo *Adjust
-crop* and *Remove photo*. The flows live in `AvatarPhotoActions`, whose only
+crop* and *Remove photo*. The flows live in `PersonPhotoActions`, whose only
 dependencies are the two repositories and the two surfaces it opens, handed
 in as functions — so pick → crop → write, and backing out at either step, is
 a plain unit test. Three rules are load-bearing:
@@ -214,11 +218,11 @@ a plain unit test. Three rules are load-bearing:
 - **Cancelling writes nothing, even after the picker ran.** The picker has to
   import the picture before the crop surface can show it, so an entry already
   exists when the user sees *Use photo*; cancelling there deletes that entry
-  again. `AvatarPhotoActions.choose` owns this.
+  again. `PersonPhotoActions.chooseAvatar` owns this.
 - **The crop surface commits nothing.** `showAvatarCropSheet` resolves to the
   framing or null; the caller writes. Its preview *is* a `PersonaAvatar`, so
   the preview and the list cannot disagree, and its gesture arithmetic is
-  `AvatarCropGeometry` — the renderer's model written out — whose "the circle
+  `CoverCropGeometry` — the renderer's model written out — whose "the circle
   is never empty" invariant is a property test.
 - **Removing clears the reference and keeps the entry**, the task cover-art
   precedent (`setCoverArt(null)`): taking a picture off a person is not
@@ -247,7 +251,19 @@ fixed on purpose:
 - **The decode is bounded to the strip at rest**, so scrolling never re-keys
   the picture through the image cache.
 
-Nothing *chooses* a banner yet: that is the form's Photo card, after this.
+**Choosing the banner — and the face again — is the form's Photo card**
+(`PersonPhotoCard`, edit only). Face: the avatar at the import review's size
+with Change · Adjust crop · Remove. Banner: a strip the hero's own height,
+dragged left or right by `CoverCropGeometry` over the strip's viewport — the
+arithmetic the hero renders with — with the write made once, when the finger
+lifts. Its actions are the same `PersonPhotoActions` the sheet uses, built by
+`productionPersonPhotoActions` for both, and they write **immediately**, not on
+Save: a picture exists the moment the picker returns, so commit-on-Save would
+mean tracking orphans to delete on Cancel, and every profile editor treats a
+photo change as its own act. The form therefore carries a refreshable
+`_person`, re-read after every card write, and builds Save from *that* — a
+Save built from the entry the form opened with would write the old photo back
+over the new one, and a test pins that it does not.
 
 The field they replaced, `coverArtId`, was declared with the rest of the model
 and never written by anything, so it was **removed rather than migrated** — no
