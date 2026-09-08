@@ -30,12 +30,14 @@ import 'package:flutter_scene/scene.dart' hide FlyCameraController;
 import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
+import 'package:lotti/features/plaza/domain/character_population.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_bench.dart';
+import 'package:lotti/features/plaza/scene/plaza_characters.dart';
 import 'package:lotti/features/plaza/scene/plaza_picker.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
@@ -104,7 +106,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     Platform.environment,
   );
 
-  /// Dev-only: `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls`
+  /// Dev-only: `PLAZA_HIDE=gantry,jumbotron,fillers,skyline,pylons,walls,characters`
   /// leaves those pieces out of the scene, to isolate what a screenshot
   /// is showing.
   static final Set<String> _hidden = {
@@ -146,6 +148,8 @@ class _PlazaHarnessState extends State<_PlazaHarness>
 
   late PlazaWorld _world;
   late PlazaSceneController _sceneController;
+  late PlazaCharacters _characters;
+  bool _animateCharacters = true;
   late FacadeLodManager _lod;
   late PlazaSprites _sprites;
   late PlazaSurfaces _surfaces;
@@ -192,6 +196,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   /// be loaded before any of them is constructed.
   bool _ready = false;
   WallTextures? _walls;
+  Node? _penguinModel;
 
   @override
   void initState() {
@@ -203,6 +208,9 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   Future<void> _boot() async {
     await Scene.initializeStaticResources();
     _walls = await WallTextures.load();
+    if (!_hidden.contains('characters')) {
+      _penguinModel = await PlazaCharacters.loadModel();
+    }
     if (!mounted) return;
     _load();
     switch (_mode) {
@@ -221,6 +229,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
           : _frameRate.capFor(
               moving: _moving || _elapsed < _movingUntil,
               activeSurface: _lod.stats.live > 0,
+              activeAnimation: _characters.hasVisibleMotion,
             ),
     );
     if (WidgetsBinding.instance.lifecycleState == null ||
@@ -240,7 +249,10 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     WidgetsBinding.instance.removeObserver(this);
     SchedulerBinding.instance.removeTimingsCallback(_recordEngineFrames);
     _pacer?.dispose();
-    if (_ready) _lod.dispose();
+    if (_ready) {
+      _lod.dispose();
+      _characters.dispose();
+    }
     _ticks.dispose();
     _stats.dispose();
     _frame.dispose();
@@ -279,6 +291,12 @@ class _PlazaHarnessState extends State<_PlazaHarness>
     } else {
       _pacer?.stop();
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _animateCharacters = !MediaQuery.disableAnimationsOf(context);
   }
 
   // ---------------------------------------------------------------- data
@@ -325,8 +343,23 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       pxPerMeter: _sceneController.pxPerMeter,
     );
     final batches = _sceneController.bakeStaticMeshes();
+    // Articulated meshes must attach after the stationary district is baked.
+    _characters = PlazaCharacters(
+      parent: _sceneController.scene.root,
+      model: _penguinModel,
+      shadowTexture: walls?.pool,
+      population: _hidden.contains('characters')
+          ? const []
+          : CharacterPopulation.forWorld(
+              plan: _world.plan,
+              plaza: _world.plaza,
+              solids: _world.solids,
+              roadWidth: _world.layout.roadWidth,
+            ),
+    );
     debugPrint(
-      'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches}',
+      'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches} '
+      'penguins=${_characters.root.children.length}',
     );
     _picker = PlazaPicker(controller: _sceneController, sprites: _sprites);
     final home =
@@ -350,6 +383,7 @@ class _PlazaHarnessState extends State<_PlazaHarness>
   /// Rebuilds the scene with the current layout knobs.
   void _applyKnobs() {
     _lod.dispose();
+    _characters.dispose();
     setState(_load);
     _bench?.resume(_camera);
   }
@@ -625,6 +659,11 @@ class _PlazaHarnessState extends State<_PlazaHarness>
       glowFade: _sceneController.poolFade,
     );
     _sceneController.updateForCamera(eye);
+    _characters.update(
+      seconds: _elapsed,
+      eye: eye,
+      animate: _animateCharacters,
+    );
     _sprites.update(camera, _viewSize, _elapsed);
 
     if (_toast != null && _elapsed > _toastUntil) {
