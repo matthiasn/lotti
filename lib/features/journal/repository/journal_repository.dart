@@ -381,10 +381,12 @@ class JournalRepository {
         linkCollapsed: linkCollapsed,
       );
 
-      // Invoke callback after successful creation
-      onCreated?.call(journalEntity);
+      final created = applied ?? false;
+      // Only a row this call inserted is "created": an existing image must
+      // not have its analysis re-triggered because it was picked again.
+      if (created) onCreated?.call(journalEntity);
 
-      return (entry: journalEntity, created: applied ?? false);
+      return (entry: journalEntity, created: created);
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.persistence,

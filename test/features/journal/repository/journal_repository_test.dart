@@ -1860,12 +1860,19 @@ void main() {
             ),
           ).thenAnswer((_) async => true);
 
+          final seen = <JournalEntity>[];
           final result = await JournalRepository.createImageEntryTracked(
             imageData,
+            onCreated: seen.add,
           );
 
           expect(result!.created, isTrue);
           expect(result.entry.meta.id, 'image-entry');
+          expect(
+            seen.map((entity) => entity.meta.id),
+            ['image-entry'],
+            reason: 'onCreated fires for the row this call inserted',
+          );
         });
 
         test(
@@ -1880,8 +1887,10 @@ void main() {
               ),
             ).thenAnswer((_) async => false);
 
+            var callbacks = 0;
             final result = await JournalRepository.createImageEntryTracked(
               imageData,
+              onCreated: (_) => callbacks++,
             );
 
             expect(result!.created, isFalse);
@@ -1889,6 +1898,13 @@ void main() {
               result.entry.meta.id,
               'image-entry',
               reason: 'the caller still gets the entry it can reference',
+            );
+            expect(
+              callbacks,
+              0,
+              reason:
+                  'an existing image must not have its analysis re-triggered '
+                  'because it was picked again',
             );
           },
         );

@@ -97,6 +97,12 @@ void main() {
     when(
       () => relationships.updateRelationship(any()),
     ).thenAnswer((_) async => outcome != PersonPhotoOutcome.failed);
+    // A refused write discards the picture the flow imported; without this
+    // the refused-write tests would reach their toast through the exception
+    // path instead, and prove nothing about the refusal.
+    when(
+      () => journal.deleteJournalEntity(any()),
+    ).thenAnswer((_) async => true);
   });
 
   tearDown(() async {
@@ -274,6 +280,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(changes, 1, reason: 'a failed write is not a change');
     expect(find.text('Could not save the photo'), findsOneWidget);
+    verify(
+      () => journal.deleteJournalEntity('image-new'),
+    ).called(1);
+    expect(
+      log,
+      ['pick', 'crop image-new'],
+      reason: 'the refused path ran the whole flow, not an exception',
+    );
   });
 
   testWidgets('a flow that throws is reported like a refused write, and the '

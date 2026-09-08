@@ -1324,6 +1324,16 @@ void main() {
         find.text('Could not save this person. Please try again.'),
         findsOne,
       );
+      // The same matchers verify the call, which is what proves the stub
+      // above matched it and the toast came from the thrown exception.
+      verify(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      ).called(1);
     });
 
     testWidgets('shows a toast when update returns false', (tester) async {
