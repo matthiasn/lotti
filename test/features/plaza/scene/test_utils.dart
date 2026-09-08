@@ -4,13 +4,19 @@ import 'dart:typed_data';
 
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_characters.dart';
+import 'package:lotti/features/plaza/scene/plaza_meerkats.dart';
 import 'package:vector_math/vector_math.dart';
 
 /// Reads the shipped penguin's hierarchy and bind matrices without GPU
 /// uploads. Empty skinned geometry stands in for its base buffers; skeletons,
 /// morph deltas, materials and transforms retain the asset's actual structure.
-Node loadPenguinWithoutGpu() {
-  final bytes = File(PlazaCharacters.asset).readAsBytesSync();
+Node loadPenguinWithoutGpu() => _loadCharacterWithoutGpu(PlazaCharacters.asset);
+
+/// Uses the same asset-backed skeleton and morph fixture for the meerkat rig.
+Node loadMeerkatWithoutGpu() => _loadCharacterWithoutGpu(PlazaMeerkats.asset);
+
+Node _loadCharacterWithoutGpu(String asset) {
+  final bytes = File(asset).readAsBytesSync();
   final data = ByteData.sublistView(bytes);
   final jsonLength = data.getUint32(12, Endian.little);
   final doc =

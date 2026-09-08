@@ -10380,6 +10380,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get plazaMeerkats => 'Suricate';
+
+  @override
   String get plazaMorningWalk => 'Plimbare de dimineață';
 
   @override

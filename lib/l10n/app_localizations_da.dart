@@ -10185,6 +10185,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get plazaMeerkats => 'Surikater';
+
+  @override
   String get plazaMorningWalk => 'Morgentur';
 
   @override

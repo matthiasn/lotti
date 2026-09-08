@@ -10313,6 +10313,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get plazaMeerkats => 'Surikaty';
+
+  @override
   String get plazaMorningWalk => 'Ranní procházka';
 
   @override
