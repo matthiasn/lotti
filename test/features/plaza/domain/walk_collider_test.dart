@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/domain/walk_collider.dart';
@@ -20,6 +21,74 @@ Footprint _box({
 );
 
 void main() {
+  group('swept movement', () {
+    for (final facing in [0.0, math.pi / 4, math.pi / 2, -math.pi / 3]) {
+      for (final direction in [-1.0, 1.0]) {
+        test('cannot cross a thin rotated wall ($facing, $direction)', () {
+          final box = _box(x: 13, z: -7, facing: facing, depth: 0.2);
+          final collider = WalkCollider([box]);
+          final (sx, sz) = frameToWorld(13, -7, facing, 0, direction * 30);
+          final (tx, tz) = frameToWorld(13, -7, facing, 0, -direction * 30);
+          final (x, z) = collider.move(sx, sz, tx, tz);
+          final (u, v) = box.local(x, z);
+          expect(u, closeTo(0, 1e-6));
+          expect(v, closeTo(direction * 0.7, 1e-6));
+        });
+      }
+    }
+
+    glados.Glados3<double, double, double>(
+      glados.any.doubleInRange(-math.pi, math.pi),
+      glados.any.doubleInRange(2, 200),
+      glados.any.doubleInRange(-40, 40),
+      glados.ExploreConfig(numRuns: 80),
+    ).test('sweep stops on the entry face across headings and step lengths', (
+      facing,
+      distance,
+      lateral,
+    ) {
+      final box = _box(x: 13, z: -7, facing: facing, width: 100, depth: 0.2);
+      final collider = WalkCollider([box]);
+      final (sx, sz) = frameToWorld(13, -7, facing, lateral, distance);
+      final (tx, tz) = frameToWorld(13, -7, facing, lateral, -distance);
+      final (x, z) = collider.move(sx, sz, tx, tz);
+      final (u, v) = box.local(x, z);
+      expect(u, closeTo(lateral, 1e-6));
+      expect(v, closeTo(0.7, 1e-6));
+    }, tags: 'glados');
+
+    test('slides along a rotated wall after a long diagonal step', () {
+      final box = _box(facing: math.pi / 4, width: 100, depth: 0.2);
+      final collider = WalkCollider([box]);
+      final (sx, sz) = frameToWorld(0, 0, math.pi / 4, -10, 20);
+      final (tx, tz) = frameToWorld(0, 0, math.pi / 4, 10, -20);
+      final (x, z) = collider.move(sx, sz, tx, tz);
+      final (u, v) = box.local(x, z);
+      expect(u, closeTo(10, 1e-6));
+      expect(v, closeTo(0.7, 1e-6));
+    });
+
+    test('stops at both walls of a corner in either obstacle order', () {
+      final walls = [
+        _box(x: 10, width: 0.2, depth: 100),
+        _box(z: 10, width: 100, depth: 0.2),
+      ];
+      for (final order in [walls, walls.reversed]) {
+        final (x, z) = WalkCollider(order).move(0, 0, 40, 30);
+        expect(x, closeTo(9.3, 1e-6));
+        expect(z, closeTo(9.3, 1e-6));
+      }
+    });
+
+    test('allows travel parallel to and away from a contacted wall', () {
+      final collider = WalkCollider([_box()]);
+      expect(collider.move(0, 3.6, 3, 3.6), (3, 3.6));
+      expect(collider.move(0, 3.6, 0, 30), (0, 30));
+      expect(collider.move(20, 20, 20, 20), (20, 20));
+      expect(collider.move(0, 2.5, 0, 20), (0, 21.1));
+    });
+  });
+
   test('a long box turned 45° still pushes out near its far corner', () {
     // Width 20 along local X, depth 2: the far corner is 10.05 m from the
     // centre, well past the |dx| + |dz| a square box of that reach would

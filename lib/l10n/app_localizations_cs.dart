@@ -10258,7 +10258,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD chůze · tažením se rozhlížej · Tab další maják · H domů · M přehled · / hledat · ⌘[ zpět';
+      'WASD chůze · drž Shift: 8× rychlost · tažením se rozhlížej · Tab další maják · H domů · M přehled · / hledat · ⌘[ zpět';
 
   @override
   String plazaCornerAfter(String week) {

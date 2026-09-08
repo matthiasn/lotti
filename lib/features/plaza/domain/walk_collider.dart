@@ -1,10 +1,10 @@
-/// Keeps the walker out of every solid: a point-versus-rotated-rectangle
-/// push against every footprint, with a margin so the camera never clips a
-/// wall.
+/// Keeps the walker out of every solid: swept movement against rotated
+/// footprints, with a margin so the camera never clips a wall, even when
+/// a fast step crosses an entire building.
 ///
-/// Pure Dart, O(footprints) per resolve; each footprint's frame is fixed
-/// once, and a footprint too far away to touch is rejected before it is
-/// rotated into.
+/// Pure Dart, O(footprints) per move/resolve; each footprint's frame is fixed
+/// once. Point recovery rejects distant footprints before rotating into
+/// their local frame; movement checks the complete segment.
 library;
 
 import 'dart:math' as math;
@@ -77,6 +77,80 @@ class WalkCollider {
 
   /// Extra clearance around every footprint, world meters.
   final double margin;
+
+  /// Sweeps the entire step, stopping at the first wall and sliding along it.
+  ///
+  /// At most four contacts are processed, independent of speed or frame time;
+  /// any remaining motion is discarded at a complex corner. The slabs and
+  /// contact normals use cached wall frames, with no per-wall allocations.
+  (double, double) move(double fromX, double fromZ, double toX, double toZ) {
+    var (x, z) = resolve(fromX, fromZ);
+    var dx = toX - fromX;
+    var dz = toZ - fromZ;
+    const epsilon = 1e-9;
+    for (var contact = 0; contact < 4; contact++) {
+      if (dx.abs() + dz.abs() < epsilon) break;
+      var earliest = 1.0;
+      var normalX = 0.0;
+      var normalZ = 0.0;
+      var hit = false;
+      for (final w in _walls) {
+        final u = (x - w.x) * w.cosF - (z - w.z) * w.sinF;
+        final v = (x - w.x) * w.sinF + (z - w.z) * w.cosF;
+        final du = dx * w.cosF - dz * w.sinF;
+        final dv = dx * w.sinF + dz * w.cosF;
+        var enterU = double.negativeInfinity;
+        var exitU = double.infinity;
+        var enterV = double.negativeInfinity;
+        var exitV = double.infinity;
+        if (du.abs() < epsilon) {
+          if (u.abs() >= w.halfW) continue;
+        } else {
+          final a = (-w.halfW - u) / du;
+          final b = (w.halfW - u) / du;
+          enterU = math.min(a, b);
+          exitU = math.max(a, b);
+        }
+        if (dv.abs() < epsilon) {
+          if (v.abs() >= w.halfD) continue;
+        } else {
+          final a = (-w.halfD - v) / dv;
+          final b = (w.halfD - v) / dv;
+          enterV = math.min(a, b);
+          exitV = math.max(a, b);
+        }
+        final enter = math.max(enterU, enterV);
+        final exit = math.min(exitU, exitV);
+        // Ignore grazing, motion away from a face, and walls beyond this step.
+        if (enter < -epsilon ||
+            enter > earliest ||
+            exit <= math.max(0, enter)) {
+          continue;
+        }
+        earliest = math.max(0, enter);
+        hit = true;
+        if (enterU > enterV) {
+          normalX = -du.sign * w.cosF;
+          normalZ = du.sign * w.sinF;
+        } else {
+          normalX = -dv.sign * w.sinF;
+          normalZ = -dv.sign * w.cosF;
+        }
+      }
+      x += dx * earliest;
+      z += dz * earliest;
+      if (!hit) break;
+      // A sub-micron separation avoids round-off placing the next sweep inside.
+      x += normalX * 1e-7;
+      z += normalZ * 1e-7;
+      dx *= 1 - earliest;
+      dz *= 1 - earliest;
+      final intoWall = dx * normalX + dz * normalZ;
+      dx -= intoWall * normalX;
+      dz -= intoWall * normalZ;
+    }
+    return (x, z);
+  }
 
   /// Returns the nearest point outside every footprint to (x, z).
   (double, double) resolve(double x, double z) {

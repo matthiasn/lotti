@@ -5,7 +5,7 @@ description: Scoped journal snapshots generate task timelines and category avenu
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, projects, categories]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-08T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-08T22:30:00Z }
 stale_after: 2027-03-01
 sources:
   - id: repository
@@ -32,6 +32,10 @@ sources:
     resource: ../../lib/features/plaza/domain/building_architecture.dart
     title: Bounded building volumes and facade dimensions
     last_modified: 2026-09-08
+  - id: architecture-renderer
+    resource: ../../lib/features/plaza/scene/plaza_architecture.dart
+    title: Shared recessed cores, structural piers and lit cornices
+    last_modified: 2026-09-08
   - id: street
     resource: ../../lib/features/plaza/domain/street_layout.dart
     title: Deterministic timeline placement
@@ -43,7 +47,7 @@ sources:
   - id: scene
     resource: ../../lib/features/plaza/scene/plaza_scene.dart
     title: Geometry and static batching
-    last_modified: 2026-09-05
+    last_modified: 2026-09-08
   - id: lod
     resource: ../../lib/features/plaza/scene/facade_lod_manager.dart
     title: Facade promotion and capture budgets
@@ -203,6 +207,15 @@ laterally away from the road. Default low-level layout parameters preserve the
 older fixture contracts; integrated generators enable density and priority
 scaling. Renderer debug tuning preserves the remaining generator parameters.
 
+Background fabric uses compact two-to-3.5-metre alleys and the same shallow
+setback range behind the plot line. Mid-rise blocks stand 24–48 metres high,
+with seeded 56–80-metre accents. Fillers shrink or disappear when they overlap
+another street corridor or a task footprint, including recessed completed plots.
+Avenue landmarks stand 60 metres past a folded row. The skyline retains its
+48-tower budget: broader, taller towers occupy a 36-metre radial band beyond the
+existing district clearance. These dimensions belong to the pure scenery
+recipe; rendering, walking and flight clearance all consume the resulting solids.
+
 Priority scales facade and attention billboard dimensions within their mounts:
 urgent is full size, with successively smaller factors for high, medium and low.
 Mount centers and orientation remain fixed. Completed walls are muted green;
@@ -229,18 +242,36 @@ and picking record. Priority scales the panel about its centre. Configuration
 changes preserve the timeline address and the original street-facing plane.
 
 `BuildingArchitecture` chooses a stepped tower, offset media crown or theater
-setback. A recessed ground floor supports a continuous streetwall and canopy;
-smaller upper volumes expose the silhouette. Every volume stays within the
-plot's width, depth and height, so existing conservative collision and flight
-solids remain valid. The former extra rooftop mass and decorative plant are
-removed. The topmost crown carries the task's status colour, including green for
-done and neutral grey for cancelled. Ordinary storeys have window grids without
-repeating the ground-floor storefront band. The project jumbotron uses the
-stepped family, reserving its entire sign height before beginning the crown.
-Window and shopfront skins use the existing facade-plate depth bias as well as
-their geometric offset. The offset alone loses depth precision on distant
-towers when static batching changes draw order. The shared paving texture draws
-staggered joints over transparent slab centres, avoiding checkerboard shading.
+setback. The stepped family has three narrowing crown tiers. A recessed ground
+floor supports a continuous streetwall and canopy. Every volume stays within
+the plot's width, depth and height, so conservative collision and flight solids
+remain valid. The topmost crown carries the task's status colour, including
+green for done and neutral grey for cancelled.
+
+`PlazaArchitecture` builds inset wall cores under each volume's outer envelope.
+Shared window skins dress those cores; corner piers, side-wall bays and cornices
+occupy the remaining relief. Media towers use horizontal spandrels, while stone
+families use vertical piers and crown flutes. Repeated detail caps at six bays or
+courses per volume. All structure stays behind the street-facing sign plane;
+priority scaling, picking anchors and the task's approach remain unchanged.
+Materials come from the existing scene palette and design-system surface tokens.
+
+Task buildings, the project jumbotron, avenue landmarks, filler blocks and the
+skyline use this builder. Jumbotron and avenue recipes reserve the full screen
+height before starting the crown. Supporting filler blocks and skyline towers
+omit column grids and extra coping. Each lit setback uses one thin cap
+instead of four rim pieces; the street-facing luminous course stays at the
+same height. Skyline towers also omit shopfronts. The renderer creates this geometry once
+and includes it in static batching; it adds no per-frame geometry work or new
+texture families.
+
+Ordinary storeys have window grids without repeating the ground-floor storefront
+band. The office tile has full-height glass and metal mullions; residential
+families retain inset panes. All share the original atlas dimensions. Window
+and shopfront skins use the existing facade-plate depth bias as well as their
+geometric offset. The offset alone loses depth precision on distant towers when
+static batching changes draw order. The shared paving texture draws staggered
+joints over transparent slab centres, avoiding checkerboard shading.
 
 # Attention and navigation
 
@@ -268,13 +299,42 @@ stateDiagram-v2
   Flying --> Walking: arrival
   Flying --> Walking: manual movement or drag cancels
   Flying --> Flying: high movement replaces flight with landing
+  Flying --> Flying: Shift eases flight speed up or down
   Walking --> Walking: collision-constrained movement
 ```
 
 `Flight.route` follows street segments between low poses; `Flight.plan` handles
-climbs and dives. Both use smooth speed profiles, bounded turn timing and swept
-height clearance against solids. Starting flight clears walking velocity, and
-hardware key state prevents a lost key-up from leaving movement latched.
+climbs and dives. Guide legs retain swept height clearance against solids.
+Routed flights join those legs with cubic Bezier bends matching both position
+and tangent. A bend trims at most eight metres and at most 35% of either adjacent
+leg; its recursively subdivided control hull must clear every solid with camera
+clearance. A blocked bend shrinks until clear; if no usable radius remains, the
+original guide junction is retained. Arrival look-ahead stops before the rounded
+pull-off, preserving the road heading until the final orientation blend.
+
+Flight timing includes the actual three-dimensional distance between samples,
+so a steep obstacle lift cannot ignore its vertical travel. A bounded slowdown
+envelope spreads braking before tight sections. Monotone cubic interpolation of
+progress, yaw and pitch shares derivatives between knots, preserving continuous
+velocity. Analytic angular derivative bounds stretch the clock when necessary.
+The bend checks, timing arrays and smoothing weights are computed once per
+flight; frames interpolate the cached plan. Starting flight clears walking
+velocity, and hardware key state prevents lost key-up from latching movement.
+Walking is 3.4 m/s; holding either Shift key multiplies travel speed by eight,
+with the existing acceleration/deceleration easing. The localized control legend
+advertises the modifier. Holding Shift during a flight accelerates its clock
+up to the same eightfold rate without cancelling the flight or Morning walk.
+The multiplier approaches its target with a 0.3-second exponential time constant;
+integrating it exactly makes coarse and fine frame steps agree. Releasing Shift
+smoothly returns to normal speed, even when its key-up goes to an overlay. A new
+flight or landing resets the multiplier. Arrival still clamps to the exact
+endpoint and calls its callback once.
+
+`WalkCollider.move` sweeps the whole movement segment
+against inflated rotated footprints, chooses the earliest contact, then slides
+along the wall. It processes at most four contacts and drops residual motion at
+a complex corner, so speed and slow frames cannot tunnel through thin solids.
+Wall frames are cached and the sweep creates no per-wall objects.
 Camera history returns through prior poses before the route exits.
 
 ```mermaid
@@ -307,7 +367,9 @@ statistics periodically rather than allocating a new history each frame.
 `PlazaBoxes` shares unit meshes and immutable materials. Static opaque meshes are
 baked by spatial cell and compatible material/UV/picking state; pick anchors and
 dynamic groups keep their identity. Translucent pools and individual status
-sprites keep depth ordering. Fog and ground washes recede with altitude, leaving
+sprites keep depth ordering. Ground streaks, scene glows and independently
+animated billboard halos all receive the shared radial falloff texture; missing
+that binding produces hard rectangular sheets of colour. Fog and ground washes recede with altitude, leaving
 road markers and status lights readable in Overview. Decorative filler blocks
 and the skyline ring share a separately baked `city-context` root. It hides at
 the same altitude threshold that reveals map labels, removing their occlusion
@@ -487,8 +549,8 @@ catch-up jump when re-enabled. Characters beyond `visibleRange` stop rendering
 and leave the 30 Hz animation budget. Resuming visibility samples the current
 route time. Rebuilding the world or disposing the explorer detaches the old rigs.
 `PlazaCharacters.enabled` hides the existing root, clears its motion budget,
-and resets the clock baseline on both toggle edges. The HUD preference stays in
-`PlazaView` across data refreshes; toggling it does not call `_load` or move the
+and resets the clock baseline on both toggle edges. The HUD preference starts
+false in each new `PlazaView` and stays there across data refreshes; toggling it does not call `_load` or move the
 camera. Reduced motion leaves visible animals frozen, independently of hiding.
 Optional GLB load failure leaves the data world usable and its control disabled.
 A later zero-to-positive budget change can load the model, with a mounted guard
@@ -497,7 +559,7 @@ omits the layer for scene isolation.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Visible: attach available model
+  [*] --> Hidden: attach available model with default preference
   Visible --> Hidden: Penguins off
   Hidden --> Visible: Penguins on, reset clock baseline
   Visible --> Frozen: reduced motion

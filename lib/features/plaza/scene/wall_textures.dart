@@ -19,8 +19,9 @@ class WallTextures {
 
   /// How many window-tile families there are: the same lit ratio in
   /// three occupancies (mixed flats, a residential stack with dark floors
-  /// and one lit edge to edge, a cool office grid), so adjacent walls do
-  /// not share one wallpaper.
+  /// and one lit edge to edge, a cool office curtain wall), so adjacent walls
+  /// do not share one wallpaper. The office family has larger glass panes
+  /// and metal mullions; all families share the same atlas dimensions.
   static const tileFamilies = 3;
 
   /// One tile is [floors] storeys tall and [bays] windows wide, in world
@@ -1207,7 +1208,10 @@ class WallTextures {
       ..scale(_textureScale)
       ..drawRect(
         ui.Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
-        ui.Paint()..color = _night,
+        ui.Paint()
+          ..color = family == 2
+              ? dsTokensDark.colors.aiCard.background
+              : _night,
       );
     final rng = math.Random(state.index * 7919 + 17 + family * 101);
     final tint = _tints[state]!;
@@ -1224,11 +1228,17 @@ class WallTextures {
     final blindShare = family == 2 ? 0.15 : 0.4;
     for (var floor = 0; floor < floors; floor++) {
       for (var bay = 0; bay < bays; bay++) {
-        // A pane clearly smaller than a shop door, so the storeys read
-        // as storeys next to the 4 m band.
-        final x = bay * _px + _px * 0.27;
-        final y = floor * _px + _px * 0.3;
-        final rect = ui.Rect.fromLTWH(x, y, _px * 0.46, _px * 0.5);
+        // Residential punched windows contrast with floor-to-ceiling office
+        // glazing. This changes the architecture without another atlas or draw.
+        final office = family == 2;
+        final x = bay * _px + _px * (office ? 0.08 : 0.27);
+        final y = floor * _px + _px * (office ? 0.14 : 0.3);
+        final rect = ui.Rect.fromLTWH(
+          x,
+          y,
+          _px * (office ? 0.84 : 0.46),
+          _px * (office ? 0.78 : 0.5),
+        );
         final roll = rng.nextDouble() < lit;
         final on = floor != darkFloor && (floor == litFloor || roll);
         // Two tints per state: most windows warm, a few the cooler one,
@@ -1283,6 +1293,18 @@ class WallTextures {
               rect.height * (0.25 + rng.nextDouble() * 0.35),
             ),
             ui.Paint()..color = const ui.Color(0xB30B0A14),
+          );
+        }
+        if (office) {
+          // Narrow metal caps catch the city light between the dark glazing.
+          canvas.drawRect(
+            ui.Rect.fromLTWH(
+              bay * _px.toDouble(),
+              floor * _px.toDouble(),
+              _px * 0.025,
+              _px.toDouble(),
+            ),
+            ui.Paint()..color = dsTokensDark.colors.background.level03,
           );
         }
       }

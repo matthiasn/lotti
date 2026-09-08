@@ -237,7 +237,7 @@ Solid plotSpireSolidFor(PlotPlacement p) => Solid.post(
 );
 
 /// Fillers stand this far past the plots' back line.
-const fillerSetback = 4.0;
+const fillerSetback = 2.0;
 
 /// No filler stands on the plaza or within this margin of it.
 const fillerPlazaMargin = 12.0;
@@ -279,7 +279,9 @@ Footprint streetCorridorFor(
 /// and nothing in any street: the folds bring the rows closer than a
 /// filler's reach, so a block that would stand in the next row's corridor
 /// is cut back to an alley short of it, or left out when too little of it
-/// is left. A dropped block never shifts its neighbours.
+/// is left. Recessed task plots are also reserved. Two-to-3.5-metre alleys
+/// and shallow setbacks keep the fabric continuous without adding another
+/// layer of buildings. A dropped block never shifts its neighbours.
 List<FillerBlock> fillerBlocksFor(
   StreetPlan plan,
   FrontierPlaza? plaza, {
@@ -287,9 +289,11 @@ List<FillerBlock> fillerBlocksFor(
   required double plotDepth,
 }) {
   final lateralBase = roadWidth / 2 + plotDepth + fillerSetback;
-  final corridors = [
+  final obstacles = [
     for (final segment in plan.segments)
       streetCorridorFor(segment, roadWidth: roadWidth, plotDepth: plotDepth),
+    // Completed plots stand behind the normal street frontage too.
+    for (final plot in plan.placements.values) plot.footprint,
   ];
   final plazaGround = plaza?.footprint;
   bool onPlaza(double x, double z) =>
@@ -311,9 +315,9 @@ List<FillerBlock> fillerBlocksFor(
         // landmarks so the roofline behind a row is jagged.
         final tall = stableUnit(id, 'tall') < 0.25;
         final height = tall
-            ? 40 + stableUnit(id, 'h') * 20
-            : 12 + stableUnit(id, 'h') * 22;
-        final inner = lateralBase + stableUnit(id, 'l') * 4;
+            ? 56 + stableUnit(id, 'h') * 24
+            : 24 + stableUnit(id, 'h') * 24;
+        final inner = lateralBase + stableUnit(id, 'l') * 1.5;
         FillerBlock at(double reach) {
           final (x, z) = frameToWorld(
             segment.startX,
@@ -340,12 +344,12 @@ List<FillerBlock> fillerBlocksFor(
           // Cut the reach back, a metre at a time, until the block stands
           // in no street.
           while (block.width >= fillerMinReach &&
-              corridors.any((c) => footprintsOverlap(block.footprint, c))) {
+              obstacles.any((c) => footprintsOverlap(block.footprint, c))) {
             block = at(block.width - 1);
           }
           if (block.width >= fillerMinReach) blocks.add(block);
         }
-        along += frontage + 2 + stableUnit(id, 'gap') * 4;
+        along += frontage + 2 + stableUnit(id, 'gap') * 1.5;
         i++;
       }
     }
@@ -354,7 +358,7 @@ List<FillerBlock> fillerBlocksFor(
 }
 
 /// How far past a folding row's end its hero tower stands.
-const heroTowerStandOff = 90.0;
+const heroTowerStandOff = 60.0;
 
 /// One hero tower past the far end of every row that folds, on the row's
 /// axis, facing back down the row. The last row's far end has the
@@ -420,7 +424,7 @@ JumbotronTower? jumbotronTowerFor(BillboardSlot? jumbotron) {
 }
 
 /// Towers on the skyline ring, and how far beyond the district's radius
-/// the ring starts. The towers stand 24 to 78 m so their lit rooflines
+/// the ring starts. The towers stand 42 to 96 m so their lit rooflines
 /// show over the fillers from the street.
 const skylineTowerCount = 48;
 const skylineRingClearance = 50.0;
@@ -459,8 +463,8 @@ List<SkylineTower> skylineFor(StreetPlan plan, FrontierPlaza? plaza) {
     final id = 'skyline-$i';
     final angle =
         i / skylineTowerCount * 2 * math.pi + stableUnit(id, 'a') * 0.1;
-    final r = radius + stableUnit(id, 'r') * 90;
-    final width = 16 + stableUnit(id, 'w') * 26;
+    final r = radius + stableUnit(id, 'r') * 36;
+    final width = 24 + stableUnit(id, 'w') * 26;
     towers.add(
       SkylineTower(
         id: id,
@@ -470,7 +474,7 @@ List<SkylineTower> skylineFor(StreetPlan plan, FrontierPlaza? plaza) {
         yawRadians: -angle,
         width: width,
         depth: width * 0.8,
-        height: 24 + stableUnit(id, 'h') * 54,
+        height: 42 + stableUnit(id, 'h') * 54,
       ),
     );
   }

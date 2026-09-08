@@ -11,8 +11,8 @@ import 'package:vector_math/vector_math.dart' show Vector3;
 
 /// First-person walk camera with flights.
 ///
-/// WASD/arrows walk (shift sprints), drag looks, and [flyTo] hands the pose
-/// to a [Flight]: between two stops on the ground it follows the street
+/// WASD/arrows walk (hold Shift for 8× travel), drag looks, and [flyTo]
+/// hands the pose to a [Flight]: between two stops on the ground it follows the street
 /// network; otherwise it is the direct line. Either way it is planned over
 /// the world's solids, so it lifts over whatever stands on its line; any
 /// movement input cancels a flight in place. Walking happens at
@@ -32,7 +32,11 @@ class FlyCameraController {
   // ignore_for_file: prefer_initializing_formals
 
   static const walkSpeed = 3.4;
-  static const _sprintFactor = 2.5;
+  static const _sprintFactor = 8.0;
+
+  /// Shift changes flight time continuously, including a gentle release.
+  static const _flightSpeedRamp = 0.3;
+  double _flightSpeed = 1;
 
   /// Vertical field of view: a game camera, not a phone lens.
   static const double fovRadiansY = 60 * math.pi / 180;
@@ -69,6 +73,7 @@ class FlyCameraController {
     _pose = value;
     _flight = null;
     _landing = false;
+    _flightSpeed = 1;
     _vForward = 0;
     _vStrafe = 0;
   }
@@ -119,6 +124,7 @@ class FlyCameraController {
         : Flight.plan(_pose, target, solids: _solids);
     _flight = flight;
     _landing = false;
+    _flightSpeed = 1;
     _vForward = 0;
     _vStrafe = 0;
     return flight;
@@ -182,6 +188,7 @@ class FlyCameraController {
       solids: _solids,
     );
     _landing = true;
+    _flightSpeed = 1;
   }
 
   /// Mouse-drag look, in logical pixels. Cancels a flight in place and
@@ -206,8 +213,20 @@ class FlyCameraController {
   void update(double dt) {
     final flight = _flight;
     if (flight != null) {
+      // Read actual modifiers even when Shift was held before entering the
+      // view, or a key-up went to an overlay. Shift alone never cancels flight.
+      final target = HardwareKeyboard.instance.isShiftPressed
+          ? _sprintFactor
+          : 1.0;
+      final step = math.max(0, dt);
+      final decay = math.exp(-step / _flightSpeedRamp);
+      // Integrate the exponential exactly: boost feels the same at any FPS.
+      final elapsed =
+          target * step +
+          (_flightSpeed - target) * _flightSpeedRamp * (1 - decay);
+      _flightSpeed = target + (_flightSpeed - target) * decay;
       _pose = flight.advance(
-        Duration(microseconds: (dt * 1e6).round()),
+        Duration(microseconds: (elapsed * 1e6).round()),
       );
       if (flight.done) {
         _flight = null;
@@ -263,7 +282,7 @@ class FlyCameraController {
       z += (cosY * _vForward - sinY * _vStrafe) * dt;
       final collider = _collider;
       if (collider != null) {
-        (x, z) = collider.resolve(x, z);
+        (x, z) = collider.move(_pose.x, _pose.z, x, z);
       }
     }
     _pose = CameraPose(x: x, y: y, z: z, yaw: _pose.yaw, pitch: _pose.pitch);

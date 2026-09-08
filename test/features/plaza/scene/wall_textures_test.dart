@@ -93,6 +93,40 @@ const _glassBottom = 3.5;
 
 void main() {
   test(
+    'office glazing fills its bays while residential windows stay inset',
+    () async {
+      final images = [
+        WallTextures.paintWindows(LanternState.open),
+        WallTextures.paintWindows(LanternState.open, family: 2),
+      ];
+      for (final image in images) {
+        addTearDown(image.dispose);
+      }
+      final residential = (await images[0].toByteData())!;
+      final office = (await images[1].toByteData())!;
+      // At 15% across a bay, the residential tile is still solid wall, while
+      // the office's full-height glazing has already begun. Test every floor
+      // and bay so one seeded lit pane cannot accidentally satisfy the test.
+      var glassSamples = 0;
+      for (var floor = 0; floor < WallTextures.floors; floor++) {
+        for (var bay = 0; bay < WallTextures.bays; bay++) {
+          final x = ((bay + 0.15) * images[0].width / WallTextures.bays)
+              .floor();
+          final y = ((floor + 0.65) * images[0].height / WallTextures.floors)
+              .floor();
+          final offset = (y * images[0].width + x) * 4;
+          final wallPixel = residential.getUint32(offset);
+          expect(wallPixel, 0x0B0A14FF);
+          if (office.getUint32(offset) != wallPixel) glassSamples++;
+        }
+      }
+      expect(glassSamples, WallTextures.floors * WallTextures.bays);
+      expect(images[1].width, images[0].width);
+      expect(images[1].height, images[0].height);
+    },
+  );
+
+  test(
     'paving preserves unlit slab centres and alternates mortar joints',
     () async {
       final image = WallTextures.paintPaving();

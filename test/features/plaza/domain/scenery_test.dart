@@ -116,7 +116,7 @@ void main() {
     });
 
     test('a wider fold leaves room: blocks are cut back, not dropped', () {
-      final wide = StreetLayout(projectSeed: 1337, connectorLength: 60);
+      final wide = StreetLayout(projectSeed: 1337, connectorLength: 54);
       final widePlan = wide.plan(tasks);
       final cut = fillerBlocksFor(
         widePlan,
@@ -161,6 +161,70 @@ void main() {
             final next = row[i + 1].$1 - row[i + 1].$2 / 2;
             expect(next - end, greaterThanOrEqualTo(2 - 1e-9));
           }
+        }
+      }
+    });
+
+    test('forms a close streetwall with compact alleys', () {
+      final blocks = fillerBlocksFor(
+        plan,
+        null,
+        roadWidth: layout.roadWidth,
+        plotDepth: layout.plotDepth,
+      );
+      var checkedAlleys = 0;
+      for (final segment in segmentsByBucket.values) {
+        final row = blocks
+            .where((f) => f.bucketIndex == segment.bucketIndex && f.side == -1)
+            .toList();
+        for (final f in row) {
+          final (_, lateral) = _inSegment(segment, f.x, f.z);
+          final setback =
+              lateral.abs() -
+              f.width / 2 -
+              layout.roadWidth / 2 -
+              layout.plotDepth;
+          expect(setback, inInclusiveRange(2 - 1e-9, 3.5 + 1e-9));
+        }
+        for (var i = 0; i + 1 < row.length; i++) {
+          final a = row[i];
+          final b = row[i + 1];
+          // Exclude slots removed to protect another street.
+          if (int.parse(b.id.split('-').last) !=
+              int.parse(a.id.split('-').last) + 1) {
+            continue;
+          }
+          final gap =
+              _inSegment(segment, b.x, b.z).$1 -
+              b.depth / 2 -
+              _inSegment(segment, a.x, a.z).$1 -
+              a.depth / 2;
+          expect(gap, inInclusiveRange(2 - 1e-9, 3.5 + 1e-9));
+          checkedAlleys++;
+        }
+      }
+      expect(checkedAlleys, greaterThan(0));
+    });
+
+    test('keeps recessed completed plots clear of background blocks', () {
+      final recessed = StreetLayout(
+        projectSeed: 1337,
+        completedSetback: 12,
+      ).plan(tasks);
+      final blocks = fillerBlocksFor(
+        recessed,
+        null,
+        roadWidth: layout.roadWidth,
+        plotDepth: layout.plotDepth,
+      );
+      expect(blocks, isNotEmpty);
+      for (final block in blocks) {
+        for (final plot in recessed.placements.values) {
+          expect(
+            footprintsOverlap(block.footprint, plot.footprint),
+            isFalse,
+            reason: '${block.id} covers ${plot.taskId}',
+          );
         }
       }
     });
@@ -213,11 +277,11 @@ void main() {
       for (final f in fillers) {
         expect(f.depth, inInclusiveRange(7, 16));
         expect(f.width, inInclusiveRange(8, 16));
-        expect(f.height, inInclusiveRange(12, 60));
+        expect(f.height, inInclusiveRange(24, 80));
       }
       // The fabric is the tall layer: a quarter are mid-rise landmarks
       // above every plot, the rest still rise over the shops.
-      final landmarks = fillers.where((f) => f.height >= 40);
+      final landmarks = fillers.where((f) => f.height >= 56);
       expect(landmarks.length, greaterThan(fillers.length ~/ 8));
       expect(landmarks.length, lessThan(fillers.length ~/ 2));
       final again = fillerBlocksFor(
@@ -323,7 +387,7 @@ void main() {
         );
         expect(
           r,
-          inInclusiveRange(inner - 1e-9, inner + 90 + 1e-9),
+          inInclusiveRange(inner - 1e-9, inner + 36 + 1e-9),
           reason: tower.id,
         );
         final angle = math.atan2(tower.z - cz, tower.x - cx);
@@ -332,9 +396,9 @@ void main() {
         final delta = (angle - slot + math.pi) % (2 * math.pi) - math.pi;
         expect(delta, inInclusiveRange(-1e-9, 0.1 + 1e-9), reason: tower.id);
         expect(tower.yawRadians, closeTo(-slot - delta, 1e-9));
-        expect(tower.width, inInclusiveRange(16, 42));
+        expect(tower.width, inInclusiveRange(24, 50));
         expect(tower.depth, closeTo(tower.width * 0.8, 1e-9));
-        expect(tower.height, inInclusiveRange(24, 78));
+        expect(tower.height, inInclusiveRange(42, 96));
       }
     });
 
@@ -348,7 +412,7 @@ void main() {
           r,
           inInclusiveRange(
             skylineRingClearance - 1e-9,
-            skylineRingClearance + 90 + 1e-9,
+            skylineRingClearance + 36 + 1e-9,
           ),
         );
       }

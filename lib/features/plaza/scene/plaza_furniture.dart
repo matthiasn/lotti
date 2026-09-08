@@ -264,36 +264,36 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
         family: BuildingFamily.steppedTower,
         minimumFrontageHeight: jumbotron.bottom + jumbotron.height,
       );
-      final tower = Node(
-        localTransform: Matrix4.translation(
-          Vector3(0, towerH / 2, -jumbotronTowerSetback),
-        ),
-      );
-      for (final (index, volume) in architecture.volumes.indexed) {
-        final tier = _boxes.node(
-          Vector3(volume.width, volume.height, volume.depth),
-          PlazaSceneController._towerMaterial,
-          transform: Matrix4.translation(
-            Vector3(
-              volume.x,
-              volume.bottom + volume.height / 2 - towerH / 2,
-              volume.z,
+      final tower =
+          Node(
+            localTransform: Matrix4.translation(
+              Vector3(0, towerH / 2, -jumbotronTowerSetback),
             ),
-          ),
-          shaded: true,
-        );
-        _windowedBox(
-          tier,
-          id: 'jumbotron-$index',
-          w: volume.width,
-          d: volume.depth,
-          height: volume.height,
-          state: LanternState.inProgress,
-          tint: PlazaSceneController._tower,
-          groundFloor: index == 0,
-        );
-        tower.add(tier);
-      }
+          )..add(
+            PlazaArchitecture(_boxes).build(
+              architecture,
+              wall: PlazaSceneController._towerMaterial,
+              trim: _boxes.solid(
+                linearColor(dsTokensDark.colors.background.level03),
+              ),
+              light: _boxes.solid(
+                emissiveColor(PlazaStyle.teal, PlazaSceneController.neonBoost),
+              ),
+              onVolume: (tier, volume, {required groundFloor}) {
+                _windowedBox(
+                  tier,
+                  id: 'jumbotron-${volume.bottom}',
+                  w: volume.width,
+                  d: volume.depth,
+                  height: volume.height,
+                  state: LanternState.inProgress,
+                  tint: PlazaSceneController._tower,
+                  groundFloor: groundFloor,
+                  family: 2,
+                );
+              },
+            )..localTransform = Matrix4.translation(Vector3(0, -towerH / 2, 0)),
+          );
       // The corner strips and crown at a quarter, so the screen's own
       // border is the one teal frame on the tower.
       final corner = UnlitMaterial()

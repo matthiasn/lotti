@@ -10139,7 +10139,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD gå · dra för att se dig omkring · Tab nästa fyr · H hem · M översikt · / sök · ⌘[ tillbaka';
+      'WASD gå · håll Shift: 8× hastighet · dra för att se dig omkring · Tab nästa fyr · H hem · M översikt · / sök · ⌘[ tillbaka';
 
   @override
   String plazaCornerAfter(String week) {

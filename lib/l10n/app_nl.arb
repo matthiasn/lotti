@@ -4312,7 +4312,7 @@
   "plazaCategoryEmpty": "Deze categorie heeft geen zichtbare projecten.",
   "plazaClosedForNight": "GESLOTEN VOOR DE NACHT",
   "plazaCloseHint": "Esc om te sluiten",
-  "plazaControls": "WASD lopen · sleep om rond te kijken · Tab volgend baken · H start · M overzicht · / zoeken · ⌘[ terug",
+  "plazaControls": "WASD lopen · houd Shift ingedrukt: 8× snelheid · sleep om rond te kijken · Tab volgend baken · H start · M overzicht · / zoeken · ⌘[ terug",
   "plazaCornerAfter": "Bocht na {week}",
   "plazaDebug": "Debuggen",
   "plazaDecisionStrip": "BESLISSING NODIG",

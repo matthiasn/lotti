@@ -4313,7 +4313,7 @@
   "plazaCategoryEmpty": "Den här kategorin har inga synliga projekt.",
   "plazaClosedForNight": "STÄNGT FÖR NATTEN",
   "plazaCloseHint": "Esc för att stänga",
-  "plazaControls": "WASD gå · dra för att se dig omkring · Tab nästa fyr · H hem · M översikt · / sök · ⌘[ tillbaka",
+  "plazaControls": "WASD gå · håll Shift: 8× hastighet · dra för att se dig omkring · Tab nästa fyr · H hem · M översikt · / sök · ⌘[ tillbaka",
   "plazaCornerAfter": "Sväng efter {week}",
   "plazaDebug": "Felsökning",
   "plazaDecisionStrip": "BEHÖVER ETT BESLUT",

@@ -10279,7 +10279,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD caminar · arrastra para mirar · Tab siguiente baliza · H inicio · M vista general · / buscar · ⌘[ volver';
+      'WASD caminar · mantén Shift: velocidad ×8 · arrastra para mirar · Tab siguiente baliza · H inicio · M vista general · / buscar · ⌘[ volver';
 
   @override
   String plazaCornerAfter(String week) {

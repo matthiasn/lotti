@@ -10082,7 +10082,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD walk · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back';
+      'WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back';
 
   @override
   String plazaCornerAfter(String week) {

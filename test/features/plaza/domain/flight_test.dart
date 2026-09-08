@@ -36,6 +36,21 @@ Solid box({
   top: top,
 );
 
+/// The time at which the flight is [d] metres along its way.
+double timeAt(Flight flight, double d) {
+  var lo = 0.0;
+  var hi = 1.0;
+  for (var i = 0; i < 60; i++) {
+    final mid = (lo + hi) / 2;
+    if (flight.distanceAt(mid) < d) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return (lo + hi) / 2;
+}
+
 void main() {
   const a = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
 
@@ -74,6 +89,134 @@ void main() {
       expect(maxYaw, lessThanOrEqualTo(math.pi / 4 + 1e-5));
       expect(maxPitch, lessThanOrEqualTo(math.pi / 6 + 1e-5));
     }
+  });
+
+  group('smooth flight paths', () {
+    const from = CameraPose(x: 0, y: 5, z: 0, yaw: math.pi / 2);
+    const to = CameraPose(x: 50, y: 5, z: 50, yaw: 0);
+    const via = [(50.0, 0.0)];
+
+    test('rounds a street corner with continuous position and velocity', () {
+      final f = Flight.route(from, to, via: via);
+      final corner = f.poseAt(timeAt(f, 50));
+      expect(corner.x, inExclusiveRange(47, 49));
+      expect(corner.z, inExclusiveRange(1, 3));
+      expect(corner.y, closeTo(5, 1e-9));
+      // Compare physical velocities on either side of both joins and the bend.
+      final dt = 0.00001 / seconds(f);
+      for (final d in [42.0, 50.0, 58.0]) {
+        final t = timeAt(f, d);
+        final before = f.poseAt(t - dt);
+        final at = f.poseAt(t);
+        final after = f.poseAt(t + dt);
+        final jump =
+            math.sqrt(
+              math.pow(after.x - 2 * at.x + before.x, 2) +
+                  math.pow(after.y - 2 * at.y + before.y, 2) +
+                  math.pow(after.z - 2 * at.z + before.z, 2),
+            ) /
+            0.00001;
+        expect(
+          jump,
+          lessThan(0.005),
+          reason: 'velocity jump at guide distance $d',
+        );
+      }
+    });
+
+    test('turning builds and releases gradually through a corner', () {
+      final f = Flight.route(from, to, via: via);
+      final count = (seconds(f) * 240).ceil();
+      final dt = seconds(f) / count;
+      var previous = f.poseAt(0).yaw;
+      var previousRate = 0.0;
+      var peak = 0.0;
+      for (var i = 1; i <= count; i++) {
+        final yaw = f.poseAt(i / count).yaw;
+        final delta = math.atan2(
+          math.sin(yaw - previous),
+          math.cos(yaw - previous),
+        );
+        final rate = delta / dt;
+        peak = math.max(peak, (rate - previousRate).abs() / dt);
+        previous = yaw;
+        previousRate = rate;
+      }
+      expect(peak, lessThan(math.pi));
+    });
+
+    test('a lifted direct flight respects speed through a steep climb', () {
+      const from = CameraPose(x: 0, y: 2.2, z: 0, yaw: 0);
+      const to = CameraPose(x: 0, y: 2.2, z: 60, yaw: 0);
+      final tower = box(x: 0, z: 15, depth: 26, top: 80);
+      final f = Flight.plan(from, to, solids: [tower]);
+      final count = (seconds(f) * 240).ceil();
+      final dt = seconds(f) / count;
+      var previous = f.poseAt(0);
+      var peak = 0.0;
+      for (var i = 1; i <= count; i++) {
+        final pose = f.poseAt(i / count);
+        peak = math.max(peak, pose.distanceTo(previous) / dt);
+        previous = pose;
+      }
+      expect(peak, lessThanOrEqualTo(Flight.directSpeed * 1.01));
+      expect(passesThrough(f, [tower]), isFalse);
+      expect((previous.x, previous.y, previous.z), (to.x, to.y, to.z));
+    });
+
+    glados.Glados3<double, double, double>(
+      glados.any.doubleInRange(-1000, 1000),
+      glados.any.doubleInRange(-1000, 1000),
+      glados.any.doubleInRange(-math.pi, math.pi),
+      glados.ExploreConfig(numRuns: 60),
+    ).test('rounded clearance is invariant under translation and rotation', (
+      x,
+      z,
+      yaw,
+    ) {
+      final (endX, endZ) = frameToWorld(x, z, yaw, 50, 50);
+      final (viaX, viaZ) = frameToWorld(x, z, yaw, 50, 0);
+      final (blockX, blockZ) = frameToWorld(x, z, yaw, 48, 2);
+      final start = CameraPose(x: x, y: 5, z: z, yaw: yaw + math.pi / 2);
+      final end = CameraPose(x: endX, y: 5, z: endZ, yaw: yaw);
+      final obstacles = [
+        box(
+          x: blockX,
+          z: blockZ,
+          width: 0.3,
+          depth: 2,
+          facing: yaw + math.pi / 4,
+          top: 20,
+        ),
+      ];
+      final via = [(viaX, viaZ)];
+      expect(
+        passesThrough(Flight.route(start, end, via: via), obstacles),
+        isTrue,
+      );
+      final safe = Flight.route(start, end, via: via, solids: obstacles);
+      expect(passesThrough(safe, obstacles), isFalse);
+      expect(safe.poseAt(0).distanceTo(start), closeTo(0, 1e-9));
+      expect(safe.poseAt(1).distanceTo(end), closeTo(0, 1e-9));
+    }, tags: 'glados');
+
+    test('a rounded join shrinks to clear a thin rotated obstacle', () {
+      final obstacle = box(
+        x: 48,
+        z: 2,
+        width: 0.3,
+        depth: 2,
+        facing: math.pi / 4,
+        top: 20,
+      );
+      final clear = Flight.route(from, to, via: via, solids: [obstacle]);
+      final blind = Flight.route(from, to, via: via);
+      expect(passesThrough(blind, [obstacle]), isTrue);
+      expect(passesThrough(clear, [obstacle]), isFalse);
+      final corner = clear.poseAt(timeAt(clear, 50));
+      expect(corner.x, greaterThanOrEqualTo(49 - 1e-9));
+      expect(corner.z, lessThanOrEqualTo(1 + 1e-9));
+    });
   });
 
   test('turning in place takes time and still lands exactly', () {
@@ -129,10 +272,11 @@ void main() {
     final f = Flight.plan(a, const CameraPose(x: 0, y: 2.2, z: 1000, yaw: 0));
     expect(f.cruiseSpeed, Flight.directSpeed);
     expect(f.rampTime, Flight.rampSeconds);
-    // Two ramps, each covering half a cruise-ramp, then the rest at cruise.
+    // The actual 3D arc adds travel beyond the guide distance; its lift
+    // must not make the camera exceed cruise speed.
     expect(
       seconds(f),
-      closeTo(2 * 1.6 + (1000 - 36 * 1.6) / 36, 1e-6),
+      greaterThan(2 * 1.6 + (1000 - 36 * 1.6) / 36 + 0.1),
     );
     expect(f.distanceAt(0), 0);
     expect(f.distanceAt(1), closeTo(1000, 1e-9));
@@ -447,54 +591,42 @@ void main() {
     const via = [(0.0, 0.0), (50.0, 0.0), (50.0, 50.0)];
     final f = Flight.route(from, to, via: via);
 
-    /// The time at which the flight is [d] metres along its way.
-    double timeAt(Flight flight, double d) {
-      var lo = 0.0;
-      var hi = 1.0;
-      for (var i = 0; i < 60; i++) {
-        final mid = (lo + hi) / 2;
-        if (flight.distanceAt(mid) < d) {
-          lo = mid;
-        } else {
-          hi = mid;
-        }
-      }
-      return (lo + hi) / 2;
-    }
-
     bool visits(Flight flight, double x, double z) {
       for (var t = 0.0; t <= 1.0001; t += 0.0005) {
         final p = flight.poseAt(t);
-        if ((p.x - x).abs() < 0.2 && (p.z - z).abs() < 0.2) return true;
+        if (groundDistanceBetween(p.x, p.z, x, z) < 4) return true;
       }
       return false;
     }
 
-    test('runs the way through every point, at street height and speed', () {
-      expect(f.routed, isTrue);
-      expect(f.legCount, 4);
-      // The first and last legs climb to street height and drop again,
-      // and that climb is part of the way.
-      final hop = math.sqrt(3 * 3 + 2.8 * 2.8);
-      expect(f.length, closeTo(hop + 50 + 50 + hop, 1e-9));
-      expect(f.cruiseSpeed, Flight.streetSpeed);
-      expect(f.rampTime, Flight.rampSeconds);
-      // Departure, corner and arrival turns add time to the base profile.
-      expect(seconds(f), greaterThan(f.length / 10 + 1.6));
-      final midStreet = timeAt(f, 30);
-      final dt = 0.01 / seconds(f);
-      expect(
-        (f.distanceAt(midStreet + dt) - f.distanceAt(midStreet - dt)) / 0.02,
-        closeTo(Flight.streetSpeed, 1e-6),
-      );
-      for (final (x, z) in via) {
-        expect(visits(f, x, z), isTrue, reason: '$x, $z');
-      }
-      expect(f.poseAt(0).y, 2.2);
-      expect(f.poseAt(0.5).y, closeTo(Flight.streetFlightHeight, 1e-9));
-      expect(f.poseAt(1).y, closeTo(2.2, 1e-9));
-      expect(f.arc, 0);
-    });
+    test(
+      'rounds the guide points while preserving street height and cruise',
+      () {
+        expect(f.routed, isTrue);
+        expect(f.legCount, 4);
+        // The first and last legs climb to street height and drop again,
+        // and that climb is part of the way.
+        final hop = math.sqrt(3 * 3 + 2.8 * 2.8);
+        expect(f.length, closeTo(hop + 50 + 50 + hop, 1e-9));
+        expect(f.cruiseSpeed, Flight.streetSpeed);
+        expect(f.rampTime, Flight.rampSeconds);
+        // Departure, corner and arrival turns add time to the base profile.
+        expect(seconds(f), greaterThan(f.length / 10 + 1.6));
+        final midStreet = timeAt(f, 30);
+        final dt = 0.01 / seconds(f);
+        expect(
+          (f.distanceAt(midStreet + dt) - f.distanceAt(midStreet - dt)) / 0.02,
+          closeTo(Flight.streetSpeed, 0.2),
+        );
+        for (final (x, z) in via) {
+          expect(visits(f, x, z), isTrue, reason: '$x, $z');
+        }
+        expect(f.poseAt(0).y, 2.2);
+        expect(f.poseAt(0.5).y, closeTo(Flight.streetFlightHeight, 1e-9));
+        expect(f.poseAt(1).y, closeTo(2.2, 1e-9));
+        expect(f.arc, 0);
+      },
+    );
 
     test(
       'looks down the way, turns before the corner, settles on the stop',

@@ -143,8 +143,7 @@ extension _PlazaWallsBuilder on PlazaSceneController {
 
   /// Windowed walls ([_windowedWall]) on [faces] of the [w] × [d] box
   /// under [parent], in that order, whose centre sits at half [height].
-  /// Each face tiles from its own hashed offset so it starts at its own
-  /// shop, unless [perFaceOffset] is off and every face shares one.
+  /// Each face tiles from its own hashed offset so it starts at its own shop.
   void _windowedBox(
     Node parent, {
     required String id,
@@ -154,7 +153,6 @@ extension _PlazaWallsBuilder on PlazaSceneController {
     required LanternState state,
     required Vector4 tint,
     List<_Face> faces = _Face.values,
-    bool perFaceOffset = true,
     bool groundFloor = true,
     LanternState? shops,
     int variant = 0,
@@ -179,7 +177,7 @@ extension _PlazaWallsBuilder on PlazaSceneController {
         height: height,
         state: state,
         tint: tint,
-        uOffset: stableUnit(id, perFaceOffset ? 'tile$yaw' : 'tile') * 3,
+        uOffset: stableUnit(id, 'tile$yaw') * 3,
         groundFloor: groundFloor,
         shops: shops,
         variant: variant,

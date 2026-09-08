@@ -12,7 +12,7 @@ class ArchitectureConfig {
   const ArchitectureConfig({
     this.seed = 0,
     this.streetwallFraction = 0.72,
-    this.towerInsetFraction = 0.16,
+    this.towerInsetFraction = 0.22,
   }) : assert(
          streetwallFraction >= 0.6 && streetwallFraction <= 0.8,
          'street wall must reserve a crown',
@@ -138,14 +138,21 @@ class BuildingArchitecture {
               width: width * (1 - inset),
               depth: depth * (1 - inset),
               bottom: streetwall,
-              height: crownHeight * 0.6,
+              height: crownHeight * 0.45,
               z: -depth * inset / 2,
             ),
             BuildingVolume(
               width: width * (1 - inset * 2),
               depth: depth * (1 - inset * 2),
-              bottom: streetwall + crownHeight * 0.6,
-              height: crownHeight * 0.4,
+              bottom: streetwall + crownHeight * 0.45,
+              height: crownHeight * 0.35,
+              z: -depth * inset,
+            ),
+            BuildingVolume(
+              width: width * (1 - inset * 3),
+              depth: depth * (1 - inset * 2),
+              bottom: streetwall + crownHeight * 0.8,
+              height: crownHeight * 0.2,
               z: -depth * inset,
             ),
           ]);

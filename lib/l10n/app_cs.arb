@@ -3846,7 +3846,7 @@
   "plazaCategoryEmpty": "V této kategorii nejsou žádné viditelné projekty.",
   "plazaClosedForNight": "NA NOC ZAVŘENO",
   "plazaCloseHint": "Esc zavře",
-  "plazaControls": "WASD chůze · tažením se rozhlížej · Tab další maják · H domů · M přehled · / hledat · ⌘[ zpět",
+  "plazaControls": "WASD chůze · drž Shift: 8× rychlost · tažením se rozhlížej · Tab další maják · H domů · M přehled · / hledat · ⌘[ zpět",
   "plazaCornerAfter": "Odbočka za {week}",
   "plazaDebug": "Ladění",
   "plazaDecisionStrip": "ČEKÁ NA ROZHODNUTÍ",

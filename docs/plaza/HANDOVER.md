@@ -32,7 +32,7 @@ provide the GPU context needed to render the scene.
 
 | Input | Effect |
 |---|---|
-| WASD or arrows | Walk; Shift sprints. Movement from altitude first lands safely. |
+| WASD or arrows | Walk; hold Shift for 8× speed (27.2 m/s). Movement from altitude first lands safely. |
 | Primary-button drag | Look. |
 | Tap a beacon or distant building/sign | Fly to its curated pose. |
 | Tap a nearby facade | Activate its controls. |
@@ -50,6 +50,9 @@ Any manual movement exits the Morning walk. App task facades persist checklist
 edits and open the normal task details page; category facades enter their
 project. The fixture's edits remain in memory and its details open a demo panel.
 The HUD also offers Back, Morning walk, Overview, Home and frame-rate controls.
+Penguins start hidden; use the Penguins checkbox to enable them.
+Hold Shift during a flight to accelerate up to 8× speed; releasing it eases back
+to normal speed. Shift alone does not abandon Morning walk.
 
 ## Headless workflow
 
@@ -102,12 +105,16 @@ before/after pairs and publication after a commit exists. Never commit images.
 `PLAZA_BENCH=1` runs the existing walking benchmark and prints a result per LOD
 budget. `PLAZA_TRACE=1` adds rendering traces; `PLAZA_FPS` selects the
 pacer. Compare the same build mode, fixture, display scale, viewport and frame
-cap. Normal idle caps deliberately reduce FPS, so idle FPS is not a throughput
+cap, including the Penguins checkbox state. Penguins start hidden; enable them
+when comparing against older runs with companions on. Normal idle caps deliberately reduce FPS, so idle FPS is not a throughput
 measurement. `PLAZA_HIDE=fire,life` isolates the new animation layers.
 
 The integration's measurement record and hardware limitations are kept in
 [the implementation notes](../implementation_plans/2026-09-07_plaza_integration.md).
-A Linux VM measurement cannot establish the reported macOS ~120 FPS baseline.
+The subsequent [cinematic city measurements](CINEMATIC_CITY_MEASUREMENTS.md)
+compare the architecture pass with its merged baseline and record the subsequent
+density and faster-travel pass. A Linux VM measurement
+cannot establish the reported macOS ~120 FPS baseline.
 
 ## Remaining boundaries
 

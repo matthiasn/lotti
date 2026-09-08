@@ -73,28 +73,72 @@ void main() {
       expect(camera.pose.z, zAfterWalk);
     });
 
-    testWidgets('shift sprints', (tester) async {
-      final walker = _controller();
-      final sprinter = _controller();
-      await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
-      walker
-        ..handleKeyEvent(
-          _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
-        )
-        ..update(1);
-      await simulateKeyDownEvent(LogicalKeyboardKey.shiftLeft);
-      sprinter
-        ..handleKeyEvent(
-          _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
-        )
-        ..handleKeyEvent(
-          _down(LogicalKeyboardKey.shiftLeft, PhysicalKeyboardKey.shiftLeft),
-        )
-        ..update(1);
-      expect(sprinter.pose.z, closeTo(walker.pose.z * 2.5, 0.05));
-      await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-      await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
-    });
+    testWidgets(
+      'holding Shift travels eight times faster and releasing slows',
+      (tester) async {
+        final walker = _controller();
+        final sprinter = _controller();
+        await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
+        walker
+          ..handleKeyEvent(
+            _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+          )
+          ..update(1);
+        await simulateKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        sprinter
+          ..handleKeyEvent(
+            _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+          )
+          ..handleKeyEvent(
+            _down(LogicalKeyboardKey.shiftLeft, PhysicalKeyboardKey.shiftLeft),
+          )
+          ..update(1);
+        expect(sprinter.pose.z, closeTo(walker.pose.z * 8, 0.05));
+        await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        final beforeRelease = sprinter.pose.z;
+        sprinter
+          ..handleKeyEvent(
+            _up(LogicalKeyboardKey.shiftLeft, PhysicalKeyboardKey.shiftLeft),
+          )
+          ..update(1);
+        expect(sprinter.pose.z - beforeRelease, closeTo(walker.pose.z, 0.05));
+        await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+      },
+    );
+
+    testWidgets(
+      'fast travel cannot tunnel through a building on a slow frame',
+      (tester) async {
+        final camera = _controller(
+          collider: WalkCollider([
+            const Footprint(
+              x: 0,
+              z: 8,
+              facingRadians: 0,
+              width: 20,
+              depth: 0.2,
+            ),
+          ]),
+        );
+        await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
+        await simulateKeyDownEvent(LogicalKeyboardKey.shiftRight);
+        camera
+          ..handleKeyEvent(
+            _down(LogicalKeyboardKey.keyW, PhysicalKeyboardKey.keyW),
+          )
+          ..handleKeyEvent(
+            _down(
+              LogicalKeyboardKey.shiftRight,
+              PhysicalKeyboardKey.shiftRight,
+            ),
+          )
+          ..update(1);
+        expect(camera.pose.z, closeTo(7.3, 1e-6));
+        expect(camera.pose.x, 0);
+        await simulateKeyUpEvent(LogicalKeyboardKey.shiftRight);
+        await simulateKeyUpEvent(LogicalKeyboardKey.keyW);
+      },
+    );
 
     test('forward follows yaw and pitch', () {
       final c = _controller();
@@ -155,6 +199,87 @@ void main() {
       // stops the walker at the facade plus the margin.
       expect(camera.pose.z, closeTo(8 - 3 - 0.6, 1e-6));
     });
+  });
+
+  group('flight speed boost', () {
+    const target = CameraPose(x: 0, y: 2.2, z: 1000, yaw: 0);
+    for (final (logical, physical) in [
+      (LogicalKeyboardKey.shiftLeft, PhysicalKeyboardKey.shiftLeft),
+      (LogicalKeyboardKey.shiftRight, PhysicalKeyboardKey.shiftRight),
+    ]) {
+      testWidgets('$logical accelerates flight without cancelling it', (
+        tester,
+      ) async {
+        final camera = _controller();
+        var moves = 0;
+        camera.onMovement = () => moves++;
+        final flight = camera.flyTo(target);
+        await simulateKeyDownEvent(logical);
+        camera
+          ..handleKeyEvent(_down(logical, physical))
+          ..update(0.05);
+        final firstStep = flight.elapsed.inMicroseconds / 1e6;
+        expect(firstStep, greaterThan(0.05));
+        expect(firstStep, lessThan(0.1)); // no instantaneous 8× jump
+        camera.update(0.95);
+        expect(flight.elapsed.inMicroseconds / 1e6, inExclusiveRange(5, 8));
+        expect(camera.flight, same(flight));
+        expect(moves, 0);
+        final before = flight.elapsed;
+        camera.update(1);
+        expect((flight.elapsed - before).inMicroseconds / 1e6, closeTo(8, 0.1));
+        // A key-up delivered elsewhere still releases the modifier.
+        await simulateKeyUpEvent(logical);
+        camera.update(2);
+        final released = flight.elapsed;
+        camera.update(0.1);
+        expect(
+          (flight.elapsed - released).inMicroseconds / 1e6,
+          closeTo(0.1, 0.002),
+        );
+      });
+    }
+
+    testWidgets(
+      'holding Shift before launch and frame cadence give the same boost',
+      (tester) async {
+        await simulateKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        final coarse = _controller();
+        final fine = _controller();
+        final a = coarse.flyTo(target);
+        final b = fine.flyTo(target);
+        coarse.update(1);
+        for (var i = 0; i < 120; i++) {
+          fine.update(1 / 120);
+        }
+        expect(a.elapsed.inMicroseconds, greaterThan(5000000));
+        expect((a.elapsed - b.elapsed).inMicroseconds.abs(), lessThan(120));
+        expect(coarse.pose.distanceTo(fine.pose), lessThan(0.005));
+        await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      },
+    );
+
+    testWidgets(
+      'boosted arrival lands exactly and fires once, then resets boost',
+      (tester) async {
+        final camera = _controller();
+        var arrivals = 0;
+        camera.onArrived = () => arrivals++;
+        final flight = camera.flyTo(target);
+        await simulateKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        camera.update(10);
+        expect(flight.done, isTrue);
+        expect(camera.flying, isFalse);
+        expect(camera.pose.distanceTo(target), 0);
+        expect(arrivals, 1);
+        await simulateKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        camera.update(1);
+        expect(arrivals, 1);
+        final next = camera.flyTo(_origin);
+        camera.update(0.1);
+        expect(next.elapsed, const Duration(milliseconds: 100));
+      },
+    );
   });
 
   group('walk feel', () {
@@ -513,7 +638,7 @@ void main() {
       while (camera.flying) {
         camera.update(0.02);
         final p = camera.pose;
-        if ((p.x - 60).abs() < 0.3 && (p.z - 0).abs() < 0.3) turned = true;
+        if (p.x > 57 && p.x < 59 && p.z > 1 && p.z < 3) turned = true;
         expect(p.y, lessThanOrEqualTo(Flight.streetFlightHeight + 1e-9));
       }
       expect(turned, isTrue);
