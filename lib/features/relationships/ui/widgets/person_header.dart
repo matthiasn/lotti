@@ -155,6 +155,8 @@ class PersonHeroAppBar extends StatelessWidget {
           initial: personaInitial(relationship.data.title),
           id: relationship.id,
           size: avatarSize(tokens),
+          imageId: relationship.data.avatarImageId,
+          crop: relationship.data.avatarCrop,
         ),
         avatarSize: avatarSize(tokens),
         avatarInset: contentInset,

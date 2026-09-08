@@ -1,6 +1,8 @@
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -18,6 +20,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_ca
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../widget_test_utils.dart';
 
 class _FakeContactsService implements ContactsService {
@@ -73,6 +76,8 @@ void main() {
     String? nickname,
     RelationshipStatus? status,
     Map<String, String> refs = const {},
+    String? avatarImageId,
+    AvatarCrop? avatarCrop,
   }) => RelationshipEntry(
     meta: Metadata(
       id: 'rel-1',
@@ -87,6 +92,8 @@ void main() {
       important: important,
       checkInCadenceDays: cadenceDays,
       contactRefs: refs,
+      avatarImageId: avatarImageId,
+      avatarCrop: avatarCrop,
       status:
           status ??
           RelationshipStatus.active(
@@ -130,6 +137,7 @@ void main() {
       bool contactsSupported = false,
       Size size = const Size(400, 800),
       bool tall = false,
+      List<Override> overrides = const [],
     }) async {
       setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
@@ -157,6 +165,7 @@ void main() {
             ),
             contactLinkControllerProvider.overrideWithValue(linkController),
             contactRefKeyProvider.overrideWith((ref) async => deviceKey),
+            ...overrides,
           ],
         ),
       );
@@ -239,6 +248,43 @@ void main() {
         tester.getBottomLeft(hero).dy + PersonHeroAppBar.avatarSize(tokens) / 2,
       );
       expect(tester.getTopLeft(avatar).dx, 0);
+    });
+
+    testWidgets("hands the person's photo and framing to the hero avatar, at "
+        'the hero size', (tester) async {
+      const crop = AvatarCrop(x: 0.4, y: 0.2, scale: 1.5);
+      // A non-image entry behind the id: the resolver hands its host null
+      // without reading the filesystem, which this test does not set up.
+      final notAPicture = JournalEntry(
+        meta: Metadata(
+          id: 'image-1',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        entryText: const EntryText(plainText: 'not a picture'),
+      );
+
+      await pump(
+        tester,
+        relationship: person(avatarImageId: 'image-1', avatarCrop: crop),
+        overrides: [createEntryControllerOverride(notAPicture)],
+      );
+
+      final avatar = tester.widget<PersonaAvatar>(find.byType(PersonaAvatar));
+      expect(avatar.imageId, 'image-1');
+      expect(avatar.crop, crop);
+      expect(avatar.id, 'rel-1', reason: 'the accent still comes from the id');
+      final tokens = tester
+          .element(find.byKey(const ValueKey('person-hero-wash')))
+          .designTokens;
+      expect(avatar.size, PersonHeroAppBar.avatarSize(tokens));
+      expect(
+        find.byKey(const ValueKey('persona-avatar-ring')),
+        findsOneWidget,
+        reason: 'an id the device cannot resolve yet still earns the ring',
+      );
     });
 
     testWidgets('the menu offers delete, and delete calls back', (

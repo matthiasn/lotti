@@ -20,6 +20,14 @@ sources:
     resource: ../../lib/classes/relationship_data.dart
     title: RelationshipData, RelationshipStatus, ContactChannel, AvatarCrop
     last_modified: 2026-09-08
+  - id: persona-avatar
+    resource: ../../lib/features/relationships/ui/shared/persona_avatar.dart
+    title: PersonaAvatar — the four faces of a person
+    last_modified: 2026-09-08
+  - id: image-resolver
+    resource: ../../lib/widgets/media/journal_image_resolver.dart
+    title: JournalImageResolver — file, stand-in or nothing, and when that changes
+    last_modified: 2026-09-08
   - id: list-model
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
     title: The People list's bands, pills and summary — pure logic
@@ -173,10 +181,23 @@ other link type would render an unlink action that could never succeed.
 
 `RelationshipData` carries an **avatar** (`avatarImageId` + `avatarCrop`) and a
 **banner** (`bannerImageId` + `bannerCropX`). Both ids point at ordinary
-`JournalImage` entries, and both are stored — but as of this writing **nothing
-renders them yet**: `PersonaAvatar` still draws the tinted initial, and the
-person hero is still the flat teal wash. The storage landed first so the
-surfaces could be built against a settled shape.
+`JournalImage` entries.
+
+**The avatar renders.** `PersonaAvatar` has four faces, decided by
+`avatarImageId` and what its file is doing: no photo (the tinted initial,
+pixel-for-pixel what shipped before); the photo inside a ring of the persona
+accent; the ThumbHash stand-in inside the ring while the file is still
+syncing; and the initial inside the ring when the id is known but nothing can
+be drawn yet. Nothing ever shows an empty circle, and the accent is the same
+hash as before, so a photo never changes anyone's colour. Every surface that
+draws a person — the People row, the person hero, the import review — goes
+through this one widget, so all three got the photograph at once. The ring is
+`spacing.step1` at every size: the design's 3 px at 80 would have needed a
+token spacing does not have.
+
+**The banner does not render yet**: the person hero is still the flat teal
+wash. And there is no way to *choose* either image in the app yet — until the
+picking surfaces land, both fields stay null in practice.
 
 The field they replaced, `coverArtId`, was declared with the rest of the model
 and never written by anything, so it was **removed rather than migrated** — no
@@ -197,8 +218,10 @@ Three properties are load-bearing and easy to break:
   a local gesture can compute anything.
 - **The bytes arrive after the entity.** An id syncs in one message and its file
   in another, so every surface that draws one of these needs a defined
-  appearance for "id known, file not here yet" — the ThumbHash-then-watch shape
-  `CoverArtThumbnail` already uses.
+  appearance for "id known, file not here yet". `JournalImageResolver` owns
+  that loop — resolve the entry, watch the filesystem, hand the host the file
+  or the ThumbHash or nothing — for every picture-of-an-entry surface;
+  `PersonaAvatar` and the task cover thumbnail are two hosts of it.
 
 Neither image ever enters agent context, for the same reason contact channels
 do not — see [Privacy](#privacy).

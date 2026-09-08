@@ -254,7 +254,7 @@ reads and writes nothing. Failures are logged per image and never delay the
 downloads.
 
 The file watcher behind all three widgets
-([`FileWatcherMixin`](../../lib/features/tasks/ui/file_watcher_mixin.dart))
+([`FileWatcherMixin`](../../lib/widgets/media/file_watcher_mixin.dart))
 polls instead of watching where the OS offers no directory watch — iOS throws
 from `Directory.watch` — and falls back to polling when a watch is refused or
 errors out, because a watcher that throws inside `build` became a 100 000 px

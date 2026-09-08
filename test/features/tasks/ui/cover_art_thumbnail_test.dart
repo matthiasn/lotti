@@ -18,6 +18,7 @@ import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/journal_image_fixtures.dart';
 import '../../../helpers/thumb_hash_fixtures.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -72,51 +73,6 @@ void main() {
       // Ignore cleanup errors
     }
   });
-
-  /// Creates a JournalImage with the specified id.
-  JournalImage buildJournalImage({
-    String id = 'image-1',
-    String imageFile = 'test.jpg',
-    String imageDirectory = '/images/',
-    String? thumbHash,
-  }) {
-    final now = DateTime(2025, 12, 31, 12);
-    return JournalImage(
-      meta: Metadata(
-        id: id,
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
-      ),
-      data: ImageData(
-        imageId: 'img-uuid-$id',
-        imageFile: imageFile,
-        imageDirectory: imageDirectory,
-        capturedAt: now,
-        thumbHash: thumbHash,
-      ),
-    );
-  }
-
-  /// Creates the image file on disk at the path that getFullImagePath() will compute.
-  /// Returns the full path to the created file.
-  String createImageFile(JournalImage image) {
-    // Use the same function the widget uses to get the path
-    final fullPath = getFullImagePath(image);
-
-    // Create parent directories
-    Directory(
-      fullPath.substring(0, fullPath.lastIndexOf('/')),
-    ).createSync(recursive: true);
-
-    // Create a minimal valid file (not a real image, but exists)
-    File(
-      fullPath,
-    ).writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG magic bytes
-
-    return fullPath;
-  }
 
   group('CoverArtThumbnail', () {
     group('with valid JournalImage and existing file', () {

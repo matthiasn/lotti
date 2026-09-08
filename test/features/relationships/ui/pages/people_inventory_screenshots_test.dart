@@ -21,6 +21,8 @@
 ///   test/features/relationships/ui/pages/people_inventory_screenshots_test.dart`
 library;
 
+import 'dart:io';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -44,6 +46,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
@@ -67,13 +70,22 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/thumbhash.dart';
+import 'package:lotti/widgets/media/journal_image_resolver.dart';
+import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/journal_image_fixtures.dart';
+import '../../../../helpers/thumb_hash_fixtures.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/ai_config_factories.dart';
@@ -90,6 +102,38 @@ const _tillyId = 'person-tilly';
 const _moId = 'person-mo';
 const _hanaId = 'person-hana';
 const _categoryId = 'penguin-operations';
+
+/// The three sizes the feature draws an avatar at: the People row's default,
+/// the import review (`step9`) and the person hero (`step11`).
+final List<double> _avatarSizes = [
+  40,
+  dsTokensDark.spacing.step9,
+  dsTokensDark.spacing.step11,
+];
+
+/// The three shapes a photograph can be in on a device, one person each:
+/// Pip's has landed, Skua's is still syncing but carries a ThumbHash, and
+/// Tilly's is known by id alone. Hana and Mo have none, which is the
+/// expected steady state for most people, not a placeholder.
+final JournalImage _pipPhoto = buildJournalImage(
+  id: 'image-pip',
+  imageFile: 'pip.png',
+);
+final JournalImage _skuaArriving = buildJournalImage(
+  id: 'image-skua',
+  imageFile: 'skua.webp',
+  thumbHash: sampleThumbHash,
+);
+final JournalImage _tillyPending = buildJournalImage(
+  id: 'image-tilly',
+  imageFile: 'tilly.webp',
+);
+
+/// A real, decodable picture for the one avatar that has its file: the
+/// design system's own placeholder — a cartoon, not a person.
+final List<int> _fixturePngBytes = File(
+  'assets/design_system/avatar_placeholder.png',
+).readAsBytesSync();
 
 /// A Thursday afternoon. Every cadence pill, "last spoke" line and relative
 /// timestamp in the capture is read against this instant, so the inventory is
@@ -185,6 +229,12 @@ class _ModalHost extends StatelessWidget {
   );
 }
 
+/// What the shell is pumped under. Its `devicePixelRatio` is the one the
+/// avatar reads when it caps its decode, so the warm-up must use it too — not
+/// the view's — or the cache keys will not match.
+MediaQueryData _mediaQueryFor(ScreenshotDevice device) =>
+    MediaQueryData(size: device.size);
+
 /// The app shell every capture is rendered inside — the production theme,
 /// the production localization delegates and the keyboard command host, so
 /// the pixels are the ones the app draws rather than a bare `MaterialApp`'s.
@@ -199,7 +249,7 @@ Widget _app({
   child: ProviderScope(
     overrides: overrides,
     child: MediaQuery(
-      data: MediaQueryData(size: device.size),
+      data: _mediaQueryFor(device),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
@@ -265,6 +315,8 @@ void main() {
     bool important = false,
     int? cadenceDays,
     List<ContactChannel> channels = const [],
+    String? avatarImageId,
+    AvatarCrop? avatarCrop,
   }) => RelationshipEntry(
     meta: meta(id, at: DateTime(2026, 3, 2)),
     data: RelationshipData(
@@ -273,6 +325,8 @@ void main() {
       important: important,
       checkInCadenceDays: cadenceDays,
       contactChannels: channels,
+      avatarImageId: avatarImageId,
+      avatarCrop: avatarCrop,
       status: RelationshipStatus.active(
         id: 'status-$id',
         createdAt: DateTime(2026, 3, 2),
@@ -334,6 +388,8 @@ void main() {
     important: true,
     cadenceDays: 7,
     channels: const [_pipMobile, _pipEmail],
+    avatarImageId: _pipPhoto.id,
+    avatarCrop: const AvatarCrop(y: 0.35, scale: 1.4),
   );
   final pipCheckIns = [
     checkIn(
@@ -383,12 +439,14 @@ void main() {
     nickname: 'Skua',
     important: true,
     cadenceDays: 14,
+    avatarImageId: _skuaArriving.id,
   );
   final tilly = person(
     _tillyId,
     title: 'Tilly Snowdrift',
     important: true,
     cadenceDays: 30,
+    avatarImageId: _tillyPending.id,
   );
   final mo = person(_moId, title: 'Mo Krillson', nickname: 'Mo');
   final hana = person(_hanaId, title: 'Hana Iceberg');
@@ -461,7 +519,10 @@ void main() {
     setupOrigin: AgentInferenceSetupOrigin.user,
   );
 
+  late Directory documents;
+
   setUp(() async {
+    documents = Directory.systemTemp.createTempSync('people_inventory_');
     repository = MockRelationshipRepository();
     agentService = MockRelationshipAgentService();
     reminders = MockRelationshipReminderService();
@@ -519,15 +580,25 @@ void main() {
         ]);
         getIt
           ..registerSingleton<EntitiesCacheService>(cache)
-          ..registerSingleton<NavService>(navService);
+          ..registerSingleton<NavService>(navService)
+          // The avatar resolves its picture through EntryController, which
+          // reads the documents directory and these two services.
+          ..registerSingleton<Directory>(documents)
+          ..registerSingleton<EditorStateService>(MockEditorStateService())
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
       },
     );
+    // Only Pip's file exists; Skua's and Tilly's are deliberately absent.
+    createImageFile(_pipPhoto, bytes: _fixturePngBytes);
   });
 
   tearDown(() async {
     selectedRelationshipId.dispose();
     chatOpen.dispose();
     await tearDownTestGetIt();
+    try {
+      documents.deleteSync(recursive: true);
+    } catch (_) {}
   });
 
   /// Everything the person page and the agent card read, in one place: the
@@ -592,7 +663,55 @@ void main() {
     relationshipSuggestionListProvider(_pipId).overrideWith(
       (ref) async => proposals ?? const RelationshipProposalSnapshot.empty(),
     ),
+    createEntryControllerOverride(_pipPhoto),
+    createEntryControllerOverride(_skuaArriving),
+    createEntryControllerOverride(_tillyPending),
   ];
+
+  /// Decodes Pip's photograph at every size an avatar draws it — and Skua's
+  /// ThumbHash stand-in, whose raster also goes through the engine — *before*
+  /// the surface is mounted.
+  ///
+  /// Order is the whole point. A `FileImage` decodes on real async IO, which
+  /// only progresses inside `runAsync`; but once a mounted `Image` has begun
+  /// resolving the provider under the test's fake-async zone, the shared
+  /// cache stream's completion is bound to that zone and never fires inside
+  /// a later `runAsync` — a precache attached afterwards waits forever. So
+  /// the decode is done first, on a throwaway host, and the real surface
+  /// then finds every key already in the image cache. The keys come from the
+  /// production `cappedFileImage` at the avatar's inner (ring-less) size and
+  /// this shell's pixel ratio, so they are exactly what `PersonaAvatar`
+  /// builds.
+  Future<void> warmAvatarDecodes(
+    WidgetTester tester,
+    ScreenshotDevice device,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: SizedBox(key: ValueKey('precache-host'))),
+    );
+    final context = tester.element(find.byKey(const ValueKey('precache-host')));
+    final path = getFullImagePath(_pipPhoto);
+    final ring = PersonaAvatar.ringWidth(dsTokensDark);
+    final devicePixelRatio = _mediaQueryFor(device).devicePixelRatio;
+    await tester.runAsync(() async {
+      // The stand-in is keyed on the hash, so this is the exact entry the
+      // list row's arriving avatar resolves to.
+      await precacheImage(
+        ThumbHashImage(ThumbHash.fromBase64(sampleThumbHash)),
+        context,
+      );
+      for (final size in _avatarSizes) {
+        await precacheImage(
+          cappedFileImage(
+            path,
+            size: size - ring * 2,
+            devicePixelRatio: devicePixelRatio,
+          ),
+          context,
+        );
+      }
+    });
+  }
 
   /// Pumps [home] in the app shell under the fixed clock and settles it.
   Future<void> pumpSurface(
@@ -612,6 +731,7 @@ void main() {
       ..devicePixelRatio = device.devicePixelRatio;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    await warmAvatarDecodes(tester, device);
 
     await withClock(Clock.fixed(_now), () async {
       await tester.pumpWidget(
@@ -1314,7 +1434,7 @@ void main() {
                     // The three sizes the feature actually draws: 40 on a
                     // People row (the default), 48 (step9) in the import
                     // review, 80 (step11) on the person page hero.
-                    for (final size in [40.0, 48.0, 80.0]) ...[
+                    for (final size in _avatarSizes) ...[
                       PersonaAvatar(initial: 'P', id: _pipId, size: size),
                       const SizedBox(width: 16),
                     ],
@@ -1338,6 +1458,69 @@ void main() {
       await captureScreenshot(
         tester,
         'persona_avatar_palette_mobile_$theme',
+        subdir: _subdir,
+      );
+    });
+  }
+
+  for (final (brightness, theme) in [
+    (Brightness.dark, 'dark'),
+    (Brightness.light, 'light'),
+  ]) {
+    testWidgets('persona avatar, the four faces — $theme', (tester) async {
+      // One row per face, the three sizes across: no photo, photo, arriving
+      // (stand-in under the ring), id known with nothing to show yet.
+      final faces = <(String, String?)>[
+        ('No photo', null),
+        ('Photo', _pipPhoto.id),
+        ('Arriving', _skuaArriving.id),
+        ('Id known', _tillyPending.id),
+      ];
+      await pumpSurface(
+        tester,
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final (label, imageId) in faces) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (final size in _avatarSizes) ...[
+                        PersonaAvatar(
+                          initial: 'P',
+                          id: _pipId,
+                          size: size,
+                          imageId: imageId,
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                      Text(label),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ],
+            ),
+          ),
+        ),
+        device: proDevice,
+        brightness: brightness,
+        overrides: personOverrides(),
+      );
+
+      expect(find.byType(PersonaAvatar), findsNWidgets(12));
+      expect(
+        find.byKey(const ValueKey('persona-avatar-ring')),
+        findsNWidgets(9),
+        reason: 'every face but "no photo" wears the ring, at all three sizes',
+      );
+      await captureScreenshot(
+        tester,
+        'persona_avatar_faces_mobile_$theme',
         subdir: _subdir,
       );
     });

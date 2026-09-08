@@ -33,9 +33,14 @@ abstract class ContactChannel with _$ContactChannel {
 /// Normalised to the source rather than to any one rendering, so the same
 /// crop frames the face identically at every size the avatar is drawn at —
 /// 40 on a People row, 48 in the import review, 80 on the person page hero.
-/// [x] and [y] are the centre of the visible circle as a fraction of the
-/// image; [scale] is how far the image is zoomed in, where `1` is the
-/// smallest zoom that still covers the circle.
+///
+/// [x] and [y] are the `BoxFit.cover` **alignment** of the image inside the
+/// circle — the convention `EventData.coverArtCropX` already uses: `0`
+/// aligns the image's left/top edge with the circle's, `1` the right/bottom,
+/// `0.5` centres it. [scale] zooms about that same point, where `1` is the
+/// smallest zoom that still covers the circle. Alignment rather than
+/// "centre of the visible window" because it makes every value in range
+/// valid at every zoom: nothing has to be re-clamped when [scale] changes.
 ///
 /// A transform over the original, never a second file: re-cropping rewrites
 /// three numbers and touches no bytes on disk.

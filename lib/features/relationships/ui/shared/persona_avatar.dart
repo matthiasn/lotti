@@ -1,4 +1,7 @@
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/media/journal_image_resolver.dart';
+import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One accent per person, stable per id (design plan §0.7). The palette is
@@ -32,18 +35,35 @@ Color personaAccentForId(String id, Brightness brightness) {
   return palette[hash % palette.length];
 }
 
-/// A persona-tinted circle avatar: `color-mix(accent 20%, transparent)`
-/// fill with an accent-colored initial (design plan §0.7).
+/// A person's face on every People surface: a photograph inside an
+/// accent-coloured ring, or — for the many people who will never have one —
+/// the persona-tinted circle with their initial (design plan §0.7).
 ///
 /// The accent is derived from [id] when supplied; callers that already
 /// hold an accent (e.g. a beat rail reusing the person's accent) pass it
-/// directly via [accent].
+/// directly via [accent]. **The accent never changes because a photo does**:
+/// the same hash gives the same colour, so a list mixing faces and initials
+/// keeps every person's identity colour, and adding a photo cannot reshuffle
+/// anyone.
+///
+/// Four faces, decided by [imageId] and what its file is doing
+/// (design 2026-09-08 turn 2):
+///
+/// * **No photo** ([imageId] null) — the tinted initial, exactly as before.
+/// * **Photo** — the picture, clipped to the circle, cropped by [crop],
+///   inside a ring of the accent.
+/// * **Arriving** — the id is known but the file has not landed (it syncs
+///   after the entry): the ThumbHash stand-in fills the ring until it does.
+/// * **Id known, no stand-in** — the ring says a photo exists; the tinted
+///   initial sits inside it so the circle is never empty.
 class PersonaAvatar extends StatelessWidget {
   const PersonaAvatar({
     required this.initial,
     this.id,
     this.accent,
     this.size = 40,
+    this.imageId,
+    this.crop,
     super.key,
   }) : assert(
          id != null || accent != null,
@@ -61,16 +81,93 @@ class PersonaAvatar extends StatelessWidget {
   /// An explicit accent, overriding the id-derived one.
   final Color? accent;
 
-  /// The avatar diameter in logical pixels.
+  /// The avatar diameter in logical pixels — ring included, so a photo never
+  /// makes a row taller.
   final double size;
+
+  /// The `JournalImage` behind the person's photograph, or null for the
+  /// initial.
+  final String? imageId;
+
+  /// Which part of the photograph is the face. Null is the default framing.
+  final AvatarCrop? crop;
+
+  /// The ring around a photograph, in logical pixels. One width at every
+  /// size: the design's 3 px at 80 would need a token spacing does not have,
+  /// and 2 px reads at 80 as well.
+  static double ringWidth(DsTokens tokens) => tokens.spacing.step1;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final accent =
         this.accent ?? personaAccentForId(id!, Theme.of(context).brightness);
-    final fontSize = size * 0.42;
+    final imageId = this.imageId;
+    if (imageId == null) {
+      return _TintedInitial(
+        initial: initial,
+        accent: accent,
+        size: size,
+        fontSize: size * 0.42,
+      );
+    }
+    final ring = ringWidth(tokens);
+    final inner = size - ring * 2;
+    return Container(
+      key: const ValueKey('persona-avatar-ring'),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: accent, width: ring),
+      ),
+      child: ClipOval(
+        child: JournalImageResolver(
+          imageId: imageId,
+          builder: (context, resolved) {
+            if (resolved == null || resolved.hasNothingToShow) {
+              return _TintedInitial(
+                initial: initial,
+                accent: accent,
+                size: inner,
+                fontSize: size * 0.42,
+              );
+            }
+            return _CroppedPicture(
+              resolved: resolved,
+              crop: crop ?? const AvatarCrop(),
+              size: inner,
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
+/// The persona-tinted circle with the initial: `color-mix(accent 20%,
+/// transparent)` fill, the initial in the accent. The whole avatar when
+/// there is no photo; the inside of the ring when the photo has nothing to
+/// show yet.
+class _TintedInitial extends StatelessWidget {
+  const _TintedInitial({
+    required this.initial,
+    required this.accent,
+    required this.size,
+    required this.fontSize,
+  });
+
+  final String initial;
+  final Color accent;
+  final double size;
+
+  /// From the avatar's *outer* size even inside a ring, so the initial does
+  /// not shrink because a photo is on its way.
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
       width: size,
       height: size,
@@ -87,6 +184,45 @@ class PersonaAvatar extends StatelessWidget {
           fontWeight: tokens.typography.weight.semiBold,
           height: 1,
         ),
+      ),
+    );
+  }
+}
+
+/// The photograph — or its stand-in — framed by an [AvatarCrop].
+///
+/// The crop is applied as `BoxFit.cover` alignment plus a scale about the
+/// same point, which is what keeps the circle full for any stored value:
+/// a covering image scaled up about a point inside the box still covers the
+/// box, so no combination of alignment and zoom in range can show an edge.
+class _CroppedPicture extends StatelessWidget {
+  const _CroppedPicture({
+    required this.resolved,
+    required this.crop,
+    required this.size,
+  });
+
+  final ResolvedJournalImage resolved;
+  final AvatarCrop crop;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final alignment = Alignment(crop.x * 2 - 1, crop.y * 2 - 1);
+    return Transform.scale(
+      scale: crop.scale,
+      alignment: alignment,
+      child: ThumbHashBackedImage(
+        key: ValueKey(resolved.path),
+        thumbHash: resolved.thumbHash,
+        image: resolved.fileExists
+            ? cappedFileImage(
+                resolved.path,
+                size: size,
+                devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+              )
+            : null,
+        alignment: alignment,
       ),
     );
   }

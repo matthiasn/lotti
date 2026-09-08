@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
-import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/thumbhash.dart';
+import 'package:lotti/widgets/media/file_watcher_mixin.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 
