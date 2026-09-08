@@ -22,6 +22,17 @@ Footprint _box({
 
 void main() {
   group('overlapping footprint recovery', () {
+    test('a push cycle returning to the start still escapes', () {
+      final collider = WalkCollider([
+        _box(),
+        _box(z: 5.6, width: 8, depth: 10),
+      ]);
+      final (x, z) = collider.resolve(0, 0);
+      expect(x, closeTo(0, 1e-6));
+      expect(z, closeTo(-3.6, 1e-6));
+      expect(collider.move(0, 0, 0, 0), (x, z));
+    });
+
     for (final facing in [0.0, math.pi / 4, math.pi / 2, -math.pi / 3]) {
       test('escapes overlapping chains at $facing in either order', () {
         final walls = [

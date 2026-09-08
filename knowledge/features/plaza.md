@@ -307,9 +307,10 @@ stateDiagram-v2
 climbs and dives. Guide legs retain swept height clearance against solids.
 Routed flights join those legs with cubic Bezier bends matching both position
 and tangent. A bend trims at most eight metres and at most 35% of either adjacent
-leg; its recursively subdivided control hull must clear every solid with camera
-clearance. A blocked bend shrinks until clear; if no usable radius remains, the
-original guide junction is retained. Arrival look-ahead stops before the rounded
+leg; its recursively subdivided control hull must clear every solid with
+`solidClearance` horizontally and `Flight.clearance` vertically, matching the
+guide legs' headroom. A blocked bend shrinks until clear; if no usable radius
+remains, the original guide junction is retained. Arrival look-ahead stops before the rounded
 pull-off, preserving the road heading until the final orientation blend.
 
 Flight timing includes the actual three-dimensional distance between samples,

@@ -217,6 +217,44 @@ void main() {
       expect(corner.x, greaterThanOrEqualTo(49 - 1e-9));
       expect(corner.z, lessThanOrEqualTo(1 + 1e-9));
     });
+
+    for (final (bottom, top) in [(0.0, 4.0), (6.0, 8.0)]) {
+      test('a rounded join preserves vertical clearance at $bottom–$top', () {
+        final obstacle = box(
+          x: 48,
+          z: 2,
+          width: 0.4,
+          depth: 0.4,
+          bottom: bottom,
+          top: top,
+        );
+        final blind = Flight.route(from, to, via: via);
+        final blindCorner = blind.poseAt(timeAt(blind, 50));
+        expect(
+          obstacle.footprint.contains(blindCorner.x, blindCorner.z),
+          isTrue,
+          reason: 'only the bend crosses the roof or overhead panel',
+        );
+        final clear = Flight.route(from, to, via: via, solids: [obstacle]);
+        for (var i = 0; i <= 1000; i++) {
+          final pose = clear.poseAt(i / 1000);
+          final horizontallyInside = obstacle.footprint.contains(
+            pose.x,
+            pose.z,
+            clearance: solidClearance,
+          );
+          expect(
+            horizontallyInside &&
+                pose.y > bottom - Flight.clearance &&
+                pose.y < top + Flight.clearance,
+            isFalse,
+            reason: 'rounded flight must retain the guide legs’ headroom',
+          );
+        }
+        expect(clear.poseAt(0).distanceTo(from), closeTo(0, 1e-9));
+        expect(clear.poseAt(1).distanceTo(to), closeTo(0, 1e-9));
+      });
+    }
   });
 
   test('turning in place takes time and still lands exactly', () {

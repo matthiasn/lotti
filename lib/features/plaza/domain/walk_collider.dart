@@ -160,6 +160,7 @@ class WalkCollider {
   (double, double) resolve(double x, double z) {
     var rx = x;
     var rz = z;
+    var displaced = false;
     for (final w in _walls) {
       final dx = rx - w.x;
       final dz = rz - w.z;
@@ -171,6 +172,7 @@ class WalkCollider {
       final u = dx * w.cosF - dz * w.sinF;
       final v = dx * w.sinF + dz * w.cosF;
       if (u.abs() >= w.halfW || v.abs() >= w.halfD) continue;
+      displaced = true;
       // Push out through the nearest face.
       final pushU = w.halfW - u.abs();
       final pushV = w.halfD - v.abs();
@@ -184,7 +186,7 @@ class WalkCollider {
       rx = w.x + nu * w.cosF + nv * w.sinF;
       rz = w.z - nu * w.sinF + nv * w.cosF;
     }
-    if ((rx != x || rz != z) && _walls.any((wall) => wall.contains(rx, rz))) {
+    if (displaced && _walls.any((wall) => wall.contains(rx, rz))) {
       final escapeX = _escapeDistance(x, z, alongX: true);
       final escapeZ = _escapeDistance(x, z, alongX: false);
       return escapeX.abs() < escapeZ.abs()

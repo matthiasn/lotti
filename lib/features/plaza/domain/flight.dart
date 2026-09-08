@@ -144,8 +144,8 @@ class Flight {
 
   static const arcThreshold = 60.0;
 
-  /// How far above a solid's top, or below its bottom, a leg must stay to
-  /// count as clearing it; the lift over a solid ends this high.
+  /// How far above a solid's top, or below its bottom, legs and rounded
+  /// bends must stay to count as clearing it; a lift ends this high.
   static const clearance = 1.5;
 
   /// The lift profile of a leg: a climb over the first [rampStart] of it,
@@ -750,8 +750,8 @@ class _Bend {
         maxU <= -footprint.width / 2 - solidClearance ||
         minV >= footprint.depth / 2 + solidClearance ||
         maxV <= -footprint.depth / 2 - solidClearance ||
-        minY >= solid.top + solidClearance ||
-        maxY <= solid.bottom - solidClearance) {
+        minY >= solid.top + Flight.clearance ||
+        maxY <= solid.bottom - Flight.clearance) {
       return true;
     }
     if (depth >= 10) return false;
