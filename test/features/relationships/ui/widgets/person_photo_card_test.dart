@@ -197,6 +197,50 @@ void main() {
     expect(written.data.avatarImageId, 'image-new');
   });
 
+  testWidgets('adjusting the face re-crops the photo it already has — no '
+      'picker — and tells the host', (tester) async {
+    await pumpCard(tester, person(avatarImageId: 'face-1'));
+
+    await tester.tap(find.byKey(const ValueKey('person-form-face-crop')));
+    await tester.pumpAndSettle();
+
+    expect(log, ['crop face-1']);
+    expect(changes, 1);
+    final written =
+        verify(
+              () => relationships.updateRelationship(captureAny()),
+            ).captured.single
+            as RelationshipEntry;
+    expect(written.data.avatarImageId, 'face-1');
+    expect(written.data.avatarCrop, const AvatarCrop(x: 0.2, y: 0.3, scale: 2));
+  });
+
+  testWidgets('removing the face clears the reference and its framing without '
+      'opening anything, and tells the host', (tester) async {
+    final framed = person(avatarImageId: 'face-1');
+    await pumpCard(
+      tester,
+      framed.copyWith(
+        data: framed.data.copyWith(
+          avatarCrop: const AvatarCrop(y: 0.3, scale: 2),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('person-form-face-remove')));
+    await tester.pumpAndSettle();
+
+    expect(log, isEmpty, reason: 'removing opens neither picker nor crop');
+    expect(changes, 1);
+    final written =
+        verify(
+              () => relationships.updateRelationship(captureAny()),
+            ).captured.single
+            as RelationshipEntry;
+    expect(written.data.avatarImageId, isNull);
+    expect(written.data.avatarCrop, isNull);
+  });
+
   testWidgets('adding a banner runs the picker alone and writes it centred', (
     tester,
   ) async {

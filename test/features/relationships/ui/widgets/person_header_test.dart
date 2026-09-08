@@ -24,6 +24,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_ca
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
@@ -212,6 +213,35 @@ void main() {
       expect(find.byKey(const ValueKey('person-menu')), findsOneWidget);
       // The name belongs to the header block; the open hero shows none.
       expect(find.text('Commander Pip Frostbeak'), findsNothing);
+    });
+
+    testWidgets('edit opens the person form prefilled with this person', (
+      tester,
+    ) async {
+      // The form behind the button reads GetIt: the shared setup, plus the
+      // category cache its category row consults.
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<EntitiesCacheService>(
+              MockEntitiesCacheService(),
+            )
+            ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+            ..registerSingleton<EditorStateService>(MockEditorStateService());
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      await pump(tester);
+
+      await tester.tap(find.byKey(const ValueKey('person-edit')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit person'), findsOneWidget);
+      expect(
+        find.widgetWithText(TextField, person().data.title),
+        findsOneWidget,
+        reason: 'the form edits this person, not a blank one',
+      );
     });
 
     testWidgets('back and talk-to-agent call back', (tester) async {

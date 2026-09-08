@@ -157,6 +157,25 @@ void main() {
     expect(find.byKey(const ValueKey('person-photo-choose')), findsNothing);
   });
 
+  testWidgets('adjusting closes the sheet, then re-crops the photo the person '
+      'already has — no picker — and writes the framing', (tester) async {
+    final result = await open(tester, person(avatarImageId: 'image-1'));
+
+    await tester.tap(find.byKey(const ValueKey('person-photo-adjust')));
+    await tester.pumpAndSettle();
+
+    expect(await result, PersonPhotoOutcome.changed);
+    expect(log, ['crop image-1'], reason: 'adjusting never opens the picker');
+    final written =
+        verify(
+              () => relationships.updateRelationship(captureAny()),
+            ).captured.single
+            as RelationshipEntry;
+    expect(written.data.avatarImageId, 'image-1');
+    expect(written.data.avatarCrop, const AvatarCrop(x: 0.2, y: 0.3, scale: 2));
+    expect(find.byKey(const ValueKey('person-photo-adjust')), findsNothing);
+  });
+
   testWidgets('removing writes the cleared person and closes the sheet', (
     tester,
   ) async {

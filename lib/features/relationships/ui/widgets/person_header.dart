@@ -452,22 +452,13 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
+  /// Always: [PersonHeroAppBar] builds a fresh [avatar], [leading] and
+  /// [actions] on every build, and widgets compare by identity, so a
+  /// field-by-field comparison could never say "unchanged" — the delegate
+  /// repaints whenever its host rebuilds, and this says so plainly rather
+  /// than through fourteen comparisons that the first widget field decides.
   @override
-  bool shouldRebuild(_PersonHeroDelegate oldDelegate) =>
-      title != oldDelegate.title ||
-      titleStyle != oldDelegate.titleStyle ||
-      wash != oldDelegate.wash ||
-      topPadding != oldDelegate.topPadding ||
-      bandExtent != oldDelegate.bandExtent ||
-      avatarSize != oldDelegate.avatarSize ||
-      avatarInset != oldDelegate.avatarInset ||
-      avatar != oldDelegate.avatar ||
-      avatarSemanticsLabel != oldDelegate.avatarSemanticsLabel ||
-      onAvatarTap != oldDelegate.onAvatarTap ||
-      banner != oldDelegate.banner ||
-      bannerCropX != oldDelegate.bannerCropX ||
-      leading != oldDelegate.leading ||
-      actions != oldDelegate.actions;
+  bool shouldRebuild(_PersonHeroDelegate oldDelegate) => true;
 }
 
 /// What the hero's kebab offers: the contact-link intents where there is an

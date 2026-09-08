@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/cover_crop_geometry.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
@@ -324,6 +325,56 @@ void main() {
       await tester.pumpAndSettle();
       return result;
     }
+
+    testWidgets('a picture with nothing to show yet — no file, no stand-in — '
+        'leaves a plain square where the viewport would be, and the preview '
+        'keeps the initial', (tester) async {
+      final pending = buildJournalImage(
+        id: 'image-pending',
+        imageFile: 'pending.png',
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 300,
+                child: AvatarCropForm(
+                  relationship: person,
+                  imageId: pending.id,
+                  handle: handle,
+                  readImageSize: readImageSize,
+                ),
+              ),
+            ),
+          ),
+          overrides: [createEntryControllerOverride(pending)],
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        viewport,
+        findsNothing,
+        reason: 'nothing to drag until a picture or its stand-in exists',
+      );
+      final square = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byType(AvatarCropForm),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      final tokens = tester.element(find.byType(AvatarCropForm)).designTokens;
+      expect(square.color, tokens.colors.background.level02);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('avatar-crop-preview')),
+          matching: find.text('P'),
+        ),
+        findsOneWidget,
+        reason: 'the preview is a PersonaAvatar, so it shows the initial',
+      );
+    });
 
     testWidgets('Use photo resolves to the framing being edited', (
       tester,

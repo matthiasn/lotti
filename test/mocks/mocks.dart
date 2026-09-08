@@ -1578,6 +1578,18 @@ class FakeFileSelectorPlatform extends Fake
     return filesToReturn;
   }
 
+  /// The single-file picker; the first of [filesToReturn], or `null` for a
+  /// dismissed dialog.
+  @override
+  Future<XFile?> openFile({
+    List<XTypeGroup>? acceptedTypeGroups,
+    String? initialDirectory,
+    String? confirmButtonText,
+  }) async {
+    lastAcceptedTypeGroups = acceptedTypeGroups;
+    return filesToReturn.firstOrNull;
+  }
+
   @override
   Future<FileSaveLocation?> getSaveLocation({
     List<XTypeGroup>? acceptedTypeGroups,
