@@ -1,14 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
 /// Hosts a button that triggers [showModal] with the page's BuildContext —
@@ -48,16 +47,14 @@ Future<void> _pumpModalHost(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockLoggingService mockLoggingService;
+  // Shared-isolate CI can enter after another widget host registered services.
+  // Reproduce that starting state even when this file runs on its own.
+  setUpAll(ensureThemingServicesRegistered);
 
-  setUp(() {
-    mockLoggingService = MockLoggingService();
-
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
-    ensureDomainLoggerRegistered();
+  setUp(() async {
+    await setUpTestGetIt();
   });
-
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   group('ConfirmationProgressModal', () {
     testWidgets('shows confirmation page with correct content', (tester) async {
@@ -69,11 +66,7 @@ void main() {
             message: 'Are you sure you want to delete this?',
             confirmLabel: 'Delete',
             progressBuilder: (context) => const Text('Progress...'),
-            operation: () async {
-              await Future<void>.delayed(
-                const Duration(milliseconds: 100),
-              );
-            },
+            operation: () async {},
           );
         },
       );
@@ -103,11 +96,7 @@ void main() {
             message: 'Continue with this action?',
             confirmLabel: 'Continue',
             progressBuilder: (context) => const Text('Progress...'),
-            operation: () async {
-              await Future<void>.delayed(
-                const Duration(milliseconds: 100),
-              );
-            },
+            operation: () async {},
             isDestructive: false,
           );
         },
@@ -179,6 +168,7 @@ void main() {
     });
 
     testWidgets('confirms operation and shows progress page', (tester) async {
+      final operation = Completer<void>();
       var operationCalled = false;
       var confirmed = false;
 
@@ -198,9 +188,7 @@ void main() {
             ),
             operation: () async {
               operationCalled = true;
-              await Future<void>.delayed(
-                const Duration(milliseconds: 200),
-              );
+              await operation.future;
             },
           );
         },
@@ -219,12 +207,13 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       // No close button since hasTopBarLayer is false
 
-      // Wait for operation to complete
-      await tester.pump(const Duration(milliseconds: 250));
+      expect(operationCalled, isTrue);
+      expect(confirmed, isFalse);
+      operation.complete();
       await tester.pumpAndSettle();
 
-      // Verify operation was called and confirmed
-      expect(operationCalled, isTrue);
+      // Completion dismisses the modal and returns the confirmation result.
+      expect(find.text('Processing...'), findsNothing);
       expect(confirmed, isTrue);
     });
 
@@ -331,11 +320,7 @@ void main() {
             message: 'Delete this item?',
             confirmLabel: 'Delete',
             progressBuilder: (context) => const Text('Progress...'),
-            operation: () async {
-              await Future<void>.delayed(
-                const Duration(milliseconds: 100),
-              );
-            },
+            operation: () async {},
           );
         },
       );
@@ -372,11 +357,7 @@ void main() {
             message: 'Continue with this action?',
             confirmLabel: 'Continue',
             progressBuilder: (context) => const Text('Progress...'),
-            operation: () async {
-              await Future<void>.delayed(
-                const Duration(milliseconds: 100),
-              );
-            },
+            operation: () async {},
             isDestructive: false,
           );
         },
