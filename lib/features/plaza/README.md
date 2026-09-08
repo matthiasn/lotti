@@ -13,9 +13,10 @@ memorable map of a project.
 
 Black-and-white penguin companions stroll through the streets and open square,
 alone or in pairs, with balancing flippers and orange webbed feet. Companions
-occasionally glance toward one another as if in conversation. They are ambient
-scene characters;
-reduced-motion settings pause them.
+occasionally glance toward one another as if in conversation, with eyes leading
+the turn and independent blinks. A mix of compact, standard and upright builds
+gives the crowd variety. They are ambient scene characters; reduced-motion
+settings pause them.
 
 This is a **developer harness only**. It is not wired into app routes,
 dependency injection or the database, and it never shows user data: it

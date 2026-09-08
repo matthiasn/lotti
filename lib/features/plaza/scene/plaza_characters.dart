@@ -79,6 +79,7 @@ class PlazaCharacters {
       'eyes': dsTokensLight.colors.background.level01,
       'pupils': dsTokensDark.colors.background.level01,
       'glints': dsTokensLight.colors.background.level01,
+      'lids': dsTokensLight.colors.background.level01,
       'beak': dsTokensDark.colors.alert.warning.defaultColor,
       'feet': dsTokensDark.colors.alert.warning.defaultColor,
     };
@@ -138,8 +139,26 @@ class _Penguin {
     pelvis = joint('pelvis');
     spine = joint('spine');
     head = joint('head');
+    final compact = companion.build == CharacterBuild.compact;
+    final upright = companion.build == CharacterBuild.upright;
+    // Only the upper body morphs. Uniform head scaling carries the eyes,
+    // eyelids and beak together after morphing, leaving leg lengths unchanged.
+    head.position += Vector3(0, compact ? -0.07 : (upright ? 0.06 : 0), 0);
+    head.scale = Vector3.all(compact ? 1.03 : 1);
+    final buildWeights = switch (companion.build) {
+      CharacterBuild.standard => const [0.0, 0.0],
+      CharacterBuild.compact => const [1.0, 0.0],
+      CharacterBuild.upright => const [0.0, 1.0],
+    };
+    for (final name in ['body', 'belly']) {
+      model.getChildByName('$name-surface')!.setMorphWeights(buildWeights);
+    }
+    lids = model.getChildByName('lids-surface')!;
     pelvisRest = pelvis.position.clone();
     for (final side in ['left', 'right']) {
+      final gaze = joint('$side-gaze');
+      gazes.add(gaze);
+      gazeRest.add(gaze.position.clone());
       flippers.add(joint('$side-flipper'));
       flipperTips.add(joint('$side-flipper-tip'));
       legs.add(
@@ -154,7 +173,10 @@ class _Penguin {
   late final Node pelvis;
   late final Node spine;
   late final Node head;
+  late final Node lids;
   late final Vector3 pelvisRest;
+  final List<Node> gazes = [];
+  final List<Vector3> gazeRest = [];
   final List<Node> flippers = [];
   final List<Node> flipperTips = [];
   final List<_Leg> legs = [];
@@ -172,6 +194,18 @@ class _Penguin {
     final waddle = math.sin(phase);
     final weight = pose.weightShift;
     final attention = companion.attentionAt(seconds);
+    lids.setMorphWeight(0, companion.blinkAt(seconds));
+    // Both pupils and catchlights follow one bounded gaze direction. The
+    // mouth seam is head-bound and never moves with these two facial joints.
+    for (var i = 0; i < gazes.length; i++) {
+      gazes[i].position =
+          gazeRest[i] +
+          Vector3(
+            0.12 * math.sin(attention.eyeYaw),
+            0,
+            -0.10 * (1 - math.cos(attention.eyeYaw)),
+          );
+    }
     pelvis.position =
         pelvisRest + Vector3(0.065 * weight, pose.bounce / scale, 0);
     // Short steps shift weight over the supporting foot. The head counters
@@ -192,13 +226,14 @@ class _Penguin {
       final side = i == 0 ? -1.0 : 1.0;
       flippers[i].rotation = Quaternion.euler(
         side * 0.10,
-        0.14 * math.sin(flipperPhase),
-        side * (0.28 + 0.07 * math.cos(flipperPhase)) - pose.bank * 0.3,
+        0.09 * math.sin(flipperPhase),
+        side * (0.20 + 0.04 * math.cos(flipperPhase)) - pose.bank * 0.3,
       );
+      final delayed = flipperPhase - 2 * math.pi * 0.08 / gait.period;
       flipperTips[i].rotation = Quaternion.euler(
         0,
-        0.07 * math.sin(flipperPhase - 0.4),
-        side * 0.08 * math.sin(flipperPhase - 0.5),
+        0.045 * math.sin(delayed),
+        side * 0.05 * math.sin(delayed),
       );
     }
     final forward = Vector3(

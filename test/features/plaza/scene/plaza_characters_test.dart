@@ -42,6 +42,7 @@ void main() {
           CharacterCompanion(
             id: 'test-$i',
             region: 'test',
+            build: CharacterBuild.values[i % CharacterBuild.values.length],
             gait: CharacterGait(loop: loop, scale: scale, phase: i / 4 + 0.05),
           ),
       ],
@@ -76,14 +77,14 @@ void main() {
           same(source.mesh!.primitives.single.geometry),
         );
         expect(part.skin, isNot(same(source.skin)));
-        expect(part.skin!.joints, hasLength(13));
+        expect(part.skin!.joints, hasLength(15));
         final actor = part.parent!.parent!;
         for (final joint in part.skin!.joints) {
           expect(_nodes(actor), contains(joint));
         }
         materials.add(primitive.material);
       }
-      expect(materials, hasLength(7));
+      expect(materials, hasLength(8));
       final torso = parts.firstWhere((n) => n.name == 'body-surface');
       final material =
           torso.mesh!.primitives.single.material as PhysicallyBasedMaterial;
@@ -102,6 +103,81 @@ void main() {
       expect(pupilMaterial.baseColorFactor.x, lessThan(0.05));
     },
   );
+
+  test('body builds and expressions vary while geometry stays shared', () {
+    final rigs = characters.root.children.toList();
+    final bodies = [
+      for (final rig in rigs) rig.getChildByName('body-surface')!,
+    ];
+    expect(bodies[0].morphWeights, [0, 0]);
+    expect(bodies[1].morphWeights, [1, 0]);
+    expect(bodies[2].morphWeights, [0, 1]);
+    final shape = bodies.first.mesh!.morphTargets!;
+    expect(shape.targetNames, ['compact', 'upright']);
+    expect(shape.positionDeltas.any((v) => v.abs() > 0.02), isTrue);
+    expect(shape.normalDeltas!.any((v) => v.abs() > 0.01), isTrue);
+    expect(
+      rigs[1].getChildByName('head')!.position.y,
+      lessThan(rigs[0].getChildByName('head')!.position.y - 0.06),
+    );
+    expect(
+      rigs[2].getChildByName('head')!.position.y,
+      greaterThan(rigs[0].getChildByName('head')!.position.y + 0.05),
+    );
+    final lid = rigs[0].getChildByName('lids-surface')!;
+    final other = rigs[1].getChildByName('lids-surface')!;
+    lid.setMorphWeight(0, 1);
+    expect(lid.morphWeights, [1]);
+    expect(other.morphWeights, [0]);
+    expect(model.getChildByName('lids-surface')!.morphWeights, [0]);
+    expect(
+      lid.mesh!.primitives.single.geometry,
+      same(other.mesh!.primitives.single.geometry),
+    );
+  });
+
+  test('eyes lead a glance and closed eyelids pause without catching up', () {
+    const gait = CharacterGait(loop: loop, scale: 1, phase: 0);
+    characters.dispose();
+    final companion = CharacterCompanion(
+      id: 'expression-0',
+      region: 'test',
+      gait: gait,
+      partnerLoop: loop.translated(CharacterPopulation.pairSeparation),
+    );
+    characters = PlazaCharacters(
+      parent: parent,
+      model: model,
+      population: [companion],
+    );
+    final rig = characters.root.children.single;
+    final gaze = rig.getChildByName('left-gaze')!;
+    final lids = rig.getChildByName('lids-surface')!;
+    tick(0);
+    final forward = gaze.position.clone();
+    tick(0.04);
+    expect(gaze.position.x, greaterThan(forward.x + 0.001));
+    expect(gaze.position.y, forward.y);
+    var closed = false;
+    for (var frame = 5; frame < 1800; frame++) {
+      tick(frame / 100);
+      if (lids.morphWeights!.single > 0.999) {
+        closed = true;
+        break;
+      }
+    }
+    expect(closed, isTrue, reason: 'the rig must actually close its eyelids');
+    final held = lids.morphWeights;
+    final gazeHeld = gaze.localTransform.clone();
+    tick(100, animate: false);
+    tick(600, animate: false);
+    expect(lids.morphWeights, held);
+    expect(gaze.localTransform, gazeHeld);
+    tick(600.01);
+    expect(lids.morphWeights!.single, greaterThan(0.9));
+    tick(600.3);
+    expect(lids.morphWeights!.single, lessThan(0.01));
+  });
 
   test('travel and articulation advance without replacing meshes or nodes', () {
     tick(100);
@@ -185,17 +261,19 @@ void main() {
               )
             : loop;
         final cast = [
-          for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed)
-            CharacterCompanion(
-              id: '$i',
-              region: 'test',
-              gait: CharacterGait(
-                loop: route,
-                scale: scale,
-                phase: i / 4 + 0.05,
-                stepPhase: street ? 0.31 : 0,
+          for (final build in CharacterBuild.values)
+            for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed)
+              CharacterCompanion(
+                id: '${build.name}-$i',
+                region: 'test',
+                build: build,
+                gait: CharacterGait(
+                  loop: route,
+                  scale: scale,
+                  phase: i / 4 + 0.05,
+                  stepPhase: street ? 0.31 : 0,
+                ),
               ),
-            ),
         ];
         characters.dispose();
         characters = PlazaCharacters(
@@ -207,7 +285,8 @@ void main() {
         for (var frame = 0; frame < 600; frame++) {
           final seconds = frame / 600 * route.length / route.pace;
           tick(seconds);
-          for (final (i, scale) in [1.0, 0.88, 0.96, 0.82].indexed) {
+          for (final (i, companion) in cast.indexed) {
+            final scale = companion.gait.scale;
             final penguin = characters.root.children[i];
             final gait = cast[i].gait.at(seconds);
             for (final (name, target) in [

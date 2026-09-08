@@ -41,9 +41,9 @@ for side, flipper, tip, hip, knee, ankle in [
     (1, 5, 6, 10, 11, 12),
 ]:
     SHAPES += [
-        ((side * 0.56, 1.40, 0), (0.15, 0.23, 0.09), flipper),
-        ((side * 0.68, 1.15, 0), (0.14, 0.34, 0.075), flipper),
-        ((side * 0.79, 0.91, 0.025), (0.082, 0.18, 0.055), tip),
+        ((side * 0.55, 1.40, 0), (0.135, 0.25, 0.095), flipper),
+        ((side * 0.72, 1.14, 0), (0.145, 0.32, 0.075), flipper),
+        ((side * 0.86, 0.91, 0.015), (0.075, 0.16, 0.060), tip),
         ((side * 0.27, 0.43, 0.045), (0.17, 0.24, 0.17), hip),
         ((side * 0.27, 0.23, 0.065), (0.105, 0.15, 0.115), knee),
         ((side * 0.27, 0.082, 0.13), (0.21, 0.082, 0.30), ankle),
@@ -149,7 +149,7 @@ def triangle(a, b, c):
         u[2] * v[0] - u[0] * v[2],
         u[0] * v[1] - u[1] * v[0],
     )
-    if sum(cross[i] * normals[a][i] for i in range(3)) < 0:
+    if sum(cross[i] * sum(normals[k][i] for k in (a, b, c)) for i in range(3)) < 0:
         b, c = c, b
     x, y, z = (sum(positions[k][i] for k in (a, b, c)) / 3 for i in range(3))
     bib = (x / 0.47) ** 2 + ((y - 1.05) / 0.68) ** 2 < 1
@@ -228,12 +228,13 @@ groups = {
     "eyes": [],
     "pupils": [],
     "glints": [],
+    "lids": [],
     "beak": [],
     "feet": feet,
 }
 
 
-def ellipsoid(group, center, radii):
+def ellipsoid(group, center, radii, bone=2):
     start = len(positions)
     segments = 20
     rings = 12
@@ -251,7 +252,7 @@ def ellipsoid(group, center, radii):
             length = math.sqrt(sum(v * v for v in n))
             positions.append(p)
             normals.append(tuple(v / length for v in n))
-            joints.append([2, 0, 0, 0])
+            joints.append([bone, 0, 0, 0])
             skin_weights.append([1, 0, 0, 0])
     for row in range(rings):
         for col in range(segments):
@@ -265,17 +266,145 @@ def ellipsoid(group, center, radii):
                 groups[group].extend((b, d, c))
 
 
+# Eyelids are shallow shells outside the full eye/gaze envelope. Their lower
+# edges close vertically, so interpolation cannot cut through a convex eye.
+blink_positions = {}
 for side in [-1, 1]:
-    x = side * 0.18
-    y = 2.025
+    x, y = side * 0.17, 1.985
     z = front(x, y)
-    ellipsoid("eyes", (x, y, z + 0.004), (0.095, 0.112, 0.034))
-    ellipsoid("pupils", (x, y - 0.008, z + 0.032), (0.061, 0.079, 0.02))
-    ellipsoid("glints", (x - 0.02, y + 0.024, z + 0.050), (0.016, 0.019, 0.009))
-# A short tapered bill with a closed seam, below the eyes.
-ellipsoid("beak", (0, 1.825, 0.46), (0.19, 0.083, 0.255))
-ellipsoid("beak", (0, 1.778, 0.46), (0.17, 0.042, 0.22))
-ellipsoid("pupils", (0, 1.790, 0.49), (0.172, 0.007, 0.20))
+    bone = len(BONES)
+    BONES.append((f"{'left' if side < 0 else 'right'}-gaze", 2, (x, y, z)))
+    ellipsoid("eyes", (x, y, z + 0.003), (0.102, 0.100, 0.022))
+    ellipsoid("pupils", (x, y - 0.006, z + 0.020), (0.063, 0.072, 0.009), bone)
+    ellipsoid("glints", (x - 0.018, y + 0.020, z + 0.030), (0.010, 0.012, 0.004), bone)
+    start = len(positions)
+    columns, rows = 24, 8
+    for row in range(rows + 1):
+        # The rim returns horizontally above the eye opening. Starting the
+        # vertical front below a diagonal return would expose the sclera at
+        # the top of an otherwise closed blink.
+        v = max(0, (row - 1) / (rows - 1))
+        for col in range(columns + 1):
+            u = -1 + 2 * col / columns
+            # The outer rim returns into the face; the moving front remains
+            # ahead of the pupil and catchlight even at the gaze limits.
+            xx = x + 0.118 * u
+            top = y + 0.098 * math.sqrt(max(0, 1 - u * u)) + 0.004
+            lower = y + 0.073 - side * u * 0.003
+            lower = min(lower, top - 0.004)
+            yy = top + (lower - top) * v
+            depth = z + 0.004 + 0.034 * math.sqrt(max(0, 1 - u * u))
+            zz = min(front(xx, top) + 0.002, depth - 0.002) if row == 0 else depth
+            index = len(positions)
+            positions.append((xx, yy, zz))
+            normals.append((0, 0, 1))
+            joints.append([2, 0, 0, 0])
+            skin_weights.append([1, 0, 0, 0])
+            blink_positions[index] = (xx, top + (y - 0.112 - top) * v, zz)
+    for row in range(rows):
+        for col in range(columns):
+            a = start + row * (columns + 1) + col
+            b, c = a + 1, a + columns + 1
+            groups["lids"].extend((a, c, b, b, c, c + 1))
+
+# Rounded loft with a taper, rather than overlapping oval bill lobes. A
+# narrow seam follows the same surface and stays rigidly bound to the head.
+sections = [
+    (0.34, 1.815, 0.125, 0.050),
+    (0.41, 1.815, 0.150, 0.065),
+    (0.50, 1.810, 0.105, 0.048),
+    (0.60, 1.802, 0.020, 0.016),
+    (0.612, 1.801, 0.003, 0.003),
+]
+angles = sorted(
+    set(
+        [i * math.pi / 12 for i in range(24)]
+        + [0.035, math.pi - 0.035, math.pi + 0.035, 2 * math.pi - 0.035]
+    )
+)
+start = len(positions)
+for z, y, width, height in sections:
+    for angle in angles:
+        positions.append((width * math.cos(angle), y + height * math.sin(angle), z))
+        normals.append((0, 0, 1))
+        joints.append([2, 0, 0, 0])
+        skin_weights.append([1, 0, 0, 0])
+for row in range(len(sections) - 1):
+    for col, angle in enumerate(angles):
+        next_col = (col + 1) % len(angles)
+        mid = (angle + (angles[next_col] if next_col else 2 * math.pi)) / 2
+        group = "pupils" if abs(math.sin(mid)) < 0.04 else "beak"
+        a, b = start + row * len(angles) + col, start + row * len(angles) + next_col
+        c, d = a + len(angles), b + len(angles)
+        groups[group].extend((a, b, c, b, d, c))
+for row, reverse in [(0, True), (len(sections) - 1, False)]:
+    z, y, _, _ = sections[row]
+    center = len(positions)
+    positions.append((0, y, z))
+    normals.append((0, 0, -1 if reverse else 1))
+    joints.append([2, 0, 0, 0])
+    skin_weights.append([1, 0, 0, 0])
+    for col in range(len(angles)):
+        a = start + row * len(angles) + col
+        b = start + row * len(angles) + (col + 1) % len(angles)
+        groups["beak"].extend((center, b, a) if reverse else (center, a, b))
+
+
+def surface_normals(indices, vertices):
+    sums = {}
+    for i in range(0, len(indices), 3):
+        a, b, c = indices[i : i + 3]
+        u = [vertices[b][j] - vertices[a][j] for j in range(3)]
+        v = [vertices[c][j] - vertices[a][j] for j in range(3)]
+        n = (
+            u[1] * v[2] - u[2] * v[1],
+            u[2] * v[0] - u[0] * v[2],
+            u[0] * v[1] - u[1] * v[0],
+        )
+        for k in (a, b, c):
+            sums[k] = tuple(sums.get(k, (0, 0, 0))[j] + n[j] for j in range(3))
+    return {
+        k: tuple(x / math.sqrt(sum(v * v for v in n)) for x in n)
+        for k, n in sums.items()
+    }
+
+
+# Area-weighted normals retain the curvature of the actual welded surface.
+for indices in [
+    body + belly + feet,
+    groups["lids"],
+    [i for group in ("beak", "pupils") for i in groups[group] if i >= start],
+]:
+    for index, n in surface_normals(indices, positions).items():
+        normals[index] = n
+closed_positions = [blink_positions.get(i, p) for i, p in enumerate(positions)]
+closed_normals = surface_normals(groups["lids"], closed_positions)
+
+
+def build_weight(y):
+    def smooth(a, b):
+        t = max(0, min(1, (y - a) / (b - a)))
+        return t * t * (3 - 2 * t)
+
+    return smooth(0.55, 0.95) * (1 - smooth(1.50, 1.80))
+
+
+def build_variant(p, compact):
+    x, y, z = p
+    w = build_weight(y)
+    width, height, depth = (0.07, -0.05, 0.03) if compact else (-0.04, 0.04, -0.02)
+    return (x * (1 + width * w), y + height * (y - 0.60) * w, z * (1 + depth * w))
+
+
+# Recompute target normals before splitting colour surfaces, so shared
+# boundary vertices keep the same shading through each body deformation.
+body_variants = [
+    [build_variant(p, compact) for p in positions] for compact in (True, False)
+]
+body_variant_normals = [
+    surface_normals(body + belly + feet, variant) for variant in body_variants
+]
+
 
 blob = bytearray()
 views = []
@@ -303,12 +432,6 @@ def accessor(rows, components, kind, fmt="f", component=5126, bounds=False):
     return len(accessors) - 1
 
 
-attributes = {
-    "POSITION": accessor(positions, 3, "VEC3", bounds=True),
-    "NORMAL": accessor(normals, 3, "VEC3"),
-    "JOINTS_0": accessor(joints, 4, "VEC4", "H", 5123),
-    "WEIGHTS_0": accessor(skin_weights, 4, "VEC4"),
-}
 nodes = [{"name": "penguin-model", "children": []}]
 for name, parent, absolute in BONES:
     at = (
@@ -325,6 +448,73 @@ inverse = accessor(matrices, 16, "MAT4")
 meshes = []
 materials = []
 for name, indices in groups.items():
+    # Importers retain every accessor vertex. Export only vertices actually
+    # used by this surface so facial morphs never duplicate the body buffers.
+    used = sorted(set(indices))
+    remap = {old: new for new, old in enumerate(used)}
+    attributes = {
+        "POSITION": accessor([positions[i] for i in used], 3, "VEC3", bounds=True),
+        "NORMAL": accessor([normals[i] for i in used], 3, "VEC3"),
+        "JOINTS_0": accessor([joints[i] for i in used], 4, "VEC4", "H", 5123),
+        "WEIGHTS_0": accessor([skin_weights[i] for i in used], 4, "VEC4"),
+    }
+    targets, target_names = [], []
+    if name in ("body", "belly"):
+        for variant_index, compact in enumerate((True, False)):
+            variant = [
+                (
+                    body_variants[variant_index][i],
+                    body_variant_normals[variant_index][i],
+                )
+                for i in used
+            ]
+            targets.append(
+                {
+                    "POSITION": accessor(
+                        [
+                            tuple(p[j] - positions[i][j] for j in range(3))
+                            for i, (p, _) in zip(used, variant)
+                        ],
+                        3,
+                        "VEC3",
+                        bounds=True,
+                    ),
+                    "NORMAL": accessor(
+                        [
+                            tuple(n[j] - normals[i][j] for j in range(3))
+                            for i, (_, n) in zip(used, variant)
+                        ],
+                        3,
+                        "VEC3",
+                    ),
+                }
+            )
+            target_names.append("compact" if compact else "upright")
+    if name == "lids":
+        targets.append(
+            {
+                "POSITION": accessor(
+                    [
+                        tuple(
+                            closed_positions[i][j] - positions[i][j] for j in range(3)
+                        )
+                        for i in used
+                    ],
+                    3,
+                    "VEC3",
+                    bounds=True,
+                ),
+                "NORMAL": accessor(
+                    [
+                        tuple(closed_normals[i][j] - normals[i][j] for j in range(3))
+                        for i in used
+                    ],
+                    3,
+                    "VEC3",
+                ),
+            }
+        )
+        target_names.append("blink")
     materials.append(
         {
             "name": name,
@@ -341,12 +531,19 @@ for name, indices in groups.items():
             "primitives": [
                 {
                     "attributes": attributes,
-                    "indices": accessor(indices, 1, "SCALAR", "I", 5125),
+                    "indices": accessor(
+                        [remap[i] for i in indices], 1, "SCALAR", "I", 5125
+                    ),
                     "material": len(materials) - 1,
+                    **({"targets": targets} if targets else {}),
                 }
             ],
         }
     )
+    if targets:
+        meshes[-1].update(
+            {"weights": [0] * len(targets), "extras": {"targetNames": target_names}}
+        )
     nodes.append({"name": name + "-surface", "mesh": len(meshes) - 1, "skin": 0})
     nodes[0]["children"].append(len(nodes) - 1)
 while len(blob) % 4:

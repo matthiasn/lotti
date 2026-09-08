@@ -6,6 +6,9 @@ import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/solid.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 
+/// A silhouette profile; changing a build never changes its route or footsteps.
+enum CharacterBuild { standard, compact, upright }
+
 /// Deterministic walkers distributed throughout the inhabited street network.
 /// Routes stay inside asphalt or plaza paving and never cut across buildings.
 class CharacterPopulation {
@@ -132,6 +135,8 @@ class CharacterPopulation {
             partnerLoop: pair ? (member == 0 ? right : left) : null,
             conversationSeed: conversation,
             responseDelay: member * 0.55,
+            build: CharacterBuild
+                .values[(seed + group + member) % CharacterBuild.values.length],
           ),
         );
       }
@@ -150,6 +155,7 @@ class CharacterCompanion {
     this.partnerLoop,
     this.conversationSeed = 0,
     this.responseDelay = 0,
+    this.build = CharacterBuild.standard,
   });
 
   final String id;
@@ -158,28 +164,37 @@ class CharacterCompanion {
   final CharacterLoop? partnerLoop;
   final int conversationSeed;
   final double responseDelay;
+  final CharacterBuild build;
 
   CharacterPose positionAt(double seconds) =>
       gait.loop.at(seconds, phase: gait.phase);
 
-  /// Ease in, hold an inward glance, then return to the route. Replies lag
-  /// their partner; most of each 9–13 second interval is spent looking ahead.
-  /// A smooth facing gate suppresses conversation through tight U-turns.
-  ({double yaw, double nod}) attentionAt(double seconds) {
+  /// Eyes lead each inward glance and its return by 80 ms. Their residual
+  /// rotation settles as the head catches up, rather than doubling its turn.
+  /// Replies lag their partner; most of each 9–13 second interval is spent
+  /// looking ahead. A smooth facing gate suppresses glances on tight U-turns.
+  ({double yaw, double nod, double eyeYaw}) attentionAt(double seconds) {
     final partner = partnerLoop;
-    if (partner == null) return (yaw: 0, nod: 0);
+    if (partner == null) return (yaw: 0, nod: 0, eyeYaw: 0);
     final interval = 9.0 + conversationSeed % 5;
     final time = (seconds + conversationSeed % 7 - responseDelay) % interval;
     final hold = 0.9 + (conversationSeed % 4) * 0.1;
-    final double weight;
-    if (time < 0.35) {
-      weight = _ease(time / 0.35);
-    } else if (time < 0.35 + hold) {
-      weight = 1;
-    } else if (time < 0.85 + hold) {
-      weight = 1 - _ease((time - 0.35 - hold) / 0.5);
-    } else {
-      return (yaw: 0, nod: 0);
+    const lead = 0.08;
+    const settle = lead + 0.35;
+    final headWeight = _lookWeight(
+      time - lead,
+      rise: 0.35,
+      hold: hold + lead,
+      fall: 0.5,
+    );
+    final eyeWeight = _lookWeight(
+      time,
+      rise: lead,
+      hold: settle + hold - lead,
+      fall: 0.09,
+    );
+    if (headWeight == 0 && eyeWeight == 0) {
+      return (yaw: 0, nod: 0, eyeYaw: 0);
     }
     final here = positionAt(seconds);
     final there = partner.at(seconds, phase: gait.phase);
@@ -190,13 +205,49 @@ class CharacterCompanion {
     );
     final forward = math.cos(here.yaw - gait.loop.heading).abs();
     final gate = _ease(((forward - 0.8) / 0.2).clamp(0, 1));
-    final amount = weight * gate;
-    final nod = math.sin(math.pi * ((time - 0.35) / hold).clamp(0, 1));
+    final amount = headWeight * gate;
+    final yaw = angle.clamp(-0.48, 0.48) * amount;
+    final gaze = angle.clamp(-0.58, 0.58) * eyeWeight * gate;
+    final nod = math.sin(math.pi * ((time - settle) / hold).clamp(0, 1));
     return (
-      yaw: angle.clamp(-0.48, 0.48) * amount,
+      yaw: yaw,
       nod: 0.045 * nod * nod * amount,
+      eyeYaw: (gaze - yaw).clamp(-0.18, 0.18),
     );
   }
 
-  static double _ease(double t) => t * t * t * (10 + t * (-15 + 6 * t));
+  /// Independent blinks close quickly, hold shut, and reopen more slowly.
+  /// Stable per-actor and per-event seeds vary timing without timers or state;
+  /// direct sampling and a paused animation clock produce the same closure.
+  double blinkAt(double seconds) {
+    const interval = 5.6;
+    // Keep the first event after time zero, including every actor's phase.
+    final local = seconds + 1.1 * stableUnit(id, 'blink-phase');
+    final block = (local / interval).floor();
+    final start = 1.2 + 2.4 * stableUnit(id, 'blink-$block-start');
+    final time = local % interval - start;
+    final variation = 0.9 + 0.2 * stableUnit(id, 'blink-$block-duration');
+    final close = 0.06 * variation;
+    final hold = 0.04 * variation;
+    final open = 0.12 * variation;
+    return _lookWeight(time, rise: close, hold: hold, fall: open);
+  }
+
+  static double _lookWeight(
+    double time, {
+    required double rise,
+    required double hold,
+    required double fall,
+  }) {
+    if (time <= 0) return 0;
+    if (time < rise) return _ease(time / rise);
+    if (time < rise + hold) return 1;
+    if (time < rise + hold + fall) {
+      return 1 - _ease((time - rise - hold) / fall);
+    }
+    return 0;
+  }
+
+  static double _ease(double t) =>
+      (t * t * t * (10 + t * (-15 + 6 * t))).clamp(0, 1);
 }
