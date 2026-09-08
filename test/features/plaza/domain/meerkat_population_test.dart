@@ -48,6 +48,29 @@ void main() {
         );
         expect(motion.scale, inInclusiveRange(0.68, 0.76));
       }
+      for (final budget in [0, 1, 6, 1000]) {
+        final limited = MeerkatPopulation.forWorld(
+          plan: world.plan,
+          plaza: world.plaza,
+          solids: world.solids,
+          roadWidth: world.layout.roadWidth,
+          penguins: penguins,
+          maxCount: budget,
+        );
+        expect(limited.length, budget.clamp(0, cast.length));
+        expect(limited.map((m) => m.id).toSet().length, limited.length);
+        expect(limited.every((m) => cast.any((c) => c.id == m.id)), isTrue);
+        if (budget == 1 || budget == 6) {
+          expect(limited.first.id, startsWith('meerkat-plaza'));
+        }
+        if (budget == 6) {
+          final streets = limited.where(
+            (m) => m.id.startsWith('meerkat-street'),
+          );
+          expect(streets.length, greaterThanOrEqualTo(2));
+          expect(streets.map((m) => m.loop.z).toSet().length, greaterThan(1));
+        }
+      }
       if (!folded) expect(penguins, hasLength(78));
     });
   }

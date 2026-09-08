@@ -12,58 +12,67 @@ import struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+# Upright reference: long narrow trunk, small skull, low ears and hanging paws.
+# The forelimbs stand clear of the torso below the shoulder, so bending an
+# elbow cannot stretch a shared skin web across the belly.
 BONES = [
     ("pelvis", None, (0, 0.62, 0)),
-    ("spine", 0, (0, 1.07, 0)),
-    ("head", 1, (0, 1.58, 0.04)),
-    ("left-shoulder", 1, (-0.23, 1.38, 0.04)),
-    ("left-elbow", 3, (-0.30, 1.04, 0.10)),
-    ("left-wrist", 4, (-0.29, 0.70, 0.14)),
-    ("right-shoulder", 1, (0.23, 1.38, 0.04)),
-    ("right-elbow", 6, (0.30, 1.04, 0.10)),
-    ("right-wrist", 7, (0.29, 0.70, 0.14)),
-    ("left-hip", 0, (-0.17, 0.62, 0)),
-    ("left-knee", 9, (-0.18, 0.33, 0.16)),
-    ("left-ankle", 10, (-0.19, 0.075, 0.04)),
-    ("right-hip", 0, (0.17, 0.62, 0)),
-    ("right-knee", 12, (0.18, 0.33, 0.16)),
-    ("right-ankle", 13, (0.19, 0.075, 0.04)),
+    ("spine", 0, (0, 1.30, 0)),
+    ("head", 1, (0, 2.03, 0.04)),
+    ("left-shoulder", 1, (-0.24, 1.80, 0.04)),
+    ("left-elbow", 3, (-0.29, 1.48, 0.10)),
+    ("left-wrist", 4, (-0.34, 1.16, 0.14)),
+    ("right-shoulder", 1, (0.24, 1.80, 0.04)),
+    ("right-elbow", 6, (0.29, 1.48, 0.10)),
+    ("right-wrist", 7, (0.34, 1.16, 0.14)),
+    ("left-hip", 0, (-0.15, 0.62, 0)),
+    ("left-knee", 9, (-0.17, 0.33, 0.16)),
+    ("left-ankle", 10, (-0.17, 0.075, 0.04)),
+    ("right-hip", 0, (0.15, 0.62, 0)),
+    ("right-knee", 12, (0.17, 0.33, 0.16)),
+    ("right-ankle", 13, (0.17, 0.075, 0.04)),
     ("tail-base", 0, (0, 0.60, -0.14)),
-    ("tail-middle", 15, (0, 0.30, -0.70)),
-    ("tail-tip", 16, (0, 0.06, -1.27)),
-    ("left-gaze", 2, (-0.13, 1.86, 0.34)),
-    ("right-gaze", 2, (0.13, 1.86, 0.34)),
+    ("tail-middle", 15, (0, 0.30, -0.82)),
+    ("tail-tip", 16, (0, 0.055, -1.55)),
+    ("left-gaze", 2, (-0.12, 2.255, 0.274)),
+    ("right-gaze", 2, (0.12, 2.255, 0.274)),
 ]
 
 SHAPES = [
-    ((0, 0.65, 0), (0.24, 0.32, 0.22), 0),
-    ((0, 1.05, 0.015), (0.25, 0.49, 0.23), 1),
-    ((0, 1.51, 0.025), (0.175, 0.28, 0.17), 1),
-    ((0, 1.82, 0.09), (0.33, 0.30, 0.27), 2),
-    ((0, 1.72, 0.33), (0.19, 0.105, 0.19), 2),
-    ((0, 1.735, 0.46), (0.075, 0.065, 0.115), 2),
+    ((0, 0.68, 0), (0.205, 0.29, 0.18), 0),
+    ((0, 1.22, 0.015), (0.195, 0.66, 0.18), 1),
+    ((0, 1.90, 0.025), (0.165, 0.27, 0.145), 1),
+    ((0, 2.21, 0.07), (0.25, 0.20, 0.215), 2),
+    ((0, 2.135, 0.265), (0.125, 0.078, 0.185), 2),
+    ((0, 2.14, 0.415), (0.052, 0.043, 0.095), 2),
 ]
 for side, shoulder, elbow, wrist, hip, knee, ankle in [
     (-1, 3, 4, 5, 9, 10, 11),
     (1, 6, 7, 8, 12, 13, 14),
 ]:
     SHAPES += [
-        ((side * 0.30, 1.99, 0.0), (0.09, 0.12, 0.075), 2),
-        ((side * 0.14, 1.73, 0.22), (0.17, 0.14, 0.18), 2),
-        ((side * 0.245, 1.27, 0.04), (0.095, 0.22, 0.095), shoulder),
-        ((side * 0.295, 0.98, 0.105), (0.075, 0.25, 0.07), elbow),
-        ((side * 0.29, 0.665, 0.20), (0.09, 0.04, 0.14), wrist),
-        ((side * 0.17, 0.50, 0.02), (0.15, 0.235, 0.16), hip),
-        ((side * 0.18, 0.23, 0.10), (0.075, 0.20, 0.085), knee),
-        ((side * 0.19, 0.06, 0.12), (0.105, 0.06, 0.17), ankle),
+        ((side * 0.237, 2.255, -0.045), (0.061, 0.080, 0.052), 2),
+        ((side * 0.18, 1.75, 0.04), (0.105, 0.15, 0.11), shoulder),
+        ((side * 0.255, 1.70, 0.04), (0.085, 0.205, 0.085), shoulder),
+        ((side * 0.315, 1.41, 0.105), (0.075, 0.24, 0.072), elbow),
+        ((side * 0.34, 1.125, 0.20), (0.073, 0.04, 0.12), wrist),
+        ((side * 0.15, 0.50, 0.02), (0.125, 0.23, 0.14), hip),
+        ((side * 0.17, 0.23, 0.10), (0.075, 0.20, 0.075), knee),
+        ((side * 0.17, 0.055, 0.12), (0.085, 0.055, 0.145), ankle),
     ]
-for i in range(10):
-    t = i / 9
-    radius = 0.105 * (1 - t) + 0.021 * t
+    for toe in range(4):
+        offset = (toe - 1.5) * 0.034
+        SHAPES += [
+            ((side * 0.34 + offset, 1.115, 0.28), (0.021, 0.028, 0.063), wrist),
+            ((side * 0.17 + offset, 0.041, 0.225), (0.022, 0.041, 0.060), ankle),
+        ]
+for i in range(12):
+    t = i / 11
+    radius = 0.077 * (1 - t) + 0.014 * t
     SHAPES.append(
         (
-            (0, 0.57 * (1 - t) ** 1.3 + 0.021, -0.17 - 1.18 * t),
-            (radius, radius + 0.025 * (1 - t), 0.16),
+            (0, 0.57 * (1 - t) ** 1.3 + 0.018, -0.17 - 1.42 * t),
+            (radius, radius + 0.025 * (1 - t), 0.14),
             15 if t < 0.33 else 16 if t < 0.7 else 17,
         )
     )
@@ -112,7 +121,9 @@ def weights(p):
 
 
 positions, normals, joints, skin_weights = [], [], [], []
-groups = {name: [] for name in ("fur", "belly", "mask", "eyes", "pupils", "lids")}
+groups = {
+    name: [] for name in ("fur", "belly", "mask", "eyes", "pupils", "glints", "lids")
+}
 closed = {}
 
 
@@ -140,26 +151,26 @@ def triangle(a, b, c, surface=None):
         b, c = c, b
     if surface is None:
         x, y, z = (sum(positions[k][i] for k in (a, b, c)) / 3 for i in range(3))
-        bib = z > 0.12 and abs(x) < 0.18 and 0.67 < y < 1.5
-        muzzle = z > 0.27 and y < 1.8 and y > 1.61
-        eye_mask = z > 0.27 and any(
-            ((x - side * 0.13) / 0.108) ** 2 + ((y - 1.86) / 0.089) ** 2 < 1
+        bib = z > 0.12 and abs(x) < 0.13 and 0.67 < y < 1.85
+        muzzle = z > 0.27 and 2.05 < y < 2.19
+        eye_mask = z > 0.22 and any(
+            ((x - side * 0.12) / 0.085) ** 2 + ((y - 2.255) / 0.067) ** 2 < 1
             for side in (-1, 1)
         )
-        ear = abs(x) > 0.25 and y > 1.96 and z > 0.015
-        stripe = z < -0.17 and 0.76 < y < 1.40 and abs(math.sin(y * 20)) < 0.3
+        ear = abs(x) > 0.215 and 2.24 < y < 2.32 and z > -0.01
+        stripe = z < -0.13 and 0.76 < y < 1.77 and abs(math.sin(y * 17 + x * 4)) < 0.22
         surface = (
             "mask"
-            if eye_mask or ear or z < -1.10 or stripe
+            if eye_mask or ear or z < -1.37 or stripe
             else "belly" if bib or muzzle else "fur"
         )
     groups[surface].extend((a, b, c))
 
 
-STEP = 0.043
-xs = [-0.59 + i * STEP for i in range(29)]
-ys = [-0.055 + i * STEP for i in range(54)]
-zs = [-1.57 + i * STEP for i in range(53)]
+STEP = 0.032
+xs = [-0.59 + i * STEP for i in range(38)]
+ys = [-0.055 + i * STEP for i in range(83)]
+zs = [-1.78 + i * STEP for i in range(77)]
 ny, nz = len(ys), len(zs)
 points = [(x, y, z) for x in xs for y in ys for z in zs]
 values = [field(p) for p in points]
@@ -243,24 +254,24 @@ def ellipsoid(center, radii, bone, surface, rows=12, columns=20):
             triangle(a + 1, b, b + 1, surface)
 
 
-ellipsoid((0, 1.735, 0.555), (0.057, 0.039, 0.033), 2, "mask")
+ellipsoid((0, 2.14, 0.505), (0.041, 0.027, 0.025), 2, "mask")
 for side, gaze in [(-1, 18), (1, 19)]:
-    x, y, z = side * 0.13, 1.86, 0.34
-    ellipsoid((x, y, z), (0.065, 0.063, 0.013), 2, "eyes")
-    ellipsoid((x, y - 0.003, z + 0.012), (0.044, 0.048, 0.006), gaze, "pupils")
-    ellipsoid((x - 0.013, y + 0.016, z + 0.018), (0.008, 0.010, 0.003), gaze, "eyes")
+    x, y, z = side * 0.12, 2.255, 0.274
+    ellipsoid((x, y, z), (0.052, 0.044, 0.012), 2, "eyes")
+    ellipsoid((x, y - 0.003, z + 0.012), (0.034, 0.031, 0.006), gaze, "pupils")
+    ellipsoid((x - 0.013, y + 0.016, z + 0.018), (0.006, 0.007, 0.003), gaze, "glints")
     start = len(positions)
     columns, rows = 20, 7
     for row in range(rows + 1):
         v = max(0, (row - 1) / (rows - 1))
         for column in range(columns + 1):
             u = -1 + 2 * column / columns
-            top = y + 0.066 * math.sqrt(max(0, 1 - u * u)) + 0.004
-            lower = min(top - 0.003, y + 0.049)
+            top = y + 0.048 * math.sqrt(max(0, 1 - u * u)) + 0.004
+            lower = min(top - 0.003, y + 0.039)
             depth = z + 0.004 + 0.026 * math.sqrt(max(0, 1 - u * u))
-            p = (x + 0.077 * u, top + (lower - top) * v, depth if row else z - 0.012)
+            p = (x + 0.062 * u, top + (lower - top) * v, depth if row else z - 0.012)
             index = add_vertex(p, (0, 0, 1), 2)
-            closed[index] = (p[0], top + (y - 0.073 - top) * v, p[2])
+            closed[index] = (p[0], top + (y - 0.053 - top) * v, p[2])
     for row in range(rows):
         for column in range(columns):
             a = start + row * (columns + 1) + column

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_scene/scene.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/character_loop.dart';
@@ -35,13 +37,17 @@ void main() {
   });
   tearDown(() => characters.dispose());
 
-  void tick(double seconds, {bool animate = true, bool visible = true}) =>
-      characters.update(
-        seconds: seconds,
-        eye: Vector3(0, 2, 0),
-        animate: animate,
-        visible: visible,
-      );
+  void tick(
+    double seconds, {
+    bool animate = true,
+    bool visible = true,
+    Vector3? eye,
+  }) => characters.update(
+    seconds: seconds,
+    eye: eye ?? Vector3(0, 2, 0),
+    animate: animate,
+    visible: visible,
+  );
 
   test('clones share skinned surfaces and retain independent expressions', () {
     final rigs = characters.root.children.toList();
@@ -76,6 +82,12 @@ void main() {
         tick(seconds);
         for (final (i, rig) in characters.root.children.indexed) {
           final pose = motions[i].at(seconds);
+          // Sentinel turns have their own planted-foot invariants below and
+          // in meerkat_lookout_test; moving/foraging contacts use the gait.
+          if (pose.action != MeerkatAction.scamper &&
+              pose.action != MeerkatAction.forage) {
+            continue;
+          }
           for (final (name, paw) in [
             ('left-ankle', pose.rearLeft),
             ('right-ankle', pose.rearRight),
@@ -101,7 +113,13 @@ void main() {
     'lookout raises the head and tucks paws while hind feet stay planted',
     () {
       tick(0);
-      tick(3.3);
+      final at = motions.first.at(3.3).root;
+      final eye = Vector3(
+        at.x + 5 * math.sin(at.yaw),
+        2,
+        at.z + 5 * math.cos(at.yaw),
+      );
+      tick(3.3, eye: eye);
       final rig = characters.root.children.first;
       final lowHead = rig
           .getChildByName('head')!
@@ -111,7 +129,7 @@ void main() {
           .getChildByName('left-ankle')!
           .globalTransform
           .getTranslation();
-      tick(5);
+      tick(5, eye: eye);
       final highHead = rig
           .getChildByName('head')!
           .globalTransform
@@ -148,6 +166,105 @@ void main() {
       expect(characters.hasVisibleMotion, isTrue);
       characters.dispose();
       expect(parent.children, isEmpty);
+    },
+  );
+
+  test('traffic clocks hold the actual rig and gate safe reappearance', () {
+    for (final seconds in [0.0, 10.0, 20.0]) {
+      characters.update(
+        seconds: seconds,
+        eye: Vector3(0, 2, 0),
+        animate: true,
+        clockFor: (id) => id == 'one' ? 3.3 : 5,
+        visibleFor: (id) => id == 'one',
+      );
+      final rig = characters.root.children.first;
+      final paw = motions.first.at(3.3).frontLeft;
+      final contact = rig
+          .getChildByName('left-wrist')!
+          .globalTransform
+          .getTranslation();
+      expect(contact.distanceTo(Vector3(paw.x, paw.y, paw.z)), lessThan(1e-4));
+      expect(rig.visible, isTrue);
+      expect(characters.root.children.last.visible, isFalse);
+    }
+  });
+
+  test(
+    'sentinel faces cameras on either side with raised chin and hanging paws',
+    () {
+      final pose = motions.first.at(5);
+      var seconds = 0.0;
+      for (final offset in [math.pi, -math.pi / 2, math.pi / 2]) {
+        final angle = pose.root.yaw + offset;
+        final eye = Vector3(
+          pose.root.x + 5 * math.sin(angle),
+          2,
+          pose.root.z + 5 * math.cos(angle),
+        );
+        for (var frame = 0; frame < 150; frame++) {
+          characters.update(
+            seconds: seconds,
+            eye: eye,
+            animate: true,
+            clockFor: (_) => 5,
+          );
+          seconds += 1 / 60;
+        }
+        final rig = characters.root.children.first;
+        final head = rig.getChildByName('head')!;
+        final forward =
+            head.globalTransform.transform3(Vector3(0, 0, 1)) -
+            head.globalTransform.getTranslation();
+        final direction = Vector3(math.sin(angle), 0, math.cos(angle));
+        final horizontal = Vector3(forward.x, 0, forward.z).normalized();
+        expect(horizontal.dot(direction), greaterThan(0.995));
+        expect(
+          forward.y,
+          greaterThan(0),
+          reason: 'chin is raised, not nose-down',
+        );
+        final gaze = rig.getChildByName('left-gaze')!;
+        final eyePosition = gaze.globalTransform.getTranslation();
+        final eyeForward =
+            gaze.globalTransform.transform3(Vector3(0, 0, 1)) - eyePosition;
+        expect(
+          eyeForward.normalized().dot((eye - eyePosition).normalized()),
+          greaterThan(0.995),
+          reason: 'eyes retain the camera target under the raised chin',
+        );
+        for (final side in ['left', 'right']) {
+          final elbow = rig
+              .getChildByName('$side-elbow')!
+              .globalTransform
+              .getTranslation();
+          final wrist = rig
+              .getChildByName('$side-wrist')!
+              .globalTransform
+              .getTranslation();
+          expect(wrist.y, lessThan(elbow.y - 0.10 * motions.first.scale));
+          final fingers =
+              rig
+                  .getChildByName('$side-wrist')!
+                  .globalTransform
+                  .transform3(Vector3(0, 0, 1)) -
+              wrist;
+          expect(
+            fingers.normalized().y,
+            lessThan(-0.95),
+            reason: 'digits hang toward the ground',
+          );
+        }
+        final held = head.globalTransform.clone();
+        characters.update(
+          seconds: seconds + 10,
+          eye: Vector3(-50, 20, -50),
+          animate: false,
+          clockFor: (_) => 5,
+        );
+        expect(head.globalTransform.storage, held.storage);
+        seconds += 10;
+      }
     },
   );
 }

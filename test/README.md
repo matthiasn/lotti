@@ -18,8 +18,8 @@ it. Use separate checkouts for concurrent desktop and VM runs.
 
 ## Plaza skeleton tests
 
-`test/features/plaza/scene/test_utils.dart` reads the shipped penguin's node
-hierarchy, inverse bind matrices and morph deltas without allocating GPU buffers. Use this
+`test/features/plaza/scene/test_utils.dart` reads the shipped penguin and meerkat node
+hierarchies, inverse bind matrices and morph deltas without allocating GPU buffers. Use this
 fixture for skeleton and IK checks; a native Flutter GPU run is still needed
 for skin deformation, eyelid coverage and appearance. Sample motion with explicit seconds,
 never wall-clock delays. The animation concept and its invariants live in

@@ -44,7 +44,7 @@ provide the GPU context needed to render the scene.
 | Space | Pause or resume the Morning walk. |
 | Escape | Close the demo panel and end the walk. |
 | Backtick | Toggle rendering diagnostics. |
-| Penguins checkbox | Hide or show companions without moving the camera. |
+| Penguins / Meerkats checkboxes | Hide or show each species without moving the camera. |
 
 Any manual movement exits the Morning walk. App task facades persist checklist
 edits and open the normal task details page; category facades enter their

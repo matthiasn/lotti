@@ -29,7 +29,7 @@ class MeerkatMotion {
   static const settleDuration = 0.25;
   static const riseDuration = 0.75;
   static const lookoutDuration = 3.2;
-  static const lowerDuration = 0.65;
+  static const lowerDuration = 2.0;
   static const forageDuration = 1.4;
   static const double cycleDuration =
       runDuration +
@@ -40,14 +40,22 @@ class MeerkatMotion {
       forageDuration;
   static const stance = 0.62;
   static const pawHeight = 0.075;
-  static const pawWidth = 0.19;
-  static const frontReach = 0.82;
+  static const pawWidth = 0.17;
+  static const frontReach = 1.2;
   static const rearReach = -0.08;
   static const _ramp = 0.45;
   static const _stepOffset = 0.05;
 
-  double get strideDistance => 0.68 * scale;
-  double get boutDistance => 8 * strideDistance;
+  double get strideDistance => 0.56 * scale;
+  double get boutDistance => 10 * strideDistance;
+
+  /// Cheap route-only sampling for the shared swept collision reservations.
+  CharacterPose positionAt(double seconds) {
+    final clock = seconds + timeOffset;
+    final block = (clock / cycleDuration).floor();
+    final run = _run(clock % cycleDuration);
+    return _onRoute((block + run.progress) * boutDistance);
+  }
 
   MeerkatPose at(double seconds) {
     final clock = seconds + timeOffset;
@@ -88,6 +96,9 @@ class MeerkatMotion {
     final scanTime = sinceStop - settleDuration - riseDuration;
     final scan = _scan(scanTime);
     final forageTime = scanTime - lookoutDuration - lowerDuration;
+    final foraging = action == MeerkatAction.forage
+        ? _ease(forageTime / 0.25) * _ease((cycleDuration - t) / 0.3)
+        : 0.0;
     return MeerkatPose(
       root: root,
       action: action,
@@ -95,22 +106,50 @@ class MeerkatMotion {
       cycle: cycles * 2 * math.pi,
       speed: run.speed * boutDistance,
       upright: upright,
+      foraging: foraging,
       headYaw: upright * scan,
       headPitch:
           upright * 0.08 +
-          (action == MeerkatAction.forage
-              ? 0.12 * math.pow(math.sin(math.pi * forageTime / 0.7), 2)
-              : 0),
+          foraging * (0.72 + 0.04 * math.sin(2 * math.pi * forageTime / 0.56)),
       blink: _blink(seconds),
-      frontLeft: _paw(cycles, side: -1, front: true, offset: 0),
-      frontRight: _paw(cycles, side: 1, front: true, offset: 0.5),
+      frontLeft: _rake(
+        _paw(cycles, side: -1, front: true, offset: 0),
+        forageTime,
+        foraging,
+      ),
+      frontRight: _rake(
+        _paw(cycles, side: 1, front: true, offset: 0.5),
+        forageTime + 0.28,
+        foraging,
+      ),
       rearLeft: _paw(cycles, side: -1, front: false, offset: 0.5),
       rearRight: _paw(cycles, side: 1, front: false, offset: 0),
     );
   }
 
+  /// Reach forward, then rake back toward the body. The other forepaw and
+  /// both hind paws support the nose-down forager throughout each stroke.
+  CharacterFootPose _rake(CharacterFootPose paw, double time, double weight) {
+    final phase = (time / 0.56) % 1;
+    if (weight == 0 || phase >= 0.45) return paw;
+    final reaching = phase < 0.15;
+    final travel = reaching
+        ? _ease(phase / 0.15)
+        : 1 - _ease((phase - 0.15) / 0.3);
+    final lift = reaching ? math.pow(math.sin(math.pi * phase / 0.15), 2) : 0;
+    final distance = 0.18 * scale * weight * travel;
+    return CharacterFootPose(
+      x: paw.x + math.sin(paw.yaw) * distance,
+      y: paw.y + 0.045 * scale * weight * lift,
+      z: paw.z + math.cos(paw.yaw) * distance,
+      yaw: paw.yaw,
+      pitch: 0,
+      planted: false,
+    );
+  }
+
   /// An integrated eased velocity gives zero speed at both ends of a bout.
-  /// Eight whole strides finish at a phase with all four paws planted.
+  /// Ten whole strides finish at a phase with all four paws planted.
   static ({double progress, double speed}) _run(double t) {
     const area = runDuration - _ramp;
     if (t >= runDuration) return (progress: 1, speed: 0);
@@ -217,6 +256,7 @@ class MeerkatPose {
     required this.cycle,
     required this.speed,
     required this.upright,
+    required this.foraging,
     required this.headYaw,
     required this.headPitch,
     required this.blink,
@@ -232,6 +272,7 @@ class MeerkatPose {
   final double cycle;
   final double speed;
   final double upright;
+  final double foraging;
   final double headYaw;
   final double headPitch;
   final double blink;

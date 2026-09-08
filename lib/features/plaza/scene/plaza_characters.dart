@@ -115,6 +115,7 @@ class PlazaCharacters {
     required bool animate,
     bool visible = true,
     double Function(String id)? clockFor,
+    bool Function(String id)? visibleFor,
   }) {
     if (!_enabled || _disposed) return;
     final last = _lastSeconds;
@@ -130,6 +131,7 @@ class PlazaCharacters {
       final dz = eye.z - pose.z;
       penguin.root.visible =
           visible &&
+          (visibleFor?.call(penguin.companion.id) ?? true) &&
           dx * dx + eye.y * eye.y + dz * dz <= visibleRange * visibleRange;
       if (!penguin.root.visible) continue;
       penguin.pose(time);

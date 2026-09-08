@@ -52,6 +52,40 @@ void main() {
 
   tearDown(() => characters.dispose());
 
+  test('traffic clocks control root and feet independently of render time', () {
+    final pose = const CharacterGait(loop: loop, scale: 1, phase: 0.05).at(2);
+    for (final seconds in [0.0, 10.0, 20.0]) {
+      characters.update(
+        seconds: seconds,
+        eye: Vector3(0, 2, 0),
+        animate: true,
+        clockFor: (id) => 2,
+        visibleFor: (id) => id == 'test-0',
+      );
+      final rig = characters.root.children.first;
+      final root = rig.globalTransform.getTranslation();
+      expect(root.x, closeTo(pose.root.x, 1e-5));
+      expect(root.z, closeTo(pose.root.z, 1e-5));
+      final ankle = rig
+          .getChildByName('left-ankle')!
+          .globalTransform
+          .getTranslation();
+      expect(
+        ankle.distanceTo(Vector3(pose.left.x, pose.left.y, pose.left.z)),
+        lessThan(1e-4),
+      );
+      expect(characters.root.children.skip(1).every((n) => !n.visible), isTrue);
+    }
+    characters.update(
+      seconds: 21,
+      eye: Vector3(0, 2, 0),
+      animate: true,
+      visible: false,
+    );
+    expect(characters.root.children.every((n) => !n.visible), isTrue);
+    expect(characters.hasVisibleMotion, isFalse);
+  });
+
   void tick(double seconds, {bool animate = true, Vector3? eye}) =>
       characters.update(
         seconds: seconds,

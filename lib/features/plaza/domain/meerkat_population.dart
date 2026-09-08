@@ -11,18 +11,47 @@ import 'package:lotti/features/plaza/domain/street_layout.dart';
 /// Solid clearance covers the whole circuit, including the long tail. Traffic
 /// arbitration handles moving neighbours separately from fixed-world geometry.
 abstract final class MeerkatPopulation {
-  static const clearance = 1.05;
+  static const clearance = 1.5;
 
+  /// A bounded crowd keeps a Home lookout and samples the remaining circuits
+  /// across the district, so small budgets do not fill only the first street.
   static List<MeerkatMotion> forWorld({
     required StreetPlan plan,
     required FrontierPlaza? plaza,
     required List<Solid> solids,
     required double roadWidth,
     required List<CharacterCompanion> penguins,
+    int? maxCount,
   }) {
+    if (maxCount != null && maxCount <= 0) return const [];
     final result = <MeerkatMotion>[];
+    final lanes = <CharacterLoop, List<CharacterPose>>{};
+    for (final penguin in penguins) {
+      final loop = penguin.gait.loop;
+      lanes.putIfAbsent(loop, () {
+        final steps = (loop.length / 0.25).ceil();
+        return [for (var i = 0; i < steps; i++) loop.at(0, phase: i / steps)];
+      });
+    }
     void place(String id, CharacterLoop loop) {
       if (!loop.clears(solids, envelope: clearance)) return;
+      // A fixed-route actor cannot sidestep on a shared, opposing lane. Keep
+      // forage loops out of these narrow corridors; transverse encounters
+      // remain the runtime traffic controller's responsibility.
+      final steps = (loop.length / 0.25).ceil();
+      for (var i = 0; i < steps; i++) {
+        final here = loop.at(0, phase: i / steps);
+        for (final lane in lanes.values) {
+          for (final there in lane) {
+            final dx = here.x - there.x;
+            final dz = here.z - there.z;
+            if (dx * dx + dz * dz < 2.5 * 2.5 &&
+                math.cos(here.yaw - there.yaw).abs() > 0.85) {
+              return;
+            }
+          }
+        }
+      }
       if (result.any(
         (other) =>
             math.pow(other.loop.x - loop.x, 2) +
@@ -101,6 +130,18 @@ abstract final class MeerkatPopulation {
         );
       }
     }
-    return List.unmodifiable(result);
+    if (maxCount == null || maxCount >= result.length) {
+      return List.unmodifiable(result);
+    }
+    final home = result
+        .where((m) => m.id.startsWith('meerkat-plaza'))
+        .firstOrNull;
+    final remaining = result.where((m) => m != home).toList();
+    final slots = maxCount - (home == null ? 0 : 1);
+    return List.unmodifiable([
+      ?home,
+      for (var i = 0; i < slots; i++)
+        remaining[(i * remaining.length / slots).floor()],
+    ]);
   }
 }

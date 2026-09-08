@@ -143,7 +143,8 @@ class PlazaHud extends StatelessWidget {
                         onChanged: onShowPenguinsChanged == null
                             ? null
                             : (value) => onShowPenguinsChanged!(value ?? false),
-                      ),                      DesignSystemCheckbox(
+                      ),
+                      DesignSystemCheckbox(
                         value: showMeerkats,
                         label: messages.plazaMeerkats,
                         onChanged: onShowMeerkatsChanged == null
