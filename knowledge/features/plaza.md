@@ -335,6 +335,11 @@ against inflated rotated footprints, chooses the earliest contact, then slides
 along the wall. It processes at most four contacts and drops residual motion at
 a complex corner, so speed and slow frames cannot tunnel through thin solids.
 Wall frames are cached and the sweep creates no per-wall objects.
+Point recovery first pushes through nearest faces. If overlapping buildings
+push the camera back into an earlier wall, it unions the wall intersections
+along both world axes and takes the shorter exit from the containing component.
+This exceptional recovery costs O(n log n); clear movement stays O(n) without
+allocating interval lists. Separate buildings do not extend the escape distance.
 Camera history returns through prior poses before the route exits.
 
 ```mermaid

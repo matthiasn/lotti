@@ -21,6 +21,59 @@ Footprint _box({
 );
 
 void main() {
+  group('overlapping footprint recovery', () {
+    for (final facing in [0.0, math.pi / 4, math.pi / 2, -math.pi / 3]) {
+      test('escapes overlapping chains at $facing in either order', () {
+        final walls = [
+          for (var i = 0; i < 5; i++)
+            _box(
+              x: frameToWorld(13, -7, facing, 0, i * 4).$1,
+              z: frameToWorld(13, -7, facing, 0, i * 4).$2,
+              facing: facing,
+              width: 10 - i.toDouble(),
+            ),
+          // Separate components on both sides must not extend the escape.
+          _box(x: -100, z: -7),
+          _box(x: 100, z: -7),
+          _box(x: 13, z: -100),
+          _box(x: 13, z: 100),
+        ];
+        for (final order in [walls, walls.reversed]) {
+          final collider = WalkCollider(order);
+          for (var i = 0; i < 5; i++) {
+            final start = frameToWorld(13, -7, facing, 0, i * 4);
+            final (x, z) = collider.resolve(start.$1, start.$2);
+            expect(
+              walls.any((wall) => wall.contains(x, z, clearance: 0.6 - 1e-8)),
+              isFalse,
+              reason: 'recovery at $start leaves the complete overlap',
+            );
+            final (againX, againZ) = collider.resolve(x, z);
+            expect(againX, closeTo(x, 1e-9));
+            expect(againZ, closeTo(z, 1e-9));
+            expect(
+              math.sqrt(math.pow(x - start.$1, 2) + math.pow(z - start.$2, 2)),
+              lessThan(9),
+              reason: 'do not jump past separate buildings',
+            );
+          }
+        }
+      });
+    }
+
+    test('a step starting inside an overlap recovers before sweeping', () {
+      final walls = [_box(), _box(z: 4, width: 8)];
+      final collider = WalkCollider(walls);
+      final (x, z) = collider.move(0, 0, 0, 30);
+      expect(x, closeTo(0, 1e-6));
+      expect(z, closeTo(-3.6, 1e-6));
+      expect(
+        walls.any((wall) => wall.contains(x, z, clearance: 0.6 - 1e-8)),
+        isFalse,
+      );
+    });
+  });
+
   group('swept movement', () {
     for (final facing in [0.0, math.pi / 4, math.pi / 2, -math.pi / 3]) {
       for (final direction in [-1.0, 1.0]) {

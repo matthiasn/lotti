@@ -2,9 +2,9 @@
 /// footprints, with a margin so the camera never clips a wall, even when
 /// a fast step crosses an entire building.
 ///
-/// Pure Dart, O(footprints) per move/resolve; each footprint's frame is fixed
-/// once. Point recovery rejects distant footprints before rotating into
-/// their local frame; movement checks the complete segment.
+/// Pure Dart, O(footprints) for normal movement; each footprint's frame is
+/// fixed once. Overlapping-wall recovery uses O(footprints log footprints)
+/// interval unions only when a nearest-face push cannot leave all buildings.
 library;
 
 import 'dart:math' as math;
@@ -30,8 +30,8 @@ class WalkCollider {
   /// the second's clearance and the second pushes it back: the sweep never
   /// settles. Aligned neighbours (same facing, same row line, same depth)
   /// whose clearances overlap are merged into one footprint, repeatedly, so
-  /// the alley between them is solid and every footprint left is at least
-  /// a clearance from the next.
+  /// the alley between them is solid. Other overlaps, including rotated
+  /// skyline towers, are handled by point recovery.
   static List<Footprint> _mergeAligned(List<Footprint> input, double margin) {
     final out = [...input];
     var merged = true;
@@ -152,7 +152,11 @@ class WalkCollider {
     return (x, z);
   }
 
-  /// Returns the nearest point outside every footprint to (x, z).
+  /// Pushes through the nearest faces to leave the footprints around (x, z).
+  ///
+  /// If overlapping buildings push back into an earlier wall, escape the
+  /// complete overlap along the shorter world-axis exit. This recovery path
+  /// sorts wall intersections; ordinary movement allocates no interval lists.
   (double, double) resolve(double x, double z) {
     var rx = x;
     var rz = z;
@@ -180,7 +184,60 @@ class WalkCollider {
       rx = w.x + nu * w.cosF + nv * w.sinF;
       rz = w.z - nu * w.sinF + nv * w.cosF;
     }
+    if ((rx != x || rz != z) && _walls.any((wall) => wall.contains(rx, rz))) {
+      final escapeX = _escapeDistance(x, z, alongX: true);
+      final escapeZ = _escapeDistance(x, z, alongX: false);
+      return escapeX.abs() < escapeZ.abs()
+          ? (x + escapeX, z)
+          : (x, z + escapeZ);
+    }
     return (rx, rz);
+  }
+
+  /// Nearest end of the union containing the origin on an axis through it.
+  double _escapeDistance(double x, double z, {required bool alongX}) {
+    final intervals = <(double, double)>[];
+    for (final wall in _walls) {
+      final u = (x - wall.x) * wall.cosF - (z - wall.z) * wall.sinF;
+      final v = (x - wall.x) * wall.sinF + (z - wall.z) * wall.cosF;
+      final du = alongX ? wall.cosF : -wall.sinF;
+      final dv = alongX ? wall.sinF : wall.cosF;
+      var enter = double.negativeInfinity;
+      var exit = double.infinity;
+      if (du.abs() < 1e-12) {
+        if (u.abs() >= wall.halfW) continue;
+      } else {
+        final a = (-wall.halfW - u) / du;
+        final b = (wall.halfW - u) / du;
+        enter = math.min(a, b);
+        exit = math.max(a, b);
+      }
+      if (dv.abs() < 1e-12) {
+        if (v.abs() >= wall.halfD) continue;
+      } else {
+        final a = (-wall.halfD - v) / dv;
+        final b = (wall.halfD - v) / dv;
+        enter = math.max(enter, math.min(a, b));
+        exit = math.min(exit, math.max(a, b));
+      }
+      if (enter < exit) intervals.add((enter, exit));
+    }
+    intervals.sort((a, b) => a.$1.compareTo(b.$1));
+    // Recovery starts inside a wall, so each axis has a component containing
+    // zero. Ignore separate buildings before and after that component.
+    var (lower, upper) = intervals.first;
+    const separation = 1e-7;
+    for (var i = 1; i < intervals.length; i++) {
+      final (start, end) = intervals[i];
+      if (start <= upper + 2 * separation) {
+        upper = math.max(upper, end);
+      } else {
+        if (upper >= 0) break;
+        lower = start;
+        upper = end;
+      }
+    }
+    return lower.abs() < upper.abs() ? lower - separation : upper + separation;
   }
 }
 
@@ -204,4 +261,12 @@ class _Wall {
   /// The corner is the box's farthest point from its centre: a point at
   /// least this far (squared, so no root per footprint) is outside.
   double get cornerDistanceSquared => halfW * halfW + halfD * halfD;
+
+  /// Ignore sub-nanometre round-off on an already resolved face.
+  bool contains(double px, double pz) {
+    final dx = px - x;
+    final dz = pz - z;
+    return (dx * cosF - dz * sinF).abs() < halfW - 1e-9 &&
+        (dx * sinF + dz * cosF).abs() < halfD - 1e-9;
+  }
 }
