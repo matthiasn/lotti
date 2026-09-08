@@ -17188,7 +17188,7 @@ abstract class AppLocalizations {
   /// No description provided for @plazaControls.
   ///
   /// In en, this message translates to:
-  /// **'WASD walk · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back'**
+  /// **'WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back'**
   String get plazaControls;
 
   /// No description provided for @plazaCornerAfter.

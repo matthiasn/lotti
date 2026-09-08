@@ -89,7 +89,10 @@ void main() {
     await tester.pumpWidget(host());
     expect(find.text('Project Waddle — Plaza'), findsOneWidget);
     expect(find.text('28 tasks · 6 weeks · 4 need attention'), findsOneWidget);
-    expect(find.textContaining('WASD'), findsOneWidget);
+    expect(
+      find.textContaining('WASD walk · hold Shift: 8× speed'),
+      findsOneWidget,
+    );
     for (final state in ['In Progress', 'Open', 'Blocked', 'Overdue', 'Done']) {
       expect(find.text(state), findsOneWidget);
     }

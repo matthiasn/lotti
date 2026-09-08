@@ -3,9 +3,9 @@
 Design proposal, 2026-09-08. The user selected a cinematic nighttime city inspired
 by Times Square. This is the outcome of an AI review panel covering game
 environment art, urban architecture, real-time rendering, and product navigation.
-The board is not a rendered app capture or a performance result. The first
-implementation now includes bounded task-building kits, a stepped project
-landmark, recessed shopfronts, restrained paving and status roofs. The map hides
+The board is not a rendered app capture or a performance result. The current
+implementation includes bounded building kits throughout the city, a stepped
+project landmark, recessed shopfronts, restrained paving and status roofs. The map hides
 decorative enclosure at its altitude threshold. Pylon replacement, additional
 sign typography work and a smooth context fade remain later design work; current
 runtime behaviour belongs in the linked concept.

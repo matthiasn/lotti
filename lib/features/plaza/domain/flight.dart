@@ -1,8 +1,9 @@
 /// Camera flights: the only way the camera moves other than walking.
 ///
 /// Pure Dart. A flight is planned once, from two poses and the world's
-/// solids, as a chain of straight legs with one speed profile over the
-/// whole way: an S-curve that eases up to a cruise and eases down again.
+/// solids, with collision-checked curved joins between the guide legs and
+/// one eased speed profile over the whole way. A precomputed timing spline
+/// limits translation and rotation without abrupt changes between samples.
 /// [Flight.plan] is the direct line, lifted over whatever stands on it;
 /// [Flight.route] follows the street between two stops on the ground.
 library;
@@ -25,11 +26,11 @@ class Flight {
     required List<_Leg> legs,
     required _Profile profile,
     required this.routed,
+    required List<Solid> solids,
     double? wayEnd,
-    // A private field cannot be a named initializing formal.
-    // ignore: prefer_initializing_formals
   }) : _legs = legs,
        _profile = profile,
+       _bends = _Bend.plan(legs, solids),
        _wayEnd = wayEnd ?? profile.length;
 
   /// Plans the direct flight from [from] to [to]: one straight leg, swept
@@ -43,7 +44,8 @@ class Flight {
     CameraPose to, {
     Iterable<Solid> solids = const [],
   }) {
-    final leg = _Leg.plan(from, to, solids, districtArc: true);
+    final obstacles = solids.toList();
+    final leg = _Leg.plan(from, to, obstacles, districtArc: true);
     return Flight._(
       from: from,
       to: to,
@@ -54,20 +56,22 @@ class Flight {
         ramp: rampSeconds,
       ),
       routed: false,
+      solids: obstacles,
     );
   }
 
   /// Plans the flight from [from] to [to] along the street: through every
-  /// point of [via] in order at [streetFlightHeight], cruising at
+  /// guide point of [via] in order at [streetFlightHeight], cruising at
   /// [streetSpeed] and looking [lookAhead] metres down the way, so the
-  /// facades and the billboards pass by and a corner is turned, not cut.
-  /// Every leg is still swept against [solids].
+  /// facades and billboards pass by. Corners are rounded within [cornerRadius];
+  /// bends shrink until their entire Bezier hull clears [solids].
   factory Flight.route(
     CameraPose from,
     CameraPose to, {
     required List<(double, double)> via,
     Iterable<Solid> solids = const [],
   }) {
+    final obstacles = solids.toList();
     final points = <CameraPose>[from];
     for (final (x, z) in via) {
       if (_apart(points.last, x, z) < viaMergeDistance) continue;
@@ -82,7 +86,7 @@ class Flight {
     points.add(to);
     final legs = <_Leg>[
       for (var i = 1; i < points.length; i++)
-        _Leg.plan(points[i - 1], points[i], solids, districtArc: false),
+        _Leg.plan(points[i - 1], points[i], obstacles, districtArc: false),
     ];
     var length = 0.0;
     for (final leg in legs) {
@@ -98,6 +102,7 @@ class Flight {
         ramp: rampSeconds,
       ),
       routed: true,
+      solids: obstacles,
       wayEnd: hop ? length - legs.last.length : length,
     );
   }
@@ -127,6 +132,9 @@ class Flight {
   /// A street flight looks at the point this far ahead along the way.
   static const lookAhead = 12.0;
 
+  /// Maximum guide distance trimmed on each side of a street corner.
+  static const cornerRadius = 8.0;
+
   /// A stop beside the road joins it, and leaves it, on a diagonal this
   /// long along the way (see `StreetNetwork.pathBetween`).
   static const joinDistance = 8.0;
@@ -136,8 +144,8 @@ class Flight {
 
   static const arcThreshold = 60.0;
 
-  /// How far above a solid's top, or below its bottom, a leg must stay to
-  /// count as clearing it; the lift over a solid ends this high.
+  /// How far above a solid's top, or below its bottom, legs and rounded
+  /// bends must stay to count as clearing it; a lift ends this high.
   static const clearance = 1.5;
 
   /// The lift profile of a leg: a climb over the first [rampStart] of it,
@@ -169,9 +177,10 @@ class Flight {
     microseconds: (_timing.seconds * 1e6).ceil(),
   );
 
-  late final _TurnTiming _timing = _TurnTiming(
+  late final _FlightTiming _timing = _FlightTiming(
     _profile.duration,
     _basePoseAt,
+    routed ? streetSpeed : directSpeed,
   );
 
   /// Whether the flight follows the street (see [Flight.route]).
@@ -190,11 +199,12 @@ class Flight {
 
   final List<_Leg> _legs;
   final _Profile _profile;
+  final List<_Bend> _bends;
 
-  /// The way, world metres, legs summed.
+  /// Guide distance, world metres, before rounding corners or adding lift.
   double get length => _profile.length;
 
-  /// How many straight legs the way has.
+  /// How many guide legs the smoothed path follows.
   @visibleForTesting
   int get legCount => _legs.length;
 
@@ -205,7 +215,7 @@ class Flight {
   @visibleForTesting
   double get rampTime => _profile.t;
 
-  /// Peak extra height over the straight line of any leg, world meters.
+  /// Maximum planned obstacle lift among the guide legs, world metres.
   double get arc => _legs.fold(0, (m, leg) => math.max(m, leg.arc));
 
   /// The first leg's ramps, as fractions of that leg.
@@ -285,10 +295,20 @@ class Flight {
     return (_legs.last, 1);
   }
 
-  /// The point [d] metres along the way, on the ground.
-  (double, double) _groundAt(double d) {
+  /// The curved position at guide distance [d], including obstacle clearance.
+  _Point _positionAt(double d) {
+    for (final bend in _bends) {
+      if (d >= bend.start && d <= bend.end) {
+        return bend.at((d - bend.start) / (bend.end - bend.start));
+      }
+    }
     final (leg, f) = _locate(d);
-    return (_lerp(leg.from.x, leg.to.x, f), _lerp(leg.from.z, leg.to.z, f));
+    return leg.pointAt(f);
+  }
+
+  (double, double) _groundAt(double d) {
+    final p = _positionAt(d);
+    return (p.x, p.z);
   }
 
   /// The pose at [t] of the flight's time (0..1): along the way on the
@@ -312,10 +332,11 @@ class Flight {
   }) {
     final d = _profile.distanceAt(t * _profile.duration);
     final (leg, f) = _locate(d);
-    final x = _lerp(leg.from.x, leg.to.x, f);
-    final z = _lerp(leg.from.z, leg.to.z, f);
-    final lift = leg.liftAt(f);
-    final y = _lerp(leg.from.y, leg.to.y, f) + lift;
+    final p = _positionAt(d);
+    final x = p.x;
+    final z = p.z;
+    final y = p.y;
+    final lift = math.max(0, y - _lerp(leg.from.y, leg.to.y, f));
     if (orientation != null) {
       return CameraPose(
         x: x,
@@ -374,17 +395,26 @@ class Flight {
   /// one.
   double _wayHeadingAt(double d) {
     if (!routed) return travelYaw ?? to.yaw;
-    final (leg, f) = _locate(d);
-    final x = _lerp(leg.from.x, leg.to.x, f);
-    final z = _lerp(leg.from.z, leg.to.z, f);
-    return _lookAheadYaw(d, x, z, leg);
+    final (leg, _) = _locate(d);
+    final p = _positionAt(d);
+    return _lookAheadYaw(d, p.x, p.z, leg);
   }
 
   /// The heading from ([x], [z]) to the point [lookAhead] metres further
   /// along the way, which ends where the way leaves the road; past that,
   /// the road's last heading.
   double _lookAheadYaw(double d, double x, double z, _Leg leg) {
-    final ahead = math.min(_wayEnd, d + lookAhead);
+    // The rounded pull-off must not steer the camera toward the stop before
+    // its final orientation blend: look only as far as the last straight.
+    final lastBend = _bends.isEmpty ? null : _bends.last;
+    final roadEnd =
+        arrival &&
+            lastBend != null &&
+            lastBend.start < _wayEnd &&
+            lastBend.end > _wayEnd
+        ? lastBend.start
+        : _wayEnd;
+    final ahead = math.min(roadEnd, d + lookAhead);
     if (ahead <= d + 1e-6) return _heading(_locate(_wayEnd - 1e-6).$1);
     final (ax, az) = _groundAt(ahead);
     final dx = ax - x;
@@ -430,18 +460,17 @@ class Flight {
   }
 }
 
-/// A bounded table computed once per flight. Each original time interval
-/// takes at least enough time to rotate between its endpoints at the limits.
-/// Position remains on the original curve; orientation interpolates between
-/// knots, so even a sharp look-ahead corner cannot exceed the rotation limits.
-class _TurnTiming {
-  factory _TurnTiming(
+/// Monotone cubic timing and orientation, computed once per flight. Shared
+/// knot derivatives keep velocity continuous; exact cubic derivative bounds
+/// stretch the clock when needed to respect the angular speed limits.
+class _FlightTiming {
+  factory _FlightTiming(
     double travelSeconds,
     CameraPose Function(double) poseAt,
+    double speed,
   ) {
     final first = poseAt(0);
     final last = poseAt(1);
-    // A pure turn still needs an eased timeline when translation takes no time.
     final baseSeconds = travelSeconds == 0
         ? 1.5 *
               math.max(
@@ -451,6 +480,8 @@ class _TurnTiming {
         : travelSeconds;
     final steps = (baseSeconds * 120).ceil().clamp(1, 4096);
     final times = Float64List(steps + 1);
+    final intervals = Float64List(steps);
+    final progress = Float64List(steps + 1);
     final yaws = Float64List(steps + 1)..[0] = first.yaw;
     final pitches = Float64List(steps + 1)..[0] = first.pitch;
     var previous = first;
@@ -458,36 +489,90 @@ class _TurnTiming {
       final pose = poseAt(i / steps);
       final yaw = _angle(pose.yaw - previous.yaw);
       final pitch = pose.pitch - previous.pitch;
-      times[i] =
-          times[i - 1] +
-          math.max(
-            baseSeconds / steps,
-            math.max(
-              yaw.abs() / Flight.maxYawSpeed,
-              pitch.abs() / Flight.maxPitchSpeed,
-            ),
-          );
+      intervals[i - 1] = math.max(
+        math.max(baseSeconds / steps, previous.distanceTo(pose) / speed),
+        math.max(
+          yaw.abs() / Flight.maxYawSpeed,
+          pitch.abs() / Flight.maxPitchSpeed,
+        ),
+      );
+      progress[i] = i / steps;
       yaws[i] = yaws[i - 1] + yaw;
       pitches[i] = pose.pitch;
       previous = pose;
     }
-    return _TurnTiming._(times, yaws, pitches);
+    // Spread each necessary slowdown to both sides before filtering. Every
+    // averaging window still contains its original requirement, so smoothing
+    // cannot erase a speed limit. This brakes before a tight bend or climb,
+    // instead of abruptly changing pace at the limiting sample.
+    final radius = baseSeconds == 0
+        ? 1
+        : (0.35 * steps / baseSeconds).ceil().clamp(1, 120);
+    final weights = Float64List(radius + 1);
+    for (var i = 0; i <= radius; i++) {
+      weights[i] = 1 + math.cos(math.pi * i / (radius + 1));
+    }
+    final envelope = Float64List(steps);
+    for (var i = 0; i < steps; i++) {
+      var peak = 0.0;
+      for (
+        var j = math.max(0, i - radius);
+        j <= math.min(steps - 1, i + radius);
+        j++
+      ) {
+        peak = math.max(peak, intervals[j]);
+      }
+      envelope[i] = peak;
+    }
+    for (var i = 0; i < steps; i++) {
+      var sum = 0.0;
+      var totalWeight = 0.0;
+      for (
+        var j = math.max(0, i - radius);
+        j <= math.min(steps - 1, i + radius);
+        j++
+      ) {
+        final weight = weights[(j - i).abs()];
+        sum += envelope[j] * weight;
+        totalWeight += weight;
+      }
+      times[i + 1] = times[i] + sum / totalWeight;
+    }
+    final positions = _Spline(times, progress);
+    final headings = _Spline(times, yaws, easeEnds: true);
+    final tilts = _Spline(times, pitches, easeEnds: true);
+    // A monotone cubic can move faster than its interval's secant. Bound
+    // its quadratic derivative analytically instead of sampling at runtime.
+    final double stretch = math.max(
+      1,
+      math.max(
+        headings.maxSpeed / Flight.maxYawSpeed,
+        tilts.maxSpeed / Flight.maxPitchSpeed,
+      ),
+    );
+    return _FlightTiming._(times, positions, headings, tilts, stretch);
   }
 
-  const _TurnTiming._(this._times, this._yaws, this._pitches);
-
+  const _FlightTiming._(
+    this._times,
+    this._progress,
+    this._yaws,
+    this._pitches,
+    this._stretch,
+  );
   final Float64List _times;
-  final Float64List _yaws;
-  final Float64List _pitches;
+  final _Spline _progress;
+  final _Spline _yaws;
+  final _Spline _pitches;
+  final double _stretch;
 
-  double get seconds => _times.last;
-
+  double get seconds => _times.last * _stretch;
   static double _angle(double radians) =>
       math.atan2(math.sin(radians), math.cos(radians));
 
   ({double progress, double yaw, double pitch}) at(double t) {
     final progress = t.clamp(0.0, 1.0);
-    final time = progress * seconds;
+    final time = progress * _times.last;
     var lo = 0;
     var hi = _times.length - 1;
     while (hi - lo > 1) {
@@ -501,10 +586,183 @@ class _TurnTiming {
     final span = _times[hi] - _times[lo];
     final f = span == 0 ? progress : (time - _times[lo]) / span;
     return (
-      progress: (lo + f) / (_times.length - 1),
-      yaw: _lerp(_yaws[lo], _yaws[hi], f),
-      pitch: _lerp(_pitches[lo], _pitches[hi], f),
+      progress: _progress.at(lo, f),
+      yaw: _yaws.at(lo, f),
+      pitch: _pitches.at(lo, f),
     );
+  }
+}
+
+/// Shape-preserving Hermite interpolation on a nonuniform clock. Harmonic
+/// slopes prevent overshoot and join adjacent intervals with the same velocity.
+class _Spline {
+  _Spline(this.times, this.values, {bool easeEnds = false})
+    : slopes = Float64List(values.length) {
+    double secant(int i) {
+      final dt = times[i + 1] - times[i];
+      return dt == 0 ? 0 : (values[i + 1] - values[i]) / dt;
+    }
+
+    if (!easeEnds) {
+      slopes[0] = secant(0);
+      slopes[slopes.length - 1] = secant(values.length - 2);
+    }
+    for (var i = 1; i < slopes.length - 1; i++) {
+      final left = secant(i - 1);
+      final right = secant(i);
+      if (left * right <= 0) continue;
+      final before = times[i] - times[i - 1];
+      final after = times[i + 1] - times[i];
+      final a = 2 * after + before;
+      final b = after + 2 * before;
+      slopes[i] = (a + b) / (a / left + b / right);
+    }
+  }
+  final Float64List times;
+  final Float64List values;
+  final Float64List slopes;
+
+  (double, double, double) coefficients(int i) {
+    final span = times[i + 1] - times[i];
+    final delta = values[i + 1] - values[i];
+    final a = slopes[i] * span;
+    final b = slopes[i + 1] * span;
+    return (a + b - 2 * delta, 3 * delta - 2 * a - b, a);
+  }
+
+  double at(int i, double t) {
+    final (a, b, c) = coefficients(i);
+    return ((a * t + b) * t + c) * t + values[i];
+  }
+
+  double get maxSpeed {
+    var result = 0.0;
+    for (var i = 0; i < values.length - 1; i++) {
+      final span = times[i + 1] - times[i];
+      if (span == 0) continue;
+      final (a, b, c) = coefficients(i);
+      var peak = math.max(c.abs(), (3 * a + 2 * b + c).abs());
+      if (a != 0) {
+        final t = -b / (3 * a);
+        if (t > 0 && t < 1) {
+          peak = math.max(peak, ((3 * a * t + 2 * b) * t + c).abs());
+        }
+      }
+      result = math.max(result, peak / span);
+    }
+    return result;
+  }
+}
+
+typedef _Point = ({double x, double y, double z});
+
+_Point _mix(_Point a, _Point b, double t) =>
+    (x: _lerp(a.x, b.x, t), y: _lerp(a.y, b.y, t), z: _lerp(a.z, b.z, t));
+
+/// A cubic join matching both neighbouring legs' position and tangent.
+/// Collision checks use the convex hull of recursively subdivided control
+/// points, so a narrow obstacle cannot fall between samples.
+class _Bend {
+  const _Bend(this.start, this.end, this.a, this.b, this.c, this.d);
+  final double start;
+  final double end;
+  final _Point a;
+  final _Point b;
+  final _Point c;
+  final _Point d;
+
+  static List<_Bend> plan(List<_Leg> legs, List<Solid> solids) {
+    final bends = <_Bend>[];
+    var along = 0.0;
+    for (var i = 1; i < legs.length; i++) {
+      final incoming = legs[i - 1];
+      final outgoing = legs[i];
+      along += incoming.length;
+      var radius = math.min(
+        Flight.cornerRadius,
+        math.min(incoming.length, outgoing.length) * 0.35,
+      );
+      while (radius > 1e-4) {
+        final f = 1 - radius / incoming.length;
+        final g = radius / outgoing.length;
+        final a = incoming.pointAt(f);
+        final d = outgoing.pointAt(g);
+        final ta = incoming.tangentAt(f);
+        final td = outgoing.tangentAt(g);
+        final handle = 2 * radius / 3;
+        final bend = _Bend(
+          along - radius,
+          along + radius,
+          a,
+          (
+            x: a.x + ta.x * handle,
+            y: a.y + ta.y * handle,
+            z: a.z + ta.z * handle,
+          ),
+          (
+            x: d.x - td.x * handle,
+            y: d.y - td.y * handle,
+            z: d.z - td.z * handle,
+          ),
+          d,
+        );
+        if (solids.every((s) => bend._clears(s, 0))) {
+          bends.add(bend);
+          break;
+        }
+        radius /= 2;
+      }
+    }
+    return bends;
+  }
+
+  _Point at(double t) {
+    final u = 1 - t;
+    final wa = u * u * u;
+    final wb = 3 * u * u * t;
+    final wc = 3 * u * t * t;
+    final wd = t * t * t;
+    return (
+      x: wa * a.x + wb * b.x + wc * c.x + wd * d.x,
+      y: wa * a.y + wb * b.y + wc * c.y + wd * d.y,
+      z: wa * a.z + wb * b.z + wc * c.z + wd * d.z,
+    );
+  }
+
+  bool _clears(Solid solid, int depth) {
+    final footprint = solid.footprint;
+    var minU = double.infinity;
+    var maxU = double.negativeInfinity;
+    var minV = double.infinity;
+    var maxV = double.negativeInfinity;
+    var minY = double.infinity;
+    var maxY = double.negativeInfinity;
+    for (final p in [a, b, c, d]) {
+      final (u, v) = footprint.local(p.x, p.z);
+      minU = math.min(minU, u);
+      maxU = math.max(maxU, u);
+      minV = math.min(minV, v);
+      maxV = math.max(maxV, v);
+      minY = math.min(minY, p.y);
+      maxY = math.max(maxY, p.y);
+    }
+    if (minU >= footprint.width / 2 + solidClearance ||
+        maxU <= -footprint.width / 2 - solidClearance ||
+        minV >= footprint.depth / 2 + solidClearance ||
+        maxV <= -footprint.depth / 2 - solidClearance ||
+        minY >= solid.top + Flight.clearance ||
+        maxY <= solid.bottom - Flight.clearance) {
+      return true;
+    }
+    if (depth >= 10) return false;
+    final ab = _mix(a, b, 0.5);
+    final bc = _mix(b, c, 0.5);
+    final cd = _mix(c, d, 0.5);
+    final abc = _mix(ab, bc, 0.5);
+    final bcd = _mix(bc, cd, 0.5);
+    final mid = _mix(abc, bcd, 0.5);
+    return _Bend(start, end, a, ab, abc, mid)._clears(solid, depth + 1) &&
+        _Bend(start, end, mid, bcd, cd, d)._clears(solid, depth + 1);
   }
 }
 
@@ -614,6 +872,28 @@ class _Leg {
   /// The fraction of the leg the climb takes, and the descent.
   final double rampStart;
   final double rampEnd;
+
+  _Point pointAt(double s) => (
+    x: _lerp(from.x, to.x, s),
+    y: _lerp(from.y, to.y, s) + liftAt(s),
+    z: _lerp(from.z, to.z, s),
+  );
+
+  _Point tangentAt(double s) {
+    var slope = 0.0;
+    if (s < rampStart) {
+      final t = s / rampStart;
+      slope = 6 * t * (1 - t) / rampStart;
+    } else if (s > 1 - rampEnd) {
+      final t = (1 - s) / rampEnd;
+      slope = -6 * t * (1 - t) / rampEnd;
+    }
+    return (
+      x: (to.x - from.x) / length,
+      y: (to.y - from.y + arc * slope) / length,
+      z: (to.z - from.z) / length,
+    );
+  }
 
   /// Extra height over the straight line at [s] of the leg (0..1).
   double liftAt(double s) => arc * _profile(s, rampStart, rampEnd);

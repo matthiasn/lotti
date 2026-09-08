@@ -3839,7 +3839,7 @@
   "plazaCategoryEmpty": "Această categorie nu are proiecte vizibile.",
   "plazaClosedForNight": "ÎNCHIS PESTE NOAPTE",
   "plazaCloseHint": "Esc pentru a închide",
-  "plazaControls": "WASD mers · trageți pentru a privi · Tab următorul reper · H acasă · M vedere de ansamblu · / căutare · ⌘[ înapoi",
+  "plazaControls": "WASD mers · țineți apăsat Shift: viteză ×8 · trageți pentru a privi · Tab următorul reper · H acasă · M vedere de ansamblu · / căutare · ⌘[ înapoi",
   "plazaCornerAfter": "Viraj după {week}",
   "plazaDebug": "Depanare",
   "plazaDecisionStrip": "ESTE NECESARĂ O DECIZIE",

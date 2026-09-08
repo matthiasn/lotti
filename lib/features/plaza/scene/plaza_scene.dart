@@ -9,6 +9,7 @@ import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
+import 'package:lotti/features/plaza/scene/plaza_architecture.dart';
 import 'package:lotti/features/plaza/scene/plaza_boxes.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
@@ -70,9 +71,6 @@ class PlazaSceneController {
   static final Vector4 _post = linearColor(const Color(0xFF14171F));
   static final Vector4 _tower = linearColor(const Color(0xFF0E0B18));
 
-  /// The skyline ring's body: a shade above the fillers so distant
-  /// silhouettes read against the sky instead of dissolving into it.
-  static final Vector4 _skyline = linearColor(const Color(0xFF161428));
   static final Vector4 _pavement = linearColor(const Color(0xFF232532));
   static final Vector4 _kerb = linearColor(const Color(0xFF5A5E72));
 
@@ -155,8 +153,13 @@ class PlazaSceneController {
           ..baseColorFactor = Vector4(1, 1, 1, 1);
       }
     }
-    for (final (material, _) in _pools) {
+    for (final (material, _) in [..._pools, ..._washes]) {
       material.baseColorTexture = textures.pool;
+    }
+    // Billboard glows have their own animation owner, but still need the
+    // falloff texture. An untextured blended quad reads as a coloured sheet.
+    for (final billboard in bindings.billboards) {
+      billboard.glow?.baseColorTexture = textures.pool;
     }
     for (final material in _grainMaterials) {
       material.baseColorTexture = textures.grain;

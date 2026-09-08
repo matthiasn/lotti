@@ -119,7 +119,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   Node? _penguinModel;
   bool _loadingPenguinModel = false;
   bool _animateCharacters = true;
-  bool _showPenguins = true;
+  bool _showPenguins = false;
   late PlazaSurfaces _surfaces;
   late PlazaPicker _picker;
   late FlyCameraController _camera;

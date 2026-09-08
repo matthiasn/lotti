@@ -10325,7 +10325,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD mers · trageți pentru a privi · Tab următorul reper · H acasă · M vedere de ansamblu · / căutare · ⌘[ înapoi';
+      'WASD mers · țineți apăsat Shift: viteză ×8 · trageți pentru a privi · Tab următorul reper · H acasă · M vedere de ansamblu · / căutare · ⌘[ înapoi';
 
   @override
   String plazaCornerAfter(String week) {

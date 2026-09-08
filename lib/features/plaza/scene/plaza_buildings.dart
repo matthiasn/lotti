@@ -25,45 +25,28 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     final wallTint = linearColor(PlazaStyle.categoryWall(task));
     final stone = _boxes.solid(wallTint);
     final cornice = _boxes.solid(linearColor(colors.background.level03));
-    for (final (index, volume) in architecture.volumes.indexed) {
-      final tier = _boxes.node(
-        Vector3(volume.width, volume.height, volume.depth),
-        stone,
-        transform: Matrix4.translation(
-          Vector3(
-            volume.x,
-            volume.bottom + volume.height / 2 - h / 2,
-            volume.z,
-          ),
-        ),
-        shaded: true,
-      );
-      node.add(tier);
-      if (_shown('walls')) {
+    final structure = PlazaArchitecture(_boxes).build(
+      architecture,
+      wall: stone,
+      trim: cornice,
+      light: _boxes.solid(linearColor(PlazaStyle.taskColor(attention))),
+      onVolume: (tier, volume, {required groundFloor}) {
+        if (!_shown('walls')) return;
         _windowedBox(
           tier,
-          id: '${task.id}-$index',
+          id: '${task.id}-${volume.bottom}',
           w: volume.width,
           d: volume.depth,
           height: volume.height,
           state: attention.lantern,
-          groundFloor: index == 0,
+          groundFloor: groundFloor,
           tint: wallTint,
           variant: parade,
           family: kit,
         );
-      }
-      // Continuous cornices tie the family together, with a recessed crown
-      // rather than roof clutter extending beyond the reserved solid.
-      _rim(
-        tier,
-        w: volume.width,
-        d: volume.depth,
-        y: volume.height / 2 - 0.1,
-        thickness: 0.2,
-        material: cornice,
-      );
-    }
+      },
+    )..localTransform = Matrix4.translation(Vector3(0, -h / 2, 0));
+    node.add(structure);
     _box(
       node,
       Vector3(0, -h / 2 + 0.02, 0),

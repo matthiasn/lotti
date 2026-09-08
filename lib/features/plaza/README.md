@@ -5,7 +5,10 @@ has a building and a billboard showing its title, status, due date and checklist
 progress. Larger signs emphasize priority; overdue work burns above its signs.
 Completed tasks have quiet green buildings set back from the street, with green
 roofs that remain readable in the aerial overview. Recessed shopfronts and
-stepped tower silhouettes give each task a place along the avenue.
+stepped tower silhouettes give each task a place along the avenue. Glass media
+towers, structural façade details and illuminated crowns extend that character
+into a denser surrounding city with closer street frontage and a fuller skyline;
+soft light spills connect signs to the paving.
 
 Open **Explore project** from a project's details, or **Explore category**
 under a category in the Projects list. A category has an avenue for each
@@ -17,11 +20,14 @@ Black-and-white penguin companions stroll through the streets and open square,
 alone or in pairs, with balancing flippers and orange webbed feet. Companions
 occasionally glance toward one another as if in conversation, with eyes leading
 the turn and independent blinks. A mix of compact, standard and upright builds
-gives the crowd variety. The **Penguins** option shows or hides them, and
+gives the crowd variety. Penguins start hidden; the **Penguins** option shows
+or hides them, and
 reduced-motion settings pause them.
 
 The existing walk, drag-to-look, beacon navigation, search, Home, Overview and
-Morning walk remain available. Nearby task facades offer checklist edits and
+Morning walk remain available. Flights follow rounded curves with gentle turns
+and climbs. Hold **Shift** while walking or flying for **8× speed** through the
+district. Nearby task facades offer checklist edits and
 open the regular task details page.
 
 The feature targets desktop Flutter GPU / Impeller. Unsupported renderers show

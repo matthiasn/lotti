@@ -54,31 +54,16 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
       final bh = block.height;
       // Local x is lateral, local z runs along the road: the block is
       // bw long along the street and bd deep away from it.
-      final node = _boxes.node(
-        Vector3(bd, bh, bw),
-        PlazaSceneController._towerMaterial,
-        transform: Matrix4.translation(Vector3(block.x, bh / 2, block.z))
-          ..rotateY(block.yawRadians),
-        shaded: true,
-      );
-      final parade = stableIndex(id, 'parade', WallTextures.paradeVariants);
-      final kit = stableIndex(id, 'kit', WallTextures.tileFamilies);
-      // Windows on every face: a filler is seen from the street, from
-      // the plaza and from above.
-      _windowedBox(
-        node,
-        id: id,
-        w: bd,
-        d: bw,
-        height: bh,
-        faces: const [_Face.right, _Face.left, _Face.front, _Face.back],
-        state: LanternState.open,
-        tint: PlazaSceneController._tower,
-        // The fabric trades all night, whatever its flats are doing.
-        shops: LanternState.inProgress,
-        variant: parade,
-        family: kit,
-      );
+      final node =
+          _sceneryArchitecture(
+              block,
+              state: LanternState.open,
+              light: PlazaStyle.lamp,
+              detailed: false,
+            )
+            ..localTransform = (Matrix4.translation(
+              Vector3(block.x, 0, block.z),
+            )..rotateY(block.yawRadians));
       // The parade's light on the pavement, on the street side.
       {
         final yaw = block.yawRadians + (side < 0 ? math.pi / 2 : -math.pi / 2);
@@ -108,7 +93,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
           final pick = stableIndex(id, 'pick', weekTasks.length);
           final anchor = Node(
             localTransform: Matrix4.translation(
-              Vector3(-side * (bd / 2 + 0.08), bh * 0.15, -bw / 2 + 1.2),
+              Vector3(-side * (bd / 2 + 0.08), bh * 0.65, -bw / 2 + 1.2),
             )..rotateY(side < 0 ? math.pi / 2 : -math.pi / 2),
           );
           node.add(anchor);
@@ -125,40 +110,23 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
   /// toward. The last row's far end has the jumbotron instead.
   void _buildHeroTowers() {
     for (final tower in world.scenery.heroTowers) {
-      final id = tower.id;
       final w = tower.width;
       final bd = tower.depth;
       final height = tower.height;
       // The root faces back down the row.
-      final root = Node(
-        localTransform: Matrix4.translation(Vector3(tower.x, 0, tower.z))
-          ..rotateY(tower.yawRadians),
-      );
-      final box = _boxes.node(
-        Vector3(w, height, bd),
-        PlazaSceneController._towerMaterial,
-        transform: Matrix4.translation(Vector3(0, height / 2, 0)),
-        shaded: true,
-      );
-      final parade = stableIndex(id, 'parade', WallTextures.paradeVariants);
-      root.add(box);
-      _windowedBox(
-        box,
-        id: id,
-        w: w,
-        d: bd,
-        height: height,
-        state: LanternState.inProgress,
-        tint: PlazaSceneController._tower,
-        variant: parade,
-      );
-      // Crown: a lit trim and a spire with a blinking light.
-      _box(
-        root,
-        Vector3(0, height + 0.1, 0),
-        Vector3(w + 0.3, 0.2, bd + 0.3),
-        _boxes.solid(linearColor(PlazaStyle.teal, alpha: 0.9)),
-      );
+      final root =
+          Node(
+            localTransform: Matrix4.translation(Vector3(tower.x, 0, tower.z))
+              ..rotateY(tower.yawRadians),
+          )..add(
+            _sceneryArchitecture(
+              tower,
+              state: LanternState.inProgress,
+              light: PlazaStyle.teal,
+              landmark: true,
+              minimumFrontageHeight: height * 0.62 + w * 0.9 * 0.62 / 2,
+            ),
+          );
       _spire(
         root,
         Vector3(0, height, 0),
@@ -210,34 +178,21 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
   /// data.
   void _buildSkyline() {
     for (final tower in world.scenery.skyline) {
-      final id = tower.id;
       final i = tower.index;
       final w = tower.width;
       final h = tower.height;
-      final node = _boxes.node(
-        Vector3(w, h, tower.depth),
-        _boxes.solid(PlazaSceneController._skyline),
-        transform: Matrix4.translation(Vector3(tower.x, h / 2, tower.z))
-          ..rotateY(tower.yawRadians),
-        shaded: true,
-      );
-      // A lit roofline along the district-facing edge, warm and teal by
-      // turns, so the ring is a glowing horizon and not a row of dots.
-      final roofline = i.isEven ? const Color(0xFFFFC46B) : PlazaStyle.teal;
-      _box(
-        node,
-        Vector3(0, h / 2 + 0.1, tower.depth / 2 - 0.1),
-        Vector3(w + 0.2, 0.25, 0.25),
-        _boxes.solid(
-          emissiveColor(roofline, PlazaSceneController.neonBoost, alpha: 0.95),
-        ),
-      );
-      node.add(
-        _glowQuad(w + 4, 3, roofline, 0.16)
-          ..localTransform = Matrix4.translation(
-            Vector3(0, h / 2 + 0.6, tower.depth / 2 + 0.05),
-          ),
-      );
+      final node =
+          _sceneryArchitecture(
+              tower,
+              state: LanternState.off,
+              light: i.isEven ? PlazaStyle.lamp : PlazaStyle.teal,
+              detailed: false,
+              shops: false,
+              minimumFrontageHeight: math.min(h, h * 0.55 + w * 0.82 * 0.5 / 2),
+            )
+            ..localTransform = (Matrix4.translation(
+              Vector3(tower.x, 0, tower.z),
+            )..rotateY(tower.yawRadians));
       // Every fourth tower carries a big screen on its district-facing
       // face: the hi-rises behind Times Square are where the screens are.
       if (i % 4 == 1 && world.anomalies.isNotEmpty) {
@@ -249,7 +204,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
           node,
           width: sw,
           height: sh,
-          y: sy - h / 2,
+          y: sy,
           front: tower.depth / 2,
           frame: PlazaStyle.lantern(world.anomalies[rank].lantern),
           glowMargin: 6,
@@ -257,19 +212,68 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
           rank: rank,
         );
       }
-      // Two windowed faces toward the district, tiled from one offset.
-      _windowedBox(
-        node,
-        id: id,
-        w: w,
-        d: tower.depth,
-        height: h,
-        faces: const [_Face.front, _Face.left],
-        state: LanternState.off,
-        tint: PlazaSceneController._tower,
-        perFaceOffset: false,
-      );
       _cityContext.add(node);
     }
+  }
+
+  /// Shared recipes for supporting city fabric and avenue landmarks. A distant
+  /// tower keeps its massing and crown with no column grid or shopfront capture.
+  Node _sceneryArchitecture(
+    SceneryBox box, {
+    required LanternState state,
+    required Color light,
+    bool landmark = false,
+    bool detailed = true,
+    bool shops = true,
+    double minimumFrontageHeight = 0,
+  }) {
+    final architecture = BuildingArchitecture.forEnvelope(
+      id: box.id,
+      width: box.width,
+      depth: box.depth,
+      height: box.height,
+      config: world.architecture,
+      family: landmark ? BuildingFamily.steppedTower : null,
+      minimumFrontageHeight: minimumFrontageHeight,
+    );
+    final colors = dsTokensDark.colors;
+    final glow = landmark
+        ? light
+        : Color.lerp(colors.background.level02, light, SurfaceAlphas.muted)!;
+    final variant = stableIndex(box.id, 'parade', WallTextures.paradeVariants);
+    final family = switch (architecture.family) {
+      BuildingFamily.mediaTower => 2,
+      BuildingFamily.theater => 1,
+      BuildingFamily.steppedTower => 0,
+    };
+    return PlazaArchitecture(_boxes).build(
+      architecture,
+      wall: PlazaSceneController._towerMaterial,
+      trim: _boxes.solid(
+        linearColor(
+          landmark ? colors.background.level03 : colors.background.level02,
+        ),
+      ),
+      light: _boxes.solid(
+        emissiveColor(glow, landmark ? PlazaSceneController.neonBoost : 1),
+      ),
+      detailed: detailed,
+      onVolume: (tier, volume, {required groundFloor}) {
+        _windowedBox(
+          tier,
+          id: '${box.id}-${volume.bottom}',
+          w: volume.width,
+          d: volume.depth,
+          height: volume.height,
+          state: state,
+          tint: PlazaSceneController._tower,
+          groundFloor: shops && groundFloor,
+          shops: LanternState.inProgress,
+          variant: variant,
+          family: family,
+          faces: shops ? _Face.values : const [_Face.front, _Face.left],
+        );
+      },
+    );
   }
 }

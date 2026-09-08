@@ -208,6 +208,9 @@ counter increment alone does not prove that a decoded cover reached the GPU.
 An empty `UnskinnedGeometry` with explicit local bounds also needs no GPU
 upload: `plaza_boxes_test.dart` uses it to verify shared geometry and material
 identity and the placement of scaled meshes under unscaled anchors.
+`plaza_architecture_test.dart` supplies the same GPU-free boxes to check
+architectural relief, sign clearance, bounded detail and the simplified skyline
+recipe. Native captures still verify window-skin depth and light falloff.
 
 ## Hover-divider tests: `test_utils/hover_divider_harness.dart`
 

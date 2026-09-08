@@ -4313,7 +4313,7 @@
   "plazaCategoryEmpty": "Questa categoria non ha progetti visibili.",
   "plazaClosedForNight": "CHIUSO PER LA NOTTE",
   "plazaCloseHint": "Esc per chiudere",
-  "plazaControls": "WASD cammina · trascina per guardare · Tab prossimo segnale · H inizio · M panoramica · / cerca · ⌘[ indietro",
+  "plazaControls": "WASD cammina · tieni premuto Shift: velocità ×8 · trascina per guardare · Tab prossimo segnale · H inizio · M panoramica · / cerca · ⌘[ indietro",
   "plazaCornerAfter": "Svolta dopo {week}",
   "plazaDebug": "Debug",
   "plazaDecisionStrip": "SERVE UNA DECISIONE",

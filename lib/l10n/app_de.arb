@@ -3839,7 +3839,7 @@
   "plazaCategoryEmpty": "Diese Kategorie hat keine sichtbaren Projekte.",
   "plazaClosedForNight": "ÜBER NACHT GESCHLOSSEN",
   "plazaCloseHint": "Esc zum Schließen",
-  "plazaControls": "WASD gehen · Ziehen zum Umschauen · Tab nächstes Leuchtfeuer · H Start · M Übersicht · / Suche · ⌘[ zurück",
+  "plazaControls": "WASD gehen · Shift halten: 8× Tempo · Ziehen zum Umschauen · Tab nächstes Leuchtfeuer · H Start · M Übersicht · / Suche · ⌘[ zurück",
   "plazaCornerAfter": "Abzweigung nach {week}",
   "plazaDebug": "Debug",
   "plazaDecisionStrip": "ENTSCHEIDUNG NÖTIG",

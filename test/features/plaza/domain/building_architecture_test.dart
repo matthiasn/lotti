@@ -2,6 +2,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/building_architecture.dart';
 
 void main() {
+  test('Art Deco crown narrows through three distinct setbacks', () {
+    final kit = BuildingArchitecture.forEnvelope(
+      id: 'landmark',
+      width: 30,
+      depth: 12,
+      height: 80,
+      family: BuildingFamily.steppedTower,
+      minimumFrontageHeight: 60,
+    );
+    final crown = kit.volumes.where((volume) => volume.bottom >= 60).toList();
+    expect(crown, hasLength(3));
+    expect(crown.first.bottom, 60);
+    expect(crown.last.top, 80);
+    for (var i = 1; i < crown.length; i++) {
+      expect(crown[i].width, lessThan(crown[i - 1].width));
+      expect(crown[i].bottom, crown[i - 1].top);
+    }
+    expect(crown.last.width, lessThan(30 / 2));
+  });
+
   for (final family in BuildingFamily.values) {
     test('$family keeps solids and signs within the reserved plot', () {
       for (final width in [5.0, 14.0, 30.0]) {

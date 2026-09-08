@@ -10147,7 +10147,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD lopen · sleep om rond te kijken · Tab volgend baken · H start · M overzicht · / zoeken · ⌘[ terug';
+      'WASD lopen · houd Shift ingedrukt: 8× snelheid · sleep om rond te kijken · Tab volgend baken · H start · M overzicht · / zoeken · ⌘[ terug';
 
   @override
   String plazaCornerAfter(String week) {
