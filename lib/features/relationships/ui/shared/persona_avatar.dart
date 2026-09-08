@@ -240,10 +240,18 @@ class AvatarCropPicture extends StatelessWidget {
   /// zooming never re-decodes.
   final double? decodeZoom;
 
+  /// The square, in points, a slot of [size] decodes its photograph into at
+  /// [zoom]: rounded up, so the bound is never a hair under the pixels the
+  /// zoom will show. The one formula for the renderer and for anything that
+  /// warms its cache ahead of it — the screenshot suite pre-decodes exactly
+  /// these keys, and a copy of the arithmetic there drifted once.
+  static double decodeBound(double size, double zoom) =>
+      (size * zoom).ceilToDouble();
+
   @override
   Widget build(BuildContext context) {
     final alignment = Alignment(crop.x * 2 - 1, crop.y * 2 - 1);
-    final bound = (size * (decodeZoom ?? crop.scale)).ceilToDouble();
+    final bound = decodeBound(size, decodeZoom ?? crop.scale);
     return Transform.scale(
       scale: crop.scale,
       alignment: alignment,

@@ -114,6 +114,32 @@ final List<double> _avatarSizes = [
   dsTokensDark.spacing.step11,
 ];
 
+/// Every photograph on screen has painted: each `Image` over a `ResizeImage`
+/// — the file decode behind a face or a banner, never the ThumbHash stand-in
+/// — holds a frame. A face whose decode the warm-up missed renders as a
+/// hollow ring, which passes every presence check and would land in a
+/// capture as if the feature were broken; this is what catches it.
+void expectPhotosDrawn(WidgetTester tester) {
+  final frames = tester
+      .widgetList<RawImage>(
+        find.descendant(
+          of: find.byWidgetPredicate(
+            (widget) => widget is Image && widget.image is ResizeImage,
+          ),
+          matching: find.byType(RawImage),
+        ),
+      )
+      .toList(growable: false);
+  expect(frames, isNotEmpty, reason: 'the surface draws at least one photo');
+  expect(
+    frames.map((raw) => raw.image),
+    everyElement(isNotNull),
+    reason:
+        'a photograph missed the warm-up and would render as a hollow ring '
+        '— warm the key AvatarCropPicture.decodeBound gives its slot',
+  );
+}
+
 /// The three shapes a photograph can be in on a device, one person each:
 /// Pip's has landed, Skua's is still syncing but carries a ThumbHash, and
 /// Tilly's is known by id alone. Hana and Mo have none, which is the
@@ -721,16 +747,33 @@ void main() {
         ThumbHashImage(ThumbHash.fromBase64(sampleThumbHash)),
         context,
       );
+      // A face decodes bounded to its slot times its zoom — the default zoom
+      // on the primitives surface, Pip's own everywhere Pip is drawn, and the
+      // deepest zoom in the crop surface's live preview at list size.
+      final zooms = <double>{1, pip.data.avatarCrop!.scale};
       for (final size in _avatarSizes) {
-        await precacheImage(
-          cappedFileImage(
-            path,
-            size: size - ring * 2,
-            devicePixelRatio: devicePixelRatio,
-          ),
-          context,
-        );
+        for (final zoom in zooms) {
+          await precacheImage(
+            cappedFileImage(
+              path,
+              size: AvatarCropPicture.decodeBound(size - ring * 2, zoom),
+              devicePixelRatio: devicePixelRatio,
+            ),
+            context,
+          );
+        }
       }
+      await precacheImage(
+        cappedFileImage(
+          path,
+          size: AvatarCropPicture.decodeBound(
+            _avatarSizes.first - ring * 2,
+            maxAvatarCropScale,
+          ),
+          devicePixelRatio: devicePixelRatio,
+        ),
+        context,
+      );
     });
   }
 
@@ -781,7 +824,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await warmAvatarDecodes(tester, device);
 
-    await withClock(Clock.fixed(_now), () async {
+    Future<void> mount() => withClock(Clock.fixed(_now), () async {
       await tester.pumpWidget(
         _app(
           home: home,
@@ -793,6 +836,39 @@ void main() {
       );
       await tester.pumpAndSettle();
     });
+    await mount();
+
+    // The hero keys its banner on the width it was laid out at. On a phone
+    // that is the shell's, warmed above; on desktop the hero sits in the
+    // detail pane, narrower than the shell, and the pane's width only exists
+    // once mounted. Measure it, unmount so the fake-clock stream the miss
+    // started is dropped, warm the pane-wide key on the real event loop, and
+    // mount again — the after-a-dry-run rule the modals follow, for a page.
+    final banner = find.byKey(const ValueKey('person-hero-banner'));
+    if (banner.evaluate().isNotEmpty) {
+      final width = tester.getSize(banner).width;
+      if (width != device.size.width) {
+        final key = boundedFileImage(
+          getFullImagePath(_pipPhoto),
+          bounds: Size(
+            width,
+            PersonHeroAppBar.bannerStripExtent(dsTokensDark, topPadding: 0),
+          ),
+          devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
+        );
+        await tester.pumpWidget(
+          const MaterialApp(home: SizedBox(key: ValueKey('precache-host'))),
+        );
+        final context = tester.element(
+          find.byKey(const ValueKey('precache-host')),
+        );
+        await tester.runAsync(() async {
+          await key.evict();
+          await precacheImage(key, context);
+        });
+        await mount();
+      }
+    }
   }
 
   /// Opens a modal from [_ModalHost] and settles it, under the same clock.
@@ -833,6 +909,7 @@ void main() {
           findsNWidgets(listItems.length),
           reason: 'every band renders its rows: due, on track, not enrolled',
         );
+        expectPhotosDrawn(tester);
         await captureScreenshot(
           tester,
           'people_list_${viewport}_$theme',
@@ -894,6 +971,7 @@ void main() {
           findsOneWidget,
           reason: 'the page leads with the agent briefing',
         );
+        expectPhotosDrawn(tester);
         await captureScreenshot(
           tester,
           'person_page_${viewport}_$theme',
@@ -1051,6 +1129,7 @@ void main() {
       findsOneWidget,
       reason: 'the stand-in wears the same scrim the picture will',
     );
+    expectPhotosDrawn(tester);
     await captureScreenshot(
       tester,
       'person_page_banner_arriving_mobile_dark',
@@ -1081,6 +1160,7 @@ void main() {
       findsOneWidget,
       reason: 'the name has swapped into the bar, over the picture',
     );
+    expectPhotosDrawn(tester);
     await captureScreenshot(
       tester,
       'person_page_banner_folded_mobile_dark',
@@ -1364,6 +1444,7 @@ void main() {
         find.byKey(const ValueKey('person-form-save')),
         findsOneWidget,
       );
+      expectPhotosDrawn(tester);
       await captureScreenshot(
         tester,
         'person_form_edit_${viewport}_dark',
@@ -1485,9 +1566,14 @@ void main() {
         close: () =>
             tester.tap(find.byKey(const ValueKey('avatar-crop-cancel'))),
         measure: find.byKey(const ValueKey('avatar-crop-viewport')),
+        // The crop surface bounds at the deepest zoom from the start, so a
+        // pinch never re-decodes.
         keyFor: (viewport) => cappedFileImage(
           getFullImagePath(_pipPhoto),
-          size: viewport.width,
+          size: AvatarCropPicture.decodeBound(
+            viewport.width,
+            maxAvatarCropScale,
+          ),
           devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
         ),
       );
@@ -1499,6 +1585,7 @@ void main() {
         findsOneWidget,
         reason: 'the live preview at list size is the commitment moment',
       );
+      expectPhotosDrawn(tester);
       await captureScreenshot(
         tester,
         'avatar_crop_${viewport}_dark',
@@ -1746,6 +1833,7 @@ void main() {
         findsNWidgets(9),
         reason: 'every face but "no photo" wears the ring, at all three sizes',
       );
+      expectPhotosDrawn(tester);
       await captureScreenshot(
         tester,
         'persona_avatar_faces_mobile_$theme',
