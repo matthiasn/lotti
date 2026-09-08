@@ -25,13 +25,17 @@ void main() {
         ..writeAsBytesSync(
           File('assets/design_system/avatar_placeholder.png').readAsBytesSync(),
         );
+      // The cache is process-global and other files in the same isolate may
+      // have left entries in it; what this read must not do is add one.
+      final cache = PaintingBinding.instance.imageCache;
+      final cachedBefore = cache.currentSize;
 
       final size = await tester.runAsync(() => readImageFileSize(picture.path));
 
       expect(size, const Size(160, 160));
       expect(
-        PaintingBinding.instance.imageCache.currentSize,
-        0,
+        cache.currentSize,
+        cachedBefore,
         reason:
             'learning a size must not park the decoded picture in the cache '
             'under a key nothing draws with',

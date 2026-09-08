@@ -1,7 +1,7 @@
 import 'dart:ui' show Tristate;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -9,9 +9,14 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../widget_test_utils.dart';
 
 void main() {
+  // Width-driven layout: pin the bundled fonts so the numbers below read
+  // the same whether or not another file in this isolate loaded them first
+  // (test/README.md, "Committed per-feature harnesses").
+  setUpAll(loadAppFonts);
   final now = DateTime(2026, 7, 16, 9);
 
   Widget subject({
@@ -668,7 +673,31 @@ void main() {
       final label = tester.widget<Text>(scheduleLabel());
       expect(label.maxLines, 2);
       expect(label.softWrap, isTrue);
-      expect(tester.getSize(scheduleLabel()).width, 320);
+      // The promise owns its line and is whole: no wider than the surface,
+      // nothing cut. (Under Inter at 1.3× the wording is ~211 px, so on a
+      // 320 surface it is one line; the wrap is exercised below.)
+      expect(tester.getSize(scheduleLabel()).width, lessThanOrEqualTo(320));
+      expect(
+        tester.renderObject<RenderParagraph>(scheduleLabel()).didExceedMaxLines,
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+
+      // Narrower than the wording itself: the label is clamped to the surface
+      // and wraps to its second line rather than truncating.
+      await pumpRow(
+        tester,
+        subject(automaticUpdatesEnabled: true, onRunNow: () {}),
+        width: 200,
+        locale: const Locale('de'),
+        textScaler: const TextScaler.linear(1.3),
+      );
+      expect(tester.getSize(scheduleLabel()).width, 200);
+      expect(tester.widget<Text>(scheduleLabel()).maxLines, 2);
+      expect(
+        tester.renderObject<RenderParagraph>(scheduleLabel()).didExceedMaxLines,
+        isFalse,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -843,6 +872,9 @@ void main() {
       tester,
     ) async {
       await withClock(Clock.fixed(now), () async {
+        // Fully stacked — the trigger under its freshness word, not beside
+        // it — which under Inter at 1.3× needs a surface of 250 or less;
+        // 240 keeps clear of the edge.
         await pumpRow(
           tester,
           subject(
@@ -853,7 +885,7 @@ void main() {
             nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
             onRunNow: () {},
           ),
-          width: 320,
+          width: 240,
           locale: const Locale('de'),
           textScaler: const TextScaler.linear(1.3),
         );

@@ -304,7 +304,7 @@ void main() {
         cropScaleFromJson(value),
         inInclusiveRange(minAvatarCropScale, maxAvatarCropScale),
       );
-    });
+    }, tags: 'glados');
   });
 
   group('RelationshipImageFraming', () {

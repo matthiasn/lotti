@@ -45,8 +45,9 @@ JournalImage buildJournalImage({
 /// has to *decode* the picture passes a real image instead.
 String createImageFile(JournalImage image, {List<int>? bytes}) {
   final fullPath = getFullImagePath(image);
-  Directory(fullPath.substring(0, fullPath.lastIndexOf('/')))
-      .createSync(recursive: true);
+  Directory(
+    fullPath.substring(0, fullPath.lastIndexOf('/')),
+  ).createSync(recursive: true);
   File(fullPath).writeAsBytesSync(bytes ?? const [0xFF, 0xD8, 0xFF, 0xE0]);
   return fullPath;
 }

@@ -50,7 +50,13 @@ every test for Mocktail matchers, DevLogger output and captured logs, Google
 Fonts runtime fetching, Drift's multiple-database warning policy, and GetIt's
 reassignment policy. Tests still own every GetIt registration, stream,
 database, timer, and platform-channel handler they create; clean those up in
-the suite's teardown.
+the suite's teardown. Two more things nobody restores for you: the
+`lib/utils/platform.dart` flags (`isMacOS`, `isDesktop`, …) are plain
+globals, so a test that assigns one restores it in `addTearDown` — a
+generated-scenario test that forgets leaves the *last* scenario's value for
+every file after it — and the painting binding's `imageCache` carries
+whatever earlier files decoded, so assert a *delta* on its size, never an
+absolute.
 
 ## Aged-history cost gates
 
