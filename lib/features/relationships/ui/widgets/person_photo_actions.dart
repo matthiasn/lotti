@@ -4,7 +4,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 
 /// What one of the avatar sheet's actions came to.
-enum AvatarPhotoOutcome {
+enum PersonPhotoOutcome {
   /// The person was written.
   changed,
 
@@ -15,16 +15,18 @@ enum AvatarPhotoOutcome {
   failed,
 }
 
-/// The three things the avatar sheet can do to a person's photo — choose,
-/// re-crop, remove — as one object whose only dependencies are the two
-/// repositories and the two surfaces it opens, both handed in as functions.
+/// Everything a surface can do to a person's two images — choose, re-crop
+/// or remove the avatar; choose, reposition or remove the banner — as one
+/// object whose only dependencies are the two repositories and the two
+/// surfaces it opens, both handed in as functions.
 ///
 /// The surfaces are functions rather than widgets so the whole flow — pick,
 /// then crop, then write, or back out at either step — can be exercised in a
-/// plain test with fakes, without a picker or a sheet on screen. The sheet
-/// widget is then only rows that call these.
-class AvatarPhotoActions {
-  const AvatarPhotoActions({
+/// plain test with fakes, without a picker or a sheet on screen. The avatar
+/// sheet and the form's Photo card are then only controls that call these,
+/// and they cannot disagree about what a write contains.
+class PersonPhotoActions {
+  const PersonPhotoActions({
     required this.relationships,
     required this.journal,
     required this.pickImage,
@@ -52,13 +54,13 @@ class AvatarPhotoActions {
   /// writes nothing"), so the freshly imported entry is deleted again — it
   /// exists only to be this person's photo, and nobody has seen it anywhere
   /// else.
-  Future<AvatarPhotoOutcome> choose(RelationshipEntry person) async {
+  Future<PersonPhotoOutcome> chooseAvatar(RelationshipEntry person) async {
     final imageId = await pickImage();
-    if (imageId == null) return AvatarPhotoOutcome.cancelled;
+    if (imageId == null) return PersonPhotoOutcome.cancelled;
     final crop = await chooseCrop(imageId, null);
     if (crop == null) {
       await journal.deleteJournalEntity(imageId);
-      return AvatarPhotoOutcome.cancelled;
+      return PersonPhotoOutcome.cancelled;
     }
     return _write(
       person,
@@ -68,11 +70,11 @@ class AvatarPhotoActions {
 
   /// Re-frame the photograph the person already has. The crop is a transform
   /// over the original, so only the three numbers change.
-  Future<AvatarPhotoOutcome> adjust(RelationshipEntry person) async {
+  Future<PersonPhotoOutcome> adjustAvatar(RelationshipEntry person) async {
     final imageId = person.data.avatarImageId;
-    if (imageId == null) return AvatarPhotoOutcome.cancelled;
+    if (imageId == null) return PersonPhotoOutcome.cancelled;
     final crop = await chooseCrop(imageId, person.data.avatarCrop);
-    if (crop == null) return AvatarPhotoOutcome.cancelled;
+    if (crop == null) return PersonPhotoOutcome.cancelled;
     return _write(person, person.data.copyWith(avatarCrop: crop));
   }
 
@@ -81,18 +83,45 @@ class AvatarPhotoActions {
   /// Clears the reference and its framing and leaves the image entry where
   /// it is — the task cover-art precedent (`setCoverArt(null)`): removing a
   /// picture from one place is not deleting it from the journal.
-  Future<AvatarPhotoOutcome> remove(RelationshipEntry person) => _write(
+  Future<PersonPhotoOutcome> removeAvatar(RelationshipEntry person) => _write(
     person,
     person.data.copyWith(avatarImageId: null, avatarCrop: null),
   );
 
-  Future<AvatarPhotoOutcome> _write(
+  /// Choose a wide picture for the person's page. It starts centred; the
+  /// form's Photo card lets the user drag it into place afterwards.
+  Future<PersonPhotoOutcome> chooseBanner(RelationshipEntry person) async {
+    final imageId = await pickImage();
+    if (imageId == null) return PersonPhotoOutcome.cancelled;
+    return _write(
+      person,
+      person.data.copyWith(bannerImageId: imageId, bannerCropX: 0.5),
+    );
+  }
+
+  /// Slide the banner left or right: [cropX] is the `BoxFit.cover`
+  /// alignment, `0` hugging the left edge and `1` the right. The repository
+  /// clamps it, so a gesture's rounding cannot store an edge the hero would
+  /// have to guess at.
+  Future<PersonPhotoOutcome> repositionBanner(
+    RelationshipEntry person,
+    double cropX,
+  ) => _write(person, person.data.copyWith(bannerCropX: cropX));
+
+  /// Take the banner off the person's page. Like [removeAvatar], the entry
+  /// stays in the journal; only the reference and its framing go.
+  Future<PersonPhotoOutcome> removeBanner(RelationshipEntry person) => _write(
+    person,
+    person.data.copyWith(bannerImageId: null, bannerCropX: 0.5),
+  );
+
+  Future<PersonPhotoOutcome> _write(
     RelationshipEntry person,
     RelationshipData data,
   ) async {
     final ok = await relationships.updateRelationship(
       person.copyWith(data: data),
     );
-    return ok ? AvatarPhotoOutcome.changed : AvatarPhotoOutcome.failed;
+    return ok ? PersonPhotoOutcome.changed : PersonPhotoOutcome.failed;
   }
 }

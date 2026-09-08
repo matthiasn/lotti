@@ -6666,10 +6666,17 @@
     }
   },
   "relationshipPayAttentionTo": "Pay attention to",
+  "relationshipPhotoAddBanner": "Add banner",
   "relationshipPhotoAdjustCrop": "Adjust crop",
+  "relationshipPhotoBanner": "Banner",
+  "relationshipPhotoCardTitle": "Photo",
+  "relationshipPhotoChange": "Change",
   "relationshipPhotoChoose": "Choose from library",
+  "relationshipPhotoDragToReposition": "Drag to reposition",
+  "relationshipPhotoFace": "Face",
   "relationshipPhotoPrivacy": "Only on your devices · the agent never sees it",
   "relationshipPhotoRemove": "Remove photo",
+  "relationshipPhotoRemoveAction": "Remove",
   "relationshipPhotoSaveFailed": "Could not save the photo",
   "relationshipPhotoSheetTitle": "Photo of {name}",
   "@relationshipPhotoSheetTitle": {

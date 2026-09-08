@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/relationships/ui/widgets/avatar_photo_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -44,7 +44,7 @@ void main() {
         ),
       );
 
-  AvatarPhotoActions actions() => AvatarPhotoActions(
+  PersonPhotoActions actions() => PersonPhotoActions(
     relationships: relationships,
     journal: journal,
     pickImage: () async {
@@ -85,7 +85,10 @@ void main() {
       () async {
         pickResult = null;
 
-        expect(await actions().choose(person()), AvatarPhotoOutcome.cancelled);
+        expect(
+          await actions().chooseAvatar(person()),
+          PersonPhotoOutcome.cancelled,
+        );
 
         expect(log, ['pick']);
         verifyNever(() => relationships.updateRelationship(any()));
@@ -97,7 +100,10 @@ void main() {
         'imported, so cancelling leaves nothing behind', () async {
       cropResult = null;
 
-      expect(await actions().choose(person()), AvatarPhotoOutcome.cancelled);
+      expect(
+        await actions().chooseAvatar(person()),
+        PersonPhotoOutcome.cancelled,
+      );
 
       expect(log, ['pick', 'crop image-new from null']);
       verify(() => journal.deleteJournalEntity('image-new')).called(1);
@@ -105,7 +111,10 @@ void main() {
     });
 
     test('committing writes the image and the framing together', () async {
-      expect(await actions().choose(person()), AvatarPhotoOutcome.changed);
+      expect(
+        await actions().chooseAvatar(person()),
+        PersonPhotoOutcome.changed,
+      );
 
       final data = written()!;
       expect(data.avatarImageId, 'image-new');
@@ -115,7 +124,9 @@ void main() {
 
     test('the crop surface starts from the default framing for a new photo, '
         'even when the person had one before', () async {
-      await actions().choose(person(avatarImageId: 'old', avatarCrop: crop));
+      await actions().chooseAvatar(
+        person(avatarImageId: 'old', avatarCrop: crop),
+      );
 
       expect(
         log.last,
@@ -129,7 +140,7 @@ void main() {
         () => relationships.updateRelationship(any()),
       ).thenAnswer((_) async => false);
 
-      expect(await actions().choose(person()), AvatarPhotoOutcome.failed);
+      expect(await actions().chooseAvatar(person()), PersonPhotoOutcome.failed);
     });
   });
 
@@ -137,14 +148,17 @@ void main() {
     test(
       'a person with no photo has nothing to adjust: nothing opens',
       () async {
-        expect(await actions().adjust(person()), AvatarPhotoOutcome.cancelled);
+        expect(
+          await actions().adjustAvatar(person()),
+          PersonPhotoOutcome.cancelled,
+        );
         expect(log, isEmpty);
       },
     );
 
     test('opens the crop surface over the current photo, starting from its '
         'current framing', () async {
-      await actions().adjust(
+      await actions().adjustAvatar(
         person(avatarImageId: 'image-1', avatarCrop: crop),
       );
 
@@ -155,20 +169,20 @@ void main() {
       cropResult = null;
 
       expect(
-        await actions().adjust(
+        await actions().adjustAvatar(
           person(avatarImageId: 'image-1', avatarCrop: crop),
         ),
-        AvatarPhotoOutcome.cancelled,
+        PersonPhotoOutcome.cancelled,
       );
       verifyNever(() => relationships.updateRelationship(any()));
     });
 
     test('committing writes only the framing and keeps the image', () async {
       expect(
-        await actions().adjust(
+        await actions().adjustAvatar(
           person(avatarImageId: 'image-1', avatarCrop: crop),
         ),
-        AvatarPhotoOutcome.changed,
+        PersonPhotoOutcome.changed,
       );
 
       final data = written()!;
@@ -181,10 +195,10 @@ void main() {
     test('clears the image and its framing, and leaves the entry alone — '
         'the cover-art precedent', () async {
       expect(
-        await actions().remove(
+        await actions().removeAvatar(
           person(avatarImageId: 'image-1', avatarCrop: crop),
         ),
-        AvatarPhotoOutcome.changed,
+        PersonPhotoOutcome.changed,
       );
 
       final data = written()!;
@@ -200,8 +214,85 @@ void main() {
       ).thenAnswer((_) async => false);
 
       expect(
-        await actions().remove(person(avatarImageId: 'image-1')),
-        AvatarPhotoOutcome.failed,
+        await actions().removeAvatar(person(avatarImageId: 'image-1')),
+        PersonPhotoOutcome.failed,
+      );
+    });
+  });
+
+  group('banner', () {
+    test(
+      'choosing writes the picture centred, and opens no crop surface',
+      () async {
+        expect(
+          await actions().chooseBanner(person()),
+          PersonPhotoOutcome.changed,
+        );
+
+        expect(log, [
+          'pick',
+        ], reason: 'a banner is framed by dragging, not cropped');
+        final data = written()!;
+        expect(data.bannerImageId, 'image-new');
+        expect(data.bannerCropX, 0.5);
+      },
+    );
+
+    test('backing out of the picker writes nothing', () async {
+      pickResult = null;
+      expect(
+        await actions().chooseBanner(person()),
+        PersonPhotoOutcome.cancelled,
+      );
+      verifyNever(() => relationships.updateRelationship(any()));
+    });
+
+    test('repositioning writes only the alignment', () async {
+      final withBanner = person().copyWith(
+        data: person().data.copyWith(
+          bannerImageId: 'image-1',
+          bannerCropX: 0.5,
+        ),
+      );
+
+      expect(
+        await actions().repositionBanner(withBanner, 0.2),
+        PersonPhotoOutcome.changed,
+      );
+
+      final data = written()!;
+      expect(data.bannerImageId, 'image-1');
+      expect(data.bannerCropX, 0.2);
+      expect(log, isEmpty);
+    });
+
+    test('removing clears the picture and resets the alignment, and leaves '
+        'the entry alone', () async {
+      final withBanner = person().copyWith(
+        data: person().data.copyWith(
+          bannerImageId: 'image-1',
+          bannerCropX: 0.1,
+        ),
+      );
+
+      expect(
+        await actions().removeBanner(withBanner),
+        PersonPhotoOutcome.changed,
+      );
+
+      final data = written()!;
+      expect(data.bannerImageId, isNull);
+      expect(data.bannerCropX, 0.5);
+      verifyNever(() => journal.deleteJournalEntity(any()));
+    });
+
+    test('a refused write is reported as failed', () async {
+      when(
+        () => relationships.updateRelationship(any()),
+      ).thenAnswer((_) async => false);
+      expect(
+        await actions().chooseBanner(person()),
+        PersonPhotoOutcome.failed,
       );
     });
   });

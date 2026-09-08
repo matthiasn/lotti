@@ -11590,10 +11590,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipPayAttentionTo => 'Prestar atención a';
 
   @override
+  String get relationshipPhotoAddBanner => 'Añadir banner';
+
+  @override
   String get relationshipPhotoAdjustCrop => 'Ajustar el recorte';
 
   @override
+  String get relationshipPhotoBanner => 'Banner';
+
+  @override
+  String get relationshipPhotoCardTitle => 'Foto';
+
+  @override
+  String get relationshipPhotoChange => 'Cambiar';
+
+  @override
   String get relationshipPhotoChoose => 'Elegir de la biblioteca';
+
+  @override
+  String get relationshipPhotoDragToReposition => 'Arrastra para recolocar';
+
+  @override
+  String get relationshipPhotoFace => 'Cara';
 
   @override
   String get relationshipPhotoPrivacy =>
@@ -11601,6 +11619,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipPhotoRemove => 'Quitar la foto';
+
+  @override
+  String get relationshipPhotoRemoveAction => 'Quitar';
 
   @override
   String get relationshipPhotoSaveFailed => 'No se pudo guardar la foto';

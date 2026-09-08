@@ -5,8 +5,8 @@ import 'package:lotti/features/design_system/components/action_modal/ds_action_m
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/features/relationships/ui/widgets/avatar_photo_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -44,7 +44,7 @@ void main() {
   /// Real flows over fake surfaces: the picker "returns" a fresh id and the
   /// crop surface "commits" a framing, so a row tap runs end to end without
   /// a picker or a sheet.
-  AvatarPhotoActions fakeActions() => AvatarPhotoActions(
+  PersonPhotoActions fakeActions() => PersonPhotoActions(
     relationships: relationships,
     journal: journal,
     pickImage: () async {
@@ -68,18 +68,18 @@ void main() {
 
   /// Opens the sheet from a host button the way the page does, and hands back
   /// the future the sheet resolves.
-  Future<Future<AvatarPhotoOutcome?>> open(
+  Future<Future<PersonPhotoOutcome?>> open(
     WidgetTester tester,
     RelationshipEntry entry,
   ) async {
-    late Future<AvatarPhotoOutcome?> result;
+    late Future<PersonPhotoOutcome?> result;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
           body: Builder(
             builder: (context) => TextButton(
               onPressed: () {
-                result = DsActionModal.show<AvatarPhotoOutcome>(
+                result = DsActionModal.show<PersonPhotoOutcome>(
                   context: context,
                   title: 'Photo of Pip',
                   builder: (_) => PersonAvatarSheet(
@@ -133,7 +133,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('person-photo-choose')));
     await tester.pumpAndSettle();
 
-    expect(await result, AvatarPhotoOutcome.changed);
+    expect(await result, PersonPhotoOutcome.changed);
     expect(log, ['pick', 'crop image-new']);
     final written =
         verify(
@@ -152,7 +152,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('person-photo-remove')));
     await tester.pumpAndSettle();
 
-    expect(await result, AvatarPhotoOutcome.changed);
+    expect(await result, PersonPhotoOutcome.changed);
     expect(log, isEmpty, reason: 'removing opens nothing');
     final written =
         verify(
@@ -173,7 +173,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('person-photo-remove')));
     await tester.pumpAndSettle();
 
-    expect(await result, AvatarPhotoOutcome.failed);
+    expect(await result, PersonPhotoOutcome.failed);
   });
 
   group('showPersonAvatarSheet', () {
@@ -182,7 +182,7 @@ void main() {
       when(
         () => relationships.updateRelationship(any()),
       ).thenAnswer((_) async => false);
-      late Future<AvatarPhotoOutcome?> result;
+      late Future<PersonPhotoOutcome?> result;
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(
@@ -212,13 +212,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('person-photo-remove')));
       await tester.pumpAndSettle();
 
-      expect(await result, AvatarPhotoOutcome.failed);
+      expect(await result, PersonPhotoOutcome.failed);
       expect(find.text('Photo of Pip'), findsNothing);
       expect(find.text('Could not save the photo'), findsOneWidget);
     });
 
     testWidgets('backing out says nothing', (tester) async {
-      late Future<AvatarPhotoOutcome?> result;
+      late Future<PersonPhotoOutcome?> result;
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(

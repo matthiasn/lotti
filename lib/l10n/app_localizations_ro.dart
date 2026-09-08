@@ -11661,10 +11661,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipPayAttentionTo => 'Fiți atent la';
 
   @override
+  String get relationshipPhotoAddBanner => 'Adăugați un banner';
+
+  @override
   String get relationshipPhotoAdjustCrop => 'Ajustați decuparea';
 
   @override
+  String get relationshipPhotoBanner => 'Banner';
+
+  @override
+  String get relationshipPhotoCardTitle => 'Fotografie';
+
+  @override
+  String get relationshipPhotoChange => 'Schimbați';
+
+  @override
   String get relationshipPhotoChoose => 'Alegeți din bibliotecă';
+
+  @override
+  String get relationshipPhotoDragToReposition =>
+      'Trageți pentru a repoziționa';
+
+  @override
+  String get relationshipPhotoFace => 'Chip';
 
   @override
   String get relationshipPhotoPrivacy =>
@@ -11672,6 +11691,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipPhotoRemove => 'Eliminați fotografia';
+
+  @override
+  String get relationshipPhotoRemoveAction => 'Eliminați';
 
   @override
   String get relationshipPhotoSaveFailed => 'Fotografia nu a putut fi salvată';
