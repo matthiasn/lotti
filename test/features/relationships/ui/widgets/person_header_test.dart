@@ -138,6 +138,7 @@ void main() {
       Size size = const Size(400, 800),
       bool tall = false,
       List<Override> overrides = const [],
+      VoidCallback? onAvatarTap,
     }) async {
       setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
@@ -151,6 +152,7 @@ void main() {
                   onBack: () => backs++,
                   onTalkToAgent: () => chats++,
                   onDelete: () async => deletes++,
+                  onAvatarTap: onAvatarTap,
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(height: tall ? 3000 : 100),
@@ -285,6 +287,57 @@ void main() {
         findsOneWidget,
         reason: 'an id the device cannot resolve yet still earns the ring',
       );
+    });
+
+    testWidgets('the avatar is a button while the band is open, and stops '
+        'being one once the hero has folded', (tester) async {
+      var taps = 0;
+      await pump(tester, tall: true, onAvatarTap: () => taps++);
+      final avatar = find.byKey(const ValueKey('person-hero-avatar-tap'));
+
+      await tester.tap(avatar);
+      expect(taps, 1);
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+      await tester.pumpAndSettle();
+      // The faded avatar still exists but must not catch a tap meant for the
+      // content under it.
+      await tester.tap(avatar, warnIfMissed: false);
+      expect(taps, 1);
+    });
+
+    testWidgets('every pixel of the avatar is tappable — including the half '
+        'below the wash, which a sliver could not hit-test if it hung past '
+        'the hero', (tester) async {
+      var taps = 0;
+      await pump(tester, tall: true, onAvatarTap: () => taps++);
+      final avatar = find.byKey(const ValueKey('person-hero-avatar-tap'));
+      final wash = find.byKey(const ValueKey('person-hero-wash'));
+
+      // Just inside the avatar's bottom edge, below the wash.
+      final nearBottom = tester.getBottomLeft(avatar) + const Offset(20, -1);
+      expect(nearBottom.dy, greaterThan(tester.getBottomLeft(wash).dy));
+      await tester.tapAt(nearBottom);
+      expect(taps, 1);
+    });
+
+    testWidgets('the avatar names the sheet it opens', (tester) async {
+      await pump(tester, onAvatarTap: () {});
+      final semantics = tester.getSemantics(
+        find.byKey(const ValueKey('person-hero-avatar-tap')),
+      );
+      expect(semantics.label, 'Photo of Commander Pip Frostbeak');
+      expect(semantics.flagsCollection.isButton, isTrue);
+    });
+
+    testWidgets('without a handler the avatar is inert, not a dead button', (
+      tester,
+    ) async {
+      await pump(tester);
+      final semantics = tester.getSemantics(
+        find.byKey(const ValueKey('person-hero-avatar-tap')),
+      );
+      expect(semantics.flagsCollection.isButton, isFalse);
     });
 
     testWidgets('the menu offers delete, and delete calls back', (

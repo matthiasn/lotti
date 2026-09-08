@@ -2651,6 +2651,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingStop => 'Opriți';
 
   @override
+  String get avatarCropHint =>
+      'Trageți pentru a muta · apropiați degetele pentru zoom';
+
+  @override
+  String get avatarCropPreviewLabel => 'Așa va arăta în listă';
+
+  @override
+  String get avatarCropTitle => 'Alegeți fața';
+
+  @override
+  String get avatarCropUse => 'Folosiți fotografia';
+
+  @override
   String backfillAdvancedRecoveryActions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11646,6 +11659,27 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipPayAttentionTo => 'Fiți atent la';
+
+  @override
+  String get relationshipPhotoAdjustCrop => 'Ajustați decuparea';
+
+  @override
+  String get relationshipPhotoChoose => 'Alegeți din bibliotecă';
+
+  @override
+  String get relationshipPhotoPrivacy =>
+      'Doar pe dispozitivele dvs. · agentul nu o vede niciodată';
+
+  @override
+  String get relationshipPhotoRemove => 'Eliminați fotografia';
+
+  @override
+  String get relationshipPhotoSaveFailed => 'Fotografia nu a putut fi salvată';
+
+  @override
+  String relationshipPhotoSheetTitle(String name) {
+    return 'Fotografie – $name';
+  }
 
   @override
   String get relationshipPostCallConfirm => 'Notați check-in';

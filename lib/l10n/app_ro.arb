@@ -1170,6 +1170,10 @@
   "audioRecordingResume": "Reluare",
   "audioRecordings": "Înregistrări audio",
   "audioRecordingStop": "Opriți",
+  "avatarCropHint": "Trageți pentru a muta · apropiați degetele pentru zoom",
+  "avatarCropPreviewLabel": "Așa va arăta în listă",
+  "avatarCropTitle": "Alegeți fața",
+  "avatarCropUse": "Folosiți fotografia",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 acțiune} other{{count} acțiuni}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -4446,6 +4450,12 @@
     }
   },
   "relationshipPayAttentionTo": "Fiți atent la",
+  "relationshipPhotoAdjustCrop": "Ajustați decuparea",
+  "relationshipPhotoChoose": "Alegeți din bibliotecă",
+  "relationshipPhotoPrivacy": "Doar pe dispozitivele dvs. · agentul nu o vede niciodată",
+  "relationshipPhotoRemove": "Eliminați fotografia",
+  "relationshipPhotoSaveFailed": "Fotografia nu a putut fi salvată",
+  "relationshipPhotoSheetTitle": "Fotografie – {name}",
   "relationshipPostCallConfirm": "Notați check-in",
   "relationshipPostCallDismiss": "Nu acum",
   "relationshipPostCallMeta": "început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",

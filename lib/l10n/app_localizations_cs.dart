@@ -2638,6 +2638,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingStop => 'Stop';
 
   @override
+  String get avatarCropHint => 'Tažením posuneš · stažením přiblížíš';
+
+  @override
+  String get avatarCropPreviewLabel => 'Takhle to bude vypadat v seznamu';
+
+  @override
+  String get avatarCropTitle => 'Vyber obličej';
+
+  @override
+  String get avatarCropUse => 'Použít fotku';
+
+  @override
   String backfillAdvancedRecoveryActions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11584,6 +11596,27 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipPayAttentionTo => 'Dávej pozor na';
+
+  @override
+  String get relationshipPhotoAdjustCrop => 'Upravit ořez';
+
+  @override
+  String get relationshipPhotoChoose => 'Vybrat z knihovny';
+
+  @override
+  String get relationshipPhotoPrivacy =>
+      'Jen na tvých zařízeních · agent ji nikdy nevidí';
+
+  @override
+  String get relationshipPhotoRemove => 'Odebrat fotku';
+
+  @override
+  String get relationshipPhotoSaveFailed => 'Fotku se nepodařilo uložit';
+
+  @override
+  String relationshipPhotoSheetTitle(String name) {
+    return 'Fotka – $name';
+  }
 
   @override
   String get relationshipPostCallConfirm => 'Zapsat check-in';

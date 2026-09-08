@@ -28,6 +28,14 @@ sources:
     resource: ../../lib/widgets/media/journal_image_resolver.dart
     title: JournalImageResolver — file, stand-in or nothing, and when that changes
     last_modified: 2026-09-08
+  - id: avatar-actions
+    resource: ../../lib/features/relationships/ui/widgets/avatar_photo_actions.dart
+    title: AvatarPhotoActions — choose, re-crop, remove, with the surfaces injected
+    last_modified: 2026-09-08
+  - id: crop-geometry
+    resource: ../../lib/features/relationships/ui/shared/avatar_crop_geometry.dart
+    title: AvatarCropGeometry — the renderer's model, for the surface that edits it
+    last_modified: 2026-09-08
   - id: list-model
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
     title: The People list's bands, pills and summary — pure logic
@@ -195,9 +203,29 @@ through this one widget, so all three got the photograph at once. The ring is
 `spacing.step1` at every size: the design's 3 px at 80 would have needed a
 token spacing does not have.
 
+**Choosing the avatar.** Tapping the hero avatar (only while the band is
+open — a folded hero's faded avatar takes no taps) opens the avatar sheet:
+the privacy line, *Choose from library*, and once there is a photo *Adjust
+crop* and *Remove photo*. The flows live in `AvatarPhotoActions`, whose only
+dependencies are the two repositories and the two surfaces it opens, handed
+in as functions — so pick → crop → write, and backing out at either step, is
+a plain unit test. Three rules are load-bearing:
+
+- **Cancelling writes nothing, even after the picker ran.** The picker has to
+  import the picture before the crop surface can show it, so an entry already
+  exists when the user sees *Use photo*; cancelling there deletes that entry
+  again. `AvatarPhotoActions.choose` owns this.
+- **The crop surface commits nothing.** `showAvatarCropSheet` resolves to the
+  framing or null; the caller writes. Its preview *is* a `PersonaAvatar`, so
+  the preview and the list cannot disagree, and its gesture arithmetic is
+  `AvatarCropGeometry` — the renderer's model written out — whose "the circle
+  is never empty" invariant is a property test.
+- **Removing clears the reference and keeps the entry**, the task cover-art
+  precedent (`setCoverArt(null)`): taking a picture off a person is not
+  deleting it from the journal.
+
 **The banner does not render yet**: the person hero is still the flat teal
-wash. And there is no way to *choose* either image in the app yet — until the
-picking surfaces land, both fields stay null in practice.
+wash, and nothing chooses a banner until the form's Photo card lands.
 
 The field they replaced, `coverArtId`, was declared with the rest of the model
 and never written by anything, so it was **removed rather than migrated** — no

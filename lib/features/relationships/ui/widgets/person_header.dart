@@ -28,17 +28,21 @@ import 'package:material_ui/material_ui.dart';
 /// reachable while the page scrolls; once the wash band has folded away
 /// the bar names the person the hero itself leaves to the header block.
 ///
-/// A persistent header of its own rather than a `SliverAppBar`: the avatar
-/// hangs below the header's extent, over the block that follows, and every
-/// layer of an app bar (its stack, its flexible space) clips that overflow.
-/// Slivers paint back to front, so the header — earlier in the list —
-/// paints its overhanging avatar over the content scrolling under it.
+/// A persistent header of its own rather than a `SliverAppBar`, for the
+/// avatar's overhang. The half of it below the wash is *part of the hero's
+/// extent*, left transparent, so the whole avatar sits inside the sliver —
+/// a sliver only hit-tests within its own extent, and an avatar hanging past
+/// it would be a button whose lower half does nothing. An app bar paints its
+/// background over its whole extent and could not leave that strip clear.
+/// Slivers paint back to front, so the header — earlier in the list — still
+/// paints the avatar over the content scrolling under it.
 class PersonHeroAppBar extends StatelessWidget {
   const PersonHeroAppBar({
     required this.relationship,
     required this.onBack,
     required this.onTalkToAgent,
     required this.onDelete,
+    this.onAvatarTap,
     this.contentInset = 0,
     super.key,
   });
@@ -47,6 +51,12 @@ class PersonHeroAppBar extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onTalkToAgent;
   final Future<void> Function() onDelete;
+
+  /// Tapping the avatar — the door to the person's photo (design 2026-09-08
+  /// turn 2, the avatar tap sheet). Only while the band is open: once the
+  /// hero has folded, the avatar has faded and must not catch taps meant
+  /// for the content scrolling under it.
+  final VoidCallback? onAvatarTap;
 
   /// The page's horizontal content inset, so the avatar lines up with the
   /// header block's left edge — the gutter on a phone, the centred column's
@@ -160,6 +170,10 @@ class PersonHeroAppBar extends StatelessWidget {
         ),
         avatarSize: avatarSize(tokens),
         avatarInset: contentInset,
+        avatarSemanticsLabel: messages.relationshipPhotoSheetTitle(
+          relationship.data.title,
+        ),
+        onAvatarTap: onAvatarTap,
         leading: leading,
         actions: actions,
       ),
@@ -183,6 +197,8 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
     required this.avatar,
     required this.avatarSize,
     required this.avatarInset,
+    required this.avatarSemanticsLabel,
+    required this.onAvatarTap,
     required this.leading,
     required this.actions,
   });
@@ -200,14 +216,23 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   final Widget avatar;
   final double avatarSize;
   final double avatarInset;
+  final String avatarSemanticsLabel;
+  final VoidCallback? onAvatarTap;
   final Widget leading;
   final Widget actions;
 
   @override
   double get minExtent => topPadding + kToolbarHeight;
 
+  /// The half of the avatar below the wash, carried as transparent extent so
+  /// the avatar is whole inside the sliver.
+  double get overhang => avatarSize / 2;
+
+  /// Everything that folds: the band and the overhang under it.
+  double get foldable => bandExtent + overhang;
+
   @override
-  double get maxExtent => minExtent + bandExtent;
+  double get maxExtent => minExtent + foldable;
 
   @override
   Widget build(
@@ -215,14 +240,27 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final collapsed = shrinkOffset >= bandExtent - collapseSlack;
-    final bandOpen = 1 - (shrinkOffset / bandExtent).clamp(0.0, 1.0);
+    final collapsed = shrinkOffset >= foldable - collapseSlack;
+    final bandOpen = 1 - (shrinkOffset / foldable).clamp(0.0, 1.0);
+    // The clear strip under the wash closes before the band itself folds,
+    // so the wash keeps its height for the first half-diameter of scroll
+    // while the avatar tucks up into it.
+    final overhangOpen = (overhang - shrinkOffset).clamp(0.0, overhang);
 
     return Stack(
       clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
-        ColoredBox(key: const ValueKey('person-hero-wash'), color: wash),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: overhangOpen,
+          child: ColoredBox(
+            key: const ValueKey('person-hero-wash'),
+            color: wash,
+          ),
+        ),
         Positioned(
           top: topPadding,
           left: gutter,
@@ -255,15 +293,31 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
           ),
         ),
         // Fades with the band so it never sits on the collapsed toolbar's
-        // edge, over whatever has scrolled under it.
+        // edge, over whatever has scrolled under it — and stops taking taps
+        // at the same moment, so a faded avatar cannot intercept the content.
+        // Anchored to the hero's own bottom: at rest that is half a diameter
+        // below the wash, and every pixel of it is inside the sliver.
         Positioned(
           left: avatarInset,
-          bottom: -avatarSize / 2,
+          bottom: 0,
           child: IgnorePointer(
+            ignoring: collapsed || onAvatarTap == null,
             child: Opacity(
               key: const ValueKey('person-hero-avatar'),
               opacity: bandOpen,
-              child: avatar,
+              // The initial inside the circle is decoration to a screen
+              // reader; the label says what the tap opens.
+              child: Semantics(
+                button: onAvatarTap != null,
+                label: avatarSemanticsLabel,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  key: const ValueKey('person-hero-avatar-tap'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onAvatarTap,
+                  child: avatar,
+                ),
+              ),
             ),
           ),
         ),
@@ -281,6 +335,8 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
       avatarSize != oldDelegate.avatarSize ||
       avatarInset != oldDelegate.avatarInset ||
       avatar != oldDelegate.avatar ||
+      avatarSemanticsLabel != oldDelegate.avatarSemanticsLabel ||
+      onAvatarTap != oldDelegate.onAvatarTap ||
       leading != oldDelegate.leading ||
       actions != oldDelegate.actions;
 }
@@ -429,11 +485,9 @@ class PersonHeaderBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Room for the half of the avatar that hangs off the hero.
-        SizedBox(
-          height:
-              PersonHeroAppBar.avatarSize(tokens) / 2 + tokens.spacing.step3,
-        ),
+        // The hero's own extent already covers the half of the avatar
+        // below the wash; this is only the breathing room under it.
+        SizedBox(height: tokens.spacing.step3),
         if (eyebrow.isNotEmpty) ...[
           Text(
             eyebrow,

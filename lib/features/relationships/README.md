@@ -14,8 +14,12 @@ Desktop uses a list/detail split; phones open a dedicated person page.
 The person page holds a header with category, importance, name, nickname
 and recent contact, followed by the agent briefing, *Next time*, check-ins,
 contact channels and linked tasks. The header opens the agent conversation
-and person editor. The bottom action bar offers a check-in, voice capture
-and an available contact action.
+and person editor, and tapping the avatar opens the person's photo: choose
+one from the library and pick which part of it is the face, adjust that
+later, or remove it. The photo shows wherever the person does, inside their
+usual colour; it stays on the user's devices and never enters agent context.
+The bottom action bar offers a check-in, voice capture and an available
+contact action.
 
 ## Briefings and suggestions
 

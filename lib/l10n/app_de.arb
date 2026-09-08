@@ -1170,6 +1170,10 @@
   "audioRecordingResume": "Fortsetzen",
   "audioRecordings": "Audioaufnahmen",
   "audioRecordingStop": "Stopp",
+  "avatarCropHint": "Ziehen zum Verschieben · Zusammenziehen zum Zoomen",
+  "avatarCropPreviewLabel": "So sieht es in der Liste aus",
+  "avatarCropTitle": "Gesicht wählen",
+  "avatarCropUse": "Foto verwenden",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 Aktion} other{{count} Aktionen}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -4446,6 +4450,12 @@
     }
   },
   "relationshipPayAttentionTo": "Darauf achten",
+  "relationshipPhotoAdjustCrop": "Ausschnitt anpassen",
+  "relationshipPhotoChoose": "Aus der Mediathek wählen",
+  "relationshipPhotoPrivacy": "Nur auf deinen Geräten · der Agent sieht es nie",
+  "relationshipPhotoRemove": "Foto entfernen",
+  "relationshipPhotoSaveFailed": "Foto konnte nicht gespeichert werden",
+  "relationshipPhotoSheetTitle": "Foto von {name}",
   "relationshipPostCallConfirm": "Check-in festhalten",
   "relationshipPostCallDismiss": "Jetzt nicht",
   "relationshipPostCallMeta": "begonnen um {time} · {minutes, plural, =0{unter einer Minute} =1{etwa 1 Min.} other{etwa {minutes} Min.}}",

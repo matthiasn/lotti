@@ -61,8 +61,10 @@ import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
@@ -1298,6 +1300,94 @@ void main() {
       await captureScreenshot(
         tester,
         'person_chat_${viewport}_dark',
+        subdir: _subdir,
+      );
+    });
+  }
+
+  // -----------------------------------------------------------------
+  // The avatar's own surfaces: the sheet under it, and the crop.
+  // -----------------------------------------------------------------
+  for (final (device, viewport) in [
+    (proDevice, 'mobile'),
+    (desktopDevice, 'desktop'),
+  ]) {
+    testWidgets('$viewport person photo sheet — dark', (tester) async {
+      await pumpSurface(
+        tester,
+        home: _ModalHost(
+          open: (context) =>
+              showPersonAvatarSheet(context: context, relationship: pip),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: personOverrides(),
+      );
+      await openModal(tester);
+
+      expect(find.text('Photo of Commander Pip Frostbeak'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('person-photo-remove')),
+        findsOneWidget,
+        reason: 'Pip has a photo, so the sheet offers all three rows',
+      );
+      await captureScreenshot(
+        tester,
+        'person_photo_sheet_${viewport}_dark',
+        subdir: _subdir,
+      );
+    });
+
+    testWidgets('$viewport avatar crop — dark', (tester) async {
+      Future<void> open() => openModal(tester);
+      await pumpSurface(
+        tester,
+        home: _ModalHost(
+          open: (context) => showAvatarCropSheet(
+            context: context,
+            relationship: pip,
+            imageId: _pipPhoto.id,
+            initial: pip.data.avatarCrop,
+          ),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: personOverrides(),
+      );
+
+      // The surface decodes the picture at its own viewport size, which is
+      // only known once laid out. Open once to measure, close, warm that
+      // exact key on the real event loop, then open again to capture — the
+      // same before-mount rule the avatars follow, applied after a dry run.
+      await open();
+      final viewportSide = tester
+          .getSize(find.byKey(const ValueKey('avatar-crop-viewport')))
+          .width;
+      await tester.tap(find.byKey(const ValueKey('avatar-crop-cancel')));
+      await tester.pumpAndSettle();
+      final key = cappedFileImage(
+        getFullImagePath(_pipPhoto),
+        size: viewportSide,
+        devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
+      );
+      final context = tester.element(find.byKey(const ValueKey('open-modal')));
+      await tester.runAsync(() async {
+        // The dry run left a completer bound to the fake clock under this
+        // key; evict it so the precache starts a fresh one here.
+        await key.evict();
+        await precacheImage(key, context);
+      });
+      await open();
+
+      expect(find.text('Choose the face'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('avatar-crop-preview')),
+        findsOneWidget,
+        reason: 'the live preview at list size is the commitment moment',
+      );
+      await captureScreenshot(
+        tester,
+        'avatar_crop_${viewport}_dark',
         subdir: _subdir,
       );
     });

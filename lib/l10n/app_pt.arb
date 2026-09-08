@@ -1352,6 +1352,10 @@
   "audioRecordingResume": "Retomar",
   "audioRecordings": "Gravações de áudio",
   "audioRecordingStop": "Parar",
+  "avatarCropHint": "Arrasta para mover · belisca para ampliar",
+  "avatarCropPreviewLabel": "Assim vai ficar na lista",
+  "avatarCropTitle": "Escolhe o rosto",
+  "avatarCropUse": "Usar a foto",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 ação} other{{count} ações}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -4948,6 +4952,12 @@
     }
   },
   "relationshipPayAttentionTo": "Prestar atenção a",
+  "relationshipPhotoAdjustCrop": "Ajustar o recorte",
+  "relationshipPhotoChoose": "Escolher da biblioteca",
+  "relationshipPhotoPrivacy": "Só nos teus dispositivos · o agente nunca a vê",
+  "relationshipPhotoRemove": "Remover a foto",
+  "relationshipPhotoSaveFailed": "Não foi possível guardar a foto",
+  "relationshipPhotoSheetTitle": "Foto de {name}",
   "relationshipPostCallConfirm": "Registar check-in",
   "relationshipPostCallDismiss": "Agora não",
   "relationshipPostCallMeta": "começou às {time} · {minutes, plural, =0{menos de um minuto} =1{cerca de 1 min} other{cerca de {minutes} min}}",

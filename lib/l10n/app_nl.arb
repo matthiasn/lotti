@@ -1352,6 +1352,10 @@
   "audioRecordingResume": "Hervatten",
   "audioRecordings": "Audio-opnames",
   "audioRecordingStop": "Stoppen",
+  "avatarCropHint": "Sleep om te verplaatsen · knijp om te zoomen",
+  "avatarCropPreviewLabel": "Zo ziet het eruit in de lijst",
+  "avatarCropTitle": "Kies het gezicht",
+  "avatarCropUse": "Foto gebruiken",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 actie} other{{count} acties}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -4948,6 +4952,12 @@
     }
   },
   "relationshipPayAttentionTo": "Let op",
+  "relationshipPhotoAdjustCrop": "Uitsnede aanpassen",
+  "relationshipPhotoChoose": "Kiezen uit bibliotheek",
+  "relationshipPhotoPrivacy": "Alleen op je apparaten · de agent ziet hem nooit",
+  "relationshipPhotoRemove": "Foto verwijderen",
+  "relationshipPhotoSaveFailed": "Kon de foto niet opslaan",
+  "relationshipPhotoSheetTitle": "Foto van {name}",
   "relationshipPostCallConfirm": "Check-in vastleggen",
   "relationshipPostCallDismiss": "Niet nu",
   "relationshipPostCallMeta": "begonnen om {time} · {minutes, plural, =0{minder dan een minuut} =1{ongeveer 1 min} other{ongeveer {minutes} min}}",

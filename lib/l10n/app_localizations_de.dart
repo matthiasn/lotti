@@ -2634,6 +2634,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get audioRecordingStop => 'Stopp';
 
   @override
+  String get avatarCropHint =>
+      'Ziehen zum Verschieben · Zusammenziehen zum Zoomen';
+
+  @override
+  String get avatarCropPreviewLabel => 'So sieht es in der Liste aus';
+
+  @override
+  String get avatarCropTitle => 'Gesicht wählen';
+
+  @override
+  String get avatarCropUse => 'Foto verwenden';
+
+  @override
   String backfillAdvancedRecoveryActions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11480,6 +11493,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipPayAttentionTo => 'Darauf achten';
+
+  @override
+  String get relationshipPhotoAdjustCrop => 'Ausschnitt anpassen';
+
+  @override
+  String get relationshipPhotoChoose => 'Aus der Mediathek wählen';
+
+  @override
+  String get relationshipPhotoPrivacy =>
+      'Nur auf deinen Geräten · der Agent sieht es nie';
+
+  @override
+  String get relationshipPhotoRemove => 'Foto entfernen';
+
+  @override
+  String get relationshipPhotoSaveFailed =>
+      'Foto konnte nicht gespeichert werden';
+
+  @override
+  String relationshipPhotoSheetTitle(String name) {
+    return 'Foto von $name';
+  }
 
   @override
   String get relationshipPostCallConfirm => 'Check-in festhalten';

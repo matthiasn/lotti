@@ -133,7 +133,7 @@ class PersonaAvatar extends StatelessWidget {
                 fontSize: size * 0.42,
               );
             }
-            return _CroppedPicture(
+            return AvatarCropPicture(
               resolved: resolved,
               crop: crop ?? const AvatarCrop(),
               size: inner,
@@ -189,17 +189,23 @@ class _TintedInitial extends StatelessWidget {
   }
 }
 
-/// The photograph — or its stand-in — framed by an [AvatarCrop].
+/// The photograph — or its stand-in — framed by an [AvatarCrop], in a box
+/// of [size]: the one composition every avatar and the crop surface draw.
 ///
 /// The crop is applied as `BoxFit.cover` alignment plus a scale about the
 /// same point, which is what keeps the circle full for any stored value:
 /// a covering image scaled up about a point inside the box still covers the
 /// box, so no combination of alignment and zoom in range can show an edge.
-class _CroppedPicture extends StatelessWidget {
-  const _CroppedPicture({
+/// `AvatarCropGeometry` is this arithmetic written out, for the surface
+/// that edits the crop; the two must agree, and sharing the widget is what
+/// makes the surface's big square and the list's 40 px circle the same
+/// framing.
+class AvatarCropPicture extends StatelessWidget {
+  const AvatarCropPicture({
     required this.resolved,
     required this.crop,
     required this.size,
+    super.key,
   });
 
   final ResolvedJournalImage resolved;

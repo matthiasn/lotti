@@ -226,6 +226,28 @@ void main() {
   DsPill pill(WidgetTester tester, String key) =>
       tester.widget<DsPill>(find.byKey(ValueKey(key)));
 
+  testWidgets('tapping the hero avatar opens the photo sheet', (tester) async {
+    when(
+      () => mockRepository.getRelationshipById('rel-1'),
+    ).thenAnswer((_) async => relationship());
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await pumpPage(tester);
+    await tester.tap(find.byKey(const ValueKey('person-hero-avatar-tap')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Photo of Anna'), findsOneWidget);
+    expect(find.byKey(const ValueKey('person-photo-privacy')), findsOneWidget);
+    expect(find.byKey(const ValueKey('person-photo-choose')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('person-photo-remove')),
+      findsNothing,
+      reason: 'a person without a photo has nothing to remove',
+    );
+  });
+
   testWidgets(
     'renders the header block (eyebrow, name, one-liner, pills) and the '
     'check-in rows',
