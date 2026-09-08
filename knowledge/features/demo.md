@@ -210,10 +210,11 @@ reads the generated map in
 keyed by the object's `sha256` so a replaced object loses its stale hash by
 itself, and the seeders copy it into `ImageData.thumbHash` — a nullable
 rendering hint that older entities and user photos simply lack. The widgets
-therefore never see the catalog: `CoverArtThumbnail`, `CoverArtBackground` and
-`CardImageWidget` hand `ThumbHash.tryParse(entry.data.thumbHash)` (a corrupt
-hash is no hash) and the file's `ImageProvider` — null while the file is
-missing — to
+therefore never see the catalog:
+[`JournalImageResolver`](../../lib/widgets/media/journal_image_resolver.dart)
+parses `ThumbHash.tryParse(entry.data.thumbHash)` (a corrupt hash is no hash)
+once, and `CoverArtThumbnail`, `CoverArtBackground` and `CardImageWidget` hand
+that and the file's `ImageProvider` — null while the file is missing — to
 [`ThumbHashBackedImage`](../../lib/widgets/media/thumb_hash_backed_image.dart),
 which draws the stand-in alone, then the first decoded frame over it with a
 `MotionDurations.medium1` fade (none under reduced motion), and never fades
@@ -253,7 +254,7 @@ its stand-ins on its next start, in place; after that first start the pass
 reads and writes nothing. Failures are logged per image and never delay the
 downloads.
 
-The file watcher behind all three widgets
+The file watcher behind the resolver all three draw through
 ([`FileWatcherMixin`](../../lib/widgets/media/file_watcher_mixin.dart))
 polls instead of watching where the OS offers no directory watch — iOS throws
 from `Directory.watch` — and falls back to polling when a watch is refused or

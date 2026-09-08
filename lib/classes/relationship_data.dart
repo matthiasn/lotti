@@ -44,21 +44,25 @@ abstract class ContactChannel with _$ContactChannel {
 ///
 /// A transform over the original, never a second file: re-cropping rewrites
 /// three numbers and touches no bytes on disk.
+///
+/// Every field reads through [cropFractionFromJson] or [cropScaleFromJson],
+/// the same guard the banner's axis has: a value that arrives out of range —
+/// from a peer running a future version, or a hand-edited payload — lands
+/// inside it rather than rendering an empty circle, and one that is not a
+/// number at all reads as the default rather than throwing, so a malformed
+/// framing cannot stop a person loading.
 @freezed
 abstract class AvatarCrop with _$AvatarCrop {
   const factory AvatarCrop({
-    @Default(0.5) double x,
-    @Default(0.5) double y,
-    @Default(1) double scale,
+    @Default(0.5) @JsonKey(fromJson: cropFractionFromJson) double x,
+    @Default(0.5) @JsonKey(fromJson: cropFractionFromJson) double y,
+    @Default(1) @JsonKey(fromJson: cropScaleFromJson) double scale,
   }) = _AvatarCrop;
 
   const AvatarCrop._();
 
-  /// Deserialises through [clamped], so a value that arrives out of range —
-  /// from a peer running a future version, or a hand-edited payload — cannot
-  /// render an empty circle on this device.
   factory AvatarCrop.fromJson(Map<String, dynamic> json) =>
-      _$AvatarCropFromJson(json).clamped;
+      _$AvatarCropFromJson(json);
 
   /// The framing this crop actually describes: centre inside the image and
   /// zoom inside [minAvatarCropScale] … [maxAvatarCropScale].
@@ -87,11 +91,17 @@ double clampAvatarCropScale(double value) => value.isNaN
     : value.clamp(minAvatarCropScale, maxAvatarCropScale);
 
 /// Reads a normalised position out of JSON, clamped — the read-side guard
-/// [AvatarCrop.fromJson] gives the avatar, for the banner's single axis.
-/// Anything that is not a number reads as centred rather than throwing: a
-/// malformed framing must not make a person fail to load.
+/// for the avatar's two axes and the banner's one. Anything that is not a
+/// number reads as centred rather than throwing: a malformed framing must
+/// not make a person fail to load.
 double cropFractionFromJson(Object? raw) =>
     raw is num ? clampCropFraction(raw.toDouble()) : 0.5;
+
+/// [cropFractionFromJson] for the avatar's zoom: clamped to the range the
+/// crop surface offers, and the smallest zoom for anything that is not a
+/// number.
+double cropScaleFromJson(Object? raw) =>
+    raw is num ? clampAvatarCropScale(raw.toDouble()) : minAvatarCropScale;
 
 /// Lifecycle status of a relationship, mirroring `ProjectStatus` in shape
 /// (ADR 0038): `active` relationships participate in cadence tracking,

@@ -371,11 +371,65 @@ void main() {
       expect(picture.alignment, const Alignment(-0.5, 1));
     });
 
-    testWidgets('the decode is bounded to the slot at the widest zoom, so a '
-        'zoomed face is drawn from pixels the source has', (tester) async {
+    testWidgets("the decode is bounded to the slot at the crop's own zoom, "
+        'rounded up to a point: a zoomed face is drawn from pixels the '
+        'source has, and an unzoomed one costs no more than its slot', (
+      tester,
+    ) async {
       final image = buildJournalImage();
       createImageFile(image);
       final tokens = theme.extension<DsTokens>()!;
+      final inner = 80 - 2 * tokens.spacing.step1;
+      final dpr = tester.view.devicePixelRatio;
+
+      Future<ResizeImage> decodeFor(AvatarCrop crop) async {
+        await pumpAvatar(
+          tester,
+          PersonaAvatar(
+            initial: 'P',
+            id: 'p',
+            size: 80,
+            imageId: image.id,
+            crop: crop,
+          ),
+          overrides: [createEntryControllerOverride(image)],
+        );
+        return tester.widget<Image>(find.byType(Image)).image as ResizeImage;
+      }
+
+      final zoomed = await decodeFor(const AvatarCrop(scale: 2.5));
+      final zoomedBound = ((inner * 2.5).ceil() * dpr).round();
+      expect(
+        zoomed.width,
+        zoomedBound,
+        reason:
+            'a decode capped to the circle itself would be magnified 2.5× '
+            'into a blur of its own pixels',
+      );
+      expect(zoomed.height, zoomedBound);
+      expect(
+        zoomed.policy,
+        ResizeImagePolicy.fit,
+        reason: 'a source smaller than the bound still decodes at its own size',
+      );
+
+      final unzoomed = await decodeFor(const AvatarCrop());
+      expect(
+        unzoomed.width,
+        (inner * dpr).round(),
+        reason:
+            'at the default zoom the slot itself is the bound — a list of '
+            'faces must not hold ${maxAvatarCropScale.toInt()}× the pixels '
+            'it shows on each axis',
+      );
+    });
+
+    testWidgets('decodeZoom fixes the bound regardless of the crop, for a '
+        'surface whose zoom moves live', (tester) async {
+      final image = buildJournalImage();
+      createImageFile(image);
+      final tokens = theme.extension<DsTokens>()!;
+      final inner = 80 - 2 * tokens.spacing.step1;
 
       await pumpAvatar(
         tester,
@@ -384,28 +438,18 @@ void main() {
           id: 'p',
           size: 80,
           imageId: image.id,
-          crop: const AvatarCrop(scale: maxAvatarCropScale),
+          crop: const AvatarCrop(scale: 1.5),
+          decodeZoom: maxAvatarCropScale,
         ),
         overrides: [createEntryControllerOverride(image)],
       );
 
       final decode =
           tester.widget<Image>(find.byType(Image)).image as ResizeImage;
-      final inner = 80 - 2 * tokens.spacing.step1;
-      final bound = (inner * maxAvatarCropScale * tester.view.devicePixelRatio)
-          .round();
       expect(
         decode.width,
-        bound,
-        reason:
-            'a decode capped to the circle itself would be magnified '
-            '${maxAvatarCropScale.toInt()}× into a blur of its own pixels',
-      );
-      expect(decode.height, bound);
-      expect(
-        decode.policy,
-        ResizeImagePolicy.fit,
-        reason: 'a source smaller than the bound still decodes at its own size',
+        ((inner * maxAvatarCropScale).ceil() * tester.view.devicePixelRatio)
+            .round(),
       );
     });
 

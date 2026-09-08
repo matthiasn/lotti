@@ -112,6 +112,7 @@ void main() {
     double width = 400,
     Future<String?> Function()? pickImage,
     ImageFileSizeReader readImageSize = readImageFileSize,
+    Future<void> Function()? onChanged,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -121,7 +122,7 @@ void main() {
             child: PersonPhotoCard(
               person: entry,
               actions: actions(pickImage: pickImage),
-              onChanged: () async => changes++,
+              onChanged: onChanged ?? () async => changes++,
               readImageSize: readImageSize,
             ),
           ),
@@ -253,6 +254,31 @@ void main() {
       isNotNull,
       reason: 'busy must be released however the flow ends',
     );
+  });
+
+  testWidgets("a re-read that throws after a successful write is the host's "
+      "problem, not the user's: no error toast, and the card is handed back", (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      person(bannerImageId: 'banner-1'),
+      onChanged: () async => throw StateError('the re-read fell over'),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('person-form-banner-remove')));
+    await tester.pumpAndSettle();
+
+    verify(() => relationships.updateRelationship(any())).called(1);
+    expect(
+      find.text('Could not save the photo'),
+      findsNothing,
+      reason: 'the write landed; a toast saying it did not would be untrue',
+    );
+    final change = tester.widget<DesignSystemButton>(
+      find.byKey(const ValueKey('person-form-banner-change')),
+    );
+    expect(change.onPressed, isNotNull, reason: 'busy is released regardless');
   });
 
   testWidgets("dragging the banner sideways moves it by the hero's own "

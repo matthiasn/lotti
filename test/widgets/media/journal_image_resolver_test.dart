@@ -215,50 +215,100 @@ void main() {
     });
   });
 
-  group('ResolvedJournalImage', () {
-    test('is a value: same path, same state, same resolution', () {
-      final hash = ThumbHash.fromBase64(sampleThumbHash);
-      const a = ResolvedJournalImage(
-        path: '/p',
-        fileExists: false,
-        thumbHash: null,
-      );
-      expect(
-        a,
-        const ResolvedJournalImage(
-          path: '/p',
-          fileExists: false,
-          thumbHash: null,
-        ),
-      );
-      expect(
-        a,
-        isNot(
-          const ResolvedJournalImage(
-            path: '/p',
-            fileExists: true,
-            thumbHash: null,
+  group('JournalImageFileResolver', () {
+    /// Pumps the file half alone — no `ProviderScope` at all, so a read of
+    /// any provider would throw — and records every resolution the builder
+    /// was handed, newest last.
+    Future<List<ResolvedJournalImage>> pumpFileResolver(
+      WidgetTester tester,
+      JournalImage image,
+    ) async {
+      final seen = <ResolvedJournalImage>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: LegacyMaterialBridge.builder,
+          home: Scaffold(
+            body: JournalImageFileResolver(
+              image: image,
+              builder: (context, resolved) {
+                seen.add(resolved);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      return seen;
+    }
+
+    testWidgets('resolves the entry it is handed, touching no provider', (
+      tester,
+    ) async {
+      final image = buildJournalImage(thumbHash: sampleThumbHash);
+
+      final seen = await pumpFileResolver(tester, image);
+
+      final resolved = seen.last;
+      expect(resolved.image, image);
+      expect(resolved.path, getFullImagePath(image));
+      expect(resolved.fileExists, isFalse);
+      expect(resolved.thumbHash, isNotNull);
+    });
+
+    testWidgets('a different entry is watched at its own path', (
+      tester,
+    ) async {
+      final first = buildJournalImage();
+      final second = buildJournalImage(id: 'image-2', imageFile: 'second.jpg');
+      final path = createImageFile(second);
+
+      await pumpFileResolver(tester, first);
+      // Same widget type in the same slot, so this is the didUpdateWidget
+      // path, not a fresh mount.
+      final seen = await pumpFileResolver(tester, second);
+
+      expect(seen.last.image, second);
+      expect(seen.last.path, path);
+      expect(
+        seen.last.fileExists,
+        isTrue,
+        reason: 'the watch moved to the new file instead of reporting the old',
+      );
+    });
+  });
+
+  group('ResolvedJournalImage', () {
+    test('is a value: same entry, same path, same state, same resolution', () {
+      final hash = ThumbHash.fromBase64(sampleThumbHash);
+      final image = buildJournalImage();
+      ResolvedJournalImage resolution({
+        JournalImage? image,
+        String path = '/p',
+        bool fileExists = false,
+        ThumbHash? thumbHash,
+      }) => ResolvedJournalImage(
+        image: image ?? buildJournalImage(),
+        path: path,
+        fileExists: fileExists,
+        thumbHash: thumbHash,
+      );
+
+      final a = resolution(image: image);
+      expect(a, resolution(image: image));
+      expect(a.hashCode, resolution(image: image).hashCode);
+      expect(
+        a,
+        isNot(resolution(image: image, fileExists: true)),
         reason: 'the file landing is a change a host must see',
       );
+      expect(a, isNot(resolution(image: image, thumbHash: hash)));
+      expect(a, isNot(resolution(image: image, path: '/q')));
       expect(
         a,
-        isNot(
-          ResolvedJournalImage(path: '/p', fileExists: false, thumbHash: hash),
-        ),
+        isNot(resolution(image: buildJournalImage(id: 'image-2'))),
+        reason: 'a different entry at the same path is a different resolution',
       );
-      expect(
-        a,
-        isNot(
-          const ResolvedJournalImage(
-            path: '/q',
-            fileExists: false,
-            thumbHash: null,
-          ),
-        ),
-      );
-      expect(a.hashCode, a.hashCode);
     });
   });
 

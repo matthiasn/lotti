@@ -2,14 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/thumbhash.dart';
-import 'package:lotti/widgets/media/file_watcher_mixin.dart';
+import 'package:lotti/widgets/media/journal_image_resolver.dart';
 import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -56,7 +51,11 @@ int? coverArtCacheExtent(double maxExtent, double devicePixelRatio) {
 /// While the file is still missing, an image that carries a ThumbHash shows
 /// its blurred stand-in under the same scrim, with nothing to tap — there is
 /// no file to open yet; one that does not collapses to nothing, as before.
-class CoverArtBackground extends ConsumerStatefulWidget {
+///
+/// Only the rendering — and the decode-variant bookkeeping it needs — lives
+/// here. Which of file, stand-in or nothing can be drawn, and noticing when
+/// that changes, is [JournalImageResolver]'s.
+class CoverArtBackground extends StatefulWidget {
   const CoverArtBackground({
     required this.imageId,
     super.key,
@@ -65,11 +64,10 @@ class CoverArtBackground extends ConsumerStatefulWidget {
   final String imageId;
 
   @override
-  ConsumerState<CoverArtBackground> createState() => _CoverArtBackgroundState();
+  State<CoverArtBackground> createState() => _CoverArtBackgroundState();
 }
 
-class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
-    with FileWatcherMixin {
+class _CoverArtBackgroundState extends State<CoverArtBackground> {
   String? _lastDecodePath;
   int? _lastDecodeExtent;
   ImageProvider? _lastImageProvider;
@@ -99,57 +97,40 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
   }
 
   @override
-  void didUpdateWidget(CoverArtBackground oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.imageId != widget.imageId) {
-      resetFileWatcher();
-    }
-  }
-
-  @override
-  void dispose() {
-    disposeFileWatcher();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = entryControllerProvider(widget.imageId);
-    final entry = ref.watch(provider).value?.entry;
-
-    if (entry is! JournalImage) {
-      return const SizedBox.shrink();
-    }
-
-    final path = getFullImagePath(entry);
-    setupFileWatcher(path);
-    final thumbHash = ThumbHash.tryParse(entry.data.thumbHash);
-
-    if (!fileExists) {
-      if (thumbHash == null) {
+  Widget build(BuildContext context) => JournalImageResolver(
+    imageId: widget.imageId,
+    builder: (context, resolved) {
+      if (resolved == null || resolved.hasNothingToShow) {
         return const SizedBox.shrink();
       }
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          ThumbHashBackedImage(
-            key: ValueKey(path),
-            thumbHash: thumbHash,
-            image: null,
-            alignment: Alignment.topCenter,
-          ),
-          const _CoverArtScrim(),
-        ],
-      );
-    }
+      if (!resolved.fileExists) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            ThumbHashBackedImage(
+              key: ValueKey(resolved.path),
+              thumbHash: resolved.thumbHash,
+              image: null,
+              alignment: Alignment.topCenter,
+            ),
+            const _CoverArtScrim(),
+          ],
+        );
+      }
+      return _buildCoverArt(context, resolved);
+    },
+  );
 
+  Widget _buildCoverArt(BuildContext context, ResolvedJournalImage resolved) {
+    final path = resolved.path;
+    final thumbHash = resolved.thumbHash;
     final file = File(path);
     final heroTag = 'task_cover_art_${widget.imageId}';
     void openViewer() => showFullscreenImageViewer(
       context,
       file: file,
       heroTag: heroTag,
-      date: entry.data.capturedAt,
+      date: resolved.image.data.capturedAt,
     );
 
     final coverArt = Stack(

@@ -28,9 +28,9 @@ const _$ContactChannelTypeEnumMap = {
 };
 
 _AvatarCrop _$AvatarCropFromJson(Map<String, dynamic> json) => _AvatarCrop(
-  x: (json['x'] as num?)?.toDouble() ?? 0.5,
-  y: (json['y'] as num?)?.toDouble() ?? 0.5,
-  scale: (json['scale'] as num?)?.toDouble() ?? 1,
+  x: json['x'] == null ? 0.5 : cropFractionFromJson(json['x']),
+  y: json['y'] == null ? 0.5 : cropFractionFromJson(json['y']),
+  scale: json['scale'] == null ? 1 : cropScaleFromJson(json['scale']),
 );
 
 Map<String, dynamic> _$AvatarCropToJson(_AvatarCrop instance) =>

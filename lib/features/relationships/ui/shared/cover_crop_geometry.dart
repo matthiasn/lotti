@@ -84,8 +84,11 @@ class CoverCropGeometry {
   }
 
   /// The crop zoomed by [factor] (above `1` zooms in) about its own
-  /// alignment point, so the part of the picture under the fingers stays
-  /// under the fingers. Clamped to the range the surface offers.
+  /// alignment point — not the gesture's focal point, so a pinch away from
+  /// that point drifts the picture a little. The trade is deliberate: a
+  /// covering picture scaled about a point inside the viewport still covers
+  /// it, so every zoom in range keeps the circle full with nothing to
+  /// re-clamp. Clamped to the range the surface offers.
   static AvatarCrop zoomBy(AvatarCrop crop, double factor) =>
       crop.copyWith(scale: crop.scale * factor).clamped;
 

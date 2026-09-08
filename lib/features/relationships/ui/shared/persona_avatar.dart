@@ -64,6 +64,7 @@ class PersonaAvatar extends StatelessWidget {
     this.size = 40,
     this.imageId,
     this.crop,
+    this.decodeZoom,
     super.key,
   }) : assert(
          id != null || accent != null,
@@ -91,6 +92,10 @@ class PersonaAvatar extends StatelessWidget {
 
   /// Which part of the photograph is the face. Null is the default framing.
   final AvatarCrop? crop;
+
+  /// The zoom the photograph is decoded for — [AvatarCropPicture.decodeZoom].
+  /// Null, the crop's own, everywhere but the crop surface's live preview.
+  final double? decodeZoom;
 
   /// The ring around a photograph, in logical pixels. One width at every
   /// size: the design's 3 px at 80 would need a token spacing does not have,
@@ -137,6 +142,7 @@ class PersonaAvatar extends StatelessWidget {
               resolved: resolved,
               crop: crop ?? const AvatarCrop(),
               size: inner,
+              decodeZoom: decodeZoom,
             );
           },
         ),
@@ -201,17 +207,21 @@ class _TintedInitial extends StatelessWidget {
 /// makes the surface's big square and the list's 40 px circle the same
 /// framing.
 ///
-/// The decode is bounded to the box at the *widest* zoom, [maxAvatarCropScale]
-/// times [size], not to the box itself: the zoom magnifies whatever was
-/// decoded, and a decode capped to the circle would show a zoomed face as a
-/// blur of its own pixels. One bound per slot keeps the provider's key fixed
-/// through a pinch, so zooming never re-decodes, and `ResizeImage` never
-/// upscales, so a small source still decodes at its own size.
+/// The decode is bounded to the box at a zoom, not to the box itself: the
+/// zoom magnifies whatever was decoded, and a decode capped to the circle
+/// would show a zoomed face as a blur of its own pixels. Which zoom is
+/// [decodeZoom]'s call. `ResizeImage` never upscales either way, so a small
+/// source still decodes at its own size — and its square cap is fitted, so a
+/// picture that is not square lands its short side under the cap by its
+/// aspect ratio; a phone photo at the deepest zoom is drawn a little
+/// under-sampled, the trade `ResizeImagePolicy.fit` makes for never
+/// squashing one.
 class AvatarCropPicture extends StatelessWidget {
   const AvatarCropPicture({
     required this.resolved,
     required this.crop,
     required this.size,
+    this.decodeZoom,
     super.key,
   });
 
@@ -219,9 +229,21 @@ class AvatarCropPicture extends StatelessWidget {
   final AvatarCrop crop;
   final double size;
 
+  /// The zoom the decode is bounded for, as a multiple of [size].
+  ///
+  /// Null — every persisted renderer — bounds at the crop's own scale,
+  /// rounded up to a whole point: a list row at the default zoom holds a
+  /// bitmap the size of its slot, not sixteen times it, and the key changes
+  /// only when a crop is re-saved. The crop surface passes
+  /// [maxAvatarCropScale] instead: its zoom moves live under a pinch, and a
+  /// bound fixed at the deepest zoom keeps the key the same throughout, so
+  /// zooming never re-decodes.
+  final double? decodeZoom;
+
   @override
   Widget build(BuildContext context) {
     final alignment = Alignment(crop.x * 2 - 1, crop.y * 2 - 1);
+    final bound = (size * (decodeZoom ?? crop.scale)).ceilToDouble();
     return Transform.scale(
       scale: crop.scale,
       alignment: alignment,
@@ -231,7 +253,7 @@ class AvatarCropPicture extends StatelessWidget {
         image: resolved.fileExists
             ? cappedFileImage(
                 resolved.path,
-                size: size * maxAvatarCropScale,
+                size: bound,
                 devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
               )
             : null,

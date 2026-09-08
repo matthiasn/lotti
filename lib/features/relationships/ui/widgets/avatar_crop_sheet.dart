@@ -217,10 +217,13 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
+                            // Bounded at the deepest zoom from the start,
+                            // so a pinch never re-keys the decode.
                             AvatarCropPicture(
                               resolved: resolved,
                               crop: _crop,
                               size: side,
+                              decodeZoom: maxAvatarCropScale,
                             ),
                             IgnorePointer(
                               child: CustomPaint(
@@ -261,6 +264,7 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
                 id: widget.relationship.id,
                 imageId: widget.imageId,
                 crop: crop,
+                decodeZoom: maxAvatarCropScale,
               ),
             ),
             SizedBox(width: tokens.spacing.step4),

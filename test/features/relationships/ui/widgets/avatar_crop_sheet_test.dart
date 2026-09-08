@@ -131,6 +131,47 @@ void main() {
       expect(preview.crop!.scale, closeTo(math.e, 1e-9));
     });
 
+    testWidgets('the picture is decoded at the deepest zoom from the start, '
+        'so a zoom never re-keys the decode — and the preview is bounded the '
+        'same way', (tester) async {
+      await pumpForm(tester);
+      // The widget decodes for the MediaQuery's ratio, which the harness
+      // sets independently of the test view's.
+      final dpr = MediaQuery.devicePixelRatioOf(tester.element(viewport));
+      final bound = ((300 * maxAvatarCropScale).ceil() * dpr).round();
+      ResizeImage viewportDecode() =>
+          tester
+                  .widget<Image>(
+                    find.descendant(
+                      of: viewport,
+                      matching: find.byType(Image),
+                    ),
+                  )
+                  .image
+              as ResizeImage;
+
+      expect(viewportDecode().width, bound);
+
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: tester.getCenter(viewport),
+          scrollDelta: const Offset(0, -300),
+        ),
+      );
+      await tester.pump();
+
+      expect(handle.value.scale, closeTo(math.e, 1e-9));
+      expect(
+        viewportDecode().width,
+        bound,
+        reason: 'zooming must not mint a new image-cache key',
+      );
+      final preview = tester.widget<PersonaAvatar>(
+        find.byKey(const ValueKey('avatar-crop-preview')),
+      );
+      expect(preview.decodeZoom, maxAvatarCropScale);
+    });
+
     testWidgets('the wheel over the picture zooms it and leaves the sheet '
         'where it was — the signal is claimed, not shared with the scroll '
         'view around the form', (tester) async {

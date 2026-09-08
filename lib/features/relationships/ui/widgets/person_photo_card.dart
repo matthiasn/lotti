@@ -66,6 +66,11 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
   /// ends. A flow that throws — the permission request or the picker can —
   /// is reported like a refused write, the way the form's own Save treats a
   /// throw, so the buttons come back and the user hears about it.
+  ///
+  /// The host's re-read is deliberately outside that judgement: once the
+  /// flow reports [PersonPhotoOutcome.changed] the write has landed and the
+  /// avatar has changed, so a re-read that fails is logged and nothing more
+  /// — a toast saying the photo could not be saved would be untrue.
   Future<void> _run(
     Future<PersonPhotoOutcome> Function(RelationshipEntry) flow,
   ) async {
@@ -74,7 +79,6 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
     var outcome = PersonPhotoOutcome.cancelled;
     try {
       outcome = await flow(widget.person);
-      if (outcome == PersonPhotoOutcome.changed) await widget.onChanged();
     } catch (e, s) {
       developer.log(
         'Failed to change a photo',
@@ -83,18 +87,30 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
         stackTrace: s,
       );
       outcome = PersonPhotoOutcome.failed;
-    } finally {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _draggingCropX = null;
-        });
-      }
     }
-    if (mounted && outcome == PersonPhotoOutcome.failed) {
+    if (outcome == PersonPhotoOutcome.changed) await _notifyChanged();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _draggingCropX = null;
+    });
+    if (outcome == PersonPhotoOutcome.failed) {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.relationshipPhotoSaveFailed,
+      );
+    }
+  }
+
+  Future<void> _notifyChanged() async {
+    try {
+      await widget.onChanged();
+    } catch (e, s) {
+      developer.log(
+        'Failed to re-read the person after a photo change',
+        name: 'PersonPhotoCard',
+        error: e,
+        stackTrace: s,
       );
     }
   }

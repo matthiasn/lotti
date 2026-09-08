@@ -215,6 +215,21 @@ void main() {
       expect(crop, const AvatarCrop());
     });
 
+    test('a value that is not a number reads as the default rather than '
+        'throwing — the guard the banner axis has, so a malformed framing '
+        'cannot stop a person loading', () {
+      final crop = AvatarCrop.fromJson(const {
+        'x': 'left',
+        'y': <String, Object?>{'fraction': 0.2},
+        'scale': 'big',
+      });
+      expect(crop, const AvatarCrop());
+    });
+
+    test('a field that is missing reads as its default', () {
+      expect(AvatarCrop.fromJson(const {'x': 0.1}), const AvatarCrop(x: 0.1));
+    });
+
     glados.Glados3(
       glados.any.double,
       glados.any.double,
@@ -264,6 +279,32 @@ void main() {
     ).test('always lands in 0…1', (value) {
       expect(cropFractionFromJson(value), inInclusiveRange(0, 1));
     }, tags: 'glados');
+  });
+
+  group('cropScaleFromJson', () {
+    test('reads an int as well as a double, clamped to the range the crop '
+        'surface offers', () {
+      expect(cropScaleFromJson(2), 2.0);
+      expect(cropScaleFromJson(1.5), 1.5);
+      expect(cropScaleFromJson(0.1), minAvatarCropScale);
+      expect(cropScaleFromJson(99), maxAvatarCropScale);
+    });
+
+    test('anything that is not a number reads as the smallest zoom', () {
+      expect(cropScaleFromJson(null), minAvatarCropScale);
+      expect(cropScaleFromJson('big'), minAvatarCropScale);
+      expect(cropScaleFromJson(double.nan), minAvatarCropScale);
+    });
+
+    glados.Glados(
+      glados.any.double,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('always lands in the range the crop surface offers', (value) {
+      expect(
+        cropScaleFromJson(value),
+        inInclusiveRange(minAvatarCropScale, maxAvatarCropScale),
+      );
+    });
   });
 
   group('RelationshipImageFraming', () {

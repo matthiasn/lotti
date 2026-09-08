@@ -284,7 +284,7 @@ as String?,
 /// @nodoc
 mixin _$AvatarCrop {
 
- double get x; double get y; double get scale;
+@JsonKey(fromJson: cropFractionFromJson) double get x;@JsonKey(fromJson: cropFractionFromJson) double get y;@JsonKey(fromJson: cropScaleFromJson) double get scale;
 /// Create a copy of AvatarCrop
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -317,7 +317,7 @@ abstract mixin class $AvatarCropCopyWith<$Res>  {
   factory $AvatarCropCopyWith(AvatarCrop value, $Res Function(AvatarCrop) _then) = _$AvatarCropCopyWithImpl;
 @useResult
 $Res call({
- double x, double y, double scale
+@JsonKey(fromJson: cropFractionFromJson) double x,@JsonKey(fromJson: cropFractionFromJson) double y,@JsonKey(fromJson: cropScaleFromJson) double scale
 });
 
 
@@ -424,7 +424,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double x,  double y,  double scale)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: cropFractionFromJson)  double x, @JsonKey(fromJson: cropFractionFromJson)  double y, @JsonKey(fromJson: cropScaleFromJson)  double scale)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AvatarCrop() when $default != null:
 return $default(_that.x,_that.y,_that.scale);case _:
@@ -445,7 +445,7 @@ return $default(_that.x,_that.y,_that.scale);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double x,  double y,  double scale)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: cropFractionFromJson)  double x, @JsonKey(fromJson: cropFractionFromJson)  double y, @JsonKey(fromJson: cropScaleFromJson)  double scale)  $default,) {final _that = this;
 switch (_that) {
 case _AvatarCrop():
 return $default(_that.x,_that.y,_that.scale);case _:
@@ -465,7 +465,7 @@ return $default(_that.x,_that.y,_that.scale);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double x,  double y,  double scale)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: cropFractionFromJson)  double x, @JsonKey(fromJson: cropFractionFromJson)  double y, @JsonKey(fromJson: cropScaleFromJson)  double scale)?  $default,) {final _that = this;
 switch (_that) {
 case _AvatarCrop() when $default != null:
 return $default(_that.x,_that.y,_that.scale);case _:
@@ -480,12 +480,12 @@ return $default(_that.x,_that.y,_that.scale);case _:
 @JsonSerializable()
 
 class _AvatarCrop extends AvatarCrop {
-  const _AvatarCrop({this.x = 0.5, this.y = 0.5, this.scale = 1}): super._();
+  const _AvatarCrop({@JsonKey(fromJson: cropFractionFromJson) this.x = 0.5, @JsonKey(fromJson: cropFractionFromJson) this.y = 0.5, @JsonKey(fromJson: cropScaleFromJson) this.scale = 1}): super._();
   factory _AvatarCrop.fromJson(Map<String, dynamic> json) => _$AvatarCropFromJson(json);
 
-@override@JsonKey() final  double x;
-@override@JsonKey() final  double y;
-@override@JsonKey() final  double scale;
+@override@JsonKey(fromJson: cropFractionFromJson) final  double x;
+@override@JsonKey(fromJson: cropFractionFromJson) final  double y;
+@override@JsonKey(fromJson: cropScaleFromJson) final  double scale;
 
 /// Create a copy of AvatarCrop
 /// with the given fields replaced by the non-null parameter values.
@@ -520,7 +520,7 @@ abstract mixin class _$AvatarCropCopyWith<$Res> implements $AvatarCropCopyWith<$
   factory _$AvatarCropCopyWith(_AvatarCrop value, $Res Function(_AvatarCrop) _then) = __$AvatarCropCopyWithImpl;
 @override @useResult
 $Res call({
- double x, double y, double scale
+@JsonKey(fromJson: cropFractionFromJson) double x,@JsonKey(fromJson: cropFractionFromJson) double y,@JsonKey(fromJson: cropScaleFromJson) double scale
 });
 
 

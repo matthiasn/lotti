@@ -207,11 +207,14 @@ through this one widget, so all three got the photograph at once. The ring is
 `spacing.step1` at every size: the design's 3 px at 80 would have needed a
 token spacing does not have.
 
-The photograph decodes at the slot's size times the widest zoom
-(`maxAvatarCropScale`), one fixed bound per slot: the zoom magnifies whatever
-was decoded, so a decode capped to the circle itself would draw a zoomed face
-as a blur of its own pixels, and a bound that moved with the zoom would
-re-decode through every pinch.
+The photograph decodes at the slot's size times its *stored* zoom, rounded up
+to a point: the zoom magnifies whatever was decoded, so a decode capped to the
+circle itself would draw a zoomed face as a blur of its own pixels — but a
+bound fixed at the deepest zoom would make every row at the default zoom hold
+sixteen times the pixels it shows. The key changes only when a crop is
+re-saved. The crop surface is the one exception (`AvatarCropPicture.decodeZoom`):
+its zoom moves live under a pinch, so it bounds at `maxAvatarCropScale` from
+the start and never re-decodes mid-gesture.
 
 **Choosing the avatar.** Tapping the hero avatar (only while the band is
 open — a folded hero's faded avatar takes no taps) opens the avatar sheet:
@@ -300,8 +303,10 @@ Three properties are load-bearing and easy to break:
   in another, so every surface that draws one of these needs a defined
   appearance for "id known, file not here yet". `JournalImageResolver` owns
   that loop — resolve the entry, watch the filesystem, hand the host the file
-  or the ThumbHash or nothing — for every picture-of-an-entry surface;
-  `PersonaAvatar` and the task cover thumbnail are two hosts of it.
+  or the ThumbHash or nothing — for every picture-of-an-entry surface:
+  `PersonaAvatar`, the hero banner, the task cover thumbnail and background,
+  and — through its file half, `JournalImageFileResolver`, because the list
+  hands it the entry — the journal card image.
 
 Neither image ever enters agent context, for the same reason contact channels
 do not — see [Privacy](#privacy).
