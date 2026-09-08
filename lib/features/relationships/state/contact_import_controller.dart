@@ -38,6 +38,14 @@ enum ContactImportStatus {
 /// One selected contact plus the two decisions the review step asks for.
 typedef ContactImportDraft = ({
   ImportedContact contact,
+
+  /// The entity id the person will be created under, minted the moment the
+  /// contact is ticked. The review step hashes it for the persona accent —
+  /// the same hash every other surface applies to `relationship.id` — so the
+  /// colour a person is reviewed in is the colour they keep. Hashing the OS
+  /// contact id instead, as the review once did, changed everyone's colour
+  /// the moment they were imported.
+  String id,
   bool important,
   int? cadenceDays,
 });
@@ -60,6 +68,13 @@ const ContactImportState _emptyState = (
   query: '',
 );
 
+/// How [ContactImportController] mints the id a ticked contact's person will
+/// be created under. Production mints a fresh v1 uuid; the screenshot harness
+/// pins ids so the review is drawn in known colours.
+typedef PersonIdMinter = String Function(ImportedContact contact);
+
+String _freshPersonId(ImportedContact _) => uuid.v1();
+
 /// Drives the multi-select contact import (plan v2 phase 7 item 3, ADR 0041
 /// D5).
 ///
@@ -69,6 +84,11 @@ const ContactImportState _emptyState = (
 /// point of the curation model: dormant entities the user never picked would
 /// destroy the nudge signal.
 class ContactImportController extends Notifier<ContactImportState> {
+  ContactImportController({this.mintPersonId = _freshPersonId});
+
+  /// Mints the id a ticked contact's person is created under.
+  final PersonIdMinter mintPersonId;
+
   @override
   ContactImportState build() => _emptyState;
 
@@ -161,6 +181,7 @@ class ContactImportController extends Notifier<ContactImportState> {
     if (drafts.remove(contact.id) == null) {
       drafts[contact.id] = (
         contact: contact,
+        id: mintPersonId(contact),
         important: false,
         cadenceDays: null,
       );
@@ -181,6 +202,7 @@ class ContactImportController extends Notifier<ContactImportState> {
     final drafts = Map<String, ContactImportDraft>.from(state.drafts);
     drafts[contactId] = (
       contact: draft.contact,
+      id: draft.id,
       important: important,
       cadenceDays: important ? draft.cadenceDays : null,
     );
@@ -196,6 +218,7 @@ class ContactImportController extends Notifier<ContactImportState> {
     final drafts = Map<String, ContactImportDraft>.from(state.drafts);
     drafts[contactId] = (
       contact: draft.contact,
+      id: draft.id,
       important: draft.important,
       cadenceDays: cadenceDays,
     );
@@ -204,7 +227,9 @@ class ContactImportController extends Notifier<ContactImportState> {
 
   void clearSelection() => _withDrafts(const {});
 
-  /// Creates one relationship per selected contact, in selection order.
+  /// Creates one relationship per selected contact, in selection order, each
+  /// under the id its draft was minted with — the id the review step already
+  /// coloured them by.
   ///
   /// Returns the ids of the people actually created. A contact whose write
   /// is rejected is skipped rather than aborting the batch: importing eight
@@ -228,7 +253,10 @@ class ContactImportController extends Notifier<ContactImportState> {
         checkInCadenceDays: draft.cadenceDays,
       );
 
-      final relationship = await repository.createRelationship(data: data);
+      final relationship = await repository.createRelationship(
+        data: data,
+        id: draft.id,
+      );
       if (relationship != null) created.add(relationship.id);
     }
 

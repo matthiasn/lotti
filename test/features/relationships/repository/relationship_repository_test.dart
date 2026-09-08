@@ -184,6 +184,53 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test("creates the person under the caller's id when one is given, so the "
+        'import review can colour them by the id they will keep', () async {
+      when(() => mockPersistence.createDbEntity(any())).thenAnswer(
+        (_) async => true,
+      );
+
+      final result = await withClock(
+        Clock.fixed(testDate),
+        () => repository.createRelationship(
+          data: relationshipData(),
+          id: 'minted-at-review',
+        ),
+      );
+
+      expect(result!.meta.id, 'minted-at-review');
+      final stored =
+          verify(
+                () => mockPersistence.createDbEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(
+        stored.meta.id,
+        'minted-at-review',
+        reason: 'the id must reach storage, not only the returned entry',
+      );
+      expect(
+        result.meta.dateFrom,
+        testDate,
+        reason:
+            'only the id is overridden; the rest of the metadata is still '
+            "the service's",
+      );
+    });
+
+    test('mints the id as usual when none is given', () async {
+      when(() => mockPersistence.createDbEntity(any())).thenAnswer(
+        (_) async => true,
+      );
+
+      final result = await withClock(
+        Clock.fixed(testDate),
+        () => repository.createRelationship(data: relationshipData()),
+      );
+
+      expect(result!.meta.id, 'generated-id');
+    });
   });
 
   group('createCheckIn', () {

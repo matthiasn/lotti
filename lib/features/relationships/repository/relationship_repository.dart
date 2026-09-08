@@ -155,12 +155,19 @@ class RelationshipRepository {
   /// starts (ADR 0038) — the baseline for the first cadence reminder until a
   /// check-in exists (ADR 0039).
   ///
+  /// [id], when given, is the entity id the person is created under instead
+  /// of a freshly minted one. The contact import mints a person's id the
+  /// moment the contact is ticked, so the review step can draw them in the
+  /// persona accent that id hashes to — the colour they keep once created —
+  /// and hands the same id here. Left null, the id is minted as usual.
+  ///
   /// Persisted via [PersistenceLogic], which handles vector clocks, sync
   /// outbox enqueuing, and notification emission.
   Future<RelationshipEntry?> createRelationship({
     required RelationshipData data,
     EntryText? entryText,
     String? categoryId,
+    String? id,
   }) async {
     final started = clock.now();
     final meta = await _persistenceLogic.createMetadata(
@@ -169,7 +176,7 @@ class RelationshipRepository {
       categoryId: categoryId,
     );
     final relationship = RelationshipEntry(
-      meta: meta,
+      meta: id == null ? meta : meta.copyWith(id: id),
       data: data.withClampedImageFraming,
       entryText: entryText,
     );

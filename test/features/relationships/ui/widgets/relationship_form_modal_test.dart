@@ -347,6 +347,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     );
   });
@@ -358,6 +359,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -386,6 +388,7 @@ void main() {
                 () => mockRepository.createRelationship(
                   data: captureAny(named: 'data'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -405,6 +408,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     ).thenAnswer((_) async => null);
 
@@ -430,6 +434,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     ).thenThrow(Exception('db gone'));
 
@@ -465,6 +470,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     );
   });
@@ -477,6 +483,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -516,6 +523,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -543,6 +551,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -697,6 +706,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -728,6 +738,7 @@ void main() {
                 () => mockRepository.createRelationship(
                   data: captureAny(named: 'data'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -741,6 +752,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -769,6 +781,7 @@ void main() {
                 () => mockRepository.createRelationship(
                   data: captureAny(named: 'data'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -853,6 +866,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       );
     });
@@ -943,6 +957,7 @@ void main() {
       () => mockRepository.createRelationship(
         data: any(named: 'data'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     ).thenAnswer(
       (invocation) async => createdEntry(
@@ -963,6 +978,7 @@ void main() {
               () => mockRepository.createRelationship(
                 data: captureAny(named: 'data'),
                 categoryId: any(named: 'categoryId'),
+                id: any(named: 'id'),
               ),
             ).captured.single
             as RelationshipData;
@@ -1268,6 +1284,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => null);
 

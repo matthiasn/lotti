@@ -957,7 +957,12 @@ cadence presets under a person only once they are marked important — a
 cadence on an unimportant person is never evaluated. Its switch copy says
 what importance turns on, never that leaving it off keeps the person out of
 AI entirely: a chat, an explicit briefing and a dictated check-in all reach a
-model for anyone.
+model for anyone. Each avatar is coloured by the id the person will be
+created under: `ContactImportController` mints it the moment the contact is
+ticked, keeps it on the draft through the review decisions, and hands it to
+`createRelationship`, so the accent in the review is the accent the People
+row shows next. (The review once hashed the OS contact id, and everyone
+changed colour the moment they were imported.)
 
 **The chat** is a pane, not only a page.
 [`RelationshipChatPane`](../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart)

@@ -8,6 +8,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
 import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
+import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -66,6 +67,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     ).thenAnswer(
       (_) async => RelationshipEntry(
@@ -258,6 +260,36 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    testWidgets(
+      'colours the review avatar by the id the person is created under, so '
+      'nobody changes colour the moment they are imported',
+      (tester) async {
+        await advanceToReview(tester);
+
+        final avatar = tester.widget<PersonaAvatar>(find.byType(PersonaAvatar));
+        expect(
+          avatar.id,
+          isNot('a'),
+          reason:
+              'the OS contact id is not the person id — hashing it for the '
+              'accent is what made everyone change colour on import',
+        );
+
+        await tester.tap(find.text('Add 1 person'));
+        await tester.pumpAndSettle();
+
+        final createdUnder = verify(
+          () => repository.createRelationship(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            id: captureAny(named: 'id'),
+          ),
+        ).captured.single;
+        expect(createdUnder, avatar.id);
+      },
+    );
+
     testWidgets('asks who to nurture before creating anyone', (tester) async {
       await advanceToReview(tester);
 
@@ -348,6 +380,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).called(1);
     });
@@ -413,6 +446,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -468,6 +502,7 @@ void main() {
                   data: captureAny(named: 'data'),
                   entryText: any(named: 'entryText'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -491,6 +526,7 @@ void main() {
                   data: captureAny(named: 'data'),
                   entryText: any(named: 'entryText'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;

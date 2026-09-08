@@ -1567,7 +1567,24 @@ void main() {
       home: const ContactImportPage(),
       device: proDevice,
       brightness: Brightness.dark,
-      overrides: personOverrides(contacts: addressBook),
+      overrides: [
+        ...personOverrides(contacts: addressBook),
+        // The review colours each person by the id they will be created
+        // under. Pinning those ids to the penguins' own draws the review in
+        // exactly the accents the People list and the hero already show —
+        // which is the point of the fix, and what keeps the capture stable
+        // (a fresh v1 uuid would land on a different accent every run).
+        contactImportControllerProvider.overrideWith(
+          () => ContactImportController(
+            mintPersonId: (contact) => switch (contact.id) {
+              'c1' => _pipId,
+              'c2' => _skuaId,
+              'c3' => _tillyId,
+              _ => _moId,
+            },
+          ),
+        ),
+      ],
     );
 
     await tester.tap(find.text('Commander Pip Frostbeak'));
@@ -1580,6 +1597,13 @@ void main() {
       find.byKey(const ValueKey('contact-import-review-c1')),
       findsOneWidget,
       reason: 'the review step is where importance and cadence are decided',
+    );
+    expect(
+      tester
+          .widgetList<PersonaAvatar>(find.byType(PersonaAvatar))
+          .map((avatar) => avatar.id),
+      [_pipId, _skuaId],
+      reason: 'the review is coloured by the ids these people will keep',
     );
     expect(
       find.textContaining('contact details stay on this device'),
