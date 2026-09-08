@@ -10194,6 +10194,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get plazaMeerkats => 'Surikater';
+
+  @override
   String get plazaMorningWalk => 'Morgonpromenad';
 
   @override

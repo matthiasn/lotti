@@ -136,6 +136,14 @@ void main() {
         final cast = population(district);
         if (!folded) {
           expect(cast, hasLength(78));
+          expect(
+            cast.map((c) => c.gait.scale).reduce(math.max),
+            closeTo(0.85, 1e-9),
+          );
+          expect(
+            cast.map((c) => c.gait.scale).reduce(math.min),
+            closeTo(0.697, 1e-9),
+          );
         }
         expect(cast.where((c) => c.region == 'plaza'), hasLength(12));
         expect(cast.any((c) => c.partnerLoop != null), isTrue);

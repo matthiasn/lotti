@@ -16,6 +16,7 @@ void main() {
   late PlazaFrameRate frameRate;
   late bool showDebug;
   late bool showPenguins;
+  late bool showMeerkats;
 
   setUp(() {
     walks = 0;
@@ -25,6 +26,7 @@ void main() {
     frameRate = PlazaFrameRate.sixty;
     showDebug = false;
     showPenguins = true;
+    showMeerkats = true;
   });
 
   Widget host({
@@ -32,6 +34,7 @@ void main() {
     String? walkChip,
     bool isCategory = false,
     bool penguinsAvailable = true,
+    bool meerkatsAvailable = true,
   }) => makeTestableWidget2(
     Scaffold(
       body: PlazaHud(
@@ -46,6 +49,10 @@ void main() {
         onExit: () => exits++,
         frameRate: frameRate,
         onFrameRateChanged: (rate) => frameRate = rate,
+        showMeerkats: showMeerkats,
+        onShowMeerkatsChanged: meerkatsAvailable
+            ? (show) => showMeerkats = show
+            : null,
         showPenguins: showPenguins,
         onShowPenguinsChanged: penguinsAvailable
             ? (show) => showPenguins = show
@@ -86,6 +93,10 @@ void main() {
   testWidgets('shows the project, the counts and the legends', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(host());
     expect(find.text('Project Waddle — Plaza'), findsOneWidget);
     expect(find.text('28 tasks · 6 weeks · 4 need attention'), findsOneWidget);
@@ -115,6 +126,10 @@ void main() {
   });
 
   testWidgets('the three buttons fire their callbacks', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(host());
     await tester.tap(find.text('Morning walk'));
     await tester.tap(find.text('Overview'));
@@ -125,6 +140,10 @@ void main() {
   });
 
   testWidgets('toast and walk chip appear only when set', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(host());
     expect(find.text('Fuel the shuttle'), findsNothing);
     await tester.pumpWidget(
@@ -145,6 +164,10 @@ void main() {
   testWidgets('the frame-rate control and the debug box drive the harness', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(host());
     // Each segment draws its label twice: once visible, once as the ghost
     // that reserves the selected width.
@@ -160,5 +183,45 @@ void main() {
     await tester.tap(find.text('Debug'));
     await tester.pump();
     expect(showDebug, isTrue);
+  });
+
+  testWidgets('each species checkbox changes only its own visibility', (
+    tester,
+  ) async {
+    bool checked(String label) => tester
+        .widget<DesignSystemCheckbox>(
+          find.byWidgetPredicate(
+            (w) => w is DesignSystemCheckbox && w.label == label,
+          ),
+        )
+        .value!;
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(host());
+    expect(checked('Penguins'), isTrue);
+    expect(checked('Meerkats'), isTrue);
+    await tester.tap(find.text('Penguins'));
+    await tester.pumpWidget(host());
+    expect(checked('Penguins'), isFalse);
+    expect(checked('Meerkats'), isTrue);
+    await tester.tap(find.text('Meerkats'));
+    await tester.pumpWidget(host());
+    expect((showPenguins, showMeerkats), (false, false));
+    await tester.tap(find.text('Penguins'));
+    await tester.pumpWidget(host());
+    expect(checked('Penguins'), isTrue);
+    expect(checked('Meerkats'), isFalse);
+    expect(showDebug, isFalse);
+    await tester.pumpWidget(host(meerkatsAvailable: false));
+    final disabled = tester.widget<DesignSystemCheckbox>(
+      find.byWidgetPredicate(
+        (w) => w is DesignSystemCheckbox && w.label == 'Meerkats',
+      ),
+    );
+    expect(disabled.onChanged, isNull);
+    await tester.tap(find.text('Meerkats'));
+    expect(showMeerkats, isFalse);
   });
 }

@@ -20,9 +20,12 @@ Black-and-white penguin companions stroll through the streets and open square,
 alone or in pairs, with balancing flippers and orange webbed feet. Companions
 occasionally glance toward one another as if in conversation, with eyes leading
 the turn and independent blinks. A mix of compact, standard and upright builds
-gives the crowd variety. Penguins start hidden; the **Penguins** option shows
-or hides them, and
-reduced-motion settings pause them.
+gives the crowd variety. Smaller penguins share the district with tawny meerkats,
+which scamper on four paws, forage and frequently rise into a lookout facing the
+camera. Both species start hidden; separate **Penguins** and **Meerkats**
+checkboxes show each species.
+Shared traffic control gives them room to finish steps and yield at crossings.
+Reduced-motion settings pause both species.
 
 The existing walk, drag-to-look, beacon navigation, search, Home, Overview and
 Morning walk remain available. Flights follow rounded curves with gentle turns

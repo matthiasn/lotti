@@ -17269,6 +17269,12 @@ abstract class AppLocalizations {
   /// **'links {count}'**
   String plazaLinks(int count);
 
+  /// Checkbox label for showing meerkat characters in Plaza.
+  ///
+  /// In en, this message translates to:
+  /// **'Meerkats'**
+  String get plazaMeerkats;
+
   /// No description provided for @plazaMorningWalk.
   ///
   /// In en, this message translates to:

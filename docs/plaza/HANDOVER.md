@@ -44,13 +44,13 @@ provide the GPU context needed to render the scene.
 | Space | Pause or resume the Morning walk. |
 | Escape | Close the demo panel and end the walk. |
 | Backtick | Toggle rendering diagnostics. |
-| Penguins checkbox | Hide or show companions without moving the camera. |
+| Penguins / Meerkats checkboxes | Hide or show each species without moving the camera. |
 
 Any manual movement exits the Morning walk. App task facades persist checklist
 edits and open the normal task details page; category facades enter their
 project. The fixture's edits remain in memory and its details open a demo panel.
 The HUD also offers Back, Morning walk, Overview, Home and frame-rate controls.
-Penguins start hidden; use the Penguins checkbox to enable them.
+Both species start hidden; use their Penguins or Meerkats checkbox to enable them.
 Hold Shift during a flight to accelerate up to 8× speed; releasing it eases back
 to normal speed. Shift alone does not abandon Morning walk.
 

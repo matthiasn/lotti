@@ -8,6 +8,9 @@ import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' hide FlyCameraController;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/character_population.dart';
+import 'package:lotti/features/plaza/domain/character_traffic.dart';
+import 'package:lotti/features/plaza/domain/meerkat_motion.dart';
+import 'package:lotti/features/plaza/domain/meerkat_population.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -15,6 +18,7 @@ import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_bench.dart';
 import 'package:lotti/features/plaza/scene/plaza_characters.dart';
 import 'package:lotti/features/plaza/scene/plaza_fire.dart';
+import 'package:lotti/features/plaza/scene/plaza_meerkats.dart';
 import 'package:lotti/features/plaza/scene/plaza_picker.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
@@ -117,9 +121,13 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   PlazaFire? _fire;
   PlazaCharacters? _characters;
   Node? _penguinModel;
-  bool _loadingPenguinModel = false;
+  Node? _meerkatModel;
+  PlazaMeerkats? _meerkats;
+  CharacterTraffic? _traffic;
+  bool _loadingCharacterModels = false;
   bool _animateCharacters = true;
   bool _showPenguins = false;
+  bool _showMeerkats = false;
   late PlazaSurfaces _surfaces;
   late PlazaPicker _picker;
   late FlyCameraController _camera;
@@ -192,7 +200,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     await Future.sync(() => gpu.gpuContext);
     await Scene.initializeStaticResources();
     _walls = await WallTextures.load(copy: widget.world.copy);
-    await _ensurePenguinModel();
+    await _ensureCharacterModels();
     if (!mounted) return;
     _load();
     switch (_mode) {
@@ -213,7 +221,9 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
           : _frameRate.capFor(
               moving: _moving || _elapsed < _movingUntil,
               activeSurface: _lod.stats.live > 0,
-              activeAnimation: _characters?.hasVisibleMotion ?? false,
+              activeAnimation:
+                  (_characters?.hasVisibleMotion ?? false) ||
+                  (_meerkats?.hasVisibleMotion ?? false),
             ),
     );
     if (_renderingEnabled &&
@@ -255,6 +265,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     _pacer?.dispose();
     if (_lodCreated) _lod.dispose();
     _characters?.dispose();
+    _meerkats?.dispose();
     if (widget.ticks == null) _ticks.dispose();
     _stats.dispose();
     _frame.dispose();
@@ -392,50 +403,83 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   void _attachCharacters() {
     // Animated skeletons must remain outside stationary mesh batches.
     _characters?.dispose();
+    _meerkats?.dispose();
+    final budget = _hidden.contains('characters') || _hidden.contains('life')
+        ? 0
+        : _world.ambientCreatures;
+    final meerkatBudget = _meerkatModel == null ? 0 : budget ~/ 4;
+    final penguins = _penguinModel == null
+        ? const <CharacterCompanion>[]
+        : CharacterPopulation.forWorld(
+            plan: _world.plan,
+            plaza: _world.plaza,
+            solids: _world.solids,
+            roadWidth: _world.layout.roadWidth,
+            maxCount: budget - meerkatBudget,
+          );
+    final meerkats = meerkatBudget == 0
+        ? const <MeerkatMotion>[]
+        : MeerkatPopulation.forWorld(
+            plan: _world.plan,
+            plaza: _world.plaza,
+            solids: _world.solids,
+            roadWidth: _world.layout.roadWidth,
+            penguins: penguins,
+            maxCount: meerkatBudget,
+          );
+    _traffic = CharacterTraffic([
+      for (final penguin in penguins) TrafficCharacter.penguin(penguin),
+      for (final meerkat in meerkats) TrafficCharacter.meerkat(meerkat),
+    ]);
     _characters = PlazaCharacters(
       parent: _sceneController.scene.root,
       model: _penguinModel,
       shadowTexture: _walls?.pool,
-      population:
-          _hidden.contains('characters') ||
-              _hidden.contains('life') ||
-              _world.ambientCreatures <= 0
-          ? const []
-          : CharacterPopulation.forWorld(
-              plan: _world.plan,
-              plaza: _world.plaza,
-              solids: _world.solids,
-              roadWidth: _world.layout.roadWidth,
-              maxCount: _world.ambientCreatures,
-            ),
+      population: penguins,
     )..enabled = _showPenguins;
+    _meerkats = PlazaMeerkats(
+      parent: _sceneController.scene.root,
+      model: _meerkatModel,
+      shadowTexture: _walls?.pool,
+      population: meerkats,
+    );
   }
 
-  /// Load only when permitted by the current scope. A live configuration
-  /// change can enable companions after a world initially reserved none.
-  Future<void> _ensurePenguinModel() async {
-    if (_penguinModel != null ||
-        _loadingPenguinModel ||
+  /// Load each species independently when the scope permits ambient life.
+  /// A live configuration change can enable companions after a zero budget.
+  Future<void> _ensureCharacterModels() async {
+    if ((_penguinModel != null && _meerkatModel != null) ||
+        _loadingCharacterModels ||
         widget.world.ambientCreatures == 0 ||
         _hidden.contains('characters') ||
         _hidden.contains('life')) {
       return;
     }
-    _loadingPenguinModel = true;
+    _loadingCharacterModels = true;
     try {
-      final model = await PlazaCharacters.loadModel();
+      // A failed optional species must not block the other or project data.
+      await Future.wait([
+        if (_penguinModel == null)
+          PlazaCharacters.loadModel()
+              .then((model) {
+                if (mounted) _penguinModel = model;
+              })
+              .catchError(_reportTextureError),
+        if (_meerkatModel == null)
+          PlazaMeerkats.loadModel()
+              .then((model) {
+                if (mounted) _meerkatModel = model;
+              })
+              .catchError(_reportTextureError),
+      ]);
       if (!mounted) return;
-      _penguinModel = model;
       if (_ready) {
         _attachCharacters();
         setState(() {});
         _wakeForInput();
       }
-    } catch (error, stack) {
-      // Ambient life is optional; a failed model must not block project data.
-      _reportTextureError(error, stack);
     } finally {
-      _loadingPenguinModel = false;
+      _loadingCharacterModels = false;
     }
   }
 
@@ -446,7 +490,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       final pose = _camera.pose;
       _lod.dispose();
       _load(pose: pose);
-      unawaited(_ensurePenguinModel());
+      unawaited(_ensureCharacterModels());
       _frameCamera = null;
       _wakeForInput();
       if (oldWidget.world.copy.messages.localeName !=
@@ -777,10 +821,27 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);
     _fire?.update(_elapsed, eye);
+    final traffic = _traffic;
+    traffic?.update(
+      seconds: _elapsed,
+      animate: _animateCharacters,
+      showPenguins: _showPenguins,
+      showMeerkats: _showMeerkats,
+    );
     _characters?.update(
       seconds: _elapsed,
       eye: eye,
       animate: _animateCharacters,
+      clockFor: traffic?.clockFor,
+      visibleFor: traffic?.visibleFor,
+    );
+    _meerkats?.update(
+      seconds: _elapsed,
+      eye: eye,
+      animate: _animateCharacters,
+      visible: _showMeerkats,
+      clockFor: traffic?.clockFor,
+      visibleFor: traffic?.visibleFor,
     );
 
     if (_toast != null && _elapsed > _toastUntil) {
@@ -885,6 +946,17 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
                   : (show) {
                       setState(() => _showPenguins = show);
                       _characters?.enabled = show;
+                      _wakeForInput();
+                    },
+              showMeerkats:
+                  _showMeerkats &&
+                  _meerkatModel != null &&
+                  _world.ambientCreatures >= 4,
+              onShowMeerkatsChanged:
+                  _meerkatModel == null || _world.ambientCreatures < 4
+                  ? null
+                  : (show) {
+                      setState(() => _showMeerkats = show);
                       _wakeForInput();
                     },
               showDebug: _showDebug,

@@ -5,6 +5,7 @@ import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/character_gait.dart';
 import 'package:lotti/features/plaza/domain/character_population.dart';
+import 'package:lotti/features/plaza/scene/character_limb.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
 import 'package:vector_math/vector_math.dart';
 
@@ -112,6 +113,9 @@ class PlazaCharacters {
     required double seconds,
     required Vector3 eye,
     required bool animate,
+    bool visible = true,
+    double Function(String id)? clockFor,
+    bool Function(String id)? visibleFor,
   }) {
     if (!_enabled || _disposed) return;
     final last = _lastSeconds;
@@ -121,13 +125,16 @@ class PlazaCharacters {
     }
     _hasVisibleMotion = false;
     for (final penguin in _penguins) {
-      final pose = penguin.companion.positionAt(_animationSeconds);
+      final time = clockFor?.call(penguin.companion.id) ?? _animationSeconds;
+      final pose = penguin.companion.positionAt(time);
       final dx = eye.x - pose.x;
       final dz = eye.z - pose.z;
       penguin.root.visible =
+          visible &&
+          (visibleFor?.call(penguin.companion.id) ?? true) &&
           dx * dx + eye.y * eye.y + dz * dz <= visibleRange * visibleRange;
       if (!penguin.root.visible) continue;
-      penguin.pose(_animationSeconds);
+      penguin.pose(time);
       _hasVisibleMotion |= animate;
     }
   }
@@ -177,7 +184,11 @@ class _Penguin {
       flippers.add(joint('$side-flipper'));
       flipperTips.add(joint('$side-flipper-tip'));
       legs.add(
-        _Leg(joint('$side-hip'), joint('$side-knee'), joint('$side-ankle')),
+        CharacterLimb(
+          joint('$side-hip'),
+          joint('$side-knee'),
+          joint('$side-ankle'),
+        ),
       );
     }
   }
@@ -194,7 +205,7 @@ class _Penguin {
   final List<Vector3> gazeRest = [];
   final List<Node> flippers = [];
   final List<Node> flipperTips = [];
-  final List<_Leg> legs = [];
+  final List<CharacterLimb> legs = [];
 
   void pose(double seconds) {
     final pose = gait.at(seconds);
@@ -258,65 +269,5 @@ class _Penguin {
     );
     legs[0].solve(pose.left, forward: forward, scale: scale);
     legs[1].solve(pose.right, forward: forward, scale: scale);
-  }
-}
-
-/// Analytic two-bone IK in world space, including lateral movement on turns.
-/// Each rotation maps the authored rest vector onto the solved limb vector;
-/// the ankle cancels its parents so the planted sole keeps its ground pose.
-class _Leg {
-  _Leg(this.hip, this.knee, this.ankle)
-    : upper = knee.position.clone(),
-      lower = ankle.position.clone();
-
-  final Node hip;
-  final Node knee;
-  final Node ankle;
-  final Vector3 upper;
-  final Vector3 lower;
-
-  static Quaternion _rotation(Node node) {
-    final rotation = Quaternion.identity();
-    node.globalTransform.decompose(Vector3.zero(), rotation, Vector3.zero());
-    return rotation;
-  }
-
-  /// Unlike fromTwoVectors, retain small rotations: snapping even a degree
-  /// at a knee makes a planted foot visibly skid.
-  static Quaternion _align(Vector3 from, Vector3 to) {
-    final a = from.normalized();
-    final b = to.normalized();
-    final cross = a.cross(b);
-    return Quaternion(cross.x, cross.y, cross.z, 1 + a.dot(b))..normalize();
-  }
-
-  void solve(
-    CharacterFootPose foot, {
-    required Vector3 forward,
-    required double scale,
-  }) {
-    final origin = hip.globalTransform.getTranslation();
-    final target = Vector3(foot.x, foot.y, foot.z);
-    final delta = target - origin;
-    final a = upper.length * scale;
-    final b = lower.length * scale;
-    final distance = delta.length.clamp((a - b).abs() + 1e-6, a + b - 1e-6);
-    final direction = delta.normalized();
-    final bend = (forward - direction * forward.dot(direction)).normalized();
-    final along = (a * a - b * b + distance * distance) / (2 * distance);
-    final rise = math.sqrt(math.max(0, a * a - along * along));
-    final wantedKnee = origin + direction * along + bend * rise;
-    final parentRotation = _rotation(hip.parent!);
-    // vector_math's Quaternion.rotated applies q^-1 * v * q: this converts
-    // world vectors into the parent's local frame without conjugating q.
-    final localUpper = parentRotation.rotated(wantedKnee - origin);
-    hip.rotation = _align(upper, localUpper);
-    final kneeOrigin = knee.globalTransform.getTranslation();
-    final localLower = _rotation(hip).rotated(target - kneeOrigin);
-    knee.rotation = _align(lower, localLower);
-    final desired =
-        Quaternion.axisAngle(Vector3(0, 1, 0), foot.yaw) *
-        Quaternion.axisAngle(Vector3(1, 0, 0), foot.pitch);
-    ankle.rotation = _rotation(knee).conjugated() * desired;
   }
 }

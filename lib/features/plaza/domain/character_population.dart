@@ -154,7 +154,8 @@ class CharacterPopulation {
             region: id,
             gait: CharacterGait(
               loop: route,
-              scale: [1.0, 0.88, 0.96, 0.82][(seed + group + member) % 4],
+              scale:
+                  [1.0, 0.88, 0.96, 0.82][(seed + group + member) % 4] * 0.85,
               phase: phase,
               stepPhase: member * 0.31 + (seed % 11) / 17,
             ),

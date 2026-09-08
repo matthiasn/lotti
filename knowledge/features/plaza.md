@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Project plaza
-description: Scoped journal snapshots generate task timelines and category avenues, rendered through a reusable Flutter GPU explorer with bounded facade detail, status lights, overdue flames and ambient penguins.
+description: Scoped journal snapshots generate task timelines and category avenues, rendered through a reusable Flutter GPU explorer with bounded facade detail, status lights, overdue flames and ambient penguins and meerkats.
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, projects, categories]
 status: draft
@@ -71,7 +71,31 @@ sources:
     title: World-space foot contacts and walking mechanics
   - id: characters
     resource: ../../lib/features/plaza/scene/plaza_characters.dart
-    title: Skinned companions and inverse kinematics
+    title: Skinned companions and two-bone inverse kinematics
+  - id: meerkat-motion
+    resource: ../../lib/features/plaza/domain/meerkat_motion.dart
+    title: Distance-driven scamper and lookout cycle
+  - id: meerkat-lookout
+    resource: ../../lib/features/plaza/domain/meerkat_lookout.dart
+    title: Camera-facing sentinel turns with supporting pivot steps
+  - id: meerkat-population
+    resource: ../../lib/features/plaza/domain/meerkat_population.dart
+    title: Cleared foraging loops throughout the district
+  - id: meerkat-rig
+    resource: ../../lib/features/plaza/scene/plaza_meerkats.dart
+    title: Four-paw IK, upright lookout and shared materials
+  - id: meerkat-model
+    resource: ../../tool/plaza/build_meerkat.py
+    title: Original meerkat mesh, skin and eyelid generator
+  - id: character-traffic
+    resource: ../../lib/features/plaza/domain/character_traffic.dart
+    title: Swept reservations and independent locomotion clocks
+  - id: character-limb
+    resource: ../../lib/features/plaza/scene/character_limb.dart
+    title: Shared world-space two-bone contact solver
+  - id: traffic-tests
+    resource: ../../test/features/plaza/domain/character_traffic_test.dart
+    title: Crossings, mixed cadences, lookout clearance and reappearance
   - id: penguin-model
     resource: ../../tool/plaza/build_penguin.py
     title: Original penguin mesh and skin generator
@@ -453,11 +477,104 @@ another on straights and briefly stagger through turns. Narrow or obstructed
 pair routes fall back to solo walkers. Groups on the same circuit share pace
 and evenly spaced phases; different regions can use different paces. Each
 region repeats its full solo/pair mix twice, with six groups on streets and
-eight in the plaza. The generated world passes its `ambientCreatures` budget
-(default 24) to `CharacterPopulation.forWorld(maxCount: ...)`. A zero budget
-returns immediately. Selection retains whole groups, starts with a fitting
+eight in the plaza. `PlazaView` shares the world's `ambientCreatures` budget
+(default 24) between both species: up to one quarter goes to meerkats, with the
+rest passed to `CharacterPopulation.forWorld(maxCount: ...)`. Unavailable
+meerkat assets leave the full budget for penguins. A zero budget loads neither
+model and creates no actors. Selection retains whole groups, starts with a fitting
 Home group, then visits regions round-robin; odd budgets use solo walkers.
 Unbounded population generation remains available to route-clearance tests.
+Their uniform scales are 15% smaller than the original crowd; stride
+distance, IK and contact heights follow that scale.
+
+`MeerkatPopulation.forWorld` adds small, obstacle-cleared foraging circuits
+through the same street network and square. Seeded phases and time offsets
+spread out the lookouts. A bounded population keeps a Home lookout and samples
+remaining circuits across the district. Candidate positions avoid the initial penguin crowd;
+shared traffic reservations handle later encounters. Foraging loops exclude
+parallel overlaps with narrow penguin lanes, where fixed routes would leave no
+room to pass; transverse route crossings remain possible. Each species has its
+own localized HUD checkbox; both species start hidden to preserve idle rendering.
+
+`MeerkatMotion` integrates an eased velocity over a 3.2-second scamper. Ten
+whole diagonal strides end with all four paws planted, followed by settling, a
+camera-facing lookout and foraging. Each 10.8-second bout includes a lookout.
+The body keeps facing the camera while upright, then turns back toward the
+route on supporting pivot steps as it lowers. Route distance stays constant
+throughout the stationary actions and continues across the next cycle without
+resetting contacts. Head and eye tracking aim toward the camera during lookout;
+the chin sits higher while the forepaws hang close to the belly. Seeded blinks
+run independently. Foraging lowers the head toward the ground and alternates
+short forepaw rakes, with both hind paws and the other forepaw supporting the
+body. Entry and exit weights preserve continuous targets when the action
+changes.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Scamper
+  Scamper --> Settle: ten strides / four paws planted
+  Settle --> Rise: weight settled
+  Rise --> Lookout: upright
+  Lookout --> Lower: scan complete
+  Lower --> Forage: forepaws return
+  Forage --> Scamper: next bout
+```
+
+The original meerkat asset has a slender body, pointed muzzle, dark eye
+patches, small low-set ears, a narrow torso and a long tapered tail. Zoo
+reference photographs from
+[Marwell](https://www.marwell.org.uk/animals/meerkat/) and
+[Indianapolis](https://www.indianapoliszoo.com/animals/meerkat/), plus the
+[Wellington Zoo behaviour footage](https://meerkat-dataset.github.io/), guide
+the proportions, nose-down foraging and sentinel posture. Its 20-joint skin
+includes four three-joint limbs, three tail joints and independent gaze joints.
+`PlazaMeerkats` reuses `CharacterLimb` for all four contacts. The pelvis and
+spine lean into the quadruped pose; the head counters the lean. On rising, the
+hind paws support the body and alternate pivot steps while forepaws hang close
+to the belly with downward-facing digits. Fur uses the existing warm neutral
+lantern palette. Skin geometry and materials are shared; clone joints and
+eyelid morphs remain independent. Each update samples the gait once per meerkat
+and reuses that pose for distance culling and the visible rig transforms.
+
+`MeerkatLookout` turns the stationary body toward the camera at a bounded
+angular rate. The head and eyes lead the turn; hind paws alternate short pivot
+steps, retaining at least one supporting contact without sliding. As the body
+lowers, the same controller turns back toward the route. Reduced motion freezes
+both these contacts and the camera target.
+Contacts belong to their sampled route stop. If culling skips the moving phase,
+the next sample at a different stop resets the cached yaw and hind-paw contacts
+before posing the visible skeleton.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Planted
+  Planted --> PivotStep: target moved and other hind paw supports
+  PivotStep --> Planted: supporting contact reached
+```
+
+`CharacterTraffic` owns each actor's locomotion clock. It grants a swept route
+reservation ending at a supporting pose, then accelerates or brakes the clock
+within that reservation. The same clock drives root travel, feet and body;
+collision response never displaces a root independently of its foot targets.
+Reservation samples are at most 5 cm apart, with half a sample interval added
+to each collision radius to cover the spaces between samples. Axis-aligned
+bounds reject unrelated regions before testing individual samples. Meerkat
+clearance includes the extended body and tail.
+
+Stable population order grants priority at simultaneous crossings. A separate
+forward guard keeps a yielding approach outside the crossing until its exit is
+clear; parallel followers use ordinary swept reservations. Fixed 30 Hz steps
+keep results independent of render cadence. Catch-up is capped at 250 ms after
+long suspension. Hidden species release space, and reappearing actors wait for
+a safe reservation before becoming visible. Reduced motion pauses the clocks.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending
+  Pending --> Admitted: enabled and swept step is clear
+  Admitted --> Pending: species hidden
+  Admitted --> Admitted: extend clear reservation / otherwise brake to support
+```
 
 `PlazaCharacters` attaches the population **after** static mesh baking. Each
 instance has its own skeleton; geometry and token materials are shared. All

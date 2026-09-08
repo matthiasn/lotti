@@ -5850,6 +5850,10 @@
       }
     }
   },
+  "plazaMeerkats": "Meerkats",
+  "@plazaMeerkats": {
+    "description": "Checkbox label for showing meerkat characters in Plaza."
+  },
   "plazaMorningWalk": "Morning walk",
   "plazaNeedsAttention": "{count} need attention",
   "@plazaNeedsAttention": {
