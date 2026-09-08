@@ -4,6 +4,7 @@ part of 'plaza_scene.dart';
 extension _PlazaGroundBuilder on PlazaSceneController {
   void _build() {
     _buildSky();
+    scene.add(_cityContext);
 
     final (centerX, centerZ) = planCenterOf(plan);
     final buildSkyline = _shown('skyline');

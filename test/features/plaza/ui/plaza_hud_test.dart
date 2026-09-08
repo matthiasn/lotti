@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
@@ -14,6 +15,7 @@ void main() {
   late int exits;
   late PlazaFrameRate frameRate;
   late bool showDebug;
+  late bool showPenguins;
 
   setUp(() {
     walks = 0;
@@ -22,31 +24,64 @@ void main() {
     exits = 0;
     frameRate = PlazaFrameRate.sixty;
     showDebug = false;
+    showPenguins = true;
   });
 
-  Widget host({String? toast, String? walkChip, bool isCategory = false}) =>
-      makeTestableWidget2(
-        Scaffold(
-          body: PlazaHud(
-            projectLabel: 'Project Waddle',
-            taskCount: 28,
-            weekCount: 6,
-            isCategory: isCategory,
-            attentionCount: 4,
-            onMorningWalk: () => walks++,
-            onOverview: () => overviews++,
-            onHome: () => homes++,
-            onExit: () => exits++,
-            frameRate: frameRate,
-            onFrameRateChanged: (rate) => frameRate = rate,
-            showDebug: showDebug,
-            onShowDebugChanged: (show) => showDebug = show,
-            toast: toast,
-            walkChip: walkChip,
-          ),
+  Widget host({
+    String? toast,
+    String? walkChip,
+    bool isCategory = false,
+    bool penguinsAvailable = true,
+  }) => makeTestableWidget2(
+    Scaffold(
+      body: PlazaHud(
+        projectLabel: 'Project Waddle',
+        taskCount: 28,
+        weekCount: 6,
+        isCategory: isCategory,
+        attentionCount: 4,
+        onMorningWalk: () => walks++,
+        onOverview: () => overviews++,
+        onHome: () => homes++,
+        onExit: () => exits++,
+        frameRate: frameRate,
+        onFrameRateChanged: (rate) => frameRate = rate,
+        showPenguins: showPenguins,
+        onShowPenguinsChanged: penguinsAvailable
+            ? (show) => showPenguins = show
+            : null,
+        showDebug: showDebug,
+        onShowDebugChanged: (show) => showDebug = show,
+        toast: toast,
+        walkChip: walkChip,
+      ),
+    ),
+    mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+  );
+
+  testWidgets(
+    'penguin option updates both ways and disables when unavailable',
+    (tester) async {
+      DesignSystemCheckbox control() => tester.widget<DesignSystemCheckbox>(
+        find.ancestor(
+          of: find.text('Penguins'),
+          matching: find.byType(DesignSystemCheckbox),
         ),
-        mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
       );
+      await tester.pumpWidget(host());
+      expect(control().value, isTrue);
+      await tester.tap(find.text('Penguins'));
+      expect(showPenguins, isFalse);
+      await tester.pumpWidget(host());
+      expect(control().value, isFalse);
+      await tester.tap(find.text('Penguins'));
+      expect(showPenguins, isTrue);
+      await tester.pumpWidget(host(penguinsAvailable: false));
+      expect(control().onChanged, isNull);
+      await tester.tap(find.text('Penguins'));
+      expect(showPenguins, isTrue);
+    },
+  );
 
   testWidgets('shows the project, the counts and the legends', (
     tester,

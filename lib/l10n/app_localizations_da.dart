@@ -10218,6 +10218,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get plazaSearchHint => 'Søg efter opgaver, Enter for at flyve';
 
   @override
+  String get plazaShowPenguins => 'Pingviner';
+
+  @override
   String plazaStaleReason(int days) {
     return 'stille i $days dage — tag fat igen';
   }

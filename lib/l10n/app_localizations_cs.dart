@@ -10346,6 +10346,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get plazaSearchHint => 'Hledej úkoly, Enter pro přelet';
 
   @override
+  String get plazaShowPenguins => 'Tučňáci';
+
+  @override
   String plazaStaleReason(int days) {
     return 'bez aktivity $days dní — vrať se k tomu';
   }

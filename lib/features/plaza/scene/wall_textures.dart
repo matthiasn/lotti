@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_scene/scene.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 
@@ -90,7 +91,7 @@ class WallTextures {
     final textures = WallTextures._(map)
       ..pool = await _upload(_paintPool())
       ..grain = await _upload(_paintGrain())
-      ..paving = await _upload(_paintPaving())
+      ..paving = await _upload(paintPaving())
       .._shopfronts = shops;
     return textures;
   }
@@ -1110,44 +1111,33 @@ class WallTextures {
     }
   }
 
-  static ui.Image _paintPaving() {
+  /// Restrained, staggered stone joints; transparent slab centres preserve
+  /// the ground's shared material instead of making a checkerboard of lights.
+  @visibleForTesting
+  static ui.Image paintPaving() {
     const size = 256;
-    const half = size / 2;
+    const course = size / 4;
     final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(recorder)
-      ..drawRect(
-        ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
-        ui.Paint()..color = const ui.Color(0x00000000),
+    final canvas = ui.Canvas(recorder);
+    final colors = dsTokensDark.colors;
+    final joint = ui.Paint()
+      ..color = colors.background.level01.withValues(
+        alpha: SurfaceAlphas.muted,
       );
-    final rng = math.Random(9001);
-    // Four slabs, each a faintly different shade, so the grid is not flat.
-    for (final (x, y) in [(0.0, 0.0), (half, 0.0), (0.0, half), (half, half)]) {
-      canvas.drawRect(
-        ui.Rect.fromLTWH(x, y, half, half),
-        ui.Paint()
-          ..color = ui.Color.fromARGB(10 + rng.nextInt(16), 255, 255, 255),
+    final edge = ui.Paint()
+      ..color = colors.text.highEmphasis.withValues(
+        alpha: SurfaceAlphas.tint,
       );
-    }
-    // Joints: a dark line with a lit edge, the way wet paving catches light.
-    final joint = ui.Paint()..color = const ui.Color(0x66000000);
-    final edge = ui.Paint()..color = const ui.Color(0x14FFFFFF);
-    for (final at in [0.0, half]) {
+    // Texture-space dimensions describe mortar, not widget layout spacing.
+    for (var row = 0; row < 4; row++) {
+      final y = row * course;
       canvas
-        ..drawRect(ui.Rect.fromLTWH(at, 0, 3, size.toDouble()), joint)
-        ..drawRect(ui.Rect.fromLTWH(at + 3, 0, 1.5, size.toDouble()), edge)
-        ..drawRect(ui.Rect.fromLTWH(0, at, size.toDouble(), 3), joint)
-        ..drawRect(ui.Rect.fromLTWH(0, at + 3, size.toDouble(), 1.5), edge);
-    }
-    for (var i = 0; i < 300; i++) {
-      canvas.drawRect(
-        ui.Rect.fromLTWH(
-          rng.nextDouble() * size,
-          rng.nextDouble() * size,
-          1.5,
-          1,
-        ),
-        ui.Paint()..color = ui.Color.fromARGB(20 + rng.nextInt(40), 0, 0, 0),
-      );
+        ..drawRect(ui.Rect.fromLTWH(0, y, size.toDouble(), 2), joint)
+        ..drawRect(ui.Rect.fromLTWH(0, y + 2, size.toDouble(), 1), edge);
+      final x = row.isEven ? 0.0 : size / 2;
+      canvas
+        ..drawRect(ui.Rect.fromLTWH(x, y, 2, course), joint)
+        ..drawRect(ui.Rect.fromLTWH(x + 2, y + 2, 1, course - 2), edge);
     }
     return recorder.endRecording().toImageSync(size, size);
   }

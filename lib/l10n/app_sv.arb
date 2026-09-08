@@ -4336,6 +4336,7 @@
   "plazaPaused": "Pausad",
   "plazaProjectOverdue": "Försenade uppgifter: {count}",
   "plazaSearchHint": "Sök uppgifter, Enter för att flyga",
+  "plazaShowPenguins": "Pingviner",
   "plazaStaleReason": "ingen aktivitet på {days} dagar — ta upp den igen",
   "plazaStats": "{tasks} uppgifter · {weeks} veckor · {attention} kräver uppmärksamhet",
   "plazaTaskCount": "Uppgifter: {count}",

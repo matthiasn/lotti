@@ -44,6 +44,7 @@ provide the GPU context needed to render the scene.
 | Space | Pause or resume the Morning walk. |
 | Escape | Close the demo panel and end the walk. |
 | Backtick | Toggle rendering diagnostics. |
+| Penguins checkbox | Hide or show companions without moving the camera. |
 
 Any manual movement exits the Morning walk. App task facades persist checklist
 edits and open the normal task details page; category facades enter their
@@ -65,10 +66,12 @@ xvfb-run -a -s '-screen 0 1600x1000x24' env GDK_SCALE=1 \
   python3 tool/plaza/capture_tour.py /tmp/lotti-pr-screenshots/plaza/after
 ```
 
-The VM used for this integration produced corrupt widget textures under Xvfb.
-This can check startup, but its images and frame rate do not establish native
-visual quality or GPU performance. Native captures need a real display and
-should only be launched when a visible window is welcome.
+Settled Xvfb captures show widget text and cover art on this VM. Earlier blank
+Home signs were an early screenshot: the tour now waits for acknowledged still
+captures and raster completion before announcing a settled stop. These images
+are useful for Linux geometry and UI review; frame times from a VM do not
+establish macOS GPU performance. Target-device runs still need a real display
+and should only be launched when a visible window is welcome.
 
 ## Review captures
 

@@ -28,6 +28,10 @@ sources:
     resource: ../../lib/features/plaza/scene/plaza_world.dart
     title: Shared CPU scene description
     last_modified: 2026-09-08
+  - id: architecture
+    resource: ../../lib/features/plaza/domain/building_architecture.dart
+    title: Bounded building volumes and facade dimensions
+    last_modified: 2026-09-08
   - id: street
     resource: ../../lib/features/plaza/domain/street_layout.dart
     title: Deterministic timeline placement
@@ -215,6 +219,29 @@ reuse the building renderer, but project labels and actions stay distinct from
 task labels. Entering pushes a project route above the category, preserving the
 category camera on return.
 
+# Architectural recipes
+
+`ProjectWorldConfig.architecture` carries an `ArchitectureConfig` through both
+project and category generation. `PlazaWorld.architectureByTaskId` computes each
+recipe once from the task ID, recipe seed and plot envelope. The renderer uses
+those same facade dimensions for the visible plate, focus ring, captured widget
+and picking record. Priority scales the panel about its centre. Configuration
+changes preserve the timeline address and the original street-facing plane.
+
+`BuildingArchitecture` chooses a stepped tower, offset media crown or theater
+setback. A recessed ground floor supports a continuous streetwall and canopy;
+smaller upper volumes expose the silhouette. Every volume stays within the
+plot's width, depth and height, so existing conservative collision and flight
+solids remain valid. The former extra rooftop mass and decorative plant are
+removed. The topmost crown carries the task's status colour, including green for
+done and neutral grey for cancelled. Ordinary storeys have window grids without
+repeating the ground-floor storefront band. The project jumbotron uses the
+stepped family, reserving its entire sign height before beginning the crown.
+Window and shopfront skins use the existing facade-plate depth bias as well as
+their geometric offset. The offset alone loses depth precision on distant
+towers when static batching changes draw order. The shared paving texture draws
+staggered joints over transparent slab centres, avoiding checkerboard shading.
+
 # Attention and navigation
 
 `attentionFor` evaluates UTC calendar days. Done, cancelled and deleted items
@@ -281,7 +308,11 @@ statistics periodically rather than allocating a new history each frame.
 baked by spatial cell and compatible material/UV/picking state; pick anchors and
 dynamic groups keep their identity. Translucent pools and individual status
 sprites keep depth ordering. Fog and ground washes recede with altitude, leaving
-road markers and status lights readable in Overview.
+road markers and status lights readable in Overview. Decorative filler blocks
+and the skyline ring share a separately baked `city-context` root. It hides at
+the same altitude threshold that reveals map labels, removing their occlusion
+of task roofs; the project landmark, actual task buildings and week addresses
+remain. This is currently a discrete map transition, not an opacity fade.
 
 Facade tiers are geometry-only far, captured sign, and activated live. The LOD
 manager caps sign/live counts, uses range/view hysteresis and paces promotions.
@@ -354,7 +385,11 @@ another on straights and briefly stagger through turns. Narrow or obstructed
 pair routes fall back to solo walkers. Groups on the same circuit share pace
 and evenly spaced phases; different regions can use different paces. Each
 region repeats its full solo/pair mix twice, with six groups on streets and
-eight in the plaza. The resulting population follows the generated street network.
+eight in the plaza. The generated world passes its `ambientCreatures` budget
+(default 24) to `CharacterPopulation.forWorld(maxCount: ...)`. A zero budget
+returns immediately. Selection retains whole groups, starts with a fitting
+Home group, then visits regions round-robin; odd budgets use solo walkers.
+Unbounded population generation remains available to route-clearance tests.
 
 `PlazaCharacters` attaches the population **after** static mesh baking. Each
 instance has its own skeleton; geometry and token materials are shared. All
@@ -451,7 +486,29 @@ The reusable explorer supplies its existing active clock; no extra ticker is cre
 catch-up jump when re-enabled. Characters beyond `visibleRange` stop rendering
 and leave the 30 Hz animation budget. Resuming visibility samples the current
 route time. Rebuilding the world or disposing the explorer detaches the old rigs.
-`PLAZA_HIDE=characters` omits the layer for scene isolation.
+`PlazaCharacters.enabled` hides the existing root, clears its motion budget,
+and resets the clock baseline on both toggle edges. The HUD preference stays in
+`PlazaView` across data refreshes; toggling it does not call `_load` or move the
+camera. Reduced motion leaves visible animals frozen, independently of hiding.
+Optional GLB load failure leaves the data world usable and its control disabled.
+A later zero-to-positive budget change can load the model, with a mounted guard
+before attaching it to the current world. `PLAZA_HIDE=characters` (or `life`)
+omits the layer for scene isolation.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Visible: attach available model
+  Visible --> Hidden: Penguins off
+  Hidden --> Visible: Penguins on, reset clock baseline
+  Visible --> Frozen: reduced motion
+  Frozen --> Visible: motion allowed
+  Frozen --> Hidden: Penguins off
+  Hidden --> Frozen: Penguins on with reduced motion
+  Visible --> Disposed: world replaced or route disposed
+  Frozen --> Disposed: world replaced or route disposed
+  Hidden --> Disposed: world replaced or route disposed
+  Disposed --> [*]
+```
 
 Tests load the shipped GLB hierarchy, inverse bind matrices and actual morph
 deltas through the shared scene test helper, using empty base geometry to avoid GPU uploads. They check
@@ -469,8 +526,12 @@ native Flutter GPU review; these tests cannot judge animation appeal.
 
 Repository/provider, generation, navigation, checklist edits, image arrivals,
 flights and widget copy run in targeted headless tests. GPU geometry and native
-texture interop still require the fixture on a supported renderer. The Linux VM
-virtual display used during integration corrupts widget textures; it cannot
-validate native visuals or the reported macOS frame rate. Commands, screenshot
+texture interop still require the fixture on a supported renderer. Settled Linux
+Xvfb captures now show hosted text and cover images. Earlier blank Home signs
+were captured before presentation, not sufficient evidence of texture corruption.
+The tour waits for acknowledged still captures and a stable settling interval,
+then announces readiness only after raster timing acknowledges the frame. It
+cannot advance past that stop before the acknowledgement. These Linux captures
+do not establish macOS visual parity or its reported frame rate. Commands, screenshot
 rules and measurement interpretation belong in the
 [operator notes](../../docs/plaza/HANDOVER.md).

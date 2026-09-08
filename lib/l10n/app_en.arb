@@ -5880,6 +5880,7 @@
     }
   },
   "plazaSearchHint": "Search tasks, Enter to fly",
+  "plazaShowPenguins": "Penguins",
   "plazaStaleReason": "quiet for {days} days — pick it back up",
   "@plazaStaleReason": {
     "placeholders": {

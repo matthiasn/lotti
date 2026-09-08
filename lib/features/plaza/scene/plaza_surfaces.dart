@@ -385,6 +385,8 @@ class PlazaSurfaces {
     _captures.requestDue(_jumbotron, eye, seconds, forward: forward);
   }
 
+  bool get hasPendingCaptures => _captures.hasPending;
+
   /// Total captures across these surfaces, for the debug overlay.
   int get captures => _captures.captures;
 

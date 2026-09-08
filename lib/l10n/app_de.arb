@@ -3862,6 +3862,7 @@
   "plazaPaused": "Pausiert",
   "plazaProjectOverdue": "Überfällige Aufgaben: {count}",
   "plazaSearchHint": "Aufgaben suchen, Enter zum Hinfliegen",
+  "plazaShowPenguins": "Pinguine",
   "plazaStaleReason": "seit {days} Tagen ruhig — nimm es wieder auf",
   "plazaStats": "{tasks} Aufgaben · {weeks} Wochen · {attention} brauchen Aufmerksamkeit",
   "plazaTaskCount": "Aufgaben: {count}",

@@ -14,8 +14,8 @@ Optional: PLAZA_CLICK="<stop-name>:<x>,<y>" clicks that window-relative point
 after capturing the named stop and grabs a second frame as <stop>-ticked.png
 (used for the live-checkbox screenshot). Any other PLAZA_* variable is
 passed through to the harness. Always stage output outside the repository.
-For headless smoke checks, wrap this command in xvfb-run. Virtual GPU widget
-textures may be corrupt; those captures are not visual or FPS evidence.
+For headless visual checks, wrap this command in xvfb-run. The harness waits
+for capture acknowledgement and raster completion; VM FPS is not macOS evidence.
 
 The script keys on the `PLAZA_TOUR ready <i> <name>` lines the harness prints
 once a stop has settled, writes <out_dir>/<name>.png, and exits after

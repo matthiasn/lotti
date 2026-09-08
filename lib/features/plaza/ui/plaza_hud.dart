@@ -22,6 +22,8 @@ class PlazaHud extends StatelessWidget {
     required this.onHome,
     required this.frameRate,
     required this.onFrameRateChanged,
+    required this.showPenguins,
+    required this.onShowPenguinsChanged,
     required this.showDebug,
     required this.onShowDebugChanged,
     this.onExit,
@@ -42,6 +44,8 @@ class PlazaHud extends StatelessWidget {
   final VoidCallback? onExit;
   final PlazaFrameRate frameRate;
   final ValueChanged<PlazaFrameRate> onFrameRateChanged;
+  final bool showPenguins;
+  final ValueChanged<bool>? onShowPenguinsChanged;
   final bool showDebug;
   final ValueChanged<bool> onShowDebugChanged;
   final String? toast;
@@ -128,6 +132,13 @@ class PlazaHud extends StatelessWidget {
                         ],
                         selected: frameRate,
                         onChanged: onFrameRateChanged,
+                      ),
+                      DesignSystemCheckbox(
+                        value: showPenguins,
+                        label: messages.plazaShowPenguins,
+                        onChanged: onShowPenguinsChanged == null
+                            ? null
+                            : (value) => onShowPenguinsChanged!(value ?? false),
                       ),
                       DesignSystemCheckbox(
                         value: showDebug,

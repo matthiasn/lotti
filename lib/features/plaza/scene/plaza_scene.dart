@@ -2,7 +2,9 @@ import 'dart:math' as math;
 import 'dart:ui' show Color;
 
 import 'package:flutter_scene/scene.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/domain/building_architecture.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
@@ -48,6 +50,9 @@ class PlazaSceneController {
   final Set<String> hidden;
   bool _shown(String piece) => !hidden.contains(piece);
   final Scene scene = Scene();
+  // Decorative enclosure has its own batch root so the map can reveal task
+  // roofs without leaving detached windows or signs floating in space.
+  final Node _cityContext = Node(name: 'city-context');
   final PlazaSceneBindings bindings = PlazaSceneBindings();
   late final _boxes = PlazaBoxes(
     cube: CuboidGeometry(Vector3.all(1)),
@@ -113,6 +118,7 @@ class PlazaSceneController {
           for (final billboard in bindings.billboards) ?billboard.back,
         },
         localGroups: [
+          _cityContext,
           for (final building in bindings.buildings) ...[
             building.ring,
             building.neon,
@@ -121,6 +127,7 @@ class PlazaSceneController {
           ...bindings.pickableBillboards.keys,
         ],
         preserve: {
+          _cityContext,
           ...bindings.pickableBuildings.keys,
           ...bindings.pickableBillboards.keys,
           ...bindings.markerAnchors.values,
@@ -211,6 +218,7 @@ class PlazaSceneController {
     final mapVisible = eye.y >= poolFadeStart;
     if (mapVisible != _mapVisible) {
       _mapVisible = mapVisible;
+      _cityContext.visible = !mapVisible;
       for (final anchor in bindings.markerAnchors.values) {
         anchor.visible = mapVisible;
       }

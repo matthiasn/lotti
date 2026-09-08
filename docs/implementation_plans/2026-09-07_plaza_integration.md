@@ -50,7 +50,8 @@ category avenues and completed-work distance, then optional ambient creatures.
   and dark themes. Before/after pairs are staged outside the repository at
   `/tmp/lotti-pr-screenshots/plaza-integration/`. They use the penguin fixture.
   Native scene before captures are also staged there; matching native after
-  captures remain outstanding because the virtual display corrupts textures.
+  macOS captures remain outstanding. The later night-city pass found and fixed
+  an early-capture race; settled Xvfb views display widget text and cover art.
 - `make knowledge_check`: 101 concepts, 540 Mermaid blocks, no errors; the
   validator's 25 tests passed. `make changelog_check` passed.
 - Capture-script window selection was checked with synthetic window trees:
@@ -99,3 +100,32 @@ No trustworthy before/after native frame-time comparison was obtained. The
 reported macOS ~120 FPS remains user-provided baseline information, not a result
 verified in this VM. Follow the fixture measurement instructions in
 [the operator notes](../plaza/HANDOVER.md) on the target Mac.
+
+
+## Night-city and optional penguins follow-up (2026-09-08)
+
+Rebased onto `2fac43d50488949c0627314e3e1fc74b154ed424`, including the animated
+penguin model from main. The shared renderer uses it with a whole-group budget
+and a localized visibility control. The architectural pass adds the bounded
+building recipes, project crown, status roofs and map context separation.
+
+A second CPU comparison uses the same `generateProjectWorld` defaults before
+and after the architectural recipes, on the same VM and the same test fixture:
+
+| Tasks | Rebased baseline median / p95 | Night-city median / p95 |
+|---|---|---|
+| 28 | 1.886 / 3.693 ms | 1.156 / 4.560 ms |
+| 100 | 3.559 / 7.750 ms | 4.265 / 12.302 ms |
+| 500 | 134.780 / 191.512 ms | 127.588 / 179.515 ms |
+
+These short VM runs are noisy; they do not establish a speedup or a sustained
+frame-rate result. They exclude character route construction, GPU work, database
+reads and widget mounting. The 500-task synchronous construction limit remains.
+The default character budget now bounds actual spawned rigs to 24 (the fixture
+previously spawned 78 despite that configured budget).
+
+The old Home screenshot raced texture capture and frame presentation. A settled
+return to Home displayed both text and cover art correctly; the tour now gates
+its ready marker on capture acknowledgement and completed raster timing. Linux
+fixture captures are usable for visual review. The reported macOS 120 FPS still
+requires a target-device profile; these captures cannot verify it.

@@ -231,6 +231,10 @@ class SurfaceCaptures {
     }
   }
 
+  /// Still-image requests waiting for an acknowledged texture. The tour
+  /// must not publish a screenshot while its initial signs are placeholders.
+  bool get hasPending => _pendingOnce.isNotEmpty;
+
   /// Total captures across every registered surface.
   int get captures {
     var n = 0;

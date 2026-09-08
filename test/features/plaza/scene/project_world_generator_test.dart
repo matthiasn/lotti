@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/domain/building_architecture.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/project_world_generator.dart';
@@ -67,6 +68,52 @@ void main() {
       expect(empty.plan.placements, isEmpty);
       expect(empty.plaza, isNull);
       expect(empty.billboards, isEmpty);
+    },
+  );
+
+  test(
+    'architecture configuration changes silhouettes without moving addresses',
+    () {
+      final baseline = generateProjectWorld(
+        project: project,
+        tasks: tasks,
+        now: now,
+      );
+      const config = ProjectWorldConfig(
+        architecture: ArchitectureConfig(
+          seed: 9,
+          streetwallFraction: 0.8,
+          towerInsetFraction: 0.25,
+        ),
+      );
+      final alternative = generateProjectWorld(
+        project: project,
+        tasks: tasks,
+        now: now,
+        config: config,
+      );
+      expect(alternative.architecture, same(config.architecture));
+      expect(
+        alternative.architectureByTaskId.keys.toSet(),
+        tasks.map((t) => t.id).toSet(),
+      );
+      for (final task in tasks) {
+        final plot = alternative.plan.placements[task.id]!;
+        final original = baseline.plan.placements[task.id]!;
+        final kit = alternative.architectureByTaskId[task.id]!;
+        expect(
+          (plot.x, plot.z, plot.bucketIndex),
+          (original.x, original.z, original.bucketIndex),
+        );
+        expect(kit.frontageHeight, plot.height * 0.8);
+        expect(
+          kit.facadeWidth,
+          plot.width * 0.75 * alternative.layout.billboardScaleFor(task),
+        );
+      }
+      expect(alternative.plaza!.home.x, baseline.plaza!.home.x);
+      expect(alternative.plaza!.home.z, baseline.plaza!.home.z);
+      expect(alternative.architectureByTaskId.clear, throwsUnsupportedError);
     },
   );
 

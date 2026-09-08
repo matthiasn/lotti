@@ -5,4 +5,5 @@
   overdue tasks. Category avenues lead into individual projects, while search,
   an aerial overview, and a morning walk help you find what needs attention.
   Billboards show live task details and checklist progress, with checklist
-  updates saved to the task.
+  updates saved to the task. Recessed shopfronts and stepped towers line the
+  streets, and an optional penguin population brings the plaza to life.

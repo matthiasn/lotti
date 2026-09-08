@@ -10413,6 +10413,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get plazaSearchHint => 'Căutați sarcini, Enter pentru a zbura';
 
   @override
+  String get plazaShowPenguins => 'Pinguini';
+
+  @override
   String plazaStaleReason(int days) {
     return 'fără activitate de $days zile — reluați-o';
   }

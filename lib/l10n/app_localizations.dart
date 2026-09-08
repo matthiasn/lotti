@@ -17323,6 +17323,12 @@ abstract class AppLocalizations {
   /// **'Search tasks, Enter to fly'**
   String get plazaSearchHint;
 
+  /// No description provided for @plazaShowPenguins.
+  ///
+  /// In en, this message translates to:
+  /// **'Penguins'**
+  String get plazaShowPenguins;
+
   /// No description provided for @plazaStaleReason.
   ///
   /// In en, this message translates to:

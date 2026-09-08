@@ -10313,6 +10313,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get plazaSearchHint => 'Procura tarefas, Enter para voar';
 
   @override
+  String get plazaShowPenguins => 'Pinguins';
+
+  @override
   String plazaStaleReason(int days) {
     return 'sem atividade há $days dias — retoma-a';
   }

@@ -78,6 +78,47 @@ void main() {
         roadWidth: world.layout.roadWidth,
       );
 
+  for (final budget in [0, 1, 2, 3, 24, 100]) {
+    test(
+      'budget $budget retains whole groups and a deterministic Home cast',
+      () {
+        final world = PlazaWorld(
+          tasks: plazaTasksFromDemoWorld(now: manualDemoNow),
+          now: manualDemoNow,
+          projectLabel: 'Project Waddle',
+          layout: StreetLayout(projectSeed: 1337, roadWidth: 25),
+        );
+        List<CharacterCompanion> cast() => CharacterPopulation.forWorld(
+          plan: world.plan,
+          plaza: world.plaza,
+          solids: world.solids,
+          roadWidth: world.layout.roadWidth,
+          maxCount: budget,
+        );
+        final actors = cast();
+        expect(actors.length, math.min(budget, 78));
+        expect(actors.map((a) => a.id).toSet(), hasLength(actors.length));
+        expect(actors.map((a) => a.id), cast().map((a) => a.id));
+        if (budget > 0) expect(actors.first.region, 'plaza');
+        if (budget >= 24) {
+          expect(actors.map((a) => a.region).toSet().length, greaterThan(4));
+        }
+        for (final actor in actors.where((a) => a.partnerLoop != null)) {
+          final partner = actors.where(
+            (a) =>
+                a.id != actor.id &&
+                a.region == actor.region &&
+                a.conversationSeed == actor.conversationSeed,
+          );
+          expect(partner, hasLength(1));
+          expect(partner.single.gait.loop, same(actor.partnerLoop));
+          expect(partner.single.partnerLoop, same(actor.gait.loop));
+        }
+        expect(actors.clear, throwsUnsupportedError);
+      },
+    );
+  }
+
   for (final folded in [false, true]) {
     test(
       'walkers inhabit every district of the ${folded ? 'folded' : 'demo'} world',

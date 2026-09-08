@@ -4335,6 +4335,7 @@
   "plazaPaused": "Gepauzeerd",
   "plazaProjectOverdue": "Achterstallige taken: {count}",
   "plazaSearchHint": "Zoek taken, Enter om erheen te vliegen",
+  "plazaShowPenguins": "Pinguïns",
   "plazaStaleReason": "al {days} dagen stil — pak het weer op",
   "plazaStats": "{tasks} taken · {weeks} weken · {attention} vragen aandacht",
   "plazaTaskCount": "Taken: {count}",

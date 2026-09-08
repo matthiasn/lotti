@@ -101,6 +101,7 @@ PlazaWorld generateCategoryWorld({
     projectLabel: data.category.name,
     layout: config.layoutFor(data.category.id),
     ambientCreatures: config.ambientCreatures,
+    architecture: config.architecture,
     categoryLabels: {color.toRadixString(16): data.category.name},
     avenueLabels: {for (final (i, portal) in portals.indexed) i: portal.title},
     avenueByProjectId: {

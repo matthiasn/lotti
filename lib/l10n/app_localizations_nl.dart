@@ -10235,6 +10235,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get plazaSearchHint => 'Zoek taken, Enter om erheen te vliegen';
 
   @override
+  String get plazaShowPenguins => 'Pinguïns';
+
+  @override
   String plazaStaleReason(int days) {
     return 'al $days dagen stil — pak het weer op';
   }

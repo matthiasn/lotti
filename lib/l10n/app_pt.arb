@@ -4335,6 +4335,7 @@
   "plazaPaused": "Em pausa",
   "plazaProjectOverdue": "Tarefas em atraso: {count}",
   "plazaSearchHint": "Procura tarefas, Enter para voar",
+  "plazaShowPenguins": "Pinguins",
   "plazaStaleReason": "sem atividade há {days} dias — retoma-a",
   "plazaStats": "{tasks} tarefas · {weeks} semanas · {attention} precisam de atenção",
   "plazaTaskCount": "Tarefas: {count}",

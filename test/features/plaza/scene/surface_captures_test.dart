@@ -22,6 +22,26 @@ final _inFront = Vector3(0, 1.7, 10);
 final _towardsOrigin = Vector3(0, 0, -1);
 
 void main() {
+  test(
+    'tour readiness waits for pending captures and their acknowledgement',
+    () {
+      final captures = SurfaceCaptures();
+      final controller = FakeWidgetTextureController();
+      expect(captures.hasPending, isFalse);
+      captures.once(controller);
+      expect(captures.hasPending, isTrue);
+      captures.requestPending();
+      expect(captures.hasPending, isTrue);
+      controller.landed++;
+      captures.requestPending();
+      expect(captures.hasPending, isFalse);
+      captures.invalidate(controller);
+      expect(captures.hasPending, isTrue);
+      captures.forget(controller);
+      expect(captures.hasPending, isFalse);
+    },
+  );
+
   group('requestDue', () {
     test('the first capture is free and the next waits for the interval', () {
       final captures = SurfaceCaptures();

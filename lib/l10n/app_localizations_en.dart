@@ -10169,6 +10169,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plazaSearchHint => 'Search tasks, Enter to fly';
 
   @override
+  String get plazaShowPenguins => 'Penguins';
+
+  @override
   String plazaStaleReason(int days) {
     return 'quiet for $days days — pick it back up';
   }

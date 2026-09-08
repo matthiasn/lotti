@@ -10227,6 +10227,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get plazaSearchHint => 'Sök uppgifter, Enter för att flyga';
 
   @override
+  String get plazaShowPenguins => 'Pingviner';
+
+  @override
   String plazaStaleReason(int days) {
     return 'ingen aktivitet på $days dagar — ta upp den igen';
   }

@@ -4,7 +4,8 @@ Plaza turns a desktop project into a walkable nighttime district. Each task
 has a building and a billboard showing its title, status, due date and checklist
 progress. Larger signs emphasize priority; overdue work burns above its signs.
 Completed tasks have quiet green buildings set back from the street, with green
-roof lights that remain readable in the aerial overview.
+roofs that remain readable in the aerial overview. Recessed shopfronts and
+stepped tower silhouettes give each task a place along the avenue.
 
 Open **Explore project** from a project's details, or **Explore category**
 under a category in the Projects list. A category has an avenue for each
@@ -16,13 +17,12 @@ Black-and-white penguin companions stroll through the streets and open square,
 alone or in pairs, with balancing flippers and orange webbed feet. Companions
 occasionally glance toward one another as if in conversation, with eyes leading
 the turn and independent blinks. A mix of compact, standard and upright builds
-gives the crowd variety. They are ambient scene characters; reduced-motion
-settings pause them.
+gives the crowd variety. The **Penguins** option shows or hides them, and
+reduced-motion settings pause them.
 
 The existing walk, drag-to-look, beacon navigation, search, Home, Overview and
 Morning walk remain available. Nearby task facades offer checklist edits and
-open the regular task details page. Animated penguin companions walk through the streets and plaza, alone or in pairs.
-They respect the system reduced-motion preference.
+open the regular task details page.
 
 The feature targets desktop Flutter GPU / Impeller. Unsupported renderers show
 an unavailable message with a way back. Mobile controls and agent-directed world

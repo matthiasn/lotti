@@ -1,4 +1,5 @@
 import 'package:lotti/features/plaza/domain/attention.dart';
+import 'package:lotti/features/plaza/domain/building_architecture.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
@@ -24,9 +25,18 @@ class PlazaWorld {
     this.avenueLabels = const {},
     this.avenueByProjectId = const {},
     this.ambientCreatures = 24,
+    this.architecture = const ArchitectureConfig(),
     PlazaCopy? copy,
   }) : copy = copy ?? PlazaCopy.english {
     plan = layout.plan(tasks, epoch: epoch, bucketOverrides: avenueByProjectId);
+    architectureByTaskId = Map.unmodifiable({
+      for (final task in tasks)
+        task.id: BuildingArchitecture.forPlot(
+          plan.placements[task.id]!,
+          config: architecture,
+          billboardScale: layout.billboardScaleFor(task),
+        ),
+    });
     plaza = frontierPlazaFor(plan);
     final verdicts = attentionForAll(tasks, now);
     attention = {for (final a in verdicts) a.task.id: a};
@@ -95,6 +105,7 @@ class PlazaWorld {
   final DateTime? epoch;
   final PlazaCopy copy;
   final int ambientCreatures;
+  final ArchitectureConfig architecture;
   final Map<int, String> avenueLabels;
   final Map<String, int> avenueByProjectId;
   bool get isCategory => avenueByProjectId.isNotEmpty;
@@ -129,6 +140,7 @@ class PlazaWorld {
   }
 
   late final StreetPlan plan;
+  late final Map<String, BuildingArchitecture> architectureByTaskId;
   late final FrontierPlaza? plaza;
   late final Map<String, TaskAttention> attention;
   late final List<TaskAttention> anomalies;

@@ -1,6 +1,6 @@
 import 'dart:async' show unawaited;
 import 'dart:math' as math;
-import 'dart:ui' show FrameTiming;
+import 'dart:ui' show FramePhase, FrameTiming;
 
 import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/services.dart';
@@ -13,8 +13,8 @@ import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_bench.dart';
-import 'package:lotti/features/plaza/scene/plaza_fire.dart';
 import 'package:lotti/features/plaza/scene/plaza_characters.dart';
+import 'package:lotti/features/plaza/scene/plaza_fire.dart';
 import 'package:lotti/features/plaza/scene/plaza_picker.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
@@ -117,7 +117,9 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   PlazaFire? _fire;
   PlazaCharacters? _characters;
   Node? _penguinModel;
+  bool _loadingPenguinModel = false;
   bool _animateCharacters = true;
+  bool _showPenguins = true;
   late PlazaSurfaces _surfaces;
   late PlazaPicker _picker;
   late FlyCameraController _camera;
@@ -156,6 +158,8 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   int _tourStop = -1;
   double _tourClock = 0;
   bool _tourAnnounced = false;
+  int? _tourReadyFrameMicros;
+  String? _tourReadyReport;
   bool _tourDone = false;
 
   /// Sprites and the gradient sky touch the base shader library, which must
@@ -188,9 +192,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     await Future.sync(() => gpu.gpuContext);
     await Scene.initializeStaticResources();
     _walls = await WallTextures.load(copy: widget.world.copy);
-    if (!_hidden.contains('characters') && !_hidden.contains('life')) {
-      _penguinModel = await PlazaCharacters.loadModel();
-    }
+    await _ensurePenguinModel();
     if (!mounted) return;
     _load();
     switch (_mode) {
@@ -227,6 +229,21 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   void _recordEngineFrames(List<FrameTiming> timings) {
     _engineFrames += timings.length;
     _engineFramesSinceTrace += timings.length;
+    final readyFrame = _tourReadyFrameMicros;
+    if (readyFrame != null &&
+        timings.any(
+          (frame) =>
+              frame.timestampInMicroseconds(FramePhase.vsyncStart) >=
+              readyFrame,
+        )) {
+      // Raster timings acknowledge the frame that includes the captured
+      // surfaces. Announcing during _onTick races the X11 screenshot reader.
+      debugPrint(_tourReadyReport);
+      _tourReadyFrameMicros = null;
+      _tourReadyReport = null;
+      _tourAnnounced = true;
+      _tourClock = _tourSettleSeconds;
+    }
   }
 
   @override
@@ -305,6 +322,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       epoch: input.epoch,
       copy: input.copy,
       ambientCreatures: input.ambientCreatures,
+      architecture: input.architecture,
       avenueLabels: input.avenueLabels,
       avenueByProjectId: input.avenueByProjectId,
       layout: input.layout.copyWith(
@@ -348,23 +366,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       pxPerMeter: _sceneController.pxPerMeter,
     );
     final batches = _sceneController.bakeStaticMeshes();
-    // Animated skeletons must remain outside stationary mesh batches.
-    _characters?.dispose();
-    _characters = PlazaCharacters(
-      parent: _sceneController.scene.root,
-      model: _penguinModel,
-      shadowTexture: walls?.pool,
-      population: _hidden.contains('characters') ||
-              _hidden.contains('life') ||
-              _world.ambientCreatures <= 0
-          ? const []
-          : CharacterPopulation.forWorld(
-              plan: _world.plan,
-              plaza: _world.plaza,
-              solids: _world.solids,
-              roadWidth: _world.layout.roadWidth,
-            ),
-    );
+    _attachCharacters();
     debugPrint(
       'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches}',
     );
@@ -387,6 +389,56 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     _panel = null;
   }
 
+  void _attachCharacters() {
+    // Animated skeletons must remain outside stationary mesh batches.
+    _characters?.dispose();
+    _characters = PlazaCharacters(
+      parent: _sceneController.scene.root,
+      model: _penguinModel,
+      shadowTexture: _walls?.pool,
+      population:
+          _hidden.contains('characters') ||
+              _hidden.contains('life') ||
+              _world.ambientCreatures <= 0
+          ? const []
+          : CharacterPopulation.forWorld(
+              plan: _world.plan,
+              plaza: _world.plaza,
+              solids: _world.solids,
+              roadWidth: _world.layout.roadWidth,
+              maxCount: _world.ambientCreatures,
+            ),
+    )..enabled = _showPenguins;
+  }
+
+  /// Load only when permitted by the current scope. A live configuration
+  /// change can enable companions after a world initially reserved none.
+  Future<void> _ensurePenguinModel() async {
+    if (_penguinModel != null ||
+        _loadingPenguinModel ||
+        widget.world.ambientCreatures == 0 ||
+        _hidden.contains('characters') ||
+        _hidden.contains('life')) {
+      return;
+    }
+    _loadingPenguinModel = true;
+    try {
+      final model = await PlazaCharacters.loadModel();
+      if (!mounted) return;
+      _penguinModel = model;
+      if (_ready) {
+        _attachCharacters();
+        setState(() {});
+        _wakeForInput();
+      }
+    } catch (error, stack) {
+      // Ambient life is optional; a failed model must not block project data.
+      _reportTextureError(error, stack);
+    } finally {
+      _loadingPenguinModel = false;
+    }
+  }
+
   @override
   void didUpdateWidget(PlazaView oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -394,6 +446,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       final pose = _camera.pose;
       _lod.dispose();
       _load(pose: pose);
+      unawaited(_ensurePenguinModel());
       _frameCamera = null;
       _wakeForInput();
       if (oldWidget.world.copy.messages.localeName !=
@@ -648,21 +701,28 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
 
   void _tourTick(double dt) {
     if (_tourDone || _tourStop < 0) return;
+    if (!_tourAnnounced && _surfaces.hasPendingCaptures) {
+      _tourClock = 0;
+      return;
+    }
     _tourClock += dt;
-    if (!_tourAnnounced && _tourClock >= _tourSettleSeconds) {
-      _tourAnnounced = true;
+    if (!_tourAnnounced &&
+        _tourReadyFrameMicros == null &&
+        !_surfaces.hasPendingCaptures &&
+        _tourClock >= _tourSettleSeconds) {
+      _tourReadyFrameMicros =
+          SchedulerBinding.instance.currentSystemFrameTimeStamp.inMicroseconds;
       final focused = _lod.focused;
       final eye = _camera.position;
-      debugPrint(
-        'PLAZA_TOUR ready $_tourStop ${plazaTourStops[_tourStop].name} '
-        'live=${_lod.stats.live} sign=${_lod.stats.sign} '
-        'focused=${focused?.task.title} '
-        'd=${focused?.groundDistanceTo(eye).toStringAsFixed(1)} '
-        'range=${focused?.liveRange.toStringAsFixed(1)} '
-        '[${_lod.describeNearest(eye)}]',
-      );
+      _tourReadyReport =
+          'PLAZA_TOUR ready $_tourStop ${plazaTourStops[_tourStop].name} '
+          'live=${_lod.stats.live} sign=${_lod.stats.sign} '
+          'focused=${focused?.task.title} '
+          'd=${focused?.groundDistanceTo(eye).toStringAsFixed(1)} '
+          'range=${focused?.liveRange.toStringAsFixed(1)} '
+          '[${_lod.describeNearest(eye)}]';
     }
-    if (_tourClock < _tourHoldSeconds) return;
+    if (!_tourAnnounced || _tourClock < _tourHoldSeconds) return;
     _applyTourStop(_tourStop + 1);
   }
 
@@ -815,6 +875,18 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
                 setState(() => _frameRate = rate);
                 _wakeForInput();
               },
+              showPenguins:
+                  _showPenguins &&
+                  _penguinModel != null &&
+                  _world.ambientCreatures > 0,
+              onShowPenguinsChanged:
+                  _penguinModel == null || _world.ambientCreatures == 0
+                  ? null
+                  : (show) {
+                      setState(() => _showPenguins = show);
+                      _characters?.enabled = show;
+                      _wakeForInput();
+                    },
               showDebug: _showDebug,
               onShowDebugChanged: (show) => setState(() => _showDebug = show),
               toast: _toast,

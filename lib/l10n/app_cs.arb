@@ -3869,6 +3869,7 @@
   "plazaPaused": "Pozastaveno",
   "plazaProjectOverdue": "Úkoly po termínu: {count}",
   "plazaSearchHint": "Hledej úkoly, Enter pro přelet",
+  "plazaShowPenguins": "Tučňáci",
   "plazaStaleReason": "bez aktivity {days} dní — vrať se k tomu",
   "plazaStats": "{tasks} úkolů · {weeks} týdnů · {attention} vyžaduje pozornost",
   "plazaTaskCount": "Úkoly: {count}",

@@ -59,6 +59,19 @@ class PlazaCharacters {
   bool _hasVisibleMotion = false;
   double? _lastSeconds;
   double _animationSeconds = 0;
+  bool _enabled = true;
+  bool _disposed = false;
+
+  /// Hide and pause the existing rigs without rebuilding the city or camera.
+  /// Reset the time baseline on both edges so hidden time never catches up.
+  bool get enabled => _enabled;
+  set enabled(bool value) {
+    if (_disposed || value == _enabled) return;
+    _enabled = value;
+    root.visible = value;
+    _lastSeconds = null;
+    _hasVisibleMotion = false;
+  }
 
   /// Loads the original model and applies the existing token palette. The
   /// model is authored in Plaza's +Z-forward coordinates, so retain its own
@@ -100,6 +113,7 @@ class PlazaCharacters {
     required Vector3 eye,
     required bool animate,
   }) {
+    if (!_enabled || _disposed) return;
     final last = _lastSeconds;
     _lastSeconds = seconds;
     if (animate && last != null) {
@@ -119,6 +133,7 @@ class PlazaCharacters {
   }
 
   void dispose() {
+    _disposed = true;
     root.parent?.remove(root);
     _hasVisibleMotion = false;
   }

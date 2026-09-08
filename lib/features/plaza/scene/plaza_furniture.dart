@@ -253,26 +253,47 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
       final towerH = box.height;
       final towerW = box.width;
       final towerD = box.depth;
-      // The tower is a building, not a slab: windowed on every face, a
-      // lit crown, neon on its front corners. Its box is the scenery's,
-      // so the collider knows it.
-      final tower = _boxes.node(
-        Vector3(towerW, towerH, towerD),
-        PlazaSceneController._towerMaterial,
-        transform: Matrix4.translation(
+      // The project landmark uses the same recipe as task buildings, with
+      // a reserved streetwall tall enough to carry the complete project sign.
+      final architecture = BuildingArchitecture.forEnvelope(
+        id: box.id,
+        width: towerW,
+        depth: towerD,
+        height: towerH,
+        config: world.architecture,
+        family: BuildingFamily.steppedTower,
+        minimumFrontageHeight: jumbotron.bottom + jumbotron.height,
+      );
+      final tower = Node(
+        localTransform: Matrix4.translation(
           Vector3(0, towerH / 2, -jumbotronTowerSetback),
         ),
-        shaded: true,
       );
-      _windowedBox(
-        tower,
-        id: 'jumbotron',
-        w: towerW,
-        d: towerD,
-        height: towerH,
-        state: LanternState.inProgress,
-        tint: PlazaSceneController._tower,
-      );
+      for (final (index, volume) in architecture.volumes.indexed) {
+        final tier = _boxes.node(
+          Vector3(volume.width, volume.height, volume.depth),
+          PlazaSceneController._towerMaterial,
+          transform: Matrix4.translation(
+            Vector3(
+              volume.x,
+              volume.bottom + volume.height / 2 - towerH / 2,
+              volume.z,
+            ),
+          ),
+          shaded: true,
+        );
+        _windowedBox(
+          tier,
+          id: 'jumbotron-$index',
+          w: volume.width,
+          d: volume.depth,
+          height: volume.height,
+          state: LanternState.inProgress,
+          tint: PlazaSceneController._tower,
+          groundFloor: index == 0,
+        );
+        tower.add(tier);
+      }
       // The corner strips and crown at a quarter, so the screen's own
       // border is the one teal frame on the tower.
       final corner = UnlitMaterial()
@@ -282,8 +303,12 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
       for (final side in [-1.0, 1.0]) {
         _box(
           tower,
-          Vector3(side * (towerW / 2 + 0.1), 0, towerD / 2 + 0.1),
-          Vector3(0.25, towerH, 0.25),
+          Vector3(
+            side * (towerW / 2 + 0.1),
+            (architecture.frontageHeight - towerH) / 2,
+            towerD / 2 + 0.1,
+          ),
+          Vector3(0.25, architecture.frontageHeight, 0.25),
           corner,
         );
       }
@@ -292,7 +317,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
         tower,
         w: towerW,
         d: towerD,
-        y: towerH / 2 + 0.1,
+        y: architecture.frontageHeight - towerH / 2 + 0.1,
         inset: -0.1,
         overhang: 0.4,
         thickness: 0.22,
