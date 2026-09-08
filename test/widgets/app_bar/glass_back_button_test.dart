@@ -1,6 +1,7 @@
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
@@ -156,5 +157,22 @@ void main() {
 
       handle.dispose();
     });
+  });
+
+  testWidgets('forwards its background colour to the glass button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GlassBackButton(
+          onPressed: () {},
+          backgroundColor: PhotoNeutralGlass.fill,
+        ),
+      ),
+    );
+    expect(
+      tester.widget<GlassActionButton>(find.byType(GlassActionButton)).fill,
+      PhotoNeutralGlass.fill,
+    );
   });
 }

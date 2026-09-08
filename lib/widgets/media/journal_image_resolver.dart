@@ -36,6 +36,20 @@ class ResolvedJournalImage {
   /// True while there is neither a file nor a stand-in — the host decides
   /// what an honest empty looks like for its shape.
   bool get hasNothingToShow => !fileExists && thumbHash == null;
+
+  /// A value: two resolutions of the same path in the same state are the
+  /// same resolution, which is what lets a host that caches by it (a sliver
+  /// delegate's `shouldRebuild`) tell "nothing changed" from "the file
+  /// landed".
+  @override
+  bool operator ==(Object other) =>
+      other is ResolvedJournalImage &&
+      other.path == path &&
+      other.fileExists == fileExists &&
+      other.thumbHash == thumbHash;
+
+  @override
+  int get hashCode => Object.hash(path, fileExists, thumbHash);
 }
 
 /// Builds a host's picture from what [JournalImageResolver] resolved, or from
@@ -111,25 +125,36 @@ class _JournalImageResolverState extends ConsumerState<JournalImageResolver>
   }
 }
 
-/// The file at [path] as an [ImageProvider] decoded no larger than a
-/// [size]-point square at [devicePixelRatio] — the decode a thumbnail or an
-/// avatar actually needs, rather than the full photograph.
+/// The file at [path] as an [ImageProvider] decoded no larger than [bounds]
+/// logical points at [devicePixelRatio] — the decode a slot actually needs,
+/// rather than the full photograph.
 ///
-/// [ResizeImagePolicy.fit] caps both axes while keeping the source's aspect ratio,
-/// so a non-square photo is not squashed into a square decode; the host's
-/// `BoxFit.cover` then crops it. A non-positive [size] decodes at full size.
+/// [ResizeImagePolicy.fit] caps both axes while keeping the source's aspect
+/// ratio, so a photo is never squashed into the slot's shape; the host's
+/// `BoxFit.cover` then crops it. A non-positive bound decodes at full size.
+ImageProvider boundedFileImage(
+  String path, {
+  required Size bounds,
+  required double devicePixelRatio,
+}) {
+  final fileImage = FileImage(File(path));
+  if (bounds.width <= 0 || bounds.height <= 0) return fileImage;
+  return ResizeImage(
+    fileImage,
+    width: (bounds.width * devicePixelRatio).round().clamp(1, 10000),
+    height: (bounds.height * devicePixelRatio).round().clamp(1, 10000),
+    policy: ResizeImagePolicy.fit,
+  );
+}
+
+/// [boundedFileImage] for a square slot of [size] points — a thumbnail or an
+/// avatar.
 ImageProvider cappedFileImage(
   String path, {
   required double size,
   required double devicePixelRatio,
-}) {
-  final fileImage = FileImage(File(path));
-  if (size <= 0) return fileImage;
-  final cap = (size * devicePixelRatio).round().clamp(1, 10000);
-  return ResizeImage(
-    fileImage,
-    width: cap,
-    height: cap,
-    policy: ResizeImagePolicy.fit,
-  );
-}
+}) => boundedFileImage(
+  path,
+  bounds: Size.square(size),
+  devicePixelRatio: devicePixelRatio,
+);

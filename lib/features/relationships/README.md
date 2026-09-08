@@ -18,8 +18,10 @@ and person editor, and tapping the avatar opens the person's photo: choose
 one from the library and pick which part of it is the face, adjust that
 later, or remove it. The photo shows wherever the person does, inside their
 usual colour; it stays on the user's devices and never enters agent context.
-The bottom action bar offers a check-in, voice capture and an available
-contact action.
+A person can also carry a banner image: it fills the top of the hero, above a
+bar of the teal wash, with the header's actions kept legible over it. The
+bottom action bar offers a check-in, voice capture and an available contact
+action.
 
 ## Briefings and suggestions
 

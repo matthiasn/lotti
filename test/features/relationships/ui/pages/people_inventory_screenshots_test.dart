@@ -65,6 +65,7 @@ import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
@@ -319,6 +320,7 @@ void main() {
     List<ContactChannel> channels = const [],
     String? avatarImageId,
     AvatarCrop? avatarCrop,
+    String? bannerImageId,
   }) => RelationshipEntry(
     meta: meta(id, at: DateTime(2026, 3, 2)),
     data: RelationshipData(
@@ -329,6 +331,7 @@ void main() {
       contactChannels: channels,
       avatarImageId: avatarImageId,
       avatarCrop: avatarCrop,
+      bannerImageId: bannerImageId,
       status: RelationshipStatus.active(
         id: 'status-$id',
         createdAt: DateTime(2026, 3, 2),
@@ -392,6 +395,9 @@ void main() {
     channels: const [_pipMobile, _pipEmail],
     avatarImageId: _pipPhoto.id,
     avatarCrop: const AvatarCrop(y: 0.35, scale: 1.4),
+    // The same picture as the banner: a wide crop of it is what a person's
+    // "something that reminds me of them" is likely to be anyway.
+    bannerImageId: _pipPhoto.id,
   );
   final pipCheckIns = [
     checkIn(
@@ -696,6 +702,19 @@ void main() {
     final ring = PersonaAvatar.ringWidth(dsTokensDark);
     final devicePixelRatio = _mediaQueryFor(device).devicePixelRatio;
     await tester.runAsync(() async {
+      // The banner decodes bounded to the hero's strip at rest, at the
+      // shell's full width — the same key the hero builds.
+      await precacheImage(
+        boundedFileImage(
+          path,
+          bounds: Size(
+            device.size.width,
+            PersonHeroAppBar.bannerStripExtent(dsTokensDark, topPadding: 0),
+          ),
+          devicePixelRatio: devicePixelRatio,
+        ),
+        context,
+      );
       // The stand-in is keyed on the hash, so this is the exact entry the
       // list row's arriving avatar resolves to.
       await precacheImage(
@@ -978,6 +997,66 @@ void main() {
     await captureScreenshot(
       tester,
       'person_page_post_call_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
+  // -----------------------------------------------------------------
+  // The banner's other two states: on its way, and folded.
+  // -----------------------------------------------------------------
+  testWidgets('mobile person page, banner arriving — dark', (tester) async {
+    when(() => repository.getRelationshipById(_pipId)).thenAnswer(
+      (_) async => pip.copyWith(
+        data: pip.data.copyWith(bannerImageId: _skuaArriving.id),
+      ),
+    );
+
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: personOverrides(report: briefing()),
+    );
+
+    expect(
+      find.byKey(const ValueKey('person-hero-scrim')),
+      findsOneWidget,
+      reason: 'the stand-in wears the same scrim the picture will',
+    );
+    await captureScreenshot(
+      tester,
+      'person_page_banner_arriving_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
+  testWidgets('mobile person page, hero folded onto the banner — dark', (
+    tester,
+  ) async {
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: personOverrides(report: briefing()),
+    );
+    await withClock(Clock.fixed(_now), () async {
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -320),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    expect(
+      find.byKey(const ValueKey('person-hero-title')),
+      findsOneWidget,
+      reason: 'the name has swapped into the bar, over the picture',
+    );
+    await captureScreenshot(
+      tester,
+      'person_page_banner_folded_mobile_dark',
       subdir: _subdir,
     );
   });

@@ -215,6 +215,88 @@ void main() {
     });
   });
 
+  group('ResolvedJournalImage', () {
+    test('is a value: same path, same state, same resolution', () {
+      final hash = ThumbHash.fromBase64(sampleThumbHash);
+      const a = ResolvedJournalImage(
+        path: '/p',
+        fileExists: false,
+        thumbHash: null,
+      );
+      expect(
+        a,
+        const ResolvedJournalImage(
+          path: '/p',
+          fileExists: false,
+          thumbHash: null,
+        ),
+      );
+      expect(
+        a,
+        isNot(
+          const ResolvedJournalImage(
+            path: '/p',
+            fileExists: true,
+            thumbHash: null,
+          ),
+        ),
+        reason: 'the file landing is a change a host must see',
+      );
+      expect(
+        a,
+        isNot(
+          ResolvedJournalImage(path: '/p', fileExists: false, thumbHash: hash),
+        ),
+      );
+      expect(
+        a,
+        isNot(
+          const ResolvedJournalImage(
+            path: '/q',
+            fileExists: false,
+            thumbHash: null,
+          ),
+        ),
+      );
+      expect(a.hashCode, a.hashCode);
+    });
+  });
+
+  group('boundedFileImage', () {
+    test('caps each axis to its own bound at the pixel ratio, keeping the '
+        'aspect ratio — a banner strip is wide, not square', () {
+      final provider =
+          boundedFileImage(
+                '/p/a.jpg',
+                bounds: const Size(402, 96),
+                devicePixelRatio: 2,
+              )
+              as ResizeImage;
+      expect(provider.width, 804);
+      expect(provider.height, 192);
+      expect(provider.policy, ResizeImagePolicy.fit);
+    });
+
+    test('a non-positive bound on either axis decodes at full size', () {
+      expect(
+        boundedFileImage(
+          '/p/a.jpg',
+          bounds: const Size(0, 96),
+          devicePixelRatio: 2,
+        ),
+        isA<FileImage>(),
+      );
+      expect(
+        boundedFileImage(
+          '/p/a.jpg',
+          bounds: const Size(402, -1),
+          devicePixelRatio: 2,
+        ),
+        isA<FileImage>(),
+      );
+    });
+  });
+
   group('cappedFileImage', () {
     test('caps both axes to the slot at the device pixel ratio, keeping the '
         'aspect ratio', () {

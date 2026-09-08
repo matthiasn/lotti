@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +11,7 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
@@ -17,10 +21,18 @@ import 'package:lotti/features/relationships/state/contact_link_controller.dart'
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
+import 'package:lotti/widgets/app_bar/glass_back_button.dart';
+import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/journal_image_fixtures.dart';
+import '../../../../helpers/thumb_hash_fixtures.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 class _FakeContactsService implements ContactsService {
@@ -78,6 +90,8 @@ void main() {
     Map<String, String> refs = const {},
     String? avatarImageId,
     AvatarCrop? avatarCrop,
+    String? bannerImageId,
+    double bannerCropX = 0.5,
   }) => RelationshipEntry(
     meta: Metadata(
       id: 'rel-1',
@@ -94,6 +108,8 @@ void main() {
       contactRefs: refs,
       avatarImageId: avatarImageId,
       avatarCrop: avatarCrop,
+      bannerImageId: bannerImageId,
+      bannerCropX: bannerCropX,
       status:
           status ??
           RelationshipStatus.active(
@@ -338,6 +354,207 @@ void main() {
         find.byKey(const ValueKey('person-hero-avatar-tap')),
       );
       expect(semantics.flagsCollection.isButton, isFalse);
+    });
+
+    group('with a banner (design 2026-09-08, direction 2b)', () {
+      late Directory documents;
+
+      setUp(() async {
+        documents = Directory.systemTemp.createTempSync('person_hero_banner_');
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..registerSingleton<Directory>(documents)
+              ..registerSingleton<EditorStateService>(MockEditorStateService())
+              ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+          },
+        );
+      });
+
+      tearDown(() async {
+        await tearDownTestGetIt();
+        try {
+          documents.deleteSync(recursive: true);
+        } catch (_) {}
+      });
+
+      final banner = find.byKey(const ValueKey('person-hero-banner'));
+      final scrim = find.byKey(const ValueKey('person-hero-scrim'));
+      final wash = find.byKey(const ValueKey('person-hero-wash'));
+      DsTokens tokensOf(WidgetTester tester) =>
+          tester.element(wash).designTokens;
+      Color chatGlyph(WidgetTester tester) => tester
+          .widget<Icon>(
+            find.descendant(
+              of: find.byKey(const ValueKey('person-talk-to-agent')),
+              matching: find.byType(Icon),
+            ),
+          )
+          .color!;
+
+      testWidgets('without a banner the hero is the wash it always was: no '
+          'strip, no scrim, themed chrome', (tester) async {
+        await pump(tester);
+
+        expect(banner, findsNothing);
+        expect(scrim, findsNothing);
+        expect(tester.getTopLeft(wash).dy, 0);
+        expect(chatGlyph(tester), tokensOf(tester).colors.text.highEmphasis);
+        for (final button in tester.widgetList<GlassActionButton>(
+          find.byType(GlassActionButton),
+        )) {
+          expect(button.fill, isNull);
+        }
+      });
+
+      testWidgets('with a banner: the picture above, a one-toolbar wash bar '
+          'below, the scrim over the top, and photo-neutral chrome', (
+        tester,
+      ) async {
+        final image = buildJournalImage(imageFile: 'banner.jpg');
+        createImageFile(image);
+
+        await pump(
+          tester,
+          relationship: person(bannerImageId: image.id, bannerCropX: 0.25),
+          overrides: [createEntryControllerOverride(image)],
+        );
+        final tokens = tokensOf(tester);
+        // No status bar in the test shell.
+        final strip = PersonHeroAppBar.bannerStripExtent(
+          tokens,
+          topPadding: 0,
+        );
+
+        expect(tester.getSize(banner).height, strip);
+        expect(tester.getTopLeft(wash).dy, strip);
+        expect(
+          tester.getSize(wash).height,
+          PersonHeroAppBar.bannerBarExtent,
+          reason: 'the wash keeps exactly one toolbar of its band',
+        );
+        expect(
+          tester.getSize(scrim).height,
+          closeTo(strip * PhotoScrim.fadeExtent, 1e-9),
+        );
+        final picture = tester.widget<ThumbHashBackedImage>(
+          find.descendant(
+            of: banner,
+            matching: find.byType(ThumbHashBackedImage),
+          ),
+        );
+        expect(picture.alignment, const Alignment(-0.5, 0));
+        expect(picture.image, isA<ResizeImage>());
+        expect(chatGlyph(tester), PhotoNeutralGlass.glyph);
+        for (final button in tester.widgetList<GlassActionButton>(
+          find.byType(GlassActionButton),
+        )) {
+          expect(button.fill, PhotoNeutralGlass.fill);
+        }
+        final back = tester.widget<GlassBackButton>(
+          find.byType(GlassBackButton),
+        );
+        expect(back.iconColor, PhotoNeutralGlass.glyph);
+        expect(back.backgroundColor, PhotoNeutralGlass.fill);
+        // The kebab is the one control on the photo that is not glass; its
+        // glyph has to go neutral too or it vanishes in the light theme.
+        final kebab = tester.widget<Icon>(
+          find.descendant(
+            of: find.byKey(const ValueKey('person-menu')),
+            matching: find.byType(Icon),
+          ),
+        );
+        expect(kebab.color, PhotoNeutralGlass.glyph);
+      });
+
+      testWidgets('folding: the bar goes first, then the picture shrinks to '
+          'the toolbar, and the scrim still covers the toolbar', (
+        tester,
+      ) async {
+        final image = buildJournalImage(imageFile: 'banner.jpg');
+        createImageFile(image);
+        await pump(
+          tester,
+          tall: true,
+          relationship: person(bannerImageId: image.id),
+          overrides: [createEntryControllerOverride(image)],
+        );
+        final tokens = tokensOf(tester);
+        final strip = PersonHeroAppBar.bannerStripExtent(
+          tokens,
+          topPadding: 0,
+        );
+        final overhang = PersonHeroAppBar.avatarSize(tokens) / 2;
+
+        // Past the overhang and the bar: the bar is gone, the picture whole.
+        await tester.drag(
+          find.byType(CustomScrollView),
+          Offset(0, -(overhang + PersonHeroAppBar.bannerBarExtent)),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.getSize(wash).height, closeTo(0, 1e-9));
+        expect(tester.getSize(banner).height, closeTo(strip, 1e-9));
+
+        // Fully folded: the picture is the toolbar, still under the scrim.
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -600),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.getSize(banner).height, kToolbarHeight);
+        expect(
+          tester.getSize(scrim).height,
+          closeTo(
+            math.min(kToolbarHeight, strip * PhotoScrim.fadeExtent),
+            1e-9,
+          ),
+        );
+        expect(
+          find.byKey(const ValueKey('person-hero-title')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a banner still on its way shows its stand-in under the '
+          'scrim, with the chrome already photo-neutral', (tester) async {
+        final image = buildJournalImage(
+          imageFile: 'downloading.webp',
+          thumbHash: sampleThumbHash,
+        );
+
+        await pump(
+          tester,
+          relationship: person(bannerImageId: image.id),
+          overrides: [createEntryControllerOverride(image)],
+        );
+
+        final picture = tester.widget<ThumbHashBackedImage>(
+          find.descendant(
+            of: banner,
+            matching: find.byType(ThumbHashBackedImage),
+          ),
+        );
+        expect(picture.image, isNull);
+        expect(picture.thumbHash, isNotNull);
+        expect(scrim, findsOneWidget);
+        expect(chatGlyph(tester), PhotoNeutralGlass.glyph);
+      });
+
+      testWidgets('a banner id with nothing to show yet is the wash exactly '
+          'as without one', (tester) async {
+        final image = buildJournalImage(imageFile: 'downloading.webp');
+
+        await pump(
+          tester,
+          relationship: person(bannerImageId: image.id),
+          overrides: [createEntryControllerOverride(image)],
+        );
+
+        expect(banner, findsNothing);
+        expect(scrim, findsNothing);
+        expect(tester.getTopLeft(wash).dy, 0);
+        expect(chatGlyph(tester), tokensOf(tester).colors.text.highEmphasis);
+      });
     });
 
     testWidgets('the menu offers delete, and delete calls back', (

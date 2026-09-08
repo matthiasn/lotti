@@ -24,6 +24,10 @@ sources:
     resource: ../../../lib/features/design_system/theme/alpha_tokens.dart
     title: Hand-authored opacity tokens
     last_modified: 2026-07-29
+  - id: photo-chrome-tokens
+    resource: ../../../lib/features/design_system/theme/photo_chrome_tokens.dart
+    title: Hand-authored chrome-over-a-photograph tokens
+    last_modified: 2026-09-08
   - id: overrides
     resource: ../../../lib/themes/theme_overrides.dart
     title: App theme integration
@@ -64,7 +68,7 @@ typed surface of colors, typography, spacing and radii.
 
 **There is no sizing, motion or opacity group in the export.** If the export
 grows, the seam to update is the generator, not every component downstream.
-Three token sets are hand-authored outside this pipeline for the same reason —
+Four token sets are hand-authored outside this pipeline for the same reason —
 their values are brightness-invariant, so nothing lerps, and none exists as a
 Figma variable to import:
 
@@ -73,6 +77,7 @@ Figma variable to import:
 | **motion** | `motion_tokens.dart` | `Duration` and `Curve` are not lerp-able — see [agent UI surfaces](../agents/ui-surfaces.md) |
 | **sizing** | `sizing_tokens.dart` | `ControlSizes` for visible controls and container tiles, `TapTargets` for interaction shells, `IconSizes` for glyph dimensions, `BorderWidths` for strokes |
 | **opacity** | `alpha_tokens.dart` | `SurfaceAlphas` — fades applied to a surface or accent colour that must stay the same hue while receding |
+| **photo chrome** | `photo_chrome_tokens.dart` | `PhotoScrim` (`scrim.photoTop`) and `PhotoNeutralGlass` (`glass.photoNeutral`) — chrome over a *photograph*, which is the same picture in both themes, so black-at-strength and white glyphs rather than a themed surface. Named by the 2026-09-08 People design; used only by the person hero's banner |
 
 Before the sizing set existed, call sites borrowed `tokens.spacing.stepN` as
 control, icon, and stroke dimensions, which retuned them whenever the gap scale

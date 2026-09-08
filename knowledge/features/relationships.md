@@ -224,8 +224,30 @@ a plain unit test. Three rules are load-bearing:
   precedent (`setCoverArt(null)`): taking a picture off a person is not
   deleting it from the journal.
 
-**The banner does not render yet**: the person hero is still the flat teal
-wash, and nothing chooses a banner until the form's Photo card lands.
+**The banner renders — direction 2b.** With `bannerImageId` set, the hero
+becomes two stacked strips: the photograph takes the toolbar and the upper
+band, and the wash keeps a bar exactly one toolbar tall at the bottom of its
+band, which the avatar overlaps as before. `PersonHeroAppBar` resolves the
+banner *above* its sliver through `JournalImageResolver` (a component in a
+sliver slot returns the sliver), so the file's arrival rebuilds the hero; the
+ThumbHash stand-in shows under the same scrim meanwhile, and an id with
+nothing to show is the wash exactly as without a banner. Three things are
+fixed on purpose:
+
+- **The chrome goes photo-neutral** (`PhotoNeutralGlass`, hand-authored in
+  `photo_chrome_tokens.dart`): the theme's ink is near-black in the light
+  theme and would vanish on a picture, so every glass action, the back
+  button and the kebab take black-at-45 % glass and a white glyph whenever a
+  banner is drawn — in both themes.
+- **The scrim's extent is pixels, not a fraction of the current strip.**
+  `PhotoScrim` darkens the top 70 % of the strip *at rest*; folding, the bar
+  goes first, then the strip shrinks to the toolbar — and the scrim, fixed,
+  still covers the toolbar row, which is what keeps the swapped-in name and
+  the actions legible over an arbitrary picture at every scroll position.
+- **The decode is bounded to the strip at rest**, so scrolling never re-keys
+  the picture through the image cache.
+
+Nothing *chooses* a banner yet: that is the form's Photo card, after this.
 
 The field they replaced, `coverArtId`, was declared with the rest of the model
 and never written by anything, so it was **removed rather than migrated** — no

@@ -14,6 +14,7 @@ class GlassBackButton extends StatelessWidget {
     this.iconColor = Colors.white,
     this.iconSize = 24,
     this.containerSize = 34,
+    this.backgroundColor,
     super.key,
   });
 
@@ -29,12 +30,16 @@ class GlassBackButton extends StatelessWidget {
   /// Size of the glass container. Defaults to 34.
   final double containerSize;
 
+  /// Forwarded to [GlassActionButton.fill].
+  final Color? backgroundColor;
+
   @override
   Widget build(BuildContext context) {
     final tooltip = MaterialLocalizations.of(context).backButtonTooltip;
     return GlassActionButton(
       onTap: onPressed ?? () => Navigator.of(context).maybePop(),
       size: containerSize,
+      fill: backgroundColor,
       semanticLabel: tooltip,
       tooltip: tooltip,
       child: Icon(

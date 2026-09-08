@@ -12,6 +12,7 @@ class GlassActionButton extends StatelessWidget {
     this.size = defaultSize,
     this.semanticLabel,
     this.tooltip,
+    this.fill,
     super.key,
   });
 
@@ -34,6 +35,9 @@ class GlassActionButton extends StatelessWidget {
   /// Optional hover tooltip. When omitted, [semanticLabel] is used.
   final String? tooltip;
 
+  /// Forwarded to [GlassIconContainer.fill].
+  final Color? fill;
+
   @override
   Widget build(BuildContext context) {
     final label = semanticLabel ?? tooltip;
@@ -49,6 +53,7 @@ class GlassActionButton extends StatelessWidget {
           onTap: onTap,
           child: GlassIconContainer(
             size: size,
+            fill: fill,
             child: child,
           ),
         ),

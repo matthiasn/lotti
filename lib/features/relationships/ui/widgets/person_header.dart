@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -6,6 +7,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -20,6 +22,8 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
+import 'package:lotti/widgets/media/journal_image_resolver.dart';
+import 'package:lotti/widgets/media/thumb_hash_backed_image.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The person page's cover-style hero (design 2026-09-06 §2–3): a teal wash
@@ -71,6 +75,19 @@ class PersonHeroAppBar extends StatelessWidget {
   /// The avatar diameter; half of it hangs below the hero.
   static double avatarSize(DsTokens tokens) => tokens.spacing.step11;
 
+  /// With a banner (design 2026-09-08, direction 2b) the wash keeps only a
+  /// bar at the bottom of its band — exactly one toolbar tall, mirroring the
+  /// bar above it — and the photograph takes everything above.
+  static const double bannerBarExtent = kToolbarHeight;
+
+  /// The banner strip's height at rest: the toolbar and the band, less the
+  /// wash bar. What the strip's decode is bounded to, so a scroll never
+  /// re-keys the picture.
+  static double bannerStripExtent(
+    DsTokens tokens, {
+    required double topPadding,
+  }) => topPadding + bandExtent(tokens);
+
   /// The wash itself: the interactive accent at the tint alpha over the page
   /// surface — the same recipe every tone-tinted card fill uses.
   static Color washColor(DsTokens tokens) => Color.alphaBlend(
@@ -80,10 +97,32 @@ class PersonHeroAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bannerId = relationship.data.bannerImageId;
+    if (bannerId == null) return _build(context, banner: null);
+    // The banner's file may not be on disk yet; the resolver rebuilds the
+    // hero when it lands. A component in a sliver slot is fine — the sliver
+    // is what it returns. With nothing to show, the hero is the wash exactly
+    // as it is without a banner.
+    return JournalImageResolver(
+      imageId: bannerId,
+      builder: (context, resolved) => _build(
+        context,
+        banner: resolved == null || resolved.hasNothingToShow ? null : resolved,
+      ),
+    );
+  }
+
+  Widget _build(BuildContext context, {required ResolvedJournalImage? banner}) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final desktop = isDesktopLayout(context);
-    final ink = tokens.colors.text.highEmphasis;
+    // Over a photograph the chrome goes photo-neutral: the theme's ink is
+    // near-black in the light theme and would vanish on a picture.
+    final onPhoto = banner != null;
+    final ink = onPhoto
+        ? PhotoNeutralGlass.glyph
+        : tokens.colors.text.highEmphasis;
+    final glassFill = onPhoto ? PhotoNeutralGlass.fill : null;
     // On the desktop split the list pane can fold away; the hero then
     // carries the control that brings it back, beside the back button, so
     // the page never overlays a second bar on its own chrome.
@@ -97,6 +136,7 @@ class PersonHeroAppBar extends StatelessWidget {
         GlassBackButton(
           onPressed: onBack,
           iconColor: ink,
+          backgroundColor: glassFill,
           containerSize: glyphSize,
         ),
         if (listHidden) ...[
@@ -105,6 +145,7 @@ class PersonHeroAppBar extends StatelessWidget {
             key: const ValueKey('people-show-list-pane'),
             tooltip: messages.listPaneShowTooltip,
             semanticLabel: messages.listPaneShowTooltip,
+            fill: glassFill,
             onTap: split.showListPane,
             child: Icon(LottiIcons.sidebar, size: IconSizes.l, color: ink),
           ),
@@ -129,6 +170,7 @@ class PersonHeroAppBar extends StatelessWidget {
             key: const ValueKey('person-talk-to-agent'),
             tooltip: messages.goalChatTalkToAgent,
             semanticLabel: messages.goalChatTalkToAgent,
+            fill: glassFill,
             onTap: onTalkToAgent,
             child: Icon(LottiIcons.chat, size: IconSizes.l, color: ink),
           ),
@@ -137,6 +179,7 @@ class PersonHeroAppBar extends StatelessWidget {
           key: const ValueKey('person-edit'),
           tooltip: messages.relationshipEditTitle,
           semanticLabel: messages.relationshipEditTitle,
+          fill: glassFill,
           onTap: () => showRelationshipEditModal(
             context: context,
             relationship: relationship,
@@ -144,7 +187,11 @@ class PersonHeroAppBar extends StatelessWidget {
           child: Icon(LottiIcons.edit, size: IconSizes.l, color: ink),
         ),
         SizedBox(width: tokens.spacing.step2),
-        PersonMenuButton(relationship: relationship, onDelete: onDelete),
+        PersonMenuButton(
+          relationship: relationship,
+          onDelete: onDelete,
+          glyphColor: ink,
+        ),
       ],
     );
 
@@ -174,6 +221,8 @@ class PersonHeroAppBar extends StatelessWidget {
           relationship.data.title,
         ),
         onAvatarTap: onAvatarTap,
+        banner: banner,
+        bannerCropX: relationship.data.bannerCropX,
         leading: leading,
         actions: actions,
       ),
@@ -199,6 +248,8 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
     required this.avatarInset,
     required this.avatarSemanticsLabel,
     required this.onAvatarTap,
+    required this.banner,
+    required this.bannerCropX,
     required this.leading,
     required this.actions,
   });
@@ -218,6 +269,11 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   final double avatarInset;
   final String avatarSemanticsLabel;
   final VoidCallback? onAvatarTap;
+
+  /// The banner as it can be drawn right now — file or stand-in — or null
+  /// for the wash alone.
+  final ResolvedJournalImage? banner;
+  final double bannerCropX;
   final Widget leading;
   final Widget actions;
 
@@ -230,6 +286,11 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
 
   /// Everything that folds: the band and the overhang under it.
   double get foldable => bandExtent + overhang;
+
+  /// The banner strip at rest — everything above the wash bar. Fixed, so
+  /// the scrim's extent and the decode's bound do not move with the scroll.
+  double get bannerStripAtRest =>
+      minExtent + bandExtent - PersonHeroAppBar.bannerBarExtent;
 
   @override
   double get maxExtent => minExtent + foldable;
@@ -246,13 +307,79 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
     // so the wash keeps its height for the first half-diameter of scroll
     // while the avatar tucks up into it.
     final overhangOpen = (overhang - shrinkOffset).clamp(0.0, overhang);
+    // Direction 2b: with a banner, the picture takes the toolbar and the
+    // upper band and the wash keeps a one-toolbar bar under it. Folding,
+    // the bar goes first and the picture only then shrinks to the toolbar,
+    // so at rest and collapsed alike the actions sit on the picture — under
+    // the scrim, whose extent is fixed in pixels for exactly that reason.
+    // A pinned sliver's shrinkOffset runs on to maxExtent on a deep scroll;
+    // the box itself never gets shorter than minExtent, and neither may
+    // the strip — or the banner would vanish behind the toolbar.
+    final extent = math.max(minExtent, maxExtent - shrinkOffset);
+    final washBottom = extent - overhangOpen;
+    final banner = this.banner;
+    final barOpen = banner == null
+        ? 0.0
+        : (washBottom - bannerStripAtRest).clamp(
+            0.0,
+            PersonHeroAppBar.bannerBarExtent,
+          );
+    final stripExtent = banner == null ? 0.0 : washBottom - barOpen;
+    final scrimExtent = math.min(
+      stripExtent,
+      bannerStripAtRest * PhotoScrim.fadeExtent,
+    );
 
     return Stack(
       clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
+        if (banner != null) ...[
+          Positioned(
+            key: const ValueKey('person-hero-banner'),
+            top: 0,
+            left: 0,
+            right: 0,
+            height: stripExtent,
+            child: LayoutBuilder(
+              builder: (context, constraints) => ThumbHashBackedImage(
+                key: ValueKey(banner.path),
+                thumbHash: banner.thumbHash,
+                image: banner.fileExists
+                    ? boundedFileImage(
+                        banner.path,
+                        bounds: Size(constraints.maxWidth, bannerStripAtRest),
+                        devicePixelRatio: MediaQuery.devicePixelRatioOf(
+                          context,
+                        ),
+                      )
+                    : null,
+                alignment: Alignment(bannerCropX * 2 - 1, 0),
+              ),
+            ),
+          ),
+          Positioned(
+            key: const ValueKey('person-hero-scrim'),
+            top: 0,
+            left: 0,
+            right: 0,
+            height: scrimExtent,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    PhotoScrim.color.withValues(alpha: PhotoScrim.topAlpha),
+                    PhotoScrim.color.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         Positioned(
-          top: 0,
+          top: stripExtent,
           left: 0,
           right: 0,
           bottom: overhangOpen,
@@ -337,6 +464,8 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
       avatar != oldDelegate.avatar ||
       avatarSemanticsLabel != oldDelegate.avatarSemanticsLabel ||
       onAvatarTap != oldDelegate.onAvatarTap ||
+      banner != oldDelegate.banner ||
+      bannerCropX != oldDelegate.bannerCropX ||
       leading != oldDelegate.leading ||
       actions != oldDelegate.actions;
 }
@@ -351,17 +480,22 @@ class PersonMenuButton extends ConsumerWidget {
   const PersonMenuButton({
     required this.relationship,
     required this.onDelete,
+    this.glyphColor,
     super.key,
   });
 
   final RelationshipEntry relationship;
   final Future<void> Function() onDelete;
 
+  /// The kebab's glyph. Null is the theme's ink; the hero passes the
+  /// photo-neutral glyph while it sits on a banner.
+  final Color? glyphColor;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final ink = tokens.colors.text.highEmphasis;
+    final ink = glyphColor ?? tokens.colors.text.highEmphasis;
     final contactsSupported = ref.read(contactsServiceProvider).isSupported;
     final linked =
         contactsSupported &&
