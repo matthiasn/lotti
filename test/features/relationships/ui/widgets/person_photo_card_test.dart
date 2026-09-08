@@ -10,6 +10,7 @@ import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/widgets/media/file_image_size.dart';
@@ -62,7 +63,7 @@ void main() {
   /// end to end and the card's own behaviour — which flow, and what it does
   /// afterwards — is what gets asserted. [pickImage] replaces the picker
   /// that "returns" a fresh id, for the one test whose picker fails.
-  PersonPhotoActions actions({Future<String?> Function()? pickImage}) =>
+  PersonPhotoActions actions({Future<ImportedImage?> Function()? pickImage}) =>
       PersonPhotoActions(
         relationships: relationships,
         journal: journal,
@@ -70,7 +71,7 @@ void main() {
             pickImage ??
             () async {
               log.add('pick');
-              return 'image-new';
+              return (id: 'image-new', created: true);
             },
         chooseCrop: (imageId, initial) async {
           log.add('crop $imageId');
@@ -110,7 +111,7 @@ void main() {
     RelationshipEntry entry, {
     List<Override> overrides = const [],
     double width = 400,
-    Future<String?> Function()? pickImage,
+    Future<ImportedImage?> Function()? pickImage,
     ImageFileSizeReader readImageSize = readImageFileSize,
     Future<void> Function()? onChanged,
   }) async {

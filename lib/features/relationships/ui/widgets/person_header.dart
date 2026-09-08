@@ -486,7 +486,11 @@ class PersonMenuButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final ink = glyphColor ?? tokens.colors.text.highEmphasis;
+    // The trigger sits on the hero, possibly on a photograph; the menu's
+    // rows sit on the popup's own surface and keep the theme's ink — the
+    // neutral white glyph would vanish on a light popup.
+    final triggerInk = glyphColor ?? tokens.colors.text.highEmphasis;
+    final ink = tokens.colors.text.highEmphasis;
     final contactsSupported = ref.read(contactsServiceProvider).isSupported;
     final linked =
         contactsSupported &&
@@ -514,7 +518,7 @@ class PersonMenuButton extends ConsumerWidget {
     return PopupMenuButton<PersonMenuAction>(
       key: const ValueKey('person-menu'),
       tooltip: messages.relationshipMoreActions,
-      icon: Icon(LottiIcons.moreVertical, color: ink),
+      icon: Icon(LottiIcons.moreVertical, color: triggerInk),
       onSelected: (action) => unawaited(switch (action) {
         PersonMenuAction.linkContact ||
         PersonMenuAction.relinkContact => runContactLinkAction(

@@ -617,6 +617,25 @@ void main() {
       });
 
       test('returns the ids in file order', () async {
+        // One id per file, so a reversed or shuffled result cannot pass.
+        var minted = 0;
+        when(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            categoryId: any(named: 'categoryId'),
+            flag: any(named: 'flag'),
+          ),
+        ).thenAnswer(
+          (_) async => Metadata(
+            id: 'entry-${++minted}',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+        );
         final first = await createTestImageFile('one.jpg', 1024);
         final second = await createTestImageFile('two.png', 1024);
 
@@ -633,7 +652,14 @@ void main() {
             enqueueSync: any(named: 'enqueueSync'),
           ),
         ).captured.cast<JournalImage>();
-        expect(created, [entries.first.meta.id, entries.last.meta.id]);
+        expect(created, ['entry-1', 'entry-2']);
+        expect(
+          entries.map((entry) => entry.meta.id),
+          ['entry-1', 'entry-2'],
+          reason: 'the first file is written first',
+        );
+        expect(entries.first.data.imageFile, endsWith('.jpg'));
+        expect(entries.last.data.imageFile, endsWith('.png'));
       });
 
       test(

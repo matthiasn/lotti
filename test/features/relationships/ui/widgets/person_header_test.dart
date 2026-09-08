@@ -156,10 +156,12 @@ void main() {
       bool tall = false,
       List<Override> overrides = const [],
       VoidCallback? onAvatarTap,
+      ThemeData? theme,
     }) async {
       setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
+          theme: theme,
           // A Scaffold, because the menu's link intents report in toasts.
           Scaffold(
             body: CustomScrollView(
@@ -496,6 +498,53 @@ void main() {
         );
         expect(kebab.color, PhotoNeutralGlass.glyph);
       });
+
+      testWidgets(
+        'the kebab goes neutral on the banner, but the menu it opens keeps '
+        'the theme ink — white rows would vanish on a light popup',
+        (tester) async {
+          final image = buildJournalImage(imageFile: 'banner.jpg');
+          createImageFile(image);
+          // With an address book the menu has a plain row (Link contact)
+          // beside the red Delete row, so both inks are on show.
+          await pump(
+            tester,
+            relationship: person(bannerImageId: image.id),
+            contactsSupported: true,
+            overrides: [createEntryControllerOverride(image)],
+            theme: ThemeData(brightness: Brightness.light),
+          );
+          final ink = tokensOf(tester).colors.text.highEmphasis;
+          expect(
+            ink,
+            isNot(PhotoNeutralGlass.glyph),
+            reason: 'the light theme is where the two colours differ',
+          );
+
+          await tester.tap(find.byKey(const ValueKey('person-menu')));
+          await tester.pumpAndSettle();
+
+          final rows = tester.widgetList<Text>(
+            find.descendant(
+              of: find.byType(PopupMenuItem<PersonMenuAction>),
+              matching: find.byType(Text),
+            ),
+          );
+          final colours = rows.map((row) => row.style?.color).toList();
+          expect(colours, isNotEmpty);
+          expect(
+            colours,
+            everyElement(isNot(PhotoNeutralGlass.glyph)),
+            reason: "no row borrows the trigger's photo-neutral glyph",
+          );
+          expect(
+            colours,
+            contains(ink),
+            reason:
+                'the plain rows read in the theme ink; delete keeps its own',
+          );
+        },
+      );
 
       testWidgets('folding: the bar goes first, then the picture shrinks to '
           'the toolbar, and the scrim still covers the toolbar', (

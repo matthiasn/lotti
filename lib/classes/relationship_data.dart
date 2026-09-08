@@ -103,6 +103,14 @@ double cropFractionFromJson(Object? raw) =>
 double cropScaleFromJson(Object? raw) =>
     raw is num ? clampAvatarCropScale(raw.toDouble()) : minAvatarCropScale;
 
+/// Reads the avatar's framing out of JSON: a map is parsed field by field,
+/// each field guarding itself; anything else — null, or a value that is not
+/// a map at all — is no framing. The container-level half of the guard the
+/// fields carry, for the same reason: a malformed framing must not make a
+/// person fail to load.
+AvatarCrop? avatarCropFromJson(Object? raw) =>
+    raw is Map<String, dynamic> ? AvatarCrop.fromJson(raw) : null;
+
 /// Lifecycle status of a relationship, mirroring `ProjectStatus` in shape
 /// (ADR 0038): `active` relationships participate in cadence tracking,
 /// `dormant` ones are kept but not currently nurtured (excluded from
@@ -173,7 +181,7 @@ abstract class RelationshipData with _$RelationshipData {
 
     /// How [avatarImageId] is framed. Null means the default centre framing;
     /// the crop surface writes an explicit value.
-    AvatarCrop? avatarCrop,
+    @JsonKey(fromJson: avatarCropFromJson) AvatarCrop? avatarCrop,
 
     /// The wide image behind the person page's hero: a linked `JournalImage`,
     /// something *of* or *reminding of* the person rather than a second

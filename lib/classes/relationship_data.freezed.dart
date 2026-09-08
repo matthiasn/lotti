@@ -1088,7 +1088,7 @@ mixin _$RelationshipData {
 /// steady state — the tinted initial is the fallback, not a placeholder.
  String? get avatarImageId;/// How [avatarImageId] is framed. Null means the default centre framing;
 /// the crop surface writes an explicit value.
- AvatarCrop? get avatarCrop;/// The wide image behind the person page's hero: a linked `JournalImage`,
+@JsonKey(fromJson: avatarCropFromJson) AvatarCrop? get avatarCrop;/// The wide image behind the person page's hero: a linked `JournalImage`,
 /// something *of* or *reminding of* the person rather than a second
 /// portrait. Null leaves the hero the teal wash it has always been.
  String? get bannerImageId;/// Horizontal framing of [bannerImageId] (0 = left … 1 = right), the
@@ -1131,7 +1131,7 @@ abstract mixin class $RelationshipDataCopyWith<$Res>  {
   factory $RelationshipDataCopyWith(RelationshipData value, $Res Function(RelationshipData) _then) = _$RelationshipDataCopyWithImpl;
 @useResult
 $Res call({
- String title, RelationshipStatus status, String? nickname, bool important, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId, AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
+ String title, RelationshipStatus status, String? nickname, bool important, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId,@JsonKey(fromJson: avatarCropFromJson) AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
 });
 
 
@@ -1271,7 +1271,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId,  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RelationshipData() when $default != null:
 return $default(_that.title,_that.status,_that.nickname,_that.important,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
@@ -1292,7 +1292,7 @@ return $default(_that.title,_that.status,_that.nickname,_that.important,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId,  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  RelationshipStatus status,  String? nickname,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)  $default,) {final _that = this;
 switch (_that) {
 case _RelationshipData():
 return $default(_that.title,_that.status,_that.nickname,_that.important,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
@@ -1312,7 +1312,7 @@ return $default(_that.title,_that.status,_that.nickname,_that.important,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  RelationshipStatus status,  String? nickname,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId,  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  RelationshipStatus status,  String? nickname,  bool important,  List<RelationshipStatus> statusHistory,  int? checkInCadenceDays,  DateTime? birthday,  String? profileId,  String? languageCode,  String? avatarImageId, @JsonKey(fromJson: avatarCropFromJson)  AvatarCrop? avatarCrop,  String? bannerImageId, @JsonKey(fromJson: cropFractionFromJson)  double bannerCropX,  List<ContactChannel> contactChannels,  Map<String, String> contactRefs)?  $default,) {final _that = this;
 switch (_that) {
 case _RelationshipData() when $default != null:
 return $default(_that.title,_that.status,_that.nickname,_that.important,_that.statusHistory,_that.checkInCadenceDays,_that.birthday,_that.profileId,_that.languageCode,_that.avatarImageId,_that.avatarCrop,_that.bannerImageId,_that.bannerCropX,_that.contactChannels,_that.contactRefs);case _:
@@ -1327,7 +1327,7 @@ return $default(_that.title,_that.status,_that.nickname,_that.important,_that.st
 @JsonSerializable()
 
 class _RelationshipData implements RelationshipData {
-  const _RelationshipData({required this.title, required this.status, this.nickname, this.important = false, final  List<RelationshipStatus> statusHistory = const [], this.checkInCadenceDays, this.birthday, this.profileId, this.languageCode, this.avatarImageId, this.avatarCrop, this.bannerImageId, @JsonKey(fromJson: cropFractionFromJson) this.bannerCropX = 0.5, final  List<ContactChannel> contactChannels = const [], final  Map<String, String> contactRefs = const <String, String>{}}): _statusHistory = statusHistory,_contactChannels = contactChannels,_contactRefs = contactRefs;
+  const _RelationshipData({required this.title, required this.status, this.nickname, this.important = false, final  List<RelationshipStatus> statusHistory = const [], this.checkInCadenceDays, this.birthday, this.profileId, this.languageCode, this.avatarImageId, @JsonKey(fromJson: avatarCropFromJson) this.avatarCrop, this.bannerImageId, @JsonKey(fromJson: cropFractionFromJson) this.bannerCropX = 0.5, final  List<ContactChannel> contactChannels = const [], final  Map<String, String> contactRefs = const <String, String>{}}): _statusHistory = statusHistory,_contactChannels = contactChannels,_contactRefs = contactRefs;
   factory _RelationshipData.fromJson(Map<String, dynamic> json) => _$RelationshipDataFromJson(json);
 
 /// The person's display name.
@@ -1359,7 +1359,7 @@ class _RelationshipData implements RelationshipData {
 @override final  String? avatarImageId;
 /// How [avatarImageId] is framed. Null means the default centre framing;
 /// the crop surface writes an explicit value.
-@override final  AvatarCrop? avatarCrop;
+@override@JsonKey(fromJson: avatarCropFromJson) final  AvatarCrop? avatarCrop;
 /// The wide image behind the person page's hero: a linked `JournalImage`,
 /// something *of* or *reminding of* the person rather than a second
 /// portrait. Null leaves the hero the teal wash it has always been.
@@ -1424,7 +1424,7 @@ abstract mixin class _$RelationshipDataCopyWith<$Res> implements $RelationshipDa
   factory _$RelationshipDataCopyWith(_RelationshipData value, $Res Function(_RelationshipData) _then) = __$RelationshipDataCopyWithImpl;
 @override @useResult
 $Res call({
- String title, RelationshipStatus status, String? nickname, bool important, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId, AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
+ String title, RelationshipStatus status, String? nickname, bool important, List<RelationshipStatus> statusHistory, int? checkInCadenceDays, DateTime? birthday, String? profileId, String? languageCode, String? avatarImageId,@JsonKey(fromJson: avatarCropFromJson) AvatarCrop? avatarCrop, String? bannerImageId,@JsonKey(fromJson: cropFractionFromJson) double bannerCropX, List<ContactChannel> contactChannels, Map<String, String> contactRefs
 });
 
 

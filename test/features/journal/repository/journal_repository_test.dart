@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+// Get the getIt instance to inject our mocks
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -12,11 +13,11 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-// Get the getIt instance to inject our mocks
 import 'package:lotti/get_it.dart' show getIt;
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -1830,6 +1831,69 @@ void main() {
         ).called(1);
       });
 
+      group('createImageEntryTracked', () {
+        final imageData = ImageData(
+          capturedAt: DateTime(2023),
+          imageId: 'image-id',
+          imageFile: 'image.jpg',
+          imageDirectory: '/path/to/images',
+        );
+
+        setUp(() {
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => testMeta(id: 'image-entry'));
+        });
+
+        test('says the row was inserted when the write was applied', () async {
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: false,
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await JournalRepository.createImageEntryTracked(
+            imageData,
+          );
+
+          expect(result!.created, isTrue);
+          expect(result.entry.meta.id, 'image-entry');
+        });
+
+        test(
+          'says the row was not inserted when the write was declined — the '
+          'deterministic id of a photo imported before',
+          () async {
+            when(
+              () => mockPersistenceLogic.createDbEntity(
+                any(),
+                linkedId: any(named: 'linkedId'),
+                shouldAddGeolocation: false,
+              ),
+            ).thenAnswer((_) async => false);
+
+            final result = await JournalRepository.createImageEntryTracked(
+              imageData,
+            );
+
+            expect(result!.created, isFalse);
+            expect(
+              result.entry.meta.id,
+              'image-entry',
+              reason: 'the caller still gets the entry it can reference',
+            );
+          },
+        );
+      });
+
       test('handles exceptions and returns null', () async {
         // Arrange
         final imageData = ImageData(
@@ -2250,6 +2314,69 @@ void main() {
           reason: 'only the reference to the deleted image is cleared',
         );
       });
+
+      test(
+        'a refused reference clear is logged and does not block the '
+        'tombstone: the deletion the user asked for goes ahead',
+        () async {
+          when(
+            () => mockJournalDb.journalEntityById(imageId),
+          ).thenAnswer((_) async => image());
+          when(
+            () => mockJournalDb.getLinkedToEntities(imageId),
+          ).thenAnswer(
+            (_) async => [dbEntityFor(person(avatarImageId: imageId))],
+          );
+          when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
+            (invocation) async =>
+                invocation.positionalArguments.first as Metadata,
+          );
+          when(
+            () => mockPersistenceLogic.updateMetadata(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                (invocation.positionalArguments.first as Metadata).copyWith(
+                  deletedAt: dateTime2023,
+                ),
+          );
+          when(
+            () => mockPersistenceLogic.updateDbEntity(
+              any(that: isA<RelationshipEntry>()),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockPersistenceLogic.updateDbEntity(
+              any(that: isA<JournalImage>()),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockNotificationService.updateBadge(),
+          ).thenAnswer((_) async {});
+          when(() => mockTimeService.getCurrent()).thenReturn(null);
+
+          expect(await repository.deleteJournalEntity(imageId), isTrue);
+
+          final written = verify(
+            () => mockPersistenceLogic.updateDbEntity(captureAny()),
+          ).captured.cast<JournalEntity>();
+          expect(
+            written.whereType<JournalImage>().single.meta.deletedAt,
+            dateTime2023,
+            reason: 'the image is tombstoned regardless',
+          );
+          verify(
+            () => mockDomainLogger.log(
+              LogDomain.persistence,
+              any(that: contains(imageId)),
+              subDomain: 'deleteJournalEntity',
+              level: InsightLevel.warn,
+            ),
+          ).called(1);
+        },
+      );
 
       test('deleting the banner image leaves the avatar and its framing '
           'untouched', () async {

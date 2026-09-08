@@ -27,6 +27,13 @@ import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
+/// What importing one picked picture came to: the `JournalImage` id a caller
+/// stores, and whether this import *created* that entry. A gallery asset's
+/// entry id is deterministic (`JournalRepository.createImageEntryTracked`),
+/// so picking a photo imported before lands on the existing entry —
+/// `created` is false, and the entry is nobody's to delete on cancel.
+typedef ImportedImage = ({String id, bool created});
+
 /// Creates an onCreated callback for automatic image analysis.
 ///
 /// - [analysisTrigger]: The trigger service. If null, this function returns null.
@@ -151,13 +158,19 @@ Future<List<AssetEntity>?> _pickAssets(
   return assets?.toList(growable: false);
 }
 
-/// Imports one picked gallery [asset], returning the created entry's id — or
-/// null when the asset carries no usable file or an unsupported format.
+/// Imports one picked gallery [asset], returning the entry's id and whether
+/// this import created it — or null when the asset carries no usable file or
+/// an unsupported format.
 ///
 /// The single-image path ([pickSingleImageEntry]) needs that id, and the
 /// batch path needs the same conversion, EXIF and geolocation handling, so
 /// there is one implementation and the batch loop discards what it returns.
-Future<String?> _importAsset(
+///
+/// Excluded from coverage with the rest of the gallery path: an
+/// `AssetEntity`'s file and metadata come from the photo-manager plugin,
+/// which a test cannot stand in for.
+// coverage:ignore-start
+Future<ImportedImage?> _importAsset(
   AssetEntity asset, {
   String? linkedId,
   String? categoryId,
@@ -220,14 +233,16 @@ Future<String?> _importAsset(
     geolocation: geolocation,
   );
 
-  final entry = await JournalRepository.createImageEntry(
+  final imported = await JournalRepository.createImageEntryTracked(
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
     onCreated: createAnalysisCallback(analysisTrigger, linkedId),
   );
-  return entry?.meta.id;
+  if (imported == null) return null;
+  return (id: imported.entry.meta.id, created: imported.created);
 }
+// coverage:ignore-end
 
 /// Imports image files picked from a desktop file dialog (Linux/Windows),
 /// where the gallery picker (`importImageAssets`) is unavailable.
@@ -270,13 +285,13 @@ Future<List<String>> importImageXFiles(
 }) async {
   final created = <String>[];
   for (final file in files) {
-    final id = await _importXFile(
+    final imported = await _importXFile(
       file,
       linkedId: linkedId,
       categoryId: categoryId,
       analysisTrigger: analysisTrigger,
     );
-    if (id != null) created.add(id);
+    if (imported != null) created.add(imported.id);
   }
   return created;
 }
@@ -287,7 +302,7 @@ Future<List<String>> importImageXFiles(
 /// Failures are logged and swallowed rather than rethrown: the batch caller
 /// must keep going after one bad file, and the single-image caller reads a
 /// null as "nothing was picked", which is the same outcome either way.
-Future<String?> _importXFile(
+Future<ImportedImage?> _importXFile(
   XFile file, {
   String? linkedId,
   String? categoryId,
@@ -356,13 +371,14 @@ Future<String?> _importXFile(
       geolocation: geolocation,
     );
 
-    final entry = await JournalRepository.createImageEntry(
+    final imported = await JournalRepository.createImageEntryTracked(
       imageData,
       linkedId: linkedId,
       categoryId: categoryId,
       onCreated: createAnalysisCallback(analysisTrigger, linkedId),
     );
-    return entry?.meta.id;
+    if (imported == null) return null;
+    return (id: imported.entry.meta.id, created: imported.created);
   } catch (exception, stackTrace) {
     getIt<DomainLogger>().error(
       LogDomain.ai,
@@ -389,7 +405,7 @@ Future<String?> _importXFile(
 /// practice for an avatar: the link is what lets image deletion find the
 /// entity referencing it, and what makes the image inherit a private
 /// person's privacy.
-Future<String?> pickSingleImageEntry(
+Future<ImportedImage?> pickSingleImageEntry(
   BuildContext context, {
   String? linkedId,
   String? categoryId,
@@ -404,18 +420,30 @@ Future<String?> pickSingleImageEntry(
     );
     final file = await openFile(acceptedTypeGroups: [group]);
     if (file == null) return null;
-    final created = await importImageXFiles(
-      [file],
-      linkedId: linkedId,
-      categoryId: categoryId,
-    );
-    return created.firstOrNull;
+    return _importXFile(file, linkedId: linkedId, categoryId: categoryId);
   }
   // coverage:ignore-start
   final assets = await _pickAssets(context, maxAssets: 1);
   final asset = assets?.firstOrNull;
   if (asset == null) return null;
-  return _importAsset(asset, linkedId: linkedId, categoryId: categoryId);
+  try {
+    return await _importAsset(
+      asset,
+      linkedId: linkedId,
+      categoryId: categoryId,
+    );
+  } catch (exception, stackTrace) {
+    // The desktop path logs and skips a file that fails; the gallery path
+    // keeps the same contract — null is "nothing imported" — so a caller
+    // never sees a thrown copy or conversion as anything else.
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
+      exception,
+      stackTrace: stackTrace,
+      subDomain: 'pickSingleImageEntry',
+    );
+    return null;
+  }
   // coverage:ignore-end
 }
 

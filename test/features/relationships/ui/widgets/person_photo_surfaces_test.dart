@@ -216,7 +216,7 @@ void main() {
         // the real event loop.
         final picked = await tester.runAsync(actions.pickImage);
 
-        expect(picked, 'image-imported');
+        expect(picked, (id: 'image-imported', created: true));
         verify(
           () => persistence.createDbEntity(
             any(that: isA<JournalImage>()),
@@ -236,6 +236,30 @@ void main() {
           contains('png'),
           reason: 'the picker is asked for images only',
         );
+      },
+    );
+
+    testWidgets(
+      'a picture whose row already existed comes back as not created, so the '
+      'flow will not delete it on cancel',
+      (tester) async {
+        when(
+          () => persistence.createDbEntity(
+            any(),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+            linkedId: any(named: 'linkedId'),
+            linkCollapsed: any(named: 'linkCollapsed'),
+          ),
+        ).thenAnswer((_) async => false);
+        final source = buildJournalImage(imageFile: 'pip.png');
+        createImageFile(source);
+        selector.filesToReturn = [XFile(getFullImagePath(source))];
+        final actions = await build(tester);
+
+        final picked = await tester.runAsync(actions.pickImage);
+
+        expect(picked, (id: 'image-imported', created: false));
       },
     );
 

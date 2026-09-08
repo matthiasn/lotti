@@ -128,6 +128,56 @@ void main() {
     });
   });
 
+  group('avatarCrop in JSON', () {
+    final base = RelationshipData(
+      title: 'Anna',
+      status: RelationshipStatus.active(
+        id: 'status-1',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+    );
+
+    test(
+      'a framing that is not a map at all reads as no framing rather than '
+      'throwing — the container half of the guard each field carries',
+      () {
+        for (final raw in <Object>[
+          'garbage',
+          42,
+          true,
+          <double>[0.1, 0.2],
+        ]) {
+          final json = jsonDecode(jsonEncode(base)) as Map<String, dynamic>
+            ..['avatarCrop'] = raw;
+          expect(
+            RelationshipData.fromJson(json).avatarCrop,
+            isNull,
+            reason: '$raw is not a framing',
+          );
+        }
+      },
+    );
+
+    test('a map is parsed, its fields still guarded', () {
+      final json = jsonDecode(jsonEncode(base)) as Map<String, dynamic>
+        ..['avatarCrop'] = {'x': 0.1, 'y': 7, 'scale': 'wide'};
+      expect(
+        RelationshipData.fromJson(json).avatarCrop,
+        // The default zoom is exactly what a non-number reads as; spelled
+        // out so the guard is what this line asserts.
+        // ignore: avoid_redundant_argument_values
+        const AvatarCrop(x: 0.1, y: 1, scale: 1),
+      );
+    });
+
+    test('absent stays null', () {
+      final json = jsonDecode(jsonEncode(base)) as Map<String, dynamic>
+        ..remove('avatarCrop');
+      expect(RelationshipData.fromJson(json).avatarCrop, isNull);
+    });
+  });
+
   group('RelationshipStatus', () {
     test('all variants serialize and deserialize', () {
       final variants = <RelationshipStatus>[

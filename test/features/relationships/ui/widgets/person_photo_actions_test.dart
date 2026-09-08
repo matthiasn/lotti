@@ -21,6 +21,7 @@ void main() {
   /// right order with the right arguments — or did not open at all.
   late List<String> log;
   late String? pickResult;
+  var pickCreated = true;
   late AvatarCrop? cropResult;
 
   RelationshipEntry person({String? avatarImageId, AvatarCrop? avatarCrop}) =>
@@ -49,7 +50,8 @@ void main() {
     journal: journal,
     pickImage: () async {
       log.add('pick');
-      return pickResult;
+      final id = pickResult;
+      return id == null ? null : (id: id, created: pickCreated);
     },
     chooseCrop: (imageId, initial) async {
       log.add('crop $imageId from ${initial?.x}');
@@ -70,6 +72,7 @@ void main() {
     journal = MockJournalRepository();
     log = [];
     pickResult = 'image-new';
+    pickCreated = true;
     cropResult = newCrop;
     when(
       () => relationships.updateRelationship(any()),
@@ -142,6 +145,62 @@ void main() {
 
       expect(await actions().chooseAvatar(person()), PersonPhotoOutcome.failed);
     });
+    test(
+      'cancelling the crop leaves an entry the import merely found alone — a '
+      "gallery photo imported before is the journal's, not this flow's",
+      () async {
+        pickCreated = false;
+        cropResult = null;
+
+        expect(
+          await actions().chooseAvatar(person()),
+          PersonPhotoOutcome.cancelled,
+        );
+
+        verifyNever(() => journal.deleteJournalEntity(any()));
+      },
+    );
+
+    test(
+      'a refused write takes the entry the import created back out, so a '
+      'photo nobody references does not linger',
+      () async {
+        when(
+          () => relationships.updateRelationship(any()),
+        ).thenAnswer((_) async => false);
+
+        expect(
+          await actions().chooseAvatar(person()),
+          PersonPhotoOutcome.failed,
+        );
+
+        verify(() => journal.deleteJournalEntity('image-new')).called(1);
+      },
+    );
+
+    test('a refused write leaves an entry the import found alone', () async {
+      pickCreated = false;
+      when(
+        () => relationships.updateRelationship(any()),
+      ).thenAnswer((_) async => false);
+
+      expect(await actions().chooseAvatar(person()), PersonPhotoOutcome.failed);
+
+      verifyNever(() => journal.deleteJournalEntity(any()));
+    });
+
+    test(
+      'a write that throws discards the created entry and still throws',
+      () async {
+        when(
+          () => relationships.updateRelationship(any()),
+        ).thenThrow(StateError('db locked'));
+
+        await expectLater(actions().chooseAvatar(person()), throwsStateError);
+
+        verify(() => journal.deleteJournalEntity('image-new')).called(1);
+      },
+    );
   });
 
   group('adjust', () {
@@ -294,6 +353,27 @@ void main() {
         await actions().chooseBanner(person()),
         PersonPhotoOutcome.failed,
       );
+    });
+
+    test('a refused write takes the created picture back out', () async {
+      when(
+        () => relationships.updateRelationship(any()),
+      ).thenAnswer((_) async => false);
+
+      expect(await actions().chooseBanner(person()), PersonPhotoOutcome.failed);
+
+      verify(() => journal.deleteJournalEntity('image-new')).called(1);
+    });
+
+    test('a refused write leaves a picture the import found alone', () async {
+      pickCreated = false;
+      when(
+        () => relationships.updateRelationship(any()),
+      ).thenAnswer((_) async => false);
+
+      expect(await actions().chooseBanner(person()), PersonPhotoOutcome.failed);
+
+      verifyNever(() => journal.deleteJournalEntity(any()));
     });
   });
 }

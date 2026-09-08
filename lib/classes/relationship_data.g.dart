@@ -128,9 +128,7 @@ _RelationshipData _$RelationshipDataFromJson(
   profileId: json['profileId'] as String?,
   languageCode: json['languageCode'] as String?,
   avatarImageId: json['avatarImageId'] as String?,
-  avatarCrop: json['avatarCrop'] == null
-      ? null
-      : AvatarCrop.fromJson(json['avatarCrop'] as Map<String, dynamic>),
+  avatarCrop: avatarCropFromJson(json['avatarCrop']),
   bannerImageId: json['bannerImageId'] as String?,
   bannerCropX: json['bannerCropX'] == null
       ? 0.5

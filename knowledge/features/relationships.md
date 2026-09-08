@@ -231,7 +231,12 @@ load-bearing:
 - **Cancelling writes nothing, even after the picker ran.** The picker has to
   import the picture before the crop surface can show it, so an entry already
   exists when the user sees *Use photo*; cancelling there deletes that entry
-  again. `PersonPhotoActions.chooseAvatar` owns this.
+  again — but only when the import *created* it. A gallery asset's entry id
+  is deterministic (`JournalRepository.createImageEntryTracked`), so picking a
+  photo imported before lands on the row that already exists, which is the
+  journal's and stays. The same discard follows a write that is refused or
+  throws. `PersonPhotoActions.chooseAvatar` and `chooseBanner` own this, over
+  the `ImportedImage` the picker returns.
 - **The crop surface commits nothing.** `showAvatarCropSheet` resolves to the
   framing or null; the caller writes. Its preview *is* a `PersonaAvatar`, so
   the preview and the list cannot disagree, and its gesture arithmetic is

@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
@@ -47,7 +49,21 @@ Future<PersonPhotoOutcome?> showPersonAvatarSheet({
     ),
   );
   if (flow == null) return null;
-  final outcome = await flow(relationship);
+  PersonPhotoOutcome outcome;
+  try {
+    outcome = await flow(relationship);
+  } catch (e, s) {
+    // A picker, a file copy or the crop surface that throws is, to the user,
+    // a photo that could not be saved — the same failure the Photo card
+    // reports — not an error escaping a tap handler.
+    developer.log(
+      'Failed to change a photo',
+      name: 'PersonAvatarSheet',
+      error: e,
+      stackTrace: s,
+    );
+    outcome = PersonPhotoOutcome.failed;
+  }
   // The one outcome the user has to hear about: they chose and cropped, and
   // the write was refused. Backing out says nothing, and success shows
   // itself — the avatar changes.

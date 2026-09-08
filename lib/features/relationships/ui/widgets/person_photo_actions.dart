@@ -2,6 +2,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/logic/image_import.dart';
 
 /// What one of the avatar sheet's actions came to.
 enum PersonPhotoOutcome {
@@ -37,8 +38,9 @@ class PersonPhotoActions {
   final JournalRepository journal;
 
   /// Opens the picker and imports the choice as a `JournalImage` linked to
-  /// the person, returning its id — or null when the user backed out.
-  final Future<String?> Function() pickImage;
+  /// the person — its id, and whether the import *created* that entry — or
+  /// null when the user backed out.
+  final Future<ImportedImage?> Function() pickImage;
 
   /// Opens the crop surface over the image, starting from the given framing
   /// (null for the default), and returns the framing the user committed — or
@@ -51,20 +53,23 @@ class PersonPhotoActions {
   /// The picker has to import the picture before the crop surface can show
   /// it, so by the time the user sees *Use photo* an entry already exists.
   /// Cancelling there must still leave nothing behind (design: "cancelling
-  /// writes nothing"), so the freshly imported entry is deleted again — it
+  /// writes nothing"), so an entry the import *created* is deleted again — it
   /// exists only to be this person's photo, and nobody has seen it anywhere
-  /// else.
+  /// else. A photo imported before resolves to its existing entry instead
+  /// (`ImportedImage.created` false); that one is already the journal's and
+  /// stays. The same discard follows a write that is refused or throws.
   Future<PersonPhotoOutcome> chooseAvatar(RelationshipEntry person) async {
-    final imageId = await pickImage();
-    if (imageId == null) return PersonPhotoOutcome.cancelled;
-    final crop = await chooseCrop(imageId, null);
+    final picked = await pickImage();
+    if (picked == null) return PersonPhotoOutcome.cancelled;
+    final crop = await chooseCrop(picked.id, null);
     if (crop == null) {
-      await journal.deleteJournalEntity(imageId);
+      await _discard(picked);
       return PersonPhotoOutcome.cancelled;
     }
-    return _write(
+    return _writeOrDiscard(
       person,
-      person.data.copyWith(avatarImageId: imageId, avatarCrop: crop),
+      person.data.copyWith(avatarImageId: picked.id, avatarCrop: crop),
+      picked,
     );
   }
 
@@ -91,11 +96,12 @@ class PersonPhotoActions {
   /// Choose a wide picture for the person's page. It starts centred; the
   /// form's Photo card lets the user drag it into place afterwards.
   Future<PersonPhotoOutcome> chooseBanner(RelationshipEntry person) async {
-    final imageId = await pickImage();
-    if (imageId == null) return PersonPhotoOutcome.cancelled;
-    return _write(
+    final picked = await pickImage();
+    if (picked == null) return PersonPhotoOutcome.cancelled;
+    return _writeOrDiscard(
       person,
-      person.data.copyWith(bannerImageId: imageId, bannerCropX: 0.5),
+      person.data.copyWith(bannerImageId: picked.id, bannerCropX: 0.5),
+      picked,
     );
   }
 
@@ -123,5 +129,31 @@ class PersonPhotoActions {
       person.copyWith(data: data),
     );
     return ok ? PersonPhotoOutcome.changed : PersonPhotoOutcome.failed;
+  }
+
+  /// [_write], taking the picture the flow just imported back out of the
+  /// journal when the write is refused or throws: it was imported only to be
+  /// this person's, and after a refused write nothing references it.
+  Future<PersonPhotoOutcome> _writeOrDiscard(
+    RelationshipEntry person,
+    RelationshipData data,
+    ImportedImage picked,
+  ) async {
+    final PersonPhotoOutcome outcome;
+    try {
+      outcome = await _write(person, data);
+    } catch (_) {
+      await _discard(picked);
+      rethrow;
+    }
+    if (outcome == PersonPhotoOutcome.failed) await _discard(picked);
+    return outcome;
+  }
+
+  /// Deletes [picked] again — only if this flow's import created it. An
+  /// entry the import merely found is the journal's already, whoever else
+  /// references it, and is not this flow's to remove.
+  Future<void> _discard(ImportedImage picked) async {
+    if (picked.created) await journal.deleteJournalEntity(picked.id);
   }
 }

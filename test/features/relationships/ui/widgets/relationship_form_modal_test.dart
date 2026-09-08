@@ -1306,6 +1306,9 @@ void main() {
       when(
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenThrow(Exception('db locked'));
 

@@ -56,7 +56,7 @@ void main() {
       log.add('pick');
       // With the sheet still up, the page has a route to pop.
       sheetOpenAtPick = Navigator.of(pageContext).canPop();
-      return 'image-new';
+      return (id: 'image-new', created: true);
     },
     chooseCrop: (imageId, initial) async {
       log.add('crop $imageId');
@@ -248,6 +248,47 @@ void main() {
       expect(find.text('Photo of Pip'), findsNothing);
       expect(find.text('Could not save the photo'), findsOneWidget);
     });
+
+    testWidgets(
+      'a flow that throws is a failed save to the user — the toast, and no '
+      'error escaping the tap',
+      (tester) async {
+        late Future<PersonPhotoOutcome?> result;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () {
+                    result = showPersonAvatarSheet(
+                      context: context,
+                      relationship: person(),
+                      actions: PersonPhotoActions(
+                        relationships: relationships,
+                        journal: journal,
+                        pickImage: () async =>
+                            throw StateError('the picker fell over'),
+                        chooseCrop: (imageId, initial) async => null,
+                      ),
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('person-photo-choose')));
+        await tester.pumpAndSettle();
+
+        expect(await result, PersonPhotoOutcome.failed);
+        expect(find.text('Could not save the photo'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('backing out says nothing', (tester) async {
       late Future<PersonPhotoOutcome?> result;
