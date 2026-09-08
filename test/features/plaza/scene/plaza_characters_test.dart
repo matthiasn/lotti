@@ -113,6 +113,7 @@ void main() {
           primitive.geometry,
           same(source.mesh!.primitives.single.geometry),
         );
+        expect(primitive.geometry, isA<SkinnedGeometry>());
         expect(part.skin, isNot(same(source.skin)));
         expect(part.skin!.joints, hasLength(15));
         final actor = part.parent!.parent!;

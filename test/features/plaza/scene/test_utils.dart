@@ -7,7 +7,7 @@ import 'package:lotti/features/plaza/scene/plaza_characters.dart';
 import 'package:vector_math/vector_math.dart';
 
 /// Reads the shipped penguin's hierarchy and bind matrices without GPU
-/// uploads. Empty geometry stands in for its base vertex buffers; skeletons,
+/// uploads. Empty skinned geometry stands in for its base buffers; skeletons,
 /// morph deltas, materials and transforms retain the asset's actual structure.
 Node loadPenguinWithoutGpu() {
   final bytes = File(PlazaCharacters.asset).readAsBytesSync();
@@ -77,9 +77,9 @@ Node loadPenguinWithoutGpu() {
         ?.cast<Map<String, dynamic>>();
     final Geometry geometry;
     if (targets == null) {
-      geometry = UnskinnedGeometry();
+      geometry = SkinnedGeometry();
     } else {
-      geometry = MorphedUnskinnedGeometry(
+      geometry = MorphedSkinnedGeometry(
         MorphTargetData(
           vertexCount:
               accessors[targets.first['POSITION'] as int]['count'] as int,
