@@ -18,8 +18,8 @@ sources:
     last_modified: 2026-08-14
   - id: model
     resource: ../../lib/classes/relationship_data.dart
-    title: RelationshipData, RelationshipStatus, ContactChannel
-    last_modified: 2026-08-14
+    title: RelationshipData, RelationshipStatus, ContactChannel, AvatarCrop
+    last_modified: 2026-09-08
   - id: list-model
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
     title: The People list's bands, pills and summary — pure logic
@@ -168,6 +168,40 @@ column — a person's whole check-in history is never deserialized only to be
 discarded. Scoping the read to `RelationshipLink` also keeps it in step with
 `unlinkTask`, which removes exactly that type: a task surfaced through some
 other link type would render an unlink action that could never succeed.
+
+# A person's two images
+
+`RelationshipData` carries an **avatar** (`avatarImageId` + `avatarCrop`) and a
+**banner** (`bannerImageId` + `bannerCropX`). Both ids point at ordinary
+`JournalImage` entries, and both are stored — but as of this writing **nothing
+renders them yet**: `PersonaAvatar` still draws the tinted initial, and the
+person hero is still the flat teal wash. The storage landed first so the
+surfaces could be built against a settled shape.
+
+The field they replaced, `coverArtId`, was declared with the rest of the model
+and never written by anything, so it was **removed rather than migrated** — no
+payload on any device carries the key, and a field whose name says "cover art"
+would have lied about a person's portrait.
+
+Three properties are load-bearing and easy to break:
+
+- **The image must be *linked* to the person.** `JournalRepository`'s image
+  delete finds referencing entities with `getLinkedToEntities(imageId)`, so an
+  avatar created without `linkedId` set to the relationship would survive its
+  own image's deletion as a dangling id. The link is also what makes the image
+  inherit a private person's `private` flag through `createDbEntity`.
+- **Framing is clamped on both sides.** `AvatarCrop.fromJson` and
+  `cropFractionFromJson` clamp what sync delivers; `RelationshipImageFraming`
+  clamps what this device writes, applied by `RelationshipRepository`'s create
+  and update paths. Neither side alone is enough: a peer can send anything, and
+  a local gesture can compute anything.
+- **The bytes arrive after the entity.** An id syncs in one message and its file
+  in another, so every surface that draws one of these needs a defined
+  appearance for "id known, file not here yet" — the ThumbHash-then-watch shape
+  `CoverArtThumbnail` already uses.
+
+Neither image ever enters agent context, for the same reason contact channels
+do not — see [Privacy](#privacy).
 
 # Recency without an N+1
 

@@ -170,7 +170,7 @@ class RelationshipRepository {
     );
     final relationship = RelationshipEntry(
       meta: meta,
-      data: data,
+      data: data.withClampedImageFraming,
       entryText: entryText,
     );
     final success = await _persistenceLogic.createDbEntity(relationship);
@@ -306,11 +306,20 @@ class RelationshipRepository {
   /// No manual notification: `updateDbEntity` already emits the entity's
   /// `affectedIds`, which carry both the relationship id (the detail
   /// provider's token) and [relationshipNotification] (the list provider's).
+  ///
+  /// Avatar and banner framing is clamped on the way through
+  /// ([RelationshipImageFraming]): this method is the single write path for
+  /// an edited person, so a crop that came out of a gesture with a rounding
+  /// slip is corrected once here rather than defended against at every size
+  /// the avatar is later drawn at.
   Future<bool> updateRelationship(RelationshipEntry relationship) async {
     final updatedMeta = await _persistenceLogic.updateMetadata(
       relationship.meta,
     );
-    final updated = relationship.copyWith(meta: updatedMeta);
+    final updated = relationship.copyWith(
+      meta: updatedMeta,
+      data: relationship.data.withClampedImageFraming,
+    );
     final result = await _persistenceLogic.updateDbEntity(updated);
     return result ?? false;
   }

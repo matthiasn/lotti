@@ -24,26 +24,48 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// `PersistenceLogic`, and sync services (it is a facade, not DI-wired — deps
 /// are looked up via `getIt`, not injected). Owns single- and bulk-ID loads,
 /// entity create/update, entry-link writes (under a vector-clock scope), and
-/// cascading cleanup such as clearing cover-art references on image delete.
+/// cascading cleanup such as clearing cover-art, avatar and banner references
+/// on image delete.
 class JournalRepository {
   JournalRepository();
 
-  /// Clears coverArtId from any tasks that reference the deleted image
-  Future<void> _clearCoverArtReferences(
+  /// Clears references to a deleted image from the entities that point at it,
+  /// so nothing is left rendering an id whose file and entry are gone.
+  ///
+  /// Covers a task's cover art and a relationship's avatar and banner. The
+  /// avatar's crop goes with the avatar: a framing for an image that no longer
+  /// exists is not a value worth keeping, and leaving it behind would make a
+  /// later photo inherit the old photo's framing.
+  Future<void> _clearImageReferences(
     String imageId,
     PersistenceLogic persistenceLogic,
   ) async {
     final db = getIt<JournalDb>();
-    // Find all entities that link TO this image (i.e., tasks that have this image linked)
+    // Entities that link TO this image — the ones able to reference it.
     final linkedFromEntities = await db.getLinkedToEntities(imageId);
 
     for (final dbEntity in linkedFromEntities) {
       final entity = fromDbEntity(dbEntity);
       if (entity is Task && entity.data.coverArtId == imageId) {
-        // Clear the coverArtId
         await persistenceLogic.updateTask(
           journalEntityId: entity.id,
           taskData: entity.data.copyWith(coverArtId: null),
+        );
+      }
+      if (entity is RelationshipEntry) {
+        final data = entity.data;
+        final clearsAvatar = data.avatarImageId == imageId;
+        final clearsBanner = data.bannerImageId == imageId;
+        if (!clearsAvatar && !clearsBanner) continue;
+        await persistenceLogic.updateDbEntity(
+          entity.copyWith(
+            meta: await persistenceLogic.updateMetadata(entity.meta),
+            data: data.copyWith(
+              avatarImageId: clearsAvatar ? null : data.avatarImageId,
+              avatarCrop: clearsAvatar ? null : data.avatarCrop,
+              bannerImageId: clearsBanner ? null : data.bannerImageId,
+            ),
+          ),
         );
       }
     }
@@ -144,9 +166,10 @@ class JournalRepository {
         ).deleteRelationship(journalEntityId);
       }
 
-      // If deleting an image that is used as cover art, clear the coverArtId
+      // If deleting an image anything uses as cover art, an avatar or a
+      // banner, clear the reference before the image is tombstoned.
       if (journalEntity is JournalImage) {
-        await _clearCoverArtReferences(journalEntityId, persistenceLogic);
+        await _clearImageReferences(journalEntityId, persistenceLogic);
       }
 
       await persistenceLogic.updateDbEntity(

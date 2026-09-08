@@ -28,6 +28,66 @@ abstract class ContactChannel with _$ContactChannel {
       _$ContactChannelFromJson(json);
 }
 
+/// Which part of a source image a circular avatar shows.
+///
+/// Normalised to the source rather than to any one rendering, so the same
+/// crop frames the face identically at every size the avatar is drawn at —
+/// 40 on a People row, 48 in the import review, 80 on the person page hero.
+/// [x] and [y] are the centre of the visible circle as a fraction of the
+/// image; [scale] is how far the image is zoomed in, where `1` is the
+/// smallest zoom that still covers the circle.
+///
+/// A transform over the original, never a second file: re-cropping rewrites
+/// three numbers and touches no bytes on disk.
+@freezed
+abstract class AvatarCrop with _$AvatarCrop {
+  const factory AvatarCrop({
+    @Default(0.5) double x,
+    @Default(0.5) double y,
+    @Default(1) double scale,
+  }) = _AvatarCrop;
+
+  const AvatarCrop._();
+
+  /// Deserialises through [clamped], so a value that arrives out of range —
+  /// from a peer running a future version, or a hand-edited payload — cannot
+  /// render an empty circle on this device.
+  factory AvatarCrop.fromJson(Map<String, dynamic> json) =>
+      _$AvatarCropFromJson(json).clamped;
+
+  /// The framing this crop actually describes: centre inside the image and
+  /// zoom inside [minAvatarCropScale] … [maxAvatarCropScale].
+  AvatarCrop get clamped => AvatarCrop(
+    x: clampCropFraction(x),
+    y: clampCropFraction(y),
+    scale: clampAvatarCropScale(scale),
+  );
+}
+
+/// The closest an avatar crop may be zoomed out: the image exactly covers the
+/// circle, so there is never a gap to fill.
+const double minAvatarCropScale = 1;
+
+/// The furthest an avatar crop may be zoomed in. Past this a phone photo has
+/// no pixels left to show at 80 logical points.
+const double maxAvatarCropScale = 4;
+
+/// A normalised position within an image, clamped to the image.
+double clampCropFraction(double value) =>
+    value.isNaN ? 0.5 : value.clamp(0.0, 1.0);
+
+/// An avatar zoom, clamped to the range the crop surface offers.
+double clampAvatarCropScale(double value) => value.isNaN
+    ? minAvatarCropScale
+    : value.clamp(minAvatarCropScale, maxAvatarCropScale);
+
+/// Reads a normalised position out of JSON, clamped — the read-side guard
+/// [AvatarCrop.fromJson] gives the avatar, for the banner's single axis.
+/// Anything that is not a number reads as centred rather than throwing: a
+/// malformed framing must not make a person fail to load.
+double cropFractionFromJson(Object? raw) =>
+    raw is num ? clampCropFraction(raw.toDouble()) : 0.5;
+
 /// Lifecycle status of a relationship, mirroring `ProjectStatus` in shape
 /// (ADR 0038): `active` relationships participate in cadence tracking,
 /// `dormant` ones are kept but not currently nurtured (excluded from
@@ -90,8 +150,25 @@ abstract class RelationshipData with _$RelationshipData {
     String? profileId,
     String? languageCode,
 
-    /// ID of a linked JournalImage to use as cover art.
-    String? coverArtId,
+    /// The person's photograph: a linked `JournalImage` shown wherever the
+    /// persona avatar is drawn, with [avatarCrop] deciding which part of it
+    /// is the face. Null for a person without one, which stays the expected
+    /// steady state — the tinted initial is the fallback, not a placeholder.
+    String? avatarImageId,
+
+    /// How [avatarImageId] is framed. Null means the default centre framing;
+    /// the crop surface writes an explicit value.
+    AvatarCrop? avatarCrop,
+
+    /// The wide image behind the person page's hero: a linked `JournalImage`,
+    /// something *of* or *reminding of* the person rather than a second
+    /// portrait. Null leaves the hero the teal wash it has always been.
+    String? bannerImageId,
+
+    /// Horizontal framing of [bannerImageId] (0 = left … 1 = right), the
+    /// `EventData.coverArtCropX` shape. A banner is only ever cropped
+    /// horizontally: its height is fixed by the hero.
+    @Default(0.5) @JsonKey(fromJson: cropFractionFromJson) double bannerCropX,
 
     /// Excluded from AI context (ADR 0041 §5).
     @Default([]) List<ContactChannel> contactChannels,
@@ -104,4 +181,18 @@ abstract class RelationshipData with _$RelationshipData {
 
   factory RelationshipData.fromJson(Map<String, dynamic> json) =>
       _$RelationshipDataFromJson(json);
+}
+
+/// Write-side guard for the two image framings, applied by
+/// `RelationshipRepository` before anything is persisted.
+///
+/// The read side is already covered — [AvatarCrop.fromJson] and
+/// [cropFractionFromJson] clamp whatever sync delivers. This is the other
+/// half: a local caller with an arithmetic slip in a crop gesture must not be
+/// able to write a framing that shows an empty circle on every other device.
+extension RelationshipImageFraming on RelationshipData {
+  RelationshipData get withClampedImageFraming => copyWith(
+    avatarCrop: avatarCrop?.clamped,
+    bannerCropX: clampCropFraction(bannerCropX),
+  );
 }

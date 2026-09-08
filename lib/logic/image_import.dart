@@ -23,6 +23,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
@@ -112,95 +113,120 @@ Future<void> importImageAssets(
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
+  final assets = await _pickAssets(context, maxAssets: 50);
+  if (assets == null) return;
+  for (final asset in assets) {
+    await _importAsset(
+      asset,
+      linkedId: linkedId,
+      categoryId: categoryId,
+      analysisTrigger: analysisTrigger,
+    );
+  }
+}
+
+/// Opens the gallery picker for at most [maxAssets] images, or returns null
+/// when permission is refused, the widget went away, or the user backed out.
+Future<List<AssetEntity>?> _pickAssets(
+  BuildContext context, {
+  required int maxAssets,
+}) async {
   final ps = await PhotoManager.requestPermissionExtend();
   if (!ps.isAuth) {
-    return;
+    return null;
   }
 
   if (!context.mounted) {
-    return;
+    return null;
   }
 
   final assets = await AssetPicker.pickAssets(
     context,
-    pickerConfig: const AssetPickerConfig(
-      maxAssets: 50,
+    pickerConfig: AssetPickerConfig(
+      maxAssets: maxAssets,
       requestType: RequestType.image,
-      textDelegate: EnglishAssetPickerTextDelegate(),
+      textDelegate: const EnglishAssetPickerTextDelegate(),
     ),
   );
+  return assets?.toList(growable: false);
+}
 
-  if (assets != null) {
-    for (final asset in assets.toList(growable: false)) {
-      Geolocation? geolocation;
-      final latLng = await asset.latlngAsync();
-      final latitude = latLng?.latitude ?? asset.latitude;
-      final longitude = latLng?.longitude ?? asset.longitude;
+/// Imports one picked gallery [asset], returning the created entry's id — or
+/// null when the asset carries no usable file or an unsupported format.
+///
+/// The single-image path ([pickSingleImageEntry]) needs that id, and the
+/// batch path needs the same conversion, EXIF and geolocation handling, so
+/// there is one implementation and the batch loop discards what it returns.
+Future<String?> _importAsset(
+  AssetEntity asset, {
+  String? linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+}) async {
+  Geolocation? geolocation;
+  final latLng = await asset.latlngAsync();
+  final latitude = latLng?.latitude ?? asset.latitude;
+  final longitude = latLng?.longitude ?? asset.longitude;
 
-      if (latitude != null &&
-          longitude != null &&
-          latitude != 0 &&
-          longitude != 0) {
-        geolocation = Geolocation(
-          createdAt: asset.createDateTime,
-          latitude: latitude,
-          longitude: longitude,
-          geohashString: getGeoHash(latitude: latitude, longitude: longitude),
-        );
-      }
-
-      final createdAt = asset.createDateTime;
-      final file = await _bestAvailableAssetFile(asset);
-
-      if (file != null) {
-        final sourceExtension = await sourceExtensionForAssetFile(asset, file);
-        if (sourceExtension == null ||
-            !ImageImportConstants.supportedExtensions.contains(
-              sourceExtension,
-            )) {
-          continue;
-        }
-
-        final bytes = _requiresConversion(sourceExtension)
-            ? await file.readAsBytes()
-            : null;
-        final idNamePart = asset.id.split('/').first;
-        final targetFileExtension = _targetImageExtension(
-          sourceExtension,
-          sourceBytes: bytes,
-        );
-        final imageFileName = '$idNamePart.$targetFileExtension';
-        final day = DateFormat(
-          AudioRecorderConstants.directoryDateFormat,
-        ).format(createdAt);
-        final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
-        final directory = await createAssetDirectory(relativePath);
-        final targetFilePath = p.join(directory, imageFileName);
-        await _copyOrConvertImageFile(
-          sourceFile: file,
-          sourceExtension: sourceExtension,
-          sourceBytes: bytes,
-          targetFilePath: targetFilePath,
-        );
-        final created = asset.createDateTime;
-
-        final imageData = ImageData(
-          imageId: asset.id,
-          imageFile: imageFileName,
-          imageDirectory: relativePath,
-          capturedAt: created,
-          geolocation: geolocation,
-        );
-
-        await JournalRepository.createImageEntry(
-          imageData,
-          linkedId: linkedId,
-          categoryId: categoryId,
-          onCreated: createAnalysisCallback(analysisTrigger, linkedId),
-        );
-      }
-    }
+  if (latitude != null &&
+      longitude != null &&
+      latitude != 0 &&
+      longitude != 0) {
+    geolocation = Geolocation(
+      createdAt: asset.createDateTime,
+      latitude: latitude,
+      longitude: longitude,
+      geohashString: getGeoHash(latitude: latitude, longitude: longitude),
+    );
   }
+
+  final createdAt = asset.createDateTime;
+  final file = await _bestAvailableAssetFile(asset);
+  if (file == null) return null;
+
+  final sourceExtension = await sourceExtensionForAssetFile(asset, file);
+  if (sourceExtension == null ||
+      !ImageImportConstants.supportedExtensions.contains(sourceExtension)) {
+    return null;
+  }
+
+  final bytes = _requiresConversion(sourceExtension)
+      ? await file.readAsBytes()
+      : null;
+  final idNamePart = asset.id.split('/').first;
+  final targetFileExtension = _targetImageExtension(
+    sourceExtension,
+    sourceBytes: bytes,
+  );
+  final imageFileName = '$idNamePart.$targetFileExtension';
+  final day = DateFormat(
+    AudioRecorderConstants.directoryDateFormat,
+  ).format(createdAt);
+  final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
+  final directory = await createAssetDirectory(relativePath);
+  final targetFilePath = p.join(directory, imageFileName);
+  await _copyOrConvertImageFile(
+    sourceFile: file,
+    sourceExtension: sourceExtension,
+    sourceBytes: bytes,
+    targetFilePath: targetFilePath,
+  );
+
+  final imageData = ImageData(
+    imageId: asset.id,
+    imageFile: imageFileName,
+    imageDirectory: relativePath,
+    capturedAt: createdAt,
+    geolocation: geolocation,
+  );
+
+  final entry = await JournalRepository.createImageEntry(
+    imageData,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    onCreated: createAnalysisCallback(analysisTrigger, linkedId),
+  );
+  return entry?.meta.id;
 }
 
 /// Imports image files picked from a desktop file dialog (Linux/Windows),
@@ -229,92 +255,168 @@ Future<void> importImagePickerFiles({
 /// and the desktop file picker. Validates extension + size, copies into the
 /// app's image directory, and creates a linked image entry. Per-file failures
 /// are logged and skipped so one bad file doesn't abort the batch.
-Future<void> importImageXFiles(
+///
+/// Returns the ids of the entries actually created, in the order the files
+/// were given — so a caller that needs to *reference* what it imported (a
+/// person's avatar or banner) has it, while the drag-and-drop callers that
+/// only care that the files landed can keep ignoring the result. Skipped
+/// files simply have no id in the list, which is why it can be shorter than
+/// [files].
+Future<List<String>> importImageXFiles(
   List<XFile> files, {
   String? linkedId,
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
+  final created = <String>[];
   for (final file in files) {
-    try {
-      final id = uuid.v1();
-      final srcPath = file.path;
-      final fileExtension =
-          _extensionFromPath(file.name) ?? _extensionFromPath(srcPath) ?? '';
+    final id = await _importXFile(
+      file,
+      linkedId: linkedId,
+      categoryId: categoryId,
+      analysisTrigger: analysisTrigger,
+    );
+    if (id != null) created.add(id);
+  }
+  return created;
+}
 
-      // Skip non-image files
-      if (!ImageImportConstants.supportedExtensions.contains(fileExtension)) {
-        continue;
-      }
+/// Imports one [file], returning the created entry's id — or null when the
+/// file is not a supported image, is too large, or the import threw.
+///
+/// Failures are logged and swallowed rather than rethrown: the batch caller
+/// must keep going after one bad file, and the single-image caller reads a
+/// null as "nothing was picked", which is the same outcome either way.
+Future<String?> _importXFile(
+  XFile file, {
+  String? linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+}) async {
+  try {
+    final id = uuid.v1();
+    final srcPath = file.path;
+    final fileExtension =
+        _extensionFromPath(file.name) ?? _extensionFromPath(srcPath) ?? '';
 
-      // Validate file size before reading the bytes into memory.
-      final fileSize = await File(srcPath).length();
-      if (fileSize > ImageImportConstants.maxFileSizeBytes) {
-        getIt<DomainLogger>().error(
-          LogDomain.ai,
-          'Image file too large: $fileSize bytes',
-          subDomain: 'importDroppedImages',
-        );
-        continue;
-      }
+    // Skip non-image files
+    if (!ImageImportConstants.supportedExtensions.contains(fileExtension)) {
+      return null;
+    }
 
-      final bytes = await File(srcPath).readAsBytes();
-      final lastModified = await file.lastModified();
-
-      // Prefer the photo's original capture time from EXIF; fall back to the
-      // file's last-modified time when the image carries no timestamp. Drag and
-      // drop streams each file into a fresh temp file, so its mtime is the drop
-      // time rather than when the photo was taken — only the EXIF metadata
-      // preserves the real moment.
-      final capturedAt = await _extractImageTimestamp(
-        bytes,
-        fallback: lastModified,
-      );
-      final geolocation = await extractGpsCoordinates(bytes, capturedAt);
-
-      final day = DateFormat(
-        AudioRecorderConstants.directoryDateFormat,
-      ).format(capturedAt);
-      final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
-      final directory = await createAssetDirectory(relativePath);
-      final targetFileExtension = _targetImageExtension(
-        fileExtension,
-        sourceBytes: bytes,
-      );
-      final targetFileName = '$id.$targetFileExtension';
-      final targetFilePath = p.join(directory, targetFileName);
-
-      await _copyOrConvertImageFile(
-        sourceFile: File(srcPath),
-        sourceExtension: fileExtension,
-        sourceBytes: bytes,
-        targetFilePath: targetFilePath,
-      );
-
-      final imageData = ImageData(
-        imageId: id,
-        imageFile: targetFileName,
-        imageDirectory: relativePath,
-        capturedAt: capturedAt,
-        geolocation: geolocation,
-      );
-
-      await JournalRepository.createImageEntry(
-        imageData,
-        linkedId: linkedId,
-        categoryId: categoryId,
-        onCreated: createAnalysisCallback(analysisTrigger, linkedId),
-      );
-    } catch (exception, stackTrace) {
+    // Validate file size before reading the bytes into memory.
+    final fileSize = await File(srcPath).length();
+    if (fileSize > ImageImportConstants.maxFileSizeBytes) {
       getIt<DomainLogger>().error(
         LogDomain.ai,
-        exception,
-        stackTrace: stackTrace,
+        'Image file too large: $fileSize bytes',
         subDomain: 'importDroppedImages',
       );
-      // Continue processing other files even if one fails
+      return null;
     }
+
+    final bytes = await File(srcPath).readAsBytes();
+    final lastModified = await file.lastModified();
+
+    // Prefer the photo's original capture time from EXIF; fall back to the
+    // file's last-modified time when the image carries no timestamp. Drag and
+    // drop streams each file into a fresh temp file, so its mtime is the drop
+    // time rather than when the photo was taken — only the EXIF metadata
+    // preserves the real moment.
+    final capturedAt = await _extractImageTimestamp(
+      bytes,
+      fallback: lastModified,
+    );
+    final geolocation = await extractGpsCoordinates(bytes, capturedAt);
+
+    final day = DateFormat(
+      AudioRecorderConstants.directoryDateFormat,
+    ).format(capturedAt);
+    final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
+    final directory = await createAssetDirectory(relativePath);
+    final targetFileExtension = _targetImageExtension(
+      fileExtension,
+      sourceBytes: bytes,
+    );
+    final targetFileName = '$id.$targetFileExtension';
+    final targetFilePath = p.join(directory, targetFileName);
+
+    await _copyOrConvertImageFile(
+      sourceFile: File(srcPath),
+      sourceExtension: fileExtension,
+      sourceBytes: bytes,
+      targetFilePath: targetFilePath,
+    );
+
+    final imageData = ImageData(
+      imageId: id,
+      imageFile: targetFileName,
+      imageDirectory: relativePath,
+      capturedAt: capturedAt,
+      geolocation: geolocation,
+    );
+
+    final entry = await JournalRepository.createImageEntry(
+      imageData,
+      linkedId: linkedId,
+      categoryId: categoryId,
+      onCreated: createAnalysisCallback(analysisTrigger, linkedId),
+    );
+    return entry?.meta.id;
+  } catch (exception, stackTrace) {
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
+      exception,
+      stackTrace: stackTrace,
+      subDomain: 'importDroppedImages',
+    );
+    // Continue processing other files even if one fails
+    return null;
   }
+}
+
+/// Picks exactly one image and imports it, returning the created
+/// `JournalImage`'s id — or null when the user backed out, refused access, or
+/// the file could not be read.
+///
+/// The batch importers above are `Future<void>` because nothing needed the
+/// ids they created. Setting a person's avatar or banner does: the id *is*
+/// the value that gets stored. This routes through the same per-item import,
+/// so conversion, EXIF, geolocation and the created entry are identical to a
+/// batch import of one file.
+///
+/// [linkedId] is what the image is linked to, and it is not optional in
+/// practice for an avatar: the link is what lets image deletion find the
+/// entity referencing it, and what makes the image inherit a private
+/// person's privacy.
+Future<String?> pickSingleImageEntry(
+  BuildContext context, {
+  String? linkedId,
+  String? categoryId,
+}) async {
+  // Desktop Linux/Windows have no gallery picker — the same split the
+  // journal's "import image" row makes.
+  if (isLinux || isWindows) {
+    final group = XTypeGroup(
+      extensions: ImageImportConstants.supportedExtensions.toList(
+        growable: false,
+      ),
+    );
+    final file = await openFile(acceptedTypeGroups: [group]);
+    if (file == null) return null;
+    final created = await importImageXFiles(
+      [file],
+      linkedId: linkedId,
+      categoryId: categoryId,
+    );
+    return created.firstOrNull;
+  }
+  // coverage:ignore-start
+  final assets = await _pickAssets(context, maxAssets: 1);
+  final asset = assets?.firstOrNull;
+  if (asset == null) return null;
+  return _importAsset(asset, linkedId: linkedId, categoryId: categoryId);
+  // coverage:ignore-end
 }
 
 enum _ImageStorageFormat { original, jpeg, png }

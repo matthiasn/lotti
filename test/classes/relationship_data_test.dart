@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/relationship_data.dart';
 
 void main() {
@@ -32,7 +33,10 @@ void main() {
         birthday: DateTime(1990, 4, 21),
         profileId: 'profile-123',
         languageCode: 'de',
-        coverArtId: 'image-abc',
+        avatarImageId: 'image-avatar',
+        avatarCrop: const AvatarCrop(x: 0.32, y: 0.18, scale: 2.4),
+        bannerImageId: 'image-banner',
+        bannerCropX: 0.25,
         contactChannels: const [
           ContactChannel(
             type: ContactChannelType.mobile,
@@ -59,6 +63,13 @@ void main() {
       expect(restored.contactRefs, {'ios': 'contact-ref-1'});
       expect(restored.checkInCadenceDays, 14);
       expect(restored.birthday, DateTime(1990, 4, 21));
+      expect(restored.avatarImageId, 'image-avatar');
+      expect(
+        restored.avatarCrop,
+        const AvatarCrop(x: 0.32, y: 0.18, scale: 2.4),
+      );
+      expect(restored.bannerImageId, 'image-banner');
+      expect(restored.bannerCropX, 0.25);
     });
 
     test('defaults are applied correctly', () {
@@ -78,7 +89,18 @@ void main() {
       expect(data.birthday, isNull);
       expect(data.profileId, isNull);
       expect(data.languageCode, isNull);
-      expect(data.coverArtId, isNull);
+      expect(data.avatarImageId, isNull);
+      expect(
+        data.avatarCrop,
+        isNull,
+        reason: 'null framing means "the default", not a stored centre',
+      );
+      expect(data.bannerImageId, isNull);
+      expect(
+        data.bannerCropX,
+        0.5,
+        reason: 'a banner with no chosen framing is centred',
+      );
       expect(data.contactChannels, isEmpty);
       expect(data.contactRefs, isEmpty);
     });
@@ -147,6 +169,143 @@ void main() {
         final restored = ContactChannel.fromJson(json);
         expect(restored, channel, reason: type.name);
       }
+    });
+  });
+
+  group('AvatarCrop', () {
+    test('defaults frame the centre of the image at the widest zoom', () {
+      const crop = AvatarCrop();
+      expect(crop.x, 0.5);
+      expect(crop.y, 0.5);
+      expect(
+        crop.scale,
+        minAvatarCropScale,
+        reason: 'the widest zoom is the one that exactly covers the circle',
+      );
+    });
+
+    test('round-trips through JSON', () {
+      const crop = AvatarCrop(x: 0.21, y: 0.87, scale: 3.5);
+      expect(
+        AvatarCrop.fromJson(
+          jsonDecode(jsonEncode(crop)) as Map<String, dynamic>,
+        ),
+        crop,
+      );
+    });
+
+    test('a crop that arrives out of range is read back inside it — a peer '
+        'cannot make this device render an empty circle', () {
+      final crop = AvatarCrop.fromJson(const {
+        'x': -4.0,
+        'y': 9.0,
+        'scale': 250.0,
+      });
+      expect(crop.x, 0);
+      expect(crop.y, 1);
+      expect(crop.scale, maxAvatarCropScale);
+    });
+
+    test('NaN reads as the default framing rather than propagating', () {
+      final crop = AvatarCrop.fromJson(const {
+        'x': double.nan,
+        'y': double.nan,
+        'scale': double.nan,
+      });
+      expect(crop, const AvatarCrop());
+    });
+
+    glados.Glados3(
+      glados.any.double,
+      glados.any.double,
+      glados.any.double,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('clamped always lands inside the ranges the crop surface offers', (
+      x,
+      y,
+      scale,
+    ) {
+      final clamped = AvatarCrop(x: x, y: y, scale: scale).clamped;
+      expect(clamped.x, inInclusiveRange(0, 1));
+      expect(clamped.y, inInclusiveRange(0, 1));
+      expect(
+        clamped.scale,
+        inInclusiveRange(minAvatarCropScale, maxAvatarCropScale),
+      );
+    });
+
+    glados.Glados(
+      glados.any.double,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('clamped is idempotent: framing already in range is left alone', (
+      value,
+    ) {
+      final once = AvatarCrop(x: value, y: value, scale: value).clamped;
+      expect(once.clamped, once);
+    });
+  });
+
+  group('cropFractionFromJson', () {
+    test('reads an int as well as a double — JSON does not distinguish', () {
+      expect(cropFractionFromJson(1), 1.0);
+      expect(cropFractionFromJson(0.25), 0.25);
+    });
+
+    test('anything that is not a number reads as centred, so a malformed '
+        'framing cannot stop a person loading', () {
+      expect(cropFractionFromJson(null), 0.5);
+      expect(cropFractionFromJson('left'), 0.5);
+      expect(cropFractionFromJson(const {'x': 1}), 0.5);
+    });
+
+    glados.Glados(
+      glados.any.double,
+      glados.ExploreConfig(numRuns: 300),
+    ).test('always lands in 0…1', (value) {
+      expect(cropFractionFromJson(value), inInclusiveRange(0, 1));
+    });
+  });
+
+  group('RelationshipImageFraming', () {
+    RelationshipData dataWith({AvatarCrop? avatarCrop, double? bannerCropX}) =>
+        RelationshipData(
+          title: 'Anna',
+          status: RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          avatarCrop: avatarCrop,
+          bannerCropX: bannerCropX ?? 0.5,
+        );
+
+    test('clamps both framings on the way to storage', () {
+      final clamped = dataWith(
+        avatarCrop: const AvatarCrop(x: -1, y: 2, scale: 99),
+        bannerCropX: 7,
+      ).withClampedImageFraming;
+
+      expect(clamped.avatarCrop, const AvatarCrop(x: 0, y: 1, scale: 4));
+      expect(clamped.bannerCropX, 1);
+    });
+
+    test('leaves a person with no avatar crop without one', () {
+      final clamped = dataWith().withClampedImageFraming;
+      expect(
+        clamped.avatarCrop,
+        isNull,
+        reason:
+            'clamping must not invent a stored framing for a person who '
+            'has never chosen one',
+      );
+    });
+
+    test('changes nothing else about the person', () {
+      final original = dataWith(
+        avatarCrop: const AvatarCrop(x: 0.2, y: 0.3, scale: 2),
+        bannerCropX: 0.4,
+      ).copyWith(nickname: 'Sis', important: true, checkInCadenceDays: 7);
+      expect(original.withClampedImageFraming, original);
     });
   });
 }

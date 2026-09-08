@@ -590,6 +590,77 @@ void main() {
       });
     });
 
+    group('importImageXFiles returns what it created', () {
+      test('hands back the id of the entry it created, so a caller can '
+          'reference the image it just imported', () async {
+        final testFile = await createTestImageFile('avatar.jpg', 1024);
+
+        final created = await importImageXFiles([XFile(testFile.path)]);
+
+        final entry =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+        expect(
+          created,
+          [entry.meta.id],
+          reason:
+              'the id returned is the entry id an avatar would store, '
+              'not the ImageData.imageId',
+        );
+      });
+
+      test('returns the ids in file order', () async {
+        final first = await createTestImageFile('one.jpg', 1024);
+        final second = await createTestImageFile('two.png', 1024);
+
+        final created = await importImageXFiles([
+          XFile(first.path),
+          XFile(second.path),
+        ]);
+
+        final entries = verify(
+          () => mockPersistenceLogic.createDbEntity(
+            captureAny(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).captured.cast<JournalImage>();
+        expect(created, [entries.first.meta.id, entries.last.meta.id]);
+      });
+
+      test(
+        'a skipped file contributes no id rather than a null hole',
+        () async {
+          final good = await createTestImageFile('good.jpg', 1024);
+          final unsupported = File(path.join(tempDir.path, 'notes.txt'));
+          await unsupported.create(recursive: true);
+          await unsupported.writeAsString('not an image');
+
+          final created = await importImageXFiles([
+            XFile(unsupported.path),
+            XFile(good.path),
+            XFile('/nonexistent/path/missing.jpg'),
+          ]);
+
+          expect(
+            created,
+            hasLength(1),
+            reason:
+                'an unsupported file and an unreadable one are both skipped, '
+                'and the batch still reports the one that landed',
+          );
+        },
+      );
+    });
+
     group('importDroppedImages', () {
       test('successfully imports valid JPG file', () async {
         final testFile = await createTestImageFile('test.jpg', 1024);

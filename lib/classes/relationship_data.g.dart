@@ -27,6 +27,19 @@ const _$ContactChannelTypeEnumMap = {
   ContactChannelType.messaging: 'messaging',
 };
 
+_AvatarCrop _$AvatarCropFromJson(Map<String, dynamic> json) => _AvatarCrop(
+  x: (json['x'] as num?)?.toDouble() ?? 0.5,
+  y: (json['y'] as num?)?.toDouble() ?? 0.5,
+  scale: (json['scale'] as num?)?.toDouble() ?? 1,
+);
+
+Map<String, dynamic> _$AvatarCropToJson(_AvatarCrop instance) =>
+    <String, dynamic>{
+      'x': instance.x,
+      'y': instance.y,
+      'scale': instance.scale,
+    };
+
 RelationshipActive _$RelationshipActiveFromJson(Map<String, dynamic> json) =>
     RelationshipActive(
       id: json['id'] as String,
@@ -114,7 +127,14 @@ _RelationshipData _$RelationshipDataFromJson(
       : DateTime.parse(json['birthday'] as String),
   profileId: json['profileId'] as String?,
   languageCode: json['languageCode'] as String?,
-  coverArtId: json['coverArtId'] as String?,
+  avatarImageId: json['avatarImageId'] as String?,
+  avatarCrop: json['avatarCrop'] == null
+      ? null
+      : AvatarCrop.fromJson(json['avatarCrop'] as Map<String, dynamic>),
+  bannerImageId: json['bannerImageId'] as String?,
+  bannerCropX: json['bannerCropX'] == null
+      ? 0.5
+      : cropFractionFromJson(json['bannerCropX']),
   contactChannels:
       (json['contactChannels'] as List<dynamic>?)
           ?.map((e) => ContactChannel.fromJson(e as Map<String, dynamic>))
@@ -138,7 +158,10 @@ Map<String, dynamic> _$RelationshipDataToJson(_RelationshipData instance) =>
       'birthday': instance.birthday?.toIso8601String(),
       'profileId': instance.profileId,
       'languageCode': instance.languageCode,
-      'coverArtId': instance.coverArtId,
+      'avatarImageId': instance.avatarImageId,
+      'avatarCrop': instance.avatarCrop,
+      'bannerImageId': instance.bannerImageId,
+      'bannerCropX': instance.bannerCropX,
       'contactChannels': instance.contactChannels,
       'contactRefs': instance.contactRefs,
     };

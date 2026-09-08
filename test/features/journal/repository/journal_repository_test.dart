@@ -2132,6 +2132,158 @@ void main() {
       });
     });
 
+    group('deleteJournalEntity clears relationship image references', () {
+      final dateTime2023 = DateTime(2023);
+      const imageId = 'image-to-delete';
+
+      JournalEntity image() => JournalEntity.journalImage(
+        meta: testMeta(id: imageId),
+        data: ImageData(
+          capturedAt: dateTime2023,
+          imageId: 'img-uuid',
+          imageFile: 'face.jpg',
+          imageDirectory: '/path/to/images',
+        ),
+      );
+
+      RelationshipEntry person({
+        String? avatarImageId,
+        AvatarCrop? avatarCrop,
+        String? bannerImageId,
+      }) =>
+          JournalEntity.relationship(
+                meta: testMeta(id: 'rel-1'),
+                data: RelationshipData(
+                  title: 'Anna',
+                  avatarImageId: avatarImageId,
+                  avatarCrop: avatarCrop,
+                  bannerImageId: bannerImageId,
+                  status: RelationshipStatus.active(
+                    id: 'status-1',
+                    createdAt: dateTime2023,
+                    utcOffset: 0,
+                  ),
+                ),
+              )
+              as RelationshipEntry;
+
+      JournalDbEntity dbEntityFor(RelationshipEntry entry) => JournalDbEntity(
+        id: entry.meta.id,
+        createdAt: dateTime2023,
+        updatedAt: dateTime2023,
+        dateFrom: dateTime2023,
+        dateTo: dateTime2023,
+        deleted: false,
+        type: 'RelationshipEntry',
+        subtype: '',
+        task: false,
+        starred: false,
+        private: false,
+        flag: 0,
+        category: '',
+        schemaVersion: 1,
+        serialized: jsonEncode(entry.toJson()),
+      );
+
+      /// Deletes [imageId] with [linked] as the only entity pointing at it,
+      /// and hands back every entity that was written as a result.
+      Future<List<JournalEntity>> deleteImageLinkedTo(
+        RelationshipEntry linked,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(imageId),
+        ).thenAnswer((_) async => image());
+        when(
+          () => mockJournalDb.getLinkedToEntities(imageId),
+        ).thenAnswer((_) async => [dbEntityFor(linked)]);
+        when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.first as Metadata,
+        );
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              (invocation.positionalArguments.first as Metadata).copyWith(
+                deletedAt: dateTime2023,
+              ),
+        );
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
+        when(() => mockTimeService.getCurrent()).thenReturn(null);
+
+        expect(await repository.deleteJournalEntity(imageId), isTrue);
+        return verify(
+          () => mockPersistenceLogic.updateDbEntity(captureAny()),
+        ).captured.cast<JournalEntity>();
+      }
+
+      test('deleting the avatar image clears the id and its framing, and '
+          'leaves the banner alone', () async {
+        final written = await deleteImageLinkedTo(
+          person(
+            avatarImageId: imageId,
+            avatarCrop: const AvatarCrop(x: 0.2, y: 0.7, scale: 3),
+            bannerImageId: 'other-image',
+          ),
+        );
+
+        final updated = written.whereType<RelationshipEntry>().single;
+        expect(updated.data.avatarImageId, isNull);
+        expect(
+          updated.data.avatarCrop,
+          isNull,
+          reason:
+              'a framing for an image that is gone would be inherited by '
+              'the next photo chosen',
+        );
+        expect(
+          updated.data.bannerImageId,
+          'other-image',
+          reason: 'only the reference to the deleted image is cleared',
+        );
+      });
+
+      test('deleting the banner image leaves the avatar and its framing '
+          'untouched', () async {
+        const crop = AvatarCrop(x: 0.4, y: 0.35, scale: 1.8);
+        final written = await deleteImageLinkedTo(
+          person(
+            avatarImageId: 'other-image',
+            avatarCrop: crop,
+            bannerImageId: imageId,
+          ),
+        );
+
+        final updated = written.whereType<RelationshipEntry>().single;
+        expect(updated.data.bannerImageId, isNull);
+        expect(updated.data.avatarImageId, 'other-image');
+        expect(updated.data.avatarCrop, crop);
+      });
+
+      test('a relationship linked to the image but referencing it in neither '
+          'field is not written at all', () async {
+        final written = await deleteImageLinkedTo(
+          person(avatarImageId: 'other-image', bannerImageId: 'another-image'),
+        );
+
+        expect(
+          written.whereType<RelationshipEntry>(),
+          isEmpty,
+          reason:
+              'rewriting an unchanged person would bump its vector clock '
+              'and enqueue sync for nothing',
+        );
+      });
+    });
+
     group('deleteJournalEntity with JournalImage cover art', () {
       test('clears coverArtId from tasks that reference deleted image', () async {
         // Arrange
