@@ -371,6 +371,44 @@ void main() {
       expect(picture.alignment, const Alignment(-0.5, 1));
     });
 
+    testWidgets('the decode is bounded to the slot at the widest zoom, so a '
+        'zoomed face is drawn from pixels the source has', (tester) async {
+      final image = buildJournalImage();
+      createImageFile(image);
+      final tokens = theme.extension<DsTokens>()!;
+
+      await pumpAvatar(
+        tester,
+        PersonaAvatar(
+          initial: 'P',
+          id: 'p',
+          size: 80,
+          imageId: image.id,
+          crop: const AvatarCrop(scale: maxAvatarCropScale),
+        ),
+        overrides: [createEntryControllerOverride(image)],
+      );
+
+      final decode =
+          tester.widget<Image>(find.byType(Image)).image as ResizeImage;
+      final inner = 80 - 2 * tokens.spacing.step1;
+      final bound = (inner * maxAvatarCropScale * tester.view.devicePixelRatio)
+          .round();
+      expect(
+        decode.width,
+        bound,
+        reason:
+            'a decode capped to the circle itself would be magnified '
+            '${maxAvatarCropScale.toInt()}× into a blur of its own pixels',
+      );
+      expect(decode.height, bound);
+      expect(
+        decode.policy,
+        ResizeImagePolicy.fit,
+        reason: 'a source smaller than the bound still decodes at its own size',
+      );
+    });
+
     testWidgets('no crop means centred at the widest zoom', (tester) async {
       final image = buildJournalImage();
       createImageFile(image);

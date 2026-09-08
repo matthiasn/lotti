@@ -207,13 +207,23 @@ through this one widget, so all three got the photograph at once. The ring is
 `spacing.step1` at every size: the design's 3 px at 80 would have needed a
 token spacing does not have.
 
+The photograph decodes at the slot's size times the widest zoom
+(`maxAvatarCropScale`), one fixed bound per slot: the zoom magnifies whatever
+was decoded, so a decode capped to the circle itself would draw a zoomed face
+as a blur of its own pixels, and a bound that moved with the zoom would
+re-decode through every pinch.
+
 **Choosing the avatar.** Tapping the hero avatar (only while the band is
 open — a folded hero's faded avatar takes no taps) opens the avatar sheet:
 the privacy line, *Choose from library*, and once there is a photo *Adjust
-crop* and *Remove photo*. The flows live in `PersonPhotoActions`, whose only
-dependencies are the two repositories and the two surfaces it opens, handed
-in as functions — so pick → crop → write, and backing out at either step, is
-a plain unit test. Three rules are load-bearing:
+crop* and *Remove photo*. A row pops the sheet with the flow it stands for
+and `showPersonAvatarSheet` runs that flow over the page once the sheet is
+gone, so the picker and the crop surface never stack on the sheet and it
+never reappears under them as they close. The flows live in
+`PersonPhotoActions`, whose only dependencies are the two repositories and
+the two surfaces it opens, handed in as functions — so pick → crop → write,
+and backing out at either step, is a plain unit test. Three rules are
+load-bearing:
 
 - **Cancelling writes nothing, even after the picker ran.** The picker has to
   import the picture before the crop surface can show it, so an entry already
@@ -223,7 +233,11 @@ a plain unit test. Three rules are load-bearing:
   framing or null; the caller writes. Its preview *is* a `PersonaAvatar`, so
   the preview and the list cannot disagree, and its gesture arithmetic is
   `CoverCropGeometry` — the renderer's model written out — whose "the circle
-  is never empty" invariant is a property test.
+  is never empty" invariant is a property test. The picture's size, which a
+  drag moves against, comes from the file's header (`FileImageSize` over
+  `readImageFileSize`), never from decoding the photograph; and the wheel
+  registers with the pointer-signal resolver, so a notch over the picture
+  zooms it without also scrolling the sheet.
 - **Removing clears the reference and keeps the entry**, the task cover-art
   precedent (`setCoverArt(null)`): taking a picture off a person is not
   deleting it from the journal.

@@ -29,6 +29,17 @@ import 'package:lotti/services/vector_clock_service.dart';
 class JournalRepository {
   JournalRepository();
 
+  /// The relationship repository over this one, for the writes to a person
+  /// that a delete cascades into — the person's own deletion, and clearing a
+  /// deleted image off their avatar or banner. Going through it keeps every
+  /// edit of a person on the repository's single write path.
+  RelationshipRepository _relationships(PersistenceLogic persistenceLogic) =>
+      RelationshipRepository(
+        journalDb: getIt<JournalDb>(),
+        journalRepository: this,
+        persistenceLogic: persistenceLogic,
+      );
+
   /// Clears references to a deleted image from the entities that point at it,
   /// so nothing is left rendering an id whose file and entry are gone.
   ///
@@ -57,9 +68,8 @@ class JournalRepository {
         final clearsAvatar = data.avatarImageId == imageId;
         final clearsBanner = data.bannerImageId == imageId;
         if (!clearsAvatar && !clearsBanner) continue;
-        await persistenceLogic.updateDbEntity(
+        await _relationships(persistenceLogic).updateRelationship(
           entity.copyWith(
-            meta: await persistenceLogic.updateMetadata(entity.meta),
             data: data.copyWith(
               avatarImageId: clearsAvatar ? null : data.avatarImageId,
               avatarCrop: clearsAvatar ? null : data.avatarCrop,
@@ -159,10 +169,8 @@ class JournalRepository {
       // surface that can reach the generic delete path (a deep link to the
       // journal detail page included), not only on the People pages.
       if (journalEntity is RelationshipEntry) {
-        return await RelationshipRepository(
-          journalDb: getIt<JournalDb>(),
-          journalRepository: this,
-          persistenceLogic: persistenceLogic,
+        return await _relationships(
+          persistenceLogic,
         ).deleteRelationship(journalEntityId);
       }
 

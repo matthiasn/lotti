@@ -100,6 +100,7 @@ class AvatarCropForm extends StatefulWidget {
     required this.relationship,
     required this.imageId,
     required this.handle,
+    this.readImageSize = readImageFileSize,
     super.key,
   });
 
@@ -108,6 +109,10 @@ class AvatarCropForm extends StatefulWidget {
   final RelationshipEntry relationship;
   final String imageId;
   final ValueNotifier<AvatarCrop> handle;
+
+  /// How the surface learns the picture's size, which a drag moves against.
+  /// Production reads the file's header; a test hands in the size.
+  final ImageFileSizeReader readImageSize;
 
   @override
   State<AvatarCropForm> createState() => _AvatarCropFormState();
@@ -121,9 +126,8 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
   AvatarCrop get _crop => widget.handle.value;
   set _crop(AvatarCrop value) => widget.handle.value = value;
 
-  /// A drag needs the picture's own size to move against; until the file
-  /// has decoded ([FileImageSize] hands null) it is ignored. Zoom needs no
-  /// size.
+  /// A drag needs the picture's own size to move against; until it is known
+  /// ([FileImageSize] hands null) it is ignored. Zoom needs no size.
   void _pan(Offset delta, double side, Size? imageSize) {
     if (imageSize == null) return;
     final geometry = CoverCropGeometry.circle(
@@ -135,6 +139,25 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
 
   void _zoom(double factor) {
     setState(() => _crop = CoverCropGeometry.zoomBy(_crop, factor));
+  }
+
+  /// The wheel zooms — and *claims* the event. A signal is offered to every
+  /// listener under the pointer, and the sheet's own scroll view is one of
+  /// them: without registering, a notch over the picture would zoom it and
+  /// scroll the sheet under the cursor in the same instant. Registering
+  /// first (the picture is innermost) is what makes the wheel exclusive.
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent || event.scrollDelta.dy == 0) return;
+    GestureBinding.instance.pointerSignalResolver.register(
+      event,
+      _zoomFromWheel,
+    );
+  }
+
+  void _zoomFromWheel(PointerSignalEvent event) {
+    final scroll = event as PointerScrollEvent
+      ..respond(allowPlatformDefault: false);
+    _zoom(math.exp(-scroll.scrollDelta.dy / _wheelPixelsPerE));
   }
 
   @override
@@ -163,11 +186,7 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
               width: side,
               height: side,
               child: Listener(
-                onPointerSignal: (event) {
-                  if (event is PointerScrollEvent) {
-                    _zoom(math.exp(-event.scrollDelta.dy / _wheelPixelsPerE));
-                  }
-                },
+                onPointerSignal: _handlePointerSignal,
                 child: JournalImageResolver(
                   imageId: widget.imageId,
                   builder: (context, resolved) {
@@ -222,6 +241,7 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
                     if (!resolved.fileExists) return surface(null);
                     return FileImageSize(
                       path: resolved.path,
+                      read: widget.readImageSize,
                       builder: (context, imageSize) => surface(imageSize),
                     );
                   },

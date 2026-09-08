@@ -10,19 +10,32 @@ import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.da
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// One of the avatar sheet's flows — [PersonPhotoActions.chooseAvatar],
+/// [PersonPhotoActions.adjustAvatar] or [PersonPhotoActions.removeAvatar] —
+/// as the value a row pops the sheet with.
+typedef PersonPhotoFlow =
+    Future<PersonPhotoOutcome> Function(RelationshipEntry person);
+
 /// Opens the sheet under a person's avatar (design 2026-09-08 turn 2): the
 /// privacy line, then *Choose from library*, and — once there is a photo —
 /// *Adjust crop* and *Remove photo*.
 ///
-/// [context] is the *page's*: every row closes the sheet before it acts, and
-/// the picker and the crop surface then open over the page, which is still
-/// there. Resolves once the flow has finished, to what it came to.
+/// A row closes the sheet *first* and hands back the flow it chose; the flow
+/// then runs here, over [context] — the page's, which outlives the sheet —
+/// so the picker and the crop surface open over the page alone, and the
+/// sheet never reappears under them for the frame it takes to close.
+/// Resolves once the flow has finished, to what it came to; null when the
+/// sheet was dismissed without choosing.
+///
+/// [actions] is the flows behind the rows. Null builds the real ones over
+/// [context]; a test hands in fakes so no picker opens.
 Future<PersonPhotoOutcome?> showPersonAvatarSheet({
   required BuildContext context,
   required RelationshipEntry relationship,
+  PersonPhotoActions? actions,
 }) async {
   final pageContext = context;
-  final outcome = await DsActionModal.show<PersonPhotoOutcome>(
+  final flow = await DsActionModal.show<PersonPhotoFlow>(
     context: context,
     title: context.messages.relationshipPhotoSheetTitle(
       relationship.data.title,
@@ -30,8 +43,11 @@ Future<PersonPhotoOutcome?> showPersonAvatarSheet({
     builder: (sheetContext) => PersonAvatarSheet(
       relationship: relationship,
       pageContext: pageContext,
+      actions: actions,
     ),
   );
+  if (flow == null) return null;
+  final outcome = await flow(relationship);
   // The one outcome the user has to hear about: they chose and cropped, and
   // the write was refused. Backing out says nothing, and success shows
   // itself — the avatar changes.
@@ -44,9 +60,9 @@ Future<PersonPhotoOutcome?> showPersonAvatarSheet({
   return outcome;
 }
 
-/// The rows of the avatar sheet. Each one pops the sheet with the outcome
-/// of the flow it started, so the caller of [showPersonAvatarSheet] learns
-/// what happened without holding the sheet open over the picker.
+/// The rows of the avatar sheet. Each one pops the sheet with the flow it
+/// stands for, and runs nothing itself: [showPersonAvatarSheet] runs the
+/// flow once the sheet is gone.
 class PersonAvatarSheet extends ConsumerWidget {
   const PersonAvatarSheet({
     required this.relationship,
@@ -78,15 +94,8 @@ class PersonAvatarSheet extends ConsumerWidget {
           relationship: relationship,
         );
 
-    /// Closes the sheet, runs [flow] over the page, and reports its outcome
-    /// through the sheet's own result.
-    Future<void> run(
-      Future<PersonPhotoOutcome> Function(RelationshipEntry) flow,
-    ) async {
-      final navigator = Navigator.of(context);
-      final outcome = await flow(relationship);
-      if (navigator.mounted) navigator.pop(outcome);
-    }
+    /// Closes the sheet with [flow] as its result.
+    void choose(PersonPhotoFlow flow) => Navigator.of(context).pop(flow);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +117,7 @@ class PersonAvatarSheet extends ConsumerWidget {
           title: messages.relationshipPhotoChoose,
           tone: DsActionRowTone.accent,
           trailing: DsActionRowTrailing.chevron,
-          onTap: () => run(actions.chooseAvatar),
+          onTap: () => choose(actions.chooseAvatar),
         ),
         if (hasPhoto) ...[
           DsActionRow(
@@ -118,14 +127,14 @@ class PersonAvatarSheet extends ConsumerWidget {
             icon: LottiIcons.edit,
             title: messages.relationshipPhotoAdjustCrop,
             trailing: DsActionRowTrailing.chevron,
-            onTap: () => run(actions.adjustAvatar),
+            onTap: () => choose(actions.adjustAvatar),
           ),
           DsActionRow(
             key: const ValueKey('person-photo-remove'),
             icon: LottiIcons.delete,
             title: messages.relationshipPhotoRemove,
             tone: DsActionRowTone.destructive,
-            onTap: () => run(actions.removeAvatar),
+            onTap: () => choose(actions.removeAvatar),
           ),
         ],
       ],

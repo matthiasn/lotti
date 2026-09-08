@@ -11,7 +11,6 @@ import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -25,11 +24,10 @@ void main() {
   late ValueNotifier<AvatarCrop> handle;
   final at = DateTime(2026, 8, 13, 14);
 
-  /// A real, decodable picture — the design system's own placeholder, a
-  /// 160 × 160 cartoon — so the surface can learn a size to drag against.
-  final pngBytes = File(
-    'assets/design_system/avatar_placeholder.png',
-  ).readAsBytesSync();
+  /// The size the surface is told its picture has — what a drag moves
+  /// against — in place of reading a file's header.
+  const imageSize = Size(160, 160);
+  Future<Size> readImageSize(String _) async => imageSize;
 
   final person = RelationshipEntry(
     meta: Metadata(
@@ -60,7 +58,7 @@ void main() {
       },
     );
     image = buildJournalImage(imageFile: 'pip.png');
-    createImageFile(image, bytes: pngBytes);
+    createImageFile(image);
     handle = ValueNotifier(const AvatarCrop());
   });
 
@@ -72,39 +70,26 @@ void main() {
     } catch (_) {}
   });
 
-  /// Decodes the picture *before* the form mounts — a `FileImage` decodes on
-  /// real IO, and a stream that starts under the fake clock never completes
-  /// for a later precache — then pumps the form at a known width.
+  AvatarCropForm form() => AvatarCropForm(
+    relationship: person,
+    imageId: image.id,
+    handle: handle,
+    readImageSize: readImageSize,
+  );
+
+  /// Pumps the form at a known width, then one frame for the size the
+  /// surface is told to arrive.
   Future<void> pumpForm(WidgetTester tester, {double width = 300}) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: SizedBox(key: ValueKey('warm'))),
-    );
-    await tester.runAsync(
-      () => precacheImage(
-        FileImage(File(getFullImagePath(image))),
-        tester.element(find.byKey(const ValueKey('warm'))),
-      ),
-    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
           body: Center(
-            child: SizedBox(
-              width: width,
-              child: AvatarCropForm(
-                relationship: person,
-                imageId: image.id,
-                handle: handle,
-              ),
-            ),
+            child: SizedBox(width: width, child: form()),
           ),
         ),
         overrides: [createEntryControllerOverride(image)],
       ),
     );
-    // One frame for the size probe's post-frame callback, one for its
-    // setState.
-    await tester.pump();
     await tester.pump();
   }
 
@@ -144,6 +129,50 @@ void main() {
         find.byKey(const ValueKey('avatar-crop-preview')),
       );
       expect(preview.crop!.scale, closeTo(math.e, 1e-9));
+    });
+
+    testWidgets('the wheel over the picture zooms it and leaves the sheet '
+        'where it was — the signal is claimed, not shared with the scroll '
+        'view around the form', (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: SingleChildScrollView(
+              controller: controller,
+              child: Column(
+                children: [
+                  SizedBox(width: 300, child: form()),
+                  // Somewhere for the scroll view to go, so a notch that
+                  // reached it would visibly move it.
+                  const SizedBox(height: 1000),
+                ],
+              ),
+            ),
+          ),
+          overrides: [createEntryControllerOverride(image)],
+        ),
+      );
+      await tester.pump();
+      controller.jumpTo(100);
+      await tester.pump();
+
+      // Up, which scrolls the view back towards the top and zooms in.
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: tester.getCenter(viewport),
+          scrollDelta: const Offset(0, -300),
+        ),
+      );
+      await tester.pump();
+
+      expect(handle.value.scale, closeTo(math.e, 1e-9));
+      expect(
+        controller.offset,
+        100,
+        reason: 'a notch over the picture must zoom it, not scroll the sheet',
+      );
     });
 
     testWidgets('a pinch zooms by the ratio of spans, and a second movement '
@@ -210,7 +239,7 @@ void main() {
       await tester.pump();
 
       final geometry = CoverCropGeometry.circle(
-        imageSize: const Size(160, 160),
+        imageSize: imageSize,
         diameter: 300,
       );
       final expected = geometry.panBy(

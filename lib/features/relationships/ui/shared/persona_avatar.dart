@@ -200,6 +200,13 @@ class _TintedInitial extends StatelessWidget {
 /// that edits the crop; the two must agree, and sharing the widget is what
 /// makes the surface's big square and the list's 40 px circle the same
 /// framing.
+///
+/// The decode is bounded to the box at the *widest* zoom, [maxAvatarCropScale]
+/// times [size], not to the box itself: the zoom magnifies whatever was
+/// decoded, and a decode capped to the circle would show a zoomed face as a
+/// blur of its own pixels. One bound per slot keeps the provider's key fixed
+/// through a pinch, so zooming never re-decodes, and `ResizeImage` never
+/// upscales, so a small source still decodes at its own size.
 class AvatarCropPicture extends StatelessWidget {
   const AvatarCropPicture({
     required this.resolved,
@@ -224,7 +231,7 @@ class AvatarCropPicture extends StatelessWidget {
         image: resolved.fileExists
             ? cappedFileImage(
                 resolved.path,
-                size: size,
+                size: size * maxAvatarCropScale,
                 devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
               )
             : null,

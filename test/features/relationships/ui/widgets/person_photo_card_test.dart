@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,7 +12,7 @@ import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/widgets/media/file_image_size.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -62,19 +60,23 @@ void main() {
 
   /// Real flows over scripted surfaces and a scripted write, so a tap runs
   /// end to end and the card's own behaviour — which flow, and what it does
-  /// afterwards — is what gets asserted.
-  PersonPhotoActions actions() => PersonPhotoActions(
-    relationships: relationships,
-    journal: journal,
-    pickImage: () async {
-      log.add('pick');
-      return 'image-new';
-    },
-    chooseCrop: (imageId, initial) async {
-      log.add('crop $imageId');
-      return const AvatarCrop(x: 0.2, y: 0.3, scale: 2);
-    },
-  );
+  /// afterwards — is what gets asserted. [pickImage] replaces the picker
+  /// that "returns" a fresh id, for the one test whose picker fails.
+  PersonPhotoActions actions({Future<String?> Function()? pickImage}) =>
+      PersonPhotoActions(
+        relationships: relationships,
+        journal: journal,
+        pickImage:
+            pickImage ??
+            () async {
+              log.add('pick');
+              return 'image-new';
+            },
+        chooseCrop: (imageId, initial) async {
+          log.add('crop $imageId');
+          return const AvatarCrop(x: 0.2, y: 0.3, scale: 2);
+        },
+      );
 
   setUp(() async {
     documents = Directory.systemTemp.createTempSync('person_photo_card_');
@@ -108,6 +110,8 @@ void main() {
     RelationshipEntry entry, {
     List<Override> overrides = const [],
     double width = 400,
+    Future<String?> Function()? pickImage,
+    ImageFileSizeReader readImageSize = readImageFileSize,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -116,8 +120,9 @@ void main() {
             width: width,
             child: PersonPhotoCard(
               person: entry,
-              actions: actions(),
+              actions: actions(pickImage: pickImage),
               onChanged: () async => changes++,
+              readImageSize: readImageSize,
             ),
           ),
         ),
@@ -225,40 +230,46 @@ void main() {
     expect(find.text('Could not save the photo'), findsOneWidget);
   });
 
+  testWidgets('a flow that throws is reported like a refused write, and the '
+      'card is handed back rather than left disabled behind it', (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      person(),
+      pickImage: () async => throw StateError('the picker fell over'),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('person-form-face-change')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Could not save the photo'), findsOneWidget);
+    expect(changes, 0);
+    final change = tester.widget<DesignSystemButton>(
+      find.byKey(const ValueKey('person-form-face-change')),
+    );
+    expect(
+      change.onPressed,
+      isNotNull,
+      reason: 'busy must be released however the flow ends',
+    );
+  });
+
   testWidgets("dragging the banner sideways moves it by the hero's own "
       'geometry and writes once, when the finger lifts', (tester) async {
     // A wide picture: a square one cover-fitted into a strip has no
     // horizontal room and cannot be repositioned at all.
+    const imageSize = Size(800, 100);
     final image = buildJournalImage(imageFile: 'wide.png');
-    late Uint8List png;
-    await tester.runAsync(() async {
-      final recorder = ui.PictureRecorder();
-      Canvas(recorder).drawRect(
-        const Rect.fromLTWH(0, 0, 800, 100),
-        Paint()..color = const Color(0xFF3366AA),
-      );
-      final picture = await recorder.endRecording().toImage(800, 100);
-      final bytes = await picture.toByteData(format: ui.ImageByteFormat.png);
-      png = bytes!.buffer.asUint8List();
-    });
-    createImageFile(image, bytes: png);
-    await tester.pumpWidget(
-      const MaterialApp(home: SizedBox(key: ValueKey('warm'))),
-    );
-    await tester.runAsync(
-      () => precacheImage(
-        FileImage(File(getFullImagePath(image))),
-        tester.element(find.byKey(const ValueKey('warm'))),
-      ),
-    );
+    createImageFile(image);
 
     await pumpCard(
       tester,
       person(bannerImageId: image.id),
       overrides: [createEntryControllerOverride(image)],
+      readImageSize: (_) async => imageSize,
     );
-    // The size probe: one frame to start, one for its setState.
-    await tester.pump();
+    // One frame for the size the preview is told to arrive.
     await tester.pump();
     final preview = find.byKey(const ValueKey('person-form-banner-preview'));
     final viewport = tester.getSize(preview);
@@ -271,7 +282,7 @@ void main() {
     // remainder, and that is what the geometry maps.
     const delivered = 30.0 - kDragSlopDefault;
     final expected = CoverCropGeometry(
-      imageSize: const Size(800, 100),
+      imageSize: imageSize,
       viewport: viewport,
     ).panBy(const AvatarCrop(), const Offset(-delivered, 0)).x;
     final written =

@@ -120,7 +120,7 @@ loop, and keep only the pumping inside the test.
 `IOOverrides.runZoned(body, fsWatchIsSupported: () => false)` or
 `fsWatch: (_, _, _) => throw const FileSystemException(...)` — no seam in
 production code, and timers created inside the zone still run on the test's
-fake clock (`test/features/tasks/ui/file_watcher_mixin_test.dart`).
+fake clock (`test/widgets/media/file_watcher_mixin_test.dart`).
 
 ## Platform-channel calls in widgets (e.g. HapticFeedback)
 

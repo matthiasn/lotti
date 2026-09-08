@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -34,6 +36,7 @@ class PersonPhotoCard extends StatefulWidget {
     required this.person,
     required this.actions,
     required this.onChanged,
+    this.readImageSize = readImageFileSize,
     super.key,
   });
 
@@ -43,6 +46,10 @@ class PersonPhotoCard extends StatefulWidget {
 
   /// Runs after a successful write, before the card settles.
   final Future<void> Function() onChanged;
+
+  /// How the banner preview learns its picture's size, which a drag moves
+  /// against. Production reads the file's header; a test hands in the size.
+  final ImageFileSizeReader readImageSize;
 
   @override
   State<PersonPhotoCard> createState() => _PersonPhotoCardState();
@@ -55,19 +62,36 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
   double? _draggingCropX;
   bool _busy = false;
 
+  /// Runs one flow with the card held busy, and releases it however the flow
+  /// ends. A flow that throws — the permission request or the picker can —
+  /// is reported like a refused write, the way the form's own Save treats a
+  /// throw, so the buttons come back and the user hears about it.
   Future<void> _run(
     Future<PersonPhotoOutcome> Function(RelationshipEntry) flow,
   ) async {
     if (_busy) return;
     setState(() => _busy = true);
-    final outcome = await flow(widget.person);
-    if (outcome == PersonPhotoOutcome.changed) await widget.onChanged();
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _draggingCropX = null;
-    });
-    if (outcome == PersonPhotoOutcome.failed) {
+    var outcome = PersonPhotoOutcome.cancelled;
+    try {
+      outcome = await flow(widget.person);
+      if (outcome == PersonPhotoOutcome.changed) await widget.onChanged();
+    } catch (e, s) {
+      developer.log(
+        'Failed to change a photo',
+        name: 'PersonPhotoCard',
+        error: e,
+        stackTrace: s,
+      );
+      outcome = PersonPhotoOutcome.failed;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _draggingCropX = null;
+        });
+      }
+    }
+    if (mounted && outcome == PersonPhotoOutcome.failed) {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.relationshipPhotoSaveFailed,
@@ -162,6 +186,7 @@ class _PersonPhotoCardState extends State<PersonPhotoCard> {
               imageId: data.bannerImageId!,
               cropX: _draggingCropX ?? data.bannerCropX,
               enabled: !_busy,
+              readImageSize: widget.readImageSize,
               onDrag: (cropX) => setState(() => _draggingCropX = cropX),
               onDragEnd: () {
                 final cropX = _draggingCropX;
@@ -224,6 +249,7 @@ class _BannerPreview extends StatelessWidget {
     required this.imageId,
     required this.cropX,
     required this.enabled,
+    required this.readImageSize,
     required this.onDrag,
     required this.onDragEnd,
   });
@@ -231,6 +257,7 @@ class _BannerPreview extends StatelessWidget {
   final String imageId;
   final double cropX;
   final bool enabled;
+  final ImageFileSizeReader readImageSize;
   final ValueChanged<double> onDrag;
   final VoidCallback onDragEnd;
 
@@ -269,6 +296,7 @@ class _BannerPreview extends StatelessWidget {
                 if (!resolved.fileExists) return picture;
                 return FileImageSize(
                   path: resolved.path,
+                  read: readImageSize,
                   builder: (context, imageSize) => GestureDetector(
                     key: const ValueKey('person-form-banner-preview'),
                     behavior: HitTestBehavior.opaque,

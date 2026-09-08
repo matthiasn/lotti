@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
 import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -21,6 +20,12 @@ void main() {
   late MockRelationshipRepository relationships;
   late MockJournalRepository journal;
   late List<String> log;
+
+  /// The page the sheet opens over, and whether the sheet was still on the
+  /// navigator when the picker ran — it must not be: the picker and the
+  /// crop surface open over the page alone.
+  late BuildContext pageContext;
+  bool? sheetOpenAtPick;
 
   RelationshipEntry person({String? avatarImageId}) => RelationshipEntry(
     meta: Metadata(
@@ -49,6 +54,8 @@ void main() {
     journal: journal,
     pickImage: () async {
       log.add('pick');
+      // With the sheet still up, the page has a route to pop.
+      sheetOpenAtPick = Navigator.of(pageContext).canPop();
       return 'image-new';
     },
     chooseCrop: (imageId, initial) async {
@@ -61,13 +68,15 @@ void main() {
     relationships = MockRelationshipRepository();
     journal = MockJournalRepository();
     log = [];
+    sheetOpenAtPick = null;
     when(
       () => relationships.updateRelationship(any()),
     ).thenAnswer((_) async => true);
   });
 
-  /// Opens the sheet from a host button the way the page does, and hands back
-  /// the future the sheet resolves.
+  /// Opens the sheet from a host button the way the page does — through
+  /// `showPersonAvatarSheet`, over fake surfaces — and hands back the future
+  /// it resolves.
   Future<Future<PersonPhotoOutcome?>> open(
     WidgetTester tester,
     RelationshipEntry entry,
@@ -79,14 +88,11 @@ void main() {
           body: Builder(
             builder: (context) => TextButton(
               onPressed: () {
-                result = DsActionModal.show<PersonPhotoOutcome>(
+                pageContext = context;
+                result = showPersonAvatarSheet(
                   context: context,
-                  title: 'Photo of Pip',
-                  builder: (_) => PersonAvatarSheet(
-                    relationship: entry,
-                    pageContext: context,
-                    actions: fakeActions(),
-                  ),
+                  relationship: entry,
+                  actions: fakeActions(),
                 );
               },
               child: const Text('open'),
@@ -126,8 +132,8 @@ void main() {
     expect(find.text('Remove photo'), findsOneWidget);
   });
 
-  testWidgets('choosing runs pick → crop → write and closes the sheet with '
-      'the outcome', (tester) async {
+  testWidgets('choosing closes the sheet first, then runs pick → crop → '
+      'write, and resolves to the outcome', (tester) async {
     final result = await open(tester, person());
 
     await tester.tap(find.byKey(const ValueKey('person-photo-choose')));
@@ -135,6 +141,13 @@ void main() {
 
     expect(await result, PersonPhotoOutcome.changed);
     expect(log, ['pick', 'crop image-new']);
+    expect(
+      sheetOpenAtPick,
+      isFalse,
+      reason:
+          'the picker and the crop surface open over the page alone; a sheet '
+          'held open under them would reappear for a frame as they close',
+    );
     final written =
         verify(
               () => relationships.updateRelationship(captureAny()),
