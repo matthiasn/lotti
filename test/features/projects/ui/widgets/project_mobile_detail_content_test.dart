@@ -20,6 +20,7 @@ import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
+import 'package:lotti/features/projects/ui/widgets/project_header_title_row.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
@@ -282,6 +283,54 @@ void main() {
 
         expect(find.text('Explore project'), findsNothing);
         expect(find.byIcon(LottiIcons.map), findsNothing);
+      });
+
+      testWidgets('no metadata pill sits under the action rail', (
+        tester,
+      ) async {
+        // A single-line title leaves the header shorter than the 48 pt rail,
+        // so the rail hangs into the band the status pills occupy. The pills
+        // are laid out after the header, so a pill that reached under the
+        // rail would win the pointer — the rail's own hit-test override only
+        // claims what nothing later covers. They are left-aligned and the
+        // rail is right-aligned, and this pins that they stay apart.
+        tester.view.physicalSize = const Size(430, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(
+                project: makeTestProject(title: 'Ab'),
+              ),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+              onEdit: () {},
+              onStatusTap: () {},
+              onTargetDateTap: () {},
+              onCategoryTap: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final rail = tester.getRect(find.byType(DesignSystemContextMenuButton));
+        final header = tester.getRect(find.byType(ProjectHeaderTitleRow));
+        expect(
+          rail.bottom,
+          greaterThan(header.bottom),
+          reason: 'the fixture must overhang, or this pins nothing',
+        );
+
+        for (final pill in tester.widgetList<DsPill>(find.byType(DsPill))) {
+          final rect = tester.getRect(find.byWidget(pill));
+          expect(
+            rect.overlaps(rail),
+            isFalse,
+            reason: '"${pill.label}" reaches under the action rail',
+          );
+        }
       });
 
       testWidgets('keeps the metadata close to the title', (tester) async {

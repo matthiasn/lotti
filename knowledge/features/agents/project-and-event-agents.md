@@ -342,7 +342,7 @@ project should be Active proposed exactly that on every wake — one report was
 seen carrying thirteen identical "Update project status to Active" rows, none
 of which the agent could take back.
 
-Three guards, deliberately separate, because each catches a different mistake:
+Four guards, deliberately separate, because each catches a different mistake:
 
 | Guard | Where | Catches |
 |---|---|---|
@@ -351,12 +351,12 @@ Three guards, deliberately separate, because each catches a different mistake:
 | `reconcileProjectProposals` | `project_agent_execute.dart`, at persist time | a proposal matching one still open (by structural fingerprint **or** rendered summary), one the user already rejected, and a duplicate proposed twice in one wake — on both keys, so two `create_task` calls sharing a title but not their optional args collapse to one row rather than creating the task twice |
 | `retract_suggestions` | `SuggestionRetractionService`, shared with the task agent | one the *agent* judges stale — the project moved on, the user did it by hand |
 
-Normalization comes first on purpose: it is what makes the two comparisons
-below it correct without either having to know about status aliases. `on_hold`
+Normalization comes first on purpose: it is what makes the comparisons below
+it correct without any of them having to know about status aliases. `on_hold`
 keeps its reason, which is user-facing text the apply path treats as a real
 change, so two holds for different reasons stay two proposals.
 
-The first two are deterministic and hold whatever the model does. The third
+The first three are deterministic and hold whatever the model does. The fourth
 needs the model to know what is open, so `ProjectAgentContextBuilder` reads
 `AgentRepository.getProposalLedger(agentId, taskId: projectId)` before the
 conversation and renders an **Open Proposal Guard** section — one line per open
