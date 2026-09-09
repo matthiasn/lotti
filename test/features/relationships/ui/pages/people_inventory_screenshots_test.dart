@@ -22,6 +22,8 @@
 library;
 
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +47,7 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -88,6 +91,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/journal_image_fixtures.dart';
+import '../../../../helpers/manual_demo_world.dart';
 import '../../../../helpers/thumb_hash_fixtures.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -148,6 +152,15 @@ final JournalImage _pipPhoto = buildJournalImage(
   id: 'image-pip',
   imageFile: 'pip.png',
 );
+
+/// Pip's banner: a landscape photograph of its own, so the strip's edges are
+/// straight. The avatar placeholder is a circle with transparent corners —
+/// right inside a ring, wrong as a banner, where the hero's full-height
+/// strip would show its curvature at the bottom corners.
+final JournalImage _pipBanner = buildJournalImage(
+  id: 'image-pip-banner',
+  imageFile: 'pip-banner.png',
+);
 final JournalImage _skuaArriving = buildJournalImage(
   id: 'image-skua',
   imageFile: 'skua.webp',
@@ -163,6 +176,27 @@ final JournalImage _tillyPending = buildJournalImage(
 final List<int> _fixturePngBytes = File(
   'assets/design_system/avatar_placeholder.png',
 ).readAsBytesSync();
+
+/// A real landscape photograph for the banner: the penguin demo world's
+/// habitat cover, fetched from R2 the way the manual capture suites fetch
+/// theirs and transcoded to PNG so the headless engine decodes it
+/// deterministically. Fetched once per process, in `setUpAll`, on the real
+/// event loop.
+late final Uint8List _bannerPngBytes;
+
+Future<Uint8List> _fetchBannerPng() async {
+  final asset = demoMediaAssets.firstWhere(
+    (asset) => asset.fileName == 'manual_task_cover_habitat.webp',
+  );
+  final codec = await ui.instantiateImageCodec(
+    await downloadManualDemoMedia(asset.uri),
+  );
+  final frame = await codec.getNextFrame();
+  final png = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+  frame.image.dispose();
+  codec.dispose();
+  return png!.buffer.asUint8List();
+}
 
 /// A Thursday afternoon. Every cadence pill, "last spoke" line and relative
 /// timestamp in the capture is read against this instant, so the inventory is
@@ -421,9 +455,7 @@ void main() {
     channels: const [_pipMobile, _pipEmail],
     avatarImageId: _pipPhoto.id,
     avatarCrop: const AvatarCrop(y: 0.35, scale: 1.4),
-    // The same picture as the banner: a wide crop of it is what a person's
-    // "something that reminds me of them" is likely to be anyway.
-    bannerImageId: _pipPhoto.id,
+    bannerImageId: _pipBanner.id,
   );
   final pipCheckIns = [
     checkIn(
@@ -622,8 +654,13 @@ void main() {
           ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
       },
     );
-    // Only Pip's file exists; Skua's and Tilly's are deliberately absent.
+    // Only Pip's files exist; Skua's and Tilly's are deliberately absent.
     createImageFile(_pipPhoto, bytes: _fixturePngBytes);
+    createImageFile(_pipBanner, bytes: _bannerPngBytes);
+  });
+
+  setUpAll(() async {
+    _bannerPngBytes = await _fetchBannerPng();
   });
 
   tearDown(() async {
@@ -698,6 +735,7 @@ void main() {
       (ref) async => proposals ?? const RelationshipProposalSnapshot.empty(),
     ),
     createEntryControllerOverride(_pipPhoto),
+    createEntryControllerOverride(_pipBanner),
     createEntryControllerOverride(_skuaArriving),
     createEntryControllerOverride(_tillyPending),
   ];
@@ -732,7 +770,7 @@ void main() {
       // shell's full width — the same key the hero builds.
       await precacheImage(
         boundedFileImage(
-          path,
+          getFullImagePath(_pipBanner),
           bounds: Size(
             device.size.width,
             PersonHeroAppBar.bannerStripExtent(dsTokensDark, topPadding: 0),
@@ -849,7 +887,7 @@ void main() {
       final width = tester.getSize(banner).width;
       if (width != device.size.width) {
         final key = boundedFileImage(
-          getFullImagePath(_pipPhoto),
+          getFullImagePath(_pipBanner),
           bounds: Size(
             width,
             PersonHeroAppBar.bannerStripExtent(dsTokensDark, topPadding: 0),
@@ -1423,7 +1461,7 @@ void main() {
             tester.tap(find.byKey(const ValueKey('person-form-cancel'))),
         measure: find.byKey(const ValueKey('person-form-banner-preview')),
         keyFor: (strip) => boundedFileImage(
-          getFullImagePath(_pipPhoto),
+          getFullImagePath(_pipBanner),
           bounds: strip,
           devicePixelRatio: _mediaQueryFor(device).devicePixelRatio,
         ),

@@ -413,8 +413,9 @@ void main() {
       final banner = find.byKey(const ValueKey('person-hero-banner'));
       final scrim = find.byKey(const ValueKey('person-hero-scrim'));
       final wash = find.byKey(const ValueKey('person-hero-wash'));
+      // From the hero itself: under a banner there is no wash element.
       DsTokens tokensOf(WidgetTester tester) =>
-          tester.element(wash).designTokens;
+          tester.element(find.byType(PersonHeroAppBar)).designTokens;
       Color chatGlyph(WidgetTester tester) => tester
           .widget<Icon>(
             find.descendant(
@@ -439,10 +440,9 @@ void main() {
         }
       });
 
-      testWidgets('with a banner: the picture above, a one-toolbar wash bar '
-          'below, the scrim over the top, and photo-neutral chrome', (
-        tester,
-      ) async {
+      testWidgets('with a banner: the picture is the whole hero above the '
+          "avatar's midline, no wash at all, the scrim over the top, and "
+          'photo-neutral chrome', (tester) async {
         final image = buildJournalImage(imageFile: 'banner.jpg');
         createImageFile(image);
 
@@ -458,13 +458,20 @@ void main() {
           topPadding: 0,
         );
 
-        expect(tester.getSize(banner).height, strip);
-        expect(tester.getTopLeft(wash).dy, strip);
         expect(
-          tester.getSize(wash).height,
-          PersonHeroAppBar.bannerBarExtent,
-          reason: 'the wash keeps exactly one toolbar of its band',
+          strip,
+          kToolbarHeight + PersonHeroAppBar.bandExtent(tokens),
+          reason: 'the strip is the toolbar and the whole band',
         );
+        expect(tester.getSize(banner).height, strip);
+        expect(
+          wash,
+          findsNothing,
+          reason: 'the picture replaces the wash; no bar is left under it',
+        );
+        // The avatar straddles the picture's lower edge.
+        final avatar = find.byKey(const ValueKey('person-hero-avatar-tap'));
+        expect(tester.getCenter(avatar).dy, closeTo(strip, 1e-9));
         expect(
           tester.getSize(scrim).height,
           closeTo(strip * PhotoScrim.fadeExtent, 1e-9),
@@ -546,8 +553,8 @@ void main() {
         },
       );
 
-      testWidgets('folding: the bar goes first, then the picture shrinks to '
-          'the toolbar, and the scrim still covers the toolbar', (
+      testWidgets('folding: the picture keeps its height while the avatar '
+          'tucks up, then shrinks to the toolbar, still under the scrim', (
         tester,
       ) async {
         final image = buildJournalImage(imageFile: 'banner.jpg');
@@ -559,19 +566,14 @@ void main() {
           overrides: [createEntryControllerOverride(image)],
         );
         final tokens = tokensOf(tester);
-        final strip = PersonHeroAppBar.bannerStripExtent(
-          tokens,
-          topPadding: 0,
-        );
+        // Spelled out rather than read from the static, so this pins the
+        // shape: the picture is the toolbar and the whole band.
+        final strip = kToolbarHeight + PersonHeroAppBar.bandExtent(tokens);
         final overhang = PersonHeroAppBar.avatarSize(tokens) / 2;
 
-        // Past the overhang and the bar: the bar is gone, the picture whole.
-        await tester.drag(
-          find.byType(CustomScrollView),
-          Offset(0, -(overhang + PersonHeroAppBar.bannerBarExtent)),
-        );
+        // Past the overhang: the avatar has tucked up, the picture is whole.
+        await tester.drag(find.byType(CustomScrollView), Offset(0, -overhang));
         await tester.pumpAndSettle();
-        expect(tester.getSize(wash).height, closeTo(0, 1e-9));
         expect(tester.getSize(banner).height, closeTo(strip, 1e-9));
 
         // Fully folded: the picture is the toolbar, still under the scrim.
