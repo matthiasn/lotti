@@ -1,6 +1,8 @@
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/building_architecture.dart';
+import 'package:lotti/features/plaza/domain/cable_path.dart';
 import 'package:lotti/features/plaza/domain/morning_walk.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
@@ -20,15 +22,29 @@ class PlazaWorld {
     required this.now,
     required this.projectLabel,
     required this.layout,
+    List<PlazaConnection> connections = const [],
     this.epoch,
     this.categoryLabels = const {},
     this.avenueLabels = const {},
     this.avenueByProjectId = const {},
     this.ambientCreatures = 24,
     this.architecture = const ArchitectureConfig(),
+    this.cables = const CableConfig(),
     PlazaCopy? copy,
   }) : copy = copy ?? PlazaCopy.english {
     plan = layout.plan(tasks, epoch: epoch, bucketOverrides: avenueByProjectId);
+    final visibleIds = {
+      for (final task in tasks)
+        if (!task.deleted) task.id,
+    };
+    this.connections = List.unmodifiable(
+      connections.where(
+        (edge) =>
+            edge.fromId != edge.toId &&
+            visibleIds.contains(edge.fromId) &&
+            visibleIds.contains(edge.toId),
+      ),
+    );
     architectureByTaskId = Map.unmodifiable({
       for (final task in tasks)
         task.id: BuildingArchitecture.forPlot(
@@ -99,6 +115,7 @@ class PlazaWorld {
   }
 
   final List<PlazaTask> tasks;
+  late final List<PlazaConnection> connections;
   final DateTime now;
   final String projectLabel;
   final StreetLayout layout;
@@ -106,6 +123,22 @@ class PlazaWorld {
   final PlazaCopy copy;
   final int ambientCreatures;
   final ArchitectureConfig architecture;
+  final CableConfig cables;
+
+  /// Roof routes are computed only when a renderer or inspection needs them.
+  /// They do not become camera obstacles or introduce intermediate graph nodes.
+  late final List<CablePath> cablePaths = List.unmodifiable([
+    for (final edge in connections)
+      CablePath.plan(
+        connection: edge,
+        from: plan.placements[edge.fromId]!,
+        to: plan.placements[edge.toId]!,
+        fromArchitecture: architectureByTaskId[edge.fromId]!,
+        toArchitecture: architectureByTaskId[edge.toId]!,
+        solids: solids,
+        config: cables,
+      ),
+  ]);
   final Map<int, String> avenueLabels;
   final Map<String, int> avenueByProjectId;
   bool get isCategory => avenueByProjectId.isNotEmpty;

@@ -10,10 +10,23 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/plaza/data/task_projection.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 
 /// Fallback category color when the demo category has none.
 const _fallbackColor = 0xFF5C9DFF;
+
+/// Uses the same scoped, typed edge projection as a live project snapshot.
+List<PlazaConnection> plazaConnectionsFromDemoWorld({DateTime? now}) {
+  final world = ManualDemoWorld.penguinLogistics(now: now);
+  return projectPlazaConnections(
+    links: world.links,
+    visibleTaskIds: {
+      for (final task in world.tasks)
+        if (task.meta.deletedAt == null) task.meta.id,
+    },
+  );
+}
 
 /// Category names keyed by the lower-case hex of their colour, for the
 /// side panel's category label (plaza tasks carry only the colour).

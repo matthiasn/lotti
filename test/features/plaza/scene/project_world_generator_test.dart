@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/building_architecture.dart';
+import 'package:lotti/features/plaza/domain/cable_path.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/project_world_generator.dart';
@@ -43,6 +46,30 @@ void main() {
   final project = makeTestProject(id: 'waddle', createdAt: start);
   final tasks = syntheticPlazaTasks(count: 50);
   final now = syntheticNow(tasks);
+
+  test('passes scoped relationship identity and direction into the world', () {
+    final visible = tasks.where((task) => !task.deleted).take(2).toList();
+    final edge = PlazaConnection(
+      id: 'blocker',
+      fromId: visible.first.id,
+      toId: visible.last.id,
+      type: EntryLinkType.blocks,
+    );
+    final world = generateProjectWorld(
+      project: project,
+      tasks: tasks,
+      connections: [edge],
+      now: now,
+      config: const ProjectWorldConfig(
+        cables: CableConfig(samplesPerSpan: 8, maxSupports: 0),
+      ),
+    );
+    expect(world.connections, [same(edge)]);
+    expect(world.connections.clear, throwsUnsupportedError);
+    expect(world.cablePaths.single.connection, same(edge));
+    expect(world.cablePaths.single.distances, hasLength(9));
+    expect(world.cables.samplesPerSpan, 8);
+  });
 
   test(
     'uses project identity and timeline, never fills missing data with demos',

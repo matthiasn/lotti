@@ -280,6 +280,26 @@ Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   return delegate;
 }
 
+/// Simulates the same task image retained in two independent tab histories.
+class _HeroTestLocation extends EmptyTestLocation {
+  _HeroTestLocation(super.routeInformation, {required this.label});
+
+  final String label;
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) => [
+    BeamPage(
+      key: ValueKey(label),
+      child: Center(
+        child: Hero(
+          tag: 'shared-task-image',
+          child: Text(label),
+        ),
+      ),
+    ),
+  ];
+}
+
 bool _eventsDisabledByDefault() => false;
 
 Future<void> _stubNavService(
@@ -2671,6 +2691,108 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });
+
+    for (final viewport in [_phoneViewportSize, _desktopViewportSize]) {
+      testWidgets('root navigation ignores retained inactive Heroes at '
+          '${viewport.width}px', (tester) async {
+        Future<BeamerDelegate> heroDelegate(String path) async {
+          final delegate = BeamerDelegate(
+            setBrowserTabTitle: false,
+            initialPath: path,
+            updateParent: false,
+            updateFromParent: false,
+            locationBuilder: (information, _) =>
+                _HeroTestLocation(information, label: path),
+          );
+          addTearDown(delegate.dispose);
+          await delegate.setNewRoutePath(
+            RouteInformation(uri: Uri.parse(path)),
+          );
+          return delegate;
+        }
+
+        final indices = StreamController<int>.broadcast();
+        addTearDown(indices.close);
+        final nav = MockNavService();
+        await _stubNavService(
+          nav,
+          indexStream: indices.stream,
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+          projectsDelegate: await heroDelegate('/projects'),
+          settingsDelegate: await heroDelegate('/settings'),
+        );
+        await _registerAppScreenGetIt(nav);
+        addTearDown(tearDownTestGetIt);
+        await _pumpAppScreen(
+          tester,
+          navService: nav,
+          viewportSize: viewport,
+        );
+        final departures = <String>[];
+        final projectHero = find.ancestor(
+          of: find.text('/projects', skipOffstage: false),
+          matching: find.byType(Hero, skipOffstage: false),
+        );
+        final retained = tester.element(projectHero);
+
+        // The plaza has no Hero at all; Flutter still scans both routes.
+        // A subsequent image-viewer transition must use the active tab only.
+        for (final (index, path) in [(2, '/projects'), (6, '/settings')]) {
+          indices.add(index);
+          await tester.pump();
+          await tester.pump();
+          final navigator =
+              Navigator.of(
+                tester.element(find.text(path)),
+                rootNavigator: true,
+              )..push<void>(
+                MaterialPageRoute(
+                  builder: (_) => const Scaffold(body: Text('plaza route')),
+                ),
+              );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(navigator.canPop(), isTrue);
+          navigator.pop();
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.text(path), findsOneWidget);
+
+          navigator.push<void>(
+            MaterialPageRoute(
+              builder: (_) => Scaffold(
+                body: Hero(
+                  tag: 'shared-task-image',
+                  flightShuttleBuilder: (_, _, _, from, to) {
+                    departures.add(
+                      ((from.widget as Hero).child as Text).data!,
+                    );
+                    return (to.widget as Hero).child;
+                  },
+                  child: const Text('full-screen image'),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(departures.last, path);
+          navigator.pop();
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+        }
+        expect(
+          tester.element(projectHero),
+          same(retained),
+          reason: 'disabling Heroes must preserve the inactive tab state',
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      });
+    }
 
     testWidgets('excludes inactive mobile tabs from keyboard focus', (
       tester,

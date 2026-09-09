@@ -5,7 +5,7 @@ description: Scoped journal snapshots generate task timelines and category avenu
 resource: ../../lib/features/plaza
 tags: [plaza, 3d, flutter-scene, flutter-gpu, tasks, projects, categories]
 status: draft
-generated: { by: codex/gpt-6, at: 2026-09-08T22:30:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-09T00:27:05Z }
 stale_after: 2027-03-01
 sources:
   - id: repository
@@ -24,6 +24,14 @@ sources:
     resource: ../../lib/features/plaza/scene/category_world_generator.dart
     title: Category project portals and avenue assignments
     last_modified: 2026-09-08
+  - id: cable-path
+    resource: ../../lib/features/plaza/domain/cable_path.dart
+    title: Configurable roof mounts and sagging spans
+    last_modified: 2026-09-09
+  - id: cable-renderer
+    resource: ../../lib/features/plaza/scene/plaza_cables.dart
+    title: Batched cables and instanced directional lights
+    last_modified: 2026-09-09
   - id: world
     resource: ../../lib/features/plaza/scene/plaza_world.dart
     title: Shared CPU scene description
@@ -143,10 +151,15 @@ projects or pulls linked tasks from another project into the world.
 
 Checklist and cover entities, then checklist items, are read in batches bounded
 by the repository's SQLite parameter budget. Deleted/archived checklist content
-is excluded by the projection. Links are bidirectional, deduplicated and kept
-only when both endpoints are visible members; hidden and deleted edges are
-excluded. Dependency IDs include unresolved children and filtered membership so
-late sync arrivals and membership corrections can refresh the snapshot.
+is excluded by the projection. Task relationships retain their stored type and
+direction in `PlazaConnection`. `projectPlazaConnections` excludes non-task link families,
+self-links, hidden/deleted edges and edges outside the visible task set. Basic
+associations normalize endpoint order; typed relationships retain opposing
+directions as distinct edges. Duplicate rows resolve deterministically by ID.
+The per-task linked-ID summary is bidirectional and deduplicated. The category
+lock is rechecked after asynchronous child/link reads, before publication.
+Dependency IDs include unresolved children and filtered membership so late sync
+arrivals and membership corrections can refresh the snapshot.
 
 `projectPlazaTask` is shared with the fixture projection. It computes progress
 from the complete deduplicated checklist while capping the open preview. The
@@ -296,6 +309,41 @@ and shopfront skins use the existing facade-plate depth bias as well as their
 geometric offset. The offset alone loses depth precision on distant towers when
 static batching changes draw order. The shared paving texture draws staggered
 joints over transparent slab centres, avoiding checkerboard shading.
+
+# Suspended task connections
+
+`ProjectWorldConfig.cables` supplies `CableConfig`: cable radius, sag ratio and
+cap, mount height, clearance, support/sample limits and animated-light budget.
+`PlazaWorld.cablePaths` is lazy CPU geometry over the scoped connection list;
+category avenues currently have no aggregate relationship cables.
+
+`CablePath` mounts each endpoint on its building's actual top volume. Each route
+follows a straight horizontal line with parabolic sag between roof supports.
+Intersected rotated solid envelopes are checked analytically, including narrow
+obstacles between samples. Raised mounts keep spans above those envelopes. The default shares one mast
+per task roof, carrying all of its attachment heights; up to two intermediate
+roof supports keep long crossings from requiring excessively tall endpoint
+masts. Their explicit budget can be changed by the generator configuration. Intermediate supports are structural, never
+additional relationship nodes. Cable geometry is excluded from camera collision.
+Arc-length samples let lights move at a constant physical speed.
+
+`PlazaCables` attaches after the ordinary static bake. Tubes, support poles and
+fixed lamps receive their own opaque mesh bake; selected-task overlays remain
+outside it. Selecting a task or looking at its facade emphasizes its incident cables in the existing
+focus teal; white packets leave red/green available for task status. The
+Connections checkbox hides the entire group and survives snapshot replacement.
+Explicit task selection remains emphasized during flight and Overview; Home or
+Escape clears it, and a snapshot removing that task also drops the selection.
+A basic association sends opposing packets; a typed edge sends both packets in
+its stored source-to-destination direction. No task status is inferred from edges.
+
+`PlazaCableBuffer` bounds animation to two packets on each of the nearest 96
+cables, prioritizing incident edges of the focused task. Ranking is throttled to
+four times a second, or refreshed when focus changes. One instanced draw reuses
+its scalar buffer and conservative bounds; reduced motion freezes the packet
+clock. Static lamps and tubes remain visible beyond the moving-light distance.
+The frame pacer includes visible cable motion, and hiding connections removes
+that reason to keep drawing. No meshes are regenerated per frame.
 
 # Attention and navigation
 

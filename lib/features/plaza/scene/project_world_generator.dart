@@ -1,5 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/plaza/domain/building_architecture.dart';
+import 'package:lotti/features/plaza/domain/cable_path.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
@@ -16,6 +18,7 @@ class ProjectWorldConfig {
     this.weeksPerRow = 4,
     this.ambientCreatures = 24,
     this.architecture = const ArchitectureConfig(),
+    this.cables = const CableConfig(),
   }) : assert(minimumPlotSpacing > 0, 'plots need positive spacing'),
        assert(completedSetback >= 0, 'setback cannot be negative'),
        assert(weeksPerRow > 0, 'a row must contain weeks'),
@@ -27,6 +30,7 @@ class ProjectWorldConfig {
   final int weeksPerRow;
   final int ambientCreatures;
   final ArchitectureConfig architecture;
+  final CableConfig cables;
 
   StreetLayout layoutFor(String projectId) => StreetLayout(
     projectSeed: stableHash('$projectId:$seed'),
@@ -44,11 +48,13 @@ PlazaWorld generateProjectWorld({
   required ProjectEntry project,
   required List<PlazaTask> tasks,
   required DateTime now,
+  List<PlazaConnection> connections = const [],
   Map<String, String> categoryLabels = const {},
   ProjectWorldConfig config = const ProjectWorldConfig(),
   PlazaCopy? copy,
 }) => PlazaWorld(
   tasks: tasks,
+  connections: connections,
   now: now,
   projectLabel: project.data.title,
   epoch: project.data.dateFrom,
@@ -56,5 +62,6 @@ PlazaWorld generateProjectWorld({
   layout: config.layoutFor(project.meta.id),
   ambientCreatures: config.ambientCreatures,
   architecture: config.architecture,
+  cables: config.cables,
   copy: copy,
 );

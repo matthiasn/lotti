@@ -5,7 +5,7 @@ description: Ten independent Beamer stacks behind one IndexedStack, how the acti
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-09-02T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-09T00:27:05Z }
 stale_after: 2027-03-02
 sources:
   - id: route-mirror
@@ -118,7 +118,12 @@ flowchart TD
 
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
 in-flight state across switches, at the cost of every enabled tab holding its
-widgets in memory.
+widgets in memory. `TickerMode` and `ExcludeFocus` disable animation and
+keyboard focus in inactive tabs. `HeroMode` also excludes their retained images
+from root-route Hero discovery: Flutter visits the current route of every nested
+Navigator even when its IndexedStack child is offstage. Only the active tab may
+supply an image for a full-screen transition; otherwise opening or returning
+from a root overlay such as Plaza can throw a duplicate-Hero-tag assertion.
 
 The desktop `Row` has up to four children: the sidebar, its `ResizableDivider`,
 the expanded content stack, and — while the **Tasks tab is active**, the Daily

@@ -1,6 +1,45 @@
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
+import 'package:lotti/features/tasks/model/directed_relation.dart';
+
+/// Projects only relationships whose two tasks are already visible in scope.
+/// Hidden/deleted edges and self-links are omitted. Symmetric associations
+/// deduplicate across directions; distinct typed relations retain direction.
+List<PlazaConnection> projectPlazaConnections({
+  required Iterable<EntryLink> links,
+  required Set<String> visibleTaskIds,
+}) {
+  final sorted = links.toList()..sort((a, b) => a.id.compareTo(b.id));
+  final connections = <(String, String, EntryLinkType), PlazaConnection>{};
+  for (final link in sorted) {
+    if (link.hidden == true ||
+        link.deletedAt != null ||
+        link.fromId == link.toId ||
+        !visibleTaskIds.contains(link.fromId) ||
+        !visibleTaskIds.contains(link.toId)) {
+      continue;
+    }
+    final type = entryLinkTypeOf(link);
+    if (!relationshipSelectorTypes.contains(type)) continue;
+    final reverse =
+        type == EntryLinkType.basic && link.fromId.compareTo(link.toId) > 0;
+    final fromId = reverse ? link.toId : link.fromId;
+    final toId = reverse ? link.fromId : link.toId;
+    connections.putIfAbsent(
+      (fromId, toId, type),
+      () => PlazaConnection(
+        id: link.id,
+        fromId: fromId,
+        toId: toId,
+        type: type,
+      ),
+    );
+  }
+  return List.unmodifiable(connections.values);
+}
 
 /// Projects a persisted task and its resolved checklist items into the plaza.
 ///

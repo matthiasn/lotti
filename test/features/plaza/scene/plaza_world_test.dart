@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/domain/flight.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/scenery.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
@@ -19,6 +21,45 @@ void main() {
     layout: StreetLayout(projectSeed: 1337),
     categoryLabels: {0xFF5C9DFF.toRadixString(16): 'work'},
   );
+
+  test('generation omits cables to deleted, absent or identical endpoints', () {
+    final visible = tasks.where((task) => !task.deleted).take(2).toList();
+    final deleted = tasks.firstWhere((task) => task.deleted);
+    final edges = [
+      for (final toId in [
+        visible.last.id,
+        deleted.id,
+        'outside',
+        visible.first.id,
+      ])
+        PlazaConnection(
+          id: toId,
+          fromId: visible.first.id,
+          toId: toId,
+          type: EntryLinkType.basic,
+        ),
+      PlazaConnection(
+        id: 'outside-incoming',
+        fromId: 'outside',
+        toId: visible.first.id,
+        type: EntryLinkType.blocks,
+      ),
+    ];
+    final connected = PlazaWorld(
+      tasks: tasks,
+      connections: edges,
+      now: world.now,
+      projectLabel: world.projectLabel,
+      layout: world.layout,
+    );
+    expect(connected.connections.map((edge) => edge.id), [visible.last.id]);
+    expect(connected.cablePaths.map((path) => path.connection.id), [
+      visible.last.id,
+    ]);
+    expect(connected.cablePaths, same(connected.cablePaths));
+    expect(connected.cablePaths.clear, throwsUnsupportedError);
+    expect(edges, hasLength(5));
+  });
 
   test('derives plan, plaza, attention, beacons and billboards once', () {
     expect(world.plan.placements.length, tasks.length);

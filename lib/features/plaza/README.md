@@ -10,6 +10,12 @@ towers, structural façade details and illuminated crowns extend that character
 into a denser surrounding city with closer street frontage and a fuller skyline;
 soft light spills connect signs to the paving.
 
+Linked tasks are joined by sagging cables above their roofs, with fixed lamps
+and travelling lights. Directed relationships flow from source to destination;
+ordinary associations flow both ways. Selecting a task or looking at it highlights its incident
+cables. **Connections** hides or shows the cables without changing task data.
+Only links whose endpoints are visible in the same project are included.
+
 Open **Explore project** from a project's details, or **Explore category**
 under a category in the Projects list. A category has an avenue for each
 project. Entering a project opens its own task world; Back returns to the

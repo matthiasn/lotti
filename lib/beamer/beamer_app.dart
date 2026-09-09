@@ -514,7 +514,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
   final GlobalKey _contentStackKey = GlobalKey(debugLabel: 'app-content-stack');
 
   /// The one tab host, shared by both layouts. Only the active tab animates
-  /// and can take focus; the rest stay mounted and offstage.
+  /// and can take focus or participate in Hero transitions; the rest stay
+  /// mounted and offstage. Root navigation scans current nested routes even
+  /// inside an IndexedStack, so offstage alone does not isolate their Heroes.
   Widget _buildContentStack({
     required int index,
     required List<Widget> beamerChildren,
@@ -529,7 +531,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               enabled: i == index,
               child: ExcludeFocus(
                 excluding: i != index,
-                child: beamerChildren[i],
+                child: HeroMode(
+                  enabled: i == index,
+                  child: beamerChildren[i],
+                ),
               ),
             ),
         ],
