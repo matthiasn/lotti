@@ -18,6 +18,20 @@ class AudioPlayerConstants {
 
   /// Delay before updating progress when playback completes
   static const int completionDelayMs = 50;
+
+  /// How long a queued operation waits for the one ahead of it before giving
+  /// up on the [Player] they were both going to share.
+  ///
+  /// mpv can hang: `AudioMetadataExtractor.extractDuration` already bounds
+  /// its own `open` for that reason. Without a bound here a single stuck
+  /// call would wedge the queue for the rest of the session, taking `pause`,
+  /// `seek` and every later `play` down with it. Waiting it out is not an
+  /// option either — a Player stuck inside `open` will not play anything for
+  /// the next operation either, so running that operation against it would
+  /// only let the stuck native call land *after* the newer one and leave the
+  /// wrong recording loaded. The timeout therefore abandons the player rather
+  /// than sharing it; see [AudioPlayerController._abandonStuckPlayer].
+  static const Duration operationQueueTimeout = Duration(seconds: 10);
 }
 
 /// Factory function type for creating Player instances.
@@ -69,8 +83,85 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
   StreamSubscription<bool>? _completedSubscription;
   Timer? _completionTimer;
 
+  /// Tail of the queue every player-mutating operation runs on.
+  ///
+  /// The media_kit [Player] is a single shared device: two operations that
+  /// interleave across their `await`s issue their `open`/`play` calls in an
+  /// order neither of them chose. Chaining them makes each one observe the
+  /// finished state of the previous, so `play` can never act on the
+  /// half-applied result of a `setAudioNote` that is still in flight.
+  Future<void> _operationQueue = Future<void>.value();
+
+  /// Incremented whenever the selected note is replaced or the live [Player]
+  /// is torn down.
+  ///
+  /// An operation captures this on entry and compares it after every `await`
+  /// (see [_isSuperseded]): the completion timer and provider disposal both
+  /// tear the player down without going through [_operationQueue], so an
+  /// in-flight operation can find its player gone — or its note replaced —
+  /// halfway through, and must abandon its remaining work rather than issue
+  /// it against a disposed player or clobber a newer selection.
+  int _generation = 0;
+
   @visibleForTesting
   StreamSubscription<bool>? get completedSubscription => _completedSubscription;
+
+  /// Runs [operation] once every previously queued operation has settled, or
+  /// after [AudioPlayerConstants.operationQueueTimeout] if one of them hangs.
+  ///
+  /// The returned future carries [operation]'s own outcome. The queue tail is
+  /// a separate completer that is always finished normally, so one operation
+  /// failing reports to its own caller and cannot wedge every later request
+  /// behind an unhandled error.
+  ///
+  /// **Not re-entrant.** [operation] must call the private `_`-prefixed
+  /// bodies ([_setAudioNote], [_play], …), never the public wrappers: a
+  /// public method invoked from inside a running operation would wait on a
+  /// queue tail that only completes once that same operation returns, and
+  /// hang until the timeout above rescues it.
+  Future<void> _serialize(Future<void> Function() operation) async {
+    final previous = _operationQueue;
+    final stuckPlayer = _audioPlayer;
+    final finished = Completer<void>();
+    _operationQueue = finished.future;
+    await previous.timeout(
+      AudioPlayerConstants.operationQueueTimeout,
+      onTimeout: () => _abandonStuckPlayer(stuckPlayer),
+    );
+    try {
+      await operation();
+    } finally {
+      finished.complete();
+    }
+  }
+
+  /// Gives up on [player] after the operation holding it stopped responding.
+  ///
+  /// Disposing it — rather than handing it to the operation that has been
+  /// waiting — is what keeps the timeout from reintroducing the race this
+  /// queue exists to prevent: the stuck native call cannot be cancelled, so
+  /// sharing the instance would let it land after the newer `open` and leave
+  /// the wrong recording loaded. Teardown bumps the generation instead, so
+  /// every continuation of the stuck operation is superseded and returns
+  /// without touching anything, and the waiting operation builds itself a
+  /// fresh [Player] through [_ensurePlayer]. State (the selected note, the
+  /// position) survives, so playback resumes on the next tap.
+  ///
+  /// No-op once [player] is no longer the live instance: with several
+  /// operations queued behind one stuck call, each waits on its own timer, and
+  /// only the first to fire should act. The rest would otherwise tear down the
+  /// healthy player their predecessor just built.
+  void _abandonStuckPlayer(Player? player) {
+    if (player == null || !identical(_audioPlayer, player)) return;
+    _completionTimer?.cancel();
+    _completionTimer = null;
+    _tearDownActivePlayer();
+  }
+
+  /// Whether the work started at [generation] against [player] is still the
+  /// current work. Once it is not, the caller must stop touching the player.
+  bool _isSuperseded(int generation, Player player) =>
+      _generation != generation || !identical(_audioPlayer, player);
 
   @override
   AudioPlayerState build() {
@@ -156,6 +247,9 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
   void _tearDownActivePlayer() {
     final player = _audioPlayer;
     if (player == null) return;
+    // Any operation currently suspended on an await holds a reference to this
+    // player; bumping the generation is what tells it to stop.
+    _generation++;
     _positionSubscription?.cancel();
     _positionSubscription = null;
     _bufferSubscription?.cancel();
@@ -212,8 +306,28 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
     state = state.copyWith(buffered: clamped);
   }
 
+  /// Selects [audioNote] and starts playing it.
+  ///
+  /// Selection and playback are queued as a **single** operation. Calling
+  /// `setAudioNote(note)` and `play()` as two separate un-awaited calls is
+  /// what used to make a freshly opened note play the previous one: `play`
+  /// ran while `setAudioNote` was still suspended on its first `await`, read
+  /// the not-yet-replaced `state.audioNote`, and re-opened the old file
+  /// *after* `setAudioNote` had opened the new one. Every play-this-note
+  /// caller must go through here rather than sequencing the two by hand.
+  Future<void> playAudioNote(JournalAudio audioNote) => _serialize(() async {
+    await _setAudioNote(audioNote);
+    await _play();
+  });
+
   /// Sets the audio note to play and opens the media file.
-  Future<void> setAudioNote(JournalAudio audioNote) async {
+  Future<void> setAudioNote(JournalAudio audioNote) =>
+      _serialize(() => _setAudioNote(audioNote));
+
+  /// Starts or resumes playback.
+  Future<void> play() => _serialize(_play);
+
+  Future<void> _setAudioNote(JournalAudio audioNote) async {
     try {
       if (state.audioNote == audioNote && _hasOpenAudio) {
         return;
@@ -226,6 +340,7 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
       final player = _ensurePlayer();
       if (player == null) return;
 
+      final generation = ++_generation;
       final localPath = await AudioUtils.getFullAudioPath(audioNote);
       final newState = AudioPlayerState(
         status: AudioPlayerStatus.stopped,
@@ -234,6 +349,7 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
       );
       state = newState;
       await player.open(Media(localPath), play: false);
+      if (_isSuperseded(generation, player)) return;
       _hasOpenAudio = true;
       final totalDuration = player.state.duration;
       state = state.copyWith(totalDuration: totalDuration);
@@ -247,8 +363,7 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
     }
   }
 
-  /// Starts or resumes playback.
-  Future<void> play() async {
+  Future<void> _play() async {
     try {
       // If a completion-delay timer from the previous run is still pending
       // it would otherwise fire mid-replay, tearing down the freshly
@@ -259,6 +374,8 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
       final player = _ensurePlayer();
       if (player == null) return;
 
+      final generation = _generation;
+
       // After a completion-driven teardown the Player will have been
       // recreated above without any media loaded. Reopen the previously
       // selected audio note so the user can transparently replay.
@@ -267,6 +384,7 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
         if (audioNote != null) {
           final localPath = await AudioUtils.getFullAudioPath(audioNote);
           await player.open(Media(localPath), play: false);
+          if (_isSuperseded(generation, player)) return;
           _hasOpenAudio = true;
 
           // Sync total duration from the actual media file in case it
@@ -286,6 +404,7 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
       }
 
       await player.setRate(state.speed);
+      if (_isSuperseded(generation, player)) return;
       await player.play();
       state = state.copyWith(status: AudioPlayerStatus.playing);
     } catch (exception, stackTrace) {
@@ -299,32 +418,50 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
   }
 
   /// Seeks to the specified position.
-  Future<void> seek(Duration newPosition) async {
+  ///
+  /// The position bookkeeping needs no [Player], so it lands *before* the
+  /// queue: `setAudioNote` publishes the new note (making its card active,
+  /// and its waveform scrubbable) before `open` resolves, so a scrub started
+  /// in that window would otherwise leave the thumb pinned until the file
+  /// finished loading. Only the seek on the player itself is queued.
+  Future<void> seek(Duration newPosition) {
+    _recordSeekPosition(newPosition);
+    return _serialize(() => _seek(newPosition));
+  }
+
+  /// Applies a requested [newPosition] to state, and nothing else.
+  ///
+  /// This is also the only record of a seek that arrived while no file was
+  /// loaded: `play`'s reopen branch restores the position from here.
+  void _recordSeekPosition(Duration newPosition) {
+    final newBuffered = newPosition > state.buffered
+        ? newPosition
+        : state.buffered;
+
+    if (newPosition == state.progress &&
+        newPosition == state.pausedAt &&
+        newBuffered == state.buffered) {
+      return;
+    }
+    state = state.copyWith(
+      progress: newPosition,
+      pausedAt: newPosition,
+      buffered: newBuffered,
+    );
+  }
+
+  Future<void> _seek(Duration newPosition) async {
     try {
       final player = _ensurePlayer();
       if (player == null) return;
 
       // After a completion-driven teardown the Player has no media loaded
       // yet; calling player.seek before player.open is undefined. The
-      // requested position is still recorded in state and will be applied
+      // requested position is already recorded in state and will be applied
       // when play() reopens the file (see the reopen branch in play).
       if (_hasOpenAudio) {
         await player.seek(newPosition);
       }
-      final newBuffered = newPosition > state.buffered
-          ? newPosition
-          : state.buffered;
-
-      if (newPosition == state.progress &&
-          newPosition == state.pausedAt &&
-          newBuffered == state.buffered) {
-        return;
-      }
-      state = state.copyWith(
-        progress: newPosition,
-        pausedAt: newPosition,
-        buffered: newBuffered,
-      );
     } catch (exception, stackTrace) {
       _loggingService?.error(
         LogDomain.speech,
@@ -336,7 +473,9 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
   }
 
   /// Sets the playback speed.
-  Future<void> setSpeed(double speed) async {
+  Future<void> setSpeed(double speed) => _serialize(() => _setSpeed(speed));
+
+  Future<void> _setSpeed(double speed) async {
     try {
       final player = _ensurePlayer();
       if (player == null) return;
@@ -354,7 +493,9 @@ class AudioPlayerController extends Notifier<AudioPlayerState> {
   }
 
   /// Pauses playback.
-  Future<void> pause() async {
+  Future<void> pause() => _serialize(_pause);
+
+  Future<void> _pause() async {
     try {
       final player = _ensurePlayer();
       if (player == null) return;

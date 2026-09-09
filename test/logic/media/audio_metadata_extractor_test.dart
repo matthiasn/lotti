@@ -10,6 +10,7 @@ import 'package:lotti/logic/media/audio_metadata_extractor.dart';
 import 'package:lotti/utils/platform.dart' as lotti_platform;
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart' as mt;
+import 'package:path/path.dart' as p;
 
 import '../../helpers/fallbacks.dart';
 import '../../mocks/mocks.dart';
@@ -255,6 +256,214 @@ void main() {
           reason: '$scenario',
         );
       }, tags: 'glados');
+
+      // Lenient parsing accepted anything *after* a valid timestamp, so a
+      // duplicated or renamed export resolved to the timestamp of the file it
+      // was copied from — and therefore to that file's storage path, which
+      // the import then overwrote.
+      group('rejects names that only start with a Lotti timestamp', () {
+        test('returns null for a Finder-style " 2" duplicate suffix', () {
+          expect(
+            AudioMetadataExtractor.parseFilenameTimestamp(
+              '2024-01-15_10-30-45-123 2.m4a',
+            ),
+            isNull,
+          );
+        });
+
+        test('returns null for a "-copy" suffix', () {
+          expect(
+            AudioMetadataExtractor.parseFilenameTimestamp(
+              '2024-01-15_10-30-45-123-copy.m4a',
+            ),
+            isNull,
+          );
+        });
+
+        test('returns null for a numeric disambiguation suffix', () {
+          // The suffix claimAvailableFileName itself appends must not read
+          // back as a timestamp, or a re-import would collide all over again.
+          expect(
+            AudioMetadataExtractor.parseFilenameTimestamp(
+              '2024-01-15_10-30-45-123-1.m4a',
+            ),
+            isNull,
+          );
+        });
+
+        test('returns null for trailing whitespace', () {
+          expect(
+            AudioMetadataExtractor.parseFilenameTimestamp(
+              '2024-01-15_10-30-45-123 ',
+            ),
+            isNull,
+          );
+        });
+
+        test('still parses the exact recorder filename', () {
+          expect(
+            AudioMetadataExtractor.parseFilenameTimestamp(
+              '2024-01-15_10-30-45-123.m4a',
+            ),
+            isNotNull,
+          );
+        });
+      });
+
+      test('returns null for an out-of-range month', () {
+        expect(
+          AudioMetadataExtractor.parseFilenameTimestamp(
+            '2024-13-15_10-30-45-123.m4a',
+          ),
+          isNull,
+        );
+      });
+
+      test('returns null for an out-of-range day', () {
+        expect(
+          AudioMetadataExtractor.parseFilenameTimestamp(
+            '2024-02-30_10-30-45-123.m4a',
+          ),
+          isNull,
+        );
+      });
+    });
+
+    group('claimAvailableFileName', () {
+      late Directory dir;
+
+      setUp(() async {
+        dir = await Directory.systemTemp.createTemp('resolve_target_name_');
+      });
+
+      tearDown(() async {
+        if (dir.existsSync()) {
+          await dir.delete(recursive: true);
+        }
+      });
+
+      void occupy(String name) {
+        File(
+          '${dir.path}${Platform.pathSeparator}$name',
+        ).writeAsStringSync('x');
+      }
+
+      test('returns the preferred name when nothing occupies it', () {
+        expect(
+          AudioMetadataExtractor.claimAvailableFileName(
+            directory: dir.path,
+            preferredFileName: '2024-01-15_10-30-45-123.m4a',
+          ),
+          '2024-01-15_10-30-45-123.m4a',
+        );
+      });
+
+      test('appends -1 when the preferred name is taken', () {
+        occupy('2024-01-15_10-30-45-123.m4a');
+
+        expect(
+          AudioMetadataExtractor.claimAvailableFileName(
+            directory: dir.path,
+            preferredFileName: '2024-01-15_10-30-45-123.m4a',
+          ),
+          '2024-01-15_10-30-45-123-1.m4a',
+        );
+      });
+
+      test('walks past every taken suffix', () {
+        occupy('2024-01-15_10-30-45-123.m4a');
+        occupy('2024-01-15_10-30-45-123-1.m4a');
+        occupy('2024-01-15_10-30-45-123-2.m4a');
+
+        expect(
+          AudioMetadataExtractor.claimAvailableFileName(
+            directory: dir.path,
+            preferredFileName: '2024-01-15_10-30-45-123.m4a',
+          ),
+          '2024-01-15_10-30-45-123-3.m4a',
+        );
+      });
+
+      test('claims the name, so a second caller cannot be handed it', () {
+        // The check-then-act version returned the same free name to both
+        // callers; two imports overlapping (duration extraction holds each
+        // open for seconds) then copied over one another.
+        final first = AudioMetadataExtractor.claimAvailableFileName(
+          directory: dir.path,
+          preferredFileName: 'clash.m4a',
+        );
+        final second = AudioMetadataExtractor.claimAvailableFileName(
+          directory: dir.path,
+          preferredFileName: 'clash.m4a',
+        );
+
+        expect(first, 'clash.m4a');
+        expect(second, 'clash-1.m4a');
+      });
+
+      test('leaves the claimed name on disk for the caller to write over', () {
+        final claimed = AudioMetadataExtractor.claimAvailableFileName(
+          directory: dir.path,
+          preferredFileName: 'claimed.m4a',
+        );
+
+        final file = File('${dir.path}${Platform.pathSeparator}$claimed');
+        expect(file.existsSync(), isTrue);
+        expect(file.lengthSync(), 0);
+      });
+
+      test('keeps the extension on the end, not the suffix', () {
+        occupy('note.wav');
+
+        expect(
+          AudioMetadataExtractor.claimAvailableFileName(
+            directory: dir.path,
+            preferredFileName: 'note.wav',
+          ),
+          'note-1.wav',
+        );
+      });
+
+      test('handles a preferred name with no extension', () {
+        occupy('extensionless');
+
+        expect(
+          AudioMetadataExtractor.claimAvailableFileName(
+            directory: dir.path,
+            preferredFileName: 'extensionless',
+          ),
+          'extensionless-1',
+        );
+      });
+
+      // createSync(exclusive: true) raises the same exception for "name is
+      // taken" and for "this volume will not take any file at all". Treating
+      // the second as the first would advance the suffix, fail identically on
+      // every candidate, and spin the loop forever with the isolate blocked.
+      test('rethrows when the directory cannot hold a file at all', () {
+        expect(
+          () => AudioMetadataExtractor.claimAvailableFileName(
+            directory: p.join(dir.path, 'no', 'such', 'directory'),
+            preferredFileName: '2024-01-15_10-30-45-123.m4a',
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+      });
+
+      test('rethrows when a directory occupies the name', () {
+        // A directory where an audio file belongs is a corrupted asset store,
+        // not a naming collision — failing loudly beats quietly filing the
+        // recording under a suffixed name.
+        Directory(p.join(dir.path, 'blocked.m4a')).createSync();
+
+        expect(
+          () => AudioMetadataExtractor.claimAvailableFileName(
+            directory: dir.path,
+            preferredFileName: 'blocked.m4a',
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+      });
     });
 
     group('computeRelativePath', () {

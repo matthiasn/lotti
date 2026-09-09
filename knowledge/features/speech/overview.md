@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/speech
     title: Speech feature source
-    last_modified: 2026-08-05
+    last_modified: 2026-09-09
   - id: vu
     resource: ../../../lib/features/speech/state/vu_meter.dart
     title: VuMeter — sliding-window RMS→VU
@@ -162,6 +162,46 @@ subscribes to `media_kit` position, buffer and completion streams.
 
 Because it is app-wide, starting a recording pauses active playback rather than
 letting the two compete for the output device.
+
+## One player, one queue
+
+There is a single `media_kit.Player` behind every audio card on screen, so the
+controller **serializes every player-mutating call** — `playAudioNote`,
+`setAudioNote`, `play`, `pause`, `seek`, `setSpeed` — onto one queue. Each
+operation observes the finished state of the one before it; none of them can
+interleave across an `await` and issue `open`/`play` in an order neither chose.
+
+`playAudioNote(note)` is **the** entry point for "play this recording": it
+queues selection and playback as one operation. Calling `setAudioNote` and then
+`play` as two separate un-awaited calls is what made a second recording in a
+task play the first one — `play` ran while `setAudioNote` was still resolving
+the new path, took its reopen branch against the not-yet-replaced
+`state.audioNote`, and re-opened the previous file on top of the new one.
+
+Teardown does not go through that queue: the completion timer and provider
+disposal dispose the `Player` directly. A generation counter, bumped on every
+note change and every teardown, lets an operation suspended on an `await`
+detect that its player is gone and abandon the rest of its work rather than
+issue it against a disposed player.
+
+The states below are the **`media_kit.Player`'s** lifecycle — whether a native
+player exists and what it has loaded. They are not `AudioPlayerStatus`
+(`initializing`, `playing`, `paused`, `stopped`), which `AudioPlayerState`
+tracks separately and which the UI reads for its play/pause glyph.
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoPlayer: build()
+  NoPlayer --> Opening: playAudioNote / setAudioNote — _ensurePlayer + open
+  Opening --> Loaded: open completed, generation unchanged
+  Opening --> NoPlayer: superseded — teardown won the race
+  Loaded --> Playing: play()
+  Playing --> Paused: pause()
+  Paused --> Playing: play() — media still loaded
+  Playing --> NoPlayer: completed → completion timer tears the Player down
+  Loaded --> Opening: playAudioNote(other note)
+  NoPlayer --> Opening: play() reopens state.audioNote
+```
 
 Waveforms are extracted by `AudioWaveformService` and exposed through
 `audioWaveformProvider`, which caches them so scrubbing does not re-analyse the

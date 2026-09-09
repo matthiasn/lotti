@@ -81,15 +81,22 @@ Future<void> importAudioXFiles(
         timestamp,
       );
       final directory = await createAssetDirectory(relativePath);
-      final targetFileName = AudioMetadataExtractor.computeTargetFileName(
-        timestamp,
-        fileExtension,
+      // Never reuse an occupied name: the copy below would overwrite an
+      // earlier recording that an existing journal entry still points at.
+      // The claim creates the file, so it is already this import's to clean
+      // up before the copy has written a single byte into it.
+      final targetFileName = AudioMetadataExtractor.claimAvailableFileName(
+        directory: directory,
+        preferredFileName: AudioMetadataExtractor.computeTargetFileName(
+          timestamp,
+          fileExtension,
+        ),
       );
       final targetFilePath = path.join(directory, targetFileName);
+      copiedFilePath = targetFilePath;
 
       // Copy file first
       await File(srcPath).copy(targetFilePath);
-      copiedFilePath = targetFilePath;
 
       // Extract audio duration
       var duration = Duration.zero;
