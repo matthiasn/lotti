@@ -12,8 +12,13 @@ import 'package:lotti/features/plaza/ui/plaza_style.dart';
 import 'package:vector_math/vector_math.dart';
 
 /// A continuous, six-sided tube swept along the sampled cable. Its triangles
-/// face outwards; no camera-facing ribbons or per-frame geometry are needed.
-MeshData cableTubeMesh(CablePath path, double radius) {
+/// face outwards, with vertices relative to [origin]; no camera-facing ribbons
+/// or per-frame geometry are needed.
+MeshData cableTubeMesh(
+  CablePath path,
+  double radius, {
+  required Vector3 origin,
+}) {
   const sides = 6;
   final count = path.distances.length;
   final positions = Float32List(count * sides * 3);
@@ -40,7 +45,10 @@ MeshData cableTubeMesh(CablePath path, double radius) {
       final offset = (i * sides + side) * 3;
       for (var axis = 0; axis < 3; axis++) {
         positions[offset + axis] =
-            source[i * 3 + axis] + normal[axis] * u + binormal[axis] * v;
+            source[i * 3 + axis] -
+            origin[axis] +
+            normal[axis] * u +
+            binormal[axis] * v;
       }
       if (i + 1 < count) {
         final a = i * sides + side;
@@ -50,6 +58,26 @@ MeshData cableTubeMesh(CablePath path, double radius) {
     }
   }
   return MeshData.build(positions: positions, indices: indices);
+}
+
+Geometry _uploadCableMesh(MeshData mesh) => MeshGeometry.fromMeshData(mesh);
+
+/// Places the tube at its arc midpoint so static batching assigns it to the
+/// cable's actual spatial cell. Keeping vertices local preserves world geometry
+/// while preventing disconnected districts from merging at the scene origin.
+Node cableTubeNode(
+  CablePath path,
+  double radius,
+  UnlitMaterial material, {
+  Geometry Function(MeshData) upload = _uploadCableMesh,
+}) {
+  final origin = Vector3.zero();
+  path.writePosition(path.length / 2, origin.storage, 0);
+  return Node(
+      mesh: Mesh(upload(cableTubeMesh(path, radius, origin: origin)), material),
+    )
+    ..position = origin
+    ..raycastable = false;
 }
 
 /// A single mast carries every attachment height at the same roof position.
@@ -204,9 +232,46 @@ class _CableLightSource {
   bool focused = false;
 }
 
+/// Allocates highlight geometry only when its connection is first selected.
+/// Repeated focus changes reuse cached overlays; clearing focus hides them.
+class PlazaCableSelection {
+  PlazaCableSelection({
+    required this.paths,
+    required this.root,
+    required this.create,
+  });
+
+  final List<CablePath> paths;
+  final Node root;
+  final Node Function(CablePath) create;
+  final Map<CablePath, Node> _nodes = {};
+  String? _focusedTask;
+
+  void update(String? focusedTask) {
+    if (_focusedTask == focusedTask) return;
+    _focusedTask = focusedTask;
+    for (final entry in _nodes.entries) {
+      entry.value.visible =
+          focusedTask != null &&
+          entry.key.connection.otherId(focusedTask) != null;
+    }
+    if (focusedTask == null) return;
+    for (final path in paths) {
+      if (path.length == 0 || path.connection.otherId(focusedTask) == null) {
+        continue;
+      }
+      if (!_nodes.containsKey(path)) {
+        final node = create(path);
+        _nodes[path] = node;
+        root.add(node);
+      }
+    }
+  }
+}
+
 /// Roof-mounted suspension cables. Static tubes, lamp collars and supports are
-/// baked once; selection overlays share their lifetime and toggle only when
-/// focus changes. All travelling packets use one instanced draw.
+/// baked once; selection overlays are created on first use and reused. All
+/// travelling packets use one instanced draw.
 class PlazaCables {
   PlazaCables({
     required Scene scene,
@@ -225,27 +290,17 @@ class PlazaCables {
       );
     final selected = UnlitMaterial()
       ..baseColorFactor = emissiveColor(PlazaStyle.teal, 1.6);
+    _selection = PlazaCableSelection(
+      paths: world.cablePaths,
+      root: root,
+      create: (path) =>
+          cableTubeNode(path, world.cables.radius * 1.7, selected),
+    );
     final cube = CuboidGeometry(Vector3.all(1));
     final point = Float64List(3);
     for (final path in world.cablePaths) {
       if (path.length == 0) continue;
-      final geometry = MeshGeometry.fromMeshData(
-        cableTubeMesh(path, world.cables.radius),
-      );
-      stationary.add(Node(mesh: Mesh(geometry, body))..raycastable = false);
-      final focus =
-          Node(
-              mesh: Mesh(
-                MeshGeometry.fromMeshData(
-                  cableTubeMesh(path, world.cables.radius * 1.7),
-                ),
-                selected,
-              ),
-            )
-            ..visible = false
-            ..raycastable = false;
-      root.add(focus);
-      _focus.add((path: path, node: focus));
+      stationary.add(cableTubeNode(path, world.cables.radius, body));
       final lamps = math.min(24, math.max(2, (path.length / 12).ceil()));
       for (var i = 1; i < lamps; i++) {
         path.writePosition(path.length * i / lamps, point, 0);
@@ -301,9 +356,8 @@ class PlazaCables {
   }
 
   final Node root = Node()..raycastable = false;
-  final List<({CablePath path, Node node})> _focus = [];
+  late final PlazaCableSelection _selection;
   PlazaCableBuffer? _buffer;
-  String? _focusedTask;
   int meshCount = 0;
   int batchCount = 0;
 
@@ -316,14 +370,7 @@ class PlazaCables {
     String? focusedTask,
     bool animate = true,
   }) {
-    if (_focusedTask != focusedTask) {
-      for (final entry in _focus) {
-        entry.node.visible =
-            focusedTask != null &&
-            entry.path.connection.otherId(focusedTask) != null;
-      }
-      _focusedTask = focusedTask;
-    }
+    _selection.update(focusedTask);
     _buffer?.update(
       seconds,
       eye,

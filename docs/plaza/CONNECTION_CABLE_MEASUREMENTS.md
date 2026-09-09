@@ -1,7 +1,7 @@
 # Connection cable measurement record
 
 Measured 2026-09-09 on `feat/plaza-connection-cables`, rebased onto main
-`459a5e642`. Both measurements use the final cable implementation and the
+`459a5e642`. Both measurements use the initial cable implementation (`6ae3541a4`) and the
 same Project Waddle fixture: 28 tasks and 51 real task associations. The
 [Plaza concept](../../knowledge/features/plaza.md) describes the implementation.
 
@@ -53,3 +53,19 @@ native engine disconnect.
 Review captures use fixture data only and are published separately from the
 repository. Follow the [operator notes](HANDOVER.md#review-captures) for capture
 and publication.
+
+## Spatial batching review follow-up
+
+Review identified that world-space tube vertices with identity node transforms
+merged at the origin cell. Tubes now use local vertices and a node at their
+arc midpoint, allowing the static bake to group them by their actual spatial
+cells. Highlight geometry is created only when a relationship is first selected
+and cached for later focus changes. All scoped relationships remain represented.
+
+The targeted renderer/domain run passes all 16 tests and the full analyzer is
+clean. The new spatial-batching and lazy-selection regressions fail when their
+fixes are removed. The native Linux build succeeds. The timings above predate
+this follow-up; they must not be used as measurements of the revised batching.
+The repeated headless selection/boosted-flight/Overview/Escape check succeeds,
+with no reported collision penetration. The fixture still consolidates 559
+static cable meshes into four batches; disconnected cells are tested separately.

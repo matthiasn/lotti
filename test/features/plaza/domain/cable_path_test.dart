@@ -131,15 +131,16 @@ void main() {
   }
 
   test('intermediate supports clear obstacles with a bounded stable route', () {
+    const config = CableConfig(maxSupports: 3);
     final solids = [
       for (var i = -3; i <= 3; i++)
         Solid.post(x: i * 10, z: 0, size: 4, top: 40 + i * 2),
       Solid.post(x: 0, z: 80, size: 4, top: 500),
     ];
-    final a = _path(solids: solids, config: const CableConfig(maxSupports: 3));
+    final a = _path(solids: solids, config: config);
     final b = _path(
       solids: solids.reversed.toList(),
-      config: const CableConfig(maxSupports: 3),
+      config: config,
     );
     expect(a.supports, hasLength(5));
     for (var i = 0; i < a.positions.length; i++) {
@@ -155,7 +156,7 @@ void main() {
             point[0],
             point[1],
             point[2],
-            clearance: 1.66 - 1e-8,
+            clearance: config.clearance + config.radius - 1e-8,
           ),
         ),
         isFalse,

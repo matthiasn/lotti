@@ -7,6 +7,7 @@ import 'package:lotti/features/plaza/domain/cable_path.dart';
 import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_cables.dart';
+import 'package:lotti/features/plaza/scene/plaza_static_meshes.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:vector_math/vector_math.dart';
 
@@ -35,6 +36,37 @@ List<CablePath> _paths(EntryLinkType type) {
 
 void main() {
   const stride = BillboardGeometry.floatsPerInstance;
+  test('selection creates only incident overlays and reuses them', () {
+    final paths = _paths(EntryLinkType.blocks);
+    final root = Node();
+    final created = <CablePath>[];
+    final selection = PlazaCableSelection(
+      paths: paths,
+      root: root,
+      create: (path) {
+        created.add(path);
+        return Node()..raycastable = false;
+      },
+    )..update(null);
+    expect(created, isEmpty);
+    selection.update(paths.first.connection.fromId);
+    expect(created, [paths.first]);
+    final first = root.children.single;
+    expect(first.visible, isTrue);
+    selection.update(paths.last.connection.toId);
+    expect(created, [paths.first, paths.last]);
+    expect(first.visible, isFalse);
+    expect(root.children.last.visible, isTrue);
+    selection
+      ..update(paths.first.connection.fromId)
+      ..update(paths.first.connection.fromId);
+    expect(created, [paths.first, paths.last]);
+    expect(first.visible, isTrue);
+    expect(root.children.last.visible, isFalse);
+    selection.update(null);
+    expect(root.children.every((n) => !n.visible), isTrue);
+  });
+
   test('repeated connections share a roof mast at the highest attachment', () {
     final tasks = syntheticPlazaTasks(
       count: 12,
@@ -71,7 +103,7 @@ void main() {
     'tube encloses the path with outward triangles and bounded vertices',
     () {
       final path = _paths(EntryLinkType.blocks).first;
-      final mesh = cableTubeMesh(path, 0.2);
+      final mesh = cableTubeMesh(path, 0.2, origin: Vector3.zero());
       expect(mesh.vertexCount, path.distances.length * 6);
       expect(mesh.triangleCount, (path.distances.length - 1) * 12);
       for (var ring = 0; ring < path.distances.length; ring++) {
@@ -90,6 +122,47 @@ void main() {
       }
     },
   );
+
+  test('tube batches retain spatial cells and exact world placement', () {
+    final paths = _paths(EntryLinkType.blocks);
+    final meshes = <Geometry, MeshData>{};
+    Geometry upload(MeshData mesh) {
+      final geometry = UnskinnedGeometry();
+      meshes[geometry] = mesh;
+      return geometry;
+    }
+
+    final root = Node();
+    final material = UnlitMaterial();
+    for (final path in paths) {
+      final expected = cableTubeMesh(path, 0.2, origin: Vector3.zero());
+      for (var copy = 0; copy < 2; copy++) {
+        final node = cableTubeNode(path, 0.2, material, upload: upload);
+        root.add(node);
+        final actual = meshes[node.mesh!.primitives.single.geometry]!
+            .transformed(node.globalTransform);
+        for (var i = 0; i < expected.positions.length; i++) {
+          expect(actual.positions[i], closeTo(expected.positions[i], 1e-4));
+        }
+        expect(node.raycastable, isFalse);
+      }
+    }
+    final batches = PlazaStaticMeshes(
+      cellSize: 1,
+      read: (geometry) => meshes[geometry]!,
+      upload: upload,
+    ).bake(root, preserve: {});
+    expect(batches, (meshes: 6, batches: 3));
+    expect(
+      root.children.map(
+        (n) => meshes[n.mesh!.primitives.single.geometry]!.vertexCount,
+      ),
+      unorderedEquals([
+        for (final path in paths) path.distances.length * 6 * 2,
+      ]),
+      reason: 'each spatial cell contains only its own pair of cable meshes',
+    );
+  });
 
   for (final type in [EntryLinkType.basic, EntryLinkType.blocks]) {
     test(

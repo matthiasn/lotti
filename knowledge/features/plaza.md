@@ -320,17 +320,21 @@ category avenues currently have no aggregate relationship cables.
 `CablePath` mounts each endpoint on its building's actual top volume. Each route
 follows a straight horizontal line with parabolic sag between roof supports.
 Intersected rotated solid envelopes are checked analytically, including narrow
-obstacles between samples. Raised mounts keep spans above those envelopes. The default shares one mast
-per task roof, carrying all of its attachment heights; up to two intermediate
+obstacles between samples. Raised mounts keep spans above those envelopes. The
+default shares one mast per task roof, carrying all of its attachment heights; up to two intermediate
 roof supports keep long crossings from requiring excessively tall endpoint
-masts. Their explicit budget can be changed by the generator configuration. Intermediate supports are structural, never
-additional relationship nodes. Cable geometry is excluded from camera collision.
+masts. Their explicit budget can be changed by the generator configuration.
+Intermediate supports are structural, never additional relationship nodes.
+Cable geometry is excluded from camera collision.
 Arc-length samples let lights move at a constant physical speed.
 
 `PlazaCables` attaches after the ordinary static bake. Tubes, support poles and
-fixed lamps receive their own opaque mesh bake; selected-task overlays remain
-outside it. Selecting a task or looking at its facade emphasizes its incident cables in the existing
-focus teal; white packets leave red/green available for task status. The
+fixed lamps receive their own opaque mesh bake. Each tube uses local vertices
+with a node at its arc midpoint, so the bake partitions by actual world cells
+instead of merging every tube at the origin. Selected-task overlays remain
+outside the bake; `PlazaCableSelection` creates them on first focus and caches
+them for reuse. Selecting a task or looking at its facade emphasizes its incident
+cables in the existing focus teal; white packets leave red/green available for task status. The
 Connections checkbox hides the entire group and survives snapshot replacement.
 Explicit task selection remains emphasized during flight and Overview; Home or
 Escape clears it, and a snapshot removing that task also drops the selection.
