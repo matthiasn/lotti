@@ -816,10 +816,16 @@ void main() {
     late MockPersistenceLogic wiredPersistence;
     late MockOnboardingMetricsRepository wiredMetrics;
 
-    setUp(() {
+    setUp(() async {
       wiredStructuring = MockOnboardingTaskStructuringService();
       wiredPersistence = MockPersistenceLogic();
       wiredMetrics = MockOnboardingMetricsRepository();
+      // Reset first: these are bare registrations, so anything a preceding
+      // file in the same shard left behind makes them throw
+      // "already registered". Shard membership shifts whenever a test file is
+      // added anywhere in the suite, so relying on an empty GetIt here is an
+      // ordering dependency that fails at a distance.
+      await getIt.reset();
       // The provider resolves PersistenceLogic and the metrics repo from getIt,
       // with no explicit clock.
       getIt
