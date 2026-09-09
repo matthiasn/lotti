@@ -8,9 +8,14 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../widget_test_utils.dart';
 
 void main() {
+  // Width-driven layout: pin the bundled fonts so the numbers below read
+  // the same whether or not another file in this isolate loaded them first
+  // (test/README.md, "Committed per-feature harnesses").
+  setUpAll(loadAppFonts);
   const route = InferenceRouteSnapshot(
     providerModelId: 'qwen3.5-plus',
     modelName: 'Qwen 3.5 Plus',
@@ -272,9 +277,11 @@ void main() {
   testWidgets('a squeezed route sheds whole segments, not characters', (
     tester,
   ) async {
-    // Widths here are calibrated against the test font, whose glyphs advance
-    // ~1em each — far wider than Inter — so the rung a given pixel width
-    // selects is not the rung the same width selects in the app.
+    // Widths are calibrated against Inter, pinned in setUpAll. The tier text
+    // gets the surface less a fixed chrome — 48 px on the current row, ~97 px
+    // on the report row — and the tiers measure 231 / 155 / 84 px (current)
+    // and 184 / 131 / 49 px (report), so a 260 surface drops exactly the
+    // first tier on both rows.
     await pumpRegion(
       tester,
       data: const TaskAgentModelIdentityViewData(
@@ -282,7 +289,7 @@ void main() {
         currentRoute: route,
         reportRoute: priorRoute,
       ),
-      width: 520,
+      width: 260,
     );
 
     // The full wording no longer fits, so the publisher and the connective
@@ -326,7 +333,9 @@ void main() {
         currentRoute: route,
         reportRoute: route,
       ),
-      width: 260,
+      // 180 less the 48 px chrome holds the bare name (84 px) and not the
+      // middle tier (155 px).
+      width: 180,
     );
 
     // Last rung of the ladder: everything but the model is gone, and the
@@ -344,7 +353,7 @@ void main() {
         currentRoute: route,
         reportRoute: priorRoute,
       ),
-      width: 520,
+      width: 260,
     );
 
     // "This rep…" tells the reader strictly less than nothing, so the fixed

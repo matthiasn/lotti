@@ -95,6 +95,7 @@ import 'package:uuid/uuid.dart';
 import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
+import '../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../widget_test_utils.dart';
 import '_beamer_test_utils.dart';
 
@@ -673,6 +674,10 @@ Stream<JournalEntity?> _emptyTimeStream(Invocation _) =>
     const Stream<JournalEntity?>.empty();
 
 void main() {
+  // Width-driven layout: pin the bundled fonts so the numbers below read
+  // the same whether or not another file in this isolate loaded them first
+  // (test/README.md, "Committed per-feature harnesses").
+  setUpAll(loadAppFonts);
   testWidgets(
     'mobile launcher is opt-in and toggles without changing section',
     (tester) async {
@@ -1665,8 +1670,10 @@ void main() {
           // Intermediate band: wider than the phone base line-up, too
           // narrow for all seven destinations. Exactly one overflow
           // destination (Projects, first in nav order) fits alongside
-          // the base slots and More.
-          viewportSize: const Size(520, 1200),
+          // the base slots and More. Under Inter every label sits at the
+          // 80 px comfortable minimum and the row is the window less 8,
+          // so the base four plus one is 408 ≤ width < 488.
+          viewportSize: const Size(450, 1200),
         );
 
         final navBar = tester.widget<DesignSystemBottomNavigationBar>(
@@ -1697,13 +1704,57 @@ void main() {
     );
 
     testWidgets(
+      'gives every destination its own slot once the window fits all seven',
+      (tester) async {
+        final mockNavService = MockNavService();
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        // The width the text-scale case below leans on: seven slots at the
+        // 80 px comfortable minimum need 560 of the row's 632.
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: const Size(640, 1200),
+        );
+
+        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+          find.byType(DesignSystemBottomNavigationBar),
+        );
+        expect(
+          navBar.items.map((item) => item.label),
+          [
+            'Tasks',
+            'DailyOS',
+            'Projects',
+            'Habits',
+            'Insights',
+            'Logbook',
+            'Settings',
+          ],
+          reason: 'with everything on the bar there is nothing left for More',
+        );
+      },
+    );
+
+    testWidgets(
       'keeps the More overflow on a wide window when a large text scale '
       'widens the labels past the available space',
       (tester) async {
-        // The fit decision is text-scale-aware: the same 800px window that
-        // fits all seven destinations at scale 1.0 cannot fit their labels
-        // at 3.0, so the bar falls back to the compact More line-up
-        // instead of ellipsizing every caption.
+        // The fit decision is text-scale-aware: the same 640px window that
+        // fits all seven destinations at scale 1.0 (7 × 80 ≤ 632) cannot
+        // fit their labels at 3.0 — the base four alone take ~551 px and
+        // Projects would need ~160 more — so the bar falls back to the
+        // compact More line-up instead of ellipsizing every caption.
         tester.platformDispatcher.textScaleFactorTestValue = 3.0;
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
@@ -1723,7 +1774,7 @@ void main() {
         await _pumpAppScreen(
           tester,
           navService: mockNavService,
-          viewportSize: const Size(800, 1200),
+          viewportSize: const Size(640, 1200),
         );
 
         final navBar = tester.widget<DesignSystemBottomNavigationBar>(

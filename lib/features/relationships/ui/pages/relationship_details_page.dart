@@ -17,6 +17,7 @@ import 'package:lotti/features/relationships/state/relationships_providers.dart'
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
@@ -232,6 +233,10 @@ class RelationshipDetailsPage extends ConsumerWidget {
                 onTalkToAgent: () =>
                     beamToNamed('/people/$relationshipId/chat'),
                 onDelete: () => _handleDelete(context, ref, relationship),
+                onAvatarTap: () => showPersonAvatarSheet(
+                  context: context,
+                  relationship: relationship,
+                ),
               ),
               SliverPadding(
                 padding: insets,

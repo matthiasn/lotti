@@ -52,6 +52,8 @@ class PeopleListRow extends StatelessWidget {
               PersonaAvatar(
                 initial: personaInitial(data.title),
                 id: relationship.id,
+                imageId: data.avatarImageId,
+                crop: data.avatarCrop,
               ),
               SizedBox(width: tokens.spacing.step4),
               Expanded(

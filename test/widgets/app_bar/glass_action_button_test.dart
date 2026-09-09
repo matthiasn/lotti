@@ -2,6 +2,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 import 'package:material_ui/material_ui.dart';
@@ -200,5 +201,21 @@ void main() {
 
       expect(find.text('A'), findsOneWidget);
     });
+  });
+
+  testWidgets('forwards its fill to the glass container', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GlassActionButton(
+          fill: PhotoNeutralGlass.fill,
+          onTap: () {},
+          child: const SizedBox.shrink(),
+        ),
+      ),
+    );
+    expect(
+      tester.widget<GlassIconContainer>(find.byType(GlassIconContainer)).fill,
+      PhotoNeutralGlass.fill,
+    );
   });
 }

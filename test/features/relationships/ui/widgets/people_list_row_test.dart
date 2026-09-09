@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
+import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -25,6 +26,8 @@ void main() {
     DateTime? lastCheckInAt,
     CheckInInteractionType lastType = CheckInInteractionType.call,
     RelationshipStatus? status,
+    String? avatarImageId,
+    AvatarCrop? avatarCrop,
   }) => (
     relationship: RelationshipEntry(
       meta: Metadata(
@@ -38,6 +41,8 @@ void main() {
         title: title,
         important: important,
         checkInCadenceDays: cadenceDays,
+        avatarImageId: avatarImageId,
+        avatarCrop: avatarCrop,
         status:
             status ??
             RelationshipStatus.active(
@@ -238,4 +243,20 @@ void main() {
       expect(PeopleCadencePillKind.values, hasLength(6));
     },
   );
+
+  testWidgets("hands the person's photo and its framing to the avatar, and "
+      'the avatar stays the same size with or without one', (tester) async {
+    const crop = AvatarCrop(x: 0.2, y: 0.3, scale: 2);
+    await pump(tester, item(avatarImageId: 'image-1', avatarCrop: crop));
+
+    final avatar = tester.widget<PersonaAvatar>(find.byType(PersonaAvatar));
+    expect(avatar.imageId, 'image-1');
+    expect(avatar.crop, crop);
+    expect(avatar.id, 'rel-1', reason: 'the accent still comes from the id');
+    expect(
+      avatar.size,
+      40,
+      reason: 'the row does not grow because the person has a face',
+    );
+  });
 }

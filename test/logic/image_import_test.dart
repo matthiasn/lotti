@@ -590,6 +590,103 @@ void main() {
       });
     });
 
+    group('importImageXFiles returns what it created', () {
+      test('hands back the id of the entry it created, so a caller can '
+          'reference the image it just imported', () async {
+        final testFile = await createTestImageFile('avatar.jpg', 1024);
+
+        final created = await importImageXFiles([XFile(testFile.path)]);
+
+        final entry =
+            verify(
+                  () => mockPersistenceLogic.createDbEntity(
+                    captureAny(that: isA<JournalImage>()),
+                    linkedId: any(named: 'linkedId'),
+                    shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                    enqueueSync: any(named: 'enqueueSync'),
+                  ),
+                ).captured.single
+                as JournalImage;
+        expect(
+          created,
+          [entry.meta.id],
+          reason:
+              'the id returned is the entry id an avatar would store, '
+              'not the ImageData.imageId',
+        );
+      });
+
+      test('returns the ids in file order', () async {
+        // One id per file, so a reversed or shuffled result cannot pass.
+        var minted = 0;
+        when(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            categoryId: any(named: 'categoryId'),
+            flag: any(named: 'flag'),
+          ),
+        ).thenAnswer(
+          (_) async => Metadata(
+            id: 'entry-${++minted}',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+        );
+        final first = await createTestImageFile('one.jpg', 1024);
+        final second = await createTestImageFile('two.png', 1024);
+
+        final created = await importImageXFiles([
+          XFile(first.path),
+          XFile(second.path),
+        ]);
+
+        final entries = verify(
+          () => mockPersistenceLogic.createDbEntity(
+            captureAny(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).captured.cast<JournalImage>();
+        expect(created, ['entry-1', 'entry-2']);
+        expect(
+          entries.map((entry) => entry.meta.id),
+          ['entry-1', 'entry-2'],
+          reason: 'the first file is written first',
+        );
+        expect(entries.first.data.imageFile, endsWith('.jpg'));
+        expect(entries.last.data.imageFile, endsWith('.png'));
+      });
+
+      test(
+        'a skipped file contributes no id rather than a null hole',
+        () async {
+          final good = await createTestImageFile('good.jpg', 1024);
+          final unsupported = File(path.join(tempDir.path, 'notes.txt'));
+          await unsupported.create(recursive: true);
+          await unsupported.writeAsString('not an image');
+
+          final created = await importImageXFiles([
+            XFile(unsupported.path),
+            XFile(good.path),
+            XFile('/nonexistent/path/missing.jpg'),
+          ]);
+
+          expect(
+            created,
+            hasLength(1),
+            reason:
+                'an unsupported file and an unreadable one are both skipped, '
+                'and the batch still reports the one that landed',
+          );
+        },
+      );
+    });
+
     group('importDroppedImages', () {
       test('successfully imports valid JPG file', () async {
         final testFile = await createTestImageFile('test.jpg', 1024);

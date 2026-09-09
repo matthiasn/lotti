@@ -125,6 +125,95 @@ void main() {
   // Every other test here pumps `RelationshipForm` bare, which is why the
   // defect below survived: the form was fine, the modal it lives in was not.
   // Same shape as the check-in capture sheet — see its sibling group.
+  group('the Photo card', () {
+    RelationshipEntry existing() => RelationshipEntry(
+      meta: Metadata(
+        id: 'rel-photo',
+        createdAt: DateTime(2026, 8, 13),
+        updatedAt: DateTime(2026, 8, 13),
+        dateFrom: DateTime(2026, 8, 13),
+        dateTo: DateTime(2026, 8, 13),
+      ),
+      data: RelationshipData(
+        title: 'Anna',
+        status: RelationshipStatus.active(
+          id: 'status-photo',
+          createdAt: DateTime(2026, 8, 13),
+          utcOffset: 0,
+        ),
+      ),
+    );
+
+    testWidgets('is offered only for a person who already exists', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      expect(
+        find.byKey(const ValueKey('person-form-photo-card')),
+        findsNothing,
+        reason:
+            'its actions write immediately, and there is nothing to '
+            'write to before the first Save',
+      );
+
+      await tester.pumpWidget(buildForm(initial: existing()));
+      expect(
+        find.byKey(const ValueKey('person-form-photo-card')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('person-form-photo-privacy')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('after the card writes, Save is built from the re-read person '
+        '— not from the one the form opened with', (tester) async {
+      final opened = existing().copyWith(
+        data: existing().data.copyWith(avatarImageId: 'face-1'),
+      );
+      // What the card's write left behind, as the repository now has it: a
+      // banner this form never saw when it opened.
+      final reread = opened.copyWith(
+        data: opened.data.copyWith(
+          avatarImageId: null,
+          bannerImageId: 'banner-from-elsewhere',
+        ),
+      );
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockRepository.getRelationshipById(opened.id),
+      ).thenAnswer((_) async => reread);
+
+      await tester.pumpWidget(buildForm(initial: opened));
+      // Remove needs no picker, so the production flow runs end to end.
+      await tester.tap(find.byKey(const ValueKey('person-form-face-remove')));
+      await tester.pumpAndSettle();
+
+      // The Photo card pushes Save below the harness's fold.
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('person-form-save')),
+      );
+      await tester.tap(find.byKey(const ValueKey('person-form-save')));
+      await tester.pumpAndSettle();
+
+      final writes = verify(
+        () => mockRepository.updateRelationship(captureAny()),
+      ).captured.cast<RelationshipEntry>();
+      expect(writes, hasLength(2), reason: 'the removal, then the Save');
+      expect(
+        writes.last.data.bannerImageId,
+        'banner-from-elsewhere',
+        reason:
+            'a Save built from the opening snapshot would have written '
+            'the banner away again',
+      );
+      expect(writes.last.data.avatarImageId, isNull);
+    });
+  });
+
   group('inside the real modal', () {
     RelationshipEntry person() => RelationshipEntry(
       meta: Metadata(
@@ -258,6 +347,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     );
   });
@@ -269,6 +359,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -297,6 +388,7 @@ void main() {
                 () => mockRepository.createRelationship(
                   data: captureAny(named: 'data'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -316,6 +408,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     ).thenAnswer((_) async => null);
 
@@ -341,6 +434,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     ).thenThrow(Exception('db gone'));
 
@@ -376,6 +470,7 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     );
   });
@@ -388,6 +483,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -427,6 +523,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -454,6 +551,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -608,6 +706,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -639,6 +738,7 @@ void main() {
                 () => mockRepository.createRelationship(
                   data: captureAny(named: 'data'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -652,6 +752,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -680,6 +781,7 @@ void main() {
                 () => mockRepository.createRelationship(
                   data: captureAny(named: 'data'),
                   categoryId: any(named: 'categoryId'),
+                  id: any(named: 'id'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -764,6 +866,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       );
     });
@@ -854,6 +957,7 @@ void main() {
       () => mockRepository.createRelationship(
         data: any(named: 'data'),
         categoryId: any(named: 'categoryId'),
+        id: any(named: 'id'),
       ),
     ).thenAnswer(
       (invocation) async => createdEntry(
@@ -874,6 +978,7 @@ void main() {
               () => mockRepository.createRelationship(
                 data: captureAny(named: 'data'),
                 categoryId: any(named: 'categoryId'),
+                id: any(named: 'id'),
               ),
             ).captured.single
             as RelationshipData;
@@ -1179,6 +1284,7 @@ void main() {
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -1200,6 +1306,9 @@ void main() {
       when(
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenThrow(Exception('db locked'));
 
@@ -1215,6 +1324,16 @@ void main() {
         find.text('Could not save this person. Please try again.'),
         findsOne,
       );
+      // The same matchers verify the call, which is what proves the stub
+      // above matched it and the toast came from the thrown exception.
+      verify(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
+        ),
+      ).called(1);
     });
 
     testWidgets('shows a toast when update returns false', (tester) async {

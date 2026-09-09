@@ -84,12 +84,17 @@ void main() {
 
   ({ProviderContainer container, ContactImportController controller}) build({
     String? refKey = 'android:host-a',
+    PersonIdMinter? mintPersonId,
   }) {
     final container = ProviderContainer(
       overrides: [
         contactsServiceProvider.overrideWithValue(service),
         relationshipRepositoryProvider.overrideWithValue(repository),
         contactRefKeyProvider.overrideWith((ref) async => refKey),
+        if (mintPersonId != null)
+          contactImportControllerProvider.overrideWith(
+            () => ContactImportController(mintPersonId: mintPersonId),
+          ),
       ],
     );
     addTearDown(container.dispose);
@@ -432,6 +437,50 @@ void main() {
     });
   });
 
+  group("the person's id", () {
+    test(
+      'is minted the moment a contact is ticked, distinct per contact, so the '
+      'review can colour each person by the id they will keep',
+      () {
+        final (:container, :controller) = build();
+        controller
+          ..toggleSelection(contact('a', 'Anna'))
+          ..toggleSelection(contact('b', 'Bo'));
+
+        final drafts = container.read(contactImportControllerProvider).drafts;
+        expect(drafts['a']!.id, isNotEmpty);
+        expect(
+          drafts['a']!.id,
+          isNot('a'),
+          reason:
+              'the OS contact id is not the person id — hashing it for the '
+              'accent is what made everyone change colour on import',
+        );
+        expect(drafts['a']!.id, isNot(drafts['b']!.id));
+      },
+    );
+
+    test(
+      'survives the review decisions — a colour must not change because '
+      'importance was toggled',
+      () {
+        final (:container, :controller) = build(
+          mintPersonId: (contact) => 'person-for-${contact.id}',
+        );
+        controller
+          ..toggleSelection(contact('a', 'Anna'))
+          ..setImportant(contactId: 'a', important: true)
+          ..setCadence(contactId: 'a', cadenceDays: 14)
+          ..setImportant(contactId: 'a', important: false);
+
+        expect(
+          container.read(contactImportControllerProvider).drafts['a']!.id,
+          'person-for-a',
+        );
+      },
+    );
+  });
+
   group('importSelected', () {
     setUp(() {
       when(
@@ -439,6 +488,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => created('new-id'));
     });
@@ -456,9 +506,35 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).called(2);
     });
+
+    test(
+      'creates each person under the id their draft was minted with — the id '
+      'the review coloured them by',
+      () async {
+        final controller =
+            build(
+                mintPersonId: (contact) => 'person-for-${contact.id}',
+              ).controller
+              ..toggleSelection(contact('a', 'Anna'))
+              ..toggleSelection(contact('b', 'Bo'));
+
+        await controller.importSelected();
+
+        final ids = verify(
+          () => repository.createRelationship(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+            id: captureAny(named: 'id'),
+          ),
+        ).captured;
+        expect(ids, ['person-for-a', 'person-for-b']);
+      },
+    );
 
     test(
       'carries the name, channels and review decisions onto the person',
@@ -482,6 +558,7 @@ void main() {
                     data: captureAny(named: 'data'),
                     entryText: any(named: 'entryText'),
                     categoryId: any(named: 'categoryId'),
+                    id: any(named: 'id'),
                   ),
                 ).captured.single
                 as RelationshipData;
@@ -509,6 +586,7 @@ void main() {
                     data: captureAny(named: 'data'),
                     entryText: any(named: 'entryText'),
                     categoryId: any(named: 'categoryId'),
+                    id: any(named: 'id'),
                   ),
                 ).captured.single
                 as RelationshipData;
@@ -532,6 +610,7 @@ void main() {
                     data: captureAny(named: 'data'),
                     entryText: any(named: 'entryText'),
                     categoryId: any(named: 'categoryId'),
+                    id: any(named: 'id'),
                   ),
                 ).captured.single
                 as RelationshipData;
@@ -553,6 +632,7 @@ void main() {
           data: captureAny(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).captured.cast<RelationshipData>().map((data) => data.title).toList();
 
@@ -565,6 +645,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer((invocation) async {
         final data = invocation.namedArguments[#data]! as RelationshipData;
@@ -603,6 +684,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -627,6 +709,7 @@ void main() {
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
           categoryId: any(named: 'categoryId'),
+          id: any(named: 'id'),
         ),
       );
     });

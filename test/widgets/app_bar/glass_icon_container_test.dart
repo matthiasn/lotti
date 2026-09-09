@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -164,5 +165,21 @@ void main() {
       await tester.tap(find.byType(IconButton));
       expect(tapped, isTrue);
     });
+  });
+
+  testWidgets('a fill replaces the default dark glass, so a host on a '
+      'photograph can pass the photo-neutral strength', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: GlassIconContainer(
+          fill: PhotoNeutralGlass.fill,
+          child: SizedBox.shrink(),
+        ),
+      ),
+    );
+    final decoration =
+        tester.widget<Container>(find.byType(Container)).decoration!
+            as BoxDecoration;
+    expect(decoration.color, PhotoNeutralGlass.fill);
   });
 }

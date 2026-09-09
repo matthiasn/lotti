@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 import '../../../tts/test_utils.dart';
 import '../../test_data/constants.dart';
@@ -43,6 +44,10 @@ class _DisclosureHarnessState extends State<_DisclosureHarness> {
 }
 
 void main() {
+  // Width-driven layout: pin the bundled fonts so the numbers below read
+  // the same whether or not another file in this isolate loaded them first
+  // (test/README.md, "Committed per-feature harnesses").
+  setUpAll(loadAppFonts);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   AgentReportEntity report({String? tldr, String content = 'Full report.'}) =>
@@ -350,7 +355,12 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await pumpAt(320);
+      // The header measures the longest run between break opportunities, and
+      // the hyphen is one: "KI-" / "Zusammenfassung" is a legitimate break, so
+      // only a slot narrower than "Zusammenfassung" (200–210 px under Inter
+      // at 1.3×) forces the single line. The slot is the surface less 80; a
+      // 320 phone still wraps at the hyphen, 270 leaves 190 and cannot.
+      await pumpAt(270);
       final title = find.text('KI-Zusammenfassung');
       expect(title, findsOneWidget);
       expect(tester.widget<Text>(title).maxLines, 1);

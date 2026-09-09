@@ -1686,6 +1686,10 @@
   "audioRecordingResume": "Resume",
   "audioRecordings": "Audio Recordings",
   "audioRecordingStop": "Stop",
+  "avatarCropHint": "Drag to move · pinch to zoom",
+  "avatarCropPreviewLabel": "How it will look on the list",
+  "avatarCropTitle": "Choose the face",
+  "avatarCropUse": "Use photo",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -6813,6 +6817,26 @@
     }
   },
   "relationshipPayAttentionTo": "Pay attention to",
+  "relationshipPhotoAddBanner": "Add banner",
+  "relationshipPhotoAdjustCrop": "Adjust crop",
+  "relationshipPhotoBanner": "Banner",
+  "relationshipPhotoCardTitle": "Photo",
+  "relationshipPhotoChange": "Change",
+  "relationshipPhotoChoose": "Choose from library",
+  "relationshipPhotoDragToReposition": "Drag to reposition",
+  "relationshipPhotoFace": "Face",
+  "relationshipPhotoPrivacy": "Only on your devices · the agent never sees it",
+  "relationshipPhotoRemove": "Remove photo",
+  "relationshipPhotoRemoveAction": "Remove",
+  "relationshipPhotoSaveFailed": "Could not save the photo",
+  "relationshipPhotoSheetTitle": "Photo of {name}",
+  "@relationshipPhotoSheetTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipPostCallConfirm": "Log check-in",
   "@relationshipPostCallConfirm": {
     "description": "Button that opens a pre-filled check-in from the post-call prompt"

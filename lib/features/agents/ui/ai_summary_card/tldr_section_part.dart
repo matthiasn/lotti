@@ -197,7 +197,7 @@ class TldrHeader extends StatelessWidget {
 /// The card's own name — two lines where they help, one where they would not.
 ///
 /// German compounds this title into a single unbreakable token
-/// ("KI-Zusammenfassung"), and at 320 logical px with 1.3x text scale that
+/// ("KI-Zusammenfassung"), and on a narrow phone at a large text scale that
 /// token is wider than the line the header can give it. Flutter's line breaker
 /// then falls back to breaking *inside* the word — "KI-Zusammenf / assung" —
 /// which reads as a typo rather than as shortening, because nothing marks it

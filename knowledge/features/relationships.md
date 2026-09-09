@@ -18,8 +18,28 @@ sources:
     last_modified: 2026-08-14
   - id: model
     resource: ../../lib/classes/relationship_data.dart
-    title: RelationshipData, RelationshipStatus, ContactChannel
-    last_modified: 2026-08-14
+    title: RelationshipData, RelationshipStatus, ContactChannel, AvatarCrop
+    last_modified: 2026-09-08
+  - id: persona-avatar
+    resource: ../../lib/features/relationships/ui/shared/persona_avatar.dart
+    title: PersonaAvatar — the four faces of a person
+    last_modified: 2026-09-08
+  - id: image-resolver
+    resource: ../../lib/widgets/media/journal_image_resolver.dart
+    title: JournalImageResolver — file, stand-in or nothing, and when that changes
+    last_modified: 2026-09-08
+  - id: avatar-actions
+    resource: ../../lib/features/relationships/ui/widgets/person_photo_actions.dart
+    title: PersonPhotoActions — choose, re-crop, remove, with the surfaces injected
+    last_modified: 2026-09-08
+  - id: crop-geometry
+    resource: ../../lib/features/relationships/ui/shared/cover_crop_geometry.dart
+    title: CoverCropGeometry — the renderer's model, for the surface that edits it
+    last_modified: 2026-09-08
+  - id: photo-card
+    resource: ../../lib/features/relationships/ui/widgets/person_photo_card.dart
+    title: PersonPhotoCard — face and banner in the person form
+    last_modified: 2026-09-08
   - id: list-model
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
     title: The People list's bands, pills and summary — pure logic
@@ -168,6 +188,133 @@ column — a person's whole check-in history is never deserialized only to be
 discarded. Scoping the read to `RelationshipLink` also keeps it in step with
 `unlinkTask`, which removes exactly that type: a task surfaced through some
 other link type would render an unlink action that could never succeed.
+
+# A person's two images
+
+`RelationshipData` carries an **avatar** (`avatarImageId` + `avatarCrop`) and a
+**banner** (`bannerImageId` + `bannerCropX`). Both ids point at ordinary
+`JournalImage` entries.
+
+**The avatar renders.** `PersonaAvatar` has four faces, decided by
+`avatarImageId` and what its file is doing: no photo (the tinted initial,
+pixel-for-pixel what shipped before); the photo inside a ring of the persona
+accent; the ThumbHash stand-in inside the ring while the file is still
+syncing; and the initial inside the ring when the id is known but nothing can
+be drawn yet. Nothing ever shows an empty circle, and the accent is the same
+hash as before, so a photo never changes anyone's colour. Every surface that
+draws a person — the People row, the person hero, the import review — goes
+through this one widget, so all three got the photograph at once. The ring is
+`spacing.step1` at every size: the design's 3 px at 80 would have needed a
+token spacing does not have.
+
+The photograph decodes at the slot's size times its *stored* zoom, rounded up
+to a point: the zoom magnifies whatever was decoded, so a decode capped to the
+circle itself would draw a zoomed face as a blur of its own pixels — but a
+bound fixed at the deepest zoom would make every row at the default zoom hold
+sixteen times the pixels it shows. The key changes only when a crop is
+re-saved. The crop surface is the one exception (`AvatarCropPicture.decodeZoom`):
+its zoom moves live under a pinch, so it bounds at `maxAvatarCropScale` from
+the start and never re-decodes mid-gesture.
+
+**Choosing the avatar.** Tapping the hero avatar (only while the band is
+open — a folded hero's faded avatar takes no taps) opens the avatar sheet:
+the privacy line, *Choose from library*, and once there is a photo *Adjust
+crop* and *Remove photo*. A row pops the sheet with the flow it stands for
+and `showPersonAvatarSheet` runs that flow over the page once the sheet is
+gone, so the picker and the crop surface never stack on the sheet and it
+never reappears under them as they close. The flows live in
+`PersonPhotoActions`, whose only dependencies are the two repositories and
+the two surfaces it opens, handed in as functions — so pick → crop → write,
+and backing out at either step, is a plain unit test. Three rules are
+load-bearing:
+
+- **Cancelling writes nothing, even after the picker ran.** The picker has to
+  import the picture before the crop surface can show it, so an entry already
+  exists when the user sees *Use photo*; cancelling there deletes that entry
+  again — but only when the import *created* it. A gallery asset's entry id
+  is deterministic (`JournalRepository.createImageEntryTracked`), so picking a
+  photo imported before lands on the row that already exists, which is the
+  journal's and stays. The same discard follows a write that is refused or
+  throws. `PersonPhotoActions.chooseAvatar` and `chooseBanner` own this, over
+  the `ImportedImage` the picker returns.
+- **The crop surface commits nothing.** `showAvatarCropSheet` resolves to the
+  framing or null; the caller writes. Its preview *is* a `PersonaAvatar`, so
+  the preview and the list cannot disagree, and its gesture arithmetic is
+  `CoverCropGeometry` — the renderer's model written out — whose "the circle
+  is never empty" invariant is a property test. The picture's size, which a
+  drag moves against, comes from the file's header (`FileImageSize` over
+  `readImageFileSize`), never from decoding the photograph; and the wheel
+  registers with the pointer-signal resolver, so a notch over the picture
+  zooms it without also scrolling the sheet.
+- **Removing clears the reference and keeps the entry**, the task cover-art
+  precedent (`setCoverArt(null)`): taking a picture off a person is not
+  deleting it from the journal.
+
+**The banner renders — direction 2b.** With `bannerImageId` set, the hero
+becomes two stacked strips: the photograph takes the toolbar and the upper
+band, and the wash keeps a bar exactly one toolbar tall at the bottom of its
+band, which the avatar overlaps as before. `PersonHeroAppBar` resolves the
+banner *above* its sliver through `JournalImageResolver` (a component in a
+sliver slot returns the sliver), so the file's arrival rebuilds the hero; the
+ThumbHash stand-in shows under the same scrim meanwhile, and an id with
+nothing to show is the wash exactly as without a banner. Three things are
+fixed on purpose:
+
+- **The chrome goes photo-neutral** (`PhotoNeutralGlass`, hand-authored in
+  `photo_chrome_tokens.dart`): the theme's ink is near-black in the light
+  theme and would vanish on a picture, so every glass action, the back
+  button and the kebab take black-at-45 % glass and a white glyph whenever a
+  banner is drawn — in both themes.
+- **The scrim's extent is pixels, not a fraction of the current strip.**
+  `PhotoScrim` darkens the top 70 % of the strip *at rest*; folding, the bar
+  goes first, then the strip shrinks to the toolbar — and the scrim, fixed,
+  still covers the toolbar row, which is what keeps the swapped-in name and
+  the actions legible over an arbitrary picture at every scroll position.
+- **The decode is bounded to the strip at rest**, so scrolling never re-keys
+  the picture through the image cache.
+
+**Choosing the banner — and the face again — is the form's Photo card**
+(`PersonPhotoCard`, edit only). Face: the avatar at the import review's size
+with Change · Adjust crop · Remove. Banner: a strip the hero's own height,
+dragged left or right by `CoverCropGeometry` over the strip's viewport — the
+arithmetic the hero renders with — with the write made once, when the finger
+lifts. Its actions are the same `PersonPhotoActions` the sheet uses, built by
+`productionPersonPhotoActions` for both, and they write **immediately**, not on
+Save: a picture exists the moment the picker returns, so commit-on-Save would
+mean tracking orphans to delete on Cancel, and every profile editor treats a
+photo change as its own act. The form therefore carries a refreshable
+`_person`, re-read after every card write, and builds Save from *that* — a
+Save built from the entry the form opened with would write the old photo back
+over the new one, and a test pins that it does not.
+
+The field they replaced, `coverArtId`, was declared with the rest of the model
+and never written by anything, so it was **removed rather than migrated** — no
+payload on any device carries the key, and a field whose name says "cover art"
+would have lied about a person's portrait.
+
+Three properties are load-bearing and easy to break:
+
+- **The image must be *linked* to the person.** `JournalRepository`'s image
+  delete finds referencing entities with `getLinkedToEntities(imageId)`, so an
+  avatar created without `linkedId` set to the relationship would survive its
+  own image's deletion as a dangling id. The link is also what makes the image
+  inherit a private person's `private` flag through `createDbEntity`.
+- **Framing is clamped on both sides.** `AvatarCrop.fromJson` and
+  `cropFractionFromJson` clamp what sync delivers; `RelationshipImageFraming`
+  clamps what this device writes, applied by `RelationshipRepository`'s create
+  and update paths. Neither side alone is enough: a peer can send anything, and
+  a local gesture can compute anything.
+- **The bytes arrive after the entity.** An id syncs in one message and its file
+  in another, so every surface that draws one of these needs a defined
+  appearance for "id known, file not here yet". `JournalImageResolver` owns
+  that loop — resolve the entry, watch the filesystem, hand the host the file
+  or the ThumbHash or nothing — for every picture-of-an-entry surface:
+  `PersonaAvatar`, the hero banner, the task cover thumbnail and background,
+  and — through its file half, `JournalImageFileResolver`, because the list
+  hands it the entry — the journal card image.
+
+Neither image ever enters agent context, for the same reason contact channels
+do not — see [Privacy](#privacy).
 
 # Recency without an N+1
 
@@ -834,7 +981,12 @@ cadence presets under a person only once they are marked important — a
 cadence on an unimportant person is never evaluated. Its switch copy says
 what importance turns on, never that leaving it off keeps the person out of
 AI entirely: a chat, an explicit briefing and a dictated check-in all reach a
-model for anyone.
+model for anyone. Each avatar is coloured by the id the person will be
+created under: `ContactImportController` mints it the moment the contact is
+ticked, keeps it on the draft through the review decisions, and hands it to
+`createRelationship`, so the accent in the review is the accent the People
+row shows next. (The review once hashed the OS contact id, and everyone
+changed colour the moment they were imported.)
 
 **The chat** is a pane, not only a page.
 [`RelationshipChatPane`](../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart)

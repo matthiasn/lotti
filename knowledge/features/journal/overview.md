@@ -148,7 +148,11 @@ It delegates actual storage and sync to `JournalDb`, `PersistenceLogic`,
 
 The feature looks like basic CRUD until you follow the side effects:
 
-- Deleting an image **clears any task `coverArtId`** referencing it.
+- Deleting an image **clears the references pointing at it**: a task's
+  `coverArtId`, and a relationship's `avatarImageId` / `bannerImageId`
+  (the avatar's `avatarCrop` goes with the avatar, so a later photo does
+  not inherit the deleted one's framing). Events and projects carry a
+  `coverArtId` too and are **not** covered — a known gap, not a decision.
 - Deleting a currently running entry **stops the timer**.
 - Deleting an entry updates the badge through `NotificationService`.
 - Updating a link emits `UpdateNotifications` **and** writes a sync outbox message

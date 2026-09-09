@@ -256,9 +256,11 @@ class _ReviewStep extends ConsumerWidget {
             children: [
               Row(
                 children: [
+                  // Coloured by the id the person is created under, so the
+                  // accent seen here is the one the People row shows next.
                   PersonaAvatar(
                     initial: name.isEmpty ? '?' : name.characters.first,
-                    id: draft.contact.id,
+                    id: draft.id,
                     size: tokens.spacing.step9,
                   ),
                   SizedBox(width: tokens.spacing.step3),

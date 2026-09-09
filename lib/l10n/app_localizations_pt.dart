@@ -2637,6 +2637,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get audioRecordingStop => 'Parar';
 
   @override
+  String get avatarCropHint => 'Arrasta para mover · belisca para ampliar';
+
+  @override
+  String get avatarCropPreviewLabel => 'Assim vai ficar na lista';
+
+  @override
+  String get avatarCropTitle => 'Escolhe o rosto';
+
+  @override
+  String get avatarCropUse => 'Usar a foto';
+
+  @override
   String backfillAdvancedRecoveryActions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11660,6 +11672,48 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipPayAttentionTo => 'Prestar atenção a';
+
+  @override
+  String get relationshipPhotoAddBanner => 'Adicionar banner';
+
+  @override
+  String get relationshipPhotoAdjustCrop => 'Ajustar o recorte';
+
+  @override
+  String get relationshipPhotoBanner => 'Banner';
+
+  @override
+  String get relationshipPhotoCardTitle => 'Foto';
+
+  @override
+  String get relationshipPhotoChange => 'Alterar';
+
+  @override
+  String get relationshipPhotoChoose => 'Escolher da biblioteca';
+
+  @override
+  String get relationshipPhotoDragToReposition => 'Arrasta para reposicionar';
+
+  @override
+  String get relationshipPhotoFace => 'Rosto';
+
+  @override
+  String get relationshipPhotoPrivacy =>
+      'Só nos teus dispositivos · o agente nunca a vê';
+
+  @override
+  String get relationshipPhotoRemove => 'Remover a foto';
+
+  @override
+  String get relationshipPhotoRemoveAction => 'Remover';
+
+  @override
+  String get relationshipPhotoSaveFailed => 'Não foi possível guardar a foto';
+
+  @override
+  String relationshipPhotoSheetTitle(String name) {
+    return 'Foto de $name';
+  }
 
   @override
   String get relationshipPostCallConfirm => 'Registar check-in';

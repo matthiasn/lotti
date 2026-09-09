@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -24,27 +25,78 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// `PersistenceLogic`, and sync services (it is a facade, not DI-wired — deps
 /// are looked up via `getIt`, not injected). Owns single- and bulk-ID loads,
 /// entity create/update, entry-link writes (under a vector-clock scope), and
-/// cascading cleanup such as clearing cover-art references on image delete.
+/// cascading cleanup such as clearing cover-art, avatar and banner references
+/// on image delete.
+/// What [JournalRepository.createImageEntryTracked] came to: the entry, and
+/// whether that call inserted it rather than landing on an existing row.
+typedef ImageEntryResult = ({JournalEntity entry, bool created});
+
 class JournalRepository {
   JournalRepository();
 
-  /// Clears coverArtId from any tasks that reference the deleted image
-  Future<void> _clearCoverArtReferences(
+  /// The relationship repository over this one, for the writes to a person
+  /// that a delete cascades into — the person's own deletion, and clearing a
+  /// deleted image off their avatar or banner. Going through it keeps every
+  /// edit of a person on the repository's single write path.
+  RelationshipRepository _relationships(PersistenceLogic persistenceLogic) =>
+      RelationshipRepository(
+        journalDb: getIt<JournalDb>(),
+        journalRepository: this,
+        persistenceLogic: persistenceLogic,
+      );
+
+  /// Clears references to a deleted image from the entities that point at it,
+  /// so nothing is left rendering an id whose file and entry are gone.
+  ///
+  /// Covers a task's cover art and a relationship's avatar and banner. The
+  /// avatar's crop goes with the avatar: a framing for an image that no longer
+  /// exists is not a value worth keeping, and leaving it behind would make a
+  /// later photo inherit the old photo's framing.
+  Future<void> _clearImageReferences(
     String imageId,
     PersistenceLogic persistenceLogic,
   ) async {
     final db = getIt<JournalDb>();
-    // Find all entities that link TO this image (i.e., tasks that have this image linked)
+    // Entities that link TO this image — the ones able to reference it.
     final linkedFromEntities = await db.getLinkedToEntities(imageId);
 
     for (final dbEntity in linkedFromEntities) {
       final entity = fromDbEntity(dbEntity);
       if (entity is Task && entity.data.coverArtId == imageId) {
-        // Clear the coverArtId
         await persistenceLogic.updateTask(
           journalEntityId: entity.id,
           taskData: entity.data.copyWith(coverArtId: null),
         );
+      }
+      if (entity is RelationshipEntry) {
+        final data = entity.data;
+        final clearsAvatar = data.avatarImageId == imageId;
+        final clearsBanner = data.bannerImageId == imageId;
+        if (!clearsAvatar && !clearsBanner) continue;
+        final cleared = await _relationships(persistenceLogic)
+            .updateRelationship(
+              entity.copyWith(
+                data: data.copyWith(
+                  avatarImageId: clearsAvatar ? null : data.avatarImageId,
+                  avatarCrop: clearsAvatar ? null : data.avatarCrop,
+                  bannerImageId: clearsBanner ? null : data.bannerImageId,
+                ),
+              ),
+            );
+        // A refused write leaves the person pointing at an image that is
+        // about to be tombstoned. The renderer tolerates that — the avatar's
+        // "id known, nothing to show" face, the hero's plain wash — so the
+        // deletion the user asked for goes ahead; the miss is recorded so it
+        // can be found rather than silently outliving the image.
+        if (!cleared) {
+          getIt<DomainLogger>().log(
+            LogDomain.persistence,
+            'Could not clear image $imageId from relationship ${entity.id} '
+            'before tombstoning it',
+            subDomain: 'deleteJournalEntity',
+            level: InsightLevel.warn,
+          );
+        }
       }
     }
   }
@@ -137,16 +189,15 @@ class JournalRepository {
       // surface that can reach the generic delete path (a deep link to the
       // journal detail page included), not only on the People pages.
       if (journalEntity is RelationshipEntry) {
-        return await RelationshipRepository(
-          journalDb: getIt<JournalDb>(),
-          journalRepository: this,
-          persistenceLogic: persistenceLogic,
+        return await _relationships(
+          persistenceLogic,
         ).deleteRelationship(journalEntityId);
       }
 
-      // If deleting an image that is used as cover art, clear the coverArtId
+      // If deleting an image anything uses as cover art, an avatar or a
+      // banner, clear the reference before the image is tombstoned.
       if (journalEntity is JournalImage) {
-        await _clearCoverArtReferences(journalEntityId, persistenceLogic);
+        await _clearImageReferences(journalEntityId, persistenceLogic);
       }
 
       await persistenceLogic.updateDbEntity(
@@ -286,6 +337,28 @@ class JournalRepository {
     String? categoryId,
     void Function(JournalEntity)? onCreated,
     bool linkCollapsed = false,
+  }) async => (await createImageEntryTracked(
+    imageData,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    onCreated: onCreated,
+    linkCollapsed: linkCollapsed,
+  ))?.entry;
+
+  /// [createImageEntry], also saying whether this call *inserted* the entry.
+  ///
+  /// An image entry's id is a v5 uuid of its `ImageData`, and a gallery
+  /// asset's data is the same on every import, so importing a photo a second
+  /// time lands on the row that already exists: `createDbEntity` declines the
+  /// write and `created` is false. A caller that imported the picture for one
+  /// purpose — a person's photo, say — may take it back out of the journal on
+  /// cancel only when it created it; the existing row is somebody's already.
+  static Future<ImageEntryResult?> createImageEntryTracked(
+    ImageData imageData, {
+    String? linkedId,
+    String? categoryId,
+    void Function(JournalEntity)? onCreated,
+    bool linkCollapsed = false,
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
@@ -301,17 +374,19 @@ class JournalRepository {
         ),
         geolocation: imageData.geolocation,
       );
-      await persistenceLogic.createDbEntity(
+      final applied = await persistenceLogic.createDbEntity(
         journalEntity,
         linkedId: linkedId,
         shouldAddGeolocation: false,
         linkCollapsed: linkCollapsed,
       );
 
-      // Invoke callback after successful creation
-      onCreated?.call(journalEntity);
+      final created = applied ?? false;
+      // Only a row this call inserted is "created": an existing image must
+      // not have its analysis re-triggered because it was picked again.
+      if (created) onCreated?.call(journalEntity);
 
-      return journalEntity;
+      return (entry: journalEntity, created: created);
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.persistence,

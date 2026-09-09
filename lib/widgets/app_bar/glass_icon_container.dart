@@ -12,12 +12,18 @@ class GlassIconContainer extends StatelessWidget {
     required this.child,
     this.size = 40,
     this.borderRadius = 999,
+    this.fill,
     super.key,
   });
 
   final Widget child;
   final double size;
   final double borderRadius;
+
+  /// The glass's own colour. Null is the default dark glass; a host sitting
+  /// on a photograph passes `PhotoNeutralGlass.fill`, which is the same glass
+  /// at the strength a picture needs.
+  final Color? fill;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +36,7 @@ class GlassIconContainer extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: fill ?? Colors.black.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(borderRadius),
           ),
           child: Center(child: child),

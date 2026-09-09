@@ -1966,7 +1966,12 @@ void main() {
     ).test(
       'direct transcription fallback ranking honours the platform-aware order',
       (scenario) async {
+        // A process-global flag: the last generated scenario would otherwise
+        // leak into every file sharing this isolate (platform_test asserts
+        // the flags still describe the host).
+        final wasMacOS = platform.isMacOS;
         platform.isMacOS = scenario.isMacOS;
+        addTearDown(() => platform.isMacOS = wasMacOS);
 
         final localResolver = MockProfileAutomationResolver();
         final localAiConfig = MockAiConfigRepository();

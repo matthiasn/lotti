@@ -31,6 +31,7 @@ MANUAL_LOCALES ?= en de fr it es cs nl ro pt da sv
 # published to the R2 bucket by CI. No screenshot belongs in a git repository.
 MANUAL_CAPTURE_DIR ?= $(abspath build/manual_capture)/$(MANUAL_VERSION)
 MANUAL_MEDIA_DIR ?= $(abspath build/manual_media)
+PEOPLE_INVENTORY_DIR ?= $(abspath build/people_inventory)
 
 .PHONY: test
 test:
@@ -303,6 +304,17 @@ manual_screenshots_macos:
 manual_screenshots_linux:
 	mkdir -p "$(MANUAL_CAPTURE_DIR)/legacy/${LOTTI_VERSION}/linux"
 	LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)/legacy/${LOTTI_VERSION}/linux" fvm flutter drive -d linux --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)/legacy/${LOTTI_VERSION}/linux"
+
+# The People (relationships) design-handover inventory: every People surface,
+# each state once, at both viewports. Deliberately outside the localized manual
+# catalog above — it registers no case IDs and publishes nothing. It exists so
+# a design handover's screenshot bundle can be regenerated, and so a People
+# redesign's "after" half comes from the same fixtures as its "before" half.
+.PHONY: people_inventory_screenshots
+people_inventory_screenshots:
+	mkdir -p "$(PEOPLE_INVENTORY_DIR)"
+	LOTTI_SCREENSHOT_DIR="$(PEOPLE_INVENTORY_DIR)" fvm flutter test test/features/relationships/ui/pages/people_inventory_screenshots_test.dart
+	@echo "People inventory written to $(PEOPLE_INVENTORY_DIR)"
 
 .PHONY: bundle
 bundle:

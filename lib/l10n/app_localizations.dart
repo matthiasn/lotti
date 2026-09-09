@@ -4470,6 +4470,30 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get audioRecordingStop;
 
+  /// No description provided for @avatarCropHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to move · pinch to zoom'**
+  String get avatarCropHint;
+
+  /// No description provided for @avatarCropPreviewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How it will look on the list'**
+  String get avatarCropPreviewLabel;
+
+  /// No description provided for @avatarCropTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the face'**
+  String get avatarCropTitle;
+
+  /// No description provided for @avatarCropUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use photo'**
+  String get avatarCropUse;
+
   /// No description provided for @backfillAdvancedRecoveryActions.
   ///
   /// In en, this message translates to:
@@ -19242,6 +19266,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pay attention to'**
   String get relationshipPayAttentionTo;
+
+  /// No description provided for @relationshipPhotoAddBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Add banner'**
+  String get relationshipPhotoAddBanner;
+
+  /// No description provided for @relationshipPhotoAdjustCrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust crop'**
+  String get relationshipPhotoAdjustCrop;
+
+  /// No description provided for @relationshipPhotoBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Banner'**
+  String get relationshipPhotoBanner;
+
+  /// No description provided for @relationshipPhotoCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get relationshipPhotoCardTitle;
+
+  /// No description provided for @relationshipPhotoChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get relationshipPhotoChange;
+
+  /// No description provided for @relationshipPhotoChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from library'**
+  String get relationshipPhotoChoose;
+
+  /// No description provided for @relationshipPhotoDragToReposition.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reposition'**
+  String get relationshipPhotoDragToReposition;
+
+  /// No description provided for @relationshipPhotoFace.
+  ///
+  /// In en, this message translates to:
+  /// **'Face'**
+  String get relationshipPhotoFace;
+
+  /// No description provided for @relationshipPhotoPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on your devices · the agent never sees it'**
+  String get relationshipPhotoPrivacy;
+
+  /// No description provided for @relationshipPhotoRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get relationshipPhotoRemove;
+
+  /// No description provided for @relationshipPhotoRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get relationshipPhotoRemoveAction;
+
+  /// No description provided for @relationshipPhotoSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the photo'**
+  String get relationshipPhotoSaveFailed;
+
+  /// No description provided for @relationshipPhotoSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo of {name}'**
+  String relationshipPhotoSheetTitle(String name);
 
   /// Button that opens a pre-filled check-in from the post-call prompt
   ///

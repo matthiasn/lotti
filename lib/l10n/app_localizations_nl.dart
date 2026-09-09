@@ -2623,6 +2623,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingStop => 'Stoppen';
 
   @override
+  String get avatarCropHint => 'Sleep om te verplaatsen · knijp om te zoomen';
+
+  @override
+  String get avatarCropPreviewLabel => 'Zo ziet het eruit in de lijst';
+
+  @override
+  String get avatarCropTitle => 'Kies het gezicht';
+
+  @override
+  String get avatarCropUse => 'Foto gebruiken';
+
+  @override
   String backfillAdvancedRecoveryActions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11577,6 +11589,48 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipPayAttentionTo => 'Let op';
+
+  @override
+  String get relationshipPhotoAddBanner => 'Banner toevoegen';
+
+  @override
+  String get relationshipPhotoAdjustCrop => 'Uitsnede aanpassen';
+
+  @override
+  String get relationshipPhotoBanner => 'Banner';
+
+  @override
+  String get relationshipPhotoCardTitle => 'Foto';
+
+  @override
+  String get relationshipPhotoChange => 'Wijzigen';
+
+  @override
+  String get relationshipPhotoChoose => 'Kiezen uit bibliotheek';
+
+  @override
+  String get relationshipPhotoDragToReposition => 'Sleep om te verplaatsen';
+
+  @override
+  String get relationshipPhotoFace => 'Gezicht';
+
+  @override
+  String get relationshipPhotoPrivacy =>
+      'Alleen op je apparaten · de agent ziet hem nooit';
+
+  @override
+  String get relationshipPhotoRemove => 'Foto verwijderen';
+
+  @override
+  String get relationshipPhotoRemoveAction => 'Verwijderen';
+
+  @override
+  String get relationshipPhotoSaveFailed => 'Kon de foto niet opslaan';
+
+  @override
+  String relationshipPhotoSheetTitle(String name) {
+    return 'Foto van $name';
+  }
 
   @override
   String get relationshipPostCallConfirm => 'Check-in vastleggen';

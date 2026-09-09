@@ -2611,6 +2611,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingStop => 'Stop';
 
   @override
+  String get avatarCropHint => 'Træk for at flytte · knib for at zoome';
+
+  @override
+  String get avatarCropPreviewLabel => 'Sådan ser det ud på listen';
+
+  @override
+  String get avatarCropTitle => 'Vælg ansigtet';
+
+  @override
+  String get avatarCropUse => 'Brug foto';
+
+  @override
   String backfillAdvancedRecoveryActions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -11557,6 +11569,48 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipPayAttentionTo => 'Vær opmærksom på';
+
+  @override
+  String get relationshipPhotoAddBanner => 'Tilføj banner';
+
+  @override
+  String get relationshipPhotoAdjustCrop => 'Justér beskæring';
+
+  @override
+  String get relationshipPhotoBanner => 'Banner';
+
+  @override
+  String get relationshipPhotoCardTitle => 'Foto';
+
+  @override
+  String get relationshipPhotoChange => 'Skift';
+
+  @override
+  String get relationshipPhotoChoose => 'Vælg fra biblioteket';
+
+  @override
+  String get relationshipPhotoDragToReposition => 'Træk for at flytte';
+
+  @override
+  String get relationshipPhotoFace => 'Ansigt';
+
+  @override
+  String get relationshipPhotoPrivacy =>
+      'Kun på dine enheder · agenten ser det aldrig';
+
+  @override
+  String get relationshipPhotoRemove => 'Fjern foto';
+
+  @override
+  String get relationshipPhotoRemoveAction => 'Fjern';
+
+  @override
+  String get relationshipPhotoSaveFailed => 'Kunne ikke gemme fotoet';
+
+  @override
+  String relationshipPhotoSheetTitle(String name) {
+    return 'Foto af $name';
+  }
 
   @override
   String get relationshipPostCallConfirm => 'Log tjek-ind';

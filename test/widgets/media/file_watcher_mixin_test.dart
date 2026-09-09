@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/platform.dart' as platform_utils;
+import 'package:lotti/widgets/media/file_watcher_mixin.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 

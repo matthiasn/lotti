@@ -184,6 +184,53 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test("creates the person under the caller's id when one is given, so the "
+        'import review can colour them by the id they will keep', () async {
+      when(() => mockPersistence.createDbEntity(any())).thenAnswer(
+        (_) async => true,
+      );
+
+      final result = await withClock(
+        Clock.fixed(testDate),
+        () => repository.createRelationship(
+          data: relationshipData(),
+          id: 'minted-at-review',
+        ),
+      );
+
+      expect(result!.meta.id, 'minted-at-review');
+      final stored =
+          verify(
+                () => mockPersistence.createDbEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(
+        stored.meta.id,
+        'minted-at-review',
+        reason: 'the id must reach storage, not only the returned entry',
+      );
+      expect(
+        result.meta.dateFrom,
+        testDate,
+        reason:
+            'only the id is overridden; the rest of the metadata is still '
+            "the service's",
+      );
+    });
+
+    test('mints the id as usual when none is given', () async {
+      when(() => mockPersistence.createDbEntity(any())).thenAnswer(
+        (_) async => true,
+      );
+
+      final result = await withClock(
+        Clock.fixed(testDate),
+        () => repository.createRelationship(data: relationshipData()),
+      );
+
+      expect(result!.meta.id, 'generated-id');
+    });
   });
 
   group('createCheckIn', () {
@@ -369,6 +416,87 @@ void main() {
         await repository.updateRelationship(relationshipEntry()),
         isFalse,
       );
+    });
+  });
+
+  group('image framing is clamped on the way to storage', () {
+    /// Both write paths funnel through here so the assertion is about what
+    /// was persisted, not about what the caller passed.
+    RelationshipData persistedData(VerificationResult write) =>
+        (write.captured.single as RelationshipEntry).data;
+
+    test(
+      'updateRelationship clamps a crop that came out of a bad gesture',
+      () async {
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        await repository.updateRelationship(
+          relationshipEntry().copyWith(
+            data: relationshipData().copyWith(
+              avatarImageId: 'img-1',
+              avatarCrop: const AvatarCrop(x: -0.4, y: 1.9, scale: 12),
+              bannerImageId: 'img-2',
+              bannerCropX: -3,
+            ),
+          ),
+        );
+
+        final data = persistedData(
+          verify(() => mockPersistence.updateDbEntity(captureAny())),
+        );
+        expect(data.avatarCrop, const AvatarCrop(x: 0, y: 1, scale: 4));
+        expect(data.bannerCropX, 0);
+        expect(
+          data.avatarImageId,
+          'img-1',
+          reason: 'clamping the framing must not disturb the ids',
+        );
+        expect(data.bannerImageId, 'img-2');
+      },
+    );
+
+    test('createRelationship clamps too, so an import cannot seed a framing '
+        'the crop surface could never produce', () async {
+      when(
+        () => mockPersistence.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => meta('rel-new'));
+      when(
+        () => mockPersistence.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
+
+      await repository.createRelationship(
+        data: relationshipData().copyWith(
+          avatarCrop: const AvatarCrop(x: 5, y: -5, scale: 0.1),
+        ),
+      );
+
+      final data = persistedData(
+        verify(() => mockPersistence.createDbEntity(captureAny())),
+      );
+      // scale is spelled out even though 1 is the default: the point of the
+      // assertion is that the out-of-range 0.1 was clamped up to it.
+      // ignore: avoid_redundant_argument_values
+      expect(data.avatarCrop, const AvatarCrop(x: 1, y: 0, scale: 1));
+    });
+
+    test('a person with no images is written unchanged', () async {
+      when(
+        () => mockPersistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+
+      final entry = relationshipEntry();
+      await repository.updateRelationship(entry);
+
+      final data = persistedData(
+        verify(() => mockPersistence.updateDbEntity(captureAny())),
+      );
+      expect(data, entry.data);
     });
   });
 
