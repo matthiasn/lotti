@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6]
+
+### Added
+
+- **Explore projects as a city plaza on desktop.** Open Plaza from a project
+  or category to walk among task billboards arranged along the timeline, with
+  larger signs for higher priorities, green completed work, and flames for
+  overdue tasks. Category avenues lead into individual projects, while search,
+  an aerial overview, and a morning walk help you find what needs attention.
+  Billboards show live task details and checklist progress, with checklist
+  updates saved to the task. Glass façades, recessed shopfronts, layered
+  stonework and illuminated tower crowns line a dense nighttime city, with
+  softer light around billboards and on the paving. Flights follow rounded
+  curves and ease into turns and climbs. Hold Shift while walking or flying
+  for 8× speed.
+- **Optional penguins and meerkats bring the Plaza to life.** Meerkats
+  scamper, forage and stand watch facing the camera. Penguins and meerkats
+  share the streets and yield to one another at crossings. Both start hidden;
+  turn them on independently with the Penguins and Meerkats checkboxes.
+
 ## [1.1.5]
 
 ### Added
