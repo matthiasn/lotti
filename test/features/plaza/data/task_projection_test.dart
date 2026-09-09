@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
@@ -9,6 +10,100 @@ void main() {
   final world = ManualDemoWorld.penguinLogistics(now: manualDemoNow);
   final task = world.tasks.first;
   final item = world.checklistItems.first;
+
+  group('scoped connections', () {
+    EntryLink link(
+      EntryLinkType type, {
+      String? id,
+      String from = 'a',
+      String to = 'b',
+      bool hidden = false,
+      DateTime? deletedAt,
+    }) => type.buildLink(
+      id: id ?? type.name,
+      fromId: from,
+      toId: to,
+      createdAt: manualDemoNow,
+      updatedAt: manualDemoNow,
+      vectorClock: null,
+      hidden: hidden,
+      deletedAt: deletedAt,
+    );
+
+    test('preserves every task relation and excludes other link families', () {
+      final projected = projectPlazaConnections(
+        links: [for (final type in EntryLinkType.values) link(type)],
+        visibleTaskIds: {'a', 'b'},
+      );
+      expect(projected.map((edge) => edge.type).toSet(), {
+        EntryLinkType.basic,
+        EntryLinkType.blocks,
+        EntryLinkType.followsUp,
+        EntryLinkType.duplicates,
+        EntryLinkType.fixes,
+        EntryLinkType.supersedes,
+      });
+      expect(
+        projected.map((edge) => (edge.fromId, edge.toId)),
+        everyElement(('a', 'b')),
+      );
+    });
+
+    test(
+      'scope, hidden edges, tombstones and self-links cannot add cables',
+      () {
+        final projected = projectPlazaConnections(
+          links: [
+            link(EntryLinkType.blocks, id: 'kept'),
+            link(EntryLinkType.basic, from: 'private'),
+            link(EntryLinkType.basic, to: 'outside'),
+            link(EntryLinkType.basic, from: 'unresolved', to: 'outside'),
+            link(EntryLinkType.fixes, hidden: true),
+            link(EntryLinkType.supersedes, deletedAt: manualDemoNow),
+            link(EntryLinkType.followsUp, to: 'a'),
+          ],
+          visibleTaskIds: {'a', 'b'},
+        );
+        expect(projected.map((edge) => edge.id), ['kept']);
+        expect(
+          projectPlazaConnections(
+            links: [link(EntryLinkType.blocks)],
+            visibleTaskIds: {},
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'deduplicates symmetric links without collapsing semantic direction',
+      () {
+        final links = [
+          link(EntryLinkType.basic, id: 'plain-z'),
+          link(EntryLinkType.basic, id: 'plain-a', from: 'b', to: 'a'),
+          link(EntryLinkType.blocks, id: 'forward'),
+          link(EntryLinkType.blocks, id: 'reverse', from: 'b', to: 'a'),
+          link(EntryLinkType.blocks, id: 'forward'),
+        ];
+        for (final order in [links, links.reversed]) {
+          final projected = projectPlazaConnections(
+            links: order,
+            visibleTaskIds: {'a', 'b'},
+          );
+          expect(
+            projected.map((edge) => (edge.id, edge.fromId, edge.toId)),
+            [
+              ('forward', 'a', 'b'),
+              ('plain-a', 'a', 'b'),
+              ('reverse', 'b', 'a'),
+            ],
+          );
+          expect(projected.clear, throwsUnsupportedError);
+        }
+        expect(links.first.id, 'plain-z');
+      },
+    );
+  });
 
   PlazaTask project({
     Task? source,

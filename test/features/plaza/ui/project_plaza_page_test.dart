@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/features/plaza/data/task_projection.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
@@ -120,6 +122,41 @@ void main() {
       ).called(1);
       await tester.pumpWidget(const SizedBox());
     });
+  });
+
+  testWidgets('live connections reach the renderer and disappear on refresh', (
+    tester,
+  ) async {
+    final other = projectPlazaTask(
+      task: demo.tasks[1],
+      checklistItems: const [],
+      linkedTaskIds: [task.id],
+      categoryColor: task.categoryColor,
+    );
+    final edge = PlazaConnection(
+      id: 'blocks',
+      fromId: task.id,
+      toId: other.id,
+      type: EntryLinkType.blocks,
+    );
+    await tester.pumpWidget(page());
+    snapshots.add(
+      ProjectPlazaData(
+        project: project,
+        tasks: [task, other],
+        connections: [edge],
+        dependencyIds: {project.meta.id, task.id, other.id, edge.id},
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(renderedWorld.connections, [same(edge)]);
+    snapshots.add(snapshot);
+    await tester.pump();
+    await tester.pump();
+    expect(renderedWorld.connections, isEmpty);
+    expect(renderedWorld.tasks, [task]);
+    await tester.pumpWidget(const SizedBox());
   });
 
   testWidgets('failed checklist edits roll back and explain the failure', (

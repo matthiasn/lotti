@@ -16,6 +16,7 @@ import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/facade_lod_manager.dart';
 import 'package:lotti/features/plaza/scene/plaza_bench.dart';
+import 'package:lotti/features/plaza/scene/plaza_cables.dart';
 import 'package:lotti/features/plaza/scene/plaza_characters.dart';
 import 'package:lotti/features/plaza/scene/plaza_fire.dart';
 import 'package:lotti/features/plaza/scene/plaza_meerkats.dart';
@@ -119,6 +120,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   late FacadeLodManager _lod;
   late PlazaSprites _sprites;
   PlazaFire? _fire;
+  PlazaCables? _cables;
   PlazaCharacters? _characters;
   Node? _penguinModel;
   Node? _meerkatModel;
@@ -127,6 +129,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   bool _loadingCharacterModels = false;
   bool _animateCharacters = true;
   bool _showPenguins = false;
+  bool _showConnections = true;
   bool _showMeerkats = false;
   late PlazaSurfaces _surfaces;
   late PlazaPicker _picker;
@@ -148,6 +151,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   double _toastUntil = 0;
   MorningWalk? _walk;
   PlazaBuilding? _panel;
+  String? _connectionFocusTaskId;
   bool _searchOpen = false;
   bool _showDebug = false;
   final List<CameraPose> _back = [];
@@ -223,7 +227,8 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
               activeSurface: _lod.stats.live > 0,
               activeAnimation:
                   (_characters?.hasVisibleMotion ?? false) ||
-                  (_meerkats?.hasVisibleMotion ?? false),
+                  (_meerkats?.hasVisibleMotion ?? false) ||
+                  (_cables?.hasVisibleMotion ?? false),
             ),
     );
     if (_renderingEnabled &&
@@ -327,6 +332,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     final input = widget.world;
     _world = PlazaWorld(
       tasks: input.tasks,
+      connections: input.connections,
       now: input.now,
       projectLabel: input.projectLabel,
       categoryLabels: input.categoryLabels,
@@ -334,6 +340,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       copy: input.copy,
       ambientCreatures: input.ambientCreatures,
       architecture: input.architecture,
+      cables: input.cables,
       avenueLabels: input.avenueLabels,
       avenueByProjectId: input.avenueByProjectId,
       layout: input.layout.copyWith(
@@ -377,9 +384,22 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       pxPerMeter: _sceneController.pxPerMeter,
     );
     final batches = _sceneController.bakeStaticMeshes();
+    _cables = walls == null || _hidden.contains('cables')
+        ? null
+        : PlazaCables(
+            scene: _sceneController.scene,
+            world: _world,
+            glowTexture: walls.pool,
+          );
+    _cables?.root.visible = _showConnections;
     _attachCharacters();
     debugPrint(
       'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches}',
+    );
+    debugPrint(
+      'PLAZA_CABLES edges=${_world.connections.length} '
+      'meshes=${_cables?.meshCount ?? 0} '
+      'batches=${_cables?.batchCount ?? 0}',
     );
     _picker = PlazaPicker(controller: _sceneController, sprites: _sprites);
     final home =
@@ -398,6 +418,9 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     _beaconCursor = -1;
     _walk = null;
     _panel = null;
+    if (!_world.attention.containsKey(_connectionFocusTaskId)) {
+      _connectionFocusTaskId = null;
+    }
   }
 
   void _attachCharacters() {
@@ -542,6 +565,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   }
 
   void _flyToBuilding(PlazaBuilding building) {
+    _connectionFocusTaskId = building.task.id;
     _lod.prepare(building);
     _flyTo(taskPoseFor(building.placement), building.task.title);
   }
@@ -570,10 +594,13 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     if (plaza != null) _flyTo(pose(plaza), '$where — ${_world.projectLabel}');
   }
 
-  void _flyHome() => _flyToPlaza(
-    (p) => p.home,
-    context.messages.designSystemBreadcrumbHomeLabel,
-  );
+  void _flyHome() {
+    _connectionFocusTaskId = null;
+    _flyToPlaza(
+      (p) => p.home,
+      context.messages.designSystemBreadcrumbHomeLabel,
+    );
+  }
 
   void _flyOverview() =>
       _flyToPlaza((p) => p.overview, context.messages.plazaOverview);
@@ -657,6 +684,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       final walk = _walk;
       if (walk != null) setState(walk.togglePause);
     } else if (key == LogicalKeyboardKey.escape) {
+      _connectionFocusTaskId = null;
       setState(() => _panel = null);
       _endWalk();
     } else if (key == LogicalKeyboardKey.backquote) {
@@ -688,8 +716,10 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     if (camera == null) return;
     switch (_picker.pick(camera, _viewSize, point)) {
       case PickedBeacon(:final beacon):
+        _connectionFocusTaskId = beacon.taskId;
         _flyTo(beacon.pose, beacon.label);
       case PickedBuilding(:final building):
+        _connectionFocusTaskId = building.task.id;
         if (!_lod.activate(
           building,
           _camera.position,
@@ -821,6 +851,12 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     _sceneController.updateForCamera(eye);
     _sprites.update(camera, _viewSize, _elapsed);
     _fire?.update(_elapsed, eye);
+    _cables?.update(
+      _elapsed,
+      eye,
+      focusedTask: _connectionFocusTaskId ?? _lod.focused?.task.id,
+      animate: _animateCharacters,
+    );
     final traffic = _traffic;
     traffic?.update(
       seconds: _elapsed,
@@ -946,6 +982,14 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
                   : (show) {
                       setState(() => _showPenguins = show);
                       _characters?.enabled = show;
+                      _wakeForInput();
+                    },
+              showConnections: _showConnections,
+              onShowConnectionsChanged: _world.connections.isEmpty
+                  ? null
+                  : (show) {
+                      setState(() => _showConnections = show);
+                      _cables?.root.visible = show;
                       _wakeForInput();
                     },
               showMeerkats:

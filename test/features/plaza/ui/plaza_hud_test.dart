@@ -17,6 +17,7 @@ void main() {
   late bool showDebug;
   late bool showPenguins;
   late bool showMeerkats;
+  late bool showConnections;
 
   setUp(() {
     walks = 0;
@@ -27,6 +28,7 @@ void main() {
     showDebug = false;
     showPenguins = true;
     showMeerkats = true;
+    showConnections = true;
   });
 
   Widget host({
@@ -35,6 +37,7 @@ void main() {
     bool isCategory = false,
     bool penguinsAvailable = true,
     bool meerkatsAvailable = true,
+    bool connectionsAvailable = false,
   }) => makeTestableWidget2(
     Scaffold(
       body: PlazaHud(
@@ -59,6 +62,10 @@ void main() {
             : null,
         showDebug: showDebug,
         onShowDebugChanged: (show) => showDebug = show,
+        showConnections: showConnections,
+        onShowConnectionsChanged: connectionsAvailable
+            ? (show) => showConnections = show
+            : null,
         toast: toast,
         walkChip: walkChip,
       ),
@@ -89,6 +96,27 @@ void main() {
       expect(showPenguins, isTrue);
     },
   );
+
+  testWidgets('connections toggle is reversible and absent without links', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host(connectionsAvailable: true));
+    await tester.tap(find.text('Connections'));
+    expect(showConnections, isFalse);
+    expect(showPenguins, isTrue);
+    await tester.pumpWidget(host(connectionsAvailable: true));
+    final control = tester.widget<DesignSystemCheckbox>(
+      find.ancestor(
+        of: find.text('Connections'),
+        matching: find.byType(DesignSystemCheckbox),
+      ),
+    );
+    expect(control.value, isFalse);
+    await tester.tap(find.text('Connections'));
+    expect(showConnections, isTrue);
+    await tester.pumpWidget(host());
+    expect(find.text('Connections'), findsNothing);
+  });
 
   testWidgets('shows the project, the counts and the legends', (
     tester,

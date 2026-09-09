@@ -38,6 +38,7 @@ class PlazaDevApp extends StatelessWidget {
         builder: (context) => PlazaView(
           world: PlazaWorld(
             tasks: plazaTasksFromDemoWorld(now: manualDemoNow),
+            connections: plazaConnectionsFromDemoWorld(now: manualDemoNow),
             now: manualDemoNow,
             projectLabel: 'Project Waddle',
             categoryLabels: demoCategoryLabels(now: manualDemoNow),

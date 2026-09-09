@@ -1,9 +1,11 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/plaza/data/task_projection.dart';
+import 'package:lotti/features/plaza/domain/plaza_connection.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -16,12 +18,14 @@ class ProjectPlazaData {
     required this.project,
     required this.tasks,
     required this.dependencyIds,
+    this.connections = const [],
     this.category,
   });
 
   final ProjectEntry project;
   final CategoryDefinition? category;
   final List<PlazaTask> tasks;
+  final List<PlazaConnection> connections;
 
   /// Includes unresolved child IDs so a later sync arrival refreshes the world.
   final Set<String> dependencyIds;
@@ -200,7 +204,7 @@ class PlazaRepository {
       )).whereType<ChecklistItem>())
         entity.meta.id: entity,
     };
-    final linksByTask = <String, Set<String>>{};
+    final links = <EntryLink>[];
     final dependencyIds = {
       projectId,
       ?project.meta.categoryId,
@@ -215,17 +219,23 @@ class PlazaRepository {
       final batch = ids.skip(offset).take(_batchSize).toSet();
       for (final link in await db.linksForEntryIdsBidirectional(batch)) {
         dependencyIds.add(link.id);
-        if (link.hidden == true || link.deletedAt != null) continue;
-        if (!taskIds.contains(link.fromId) || !taskIds.contains(link.toId)) {
-          continue;
-        }
-        linksByTask.putIfAbsent(link.fromId, () => {}).add(link.toId);
-        linksByTask.putIfAbsent(link.toId, () => {}).add(link.fromId);
+        links.add(link);
       }
+    }
+    if (cache.lockedCategoryIds.contains(project.meta.categoryId)) return null;
+    final connections = projectPlazaConnections(
+      links: links,
+      visibleTaskIds: taskIds,
+    );
+    final linksByTask = <String, Set<String>>{};
+    for (final edge in connections) {
+      linksByTask.putIfAbsent(edge.fromId, () => {}).add(edge.toId);
+      linksByTask.putIfAbsent(edge.toId, () => {}).add(edge.fromId);
     }
     return ProjectPlazaData(
       project: project,
       category: category,
+      connections: connections,
       dependencyIds: Set.unmodifiable(dependencyIds),
       tasks: List.unmodifiable([
         for (final task in tasks)

@@ -226,9 +226,10 @@ void main() {
       EntryLink link(
         String id,
         String toId, {
+        EntryLinkType type = EntryLinkType.basic,
         bool? hidden,
         DateTime? deletedAt,
-      }) => EntryLink.basic(
+      }) => type.buildLink(
         id: id,
         fromId: task.meta.id,
         toId: toId,
@@ -242,15 +243,35 @@ void main() {
         (_) async => [
           link('visible', sibling.meta.id),
           link('duplicate', sibling.meta.id),
+          link('blocker', sibling.meta.id, type: EntryLinkType.blocks),
           link('private-or-unrelated', 'outside-project'),
           link('hidden', third.meta.id, hidden: true),
           link('deleted', third.meta.id, deletedAt: manualDemoNow),
         ],
       );
-      final tasks = (await repository.loadProject(project.meta.id))!.tasks;
+      final snapshot = (await repository.loadProject(project.meta.id))!;
+      final tasks = snapshot.tasks;
       expect(tasks.first.linkedTaskIds, [sibling.meta.id]);
       expect(tasks[1].linkedTaskIds, [task.meta.id]);
       expect(tasks[2].linkedTaskIds, isEmpty);
+      expect(snapshot.connections.map((edge) => edge.id), [
+        'blocker',
+        'duplicate',
+      ]);
+      final blocker = snapshot.connections.first;
+      expect(blocker.type, EntryLinkType.blocks);
+      expect((blocker.fromId, blocker.toId), (task.id, sibling.id));
+    },
+  );
+
+  test(
+    'a category locked during the edge read cannot publish a world',
+    () async {
+      when(() => db.linksForEntryIdsBidirectional(any())).thenAnswer((_) async {
+        when(() => cache.lockedCategoryIds).thenReturn({category.id});
+        return [];
+      });
+      expect(await repository.loadProject(project.id), isNull);
     },
   );
   test(

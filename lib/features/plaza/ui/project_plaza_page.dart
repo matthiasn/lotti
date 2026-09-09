@@ -132,6 +132,7 @@ class _ProjectPlazaPageState extends ConsumerState<ProjectPlazaPage> {
             _world = generateProjectWorld(
               project: snapshot.project,
               tasks: snapshot.tasks,
+              connections: snapshot.connections,
               now: now,
               copy: PlazaCopy(context.messages),
               categoryLabels: {
