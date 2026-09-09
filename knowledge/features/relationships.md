@@ -250,10 +250,12 @@ load-bearing:
   precedent (`setCoverArt(null)`): taking a picture off a person is not
   deleting it from the journal.
 
-**The banner renders — direction 2b.** With `bannerImageId` set, the hero
-becomes two stacked strips: the photograph takes the toolbar and the upper
-band, and the wash keeps a bar exactly one toolbar tall at the bottom of its
-band, which the avatar overlaps as before. `PersonHeroAppBar` resolves the
+**The banner renders.** With `bannerImageId` set, the photograph is the
+whole hero above the avatar's midline — the toolbar and the band — and there
+is no wash at all: the avatar sits across the picture's lower edge, its lower
+half over the page. (Direction 2b first kept a one-toolbar bar of wash under
+the picture; in the dark theme that bar read as blank space below a cropped
+banner, so it went.) `PersonHeroAppBar` resolves the
 banner *above* its sliver through `JournalImageResolver` (a component in a
 sliver slot returns the sliver), so the file's arrival rebuilds the hero; the
 ThumbHash stand-in shows under the same scrim meanwhile, and an id with
@@ -266,8 +268,8 @@ fixed on purpose:
   button and the kebab take black-at-45 % glass and a white glyph whenever a
   banner is drawn — in both themes.
 - **The scrim's extent is pixels, not a fraction of the current strip.**
-  `PhotoScrim` darkens the top 70 % of the strip *at rest*; folding, the bar
-  goes first, then the strip shrinks to the toolbar — and the scrim, fixed,
+  `PhotoScrim` darkens the top 70 % of the strip *at rest*; folding, the
+  strip shrinks with the band down to the toolbar — and the scrim, fixed,
   still covers the toolbar row, which is what keeps the swapped-in name and
   the actions legible over an arbitrary picture at every scroll position.
 - **The decode is bounded to the strip at rest**, so scrolling never re-keys

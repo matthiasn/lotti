@@ -75,18 +75,18 @@ class PersonHeroAppBar extends StatelessWidget {
   /// The avatar diameter; half of it hangs below the hero.
   static double avatarSize(DsTokens tokens) => tokens.spacing.step11;
 
-  /// With a banner (design 2026-09-08, direction 2b) the wash keeps only a
-  /// bar at the bottom of its band — exactly one toolbar tall, mirroring the
-  /// bar above it — and the photograph takes everything above.
-  static const double bannerBarExtent = kToolbarHeight;
-
-  /// The banner strip's height at rest: the toolbar and the band, less the
-  /// wash bar. What the strip's decode is bounded to, so a scroll never
-  /// re-keys the picture.
+  /// The banner strip's height at rest: the toolbar and the whole band —
+  /// everything above the avatar's midline. The Photo card's preview mirrors
+  /// it, and the strip's decode is bounded to it so a scroll never re-keys
+  /// the picture. The delegate derives its own from the same
+  /// [_bannerStripExtent], so the two cannot drift.
   static double bannerStripExtent(
     DsTokens tokens, {
     required double topPadding,
-  }) => topPadding + bandExtent(tokens);
+  }) => _bannerStripExtent(
+    topPadding: topPadding,
+    bandExtent: bandExtent(tokens),
+  );
 
   /// The wash itself: the interactive accent at the tint alpha over the page
   /// surface — the same recipe every tone-tinted card fill uses.
@@ -287,10 +287,11 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   /// Everything that folds: the band and the overhang under it.
   double get foldable => bandExtent + overhang;
 
-  /// The banner strip at rest — everything above the wash bar. Fixed, so
-  /// the scrim's extent and the decode's bound do not move with the scroll.
+  /// The banner strip at rest — everything above the avatar's midline.
+  /// Fixed, so the scrim's extent and the decode's bound do not move with
+  /// the scroll.
   double get bannerStripAtRest =>
-      minExtent + bandExtent - PersonHeroAppBar.bannerBarExtent;
+      _bannerStripExtent(topPadding: topPadding, bandExtent: bandExtent);
 
   @override
   double get maxExtent => minExtent + foldable;
@@ -307,24 +308,20 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
     // so the wash keeps its height for the first half-diameter of scroll
     // while the avatar tucks up into it.
     final overhangOpen = (overhang - shrinkOffset).clamp(0.0, overhang);
-    // Direction 2b: with a banner, the picture takes the toolbar and the
-    // upper band and the wash keeps a one-toolbar bar under it. Folding,
-    // the bar goes first and the picture only then shrinks to the toolbar,
-    // so at rest and collapsed alike the actions sit on the picture — under
-    // the scrim, whose extent is fixed in pixels for exactly that reason.
+    // With a banner, the picture is the whole hero above the avatar's
+    // midline — the toolbar and the band — and there is no wash at all:
+    // the avatar straddles the picture's lower edge. Folding, the picture
+    // keeps its height while the avatar tucks up into it, then shrinks with
+    // the band to the toolbar, so at rest and collapsed alike the actions
+    // sit on the picture — under the scrim, whose extent is fixed in pixels
+    // for exactly that reason.
     // A pinned sliver's shrinkOffset runs on to maxExtent on a deep scroll;
     // the box itself never gets shorter than minExtent, and neither may
     // the strip — or the banner would vanish behind the toolbar.
     final extent = math.max(minExtent, maxExtent - shrinkOffset);
-    final washBottom = extent - overhangOpen;
+    final bandBottom = extent - overhangOpen;
     final banner = this.banner;
-    final barOpen = banner == null
-        ? 0.0
-        : (washBottom - bannerStripAtRest).clamp(
-            0.0,
-            PersonHeroAppBar.bannerBarExtent,
-          );
-    final stripExtent = banner == null ? 0.0 : washBottom - barOpen;
+    final stripExtent = banner == null ? 0.0 : bandBottom;
     final scrimExtent = math.min(
       stripExtent,
       bannerStripAtRest * PhotoScrim.fadeExtent,
@@ -377,17 +374,17 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
               ),
             ),
           ),
-        ],
-        Positioned(
-          top: stripExtent,
-          left: 0,
-          right: 0,
-          bottom: overhangOpen,
-          child: ColoredBox(
-            key: const ValueKey('person-hero-wash'),
-            color: wash,
+        ] else
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: overhangOpen,
+            child: ColoredBox(
+              key: const ValueKey('person-hero-wash'),
+              color: wash,
+            ),
           ),
-        ),
         Positioned(
           top: topPadding,
           left: gutter,
@@ -758,3 +755,12 @@ Widget relationshipCadencePill(
     ),
   };
 }
+
+/// The banner strip at rest, in one place: the status inset, the toolbar and
+/// the band — everything above the avatar's midline. [PersonHeroAppBar]'s
+/// static and the delegate both read it, so the decode bound, the scrim and
+/// the Photo card's preview agree by construction.
+double _bannerStripExtent({
+  required double topPadding,
+  required double bandExtent,
+}) => topPadding + kToolbarHeight + bandExtent;

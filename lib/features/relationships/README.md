@@ -18,8 +18,9 @@ and person editor, and tapping the avatar opens the person's photo: choose
 one from the library and pick which part of it is the face, adjust that
 later, or remove it. The photo shows wherever the person does, inside their
 usual colour; it stays on the user's devices and never enters agent context.
-A person can also carry a banner image: it fills the top of the hero, above a
-bar of the teal wash, with the header's actions kept legible over it. Both
+A person can also carry a banner image: it fills the whole top of the page,
+down to the avatar, which sits across its lower edge; the header's actions
+stay legible over it. Both
 pictures are managed from the person editor's Photo card — the banner is
 dragged sideways into place there — and the face from the page's avatar too.
 The bottom action bar offers a check-in, voice capture and an available
