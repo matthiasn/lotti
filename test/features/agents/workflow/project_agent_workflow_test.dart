@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
@@ -215,6 +217,14 @@ void main() {
         taskId: any(named: 'taskId'),
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => mockAgentRepository.getProposalLedger(
+        any(),
+        taskId: any(named: 'taskId'),
+        changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+        resolvedLimit: any(named: 'resolvedLimit'),
+      ),
+    ).thenAnswer((_) async => const ProposalLedger.empty());
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     stubAppendMilestone(mockSyncService);
     stubReconciledAgentState(mockSyncService, mockAgentRepository);
@@ -2135,7 +2145,11 @@ void main() {
           changeSet.items[1].toolName,
           ProjectAgentToolNames.updateProjectStatus,
         );
-        expect(changeSet.items[1].humanSummary, contains('at_risk'));
+        // `at_risk` is an alias the apply path and the row both collapse to
+        // On Hold, so the stored args and summary carry the canonical status:
+        // the alias spelling would compare as a different proposal.
+        expect(changeSet.items[1].args['status'], 'on_hold');
+        expect(changeSet.items[1].humanSummary, contains('on_hold'));
       });
 
       test('does not create change set when no deferred items', () async {
@@ -3213,7 +3227,7 @@ void main() {
         expect(result.success, isTrue);
       });
 
-      test('builds default human summary for unknown deferred tool', () async {
+      test('builds a human summary for a status proposal', () async {
         mockConversationRepository.sendMessageDelegate =
             ({
               required conversationId,
@@ -3233,9 +3247,12 @@ void main() {
                     type: ChatCompletionMessageToolCallType.function,
                     function: ChatCompletionMessageFunctionCall(
                       name: ProjectAgentToolNames.updateProjectStatus,
+                      // Not `on_track`: that canonicalizes to the status the
+                      // fixture project already has, which the wake now
+                      // refuses rather than queues.
                       arguments: jsonEncode({
-                        'status': 'on_track',
-                        'reason': 'All tasks progressing',
+                        'status': 'monitoring',
+                        'reason': 'Nothing is scheduled this cycle',
                       }),
                     ),
                   ),
@@ -3274,7 +3291,7 @@ void main() {
         expect(changeSets, hasLength(1));
         expect(
           changeSets.first.items.first.humanSummary,
-          contains('on_track'),
+          contains('monitoring'),
         );
       });
 
@@ -3854,6 +3871,325 @@ void main() {
           expect(captured.whereType<ProjectRecommendationEntity>(), isEmpty);
         },
       );
+
+      group('proposals the user has not decided yet', () {
+        /// One `create_task` proposal, phrased identically every wake — the
+        /// shape the accumulating "Proposed changes" band came in as.
+        const proposal = ChangeItem(
+          toolName: ProjectAgentToolNames.createTask,
+          args: {'title': 'Define Launch Roadmap and Milestones'},
+          humanSummary: 'Create task: Define Launch Roadmap and Milestones',
+        );
+
+        LedgerEntry openEntry(ChangeItem item) => LedgerEntry(
+          changeSetId: 'set-previous',
+          itemIndex: 0,
+          toolName: item.toolName,
+          args: item.args,
+          humanSummary: item.humanSummary,
+          fingerprint: ChangeItem.fingerprint(item),
+          status: ChangeItemStatus.pending,
+          createdAt: DateTime(2026, 3, 19),
+        );
+
+        ChangeSetEntity pendingSet(ChangeItem item) =>
+            AgentDomainEntity.changeSet(
+                  id: 'set-previous',
+                  agentId: agentId,
+                  taskId: projectId,
+                  threadId: 'thread-previous',
+                  runKey: 'run-previous',
+                  status: ChangeSetStatus.pending,
+                  items: [item],
+                  createdAt: DateTime(2026, 3, 19),
+                  vectorClock: null,
+                )
+                as ChangeSetEntity;
+
+        void stubLedger(ProposalLedger ledger) {
+          when(
+            () => mockAgentRepository.getProposalLedger(
+              any(),
+              taskId: any(named: 'taskId'),
+              changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+              resolvedLimit: any(named: 'resolvedLimit'),
+            ),
+          ).thenAnswer((_) async => ledger);
+        }
+
+        /// Runs a wake in which the model issues [toolCalls], and returns
+        /// everything the wake persisted.
+        Future<List<Object?>> runWake(
+          List<ChatCompletionMessageToolCall> toolCalls, {
+          void Function(List<ChatCompletionTool>? tools)? onTools,
+        }) async {
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                onTools?.call(tools);
+                if (strategy != null) {
+                  final manager = mockConversationRepository.getConversation(
+                    conversationId,
+                  )!;
+                  when(
+                    () => manager.addToolResponse(
+                      toolCallId: any(named: 'toolCallId'),
+                      response: any(named: 'response'),
+                    ),
+                  ).thenReturn(null);
+                  await strategy.processToolCalls(
+                    toolCalls: toolCalls,
+                    manager: manager,
+                  );
+                }
+                return null;
+              };
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          return verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+        }
+
+        ChatCompletionMessageToolCall createTaskCall(String title) =>
+            ChatCompletionMessageToolCall(
+              id: 'call-create',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: ProjectAgentToolNames.createTask,
+                arguments: jsonEncode({'title': title}),
+              ),
+            );
+
+        test('writes a proposal that is genuinely new', () async {
+          final captured = await runWake([
+            createTaskCall('Define Launch Roadmap and Milestones'),
+          ]);
+
+          expect(captured.whereType<ChangeSetEntity>(), hasLength(1));
+        });
+
+        test('does not write one the user is already looking at', () async {
+          // The bug: every wake wrote a fresh identical row, and the band grew
+          // to thirteen copies of the same suggestion.
+          stubLedger(
+            ProposalLedger(open: [openEntry(proposal)], resolved: const []),
+          );
+
+          final captured = await runWake([
+            createTaskCall('Define Launch Roadmap and Milestones'),
+          ]);
+
+          expect(captured.whereType<ChangeSetEntity>(), isEmpty);
+        });
+
+        test('does not write one the user already rejected', () async {
+          stubLedger(
+            ProposalLedger(
+              open: const [],
+              resolved: [
+                LedgerEntry(
+                  changeSetId: 'set-previous',
+                  itemIndex: 0,
+                  toolName: proposal.toolName,
+                  args: proposal.args,
+                  humanSummary: proposal.humanSummary,
+                  fingerprint: ChangeItem.fingerprint(proposal),
+                  status: ChangeItemStatus.rejected,
+                  createdAt: DateTime(2026, 3, 19),
+                  verdict: ChangeDecisionVerdict.rejected,
+                ),
+              ],
+            ),
+          );
+
+          final captured = await runWake([
+            createTaskCall('Define Launch Roadmap and Milestones'),
+          ]);
+
+          expect(captured.whereType<ChangeSetEntity>(), isEmpty);
+        });
+
+        test('still writes the other proposals of the same wake', () async {
+          stubLedger(
+            ProposalLedger(open: [openEntry(proposal)], resolved: const []),
+          );
+
+          final captured = await runWake([
+            createTaskCall('Define Launch Roadmap and Milestones'),
+            ChatCompletionMessageToolCall(
+              id: 'call-create-2',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: ProjectAgentToolNames.createTask,
+                arguments: jsonEncode({'title': 'Book the launch venue'}),
+              ),
+            ),
+          ]);
+
+          final sets = captured.whereType<ChangeSetEntity>();
+          expect(sets, hasLength(1));
+          expect(
+            sets.single.items.single.args['title'],
+            'Book the launch venue',
+          );
+        });
+
+        test('withholds retract_suggestions when nothing is open', () async {
+          List<ChatCompletionTool>? offered;
+          await runWake(const [], onTools: (tools) => offered = tools);
+
+          expect(offered, isNotNull);
+          expect(
+            offered!.map((tool) => tool.function.name),
+            isNot(contains(ProjectAgentToolNames.retractSuggestions)),
+          );
+        });
+
+        test('offers retract_suggestions when a proposal is open', () async {
+          stubLedger(
+            ProposalLedger(open: [openEntry(proposal)], resolved: const []),
+          );
+          List<ChatCompletionTool>? offered;
+          await runWake(const [], onTools: (tools) => offered = tools);
+
+          expect(offered, isNotNull);
+          expect(
+            offered!.map((tool) => tool.function.name),
+            contains(ProjectAgentToolNames.retractSuggestions),
+          );
+        });
+
+        test('applies a retraction the agent staged during the wake', () async {
+          stubLedger(
+            ProposalLedger(
+              open: [openEntry(proposal)],
+              resolved: const [],
+              pendingSets: [pendingSet(proposal)],
+            ),
+          );
+          when(
+            () => mockAgentRepository.getPendingChangeSets(
+              any(),
+              taskId: any(named: 'taskId'),
+            ),
+          ).thenAnswer((_) async => [pendingSet(proposal)]);
+          when(
+            () => mockAgentRepository.getEntity('set-previous'),
+          ).thenAnswer((_) async => pendingSet(proposal));
+
+          final captured = await runWake([
+            ChatCompletionMessageToolCall(
+              id: 'call-retract',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: ProjectAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {
+                      'fingerprint': ChangeItem.fingerprint(proposal),
+                      'reason': 'the user created this task by hand',
+                    },
+                  ],
+                }),
+              ),
+            ),
+          ]);
+
+          final decision = captured.whereType<ChangeDecisionEntity>().single;
+          expect(decision.verdict, ChangeDecisionVerdict.retracted);
+          expect(decision.actor, DecisionActor.agent);
+          expect(decision.retractionReason, contains('by hand'));
+          final rewritten = captured.whereType<ChangeSetEntity>().firstWhere(
+            (set) => set.id == 'set-previous',
+          );
+          expect(rewritten.items.single.status, ChangeItemStatus.retracted);
+        });
+
+        test(
+          'leaves a proposal the agent retracted and re-proposed open',
+          () async {
+            // Retract-then-re-add is churn: the row would vanish and reappear
+            // under the user's finger. The re-proposal is dropped as a duplicate
+            // and the original is left exactly where it was.
+            stubLedger(
+              ProposalLedger(
+                open: [openEntry(proposal)],
+                resolved: const [],
+                pendingSets: [pendingSet(proposal)],
+              ),
+            );
+            when(
+              () => mockAgentRepository.getPendingChangeSets(
+                any(),
+                taskId: any(named: 'taskId'),
+              ),
+            ).thenAnswer((_) async => [pendingSet(proposal)]);
+            when(
+              () => mockAgentRepository.getEntity('set-previous'),
+            ).thenAnswer((_) async => pendingSet(proposal));
+
+            final captured = await runWake([
+              ChatCompletionMessageToolCall(
+                id: 'call-retract',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: ProjectAgentToolNames.retractSuggestions,
+                  arguments: jsonEncode({
+                    'proposals': [
+                      {
+                        'fingerprint': ChangeItem.fingerprint(proposal),
+                        'reason': 'superseded',
+                      },
+                    ],
+                  }),
+                ),
+              ),
+              createTaskCall('Define Launch Roadmap and Milestones'),
+            ]);
+
+            expect(captured.whereType<ChangeDecisionEntity>(), isEmpty);
+            expect(captured.whereType<ChangeSetEntity>(), isEmpty);
+          },
+        );
+
+        test(
+          'a ledger the database cannot produce does not fail the wake',
+          () async {
+            when(
+              () => mockAgentRepository.getProposalLedger(
+                any(),
+                taskId: any(named: 'taskId'),
+                changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+                resolvedLimit: any(named: 'resolvedLimit'),
+              ),
+            ).thenThrow(Exception('ledger read failed'));
+
+            final captured = await runWake([
+              createTaskCall('Define Launch Roadmap and Milestones'),
+            ]);
+
+            // Degraded, not dead: the guard is gone for this wake, the proposal
+            // is still written, and the report still lands.
+            expect(captured.whereType<ChangeSetEntity>(), hasLength(1));
+          },
+        );
+      });
     });
   });
 }

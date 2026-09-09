@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -112,7 +113,24 @@ The `update_project_status` and `create_task` tools queue changes for user revie
 run. A later call replaces earlier calls in the same run. It replaces previous
 next steps when the run succeeds, including clearing
 old steps when none are recommended. Users confirm, dismiss, or create a task
-from each suggestion individually. Include only steps that remain relevant.''';
+from each suggestion individually. Include only steps that remain relevant.
+
+## Your Own Open Proposals
+
+Queued changes do **not** disappear when a wake ends. Everything you proposed on
+an earlier wake and the user has not yet decided is still on their screen, and
+is listed under `## Open Proposal Guard` with its fingerprint.
+
+1. **Never propose something that is already open.** Re-proposing an open
+   change adds a second identical row to the user's list; it does not refresh
+   the first.
+2. **Never propose a status the project already has.** Applying it would change
+   nothing.
+3. **Withdraw what went stale.** If an open proposal no longer makes sense —
+   the project moved on, the user did it by hand, another open proposal
+   supersedes it — call `retract_suggestions` with its `fp=…` fingerprint and a
+   one-sentence reason. Do not retract a proposal only to re-propose the same
+   thing, and do not retract one because the user acted on a different one.''';
 
     return composeAgentSystemPrompt(
       scaffold: scaffold,
@@ -129,6 +147,7 @@ from each suggestion individually. Include only steps that remain relevant.''';
     required String linkedTasksContext,
     required Set<String> triggerTokens,
     String? compactedLog,
+    ProposalLedger ledger = const ProposalLedger.empty(),
   }) {
     final buf = StringBuffer();
 
@@ -200,7 +219,44 @@ from each suggestion individually. Include only steps that remain relevant.''';
         ..writeln(sortedTriggerTokens.join(', '));
     }
 
+    // Last, so the proposals the user is still looking at are the freshest
+    // thing in the prompt when the model starts proposing.
+    final guard = formatOpenProposalGuard(ledger);
+    if (guard.isNotEmpty) {
+      buf
+        ..writeln()
+        ..write(guard);
+    }
+
     return (text: buf.toString(), logStart: logStart, logEnd: logEnd);
+  }
+
+  /// The prompt section listing every proposal the user has not yet decided,
+  /// each with the fingerprint `retract_suggestions` addresses it by.
+  ///
+  /// Empty when nothing is open — there is then nothing to compare against
+  /// and nothing to withdraw, and a "(none)" heading would only invite the
+  /// model to invent a fingerprint for it.
+  static String formatOpenProposalGuard(ProposalLedger ledger) {
+    if (ledger.open.isEmpty) return '';
+    final buf = StringBuffer()
+      ..writeln('## Open Proposal Guard')
+      ..writeln()
+      ..writeln(
+        "These proposals are already on the user's screen, awaiting their "
+        'decision. Before proposing any change, compare it against this '
+        'list: never propose the same change again. If one of these is '
+        'stale, call `${ProjectAgentToolNames.retractSuggestions}` with its '
+        'fingerprint; otherwise leave it open.',
+      )
+      ..writeln();
+    for (final entry in ledger.open) {
+      buf.writeln(
+        '- [fp=${entry.fingerprint}] `${entry.toolName}`: '
+        '${entry.humanSummary.trim()}',
+      );
+    }
+    return (buf..writeln()).toString();
   }
 
   void _writeProjectContext(StringBuffer buf, JournalEntity entity) {
@@ -249,8 +305,16 @@ from each suggestion individually. Include only steps that remain relevant.''';
     }
   }
 
-  List<ChatCompletionTool> buildToolDefinitions() {
-    return projectAgentTools.map((tool) {
+  /// The tool surface for one wake.
+  ///
+  /// [hasOpenProposals] admits `retract_suggestions`; an agent with nothing
+  /// open has nothing it could withdraw.
+  List<ChatCompletionTool> buildToolDefinitions({
+    bool hasOpenProposals = false,
+  }) {
+    return projectAgentToolsFor(hasOpenProposals: hasOpenProposals).map((
+      tool,
+    ) {
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
         function: FunctionObject(

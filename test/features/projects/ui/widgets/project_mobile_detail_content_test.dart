@@ -180,6 +180,134 @@ void main() {
       );
     });
 
+    group('Explore project', () {
+      testWidgets('sits in the title row, at the trailing edge', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+              onEdit: () {},
+            ),
+            size: const Size(1200, 900),
+          ),
+        );
+        await tester.pump();
+
+        final explore = tester.getRect(
+          find.widgetWithText(DesignSystemButton, 'Explore project'),
+        );
+        final title = tester.getRect(find.text('Test Project'));
+        final menu = tester.getRect(find.byType(DesignSystemContextMenuButton));
+
+        expect(
+          explore.center.dy,
+          closeTo(title.center.dy, title.height),
+          reason: 'it shares the title row rather than a band beneath it',
+        );
+        expect(
+          explore.left,
+          greaterThan(title.right),
+          reason: 'it sits after the title, not under it',
+        );
+        expect(
+          explore.right,
+          lessThanOrEqualTo(menu.left),
+          reason: 'the overflow menu stays the outermost control',
+        );
+      });
+
+      testWidgets('drops its label on a narrow pane', (tester) async {
+        // The surface itself, not just the MediaQuery: the header decides
+        // from the width it is actually laid out in.
+        tester.view.physicalSize = const Size(430, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Explore project'), findsNothing);
+        expect(
+          find.byIcon(LottiIcons.map),
+          findsOneWidget,
+          reason: 'the glyph carries the action when the label will not fit',
+        );
+      });
+
+      testWidgets('drops its label at large text on a wide pane', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+            ),
+            size: const Size(1200, 900),
+            textScaler: const TextScaler.linear(
+              ProjectMobileDetailContent.largeTextScale,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Explore project'), findsNothing);
+        expect(find.byIcon(LottiIcons.map), findsOneWidget);
+      });
+
+      testWidgets('is absent when the host offers no plaza', (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+            ),
+            size: const Size(1200, 900),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Explore project'), findsNothing);
+        expect(find.byIcon(LottiIcons.map), findsNothing);
+      });
+
+      testWidgets('keeps the metadata close to the title', (tester) async {
+        // The same guard the lone overflow menu has: adding a control to the
+        // title row must not open an empty band above the status pills.
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+              onEdit: () {},
+            ),
+            size: const Size(1200, 900),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          tester.getTopLeft(find.text('Open')).dy -
+              tester.getTopLeft(find.text('Test Project')).dy,
+          lessThan(48),
+        );
+      });
+    });
+
     testWidgets('hides the overflow menu while an inline save runs', (
       tester,
     ) async {

@@ -12,6 +12,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,12 +46,16 @@ import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -64,6 +69,13 @@ import '../../test_utils.dart';
 
 const _subdir = 'projects';
 const _projectWaddleId = 'project-waddle';
+
+/// The covers worn by the three tasks linked to Project Waddle.
+final Set<String> _taskCoverIds = {
+  manualHabitatCoverImageId,
+  manualFishFeederCoverImageId,
+  manualSardineCargoCoverImageId,
+};
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 final AiConfigModel _manualProjectAgentModel = manualDemoAiModels.firstWhere(
@@ -178,9 +190,26 @@ void main() {
   late List<ProjectRecord> records;
   late List<ProjectCategoryGroup> groups;
   late ValueNotifier<String?> selectedProjectId;
+  late Directory documentsDirectory;
 
   setUp(() async {
     world = ManualDemoWorld.penguinLogistics();
+    // The project task list draws each task's cover art, so this suite needs
+    // the catalog pixels on disk the way the tasks and day-plan suites do.
+    documentsDirectory = Directory.systemTemp.createTempSync(
+      'lotti-manual-projects-',
+    );
+    // Only the three covers the project's tasks show: installing, transcoding
+    // and priming the whole catalog runs once per case and doubled the suite.
+    // Transcoded to PNG because the headless engine can leave a resized WebP
+    // decode pending forever, which is what an empty cover square is.
+    await transcodeManualDemoMediaToPng(
+      await installManualDemoMedia(
+        world,
+        documentsDirectory,
+        images: _taskCoverIds.map(world.coverImageById),
+      ),
+    );
     final missionControl = CategoryTestUtils.createTestCategory(
       id: 'manual-mission-control',
       name: _t('Mission Control', 'Missionskontrolle'),
@@ -473,6 +502,10 @@ void main() {
     final navService = MockNavService();
     final userActivityService = MockUserActivityService();
     final entitiesCache = MockEntitiesCacheService();
+    final editorStateService = MockEditorStateService();
+    when(
+      () => editorStateService.getUnsavedStream(any(), any()),
+    ).thenAnswer((_) => const Stream.empty());
 
     when(userActivityService.updateActivity).thenReturn(null);
     when(() => navService.desktopSelectedProjectId).thenReturn(
@@ -491,19 +524,36 @@ void main() {
       },
     );
 
-    await setUpTestGetIt(
+    final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
+          ..registerSingleton<Directory>(documentsDirectory)
+          ..registerSingleton<EditorStateService>(editorStateService)
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
           ..registerSingleton<NavService>(navService)
           ..registerSingleton<UserActivityService>(userActivityService)
           ..registerSingleton<EntitiesCacheService>(entitiesCache);
       },
     );
+    // The task rows resolve their cover art through `EntryController`, which
+    // reads the image entry out of the journal.
+    when(
+      () => mocks.journalDb.journalEntityById(any()),
+    ).thenAnswer((invocation) async {
+      final id = invocation.positionalArguments.first as String;
+      // A full event-loop turn, the way a real Drift lookup crosses a timer
+      // boundary — controllers that chain on this only settle correctly then.
+      await Future<void>.delayed(Duration.zero);
+      return world.entityById(id);
+    });
   });
 
   tearDown(() async {
     selectedProjectId.dispose();
     await tearDownTestGetIt();
+    if (documentsDirectory.existsSync()) {
+      documentsDirectory.deleteSync(recursive: true);
+    }
   });
 
   List<Override> overrides() => [
@@ -555,6 +605,16 @@ void main() {
     String? selectedId,
   }) async {
     applyScreenshotDevice(tester, device);
+    // Seeded before the first frame so the cover squares paint the same
+    // bitmap every run; the headless engine can otherwise leave a resized
+    // decode pending forever.
+    await primeManualDemoCoverArt(
+      tester,
+      documentsDirectory: documentsDirectory,
+      world: world,
+      imageIds: _taskCoverIds,
+      extents: const [48, 96, 144, 216],
+    );
     selectedProjectId.value = selectedId;
     final platform = device.isPhone
         ? TargetPlatform.android
@@ -692,6 +752,28 @@ void main() {
           ),
           findsOneWidget,
         );
+        // The three linked tasks carry catalog cover art, and the capture is
+        // only evidence of the thumbnails if their pictures actually painted.
+        expect(find.byType(CoverArtThumbnail), findsNWidgets(3));
+        expect(
+          tester
+              .widgetList<CoverArtThumbnail>(find.byType(CoverArtThumbnail))
+              .map((thumbnail) => thumbnail.imageId)
+              .toSet(),
+          _taskCoverIds,
+        );
+        // Each square cross-fades its ThumbHash stand-in into the real file,
+        // so both are in the tree; the capture is only evidence once the
+        // artwork itself has resolved.
+        final painted = tester
+            .widgetList<Image>(
+              find.descendant(
+                of: find.byType(CoverArtThumbnail),
+                matching: find.byType(Image),
+              ),
+            )
+            .where((image) => image.image is! ThumbHashImage);
+        expect(painted, hasLength(3));
         await captureScreenshot(
           tester,
           'projects_tasks_${viewport}_$theme',

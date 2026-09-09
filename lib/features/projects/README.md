@@ -9,8 +9,9 @@ project agent is attached — a summary and health read that the agent maintains
 ## What it does for the user
 
 - **Groups related tasks.** A task belongs to at most one project, and the
-  project shows its tasks and their rollup. The list groups by the month each
-  task was created, newest first, folds finished tasks into a collapsed Done
+  project shows its tasks and their rollup, each row led by the task's cover art
+  when it has one. The list groups by the month each task was created, newest
+  first, folds finished tasks into a collapsed Done
   group, and offers a Sort and group control (status, priority, due window or
   no grouping; actionability, creation, due date, estimate, priority, last
   update or title) as a popover on desktop and a sheet on a phone. Group
@@ -38,6 +39,8 @@ project agent is attached — a summary and health read that the agent maintains
 - **Makes room to focus on one project.** On desktop, the project list can be
   hidden after a project is selected and restored without losing its filters,
   search or scroll position. The embedded detail has no misleading Back action.
+  Explore project sits in the title's top-right corner beside the project menu,
+  and shows its map glyph alone when the pane is narrow or the text is large.
 - **Keeps agent output actionable.** The AI report leads the task list with
   the agent's current next steps. Each step offers two labelled actions: **Add
   task** creates a project-linked task and links the step to it, **Dismiss**
@@ -47,9 +50,14 @@ project agent is attached — a summary and health read that the agent maintains
   link scrolls it into view. Bulk actions add or dismiss every open step. The
   agent's proposed changes (a status change, a task it wants to create) sit in
   their own band under the steps; applying or rejecting one can be undone for
-  eight seconds, which puts the project back and reopens the proposal. Each successful analysis replaces the list;
-  a run that was already fully decided collapses to a one-line summary with its
-  history, and an empty run says when the agent last looked.
+  eight seconds, which puts the project back and reopens the proposal. **That
+  band does not accumulate.** A wake sees what is still awaiting a decision, is
+  refused when it proposes a status the project already has or a change
+  already on screen, and can withdraw one that has gone stale — landing that
+  withdrawal with the same wake's replacements, so nothing blinks empty. Each
+  successful analysis replaces the next-steps list; a run that was already fully
+  decided collapses to a one-line summary with its history, and an empty run
+  says when the agent last looked.
 
 The whole visible experience is behind a feature flag; with it off there is no
 projects tab, no category projects section, and no project chip on tasks.
