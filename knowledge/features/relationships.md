@@ -253,9 +253,7 @@ load-bearing:
 **The banner renders.** With `bannerImageId` set, the photograph is the
 whole hero above the avatar's midline — the toolbar and the band — and there
 is no wash at all: the avatar sits across the picture's lower edge, its lower
-half over the page. (Direction 2b first kept a one-toolbar bar of wash under
-the picture; in the dark theme that bar read as blank space below a cropped
-banner, so it went.) `PersonHeroAppBar` resolves the
+half over the page. `PersonHeroAppBar` resolves the
 banner *above* its sliver through `JournalImageResolver` (a component in a
 sliver slot returns the sliver), so the file's arrival rebuilds the hero; the
 ThumbHash stand-in shows under the same scrim meanwhile, and an id with

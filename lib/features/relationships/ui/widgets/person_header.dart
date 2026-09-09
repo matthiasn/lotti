@@ -75,18 +75,15 @@ class PersonHeroAppBar extends StatelessWidget {
   /// The avatar diameter; half of it hangs below the hero.
   static double avatarSize(DsTokens tokens) => tokens.spacing.step11;
 
-  /// The banner strip's height at rest: the toolbar and the whole band —
+  /// The banner strip's height at rest: the folded hero and the whole band —
   /// everything above the avatar's midline. The Photo card's preview mirrors
   /// it, and the strip's decode is bounded to it so a scroll never re-keys
-  /// the picture. The delegate derives its own from the same
-  /// [_bannerStripExtent], so the two cannot drift.
+  /// the picture. The same sum the delegate's `bannerStripAtRest` is, over
+  /// the one [_heroMinExtent], so the two cannot drift.
   static double bannerStripExtent(
     DsTokens tokens, {
     required double topPadding,
-  }) => _bannerStripExtent(
-    topPadding: topPadding,
-    bandExtent: bandExtent(tokens),
-  );
+  }) => _heroMinExtent(topPadding) + bandExtent(tokens);
 
   /// The wash itself: the interactive accent at the tint alpha over the page
   /// surface — the same recipe every tone-tinted card fill uses.
@@ -278,7 +275,7 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   final Widget actions;
 
   @override
-  double get minExtent => topPadding + kToolbarHeight;
+  double get minExtent => _heroMinExtent(topPadding);
 
   /// The half of the avatar below the wash, carried as transparent extent so
   /// the avatar is whole inside the sliver.
@@ -290,8 +287,7 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   /// The banner strip at rest — everything above the avatar's midline.
   /// Fixed, so the scrim's extent and the decode's bound do not move with
   /// the scroll.
-  double get bannerStripAtRest =>
-      _bannerStripExtent(topPadding: topPadding, bandExtent: bandExtent);
+  double get bannerStripAtRest => minExtent + bandExtent;
 
   @override
   double get maxExtent => minExtent + foldable;
@@ -304,9 +300,9 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final collapsed = shrinkOffset >= foldable - collapseSlack;
     final bandOpen = 1 - (shrinkOffset / foldable).clamp(0.0, 1.0);
-    // The clear strip under the wash closes before the band itself folds,
-    // so the wash keeps its height for the first half-diameter of scroll
-    // while the avatar tucks up into it.
+    // The clear strip under the band closes before the band itself folds,
+    // so the wash — or the picture — keeps its height for the first
+    // half-diameter of scroll while the avatar tucks up into it.
     final overhangOpen = (overhang - shrinkOffset).clamp(0.0, overhang);
     // With a banner, the picture is the whole hero above the avatar's
     // midline — the toolbar and the band — and there is no wash at all:
@@ -756,11 +752,8 @@ Widget relationshipCadencePill(
   };
 }
 
-/// The banner strip at rest, in one place: the status inset, the toolbar and
-/// the band — everything above the avatar's midline. [PersonHeroAppBar]'s
-/// static and the delegate both read it, so the decode bound, the scrim and
-/// the Photo card's preview agree by construction.
-double _bannerStripExtent({
-  required double topPadding,
-  required double bandExtent,
-}) => topPadding + kToolbarHeight + bandExtent;
+/// The folded hero — the status inset and the toolbar — in one place: the
+/// delegate's `minExtent` and [PersonHeroAppBar.bannerStripExtent] both read
+/// it, so the decode bound, the scrim and the Photo card's preview agree with
+/// the hero's own height by construction.
+double _heroMinExtent(double topPadding) => topPadding + kToolbarHeight;
