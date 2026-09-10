@@ -4,6 +4,71 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.7]
+
+### Added
+
+- **A person can have a photo.** On a person's page, tap the avatar to choose
+  a picture from your library and pick which part of it is the face — drag to
+  move, pinch (or scroll) to zoom. The photo shows on the People list and on
+  the person's page, inside the colour that person already had. It stays on
+  your devices and the agent never sees it.
+- **A person can have a banner image.** In the person editor's new Photo card,
+  add a wide picture that fills the top of the person's page, with the face
+  photo sitting across its lower edge, and drag it left or right to frame it;
+  the page's controls stay legible over any picture. The same card lets you
+  change, re-crop or remove the face photo. Both stay on your devices and the
+  agent never sees them.
+- **Project plazas show task connections as illuminated, sagging cables.**
+  Roof mounts connect linked tasks, travelling lights preserve relationship
+  direction, and looking at a task highlights its connections. The Connections
+  control hides or shows the network; reduced motion pauses its moving lights.
+- **A project's task list now shows each task's cover art.** A task with a
+  picture was recognisable everywhere except inside its own project, where the
+  list was text only. Its thumbnail now leads the row, cropped the way it was
+  set on the task, and tasks without one are unchanged.
+
+### Changed
+
+- **Explore project moved into the project title row.** It sat in a band of
+  its own under the title, pushing the description and the report down the
+  page; it now sits in the top-right corner beside the project menu, and drops
+  to its map glyph on a narrow window or at large text.
+
+### Fixed
+
+- **People imported from Contacts keep the colour they were reviewed in.** The
+  import review used to show each person in a different colour from the one
+  they got once added; the colour you see while deciding is now the one they
+  keep.
+- **A second recording added to a task played the first one instead of
+  itself.** Once one voice note in a task had been played through, every
+  recording tapped after it started the earlier one's audio — the card lit up
+  as the one you had picked, but the wrong recording came out of it, and
+  transcribing from that card handed the model the wrong audio too. The only
+  way around it was to start a fresh task for every recording. Selecting a
+  recording and starting playback are now a single ordered step, so each one
+  plays and transcribes on its own.
+- **Importing a recording could overwrite one already in the journal.**
+  Dropped audio was filed under a name derived purely from its timestamp, and
+  a name that was merely *close* to Lotti's own — `…-203 2.m4a`, or a copy —
+  was read as that exact timestamp. Two such files landed on one path, the
+  second silently replacing the first while the first entry kept pointing at
+  it. Imports now keep every recording as its own file.
+- **Opening or returning from a plaza could show a navigation error when
+  another tab retained the same image.** Inactive tabs now stay out of image
+  transitions while preserving their navigation state.
+- **The project agent proposed the same change on every wake, and the
+  "Proposed changes" list grew a copy each time.** A wake could not see the
+  suggestions already waiting for a decision, so a project the agent thought
+  should be Active collected "Update project status to Active" over and over —
+  thirteen identical rows in one report, none of which the agent could take
+  back. Each wake now reads its open proposals, is refused when it proposes a
+  status the project already has or a change that is already on screen, and
+  can withdraw one of its own suggestions that has gone stale. Withdrawals
+  land together with that wake's new suggestions, so the list never blinks
+  empty in between.
+
 ## [1.1.6]
 
 ### Added
