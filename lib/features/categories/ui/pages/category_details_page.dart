@@ -2,7 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
+import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -218,6 +222,18 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       return _buildCreateMode(context);
     }
 
+    final queryScope = QueryScope(
+      kind: QueryScopeKind.category,
+      id: widget.categoryId!,
+    );
+    if (ref.watch(queryPaneOpenProvider(queryScope))) {
+      return QueryChatPane(
+        scope: queryScope,
+        onClose: () =>
+            ref.read(queryPaneOpenProvider(queryScope).notifier).open = false,
+      );
+    }
+
     // For edit mode, watch the category details
     final state = ref.watch(
       categoryDetailsControllerProvider(widget.categoryId!),
@@ -270,6 +286,13 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             child: CircularProgressIndicator(),
           )
         else if (category != null) ...[
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: QueryAskButton(
+              scope: QueryScope(kind: QueryScopeKind.category, id: category.id),
+              fullLabel: true,
+            ),
+          ),
           SettingsFormSection(
             title: context.messages.basicSettings,
             children: [

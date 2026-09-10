@@ -1,5 +1,10 @@
 # Knowledge Bundle Update Log
 
+## 2026-09-11
+* **Addition**: [Scoped query conversations](features/agents/query-chat.md) —
+  bounded retrieval, verified quotes, synced chats, shared conclusions and live
+  privacy gates on task, project and category discussions.
+
 ## 2026-09-10
 * **Reorganisation**: Removed the obsolete AI chat module. Its active primitives
   now belong to [agent chat input and reasoning](features/agents/chat-input-and-reasoning.md)

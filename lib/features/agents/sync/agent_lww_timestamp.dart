@@ -15,6 +15,7 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
   /// are typed, non-nullable `DateTime`s deserialized by the model, so there is
   /// nothing to cast or fail-to-parse.
   DateTime get effectiveUpdatedAt => map(
+    queryChatEvent: (e) => e.deletedAt ?? e.createdAt,
     agent: (e) => e.updatedAt,
     agentState: (e) => e.updatedAt,
     agentMessage: (e) => e.createdAt,

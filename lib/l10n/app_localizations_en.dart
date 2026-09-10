@@ -10864,6 +10864,188 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncTitle => 'Devices';
 
   @override
+  String get queryArchiveChat => 'Archive chat';
+
+  @override
+  String get queryArchivedChats => 'Archived chats';
+
+  @override
+  String get queryArchivedReadOnly =>
+      'This chat is archived. Restore it to continue the conversation.';
+
+  @override
+  String get queryAsk => 'Ask';
+
+  @override
+  String get queryAskCategory => 'Ask about this category';
+
+  @override
+  String get queryAskProject => 'Ask about this project';
+
+  @override
+  String get queryAskTask => 'Ask about this task';
+
+  @override
+  String get queryCategoryAgent => 'Category agent';
+
+  @override
+  String get queryChats => 'Chats';
+
+  @override
+  String queryChecked(int count) {
+    return 'Sources checked: $count';
+  }
+
+  @override
+  String get queryCopied => 'Copied';
+
+  @override
+  String get queryCopyQuote => 'Copy quote';
+
+  @override
+  String get queryCoverage => 'What was searched';
+
+  @override
+  String get queryDeleteChat => 'Delete chat';
+
+  @override
+  String get queryDeleteExplanation =>
+      'Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.';
+
+  @override
+  String get queryDictated =>
+      'Dictated text is editable. Nothing is sent until you press Send.';
+
+  @override
+  String get queryEmptyBody =>
+      'Ask about meetings, decisions, or earlier notes. Answers include exact stored passages you can inspect.';
+
+  @override
+  String get queryEmptyTitle => 'Find the discussion behind a decision';
+
+  @override
+  String get queryExactText => 'Show exact text';
+
+  @override
+  String get queryExampleDecision => 'What did we agree on?';
+
+  @override
+  String get queryExampleMeeting => 'In which meeting did we discuss this?';
+
+  @override
+  String get queryExpanding => 'Checking other projects in this category…';
+
+  @override
+  String get queryFailed =>
+      'The search could not finish. Your question is saved; try again.';
+
+  @override
+  String get queryForgetConclusions => 'Forget conclusions';
+
+  @override
+  String get queryHideSurrounding => 'Hide surrounding text';
+
+  @override
+  String get queryHomeOnly => 'Home scope only';
+
+  @override
+  String get queryIncomplete =>
+      'Coverage is incomplete. Missing evidence does not mean the discussion never happened.';
+
+  @override
+  String get queryInferenceUnavailable =>
+      'No usable inference setup. Configure the agent’s model or the category’s default profile, then retry.';
+
+  @override
+  String get queryKeepConclusions => 'Keep conclusions';
+
+  @override
+  String get queryMachineTranscript =>
+      'Machine transcript: exact stored wording, not checked against the audio.';
+
+  @override
+  String queryMemoryCount(int count) {
+    return 'Conclusions available from earlier chats: $count';
+  }
+
+  @override
+  String queryMissingTranscripts(int count) {
+    return 'Recordings without searchable text: $count. Open the recording in the journal to transcribe it.';
+  }
+
+  @override
+  String get queryNewChat => 'New chat';
+
+  @override
+  String get queryNoAgent =>
+      'This scope needs its usual agent assignment before you can chat. Return to details to configure it.';
+
+  @override
+  String get queryNotes => 'Notes';
+
+  @override
+  String get queryOpenEntry => 'Open entry';
+
+  @override
+  String get queryOtherProject => 'Beyond the home scope';
+
+  @override
+  String queryReachCategory(String category) {
+    return 'Searches this scope first, then $category.';
+  }
+
+  @override
+  String queryReachCategoryOnly(String category) {
+    return 'Searches within $category.';
+  }
+
+  @override
+  String get queryReachUncategorized =>
+      'Searches this task and its directly linked uncategorized entries only.';
+
+  @override
+  String get queryRecall => 'Uses relevant conclusions from earlier chats.';
+
+  @override
+  String get queryRecordings => 'Recordings';
+
+  @override
+  String get queryRenameChat => 'Rename chat';
+
+  @override
+  String get queryRestoreChat => 'Restore chat';
+
+  @override
+  String get querySavedQuote =>
+      'This saved quote reflects the source when the answer was written.';
+
+  @override
+  String get querySearching => 'Searching linked notes and recordings…';
+
+  @override
+  String get querySourceChanged => 'Source has changed';
+
+  @override
+  String get querySourceDeleted => 'Source deleted';
+
+  @override
+  String get querySourceMoved => 'Source moved to another category';
+
+  @override
+  String get querySurroundingText => 'Show surrounding text';
+
+  @override
+  String get queryTranscribing =>
+      'Transcribing… nothing is sent until you press Send.';
+
+  @override
+  String get queryUnavailable =>
+      'This scope is no longer available with your current visibility settings.';
+
+  @override
+  String get queryUnread => 'New answer';
+
+  @override
   String get queueCatchUpNowButton => 'Catch up now';
 
   @override

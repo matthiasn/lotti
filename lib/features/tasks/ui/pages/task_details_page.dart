@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
@@ -449,6 +452,15 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
   @override
   Widget build(BuildContext context) {
+    final queryScope = QueryScope(kind: QueryScopeKind.task, id: widget.taskId);
+    if (ref.watch(queryPaneOpenProvider(queryScope))) {
+      return QueryChatPane(
+        scope: queryScope,
+        onClose: () =>
+            ref.read(queryPaneOpenProvider(queryScope).notifier).open = false,
+      );
+    }
+
     final focusProvider = taskFocusControllerProvider(widget.taskId);
 
     void handleFocus(TaskFocusIntent? intent, {bool isInitialLoad = false}) {

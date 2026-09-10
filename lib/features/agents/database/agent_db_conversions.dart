@@ -20,6 +20,7 @@ class AgentDbConversions {
   static AgentEntitiesCompanion toEntityCompanion(AgentDomainEntity entity) {
     final subtype = entitySubtype(entity);
     final deletedAt = entity.map(
+      queryChatEvent: (e) => e.deletedAt,
       agent: (e) => e.deletedAt,
       agentState: (e) => e.deletedAt,
       agentMessage: (e) => e.deletedAt,
@@ -63,6 +64,7 @@ class AgentDbConversions {
     );
 
     final threadId = entity.mapOrNull(
+      queryChatEvent: (e) => e.chatId,
       agentMessage: (m) => m.threadId,
       agentReport: (r) => r.threadId,
       changeSet: (c) => c.threadId,
@@ -245,6 +247,7 @@ class AgentDbConversions {
   /// Extract the type string for the `agent_entities.type` column.
   static String entityType(AgentDomainEntity entity) {
     return entity.map(
+      queryChatEvent: (_) => AgentEntityTypes.queryChatEvent,
       agent: (_) => 'agent',
       agentState: (_) => 'agentState',
       agentMessage: (_) => 'agentMessage',
@@ -296,6 +299,7 @@ class AgentDbConversions {
   /// enabling indexed lookups via `idx_agent_entities_agent_type_sub`.
   static String? entitySubtype(AgentDomainEntity entity) {
     return entity.mapOrNull(
+      queryChatEvent: (e) => e.chatId,
       agent: (a) => a.kind,
       agentMessage: (msg) => msg.kind.name,
       agentReport: (report) => report.scope,
@@ -349,6 +353,7 @@ class AgentDbConversions {
   /// equivalent timestamp available.
   static DateTime entityCreatedAt(AgentDomainEntity entity) {
     return entity.map(
+      queryChatEvent: (e) => e.createdAt,
       agent: (e) => e.createdAt,
       agentState: (e) => e.updatedAt,
       agentMessage: (e) => e.createdAt,
@@ -399,6 +404,7 @@ class AgentDbConversions {
   /// is used instead to satisfy the NOT NULL constraint.
   static DateTime entityUpdatedAt(AgentDomainEntity entity) {
     return entity.map(
+      queryChatEvent: (e) => e.deletedAt ?? e.createdAt,
       agent: (e) => e.updatedAt,
       agentState: (e) => e.updatedAt,
       agentMessage: (e) => e.createdAt,

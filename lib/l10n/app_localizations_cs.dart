@@ -11062,6 +11062,188 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncTitle => 'Zařízení';
 
   @override
+  String get queryArchiveChat => 'Archivovat chat';
+
+  @override
+  String get queryArchivedChats => 'Archivované chaty';
+
+  @override
+  String get queryArchivedReadOnly =>
+      'Tento chat je archivovaný. Obnov ho, pokud chceš pokračovat.';
+
+  @override
+  String get queryAsk => 'Zeptat se';
+
+  @override
+  String get queryAskCategory => 'Zeptat se na tuto kategorii';
+
+  @override
+  String get queryAskProject => 'Zeptat se na tento projekt';
+
+  @override
+  String get queryAskTask => 'Zeptat se na tento úkol';
+
+  @override
+  String get queryCategoryAgent => 'Agent kategorie';
+
+  @override
+  String get queryChats => 'Chaty';
+
+  @override
+  String queryChecked(int count) {
+    return 'Zkontrolované zdroje: $count';
+  }
+
+  @override
+  String get queryCopied => 'Zkopírováno';
+
+  @override
+  String get queryCopyQuote => 'Kopírovat citaci';
+
+  @override
+  String get queryCoverage => 'Co bylo prohledáno';
+
+  @override
+  String get queryDeleteChat => 'Smazat chat';
+
+  @override
+  String get queryDeleteExplanation =>
+      'Smazat tuto konverzaci? Vyber, co se stane se sdílenými závěry. Zdrojové záznamy zůstanou zachovány.';
+
+  @override
+  String get queryDictated =>
+      'Diktovaný text můžeš upravit. Nic se neodešle, dokud nestiskneš Odeslat.';
+
+  @override
+  String get queryEmptyBody =>
+      'Ptej se na schůzky, rozhodnutí nebo dřívější poznámky. Odpovědi obsahují přesné uložené pasáže k nahlédnutí.';
+
+  @override
+  String get queryEmptyTitle => 'Najdi diskuzi, která vedla k rozhodnutí';
+
+  @override
+  String get queryExactText => 'Zobrazit přesný text';
+
+  @override
+  String get queryExampleDecision => 'Na čem jsme se dohodli?';
+
+  @override
+  String get queryExampleMeeting => 'Na které schůzce jsme to probírali?';
+
+  @override
+  String get queryExpanding => 'Kontrola dalších projektů v této kategorii…';
+
+  @override
+  String get queryFailed =>
+      'Hledání se nepodařilo dokončit. Tvá otázka je uložená; zkus to znovu.';
+
+  @override
+  String get queryForgetConclusions => 'Zapomenout závěry';
+
+  @override
+  String get queryHideSurrounding => 'Skrýt okolní text';
+
+  @override
+  String get queryHomeOnly => 'Jen výchozí rozsah';
+
+  @override
+  String get queryIncomplete =>
+      'Hledání není úplné. Chybějící důkazy neznamenají, že diskuze nikdy neproběhla.';
+
+  @override
+  String get queryInferenceUnavailable =>
+      'Chybí použitelná konfigurace AI. Nastav model agenta nebo výchozí profil kategorie a zkus to znovu.';
+
+  @override
+  String get queryKeepConclusions => 'Ponechat závěry';
+
+  @override
+  String get queryMachineTranscript =>
+      'Strojový přepis: přesné uložené znění, neověřené podle zvuku.';
+
+  @override
+  String queryMemoryCount(int count) {
+    return 'Dostupné závěry z dřívějších chatů: $count';
+  }
+
+  @override
+  String queryMissingTranscripts(int count) {
+    return 'Nahrávky bez prohledávatelného textu: $count. Otevři nahrávku v deníku a přepiš ji.';
+  }
+
+  @override
+  String get queryNewChat => 'Nový chat';
+
+  @override
+  String get queryNoAgent =>
+      'Tento rozsah potřebuje svého obvyklého agenta. Vrať se do detailů a přiřaď ho.';
+
+  @override
+  String get queryNotes => 'Poznámky';
+
+  @override
+  String get queryOpenEntry => 'Otevřít záznam';
+
+  @override
+  String get queryOtherProject => 'Mimo výchozí rozsah';
+
+  @override
+  String queryReachCategory(String category) {
+    return 'Hledá nejprve v tomto rozsahu a pak v kategorii $category.';
+  }
+
+  @override
+  String queryReachCategoryOnly(String category) {
+    return 'Hledá v kategorii $category.';
+  }
+
+  @override
+  String get queryReachUncategorized =>
+      'Hledá pouze v tomto úkolu a přímo propojených záznamech bez kategorie.';
+
+  @override
+  String get queryRecall => 'Používá relevantní závěry z dřívějších chatů.';
+
+  @override
+  String get queryRecordings => 'Nahrávky';
+
+  @override
+  String get queryRenameChat => 'Přejmenovat chat';
+
+  @override
+  String get queryRestoreChat => 'Obnovit chat';
+
+  @override
+  String get querySavedQuote =>
+      'Tato uložená citace odpovídá zdroji v době odpovědi.';
+
+  @override
+  String get querySearching => 'Hledání v propojených poznámkách a nahrávkách…';
+
+  @override
+  String get querySourceChanged => 'Zdroj byl změněn';
+
+  @override
+  String get querySourceDeleted => 'Zdroj smazán';
+
+  @override
+  String get querySourceMoved => 'Zdroj přesunut do jiné kategorie';
+
+  @override
+  String get querySurroundingText => 'Zobrazit okolní text';
+
+  @override
+  String get queryTranscribing =>
+      'Přepisování… nic se neodešle, dokud nestiskneš Odeslat.';
+
+  @override
+  String get queryUnavailable =>
+      'Tento rozsah už není s tvým nastavením viditelnosti dostupný.';
+
+  @override
+  String get queryUnread => 'Nová odpověď';
+
+  @override
   String get queueCatchUpNowButton => 'Dohnat nyní';
 
   @override

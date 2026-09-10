@@ -11122,6 +11122,191 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncTitle => 'Dispozitive';
 
   @override
+  String get queryArchiveChat => 'Arhivați conversația';
+
+  @override
+  String get queryArchivedChats => 'Conversații arhivate';
+
+  @override
+  String get queryArchivedReadOnly =>
+      'Această conversație este arhivată. Restabiliți-o pentru a continua.';
+
+  @override
+  String get queryAsk => 'Întrebați';
+
+  @override
+  String get queryAskCategory => 'Întrebați despre această categorie';
+
+  @override
+  String get queryAskProject => 'Întrebați despre acest proiect';
+
+  @override
+  String get queryAskTask => 'Întrebați despre această sarcină';
+
+  @override
+  String get queryCategoryAgent => 'Agent de categorie';
+
+  @override
+  String get queryChats => 'Conversații';
+
+  @override
+  String queryChecked(int count) {
+    return 'Surse verificate: $count';
+  }
+
+  @override
+  String get queryCopied => 'Copiat';
+
+  @override
+  String get queryCopyQuote => 'Copiați citatul';
+
+  @override
+  String get queryCoverage => 'Unde s-a căutat';
+
+  @override
+  String get queryDeleteChat => 'Ștergeți conversația';
+
+  @override
+  String get queryDeleteExplanation =>
+      'Ștergeți această conversație? Alegeți ce se întâmplă cu concluziile partajate. Înregistrările sursă nu sunt afectate.';
+
+  @override
+  String get queryDictated =>
+      'Puteți edita textul dictat. Nimic nu este trimis până nu apăsați Trimiteți.';
+
+  @override
+  String get queryEmptyBody =>
+      'Întrebați despre ședințe, decizii sau note anterioare. Răspunsurile includ pasaje exacte salvate pe care le puteți consulta.';
+
+  @override
+  String get queryEmptyTitle => 'Găsiți discuția din spatele unei decizii';
+
+  @override
+  String get queryExactText => 'Afișați textul exact';
+
+  @override
+  String get queryExampleDecision => 'Ce am convenit?';
+
+  @override
+  String get queryExampleMeeting => 'În ce ședință am discutat acest lucru?';
+
+  @override
+  String get queryExpanding =>
+      'Se verifică alte proiecte din această categorie…';
+
+  @override
+  String get queryFailed =>
+      'Căutarea nu s-a putut încheia. Întrebarea dvs. este salvată; reîncercați.';
+
+  @override
+  String get queryForgetConclusions => 'Uitați concluziile';
+
+  @override
+  String get queryHideSurrounding => 'Ascundeți textul din jur';
+
+  @override
+  String get queryHomeOnly => 'Doar domeniul inițial';
+
+  @override
+  String get queryIncomplete =>
+      'Căutarea este incompletă. Lipsa dovezilor nu înseamnă că discuția nu a avut loc niciodată.';
+
+  @override
+  String get queryInferenceUnavailable =>
+      'Nu există o configurație AI utilizabilă. Configurați modelul agentului sau profilul implicit al categoriei, apoi reîncercați.';
+
+  @override
+  String get queryKeepConclusions => 'Păstrați concluziile';
+
+  @override
+  String get queryMachineTranscript =>
+      'Transcriere automată: formularea exactă salvată, neverificată cu sunetul.';
+
+  @override
+  String queryMemoryCount(int count) {
+    return 'Concluzii disponibile din conversații anterioare: $count';
+  }
+
+  @override
+  String queryMissingTranscripts(int count) {
+    return 'Înregistrări audio fără text căutabil: $count. Deschideți înregistrarea în jurnal pentru a o transcrie.';
+  }
+
+  @override
+  String get queryNewChat => 'Conversație nouă';
+
+  @override
+  String get queryNoAgent =>
+      'Acest domeniu necesită agentul său obișnuit. Reveniți la detalii pentru a-l atribui.';
+
+  @override
+  String get queryNotes => 'Note';
+
+  @override
+  String get queryOpenEntry => 'Deschideți înregistrarea';
+
+  @override
+  String get queryOtherProject => 'În afara domeniului inițial';
+
+  @override
+  String queryReachCategory(String category) {
+    return 'Caută mai întâi în acest domeniu, apoi în $category.';
+  }
+
+  @override
+  String queryReachCategoryOnly(String category) {
+    return 'Caută în $category.';
+  }
+
+  @override
+  String get queryReachUncategorized =>
+      'Caută doar în această sarcină și în înregistrările fără categorie legate direct de ea.';
+
+  @override
+  String get queryRecall =>
+      'Folosește concluzii relevante din conversații anterioare.';
+
+  @override
+  String get queryRecordings => 'Înregistrări audio';
+
+  @override
+  String get queryRenameChat => 'Redenumiți conversația';
+
+  @override
+  String get queryRestoreChat => 'Restabiliți conversația';
+
+  @override
+  String get querySavedQuote =>
+      'Acest citat salvat reflectă sursa din momentul redactării răspunsului.';
+
+  @override
+  String get querySearching =>
+      'Se caută în notele și înregistrările audio legate…';
+
+  @override
+  String get querySourceChanged => 'Sursa a fost modificată';
+
+  @override
+  String get querySourceDeleted => 'Sursă ștearsă';
+
+  @override
+  String get querySourceMoved => 'Sursă mutată în altă categorie';
+
+  @override
+  String get querySurroundingText => 'Afișați textul din jur';
+
+  @override
+  String get queryTranscribing =>
+      'Se transcrie… nimic nu este trimis până nu apăsați Trimiteți.';
+
+  @override
+  String get queryUnavailable =>
+      'Acest domeniu nu mai este disponibil cu setările dvs. actuale de vizibilitate.';
+
+  @override
+  String get queryUnread => 'Răspuns nou';
+
+  @override
   String get queueCatchUpNowButton => 'Recuperați acum';
 
   @override

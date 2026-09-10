@@ -18403,6 +18403,324 @@ abstract class AppLocalizations {
   /// **'Devices'**
   String get provisionedSyncTitle;
 
+  /// No description provided for @queryArchiveChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive chat'**
+  String get queryArchiveChat;
+
+  /// No description provided for @queryArchivedChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived chats'**
+  String get queryArchivedChats;
+
+  /// No description provided for @queryArchivedReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This chat is archived. Restore it to continue the conversation.'**
+  String get queryArchivedReadOnly;
+
+  /// No description provided for @queryAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get queryAsk;
+
+  /// No description provided for @queryAskCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about this category'**
+  String get queryAskCategory;
+
+  /// No description provided for @queryAskProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about this project'**
+  String get queryAskProject;
+
+  /// No description provided for @queryAskTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about this task'**
+  String get queryAskTask;
+
+  /// No description provided for @queryCategoryAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Category agent'**
+  String get queryCategoryAgent;
+
+  /// No description provided for @queryChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get queryChats;
+
+  /// No description provided for @queryChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources checked: {count}'**
+  String queryChecked(int count);
+
+  /// No description provided for @queryCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get queryCopied;
+
+  /// No description provided for @queryCopyQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy quote'**
+  String get queryCopyQuote;
+
+  /// No description provided for @queryCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'What was searched'**
+  String get queryCoverage;
+
+  /// No description provided for @queryDeleteChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat'**
+  String get queryDeleteChat;
+
+  /// No description provided for @queryDeleteExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.'**
+  String get queryDeleteExplanation;
+
+  /// No description provided for @queryDictated.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictated text is editable. Nothing is sent until you press Send.'**
+  String get queryDictated;
+
+  /// No description provided for @queryEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about meetings, decisions, or earlier notes. Answers include exact stored passages you can inspect.'**
+  String get queryEmptyBody;
+
+  /// No description provided for @queryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find the discussion behind a decision'**
+  String get queryEmptyTitle;
+
+  /// No description provided for @queryExactText.
+  ///
+  /// In en, this message translates to:
+  /// **'Show exact text'**
+  String get queryExactText;
+
+  /// No description provided for @queryExampleDecision.
+  ///
+  /// In en, this message translates to:
+  /// **'What did we agree on?'**
+  String get queryExampleDecision;
+
+  /// No description provided for @queryExampleMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'In which meeting did we discuss this?'**
+  String get queryExampleMeeting;
+
+  /// No description provided for @queryExpanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking other projects in this category…'**
+  String get queryExpanding;
+
+  /// No description provided for @queryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The search could not finish. Your question is saved; try again.'**
+  String get queryFailed;
+
+  /// No description provided for @queryForgetConclusions.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget conclusions'**
+  String get queryForgetConclusions;
+
+  /// No description provided for @queryHideSurrounding.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide surrounding text'**
+  String get queryHideSurrounding;
+
+  /// No description provided for @queryHomeOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Home scope only'**
+  String get queryHomeOnly;
+
+  /// No description provided for @queryIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage is incomplete. Missing evidence does not mean the discussion never happened.'**
+  String get queryIncomplete;
+
+  /// No description provided for @queryInferenceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No usable inference setup. Configure the agent’s model or the category’s default profile, then retry.'**
+  String get queryInferenceUnavailable;
+
+  /// No description provided for @queryKeepConclusions.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep conclusions'**
+  String get queryKeepConclusions;
+
+  /// No description provided for @queryMachineTranscript.
+  ///
+  /// In en, this message translates to:
+  /// **'Machine transcript: exact stored wording, not checked against the audio.'**
+  String get queryMachineTranscript;
+
+  /// No description provided for @queryMemoryCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Conclusions available from earlier chats: {count}'**
+  String queryMemoryCount(int count);
+
+  /// No description provided for @queryMissingTranscripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Recordings without searchable text: {count}. Open the recording in the journal to transcribe it.'**
+  String queryMissingTranscripts(int count);
+
+  /// No description provided for @queryNewChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get queryNewChat;
+
+  /// No description provided for @queryNoAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'This scope needs its usual agent assignment before you can chat. Return to details to configure it.'**
+  String get queryNoAgent;
+
+  /// No description provided for @queryNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get queryNotes;
+
+  /// No description provided for @queryOpenEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Open entry'**
+  String get queryOpenEntry;
+
+  /// No description provided for @queryOtherProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Beyond the home scope'**
+  String get queryOtherProject;
+
+  /// No description provided for @queryReachCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Searches this scope first, then {category}.'**
+  String queryReachCategory(String category);
+
+  /// No description provided for @queryReachCategoryOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Searches within {category}.'**
+  String queryReachCategoryOnly(String category);
+
+  /// No description provided for @queryReachUncategorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Searches this task and its directly linked uncategorized entries only.'**
+  String get queryReachUncategorized;
+
+  /// No description provided for @queryRecall.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses relevant conclusions from earlier chats.'**
+  String get queryRecall;
+
+  /// No description provided for @queryRecordings.
+  ///
+  /// In en, this message translates to:
+  /// **'Recordings'**
+  String get queryRecordings;
+
+  /// No description provided for @queryRenameChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename chat'**
+  String get queryRenameChat;
+
+  /// No description provided for @queryRestoreChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore chat'**
+  String get queryRestoreChat;
+
+  /// No description provided for @querySavedQuote.
+  ///
+  /// In en, this message translates to:
+  /// **'This saved quote reflects the source when the answer was written.'**
+  String get querySavedQuote;
+
+  /// No description provided for @querySearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching linked notes and recordings…'**
+  String get querySearching;
+
+  /// No description provided for @querySourceChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Source has changed'**
+  String get querySourceChanged;
+
+  /// No description provided for @querySourceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Source deleted'**
+  String get querySourceDeleted;
+
+  /// No description provided for @querySourceMoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Source moved to another category'**
+  String get querySourceMoved;
+
+  /// No description provided for @querySurroundingText.
+  ///
+  /// In en, this message translates to:
+  /// **'Show surrounding text'**
+  String get querySurroundingText;
+
+  /// No description provided for @queryTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing… nothing is sent until you press Send.'**
+  String get queryTranscribing;
+
+  /// No description provided for @queryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This scope is no longer available with your current visibility settings.'**
+  String get queryUnavailable;
+
+  /// No description provided for @queryUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'New answer'**
+  String get queryUnread;
+
   /// No description provided for @queueCatchUpNowButton.
   ///
   /// In en, this message translates to:

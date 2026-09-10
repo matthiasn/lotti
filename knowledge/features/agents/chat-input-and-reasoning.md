@@ -5,7 +5,7 @@ description: Shared voice-recorder state, waveform feedback, and reasoning discl
 resource: ../../../lib/features/agents/ui/chat
 tags: [agents, chat, recording, reasoning]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-10T20:25:15Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: chat
@@ -21,7 +21,10 @@ sources:
 # Ownership and consumers
 
 `AgentChatView` supplies the shared conversation surface used by goal and
-relationship agents. Its composer and the agent improvement input widgets use
+relationship agents and [scoped queries](query-chat.md). Query hosts supply
+their own projected history and conversation ID, activity and footer slots,
+and disable reply-driven scrolling while older evidence is being inspected.
+Its composer and the agent improvement input widgets use
 the same voice-input primitives under `agents/ui/chat/`:
 
 - `ChatRecorderController` and `ChatRecorderState` manage a temporary recording,

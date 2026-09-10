@@ -11111,6 +11111,192 @@ class AppLocalizationsFr extends AppLocalizations {
   String get provisionedSyncTitle => 'Appareils';
 
   @override
+  String get queryArchiveChat => 'Archiver le chat';
+
+  @override
+  String get queryArchivedChats => 'Chats archivés';
+
+  @override
+  String get queryArchivedReadOnly =>
+      'Ce chat est archivé. Restaure-le pour poursuivre la conversation.';
+
+  @override
+  String get queryAsk => 'Demander';
+
+  @override
+  String get queryAskCategory => 'Questionner cette catégorie';
+
+  @override
+  String get queryAskProject => 'Questionner ce projet';
+
+  @override
+  String get queryAskTask => 'Questionner cette tâche';
+
+  @override
+  String get queryCategoryAgent => 'Agent de catégorie';
+
+  @override
+  String get queryChats => 'Chats';
+
+  @override
+  String queryChecked(int count) {
+    return 'Sources vérifiées : $count';
+  }
+
+  @override
+  String get queryCopied => 'Copié';
+
+  @override
+  String get queryCopyQuote => 'Copier la citation';
+
+  @override
+  String get queryCoverage => 'Périmètre de la recherche';
+
+  @override
+  String get queryDeleteChat => 'Supprimer le chat';
+
+  @override
+  String get queryDeleteExplanation =>
+      'Supprimer cette conversation ? Choisis le sort de ses conclusions partagées. Les entrées sources restent intactes.';
+
+  @override
+  String get queryDictated =>
+      'Tu peux modifier le texte dicté. Rien n’est envoyé avant d’appuyer sur Envoyer.';
+
+  @override
+  String get queryEmptyBody =>
+      'Pose des questions sur les réunions, les décisions ou les notes précédentes. Les réponses incluent des passages exacts à consulter.';
+
+  @override
+  String get queryEmptyTitle => 'Retrouve la discussion derrière une décision';
+
+  @override
+  String get queryExactText => 'Afficher le texte exact';
+
+  @override
+  String get queryExampleDecision => 'Qu’avons-nous convenu ?';
+
+  @override
+  String get queryExampleMeeting =>
+      'Dans quelle réunion en avons-nous discuté ?';
+
+  @override
+  String get queryExpanding =>
+      'Vérification des autres projets de cette catégorie…';
+
+  @override
+  String get queryFailed =>
+      'La recherche n’a pas pu aboutir. Ta question est enregistrée ; réessaie.';
+
+  @override
+  String get queryForgetConclusions => 'Oublier les conclusions';
+
+  @override
+  String get queryHideSurrounding => 'Masquer le contexte';
+
+  @override
+  String get queryHomeOnly => 'Périmètre de départ uniquement';
+
+  @override
+  String get queryIncomplete =>
+      'La recherche est incomplète. L’absence de preuve ne signifie pas que la discussion n’a jamais eu lieu.';
+
+  @override
+  String get queryInferenceUnavailable =>
+      'Aucune configuration IA utilisable. Configure le modèle de l’agent ou le profil par défaut de la catégorie, puis réessaie.';
+
+  @override
+  String get queryKeepConclusions => 'Garder les conclusions';
+
+  @override
+  String get queryMachineTranscript =>
+      'Transcription automatique : texte enregistré exact, non vérifié avec l’audio.';
+
+  @override
+  String queryMemoryCount(int count) {
+    return 'Conclusions disponibles de chats précédents : $count';
+  }
+
+  @override
+  String queryMissingTranscripts(int count) {
+    return 'Enregistrements sans texte consultable : $count. Ouvre l’enregistrement dans le journal pour le transcrire.';
+  }
+
+  @override
+  String get queryNewChat => 'Nouveau chat';
+
+  @override
+  String get queryNoAgent =>
+      'Ce périmètre a besoin de son agent habituel. Retourne aux détails pour l’attribuer.';
+
+  @override
+  String get queryNotes => 'Notes';
+
+  @override
+  String get queryOpenEntry => 'Ouvrir l’entrée';
+
+  @override
+  String get queryOtherProject => 'Hors du périmètre de départ';
+
+  @override
+  String queryReachCategory(String category) {
+    return 'Recherche d’abord dans ce périmètre, puis dans $category.';
+  }
+
+  @override
+  String queryReachCategoryOnly(String category) {
+    return 'Recherche dans $category.';
+  }
+
+  @override
+  String get queryReachUncategorized =>
+      'Recherche uniquement dans cette tâche et ses entrées sans catégorie directement liées.';
+
+  @override
+  String get queryRecall =>
+      'Utilise des conclusions pertinentes de chats précédents.';
+
+  @override
+  String get queryRecordings => 'Enregistrements';
+
+  @override
+  String get queryRenameChat => 'Renommer le chat';
+
+  @override
+  String get queryRestoreChat => 'Restaurer le chat';
+
+  @override
+  String get querySavedQuote =>
+      'Cette citation sauvegardée reflète la source au moment de la réponse.';
+
+  @override
+  String get querySearching =>
+      'Recherche dans les notes et enregistrements liés…';
+
+  @override
+  String get querySourceChanged => 'Source modifiée';
+
+  @override
+  String get querySourceDeleted => 'Source supprimée';
+
+  @override
+  String get querySourceMoved => 'Source déplacée vers une autre catégorie';
+
+  @override
+  String get querySurroundingText => 'Afficher le contexte';
+
+  @override
+  String get queryTranscribing =>
+      'Transcription… rien n’est envoyé avant d’appuyer sur Envoyer.';
+
+  @override
+  String get queryUnavailable =>
+      'Ce périmètre n’est plus accessible avec tes paramètres de visibilité actuels.';
+
+  @override
+  String get queryUnread => 'Nouvelle réponse';
+
+  @override
   String get queueCatchUpNowButton => 'Rattraper maintenant';
 
   @override

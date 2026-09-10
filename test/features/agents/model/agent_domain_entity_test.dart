@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -28,6 +29,21 @@ void main() {
   }
 
   group('AgentDomainEntity serialization roundtrip', () {
+    test(
+      'query events preserve independent chat identity and delete choice',
+      () {
+        final original = AgentDomainEntity.queryChatEvent(
+          id: 'delete-event',
+          agentId: 'task-agent',
+          chatId: 'feeder-chat',
+          data: const QueryChatEventData.deleted(forget: true),
+          createdAt: createdAt,
+          vectorClock: vectorClock,
+        );
+        expect(roundtrip(original), original);
+        expect(original.toJson()['runtimeType'], 'queryChatEvent');
+      },
+    );
     group('AgentIdentityEntity (agent variant)', () {
       test('roundtrips all fields', () {
         final original = AgentDomainEntity.agent(

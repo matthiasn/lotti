@@ -12,6 +12,7 @@ the human review gates in front of every task mutation.
 * [Persistence and sync](persistence-and-sync.md) - the agent.sqlite entity and link model, and exactly what leaves the device.
 * [Projection kernel](projection.md) - the pure fold under the agent log, and the permutation-invariance proof that makes replay order irrelevant.
 * [UI surfaces](ui-surfaces.md) - the AI summary card, internals panel, settings tabs and sidebar wake queue.
+* [Scoped query conversations](query-chat.md) - task/project/category discovery, saved quotes, multiple chats and live privacy.
 * [Chat input and reasoning](chat-input-and-reasoning.md) - shared voice recording, waveform feedback, and reasoning disclosure for agent conversations and improvement flows.
 
 # Related

@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -29,6 +30,19 @@ part 'agent_domain_entity.g.dart';
 /// reference.
 @Freezed(fallbackUnion: 'unknown')
 abstract class AgentDomainEntity with _$AgentDomainEntity {
+  /// An immutable discussion event owned by an existing scoped agent. These
+  /// rows sync independently of working-memory messages and never advance the
+  /// agent's causal message head.
+  const factory AgentDomainEntity.queryChatEvent({
+    required String id,
+    required String agentId,
+    required String chatId,
+    required QueryChatEventData data,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentQueryChatEventEntity;
+
   /// Agent identity and lifecycle.
   const factory AgentDomainEntity.agent({
     required String id,

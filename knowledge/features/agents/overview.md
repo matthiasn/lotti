@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Agents
-description: The persisted agent runtime — five agent kinds, their startup wiring, lifecycle, and the boundary against the AI inference stack.
+description: The persisted agent runtime — agent kinds, their startup wiring, lifecycle, and the boundary against the AI inference stack.
 resource: ../../../lib/features/agents
 tags: [agents, runtime, wake, ai]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-06T15:20:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: agents-src
@@ -50,8 +50,9 @@ The split of authority matters:
 | Journal database | Tasks, projects, checklist items, labels, time entries — the user's actual data |
 | `agent.sqlite` | Reports, observations, change proposals, evolution sessions, token usage, wake history — the agent's *interpretation* and review state |
 
-The agents feature never mirrors task or project state into `agent.sqlite`. It
-reads the journal on demand during a wake.
+The journal remains authoritative. Wakes read it on demand; [query
+conversations](query-chat.md) additionally retain historical source text for
+verifiable saved quotations, gated by the source's current privacy metadata.
 
 # Agent kinds
 
@@ -63,6 +64,8 @@ reads the journal on demand during a wake.
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
 | `day_agent` | day workspace (`day:<dayId>`), no single slot | `DayAgentWorkflow` | day-scoped pre-warms and capture wakes |
 | `goal_agent` | goal spec head (no single slot) | `GoalAgentWorkflow` | deterministic cadence, signal subscriptions, escalation wakes |
+| `relationship_agent` | relationship context | `RelationshipAgentWorkflow` | conversation and relationship activity |
+| `category_agent` | deterministic category ID | query conversation only | explicit user question; no wake subscription |
 
 The day agent is the single long-lived Daily OS planner (ADR 0022). Its workflow
 and service live in [`daily_os_next`](../daily_os_next/), not here — and
@@ -180,6 +183,7 @@ arrives, so either sync ordering closes the snapshot-to-live-update gap.
 * [Templates, souls and evolution](templates-souls-evolution.md) - what an agent does versus who it is, and how both evolve.
 * [Persistence and sync](persistence-and-sync.md) - the `agent.sqlite` entity and link model, plus what syncs and what stays local.
 * [Projection kernel](projection.md) - the pure fold under the agent log, and the permutation-invariance proof that makes replay order irrelevant.
+* [Scoped query conversations](query-chat.md) - isolated discovery, quotes, multi-chat persistence and privacy.
 * [UI surfaces](ui-surfaces.md) - the AI summary card, internals panel, settings tabs and sidebar.
 
 # Code reading guide

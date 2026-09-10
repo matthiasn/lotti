@@ -10,6 +10,7 @@ import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 
 import '../test_data/change_set_factories.dart';
@@ -29,6 +30,31 @@ final _updated = DateTime(2024, 6, 1);
 /// exhaustive `map` — a wrong field mapping is caught by the distinct dates,
 /// and a *missing* variant is caught by the compiler (freezed `map`).
 final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
+  (
+    label: 'queryChatEvent',
+    entity: AgentDomainEntity.queryChatEvent(
+      id: 'query-event',
+      agentId: 'agent',
+      chatId: 'chat',
+      data: const QueryChatEventData.question(text: 'Feeder?'),
+      createdAt: _created,
+      vectorClock: null,
+    ),
+    expected: _created,
+  ),
+  (
+    label: 'deleted queryChatEvent',
+    entity: AgentDomainEntity.queryChatEvent(
+      id: 'deleted-query-event',
+      agentId: 'agent',
+      chatId: 'chat',
+      data: const QueryChatEventData.question(text: 'Feeder?'),
+      createdAt: _created,
+      deletedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
   (
     label: 'agent',
     entity: makeTestIdentity(createdAt: _created, updatedAt: _updated),
@@ -427,7 +453,8 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 40);
+      // Query events also cover the deletion timestamp independently.
+      expect(_cases.length, 42);
     });
   });
 }

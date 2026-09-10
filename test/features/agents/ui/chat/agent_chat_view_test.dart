@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -12,6 +13,51 @@ import '../../../../widget_test_utils.dart';
 import '../evolution/widgets/evolution_recorder_test_utils.dart';
 
 void main() {
+  testWidgets(
+    'a scoped history bypasses the agent log and can disable composition',
+    (tester) async {
+      var logReads = 0;
+      final message = AgentChatMessage(
+        id: 'query-reply',
+        role: AgentChatRole.agent,
+        text: 'The feeder was approved.',
+        createdAt: DateTime(2026, 9, 10),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Habitat Watcher',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              history: AsyncData([message]),
+              conversationId: 'query-chat',
+              composerEnabled: false,
+              scrollOnReplies: false,
+              attachmentBuilder: (_, _) => const Text('Exact approved passage'),
+              footer: const Text('Archived fixture'),
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider('agent').overrideWith((ref) async {
+              logReads++;
+              return [];
+            }),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(logReads, 0);
+      expect(find.text('The feeder was approved.'), findsOneWidget);
+      expect(find.text('Exact approved passage'), findsOneWidget);
+      expect(find.text('Archived fixture'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    },
+  );
   testWidgets('the visible message footer follows locale word order', (
     tester,
   ) async {

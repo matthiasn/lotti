@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
@@ -306,6 +308,22 @@ class _ProjectReportSummaryState extends State<_ProjectReportSummary> {
               onOpenInternals: widget.onOpenInternals,
             ),
           ),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.cardPadding,
+            vertical: tokens.spacing.step2,
+          ),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: QueryAskButton(
+              scope: QueryScope(
+                kind: QueryScopeKind.project,
+                id: widget.record.project.meta.id,
+              ),
+              fullLabel: true,
+            ),
+          ),
+        ),
         ?widget.actions,
         ?widget.footer,
       ],

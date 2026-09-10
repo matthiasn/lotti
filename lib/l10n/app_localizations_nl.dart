@@ -10935,6 +10935,190 @@ class AppLocalizationsNl extends AppLocalizations {
   String get provisionedSyncTitle => 'Apparaten';
 
   @override
+  String get queryArchiveChat => 'Chat archiveren';
+
+  @override
+  String get queryArchivedChats => 'Gearchiveerde chats';
+
+  @override
+  String get queryArchivedReadOnly =>
+      'Deze chat is gearchiveerd. Herstel deze om het gesprek voort te zetten.';
+
+  @override
+  String get queryAsk => 'Vragen';
+
+  @override
+  String get queryAskCategory => 'Vraag over deze categorie';
+
+  @override
+  String get queryAskProject => 'Vraag over dit project';
+
+  @override
+  String get queryAskTask => 'Vraag over deze taak';
+
+  @override
+  String get queryCategoryAgent => 'Categorie-agent';
+
+  @override
+  String get queryChats => 'Chats';
+
+  @override
+  String queryChecked(int count) {
+    return 'Gecontroleerde bronnen: $count';
+  }
+
+  @override
+  String get queryCopied => 'Gekopieerd';
+
+  @override
+  String get queryCopyQuote => 'Citaat kopiëren';
+
+  @override
+  String get queryCoverage => 'Wat is doorzocht?';
+
+  @override
+  String get queryDeleteChat => 'Chat verwijderen';
+
+  @override
+  String get queryDeleteExplanation =>
+      'Deze conversatie verwijderen? Kies wat er met de gedeelde conclusies gebeurt. Bronvermeldingen blijven intact.';
+
+  @override
+  String get queryDictated =>
+      'Je kunt de gedicteerde tekst bewerken. Er wordt niets verstuurd voordat je op Verzenden drukt.';
+
+  @override
+  String get queryEmptyBody =>
+      'Vraag naar vergaderingen, besluiten of eerdere notities. Antwoorden bevatten exacte opgeslagen passages die je kunt bekijken.';
+
+  @override
+  String get queryEmptyTitle => 'Vind het gesprek achter een besluit';
+
+  @override
+  String get queryExactText => 'Exacte tekst tonen';
+
+  @override
+  String get queryExampleDecision => 'Wat hebben we afgesproken?';
+
+  @override
+  String get queryExampleMeeting =>
+      'In welke vergadering hebben we dit besproken?';
+
+  @override
+  String get queryExpanding =>
+      'Andere projecten in deze categorie controleren…';
+
+  @override
+  String get queryFailed =>
+      'De zoekopdracht kon niet worden voltooid. Je vraag is opgeslagen; probeer opnieuw.';
+
+  @override
+  String get queryForgetConclusions => 'Conclusies vergeten';
+
+  @override
+  String get queryHideSurrounding => 'Omringende tekst verbergen';
+
+  @override
+  String get queryHomeOnly => 'Alleen beginbereik';
+
+  @override
+  String get queryIncomplete =>
+      'De zoekdekking is onvolledig. Ontbrekend bewijs betekent niet dat het gesprek nooit heeft plaatsgevonden.';
+
+  @override
+  String get queryInferenceUnavailable =>
+      'Geen bruikbare AI-configuratie. Stel het model van de agent of het standaardprofiel van de categorie in en probeer opnieuw.';
+
+  @override
+  String get queryKeepConclusions => 'Conclusies bewaren';
+
+  @override
+  String get queryMachineTranscript =>
+      'Automatische transcriptie: exacte opgeslagen tekst, niet gecontroleerd aan de hand van de audio.';
+
+  @override
+  String queryMemoryCount(int count) {
+    return 'Beschikbare conclusies uit eerdere chats: $count';
+  }
+
+  @override
+  String queryMissingTranscripts(int count) {
+    return 'Opnamen zonder doorzoekbare tekst: $count. Open de opname in het dagboek om deze te transcriberen.';
+  }
+
+  @override
+  String get queryNewChat => 'Nieuwe chat';
+
+  @override
+  String get queryNoAgent =>
+      'Dit bereik heeft zijn gebruikelijke agent nodig. Ga terug naar de details om die toe te wijzen.';
+
+  @override
+  String get queryNotes => 'Notities';
+
+  @override
+  String get queryOpenEntry => 'Item openen';
+
+  @override
+  String get queryOtherProject => 'Buiten het beginbereik';
+
+  @override
+  String queryReachCategory(String category) {
+    return 'Zoekt eerst binnen dit bereik, daarna in $category.';
+  }
+
+  @override
+  String queryReachCategoryOnly(String category) {
+    return 'Zoekt binnen $category.';
+  }
+
+  @override
+  String get queryReachUncategorized =>
+      'Zoekt alleen in deze taak en de rechtstreeks gekoppelde items zonder categorie.';
+
+  @override
+  String get queryRecall => 'Gebruikt relevante conclusies uit eerdere chats.';
+
+  @override
+  String get queryRecordings => 'Opnamen';
+
+  @override
+  String get queryRenameChat => 'Chat hernoemen';
+
+  @override
+  String get queryRestoreChat => 'Chat herstellen';
+
+  @override
+  String get querySavedQuote =>
+      'Dit opgeslagen citaat geeft de bron weer op het moment van het antwoord.';
+
+  @override
+  String get querySearching => 'Gekoppelde notities en opnamen doorzoeken…';
+
+  @override
+  String get querySourceChanged => 'Bron is gewijzigd';
+
+  @override
+  String get querySourceDeleted => 'Bron verwijderd';
+
+  @override
+  String get querySourceMoved => 'Bron verplaatst naar een andere categorie';
+
+  @override
+  String get querySurroundingText => 'Omringende tekst tonen';
+
+  @override
+  String get queryTranscribing =>
+      'Transcriberen… er wordt niets verstuurd voordat je op Verzenden drukt.';
+
+  @override
+  String get queryUnavailable =>
+      'Dit bereik is niet meer beschikbaar met je huidige zichtbaarheidsinstellingen.';
+
+  @override
+  String get queryUnread => 'Nieuw antwoord';
+
+  @override
   String get queueCatchUpNowButton => 'Inhalen nu';
 
   @override

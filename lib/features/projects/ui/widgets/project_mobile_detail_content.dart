@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -295,6 +297,17 @@ class _ProjectMobileDetailContentState
                             ),
                             SliverToBoxAdapter(
                               child: SizedBox(height: tokens.spacing.step4),
+                            ),
+                            SliverToBoxAdapter(
+                              child: Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: QueryAskButton(
+                                  scope: QueryScope(
+                                    kind: QueryScopeKind.project,
+                                    id: widget.record.project.meta.id,
+                                  ),
+                                ),
+                              ),
                             ),
                             if (description.isNotEmpty) ...[
                               SliverToBoxAdapter(

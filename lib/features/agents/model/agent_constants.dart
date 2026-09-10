@@ -10,6 +10,7 @@ abstract final class AgentKinds {
   static const eventAgent = 'event_agent';
   static const goalAgent = 'goal_agent';
   static const relationshipAgent = 'relationship_agent';
+  static const categoryAgent = 'category_agent';
 }
 
 /// Notification scopes that carry meaning beyond a single agent entity ID.
@@ -64,6 +65,7 @@ abstract final class AgentLinkTypes {
 /// document families (reports, templates, souls); their non-head siblings are
 /// the individual immutable versions.
 abstract final class AgentEntityTypes {
+  static const queryChatEvent = 'queryChatEvent';
   static const capture = 'day_capture';
   static const parsedItem = 'parsed_capture_item';
   static const dayPlan = 'day_plan';

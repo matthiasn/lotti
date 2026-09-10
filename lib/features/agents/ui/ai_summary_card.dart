@@ -9,6 +9,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/agents/ui/agent_model_sheet.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
@@ -777,6 +779,19 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             ),
             child: reportBody,
           ),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.cardPadding,
+            vertical: tokens.spacing.step2,
+          ),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: QueryAskButton(
+              scope: QueryScope(kind: QueryScopeKind.task, id: widget.taskId),
+              fullLabel: true,
+            ),
+          ),
+        ),
         // Both hidden until the first value to avoid flashing empty state.
         ?proposalsBand,
         ?historySection,

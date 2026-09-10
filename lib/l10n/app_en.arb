@@ -6289,6 +6289,94 @@
   "provisionedSyncSummaryHomeserver": "Sync server",
   "provisionedSyncSummaryUser": "Sync account",
   "provisionedSyncTitle": "Devices",
+  "queryArchiveChat": "Archive chat",
+  "queryArchivedChats": "Archived chats",
+  "queryArchivedReadOnly": "This chat is archived. Restore it to continue the conversation.",
+  "queryAsk": "Ask",
+  "queryAskCategory": "Ask about this category",
+  "queryAskProject": "Ask about this project",
+  "queryAskTask": "Ask about this task",
+  "queryCategoryAgent": "Category agent",
+  "queryChats": "Chats",
+  "queryChecked": "Sources checked: {count}",
+  "@queryChecked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queryCopied": "Copied",
+  "queryCopyQuote": "Copy quote",
+  "queryCoverage": "What was searched",
+  "queryDeleteChat": "Delete chat",
+  "queryDeleteExplanation": "Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.",
+  "queryDictated": "Dictated text is editable. Nothing is sent until you press Send.",
+  "queryEmptyBody": "Ask about meetings, decisions, or earlier notes. Answers include exact stored passages you can inspect.",
+  "queryEmptyTitle": "Find the discussion behind a decision",
+  "queryExactText": "Show exact text",
+  "queryExampleDecision": "What did we agree on?",
+  "queryExampleMeeting": "In which meeting did we discuss this?",
+  "queryExpanding": "Checking other projects in this category…",
+  "queryFailed": "The search could not finish. Your question is saved; try again.",
+  "queryForgetConclusions": "Forget conclusions",
+  "queryHideSurrounding": "Hide surrounding text",
+  "queryHomeOnly": "Home scope only",
+  "queryIncomplete": "Coverage is incomplete. Missing evidence does not mean the discussion never happened.",
+  "queryInferenceUnavailable": "No usable inference setup. Configure the agent’s model or the category’s default profile, then retry.",
+  "queryKeepConclusions": "Keep conclusions",
+  "queryMachineTranscript": "Machine transcript: exact stored wording, not checked against the audio.",
+  "queryMemoryCount": "Conclusions available from earlier chats: {count}",
+  "@queryMemoryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queryMissingTranscripts": "Recordings without searchable text: {count}. Open the recording in the journal to transcribe it.",
+  "@queryMissingTranscripts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "queryNewChat": "New chat",
+  "queryNoAgent": "This scope needs its usual agent assignment before you can chat. Return to details to configure it.",
+  "queryNotes": "Notes",
+  "queryOpenEntry": "Open entry",
+  "queryOtherProject": "Beyond the home scope",
+  "queryReachCategory": "Searches this scope first, then {category}.",
+  "@queryReachCategory": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "queryReachCategoryOnly": "Searches within {category}.",
+  "@queryReachCategoryOnly": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "queryReachUncategorized": "Searches this task and its directly linked uncategorized entries only.",
+  "queryRecall": "Uses relevant conclusions from earlier chats.",
+  "queryRecordings": "Recordings",
+  "queryRenameChat": "Rename chat",
+  "queryRestoreChat": "Restore chat",
+  "querySavedQuote": "This saved quote reflects the source when the answer was written.",
+  "querySearching": "Searching linked notes and recordings…",
+  "querySourceChanged": "Source has changed",
+  "querySourceDeleted": "Source deleted",
+  "querySourceMoved": "Source moved to another category",
+  "querySurroundingText": "Show surrounding text",
+  "queryTranscribing": "Transcribing… nothing is sent until you press Send.",
+  "queryUnavailable": "This scope is no longer available with your current visibility settings.",
+  "queryUnread": "New answer",
   "queueCatchUpNowButton": "Catch up now",
   "queueCatchUpNowDone": "Catch-up kicked — queue is draining.",
   "queueCatchUpNowError": "Catch-up failed: {reason}",

@@ -31,6 +31,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/query/query_chat_store.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
@@ -1067,6 +1068,8 @@ class MockSuggestionRetractionService extends Mock
 /// Mock of the deferred change-set builder. Stub [ChangeSetBuilder.build] and
 /// [ChangeSetBuilder.proposedFingerprints] when exercising wake persistence.
 class MockChangeSetBuilder extends Mock implements ChangeSetBuilder {}
+
+class MockQueryChatStore extends Mock implements QueryChatStore {}
 
 class MockAgentSyncService extends Mock implements AgentSyncService {
   @override
