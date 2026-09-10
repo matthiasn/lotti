@@ -227,9 +227,12 @@ void main() {
           .collect(stream.stream)
           .then<void>(
             (_) => fail('A silent backend must not produce a reply'),
-            onError: (Object error) => failure = error,
+            onError: (Object error) {
+              failure = error;
+            },
           );
       async
+        ..flushMicrotasks()
         ..elapse(const Duration(minutes: 2))
         ..flushMicrotasks();
       expect(failure, isA<TimeoutException>());

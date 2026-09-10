@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 
@@ -166,5 +169,94 @@ void main() {
     expect(recordings.documents, isEmpty);
     expect(recordings.coverage.missingTranscripts, 1);
     expect(recordings.coverage.incomplete, isTrue);
+  });
+
+  test(
+    'project home includes visible same-category tasks and one link hop',
+    () async {
+      final bench = QueryTestBench();
+      final category = categoryMindfulness.id;
+      final project = makeTestProject(id: 'project', categoryId: category);
+      bench.entries['project'] = project;
+      for (final (id, private, categoryId) in [
+        ('task', false, category),
+        ('private-task', true, category),
+        ('moved-task', false, 'another-category'),
+      ]) {
+        bench.entries[id] = testTask.copyWith(
+          meta: testTask.meta.copyWith(
+            id: id,
+            private: private,
+            categoryId: categoryId,
+          ),
+          entryText: null,
+        );
+        bench.taskProjects[id] = 'project';
+      }
+      bench
+        ..add('meeting', category: category)
+        ..add('project-note', category: category)
+        ..add('unrelated', category: category)
+        ..add('second-hop', category: category)
+        ..link('task', 'meeting')
+        ..link('project', 'project-note')
+        ..link('meeting', 'second-hop');
+      final corpus = await bench.crawler.discover(
+        const QueryScope(kind: QueryScopeKind.project, id: 'project'),
+        [],
+        homeOnly: true,
+      );
+      expect(corpus.documents.map((d) => d.entry.meta.id).toSet(), {
+        'project',
+        'task',
+        'meeting',
+        'project-note',
+      });
+      expect(corpus.affiliations['project-note']!.labels, [project.data.title]);
+      expect(corpus.coverage.expanded, isFalse);
+      expect(bench.searches, isEmpty);
+    },
+  );
+
+  test('category retrieval is bounded and can use checklist titles', () async {
+    final bench = QueryTestBench();
+    final category = categoryMindfulness.id;
+    final meta = testTask.meta.copyWith(categoryId: category);
+    final checklist = Checklist(
+      meta: meta.copyWith(id: 'checklist'),
+      data: const ChecklistData(
+        title: 'Feeder inspection',
+        linkedChecklistItems: [],
+        linkedTasks: [],
+      ),
+    );
+    final item = ChecklistItem(
+      meta: meta.copyWith(id: 'item'),
+      data: const ChecklistItemData(
+        title: 'Check feeder valve',
+        isChecked: false,
+        linkedChecklists: [],
+      ),
+    );
+    for (final entry in [checklist, item]) {
+      final document = QuerySourceDocument.fromEntry(entry)!;
+      expect(document.kind, QuerySourceKind.checklist);
+      expect(document.text, contains('eeder'));
+      expect(document.version, startsWith('title:'));
+    }
+    for (var i = 0; i < 65; i++) {
+      bench.add('note-$i', category: category);
+    }
+    final corpus = await bench.crawler.discover(
+      QueryScope(kind: QueryScopeKind.category, id: category),
+      [],
+    );
+    expect(corpus.documents, hasLength(60));
+    expect(corpus.homeIds, isEmpty);
+    expect(corpus.coverage.incomplete, isTrue);
+    expect(
+      corpus.documents.every((d) => d.entry.meta.categoryId == category),
+      isTrue,
+    );
   });
 }

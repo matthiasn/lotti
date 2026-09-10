@@ -43,6 +43,13 @@ class QueryPersistenceBench extends QueryTestBench {
 
 class QueryTestBench {
   QueryTestBench() {
+    when(() => db.getTaskIdsForProjects(any())).thenAnswer((call) async {
+      final projects = call.positionalArguments.first as Set<String>;
+      return taskProjects.entries
+          .where((entry) => projects.contains(entry.value))
+          .map((entry) => entry.key)
+          .toSet();
+    });
     when(() => db.getProjectIdMapForTasks(any())).thenAnswer(
       (call) async => {
         for (final id in call.positionalArguments.first as Set<String>)
