@@ -1493,12 +1493,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCardTitle => 'Resumo de IA';
 
   @override
-  String get aiChatAssistantResponding => 'O assistente está respondendo';
-
-  @override
-  String get aiChatMessageCopied => 'Copiado para a área de transferência';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Falha ao carregar modelos. Por favor, tente novamente.';
 

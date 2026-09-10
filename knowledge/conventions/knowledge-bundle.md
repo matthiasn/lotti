@@ -5,7 +5,7 @@ description: The README/knowledge/ADR split, the frontmatter every concept carri
 resource: ../../knowledge
 tags: [convention, documentation, okf, process]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-29T02:05:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-10T20:25:15Z }
 stale_after: 2027-01-18
 sources:
   - id: okf-spec
@@ -139,9 +139,9 @@ sources:                      # must be a non-empty list; one entry must leave t
 
   Then **use the date its siblings already carry.** For a concept inside a
   directory that is the subsystem's date: re-reading all of `sync/` in one sitting
-  is far cheaper than seven separate visits. The 23 single-file features have no
+  is far cheaper than seven separate visits. Single-file feature concepts have no
   subsystem to inherit from, so they are batched **alphabetically** in three groups
-  (`ai_chat`…`habits`, `insights`…`ratings`, `settings`…`whats_new`) — arbitrary,
+  (`ai_consumption`…`habits`, `insights`…`ratings`, `settings`…`whats_new`) — arbitrary,
   but stable and easy to extend. Never invent a new date.
 
   Across subsystems the dates are **staggered a week apart**, so the reminders

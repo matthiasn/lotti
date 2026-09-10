@@ -703,8 +703,6 @@
   "aiCardReadMore": "Läs mer",
   "aiCardShowLess": "Visa mindre",
   "aiCardTitle": "AI-sammanfattning",
-  "aiChatAssistantResponding": "Assistenten svarar",
-  "aiChatMessageCopied": "Kopierat till skrivplatta",
   "aiConfigFailedToLoadModelsGeneric": "Misslyckades med att ladda modellerna. Försök igen, tack.",
   "aiConfigNoModelsAvailable": "Inga AI-modeller är konfigurerade än. Vänligen lägg till en i inställningarna.",
   "aiConfigNoSuitableModelsAvailable": "Inga modeller uppfyller kraven för denna prompt. Vänligen konfigurera modeller som stödjer de nödvändiga funktionerna.",

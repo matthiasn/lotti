@@ -1490,12 +1490,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardTitle => 'Souhrn AI';
 
   @override
-  String get aiChatAssistantResponding => 'Asistent odpovídá';
-
-  @override
-  String get aiChatMessageCopied => 'Zkopírováno do schránky';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Nepodařilo se načíst modely. Prosím, zkuste to znovu.';
 

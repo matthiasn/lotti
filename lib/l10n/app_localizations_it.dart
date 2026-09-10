@@ -1499,12 +1499,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiCardTitle => 'Riepilogo dell\'AI';
 
   @override
-  String get aiChatAssistantResponding => 'L’assistente sta rispondendo';
-
-  @override
-  String get aiChatMessageCopied => 'Copiato negli appunti';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Non caricare modelli. Si prega di riprovare.';
 

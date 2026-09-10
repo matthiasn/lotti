@@ -35,7 +35,7 @@ Lotti is a privacy-first personal assistant built with Flutter, featuring local-
 ├─────────────────────────────────────────────────────────────┤
 │                     Feature Modules                          │
 │  ┌──────────┬────────────┬──────────┬──────────────────┐   │
-│  │ Tasks    │ AI Chat    │ Journal  │ Habits & Health  │   │
+│  │ Tasks    │ Agents     │ Journal  │ Habits & Health  │   │
 │  ├──────────┼────────────┼──────────┼──────────────────┤   │
 │  │ Audio    │ Categories │ Sync     │ Settings         │   │
 │  └──────────┴────────────┴──────────┴──────────────────┘   │
@@ -58,7 +58,7 @@ Lotti is a privacy-first personal assistant built with Flutter, featuring local-
 
 ### AI Integration
 - **[AI Module](../lib/features/ai/README.md)**: Core AI provider abstraction and configuration
-- **[AI Chat](../lib/features/ai_chat/README.md)**: Interactive chat with context-aware AI assistance
+- **[Agents](../lib/features/agents/README.md)**: Scoped assistants, improvement flows, and shared text/voice conversation UI
 
 ### Content Management
 - **[Tasks](../lib/features/tasks/README.md)**: Task lifecycle management with AI-enhanced summaries

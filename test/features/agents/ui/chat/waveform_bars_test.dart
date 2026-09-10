@@ -1,7 +1,7 @@
 import 'dart:ui' show PictureRecorder;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
+import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 

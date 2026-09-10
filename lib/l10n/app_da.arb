@@ -703,8 +703,6 @@
   "aiCardReadMore": "Læs mere",
   "aiCardShowLess": "Vis mindre",
   "aiCardTitle": "AI-oversigt",
-  "aiChatAssistantResponding": "Assistenten svarer",
-  "aiChatMessageCopied": "Kopieret til clipboard",
   "aiConfigFailedToLoadModelsGeneric": "Kunne ikke indlæse modellerne. Prøv venligst igen.",
   "aiConfigNoModelsAvailable": "Der er endnu ikke konfigureret AI-modeller. Tilføj venligst en i indstillingerne.",
   "aiConfigNoSuitableModelsAvailable": "Ingen modeller opfylder kravene til denne prompt. Konfigurer venligst modeller, der understøtter de nødvendige funktioner.",

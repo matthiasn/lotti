@@ -1495,12 +1495,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCardTitle => 'KI-Zusammenfassung';
 
   @override
-  String get aiChatAssistantResponding => 'Der Assistent antwortet';
-
-  @override
-  String get aiChatMessageCopied => 'In die Zwischenablage kopiert';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Fehler beim Laden der Modelle. Bitte versuche es erneut.';
 

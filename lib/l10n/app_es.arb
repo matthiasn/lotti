@@ -621,8 +621,6 @@
   "aiCardReadMore": "Leer más",
   "aiCardShowLess": "Mostrar menos",
   "aiCardTitle": "Resumen de IA",
-  "aiChatAssistantResponding": "El asistente está respondiendo",
-  "aiChatMessageCopied": "Copiado al portapapeles",
   "aiConfigFailedToLoadModelsGeneric": "Error al cargar modelos. Por favor, inténtalo de nuevo.",
   "aiConfigNoModelsAvailable": "Aún no has configurado ningún modelo de IA. Añade uno en Ajustes.",
   "aiConfigNoSuitableModelsAvailable": "Ningún modelo cumple los requisitos para este prompt. Por favor, configura modelos con las capacidades requeridas.",

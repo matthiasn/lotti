@@ -621,8 +621,6 @@
   "aiCardReadMore": "Mehr lesen",
   "aiCardShowLess": "Weniger anzeigen",
   "aiCardTitle": "KI-Zusammenfassung",
-  "aiChatAssistantResponding": "Der Assistent antwortet",
-  "aiChatMessageCopied": "In die Zwischenablage kopiert",
   "aiConfigFailedToLoadModelsGeneric": "Fehler beim Laden der Modelle. Bitte versuche es erneut.",
   "aiConfigNoModelsAvailable": "Noch keine AI-Modelle konfiguriert. Bitte füge eines in den Einstellungen hinzu.",
   "aiConfigNoSuitableModelsAvailable": "Keine Modelle erfüllen die Anforderungen für diesen Prompt. Bitte konfiguriere Modelle mit den erforderlichen Fähigkeiten.",

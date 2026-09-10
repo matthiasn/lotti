@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The localized reason to show the user when a voice capture failed.

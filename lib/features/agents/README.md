@@ -34,6 +34,9 @@ applied until the user confirms it.
 - **Learns from feedback.** Agents periodically hold a "one-on-one" — a
   conversation where the user's accumulated feedback is reviewed and the agent's
   own instructions are revised, with every change approved by the user first.
+- **Supports text and voice conversations.** Shared chat components serve goal
+  and relationship discussions and agent improvement, including recording,
+  transcription feedback, and expandable reasoning in improvement replies.
 - **Shows its work.** An internals panel exposes the agent's reports,
   conversations, observations, token usage and activity, so its behaviour is
   inspectable rather than opaque.
@@ -43,7 +46,8 @@ applied until the user confirms it.
 The persisted agent runtime: agent identities and state, wake scheduling and
 throttling, the agent's own memory log, change proposals and the review gates in
 front of them, template and personality versioning, and the operator surfaces
-under *Settings → Agents*.
+under *Settings → Agents*. Shared conversation UI and voice-input state also
+live here; batch transcription is supplied by the AI feature.
 
 It does **not** implement inference. Providers, models, prompts and profiles
 belong to the [AI feature](../ai/README.md). It also does not own the user's
@@ -63,7 +67,7 @@ lib/features/agents/
 ├── sync/         # vector-clock stamping and outbox buffering
 ├── model/        # entities, links, enums
 ├── state/        # Riverpod providers and wiring
-└── ui/           # AI summary card, internals panel, settings tabs
+└── ui/           # summary card, internals, settings, shared chat and voice input
 ```
 
 ## What the store forgets, and what it never forgets

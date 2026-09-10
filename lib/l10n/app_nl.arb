@@ -702,8 +702,6 @@
   "aiCardReadMore": "Lees meer",
   "aiCardShowLess": "Minder tonen",
   "aiCardTitle": "Samenvatting van de AI",
-  "aiChatAssistantResponding": "De assistent antwoordt",
-  "aiChatMessageCopied": "Gekopieerd naar het klembord",
   "aiConfigFailedToLoadModelsGeneric": "Laden van modellen is mislukt. Probeer het opnieuw.",
   "aiConfigNoModelsAvailable": "Er zijn nog geen AI-modellen geconfigureerd. Voeg er een toe in instellingen.",
   "aiConfigNoSuitableModelsAvailable": "Geen modellen voldoen aan de eisen voor deze prompt. Stel modellen in die de vereiste mogelijkheden ondersteunen.",

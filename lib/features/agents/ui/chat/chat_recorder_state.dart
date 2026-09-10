@@ -106,6 +106,3 @@ class ChatRecorderConfig {
   final int maxSeconds;
   final int amplitudeIntervalMs;
 }
-
-/// Observes app lifecycle to stop realtime recording when app is backgrounded.
-///

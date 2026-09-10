@@ -996,8 +996,6 @@
   "aiCardReadMore": "Read more",
   "aiCardShowLess": "Show less",
   "aiCardTitle": "AI summary",
-  "aiChatAssistantResponding": "Assistant is responding",
-  "aiChatMessageCopied": "Copied to clipboard",
   "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
   "aiConfigNoModelsAvailable": "No AI models are configured yet. Please add one in settings.",
   "aiConfigNoSuitableModelsAvailable": "No models meet the requirements for this prompt. Please configure models that support the required capabilities.",

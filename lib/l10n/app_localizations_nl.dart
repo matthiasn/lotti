@@ -1487,12 +1487,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardTitle => 'Samenvatting van de AI';
 
   @override
-  String get aiChatAssistantResponding => 'De assistent antwoordt';
-
-  @override
-  String get aiChatMessageCopied => 'Gekopieerd naar het klembord';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Laden van modellen is mislukt. Probeer het opnieuw.';
 

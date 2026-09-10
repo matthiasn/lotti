@@ -51,7 +51,7 @@ flowchart TD
   end
   subgraph Features["Feature modules — lib/features/*"]
     F1["tasks · journal · speech · habits"]
-    F2["ai · agents · daily_os_next · ai_chat"]
+    F2["ai · agents · daily_os_next"]
     F3["sync · settings · categories · insights"]
   end
   subgraph Logic["Cross-feature logic — lib/logic, lib/services"]
