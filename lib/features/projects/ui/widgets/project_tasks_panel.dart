@@ -16,6 +16,7 @@ import 'package:lotti/features/projects/ui/widgets/project_task_list_options_she
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:sliver_tools/sliver_tools.dart';
@@ -647,7 +648,19 @@ class _ProjectTaskGroupHeader extends StatelessWidget {
 Key projectTaskRowKey(TaskSummary summary) =>
     ValueKey('project-task-row-${summary.task.meta.id}');
 
-/// A row displaying a single task's title, estimated duration, and status.
+/// The cover-art id [summary] should render a thumbnail for, or `null` when
+/// the task carries none.
+///
+/// A task whose `coverArtId` is absent — or is whitespace a sync or an
+/// import left behind — has nothing to draw, and the row keeps the full
+/// width it has always had.
+String? _coverArtId(TaskSummary summary) {
+  final id = summary.task.data.coverArtId?.trim();
+  return (id == null || id.isEmpty) ? null : id;
+}
+
+/// A row displaying a single task's cover art, title, estimated duration, and
+/// status.
 ///
 /// [highlighted] paints the hover wash without a pointer, for the row the
 /// list was just asked to bring into view.
@@ -704,6 +717,7 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
   @override
   Widget build(BuildContext context) {
     final oneLiner = widget.summary.oneLiner;
+    final coverArtId = _coverArtId(widget.summary);
 
     final tokens = context.designTokens;
     final backgroundColor = _hovered || widget.highlighted
@@ -734,7 +748,24 @@ class _TaskSummaryRowSurfaceState extends State<_TaskSummaryRowSurface> {
             vertical: tokens.spacing.step3,
           ),
           child: Row(
+            // The thumbnail lines up with the title rather than floating in
+            // the middle of a row whose height is set by the one-liner and
+            // the metadata beneath it.
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (coverArtId != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(tokens.radii.s),
+                  child: CoverArtThumbnail(
+                    imageId: coverArtId,
+                    // The same square the day planner's agenda card draws, so
+                    // a task is the same size wherever it is listed.
+                    size: tokens.spacing.step9,
+                    cropX: widget.summary.task.data.coverArtCropX,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step4),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

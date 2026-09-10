@@ -15,7 +15,11 @@ sources:
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
     title: ProjectAgentWorkflow
-    last_modified: 2026-08-14
+    last_modified: 2026-09-09
+  - id: project-proposals
+    resource: ../../../lib/features/agents/workflow/project_proposal_reconciler.dart
+    title: The guards that stop proposals accumulating
+    last_modified: 2026-09-09
   - id: event-workflow
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
     title: EventAgentWorkflow
@@ -306,9 +310,11 @@ the other committed while it was waiting.
 `ProjectAgentWorkflow.execute()` loads state and resolves `activeProjectId`,
 retires a dormant legacy scheduled wake before inference, loads the project
 entity and prior observations, resolves template/version and inference profile,
-builds linked-task context **including task-agent reports**, runs the
-conversation with `ProjectAgentStrategy`, and persists token usage, final
-thought, report, observations, deferred change set and updated state.
+builds linked-task context **including task-agent reports**, reads the
+proposal ledger for the project, runs the conversation with
+`ProjectAgentStrategy`, and persists token usage, final thought, report,
+observations, staged retractions, the deduplicated deferred change set and
+updated state.
 State that lacks `activeProjectId` enters the same shared failure path as a
 missing project or provider, advancing any overdue fallback instead of leaving
 it due on every scheduler scan.
@@ -322,9 +328,73 @@ rather than relegating internal navigation to the external Links block.
 
 ## Tools and recommendations
 
-Immediate local tools: `update_project_report`, `record_observations`.
+Immediate local tools: `update_project_report`, `record_observations`, and —
+only on a wake that has open proposals — `retract_suggestions`.
 
 Deferred mutations: `update_project_status`, `create_task`.
+
+### Proposals do not accumulate
+
+A pending `ChangeSet` outlives the wake that wrote it: it sits in the project
+card's **Proposed changes** band until the user decides it. Wakes used to be
+blind to that and wrote a fresh set every time, so an agent that believed a
+project should be Active proposed exactly that on every wake — one report was
+seen carrying thirteen identical "Update project status to Active" rows, none
+of which the agent could take back.
+
+Four guards, deliberately separate, because each catches a different mistake:
+
+| Guard | Where | Catches |
+|---|---|---|
+| `normalizeProjectProposalArgs` | `ProjectAgentStrategy`, as the call is queued | a status **alias** — `on_track`, `blocked`, `done` — which the apply path and the row both collapse anyway, so storing the raw word made two identical-looking proposals compare as different everywhere downstream |
+| `projectStatusProposalIsRedundant` | `ProjectAgentStrategy`, at the tool call | a status the project already has — applying it is a no-op, and the model is told so inside the wake rather than losing the call silently |
+| `reconcileProjectProposals` | `project_agent_execute.dart`, at persist time | a proposal matching one still open (by structural fingerprint **or** rendered summary), one the user already rejected, and a duplicate proposed twice in one wake — on both keys, so two `create_task` calls sharing a title but not their optional args collapse to one row rather than creating the task twice |
+| `retract_suggestions` | `SuggestionRetractionService`, shared with the task agent | one the *agent* judges stale — the project moved on, the user did it by hand |
+
+Normalization comes first on purpose: it is what makes the comparisons below
+it correct without any of them having to know about status aliases. `on_hold`
+keeps its reason, which is user-facing text the apply path treats as a real
+change, so two holds for different reasons stay two proposals.
+
+The first three are deterministic and hold whatever the model does. The fourth
+needs the model to know what is open, so `ProjectAgentContextBuilder` reads
+`AgentRepository.getProposalLedger(agentId, taskId: projectId)` before the
+conversation and renders an **Open Proposal Guard** section — one line per open
+proposal carrying the `fp=…` fingerprint `retract_suggestions` addresses it by
+— as the last block of the user message, after the trigger tokens. The tool is
+withheld when nothing is open, so an agent with nothing to withdraw cannot
+hallucinate a fingerprint. A ledger read that fails is non-fatal: the wake runs
+without the guard rather than not at all.
+
+The redundancy check compares through `canonicalProjectStatusOf`, the reverse
+of the `canonicalProjectStatus` alias table, so `on_track` is recognised as the
+`active` the project already is. `on_hold` also compares its reason: the same
+reason is redundant, a new one is a real change.
+
+Retractions are **staged, not written**, while the conversation runs, and
+applied inside the wake's persistence transaction alongside the proposals that
+replace them — the band never reads empty between a withdrawal and its
+replacement. A fingerprint the agent retracts *and* re-proposes in the same
+wake is skipped (`skipFingerprints`): the re-proposal has already been dropped
+as a duplicate, so applying the retraction would make a stable row vanish and
+reappear under the user's finger.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Proposed: model calls a deferred tool
+  Proposed --> Normalized: status alias resolved to its canonical value
+  Normalized --> Refused: status the project already has
+  Normalized --> Dropped: already open, or already rejected
+  Normalized --> Written: genuinely new
+  Written --> Open
+  Open --> Open: later wake re-proposes it (dropped)
+  Open --> Retracted: agent calls retract_suggestions
+  Open --> Confirmed: user confirms
+  Open --> Rejected: user rejects
+  Rejected --> Rejected: later wake re-proposes it (dropped, sticky)
+  Refused --> [*]
+  Dropped --> [*]
+```
 
 The final `recommend_next_steps` call in a conversation replaces any earlier
 payloads in that run, then is published as

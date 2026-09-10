@@ -20,6 +20,7 @@ import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
+import 'package:lotti/features/projects/ui/widgets/project_header_title_row.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_task_list_options_sheet.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
@@ -178,6 +179,182 @@ void main() {
         lessThan(48),
         reason: 'The menu hit target must not create an empty toolbar row.',
       );
+    });
+
+    group('Explore project', () {
+      testWidgets('sits in the title row, at the trailing edge', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+              onEdit: () {},
+            ),
+            size: const Size(1200, 900),
+          ),
+        );
+        await tester.pump();
+
+        final explore = tester.getRect(
+          find.widgetWithText(DesignSystemButton, 'Explore project'),
+        );
+        final title = tester.getRect(find.text('Test Project'));
+        final menu = tester.getRect(find.byType(DesignSystemContextMenuButton));
+
+        expect(
+          explore.center.dy,
+          closeTo(title.center.dy, title.height),
+          reason: 'it shares the title row rather than a band beneath it',
+        );
+        expect(
+          explore.left,
+          greaterThan(title.right),
+          reason: 'it sits after the title, not under it',
+        );
+        expect(
+          explore.right,
+          lessThanOrEqualTo(menu.left),
+          reason: 'the overflow menu stays the outermost control',
+        );
+      });
+
+      testWidgets('drops its label on a narrow pane', (tester) async {
+        // The surface itself, not just the MediaQuery: the header decides
+        // from the width it is actually laid out in.
+        tester.view.physicalSize = const Size(430, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Explore project'), findsNothing);
+        expect(
+          find.byIcon(LottiIcons.map),
+          findsOneWidget,
+          reason: 'the glyph carries the action when the label will not fit',
+        );
+      });
+
+      testWidgets('drops its label at large text on a wide pane', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+            ),
+            size: const Size(1200, 900),
+            textScaler: const TextScaler.linear(
+              ProjectMobileDetailContent.largeTextScale,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Explore project'), findsNothing);
+        expect(find.byIcon(LottiIcons.map), findsOneWidget);
+      });
+
+      testWidgets('is absent when the host offers no plaza', (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+            ),
+            size: const Size(1200, 900),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Explore project'), findsNothing);
+        expect(find.byIcon(LottiIcons.map), findsNothing);
+      });
+
+      testWidgets('no metadata pill sits under the action rail', (
+        tester,
+      ) async {
+        // A single-line title leaves the header shorter than the 48 pt rail,
+        // so the rail hangs into the band the status pills occupy. The pills
+        // are laid out after the header, so a pill that reached under the
+        // rail would win the pointer — the rail's own hit-test override only
+        // claims what nothing later covers. They are left-aligned and the
+        // rail is right-aligned, and this pins that they stay apart.
+        tester.view.physicalSize = const Size(430, 1400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(
+                project: makeTestProject(title: 'Ab'),
+              ),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+              onEdit: () {},
+              onStatusTap: () {},
+              onTargetDateTap: () {},
+              onCategoryTap: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final rail = tester.getRect(find.byType(DesignSystemContextMenuButton));
+        final header = tester.getRect(find.byType(ProjectHeaderTitleRow));
+        expect(
+          rail.bottom,
+          greaterThan(header.bottom),
+          reason: 'the fixture must overhang, or this pins nothing',
+        );
+
+        for (final pill in tester.widgetList<DsPill>(find.byType(DsPill))) {
+          final rect = tester.getRect(find.byWidget(pill));
+          expect(
+            rect.overlaps(rail),
+            isFalse,
+            reason: '"${pill.label}" reaches under the action rail',
+          );
+        }
+      });
+
+      testWidgets('keeps the metadata close to the title', (tester) async {
+        // The same guard the lone overflow menu has: adding a control to the
+        // title row must not open an empty band above the status pills.
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onOpenPlaza: () {},
+              onEdit: () {},
+            ),
+            size: const Size(1200, 900),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          tester.getTopLeft(find.text('Open')).dy -
+              tester.getTopLeft(find.text('Test Project')).dy,
+          lessThan(48),
+        );
+      });
     });
 
     testWidgets('hides the overflow menu while an inline save runs', (

@@ -1,5 +1,6 @@
 // Tool definitions for the project agent.
 
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -11,6 +12,7 @@ abstract final class ProjectAgentToolNames {
   static const recommendNextSteps = 'recommend_next_steps';
   static const updateProjectStatus = 'update_project_status';
   static const createTask = 'create_task';
+  static const retractSuggestions = 'retract_suggestions';
 }
 
 /// The canonical `update_project_status` wire value for [raw], or `null` when
@@ -36,6 +38,20 @@ String? canonicalProjectStatus(String raw) {
     _ => null,
   };
 }
+
+/// The canonical `update_project_status` wire value [status] already carries.
+///
+/// The reverse of [canonicalProjectStatus], and its counterpart: comparing a
+/// proposal's canonical value against this one is what tells a wake that
+/// "set it to Active" would change nothing on an already-active project.
+String canonicalProjectStatusOf(ProjectStatus status) => switch (status) {
+  ProjectOpen() => 'open',
+  ProjectActive() => 'active',
+  ProjectMonitoring() => 'monitoring',
+  ProjectOnHold() => 'on_hold',
+  ProjectCompleted() => 'completed',
+  ProjectArchived() => 'archived',
+};
 
 /// The [TaskPriority] a project-agent priority word means, or `null` when the
 /// word is outside the vocabulary. A missing priority is medium, the default
@@ -248,6 +264,71 @@ const projectAgentTools = <AgentToolDefinition>[
       'required': ['title'],
     },
   ),
+];
+
+/// Withdraws the agent's own still-open proposals.
+///
+/// Advertised only on a wake that actually has open proposals — see
+/// [projectAgentToolsFor]. Offering it to an agent with nothing to withdraw
+/// invites a hallucinated fingerprint and a wasted turn.
+const projectRetractSuggestionsTool = AgentToolDefinition(
+  name: ProjectAgentToolNames.retractSuggestions,
+  description:
+      'Withdraw one or more of your own previously-proposed changes that are '
+      'no longer relevant (the project already matches them, or they '
+      'duplicate another open proposal). The user is NOT prompted — the '
+      'retraction is recorded in your decision history and the items '
+      'disappear from the "Proposed changes" list. Use this to keep that '
+      'list free of stale proposals. Only already-pending items can be '
+      'retracted; items already confirmed, rejected, or retracted are '
+      'no-ops.',
+  parameters: {
+    'type': 'object',
+    'properties': {
+      'proposals': {
+        'type': 'array',
+        'minItems': 1,
+        'items': {
+          'type': 'object',
+          'properties': {
+            'fingerprint': {
+              'type': 'string',
+              'description':
+                  'The fingerprint shown in the open-proposal guard for the '
+                  'item you want to withdraw. Must exactly match an `fp=...` '
+                  'value listed there.',
+            },
+            'reason': {
+              'type': 'string',
+              'minLength': 1,
+              'maxLength': 500,
+              'description':
+                  'One short sentence explaining why this proposal is no '
+                  'longer relevant (e.g. "the project is already Active", '
+                  '"the user created this task by hand").',
+            },
+          },
+          'required': ['fingerprint', 'reason'],
+          'additionalProperties': false,
+        },
+        'description':
+            'One entry per proposal you want to retract in this call.',
+      },
+    },
+    'required': ['proposals'],
+    'additionalProperties': false,
+  },
+);
+
+/// The tool surface for one wake.
+///
+/// [hasOpenProposals] adds [projectRetractSuggestionsTool]; without open
+/// proposals there is nothing a retraction could target.
+List<AgentToolDefinition> projectAgentToolsFor({
+  required bool hasOpenProposals,
+}) => [
+  ...projectAgentTools,
+  if (hasOpenProposals) projectRetractSuggestionsTool,
 ];
 
 /// Project agent tools whose mutations require user confirmation.

@@ -7,6 +7,10 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -105,6 +109,27 @@ void main() {
       expect(prompt, contains('## Health Assessment'));
       expect(prompt, isNot(contains('## Your Personality')));
       expect(prompt, isNot(contains('## Report Directive')));
+    });
+
+    test('states the three rules that keep the proposal band clean', () {
+      // The deterministic guards drop duplicates whatever the model does, but
+      // an agent that is never told stays in a loop of proposing them.
+      final prompt = builder.buildSystemPrompt(
+        version: null,
+        soulVersion: null,
+      );
+
+      expect(prompt, contains('## Your Own Open Proposals'));
+      expect(
+        prompt,
+        contains('Never propose something that is already open'),
+      );
+      expect(
+        prompt,
+        contains('Never propose a status the project already has'),
+      );
+      expect(prompt, contains(ProjectAgentToolNames.retractSuggestions));
+      expect(prompt, contains('## Open Proposal Guard'));
     });
 
     test('appends legacy combined heading when only directives is set', () {
@@ -320,6 +345,115 @@ void main() {
       for (final tool in tools) {
         expect(tool.type, ChatCompletionToolType.function);
       }
+    });
+
+    test('withholds retract_suggestions when nothing is open', () {
+      // Offering it with nothing to withdraw invites a hallucinated
+      // fingerprint and a wasted turn.
+      expect(
+        builder.buildToolDefinitions().map((t) => t.function.name),
+        isNot(contains(ProjectAgentToolNames.retractSuggestions)),
+      );
+    });
+
+    test('offers retract_suggestions when proposals are open', () {
+      final tools = builder.buildToolDefinitions(hasOpenProposals: true);
+      expect(
+        tools.map((t) => t.function.name),
+        contains(ProjectAgentToolNames.retractSuggestions),
+      );
+      final retract = tools.firstWhere(
+        (t) => t.function.name == ProjectAgentToolNames.retractSuggestions,
+      );
+      final parameters = retract.function.parameters!;
+      expect(parameters['required'], ['proposals']);
+      final proposals = (parameters['properties']! as Map)['proposals']! as Map;
+      expect(
+        (proposals['items']! as Map)['required']! as List,
+        containsAll(<String>['fingerprint', 'reason']),
+        reason: 'a retraction without a reason leaves no audit trail',
+      );
+    });
+  });
+
+  group('open proposal guard', () {
+    LedgerEntry entry(String summary, {String status = 'active'}) {
+      final item = ChangeItem(
+        toolName: ProjectAgentToolNames.updateProjectStatus,
+        args: {'status': status},
+        humanSummary: summary,
+      );
+      return LedgerEntry(
+        changeSetId: 'set-1',
+        itemIndex: 0,
+        toolName: item.toolName,
+        args: item.args,
+        humanSummary: item.humanSummary,
+        fingerprint: ChangeItem.fingerprint(item),
+        status: ChangeItemStatus.pending,
+        createdAt: DateTime(2026, 9),
+      );
+    }
+
+    test('renders nothing when no proposal is open', () {
+      expect(
+        ProjectAgentContextBuilder.formatOpenProposalGuard(
+          const ProposalLedger.empty(),
+        ),
+        isEmpty,
+      );
+    });
+
+    test(
+      'lists each open proposal with the fingerprint it is retracted by',
+      () {
+        final open = entry('Update project status to Active');
+        final guard = ProjectAgentContextBuilder.formatOpenProposalGuard(
+          ProposalLedger(open: [open], resolved: const []),
+        );
+
+        expect(guard, contains('## Open Proposal Guard'));
+        expect(guard, contains('fp=${open.fingerprint}'));
+        expect(guard, contains('Update project status to Active'));
+        expect(
+          guard,
+          contains(ProjectAgentToolNames.retractSuggestions),
+          reason: 'the guard must name the tool that acts on it',
+        );
+      },
+    );
+
+    test('the wake message carries the guard for the model to compare', () {
+      final open = entry('Update project status to Active');
+      final result = builder.buildUserMessage(
+        projectEntity: projectEntity(),
+        lastReport: null,
+        observations: const [],
+        observationPayloads: const {},
+        linkedTasksContext: '{}',
+        triggerTokens: const {'entity-a'},
+        ledger: ProposalLedger(open: [open], resolved: const []),
+      );
+
+      expect(result.text, contains('fp=${open.fingerprint}'));
+      expect(
+        result.text.indexOf('## Open Proposal Guard'),
+        greaterThan(result.text.indexOf('## Project Context')),
+        reason: 'the guard is the freshest thing before the model proposes',
+      );
+    });
+
+    test('a wake with no open proposals carries no guard', () {
+      final result = builder.buildUserMessage(
+        projectEntity: projectEntity(),
+        lastReport: null,
+        observations: const [],
+        observationPayloads: const {},
+        linkedTasksContext: '{}',
+        triggerTokens: const {},
+      );
+
+      expect(result.text, isNot(contains('Open Proposal Guard')));
     });
   });
 

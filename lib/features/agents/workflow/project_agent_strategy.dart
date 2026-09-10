@@ -1,13 +1,16 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
+import 'package:lotti/features/agents/workflow/project_proposal_reconciler.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -30,6 +33,9 @@ class ProjectAgentStrategy extends ConversationStrategy
     required this.agentId,
     required this.threadId,
     required this.runKey,
+    this.projectId,
+    this.currentProjectStatus,
+    this.retractionService,
   });
 
   /// Sync-aware write service for persisting messages.
@@ -47,6 +53,23 @@ class ProjectAgentStrategy extends ConversationStrategy
   /// The run key for the current wake cycle.
   @override
   final String runKey;
+
+  /// The project this wake is about. Required for `retract_suggestions`,
+  /// which addresses change sets by their target entity.
+  final String? projectId;
+
+  /// The project's status at wake start. When supplied, an
+  /// `update_project_status` call that would change nothing is refused with an
+  /// explanation instead of being queued — the model learns inside the wake,
+  /// and the band never grows a row that does nothing when applied.
+  final ProjectStatus? currentProjectStatus;
+
+  /// Withdraws the agent's own open proposals. `null` leaves
+  /// `retract_suggestions` unwired, and a call to it reports that.
+  final SuggestionRetractionService? retractionService;
+
+  final _stagedRetractions = <StagedRetraction>[];
+  final _stagedRetractionKeys = <String>{};
 
   String? _reportContent;
   String? _reportTldr;
@@ -102,11 +125,42 @@ class ProjectAgentStrategy extends ConversationStrategy
         continue;
       }
 
+      if (toolName == ProjectAgentToolNames.retractSuggestions) {
+        await _handleRetractSuggestions(args, call.id, manager);
+        continue;
+      }
+
       // Deferred tools: accumulate for later persistence.
       if (projectDeferredTools.contains(toolName)) {
+        // A status the project already has is not queued: applying it is a
+        // no-op, so the row would sit in the band forever doing nothing.
+        // Telling the model now also stops it burning the next turn
+        // re-proposing the same thing.
+        //
+        // Reported as an ordinary tool result, not an error — the guard
+        // working is not a failure, and `errorMessage` renders in the agent's
+        // activity log in the error colour. The task agent reports its own
+        // redundancy checks the same way (`ChangeProposalFilter`).
+        final status = currentProjectStatus;
+        if (toolName == ProjectAgentToolNames.updateProjectStatus &&
+            status != null &&
+            projectStatusProposalIsRedundant(current: status, args: args)) {
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response:
+                'Skipped: the project is already ${status.label}, so this '
+                'would change nothing. Do not propose it again.',
+          );
+          await recordToolResultMessage(toolName: toolName);
+          continue;
+        }
         _deferredItems.add({
           'toolName': toolName,
-          'args': args,
+          // Canonicalized here, where the model's word enters: a status alias
+          // renders and applies as its canonical status, so storing the alias
+          // would make two identical-looking proposals compare as different
+          // everywhere downstream.
+          'args': normalizeProjectProposalArgs(toolName, args),
         });
         final response = 'Queued $toolName for user review.';
         manager.addToolResponse(toolCallId: call.id, response: response);
@@ -173,6 +227,12 @@ class ProjectAgentStrategy extends ConversationStrategy
   /// Returns deferred tool items accumulated during the conversation.
   List<Map<String, dynamic>> extractDeferredItems() =>
       List.unmodifiable(_deferredItems);
+
+  /// The retractions this wake staged, for the workflow to apply at the end
+  /// of the wake — in the same transaction as the new proposals, so the band
+  /// never reads empty between a withdrawal and its replacement.
+  List<StagedRetraction> extractStagedRetractions() =>
+      List.unmodifiable(_stagedRetractions);
 
   // ── Report handling ────────────────────────────────────────────────────────
 
@@ -250,6 +310,145 @@ class ProjectAgentStrategy extends ConversationStrategy
     );
     await recordToolResultMessage(
       toolName: ProjectAgentToolNames.updateProjectReport,
+    );
+  }
+
+  // ── Retraction handling ────────────────────────────────────────────────────
+
+  /// Handles `retract_suggestions`: validates the requested fingerprints
+  /// against the project's open proposals, stages the matches for end-of-wake
+  /// application, and reports the per-entry outcome back to the model.
+  ///
+  /// Nothing is written here. Staging until the end of the wake is what keeps
+  /// the "Proposed changes" band from flashing empty between a withdrawal and
+  /// the replacement this same wake is about to propose.
+  Future<void> _handleRetractSuggestions(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final service = retractionService;
+    final targetId = projectId;
+    if (service == null || targetId == null) {
+      await _rejectToolCall(
+        callId: callId,
+        toolName: ProjectAgentToolNames.retractSuggestions,
+        errorMsg: 'Error: retract_suggestions is not wired up for this agent.',
+        manager: manager,
+      );
+      return;
+    }
+
+    final rawProposals = args['proposals'];
+    if (rawProposals is! List || rawProposals.isEmpty) {
+      await _rejectToolCall(
+        callId: callId,
+        toolName: ProjectAgentToolNames.retractSuggestions,
+        errorMsg:
+            'Error: "proposals" must be a non-empty array of '
+            '{fingerprint, reason} objects.',
+        manager: manager,
+      );
+      return;
+    }
+
+    final requests = <RetractionRequest>[];
+    final parseErrors = <String>[];
+    for (var i = 0; i < rawProposals.length; i++) {
+      final entry = rawProposals[i];
+      if (entry is! Map) {
+        parseErrors.add('proposals[$i] is not an object');
+        continue;
+      }
+      final fingerprint = entry['fingerprint'];
+      final reason = entry['reason'];
+      if (fingerprint is! String || fingerprint.trim().isEmpty) {
+        parseErrors.add('proposals[$i].fingerprint missing or empty');
+        continue;
+      }
+      if (reason is! String || reason.trim().isEmpty) {
+        parseErrors.add('proposals[$i].reason missing or empty');
+        continue;
+      }
+      requests.add(
+        RetractionRequest(
+          fingerprint: fingerprint.trim(),
+          reason: reason.trim(),
+        ),
+      );
+    }
+
+    if (requests.isEmpty) {
+      await _rejectToolCall(
+        callId: callId,
+        toolName: ProjectAgentToolNames.retractSuggestions,
+        errorMsg:
+            'Error: no valid proposals to retract. ${parseErrors.join('; ')}',
+        manager: manager,
+      );
+      return;
+    }
+
+    // `plan` reads the pending change sets and the proposal ledger. A failed
+    // read must not take the wake down with it: retraction is the least
+    // valuable thing a wake produces, and losing the report, the
+    // observations and the next steps with it would be wildly
+    // disproportionate — the same reason the workflow's own ledger read is
+    // non-fatal. Report it and let the conversation continue.
+    final RetractionPlan plan;
+    try {
+      plan = await service.plan(
+        agentId: agentId,
+        taskId: targetId,
+        requests: requests,
+        alreadyStagedKeys: _stagedRetractionKeys,
+      );
+    } catch (e) {
+      developer.log(
+        'retract_suggestions could not read open proposals '
+        '(errorType=${e.runtimeType})',
+        name: 'ProjectAgentStrategy',
+      );
+      await _rejectToolCall(
+        callId: callId,
+        toolName: ProjectAgentToolNames.retractSuggestions,
+        errorMsg:
+            'Error: your open proposals could not be read, so nothing was '
+            'retracted. Continue without retracting.',
+        manager: manager,
+      );
+      return;
+    }
+    for (final retraction in plan.staged) {
+      _stagedRetractions.add(retraction);
+      _stagedRetractionKeys.add(retraction.key);
+    }
+
+    final response = StringBuffer('Retraction results:');
+    for (final result in plan.results) {
+      final label = switch (result.outcome) {
+        RetractionOutcome.retracted => 'retracted',
+        RetractionOutcome.notOpen => 'not_open (already resolved)',
+        RetractionOutcome.notFound => 'not_found',
+      };
+      final summary = result.humanSummary?.trim();
+      final detail = (summary != null && summary.isNotEmpty)
+          ? ' — "$summary"'
+          : (result.toolName != null ? ' — ${result.toolName}' : '');
+      response.writeln('\n- [fp=${result.fingerprint}] $label$detail');
+    }
+    if (parseErrors.isNotEmpty) {
+      response
+        ..writeln()
+        ..writeln('Skipped malformed entries: ${parseErrors.join('; ')}');
+    }
+
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: response.toString().trim(),
+    );
+    await recordToolResultMessage(
+      toolName: ProjectAgentToolNames.retractSuggestions,
     );
   }
 

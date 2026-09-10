@@ -190,6 +190,17 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     // 6c. Load linked tasks and their task-agent reports.
     final linkedTasksContext = await _buildLinkedTasksContext(projectId);
 
+    // 6d. Load the proposals the user has not decided yet. Wakes used to be
+    // blind to them and re-proposed the same change every time, so the
+    // "Proposed changes" band grew a fresh identical row per wake. The ledger
+    // feeds three things: the guard in the prompt, the tool surface (retract
+    // is only offered when there is something to retract), and the dedup that
+    // refuses to write a duplicate whatever the model does.
+    final ledger = await _loadProposalLedger(
+      agentId: agentId,
+      projectId: projectId,
+    );
+
     // 7. Assemble system prompt and user message.
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final builtMessage = _buildUserMessage(
@@ -199,6 +210,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       observationPayloads: observationPayloads,
       linkedTasksContext: linkedTasksContext,
       triggerTokens: triggerTokens,
+      ledger: ledger,
       // Only attach the compacted log when the read actually flips; the
       // legacy sections render otherwise.
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
@@ -253,14 +265,26 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     }
 
     try {
+      final retractionService = SuggestionRetractionService(
+        syncService: syncService,
+        domainLogger: domainLogger,
+      );
       final strategy = ProjectAgentStrategy(
         syncService: syncService,
         agentId: agentId,
         threadId: threadId,
         runKey: runKey,
+        projectId: projectId,
+        currentProjectStatus: projectEntity.maybeMap(
+          project: (project) => project.data.status,
+          orElse: () => null,
+        ),
+        retractionService: retractionService,
       );
 
-      final tools = _buildToolDefinitions();
+      final tools = _buildToolDefinitions(
+        hasOpenProposals: ledger.open.isNotEmpty,
+      );
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: this.cloudInferenceRepository,
         geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
@@ -474,12 +498,27 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
             )
             .toList();
         // Only actual project mutations need deferred tool confirmation.
-        if (mutations.isNotEmpty) {
-          final changeItems = buildDeferredChangeItems(
-            mutations,
-            ProjectAgentWorkflow._buildHumanSummary,
-          );
+        final proposedItems = buildDeferredChangeItems(
+          mutations,
+          ProjectAgentWorkflow._buildHumanSummary,
+        );
+        final changeItems = reconcileProjectProposals(
+          proposed: proposedItems,
+          ledger: ledger,
+        );
 
+        // Apply the retractions the agent staged, in the same transaction as
+        // the proposals that replace them, so the band never reads empty in
+        // between. Anything the agent retracted *and* re-proposed this wake
+        // is left open instead: the re-proposal has already been dropped as a
+        // duplicate above, so applying the retraction would make a stable
+        // suggestion disappear for no reason.
+        await retractionService.applyStaged(
+          strategy.extractStagedRetractions(),
+          skipFingerprints: proposedItems.map(ChangeItem.fingerprint).toSet(),
+        );
+
+        if (changeItems.isNotEmpty) {
           await syncService.upsertEntity(
             AgentDomainEntity.changeSet(
               id: ProjectAgentWorkflow._uuid.v4(),
@@ -492,6 +531,13 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
               createdAt: now,
               vectorClock: null,
             ),
+          );
+        }
+        if (changeItems.length < proposedItems.length) {
+          _log(
+            'dropped ${proposedItems.length - changeItems.length} duplicate '
+            'proposal(s) already open or rejected',
+            subDomain: 'execute',
           );
         }
 

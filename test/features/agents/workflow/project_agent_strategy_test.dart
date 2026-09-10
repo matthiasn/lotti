@@ -1,8 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -15,6 +20,7 @@ import '../../../mocks/mocks.dart';
 const _agentId = 'agent-001';
 const _threadId = 'thread-001';
 const _runKey = 'run-key-001';
+const _projectId = 'project-001';
 
 ChatCompletionMessageToolCall _makeToolCall({
   required String name,
@@ -775,6 +781,328 @@ void main() {
         final deferred = strategy.extractDeferredItems();
         expect(
           () => deferred.add({'extra': true}),
+          throwsUnsupportedError,
+        );
+      });
+    });
+
+    group('redundant status proposals', () {
+      /// The strategy as the wake builds it: told what the project's status
+      /// is, so it can refuse a proposal that would change nothing.
+      ProjectAgentStrategy withStatus(ProjectStatus status) =>
+          ProjectAgentStrategy(
+            syncService: mockSyncService,
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            projectId: _projectId,
+            currentProjectStatus: status,
+          );
+
+      test('refuses a status the project already has, and says why', () async {
+        final active = ProjectStatus.active(
+          id: 's1',
+          createdAt: DateTime(2026, 9),
+          utcOffset: 0,
+        );
+        final strategy = withStatus(active);
+
+        await strategy.processToolCalls(
+          toolCalls: [
+            _makeToolCall(
+              name: ProjectAgentToolNames.updateProjectStatus,
+              // The alias the reported bug came in as.
+              args: {'status': 'on_track', 'reason': 'All tasks progressing'},
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(
+          strategy.extractDeferredItems(),
+          isEmpty,
+          reason: 'a no-op proposal must never reach the user',
+        );
+        final response = verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: captureAny(named: 'response'),
+          ),
+        ).captured.single;
+        expect(response, contains('already Active'));
+
+        // Recorded as an ordinary result, not an error: `errorMessage` shows
+        // in the agent's activity log in the error colour, and the guard
+        // working is not a failure.
+        final toolResult =
+            verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured.whereType<AgentMessageEntity>().singleWhere(
+              (message) => message.kind == AgentMessageKind.toolResult,
+            );
+        expect(toolResult.metadata.errorMessage, isNull);
+      });
+
+      test('queues a status that would actually change the project', () async {
+        final strategy = withStatus(
+          ProjectStatus.active(
+            id: 's1',
+            createdAt: DateTime(2026, 9),
+            utcOffset: 0,
+          ),
+        );
+
+        await strategy.processToolCalls(
+          toolCalls: [
+            _makeToolCall(
+              name: ProjectAgentToolNames.updateProjectStatus,
+              args: {'status': 'completed', 'reason': 'Shipped'},
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(strategy.extractDeferredItems(), hasLength(1));
+      });
+
+      test('queues everything when the wake did not supply a status', () async {
+        // A strategy built without the project's status has nothing to compare
+        // against; it must not start dropping proposals on a guess.
+        await strategy.processToolCalls(
+          toolCalls: [
+            _makeToolCall(
+              name: ProjectAgentToolNames.updateProjectStatus,
+              args: {'status': 'active', 'reason': 'Work resumed'},
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(strategy.extractDeferredItems(), hasLength(1));
+      });
+
+      test('leaves create_task alone', () async {
+        final strategy = withStatus(
+          ProjectStatus.active(
+            id: 's1',
+            createdAt: DateTime(2026, 9),
+            utcOffset: 0,
+          ),
+        );
+
+        await strategy.processToolCalls(
+          toolCalls: [
+            _makeToolCall(
+              name: ProjectAgentToolNames.createTask,
+              args: {'title': 'Ship it'},
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(strategy.extractDeferredItems(), hasLength(1));
+      });
+    });
+
+    group('retract_suggestions', () {
+      late MockAgentRepository repository;
+      late ProjectAgentStrategy strategy;
+
+      /// One open proposal on the project, so a retraction has a target.
+      ChangeSetEntity openSet(ChangeItem item) =>
+          AgentDomainEntity.changeSet(
+                id: 'set-1',
+                agentId: _agentId,
+                taskId: _projectId,
+                threadId: _threadId,
+                runKey: _runKey,
+                status: ChangeSetStatus.pending,
+                items: [item],
+                createdAt: DateTime(2026, 9),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
+
+      const staleItem = ChangeItem(
+        toolName: ProjectAgentToolNames.updateProjectStatus,
+        args: {'status': 'active', 'reason': 'stale'},
+        humanSummary: 'Update project status to active',
+      );
+
+      setUp(() {
+        repository = MockAgentRepository();
+        when(() => mockSyncService.repository).thenReturn(repository);
+        when(
+          () => repository.getPendingChangeSets(_agentId, taskId: _projectId),
+        ).thenAnswer((_) async => [openSet(staleItem)]);
+        when(
+          () => repository.getProposalLedger(_agentId, taskId: _projectId),
+        ).thenAnswer((_) async => const ProposalLedger.empty());
+
+        strategy = ProjectAgentStrategy(
+          syncService: mockSyncService,
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          projectId: _projectId,
+          retractionService: SuggestionRetractionService(
+            syncService: mockSyncService,
+          ),
+        );
+      });
+
+      Future<void> retract(Object proposals) => strategy.processToolCalls(
+        toolCalls: [
+          _makeToolCall(
+            name: ProjectAgentToolNames.retractSuggestions,
+            args: {'proposals': proposals},
+          ),
+        ],
+        manager: mockManager,
+      );
+
+      String capturedResponse() =>
+          verify(
+                () => mockManager.addToolResponse(
+                  toolCallId: 'call-1',
+                  response: captureAny(named: 'response'),
+                ),
+              ).captured.single
+              as String;
+
+      test('stages a matching open proposal without writing it yet', () async {
+        await retract([
+          {
+            'fingerprint': ChangeItem.fingerprint(staleItem),
+            'reason': 'the project is already Active',
+          },
+        ]);
+
+        final staged = strategy.extractStagedRetractions();
+        expect(staged, hasLength(1));
+        expect(staged.single.item, staleItem);
+        expect(staged.single.reason, 'the project is already Active');
+        expect(capturedResponse(), contains('retracted'));
+        // Nothing is written here: the wake applies staged retractions with
+        // the proposals that replace them, so the band never reads empty.
+        verifyNever(
+          () => mockSyncService.upsertEntity(
+            any(that: isA<ChangeDecisionEntity>()),
+          ),
+        );
+        verifyNever(
+          () => mockSyncService.upsertEntity(any(that: isA<ChangeSetEntity>())),
+        );
+      });
+
+      test('reports a fingerprint that matches nothing', () async {
+        await retract([
+          {'fingerprint': 'not-a-real-fingerprint', 'reason': 'gone stale'},
+        ]);
+
+        expect(strategy.extractStagedRetractions(), isEmpty);
+        expect(capturedResponse(), contains('not_found'));
+      });
+
+      test('stages the same fingerprint only once', () async {
+        final request = {
+          'fingerprint': ChangeItem.fingerprint(staleItem),
+          'reason': 'already covered',
+        };
+        await retract([request]);
+        await retract([request]);
+
+        expect(strategy.extractStagedRetractions(), hasLength(1));
+      });
+
+      test('rejects a malformed proposals argument', () async {
+        await retract('not a list');
+
+        expect(strategy.extractStagedRetractions(), isEmpty);
+        expect(capturedResponse(), contains('non-empty array'));
+      });
+
+      test('rejects entries missing a fingerprint or a reason', () async {
+        await retract([
+          {'reason': 'no fingerprint'},
+          {'fingerprint': 'abc'},
+          'not an object',
+        ]);
+
+        expect(strategy.extractStagedRetractions(), isEmpty);
+        final response = capturedResponse();
+        expect(response, contains('fingerprint missing'));
+        expect(response, contains('reason missing'));
+        expect(response, contains('is not an object'));
+      });
+
+      test('reports the malformed entries alongside the good ones', () async {
+        // A model that gets one entry wrong should still have its valid
+        // retraction applied, and be told exactly what it got wrong.
+        await retract([
+          {
+            'fingerprint': ChangeItem.fingerprint(staleItem),
+            'reason': 'the project is already Active',
+          },
+          {'reason': 'no fingerprint here'},
+        ]);
+
+        expect(strategy.extractStagedRetractions(), hasLength(1));
+        final response = capturedResponse();
+        expect(response, contains('retracted'));
+        expect(response, contains('Skipped malformed entries'));
+      });
+
+      test('a failed read reports back instead of failing the wake', () async {
+        // Retraction is the least valuable thing a wake produces; losing the
+        // report and the observations with it would be disproportionate.
+        when(
+          () => repository.getPendingChangeSets(_agentId, taskId: _projectId),
+        ).thenThrow(Exception('database unavailable'));
+
+        await expectLater(
+          retract([
+            {
+              'fingerprint': ChangeItem.fingerprint(staleItem),
+              'reason': 'stale',
+            },
+          ]),
+          completes,
+        );
+
+        expect(strategy.extractStagedRetractions(), isEmpty);
+        expect(capturedResponse(), contains('could not be read'));
+      });
+
+      test('says so when the tool is not wired up', () async {
+        final unwired = ProjectAgentStrategy(
+          syncService: mockSyncService,
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+        );
+
+        await unwired.processToolCalls(
+          toolCalls: [
+            _makeToolCall(
+              name: ProjectAgentToolNames.retractSuggestions,
+              args: {
+                'proposals': [
+                  {'fingerprint': 'abc', 'reason': 'stale'},
+                ],
+              },
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(unwired.extractStagedRetractions(), isEmpty);
+        expect(capturedResponse(), contains('not wired up'));
+      });
+
+      test('the staged list is unmodifiable', () async {
+        expect(
+          () => strategy.extractStagedRetractions().clear(),
           throwsUnsupportedError,
         );
       });

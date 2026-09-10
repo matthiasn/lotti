@@ -7,11 +7,14 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -22,6 +25,7 @@ import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/project_proposal_reconciler.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -327,6 +331,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
     required String linkedTasksContext,
     required Set<String> triggerTokens,
+    required ProposalLedger ledger,
     String? compactedLog,
   }) => _contextBuilder.buildUserMessage(
     projectEntity: projectEntity,
@@ -336,10 +341,37 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     linkedTasksContext: linkedTasksContext,
     triggerTokens: triggerTokens,
     compactedLog: compactedLog,
+    ledger: ledger,
   );
 
-  List<ChatCompletionTool> _buildToolDefinitions() =>
-      _contextBuilder.buildToolDefinitions();
+  List<ChatCompletionTool> _buildToolDefinitions({
+    required bool hasOpenProposals,
+  }) => _contextBuilder.buildToolDefinitions(
+    hasOpenProposals: hasOpenProposals,
+  );
+
+  /// Reads every proposal this agent has open on [projectId], plus the recent
+  /// verdicts, so the wake can list them in the prompt and refuse to write a
+  /// duplicate. A failed read is non-fatal: the wake proceeds without the
+  /// guard rather than not running at all.
+  Future<ProposalLedger> _loadProposalLedger({
+    required String agentId,
+    required String projectId,
+  }) async {
+    try {
+      return await agentRepository.getProposalLedger(
+        agentId,
+        taskId: projectId,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'failed to load the proposal ledger',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const ProposalLedger.empty();
+    }
+  }
 
   String? _extractFinalAssistantContent(ConversationManager? manager) =>
       _contextBuilder.extractFinalAssistantContent(manager);

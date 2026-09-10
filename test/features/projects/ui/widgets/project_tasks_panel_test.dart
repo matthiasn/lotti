@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -14,8 +15,11 @@ import 'package:lotti/features/projects/ui/widgets/project_task_list_options_she
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_tag_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/journal_image_fixtures.dart';
 import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -282,6 +286,120 @@ void main() {
       expect(backgroundRect.right, rowRect.right);
       expect(backgroundRect.top, lessThan(rowRect.top));
       expect(backgroundRect.bottom, greaterThan(rowRect.bottom));
+    });
+
+    group('cover art', () {
+      final image = buildJournalImage();
+
+      /// A task summary carrying [coverArtId], since the shared factory
+      /// builds plain tasks.
+      TaskSummary withCoverArt(String? coverArtId, {double cropX = 0.5}) {
+        final task = makeTestTask(id: 't1', title: 'Build feature');
+        return makeTestTaskSummary(
+          task: task.copyWith(
+            data: task.data.copyWith(
+              coverArtId: coverArtId,
+              coverArtCropX: cropX,
+            ),
+          ),
+          oneLiner: 'Implementation phase done, release next',
+        );
+      }
+
+      Future<void> pumpRow(WidgetTester tester, TaskSummary summary) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [createEntryControllerOverride(image)],
+            child: wrap(TaskSummaryRow(summary: summary)),
+          ),
+        );
+        await tester.pump();
+      }
+
+      testWidgets('renders the task cover art with its stored crop', (
+        tester,
+      ) async {
+        await pumpRow(tester, withCoverArt('image-1', cropX: 0.25));
+
+        final thumbnail = tester.widget<CoverArtThumbnail>(
+          find.byType(CoverArtThumbnail),
+        );
+        expect(thumbnail.imageId, 'image-1');
+        expect(
+          thumbnail.cropX,
+          0.25,
+          reason: 'the row must honour the crop the user chose on the task',
+        );
+      });
+
+      testWidgets('draws no thumbnail when the task has no cover art', (
+        tester,
+      ) async {
+        await pumpRow(tester, withCoverArt(null));
+        expect(find.byType(CoverArtThumbnail), findsNothing);
+      });
+
+      testWidgets('treats a blank cover art id as no cover art', (
+        tester,
+      ) async {
+        // Sync and import have both been seen leaving whitespace behind; a
+        // blank id resolves to nothing and would reserve an empty square.
+        await pumpRow(tester, withCoverArt('   '));
+        expect(find.byType(CoverArtThumbnail), findsNothing);
+      });
+
+      testWidgets('the thumbnail is a square that leads the row', (
+        tester,
+      ) async {
+        await pumpRow(tester, withCoverArt('image-1'));
+
+        final thumbRect = tester.getRect(find.byType(CoverArtThumbnail));
+        final titleRect = tester.getRect(find.text('Build feature'));
+        expect(thumbRect.width, thumbRect.height);
+        expect(
+          thumbRect.right,
+          lessThanOrEqualTo(titleRect.left),
+          reason: 'the thumbnail leads the text, never overlaps it',
+        );
+        expect(
+          thumbRect.top,
+          closeTo(titleRect.top, thumbRect.height),
+          reason: 'the thumbnail aligns with the title, not the row centre',
+        );
+      });
+
+      testWidgets('the text column gives up exactly the thumbnail width', (
+        tester,
+      ) async {
+        await pumpRow(tester, withCoverArt(null));
+        final withoutArt = tester.getRect(find.text('Build feature')).left;
+
+        await pumpRow(tester, withCoverArt('image-1'));
+        final withArt = tester.getRect(find.text('Build feature')).left;
+        final thumbRect = tester.getRect(find.byType(CoverArtThumbnail));
+
+        expect(
+          withArt - withoutArt,
+          closeTo(thumbRect.width + 12, 0.5),
+          reason:
+              'the text starts after the square plus one spacing step — the '
+              'row gives the thumbnail real space rather than overlapping',
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the thumbnail takes its size from the spacing scale', (
+        tester,
+      ) async {
+        // Same square as the day planner's agenda card, so a task is the
+        // same size wherever it is listed.
+        await pumpRow(tester, withCoverArt('image-1'));
+        final tokens = DesignSystemTheme.dark().extension<DsTokens>()!;
+        expect(
+          tester.getRect(find.byType(CoverArtThumbnail)).width,
+          tokens.spacing.step9,
+        );
+      });
     });
   });
 

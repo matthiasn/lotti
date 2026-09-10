@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/model/project_task_list_options.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
+import 'package:lotti/features/projects/ui/widgets/project_header_title_row.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -65,6 +67,18 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onTaskListOptionsChanged,
     super.key,
   });
+
+  /// Below this header width the title row's Explore project action drops
+  /// its label and shows the map glyph alone.
+  ///
+  /// A 430 pt phone leaves the header about 400 pt; the narrowest desktop
+  /// detail pane the showcases use leaves it 516 pt, which fits the label
+  /// beside a title.
+  static const double compactHeaderWidth = 460;
+
+  /// From this text scale the Explore project action drops its label at any
+  /// width — the same threshold the task panel header uses.
+  static const double largeTextScale = 1.2;
 
   final ProjectRecord record;
   final DateTime currentTime;
@@ -264,6 +278,7 @@ class _ProjectMobileDetailContentState
                                 onCategoryTap: widget.onCategoryTap,
                                 onTargetDateTap: widget.onTargetDateTap,
                                 onStatusTap: widget.onStatusTap,
+                                onOpenPlaza: widget.onOpenPlaza,
                                 isInteractive: !isMutating,
                                 trailing: menuItems.isEmpty || isMutating
                                     ? null
@@ -281,24 +296,6 @@ class _ProjectMobileDetailContentState
                             SliverToBoxAdapter(
                               child: SizedBox(height: tokens.spacing.step4),
                             ),
-                            if (widget.onOpenPlaza != null) ...[
-                              SliverToBoxAdapter(
-                                child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
-                                  child: DesignSystemButton(
-                                    label: context.messages.plazaExploreProject,
-                                    variant: DesignSystemButtonVariant.outlined,
-                                    leadingIcon: LottiIcons.map,
-                                    onPressed: isMutating
-                                        ? null
-                                        : widget.onOpenPlaza,
-                                  ),
-                                ),
-                              ),
-                              SliverToBoxAdapter(
-                                child: SizedBox(height: tokens.spacing.step4),
-                              ),
-                            ],
                             if (description.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: _ProjectDescription(
@@ -407,6 +404,7 @@ class _ProjectMobileHeader extends StatelessWidget {
     this.onCategoryTap,
     this.onTargetDateTap,
     this.onStatusTap,
+    this.onOpenPlaza,
     this.isInteractive = true,
     this.trailing,
   });
@@ -415,8 +413,42 @@ class _ProjectMobileHeader extends StatelessWidget {
   final VoidCallback? onCategoryTap;
   final VoidCallback? onTargetDateTap;
   final VoidCallback? onStatusTap;
+
+  /// Opens the plaza on this project. Rendered in the title row's action
+  /// rail; omitted entirely when the host has nowhere to send the user.
+  final VoidCallback? onOpenPlaza;
   final bool isInteractive;
   final Widget? trailing;
+
+  /// The title row's trailing rail: Explore project, then whatever the host
+  /// passed as [trailing] (the overflow menu). [compact] drops the explore
+  /// label so a narrow pane or large text keeps the title readable.
+  List<Widget> _actions(BuildContext context, {required bool compact}) {
+    final tokens = context.designTokens;
+    final label = context.messages.plazaExploreProject;
+    final onExplore = isInteractive ? onOpenPlaza : null;
+    return [
+      if (onOpenPlaza != null)
+        if (compact)
+          DesignSystemIconAction(
+            icon: LottiIcons.map,
+            tooltip: label,
+            onPressed: onExplore,
+          )
+        else
+          DesignSystemButton(
+            label: label,
+            variant: DesignSystemButtonVariant.outlined,
+            size: DesignSystemButtonSize.dense,
+            tapTargetSize: MaterialTapTargetSize.padded,
+            leadingIcon: LottiIcons.map,
+            onPressed: onExplore,
+          ),
+      if (onOpenPlaza != null && trailing != null)
+        SizedBox(width: tokens.spacing.step2),
+      ?trailing,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -444,30 +476,34 @@ class _ProjectMobileHeader extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step2),
         ],
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Padding(
-              padding: EdgeInsetsDirectional.only(
-                end: trailing == null
-                    ? 0
-                    : tokens.spacing.step9 + tokens.spacing.step2,
+        // Title and the action rail share one row, so Explore project sits in
+        // the top-right corner beside the overflow menu instead of taking a
+        // band of its own under the heading.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final actions = _actions(
+              context,
+              compact:
+                  constraints.maxWidth <
+                      ProjectMobileDetailContent.compactHeaderWidth ||
+                  MediaQuery.textScalerOf(context).scale(1) >=
+                      ProjectMobileDetailContent.largeTextScale,
+            );
+            final title = Semantics(
+              header: true,
+              child: Text(
+                record.project.data.title,
+                style: titleStyle,
               ),
-              child: Semantics(
-                header: true,
-                child: Text(
-                  record.project.data.title,
-                  style: titleStyle,
-                ),
-              ),
-            ),
-            if (trailing != null)
-              PositionedDirectional(
-                top: -tokens.spacing.step2,
-                end: 0,
-                child: trailing!,
-              ),
-          ],
+            );
+            if (actions.isEmpty) return title;
+            return ProjectHeaderTitleRow(
+              gap: tokens.spacing.step3,
+              lift: tokens.spacing.step2,
+              title: title,
+              actions: Row(mainAxisSize: MainAxisSize.min, children: actions),
+            );
+          },
         ),
         SizedBox(height: tokens.spacing.step2),
         Wrap(
