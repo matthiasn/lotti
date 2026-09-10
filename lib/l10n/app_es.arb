@@ -3868,6 +3868,8 @@
   "plazaProjectOverdue": "Tareas vencidas: {count}",
   "plazaSearchHint": "Busca tareas, Intro para volar",
   "plazaShowPenguins": "Pingüinos",
+  "plazaSkyDay": "Día",
+  "plazaSkyNight": "Noche",
   "plazaStaleReason": "sin actividad desde hace {days} días — retómala",
   "plazaStats": "{tasks} tareas · {weeks} semanas · {attention} requieren atención",
   "plazaTaskCount": "Tareas: {count}",

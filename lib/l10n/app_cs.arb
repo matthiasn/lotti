@@ -3875,6 +3875,8 @@
   "plazaProjectOverdue": "Úkoly po termínu: {count}",
   "plazaSearchHint": "Hledej úkoly, Enter pro přelet",
   "plazaShowPenguins": "Tučňáci",
+  "plazaSkyDay": "Den",
+  "plazaSkyNight": "Noc",
   "plazaStaleReason": "bez aktivity {days} dní — vrať se k tomu",
   "plazaStats": "{tasks} úkolů · {weeks} týdnů · {attention} vyžaduje pozornost",
   "plazaTaskCount": "Úkoly: {count}",

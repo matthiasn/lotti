@@ -3,43 +3,55 @@ part of 'plaza_scene.dart';
 /// Builds this fixture family using the scene's shared resources.
 extension _PlazaSkylineBuilder on PlazaSceneController {
   void _buildSky() {
+    final sky = palette.sky;
+    final air = palette.air;
+    final sun = sky.sunDirection;
     scene.skybox = Skybox(
       GradientSkySource(
-        zenithColor: linearColor(const Color(0xFF03030B)).xyz,
-        horizonColor: linearColor(const Color(0xFF2A2446)).xyz,
-        groundColor: linearColor(const Color(0xFF090A16)).xyz,
-        sunColor: Vector3.zero(),
+        zenithColor: linearColor(sky.zenith).xyz,
+        horizonColor: linearColor(sky.horizon).xyz,
+        groundColor: linearColor(sky.ground).xyz,
+        // The disk's HDR value: hue times intensity, so a daylight sun sits
+        // well past white and blooms while night's stays at zero.
+        sunColor: linearColor(sky.sun).xyz * sky.sunIntensity,
+        sunDirection: Vector3(sun.x, sun.y, sun.z),
+        sunSharpness: sky.sunSharpness,
       ),
     );
     // Ground-hugging haze in the horizon's own colour: the street dissolves
     // into the sky instead of hitting a seam, and it thins with altitude
-    // so the overview still sees the district. The night is a desaturated
-    // indigo so amber signage sits warm against it; the magenta lives in
-    // the hero towers' domes alone.
-    // Real bloom: the emitters (neon, screens, chase heads, rooflines)
-    // bleed into the night the way a lightbox does, and a soft vignette
-    // pulls the eye to the centre of every frame.
+    // so the overview still sees the district. At night the haze is a
+    // desaturated indigo so amber signage sits warm against it; by day it
+    // is the sky's own pale blue, and distance reads as aerial perspective
+    // rather than as a wall two blocks out.
+    //
+    // Bloom is real: at night the emitters (neon, screens, chase heads,
+    // rooflines) bleed into the dark the way a lightbox does, and a soft
+    // vignette pulls the eye to the centre of every frame. Daylight raises
+    // the threshold above the sky's own brightness — only the sun disk is
+    // left to bloom — and drops the vignette, which would read as a dirty
+    // lens rather than as night closing in.
     scene.postProcess.bloom
-      ..enabled = true
-      ..threshold = PlazaSceneController.bloomThreshold
-      ..intensity = PlazaSceneController.bloomIntensity
-      ..scatter = 0.6;
+      ..enabled = air.hasBloom
+      ..threshold = air.bloomThreshold
+      ..intensity = air.bloomIntensity
+      ..scatter = air.bloomScatter;
     scene.postProcess.vignette
-      ..enabled = true
-      ..intensity = 0.32
-      ..radius = 0.82
-      ..smoothness = 0.6;
+      ..enabled = air.hasVignette
+      ..intensity = air.vignetteIntensity
+      ..radius = air.vignetteRadius
+      ..smoothness = air.vignetteSmoothness;
     scene.fog
       ..enabled = true
       ..mode = FogMode.exponential
-      ..density = PlazaSceneController.fogDensityLow
+      ..density = air.fogDensityLow
       ..start = 8
       ..height = 0
       ..heightFalloff = 0.028
-      ..maxOpacity = PlazaSceneController.fogOpacityLow
+      ..maxOpacity = air.fogOpacityLow
       // Between the ground and the horizon: the haze never outshines the
       // paving the walker stands on.
-      ..color = linearColor(const Color(0xFF181727)).xyz;
+      ..color = linearColor(air.fog).xyz;
   }
 
   /// City fabric behind the plots (`Scenery.fillers`): dark windowed
@@ -64,6 +76,12 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
             ..localTransform = (Matrix4.translation(
               Vector3(block.x, 0, block.z),
             )..rotateY(block.yawRadians));
+      _addShadow(
+        Vector3(block.x, 0, block.z),
+        width: bw,
+        depth: bd,
+        height: bh,
+      );
       // The parade's light on the pavement, on the street side.
       {
         final yaw = block.yawRadians + (side < 0 ? math.pi / 2 : -math.pi / 2);
@@ -76,7 +94,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
           width: bw,
           length: 2.5,
           yaw: yaw,
-          color: const Color(0xFFFFC46B),
+          color: palette.lights.parade,
           alpha: 0.06,
         );
       }
@@ -164,7 +182,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
         );
       }
       root.add(
-        _glowQuad(w * 9, height * 1.4, const Color(0xFFFF7A4A), 0.11)
+        _glowQuad(w * 9, height * 1.4, palette.lights.skyGlow, 0.11)
           ..localTransform = Matrix4.translation(
             Vector3(0, height * 0.35, -bd / 2 - 24),
           ),
@@ -248,14 +266,14 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
     };
     return PlazaArchitecture(_boxes).build(
       architecture,
-      wall: PlazaSceneController._towerMaterial,
+      wall: _towerMaterial,
       trim: _boxes.solid(
         linearColor(
           landmark ? colors.background.level03 : colors.background.level02,
         ),
       ),
       light: _boxes.solid(
-        emissiveColor(glow, landmark ? PlazaSceneController.neonBoost : 1),
+        emissiveColor(glow, landmark ? neonBoost : 1),
       ),
       detailed: detailed,
       onVolume: (tier, volume, {required groundFloor}) {
@@ -266,7 +284,7 @@ extension _PlazaSkylineBuilder on PlazaSceneController {
           d: volume.depth,
           height: volume.height,
           state: state,
-          tint: PlazaSceneController._tower,
+          tint: _tower,
           groundFloor: shops && groundFloor,
           shops: LanternState.inProgress,
           variant: variant,

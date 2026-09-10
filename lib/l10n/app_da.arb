@@ -4342,6 +4342,8 @@
   "plazaProjectOverdue": "Forsinkede opgaver: {count}",
   "plazaSearchHint": "Søg efter opgaver, Enter for at flyve",
   "plazaShowPenguins": "Pingviner",
+  "plazaSkyDay": "Dag",
+  "plazaSkyNight": "Nat",
   "plazaStaleReason": "stille i {days} dage — tag fat igen",
   "plazaStats": "{tasks} opgaver · {weeks} uger · {attention} kræver opmærksomhed",
   "plazaTaskCount": "Opgaver: {count}",

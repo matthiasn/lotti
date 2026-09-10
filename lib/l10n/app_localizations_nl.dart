@@ -10253,6 +10253,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get plazaShowPenguins => 'Pinguïns';
 
   @override
+  String get plazaSkyDay => 'Dag';
+
+  @override
+  String get plazaSkyNight => 'Nacht';
+
+  @override
   String plazaStaleReason(int days) {
     return 'al $days dagen stil — pak het weer op';
   }

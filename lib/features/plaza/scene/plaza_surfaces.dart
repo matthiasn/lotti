@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter_scene/scene.dart';
@@ -301,7 +300,7 @@ class PlazaSurfaces {
       final rim = UnlitMaterial()
         ..baseColorFactor = linearColor(PlazaStyle.teal, alpha: 0.8);
       final track = UnlitMaterial()
-        ..baseColorFactor = linearColor(const Color(0xFF0B0D14));
+        ..baseColorFactor = linearColor(PlazaStyle.housing);
       anchor.add(
         Node(
           localTransform: Matrix4.translation(Vector3(0, 0, -0.22)),

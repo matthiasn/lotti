@@ -10410,6 +10410,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get plazaShowPenguins => 'Manchots';
 
   @override
+  String get plazaSkyDay => 'Jour';
+
+  @override
+  String get plazaSkyNight => 'Nuit';
+
+  @override
   String plazaStaleReason(int days) {
     return 'sans activité depuis $days jours — reprends-la';
   }

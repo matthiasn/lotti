@@ -10432,6 +10432,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get plazaShowPenguins => 'Pinguini';
 
   @override
+  String get plazaSkyDay => 'Zi';
+
+  @override
+  String get plazaSkyNight => 'Noapte';
+
+  @override
   String plazaStaleReason(int days) {
     return 'fără activitate de $days zile — reluați-o';
   }

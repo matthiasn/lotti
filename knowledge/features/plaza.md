@@ -104,6 +104,22 @@ sources:
   - id: traffic-tests
     resource: ../../test/features/plaza/domain/character_traffic_test.dart
     title: Crossings, mixed cadences, lookout clearance and reappearance
+  - id: palette
+    resource: ../../lib/features/plaza/ui/plaza_palette.dart
+    title: Sky, haze, surfaces and emitter behaviour per hour
+    last_modified: 2026-09-10
+  - id: sky-mode
+    resource: ../../lib/features/plaza/state/plaza_sky_mode_controller.dart
+    title: The remembered sky
+    last_modified: 2026-09-10
+  - id: wall-swap
+    resource: ../../lib/features/plaza/ui/plaza_wall_swap.dart
+    title: Which painted texture set to load, and when it settles
+    last_modified: 2026-09-10
+  - id: wall-ink
+    resource: ../../lib/features/plaza/scene/wall_textures.dart
+    title: Painted walls per hour, and the shadow mask
+    last_modified: 2026-09-10
   - id: penguin-model
     resource: ../../tool/plaza/build_penguin.py
     title: Original penguin mesh and skin generator
@@ -504,6 +520,74 @@ remain visible from altitude. Chase bulbs share a draw per lightbox.
 nearest-source budget in one instance buffer. Conservative bounds are reserved
 once, and distant sources fade out. The shared procedural texture forms flame
 tongues above overdue facades and billboards; no completed/cancelled item burns.
+
+# The hour the world is built under
+
+Every material in the scene is unlit: nothing is a light and nothing is lit.
+The hour is *painted*, and `PlazaPalette` is where it lives — sky, haze, bloom
+and vignette, every flat surface colour, the lantern set, how far emitters are
+pushed past white, and where the sun stands. `PlazaSceneController` holds one
+palette and reads every colour and atmospheric number from it. **No file under
+`scene/` keeps a colour constant of its own**: a value that is not in the
+palette cannot change with the sky, which is the defect the type exists to
+prevent. The one exception is signage — `PlazaStyle` — which keeps the night
+register in both skies, because a sign is a sign at noon.
+
+Night and day are separate palettes, not a blend, so a switch is a rebuild:
+`PlazaView` throws the scene away and builds it again under the new palette,
+keeping the camera pose. Materials are shared and immutable, so there is
+nothing to repaint in place; this is the same path the layout knobs use.
+
+Painted textures cannot be shared. The window and shopfront tiles are opaque —
+the texture *is* the wall — so each hour has its own set, painted from a
+`WallInk` and uploaded asynchronously. The set on screen stays until the new
+one lands, and a result that is no longer wanted (the locale moved on, or the
+walker switched back) is dropped rather than attached.
+
+`PlazaWallSwap` owns that decision — what is on the walls, what is on its way,
+and whether the set that just landed is still wanted — because a paint takes
+long enough for the walker to change their mind twice. Every load settles it,
+whether it was attached, dropped or thrown: a marker left standing would make
+its sky unloadable for the rest of the session, and the district would keep the
+other hour's windows with nothing scheduled to correct it. It is a plain object
+rather than fields on the renderer so that sequence is a unit test. The paving and grain
+overlays are translucent and serve both skies unchanged.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Night: stored preference, or none
+  Night --> Day: Day
+  Day --> Night: Night
+  state Night {
+    [*] --> NightScene: palette night
+    NightScene --> NightWalls: WallInk.night uploaded
+  }
+  state Day {
+    [*] --> DayScene: palette day, camera kept
+    DayScene --> DayWalls: WallInk.day uploaded
+    DayScene --> Shade: sun angle casts contact and streak
+  }
+```
+
+Daylight has no light to spend, so it spends shade. `PlazaSky.shadowLength`
+turns a volume's height into a ground distance from the sun's elevation,
+clamped so a tower does not drag its shadow across the district; night returns
+zero and no shadow geometry is created at all. Each caster gets two quads: a
+contact pad on its footprint, which is what says it meets the ground from any
+camera angle, and a streak away from the sun, which is what says where the sun
+is. One offset quad cannot be both — its falloff peaks half a shadow-length
+out and leaves the wall's own foot at a third of the density.
+
+Shade uses its own mask, not the light pool's. The pool is a hot core with a
+long thin skirt, which is right for light and wrong for shade: the renderer
+blends premultiplied (`src + dst × (1 − srcAlpha)`), so a dark colour
+multiplied through that skirt darkens the paving by a percent or two and the
+shadow reads as a stain. `WallTextures.paintShadow` is opaque across the middle
+and feathers only at the rim.
+
+Chrome over a bright world needs help the night never asked for: in daylight
+the HUD's blocks sit on a scrim, because white type and tinted status pills
+drawn straight onto sunlit concrete do not read.
 
 # Ambient companions
 

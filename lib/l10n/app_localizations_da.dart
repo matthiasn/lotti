@@ -10236,6 +10236,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get plazaShowPenguins => 'Pingviner';
 
   @override
+  String get plazaSkyDay => 'Dag';
+
+  @override
+  String get plazaSkyNight => 'Nat';
+
+  @override
   String plazaStaleReason(int days) {
     return 'stille i $days dage — tag fat igen';
   }

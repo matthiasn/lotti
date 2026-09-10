@@ -51,7 +51,7 @@ extension _PlazaBillboardsBuilder on PlazaSceneController {
           root,
           Vector3(side * slot.width * 0.4, slot.bottom - 0.25, -0.3),
           Vector3(0.25, 0.5, 0.25),
-          PlazaSceneController._postMaterial,
+          _postMaterial,
         );
       }
     }
@@ -64,26 +64,26 @@ extension _PlazaBillboardsBuilder on PlazaSceneController {
           root,
           Vector3(px, slot.bottom / 2, -pylonPostSetback),
           Vector3(pylonPostSize, slot.bottom, pylonPostSize),
-          PlazaSceneController._postMaterial,
+          _postMaterial,
         );
         _box(
           root,
           Vector3(px, 0.3, -pylonPostSetback),
           Vector3(pylonFootingSize, 0.6, pylonFootingSize),
-          PlazaSceneController._postMaterial,
+          _postMaterial,
         );
       }
       _box(
         root,
         Vector3(0, slot.bottom * 0.55, -0.6),
         Vector3(slot.width * 0.8, 0.25, 0.25),
-        PlazaSceneController._postMaterial,
+        _postMaterial,
       );
       _box(
         root,
         Vector3(0, slot.bottom - 0.3, 0.5),
         Vector3(slot.width + 0.8, 0.12, 1.2),
-        PlazaSceneController._postMaterial,
+        _postMaterial,
       );
       // Light pool on the ground in the state colour, and a wide faint
       // wash in front of it so the panel connects to the paving.
@@ -105,6 +105,15 @@ extension _PlazaBillboardsBuilder on PlazaSceneController {
         color: frame,
         alpha: 0.07,
       );
+      // What the panel keeps off the paving: the shade of a sign standing
+      // in the sun, which is what gives the open square any relief at all.
+      _addShadow(
+        Vector3(slot.x, 0, slot.z),
+        width: slot.width,
+        depth: 1.5,
+        height: slot.bottom + slot.height,
+        contact: false,
+      );
       // The panel's reflection: a streak on the paving toward the walker.
       _addWash(
         Vector3(slot.x + sinF * 1.2, 0, slot.z + cosF * 1.2),
@@ -124,7 +133,7 @@ extension _PlazaBillboardsBuilder on PlazaSceneController {
       root,
       Vector3(0, slot.centerY, -depth / 2 - 0.02),
       Vector3(slot.width + 0.5, slot.height + 0.5, depth),
-      PlazaSceneController._towerMaterial,
+      _towerMaterial,
     );
     // A pylon's or a roof panel's back is open to the street: the same
     // capture shows through, mirrored ([backQuad] keeps the front's UVs

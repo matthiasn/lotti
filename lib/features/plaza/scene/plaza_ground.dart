@@ -12,7 +12,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
       scene.root,
       Vector3(centerX, -0.06, centerZ),
       Vector3(6000, 0.1, 6000),
-      _boxes.solid(PlazaSceneController._ground),
+      _boxes.solid(_ground),
     );
     if (buildSkyline) {
       _buildSkyline();
@@ -29,9 +29,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
       final roadNode = _boxes.node(
         Vector3(layout.roadWidth, 0.08, segment.length + 0.4),
         _boxes.solid(
-          segment.isGap
-              ? PlazaSceneController._gap
-              : PlazaSceneController._road,
+          segment.isGap ? _gap : _road,
         ),
         transform: Matrix4.translation(mid)..rotateY(segment.headingRadians),
       );
@@ -42,7 +40,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
           roadNode,
           Vector3(side * (layout.roadWidth / 2 - 1.5), 0.05, 0),
           Vector3(3, 0.1, segment.length + 0.4),
-          PlazaSceneController._pavementMaterial,
+          _pavementMaterial,
         );
         // A kerb you could stub a toe on: a raised stone edge between the
         // road and the pavement.
@@ -50,7 +48,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
           roadNode,
           Vector3(side * (layout.roadWidth / 2 - 3), 0.09, 0),
           Vector3(0.35, 0.18, segment.length + 0.4),
-          PlazaSceneController._kerbMaterial,
+          _kerbMaterial,
         );
       }
       // The map layer: a teal ribbon down the axis of every segment,
@@ -73,7 +71,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
             roadNode,
             Vector3(0, 0.045, along),
             Vector3(0.18, 0.01, 2.2),
-            _boxes.solid(PlazaSceneController._centreLine),
+            _boxes.solid(_centreLine),
           );
         }
       }
@@ -116,7 +114,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
     if (plaza != null) {
       final slab = _boxes.node(
         Vector3(plaza.width, 0.1, plaza.depth),
-        _boxes.solid(PlazaSceneController._ground),
+        _boxes.solid(_ground),
         transform: Matrix4.translation(
           Vector3(plaza.centerX, 0.01, plaza.centerZ),
         )..rotateY(plaza.headingRadians),
@@ -159,7 +157,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
       _addPool(
         Vector3(plaza.home.x, 0, plaza.home.z),
         radius: 7,
-        color: const Color(0xFFFFE2B8),
+        color: palette.lights.interior,
         alpha: 0.14,
       );
       _buildPlazaKerb(plaza);
@@ -214,7 +212,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
         root,
         Vector3(dx, 0, dz),
         Vector3(sx, kerbH, sz),
-        PlazaSceneController._kerbMaterial,
+        _kerbMaterial,
       );
     }
     // The threshold: a flush band across the opening, so the step from
@@ -223,7 +221,7 @@ extension _PlazaGroundBuilder on PlazaSceneController {
       root,
       Vector3(0, -kerbH / 2 + 0.05, -hd),
       Vector3(mouth, 0.02, 0.7),
-      PlazaSceneController._kerbMaterial,
+      _kerbMaterial,
     );
     scene.add(root);
   }

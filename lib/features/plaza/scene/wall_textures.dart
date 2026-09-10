@@ -1,11 +1,153 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/foundation.dart' show immutable, visibleForTesting;
 import 'package:flutter_scene/scene.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/plaza_copy.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
+
+/// The inks a painted wall is made of, per hour.
+///
+/// The window and shopfront tiles are opaque: the texture *is* the wall, so
+/// unlike the paving and grain overlays they cannot be reused across skies.
+/// Everything the two painters draw the building itself with lives here;
+/// what they draw *inside* a lit shop does not, because a shop lights its
+/// interior at noon as well.
+@immutable
+class WallInk {
+  const WallInk({
+    required this.mode,
+    required this.wall,
+    required this.officeWall,
+    required this.frame,
+    required this.reveal,
+    required this.mullion,
+    required this.board,
+    required this.riser,
+    required this.leaf,
+    required this.signOff,
+    required this.shutter,
+    required this.blind,
+    required this.slabEdge,
+    required this.skyHigh,
+    required this.skyLow,
+    required this.interior,
+  });
+
+  final PlazaSkyMode mode;
+
+  /// The wall between the windows, and a shopfront parade's surround.
+  final ui.Color wall;
+
+  /// The curtain-wall family's spandrel, which is glass rather than render.
+  final ui.Color officeWall;
+
+  /// Around glass and doors.
+  final ui.Color frame;
+
+  /// The window reveal: the wall's own thickness around a pane.
+  final ui.Color reveal;
+  final ui.Color mullion;
+
+  /// Fascia board, stair riser, door leaf, an unlit sign, a closed shutter.
+  final ui.Color board;
+  final ui.Color riser;
+  final ui.Color leaf;
+  final ui.Color signOff;
+  final ui.Color shutter;
+
+  /// A blind pulled part-way down.
+  final ui.Color blind;
+
+  /// The lit top edge of a floor slab, the relief that makes a storey read
+  /// as a storey: catching the city at night, catching the sun by day.
+  final ui.Color slabEdge;
+
+  /// Daylight only: what a pane reflects, top and bottom, and the interior
+  /// that shows through the reflection where someone is in.
+  final ui.Color skyHigh;
+  final ui.Color skyLow;
+  final ui.Color interior;
+
+  /// Whether panes mirror the sky rather than glowing.
+  bool get reflectsSky => mode == PlazaSkyMode.day;
+
+  /// The two gradient stops of one pane.
+  ///
+  /// At night a pane is a light source: [tint] at an alpha that says whether
+  /// anyone is in. By day it is a mirror — the sky, top to bottom — and
+  /// occupancy shows as an interior behind the reflection instead. Either
+  /// way an [on] pane is the one with somebody in it, so the same lit ratio
+  /// drives both.
+  (ui.Color, ui.Color) pane({
+    required ui.Color tint,
+    required bool on,
+    required double roll,
+  }) {
+    if (reflectsSky) {
+      if (!on) return (skyHigh, skyLow);
+      // The reflection survives at the top of the glass, where the sky is
+      // steepest in it; the room shows through lower down.
+      return (
+        ui.Color.lerp(skyHigh, interior, 0.35 + roll * 0.2)!,
+        ui.Color.lerp(skyLow, interior, 0.6 + roll * 0.25)!,
+      );
+    }
+    final glow = on ? 0.4 + roll * 0.4 : 0.14 + roll * 0.1;
+    return (
+      tint.withValues(alpha: glow),
+      tint.withValues(alpha: glow * 0.55),
+    );
+  }
+
+  static WallInk of(PlazaSkyMode mode) =>
+      mode == PlazaSkyMode.day ? day : night;
+
+  /// The register the district was painted in: a dark city carrying its own
+  /// light.
+  static const night = WallInk(
+    mode: PlazaSkyMode.night,
+    wall: ui.Color(0xFF0B0A14),
+    officeWall: ui.Color(0xFF121722),
+    frame: ui.Color(0xFF07060D),
+    reveal: ui.Color(0xFF050409),
+    mullion: ui.Color(0xFF07060D),
+    board: ui.Color(0xFF15131F),
+    riser: ui.Color(0xFF0A0910),
+    leaf: ui.Color(0xFF15131F),
+    signOff: ui.Color(0xFF2B2836),
+    shutter: ui.Color(0xFF232230),
+    blind: ui.Color(0xB30B0A14),
+    slabEdge: ui.Color(0xFF1C1A2A),
+    // Unused at night: nothing reflects a sky this dark.
+    skyHigh: ui.Color(0xFF0B0A14),
+    skyLow: ui.Color(0xFF0B0A14),
+    interior: ui.Color(0xFF0B0A14),
+  );
+
+  /// Mid-morning: render and concrete in the sun, glass that mirrors the
+  /// sky, and reveals that read as shade rather than as holes.
+  static const day = WallInk(
+    mode: PlazaSkyMode.day,
+    wall: ui.Color(0xFFB3ADA3),
+    officeWall: ui.Color(0xFF9FA8B4),
+    frame: ui.Color(0xFF6B665E),
+    reveal: ui.Color(0xFF8A857C),
+    mullion: ui.Color(0xFF7C776E),
+    board: ui.Color(0xFFC7C1B5),
+    riser: ui.Color(0xFF9A948A),
+    leaf: ui.Color(0xFF8E8577),
+    signOff: ui.Color(0xFFA8A296),
+    shutter: ui.Color(0xFF9EA2A8),
+    blind: ui.Color(0xCCE9E3D6),
+    slabEdge: ui.Color(0xFFD6D0C4),
+    skyHigh: ui.Color(0xFFBBD3EA),
+    skyLow: ui.Color(0xFF8098AE),
+    interior: ui.Color(0xFF4A4740),
+  );
+}
 
 /// Window-grid textures for the side and back walls, one per lantern
 /// state, tiled across every wall: the cheapest way to turn a cuboid into
@@ -13,9 +155,13 @@ import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 /// as repeating textures; walls pick a tile offset from the task id so no
 /// two facades share the same lit windows.
 class WallTextures {
-  WallTextures._(this._byState);
+  WallTextures._(this._byState, this.mode);
 
   final Map<(LanternState, int), Texture2D> _byState;
+
+  /// The hour these were painted for. A scene must not be handed a set
+  /// from the other sky.
+  final PlazaSkyMode mode;
 
   /// How many window-tile families there are: the same lit ratio in
   /// three occupancies (mixed flats, a residential stack with dark floors
@@ -73,25 +219,35 @@ class WallTextures {
   };
 
   /// Paints and uploads the fifteen window tiles, fifteen shopfront strips,
-  /// the light-pool falloff, the asphalt grain and the plaza paving.
-  static Future<WallTextures> load({PlazaCopy? copy}) async {
+  /// the light-pool falloff, the asphalt grain and the plaza paving, in
+  /// [mode]'s inks.
+  ///
+  /// The set belongs to one hour: switching skies loads a second set rather
+  /// than repainting this one, so the world on screen keeps its textures
+  /// until the new ones are on the GPU.
+  static Future<WallTextures> load({
+    PlazaCopy? copy,
+    PlazaSkyMode mode = PlazaSkyMode.night,
+  }) async {
     final map = <(LanternState, int), Texture2D>{};
     final shops = <(LanternState, int), Texture2D>{};
+    final ink = WallInk.of(mode);
     for (final state in LanternState.values) {
       for (var f = 0; f < tileFamilies; f++) {
         map[(state, f)] = await _upload(
-          paintWindows(state, family: f),
+          paintWindows(state, family: f, ink: ink),
         );
       }
       for (var v = 0; v < paradeVariants; v++) {
         shops[(state, v)] = await _upload(
-          paintShopfront(state, variant: v, copy: copy),
+          paintShopfront(state, variant: v, copy: copy, ink: ink),
         );
       }
     }
-    final textures = WallTextures._(map)
-      ..pool = await _upload(_paintPool())
-      ..grain = await _upload(_paintGrain())
+    final textures = WallTextures._(map, mode)
+      ..pool = await _upload(paintPool())
+      ..shadow = await _upload(paintShadow())
+      ..grain = await _upload(paintGrain())
       ..paving = await _upload(paintPaving())
       .._shopfronts = shops;
     return textures;
@@ -116,6 +272,9 @@ class WallTextures {
   /// Asphalt grain: a near-black noise tile with faint lighter grit.
   late final Texture2D grain;
 
+  /// The contact-shadow mask; see [paintShadow].
+  late final Texture2D shadow;
+
   /// Plaza paving: slab joints and a little wear, blended over the slab.
   late final Texture2D paving;
 
@@ -133,14 +292,11 @@ class WallTextures {
 
   static double _m(double meters) => meters * _px;
 
-  static const _night = ui.Color(0xFF0B0A14);
-  static const _frame = ui.Color(0xFF07060D);
-  static const _board = ui.Color(0xFF15131F);
-  static const _riser = ui.Color(0xFF0A0910);
-  static const _leaf = ui.Color(0xFF15131F);
-  static const _signOff = ui.Color(0xFF2B2836);
-  static const _shutter = ui.Color(0xFF232230);
   static const _warmLight = ui.Color(0xFFFFE2B8);
+
+  /// A fixed dark for what the sky never reaches: the shade inside a lit
+  /// interior, and the dark stripe on a painted canvas awning.
+  static const _shade = ui.Color(0xFF0B0A14);
 
   /// The alarm colours match the lanterns.
   static const _alarm = ui.Color(0xFFE4655F);
@@ -160,6 +316,7 @@ class WallTextures {
     LanternState state, {
     int variant = 0,
     PlazaCopy? copy,
+    WallInk ink = WallInk.night,
   }) {
     const w = shopfrontWidth * _px;
     const h = shopfrontHeight * _px;
@@ -168,7 +325,7 @@ class WallTextures {
       ..scale(_textureScale)
       ..drawRect(
         const ui.Rect.fromLTWH(0, 0, w, h),
-        ui.Paint()..color = _night,
+        ui.Paint()..color = ink.wall,
       );
     final rng = math.Random(31337 + state.index * 7 + variant);
     final dressing = _Dressing.forState(state);
@@ -182,6 +339,7 @@ class WallTextures {
         _m(shop.width),
         dressing,
         copy ?? PlazaCopy.english,
+        ink,
       );
       left += _m(shop.width);
     }
@@ -245,6 +403,7 @@ class WallTextures {
     double width,
     _Dressing dressing,
     PlazaCopy copy,
+    WallInk ink,
   ) {
     const h = shopfrontHeight * _px;
     final lit = dressing.lit;
@@ -255,7 +414,7 @@ class WallTextures {
     // it is still fitting out.
     canvas.drawRect(
       ui.Rect.fromLTWH(left, 0, width, _m(_fasciaM)),
-      ui.Paint()..color = ui.Color.lerp(_board, shop.colour, 0.12)!,
+      ui.Paint()..color = ui.Color.lerp(ink.board, shop.colour, 0.12)!,
     );
     if (dressing != _Dressing.fittingOut) {
       final signW = width * (0.5 + rng.nextDouble() * 0.15);
@@ -316,7 +475,7 @@ class WallTextures {
         // is on the wall where the walker reads it.
         final alarm = dressing == _Dressing.shuttered;
         canvas
-          ..drawRect(sign, ui.Paint()..color = _signOff)
+          ..drawRect(sign, ui.Paint()..color = ink.signOff)
           ..drawRect(
             sign.deflate(2),
             ui.Paint()
@@ -390,7 +549,7 @@ class WallTextures {
       case _Dressing.trading when vacant:
       case _Dressing.late when vacant:
       case _Dressing.fittingOut:
-        _paintPapered(canvas, rng, glass);
+        _paintPapered(canvas, rng, glass, ink);
         _paintDoor(
           canvas,
           door,
@@ -398,8 +557,9 @@ class WallTextures {
           lit: false,
           dressing: dressing,
           copy: copy,
+          ink: ink,
         );
-        canvas.drawRect(riser, ui.Paint()..color = _riser);
+        canvas.drawRect(riser, ui.Paint()..color = ink.riser);
       case _Dressing.trading:
       case _Dressing.late:
         _paintInterior(
@@ -408,6 +568,7 @@ class WallTextures {
           glass,
           shop,
           late: dressing == _Dressing.late,
+          ink: ink,
         );
         _paintDoor(
           canvas,
@@ -416,8 +577,9 @@ class WallTextures {
           lit: true,
           dressing: dressing,
           copy: copy,
+          ink: ink,
         );
-        canvas.drawRect(riser, ui.Paint()..color = _riser);
+        canvas.drawRect(riser, ui.Paint()..color = ink.riser);
         if (shop.awning) _paintAwning(canvas, glass, accent);
       case _Dressing.shuttered:
       case _Dressing.closed:
@@ -427,12 +589,13 @@ class WallTextures {
           door,
           alarm: dressing == _Dressing.shuttered,
           copy: copy,
+          ink: ink,
         );
     }
-    // Pilaster: the dark column between one shop and the next.
+    // Pilaster: the column between one shop and the next.
     canvas.drawRect(
       ui.Rect.fromLTWH(left, _m(_fasciaM), _m(_pilasterM), h - _m(_fasciaM)),
-      ui.Paint()..color = _frame,
+      ui.Paint()..color = ink.frame,
     );
   }
 
@@ -442,6 +605,7 @@ class WallTextures {
     ui.Rect glass,
     _Shop shop, {
     required bool late,
+    required WallInk ink,
   }) {
     final (interior, glow) = switch (shop.trade) {
       _Trade.cafe => (const ui.Color(0xFFFFD08A), 0.6),
@@ -454,7 +618,7 @@ class WallTextures {
       _Trade.vacant => (const ui.Color(0xFF8A8598), 0.2),
     };
     canvas
-      ..drawRect(glass.inflate(_m(0.05)), ui.Paint()..color = _frame)
+      ..drawRect(glass.inflate(_m(0.05)), ui.Paint()..color = ink.frame)
       ..drawRect(
         glass,
         ui.Paint()
@@ -490,13 +654,13 @@ class WallTextures {
       // Trading late: the whole interior flooded in the alarm amber.
       canvas.drawRect(glass, ui.Paint()..color = _amber.withValues(alpha: 0.3));
     }
-    _paintMullions(canvas, glass);
+    _paintMullions(canvas, glass, ink);
   }
 
   /// Vertical mullions about every 1.4 m and a transom under the fanlight.
-  static void _paintMullions(ui.Canvas canvas, ui.Rect glass) {
+  static void _paintMullions(ui.Canvas canvas, ui.Rect glass, WallInk ink) {
     final panes = math.max(1, (glass.width / _m(1.4)).round());
-    final paint = ui.Paint()..color = _frame;
+    final paint = ui.Paint()..color = ink.mullion;
     for (var i = 1; i < panes; i++) {
       final x = glass.left + glass.width * i / panes;
       canvas.drawRect(
@@ -540,8 +704,9 @@ class WallTextures {
     required bool lit,
     required _Dressing dressing,
     required PlazaCopy copy,
+    required WallInk ink,
   }) {
-    canvas.drawRect(door.inflate(_m(0.06)), ui.Paint()..color = _frame);
+    canvas.drawRect(door.inflate(_m(0.06)), ui.Paint()..color = ink.frame);
     if (lit) {
       canvas
         ..drawRect(
@@ -559,7 +724,7 @@ class WallTextures {
         )
         ..drawRect(
           ui.Rect.fromLTWH(door.left, door.top + _m(0.38), door.width, 3),
-          ui.Paint()..color = _frame,
+          ui.Paint()..color = ink.frame,
         );
     } else {
       // A notice taped to the door at eye height, with the words on it.
@@ -570,7 +735,7 @@ class WallTextures {
         _m(0.42),
       );
       canvas
-        ..drawRect(door, ui.Paint()..color = _leaf)
+        ..drawRect(door, ui.Paint()..color = ink.leaf)
         ..drawRect(notice, ui.Paint()..color = const ui.Color(0xFFEDE6D6));
       _paintWord(
         canvas,
@@ -590,8 +755,13 @@ class WallTextures {
   }
 
   /// Not open yet: sheets of paper taped inside the glass, seams between.
-  static void _paintPapered(ui.Canvas canvas, math.Random rng, ui.Rect glass) {
-    canvas.drawRect(glass.inflate(_m(0.05)), ui.Paint()..color = _frame);
+  static void _paintPapered(
+    ui.Canvas canvas,
+    math.Random rng,
+    ui.Rect glass,
+    WallInk ink,
+  ) {
+    canvas.drawRect(glass.inflate(_m(0.05)), ui.Paint()..color = ink.frame);
     var x = glass.left;
     while (x < glass.right) {
       final sheet = math.min(_m(0.6 + rng.nextDouble() * 0.5), glass.right - x);
@@ -626,7 +796,7 @@ class WallTextures {
           ..maskFilter = ui.MaskFilter.blur(ui.BlurStyle.normal, _m(0.3)),
       );
     }
-    _paintMullions(canvas, glass);
+    _paintMullions(canvas, glass, ink);
   }
 
   /// Shutters down over the glass and the door; alarm tape across them
@@ -638,6 +808,7 @@ class WallTextures {
     ui.Rect door, {
     required bool alarm,
     required PlazaCopy copy,
+    required WallInk ink,
   }) {
     const h = shopfrontHeight * _px;
     final span = ui.Rect.fromLTRB(
@@ -646,7 +817,7 @@ class WallTextures {
       math.max(glass.right, door.right) + _m(0.06),
       h,
     );
-    canvas.drawRect(span, ui.Paint()..color = _shutter);
+    canvas.drawRect(span, ui.Paint()..color = ink.shutter);
     final light = ui.Paint()..color = const ui.Color(0xFF3B3A4A);
     final dark = ui.Paint()..color = const ui.Color(0xFF14131C);
     for (var y = span.top + _m(0.18); y < span.bottom; y += _m(0.18)) {
@@ -741,7 +912,7 @@ class WallTextures {
       _m(0.32),
     );
     canvas.drawRect(band, ui.Paint()..color = accent);
-    final stripe = ui.Paint()..color = _night.withValues(alpha: 0.7);
+    final stripe = ui.Paint()..color = _shade.withValues(alpha: 0.7);
     for (var x = band.left + _m(0.15); x < band.right; x += _m(0.3)) {
       canvas.drawRect(
         ui.Rect.fromLTWH(
@@ -755,7 +926,7 @@ class WallTextures {
     }
     canvas.drawRect(
       ui.Rect.fromLTWH(band.left, band.bottom - 3, band.width, 3),
-      ui.Paint()..color = ui.Color.lerp(accent, _night, 0.5)!,
+      ui.Paint()..color = ui.Color.lerp(accent, _shade, 0.5)!,
     );
   }
 
@@ -1052,7 +1223,7 @@ class WallTextures {
           ..drawRect(screen, ui.Paint()..color = colour)
           ..drawRect(
             screen.deflate(_m(0.05)),
-            ui.Paint()..color = _night.withValues(alpha: 0.45),
+            ui.Paint()..color = _shade.withValues(alpha: 0.45),
           );
         i++;
       }
@@ -1143,7 +1314,11 @@ class WallTextures {
     return recorder.endRecording().toImageSync(size, size);
   }
 
-  static ui.Image _paintPool() {
+  /// The radial falloff every ground light — and, in daylight, every
+  /// contact shadow — is drawn with. White; the material colour tints it.
+  /// Public so its shape can be checked without a GPU.
+  @visibleForTesting
+  static ui.Image paintPool() {
     const size = 256;
     final recorder = ui.PictureRecorder();
     ui.Canvas(recorder).drawCircle(
@@ -1169,7 +1344,43 @@ class WallTextures {
     return recorder.endRecording().toImageSync(size, size);
   }
 
-  static ui.Image _paintGrain() {
+  /// The mask a contact shadow is drawn with: opaque across the middle,
+  /// feathered at the rim.
+  ///
+  /// Deliberately not the light pool's falloff. A pool is a hot core with a
+  /// long thin skirt, which is right for light — the ground is brightest
+  /// under the lamp — but wrong for shade: multiplied into a dark colour,
+  /// that skirt darkens the paving by a percent or two and the shadow reads
+  /// as a stain. Shade is flat in the middle and soft only at its edge.
+  /// Public so its shape can be checked without a GPU.
+  @visibleForTesting
+  static ui.Image paintShadow() {
+    const size = 256;
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder).drawCircle(
+      const ui.Offset(size / 2, size / 2),
+      size / 2,
+      ui.Paint()
+        ..shader = ui.Gradient.radial(
+          const ui.Offset(size / 2, size / 2),
+          size / 2,
+          const [
+            ui.Color(0xFFFFFFFF),
+            ui.Color(0xFFFFFFFF),
+            ui.Color(0x8CFFFFFF),
+            ui.Color(0x00FFFFFF),
+          ],
+          const [0, 0.55, 0.82, 1],
+        ),
+    );
+    return recorder.endRecording().toImageSync(size, size);
+  }
+
+  /// Asphalt grain: a transparent tile of dark grit with the odd light
+  /// fleck, blended over whichever road colour the hour supplies. Public so
+  /// it can be checked without a GPU.
+  @visibleForTesting
+  static ui.Image paintGrain() {
     const size = 128;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder)
@@ -1200,7 +1411,11 @@ class WallTextures {
   /// Paints the window tile for [state] in tile [family]; public so the
   /// occupancy contract can be checked without a GPU.
   @visibleForTesting
-  static ui.Image paintWindows(LanternState state, {int family = 0}) {
+  static ui.Image paintWindows(
+    LanternState state, {
+    int family = 0,
+    WallInk ink = WallInk.night,
+  }) {
     const w = bays * _px;
     const h = floors * _px;
     final recorder = ui.PictureRecorder();
@@ -1208,10 +1423,7 @@ class WallTextures {
       ..scale(_textureScale)
       ..drawRect(
         ui.Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
-        ui.Paint()
-          ..color = family == 2
-              ? dsTokensDark.colors.aiCard.background
-              : _night,
+        ui.Paint()..color = family == 2 ? ink.officeWall : ink.wall,
       );
     final rng = math.Random(state.index * 7919 + 17 + family * 101);
     final tint = _tints[state]!;
@@ -1242,32 +1454,28 @@ class WallTextures {
         final roll = rng.nextDouble() < lit;
         final on = floor != darkFloor && (floor == litFloor || roll);
         // Two tints per state: most windows warm, a few the cooler one,
-        // and a sill-to-lintel gradient so the pane has depth.
+        // and a sill-to-lintel gradient so the pane has depth. By day the
+        // tint gives way to the sky the glass mirrors, and occupancy shows
+        // as the room behind the reflection.
         final cool = rng.nextDouble() < coolShare;
         final base = cool ? _coolTint : tint;
-        // Lit panes top out below full white so screens and signs stay
-        // the brightest things on a wall.
-        final glow = on
-            ? 0.4 + rng.nextDouble() * 0.4
-            : 0.14 + rng.nextDouble() * 0.1;
-        // Reveal: a dark frame around the pane; then the pane with a
-        // sill-to-lintel gradient; then mullion and transom.
-        final mullion = ui.Paint()..color = _frame;
+        final (paneTop, paneBottom) = ink.pane(
+          tint: base,
+          on: on,
+          roll: rng.nextDouble(),
+        );
+        // Reveal: the wall's thickness around the pane — a hole at night,
+        // a band of shade by day; then the pane; then mullion and transom.
+        final mullion = ui.Paint()..color = ink.mullion;
         canvas
-          ..drawRect(
-            rect.inflate(_px * 0.03),
-            ui.Paint()..color = const ui.Color(0xFF050409),
-          )
+          ..drawRect(rect.inflate(_px * 0.03), ui.Paint()..color = ink.reveal)
           ..drawRect(
             rect,
             ui.Paint()
               ..shader = ui.Gradient.linear(
                 rect.topCenter,
                 rect.bottomCenter,
-                [
-                  base.withValues(alpha: glow),
-                  base.withValues(alpha: glow * 0.55),
-                ],
+                [paneTop, paneBottom],
               ),
           )
           ..drawRect(
@@ -1292,7 +1500,7 @@ class WallTextures {
               rect.width,
               rect.height * (0.25 + rng.nextDouble() * 0.35),
             ),
-            ui.Paint()..color = const ui.Color(0xB30B0A14),
+            ui.Paint()..color = ink.blind,
           );
         }
         if (office) {
@@ -1304,19 +1512,19 @@ class WallTextures {
               _px * 0.025,
               _px.toDouble(),
             ),
-            ui.Paint()..color = dsTokensDark.colors.background.level03,
+            ui.Paint()..color = ink.mullion,
           );
         }
       }
-      // Floor slab: a lit edge over a dark band, the relief of a storey.
+      // Floor slab: an edge over a band, the relief of a storey.
       canvas
         ..drawRect(
           ui.Rect.fromLTWH(0, floor * _px.toDouble(), w.toDouble(), 6),
-          ui.Paint()..color = _frame,
+          ui.Paint()..color = ink.frame,
         )
         ..drawRect(
           ui.Rect.fromLTWH(0, floor * _px.toDouble() + 6, w.toDouble(), 3),
-          ui.Paint()..color = const ui.Color(0xFF1C1A2A),
+          ui.Paint()..color = ink.slabEdge,
         );
     }
     return recorder.endRecording().toImageSync(

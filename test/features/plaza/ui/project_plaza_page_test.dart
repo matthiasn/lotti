@@ -12,6 +12,7 @@ import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
@@ -46,6 +47,8 @@ void main() {
   late PlazaWorld renderedWorld;
   late ChecklistTicks renderedTicks;
   late ValueChanged<PlazaTask> openTask;
+  PlazaSkyMode? renderedSky;
+  ValueChanged<PlazaSkyMode>? reportSky;
 
   setUp(() {
     snapshots = StreamController<ProjectPlazaData?>();
@@ -67,10 +70,14 @@ void main() {
               required ticks,
               required onOpenTask,
               required onExit,
+              initialSkyMode = PlazaSkyMode.night,
+              onSkyModeChanged,
             }) {
               renderedWorld = world;
               renderedTicks = ticks;
               openTask = onOpenTask;
+              renderedSky = initialSkyMode;
+              reportSky = onSkyModeChanged;
               return Scaffold(
                 body: Text(world.projectLabel, key: const ValueKey('scene')),
               );
@@ -366,5 +373,34 @@ void main() {
     expect(renderedWorld.projectLabel, 'Project Waddle');
     expect(find.byType(ErrorStateWidget), findsNothing);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the world opens under the remembered sky and reports a switch', (
+    tester,
+  ) async {
+    await withClock(Clock.fixed(manualDemoNow), () async {
+      await tester.pumpWidget(page());
+      snapshots.add(snapshot);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        renderedSky,
+        PlazaSkyMode.night,
+        reason: 'nothing remembered yet: the district opens at night',
+      );
+
+      reportSky!(PlazaSkyMode.day);
+      await tester.pump();
+      expect(
+        renderedSky,
+        PlazaSkyMode.day,
+        reason: 'the page holds the choice the world reported back',
+      );
+
+      // And the next world entered opens under it, without asking again.
+      await tester.pumpWidget(page(projectId: project.meta.id));
+      await tester.pump();
+      expect(renderedSky, PlazaSkyMode.day);
+    });
   });
 }

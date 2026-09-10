@@ -6,15 +6,24 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
   /// are the collider's, the dressing is here.
   void _buildPlazaFurniture() {
     final seat = UnlitMaterial()
-      ..baseColorFactor = linearColor(const Color(0xFF4A3A2E));
+      ..baseColorFactor = linearColor(palette.surfaces.timber);
     final soil = UnlitMaterial()
-      ..baseColorFactor = linearColor(const Color(0xFF1E1A1C));
+      ..baseColorFactor = linearColor(palette.surfaces.ironwork);
     final leaves = UnlitMaterial()
-      ..baseColorFactor = linearColor(const Color(0xFF1F3A28));
+      ..baseColorFactor = linearColor(palette.surfaces.foliage);
     for (final f in world.scenery.furniture) {
       final root = Node(
         localTransform: Matrix4.translation(Vector3(f.x, 0, f.z))
           ..rotateY(f.yawRadians),
+      );
+      // A bench in the sun is what tells the walker the square has a sun:
+      // the towers' shade lands at the far edge of an open plaza, but the
+      // furniture stands where the camera does.
+      _addShadow(
+        Vector3(f.x, 0, f.z),
+        width: f.width,
+        depth: f.depth,
+        height: f.height,
       );
       switch (f.kind) {
         case FurnitureKind.bench:
@@ -31,7 +40,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
             root,
             Vector3(0, f.height * 0.46, 0),
             Vector3(f.width * 0.9, 0.04, f.depth * 0.9),
-            PlazaSceneController._postMaterial,
+            _postMaterial,
           );
           _box(
             root,
@@ -44,14 +53,14 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
               root,
               Vector3(0, f.height * 0.25, dz),
               Vector3(f.width * 0.9, f.height * 0.5, 0.08),
-              PlazaSceneController._postMaterial,
+              _postMaterial,
             );
           }
         case FurnitureKind.planter:
           root.add(
             _boxes.node(
               Vector3(f.width, f.height, f.depth),
-              PlazaSceneController._postMaterial,
+              _postMaterial,
               transform: Matrix4.translation(Vector3(0, f.height / 2, 0)),
               shaded: true,
             ),
@@ -79,17 +88,17 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
             Vector3(f.width + 0.06, 0.03, f.depth + 0.06),
             _boxes.solid(
               linearColor(
-                const Color(0xFFFFC46B),
+                palette.lights.parade,
                 alpha: 0.8,
               ),
             ),
           );
         case FurnitureKind.kiosk:
           final sign = UnlitMaterial()
-            ..baseColorFactor = linearColor(const Color(0xFFFFC46B));
+            ..baseColorFactor = linearColor(palette.lights.parade);
           final window = UnlitMaterial()
             ..baseColorFactor = linearColor(
-              const Color(0xFFFFD08A),
+              palette.lights.lamp,
               alpha: 0.75,
             )
             ..alphaMode = AlphaMode.blend;
@@ -97,7 +106,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
           root.add(
             _boxes.node(
               Vector3(f.width, f.height, f.depth),
-              PlazaSceneController._towerMaterial,
+              _towerMaterial,
               transform: Matrix4.translation(Vector3(0, f.height / 2, 0)),
               shaded: true,
             ),
@@ -121,7 +130,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
             root,
             Vector3(0, f.height + 0.05, 0),
             Vector3(f.width + 0.4, 0.1, f.depth + 0.4),
-            PlazaSceneController._postMaterial,
+            _postMaterial,
           );
           _addPool(
             Vector3(
@@ -130,7 +139,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
               f.z + math.cos(f.yawRadians) * 2,
             ),
             radius: 3,
-            color: const Color(0xFFFFD08A),
+            color: palette.lights.lamp,
             alpha: 0.16,
           );
       }
@@ -147,14 +156,14 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
         scene.root,
         Vector3(x, lampPostHeight / 2, z),
         Vector3(lampPostSize, lampPostHeight, lampPostSize),
-        PlazaSceneController._postMaterial,
+        _postMaterial,
       );
       // Housing: a small dark head the bulb hangs under.
       _box(
         pole,
         Vector3(0, 2.7, 0),
         Vector3(0.7, 0.28, 0.7),
-        PlazaSceneController._postMaterial,
+        _postMaterial,
       );
       final lantern = Node(
         localTransform: Matrix4.translation(Vector3(0, 2.45, 0)),
@@ -164,7 +173,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
       _addPool(
         Vector3(x, 0, z),
         radius: 5,
-        color: const Color(0xFFFFE2B8),
+        color: palette.lights.interior,
         alpha: 0.3,
       );
     }
@@ -176,7 +185,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
         scene.root,
         Vector3(beacon.markerX, beacon.markerY / 2, beacon.markerZ),
         Vector3(0.08, beacon.markerY, 0.08),
-        PlazaSceneController._postMaterial,
+        _postMaterial,
       );
       _addPool(
         Vector3(beacon.markerX, 0, beacon.markerZ),
@@ -214,7 +223,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
           root,
           Vector3(side * gantry.width / 2, top / 2, 0),
           Vector3(gantryLegSize, top, gantryLegSize),
-          PlazaSceneController._postMaterial,
+          _postMaterial,
         );
       }
       _box(
@@ -225,7 +234,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
           gantryBeamThickness,
           gantryBeamDepth,
         ),
-        PlazaSceneController._postMaterial,
+        _postMaterial,
       );
       root.add(
         _glowQuad(gantry.width + 2, gantry.height + 2.5, PlazaStyle.teal, 0.2)
@@ -272,12 +281,10 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
           )..add(
             PlazaArchitecture(_boxes).build(
               architecture,
-              wall: PlazaSceneController._towerMaterial,
-              trim: _boxes.solid(
-                linearColor(dsTokensDark.colors.background.level03),
-              ),
+              wall: _towerMaterial,
+              trim: _boxes.solid(linearColor(palette.surfaces.cornice)),
               light: _boxes.solid(
-                emissiveColor(PlazaStyle.teal, PlazaSceneController.neonBoost),
+                emissiveColor(PlazaStyle.teal, neonBoost),
               ),
               onVolume: (tier, volume, {required groundFloor}) {
                 _windowedBox(
@@ -287,7 +294,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
                   d: volume.depth,
                   height: volume.height,
                   state: LanternState.inProgress,
-                  tint: PlazaSceneController._tower,
+                  tint: _tower,
                   groundFloor: groundFloor,
                   family: 2,
                 );
@@ -298,7 +305,7 @@ extension _PlazaFurnitureBuilder on PlazaSceneController {
       // border is the one teal frame on the tower.
       final corner = UnlitMaterial()
         ..baseColorFactor = linearColor(
-          Color.lerp(const Color(0xFF0B0A14), PlazaStyle.teal, 0.3)!,
+          Color.lerp(palette.surfaces.unlitNeon, PlazaStyle.teal, 0.3)!,
         );
       for (final side in [-1.0, 1.0]) {
         _box(

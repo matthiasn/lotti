@@ -17359,6 +17359,18 @@ abstract class AppLocalizations {
   /// **'Penguins'**
   String get plazaShowPenguins;
 
+  /// Segment label for the daylight sky in the Plaza world.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get plazaSkyDay;
+
+  /// Segment label for the night sky in the Plaza world.
+  ///
+  /// In en, this message translates to:
+  /// **'Night'**
+  String get plazaSkyNight;
+
   /// No description provided for @plazaStaleReason.
   ///
   /// In en, this message translates to:

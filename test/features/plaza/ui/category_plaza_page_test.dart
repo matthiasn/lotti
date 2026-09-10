@@ -6,6 +6,7 @@ import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/category_plaza_page.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/project_plaza_page.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:material_ui/material_ui.dart';
@@ -41,6 +42,8 @@ void main() {
             required ticks,
             required onOpenTask,
             required onExit,
+            initialSkyMode = PlazaSkyMode.night,
+            onSkyModeChanged,
           }) {
             if (world.isCategory) {
               categoryWorld = world;

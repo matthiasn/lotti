@@ -134,7 +134,7 @@ extension _PlazaWallsBuilder on PlazaSceneController {
           )..rotateY(yaw),
           mesh: Mesh(
             ccwQuad(width, cornice),
-            PlazaSceneController._corniceMaterial,
+            _corniceMaterial,
           ),
         ),
       );

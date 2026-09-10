@@ -11,6 +11,7 @@ import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/scene/project_world_generator.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/plaza_copy.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_view.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -49,7 +50,9 @@ class PlazaDevApp extends StatelessWidget {
           hidden: {...?env['PLAZA_HIDE']?.split(',')},
           trace: env['PLAZA_TRACE'] == '1',
           tourOnly: env['PLAZA_TOUR_ONLY']?.split(',').toSet(),
+          shotDir: env['PLAZA_SHOT_DIR'],
           initialFrameRate: PlazaFrameRate.fromEnvironment(env),
+          initialSkyMode: PlazaSkyMode.fromEnvironment(env),
         ),
       ),
     );

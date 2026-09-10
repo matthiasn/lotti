@@ -1,7 +1,9 @@
 import 'dart:async' show unawaited;
+import 'dart:io' show File;
 import 'dart:math' as math;
-import 'dart:ui' show FramePhase, FrameTiming;
+import 'dart:ui' show FramePhase, FrameTiming, ImageByteFormat;
 
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter/services.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
@@ -34,10 +36,12 @@ import 'package:lotti/features/plaza/ui/plaza_copy.dart';
 import 'package:lotti/features/plaza/ui/plaza_frame_pacer.dart';
 import 'package:lotti/features/plaza/ui/plaza_frame_window.dart';
 import 'package:lotti/features/plaza/ui/plaza_hud.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_pointer_controller.dart';
 import 'package:lotti/features/plaza/ui/plaza_repaint.dart';
 import 'package:lotti/features/plaza/ui/plaza_search_sheet.dart';
 import 'package:lotti/features/plaza/ui/plaza_tour.dart';
+import 'package:lotti/features/plaza/ui/plaza_wall_swap.dart';
 import 'package:lotti/features/plaza/ui/task_side_panel.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
@@ -55,7 +59,10 @@ class PlazaView extends StatefulWidget {
     this.hidden = const {},
     this.trace = false,
     this.tourOnly,
+    this.shotDir,
     this.initialFrameRate = PlazaFrameRate.auto,
+    this.initialSkyMode = PlazaSkyMode.night,
+    this.onSkyModeChanged,
     super.key,
   });
 
@@ -67,7 +74,21 @@ class PlazaView extends StatefulWidget {
   final Set<String> hidden;
   final bool trace;
   final Set<String>? tourOnly;
+
+  /// Fixture-only: where a settled tour stop writes its PNG.
+  ///
+  /// The frame is read back from the widget tree rather than off the screen,
+  /// so a capture needs no display server, no window manager and no screen
+  /// recording permission — and both skies are framed identically, which is
+  /// the whole point of a before/after pair.
+  final String? shotDir;
   final PlazaFrameRate initialFrameRate;
+
+  /// The sky the world boots under.
+  final PlazaSkyMode initialSkyMode;
+
+  /// Told when the walker changes the sky, so a host can remember it.
+  final ValueChanged<PlazaSkyMode>? onSkyModeChanged;
 
   @override
   State<PlazaView> createState() => _PlazaViewState();
@@ -96,6 +117,13 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   Set<String> get _hidden => widget.hidden;
   bool get _traceMode => widget.trace;
   late PlazaFrameRate _frameRate = widget.initialFrameRate;
+  late PlazaSkyMode _skyMode = widget.initialSkyMode;
+  PlazaPalette get _palette => PlazaPalette.of(_skyMode);
+
+  /// Which painted texture set is on its way, so a walker who flips back and
+  /// forth lands on their last choice rather than on whichever paint
+  /// finished last.
+  final PlazaWallSwap _wallSwap = PlazaWallSwap();
   PlazaFramePacer? _pacer;
 
   Duration? _lastPaint;
@@ -160,6 +188,9 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   // Tap-versus-drag.
   final _pointer = PlazaPointerController();
 
+  /// The subtree a fixture capture reads back: the world and its chrome.
+  final GlobalKey _shotKey = GlobalKey();
+
   // Rolling frame-time window.
   final _frameMs = PlazaFrameWindow();
   double _statsAge = 0;
@@ -203,7 +234,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     // backend without GPU support; those child futures otherwise escape it.
     await Future.sync(() => gpu.gpuContext);
     await Scene.initializeStaticResources();
-    _walls = await WallTextures.load(copy: widget.world.copy);
+    _walls = await WallTextures.load(copy: widget.world.copy, mode: _skyMode);
     await _ensureCharacterModels();
     if (!mounted) return;
     _load();
@@ -258,6 +289,35 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       _tourReadyReport = null;
       _tourAnnounced = true;
       _tourClock = _tourSettleSeconds;
+      final stop = _tourStop;
+      if (widget.shotDir != null && stop >= 0) {
+        unawaited(
+          _writeShot(plazaTourStops[stop].name).catchError((Object error) {
+            debugPrint('PLAZA_SHOT failed: $error');
+          }),
+        );
+      }
+    }
+  }
+
+  /// Reads the settled frame back out of the widget tree and writes it to
+  /// [PlazaView.shotDir] as `<stop>.png`.
+  Future<void> _writeShot(String name) async {
+    final boundary =
+        _shotKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return;
+    final image = await boundary.toImage(
+      pixelRatio: MediaQuery.devicePixelRatioOf(context),
+    );
+    try {
+      final bytes = await image.toByteData(format: ImageByteFormat.png);
+      if (bytes == null) return;
+      final file = File('${widget.shotDir}/$name.png')
+        ..parent.createSync(recursive: true)
+        ..writeAsBytesSync(bytes.buffer.asUint8List());
+      debugPrint('PLAZA_SHOT wrote ${file.path}');
+    } finally {
+      image.dispose();
     }
   }
 
@@ -349,7 +409,11 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
         maxBuildingHeight: _knobs.maxHeight,
       ),
     );
-    _sceneController = PlazaSceneController(world: _world, hidden: _hidden);
+    _sceneController = PlazaSceneController(
+      world: _world,
+      palette: _palette,
+      hidden: _hidden,
+    );
     final walls = _walls;
     if (walls != null) _sceneController.attachWallTextures(walls);
     _lod = FacadeLodManager(
@@ -370,6 +434,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       scene: _sceneController.scene,
       world: _world,
       bindings: _sceneController.bindings,
+      palette: _palette,
     );
     // Fire and forget: sprites are square dots until the glow lands.
     unawaited(_sprites.loadGlow().catchError(_reportTextureError));
@@ -390,11 +455,13 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
             scene: _sceneController.scene,
             world: _world,
             glowTexture: walls.pool,
+            palette: _palette,
           );
     _cables?.root.visible = _showConnections;
     _attachCharacters();
     debugPrint(
-      'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches}',
+      'PLAZA_BATCHES meshes=${batches.meshes} batches=${batches.batches} '
+      'shadows=${_sceneController.shadowCount}',
     );
     debugPrint(
       'PLAZA_CABLES edges=${_world.connections.length} '
@@ -519,7 +586,9 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       if (oldWidget.world.copy.messages.localeName !=
           widget.world.copy.messages.localeName) {
         unawaited(
-          _reloadWalls(widget.world.copy).catchError(_reportTextureError),
+          _reloadWalls(widget.world.copy, _skyMode).catchError(
+            _reportTextureError,
+          ),
         );
       }
     }
@@ -537,14 +606,56 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _reloadWalls(PlazaCopy copy) async {
-    final walls = await WallTextures.load(copy: copy);
-    if (!mounted ||
-        copy.messages.localeName != widget.world.copy.messages.localeName) {
-      return;
+  /// Paints and uploads a texture set for [mode] and hands it to the scene.
+  ///
+  /// The set on screen stays until this one lands, so neither a locale
+  /// change nor a sky switch ever shows an untextured city. A result that
+  /// is no longer wanted — the locale moved on, or the walker switched
+  /// back — is dropped rather than attached.
+  Future<void> _reloadWalls(PlazaCopy copy, PlazaSkyMode mode) async {
+    try {
+      final walls = await WallTextures.load(copy: copy, mode: mode);
+      if (!mounted ||
+          copy.messages.localeName != widget.world.copy.messages.localeName ||
+          mode != _skyMode) {
+        return;
+      }
+      _walls = walls;
+      _sceneController.attachWallTextures(walls);
+      _wakeForInput();
+    } finally {
+      // Whatever happened to it — attached, dropped, or thrown — this set is
+      // no longer on its way, and its sky must stay askable.
+      _wallSwap.settled(mode);
     }
-    _walls = walls;
-    _sceneController.attachWallTextures(walls);
+  }
+
+  /// Switches the sky.
+  ///
+  /// The scene is rebuilt under the new palette at once — geometry, air and
+  /// every solid colour — keeping the camera where it stands, and the
+  /// painted walls follow when their set finishes uploading. Rebuilding is
+  /// what a mode change *is*: the materials are shared and immutable, so
+  /// there is nothing to repaint in place.
+  void _setSkyMode(PlazaSkyMode mode) {
+    if (mode == _skyMode) return;
+    final pose = _camera.pose;
+    _lod.dispose();
+    setState(() {
+      _skyMode = mode;
+      _load(pose: pose);
+    });
+    widget.onSkyModeChanged?.call(mode);
+    final pending = _wallSwap.request(wanted: mode, attached: _walls?.mode);
+    if (pending != null) {
+      unawaited(
+        _reloadWalls(
+          widget.world.copy,
+          pending,
+        ).catchError(_reportTextureError),
+      );
+    }
+    _frameCamera = null;
     _wakeForInput();
   }
 
@@ -920,137 +1031,148 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       );
     }
     final panel = _panel;
+    // The capture boundary is a full-window compositing layer that exists
+    // only so a fixture can read the frame back; shipping runs never pay
+    // for it. [_writeShot] already tolerates its absence.
+    Widget capturable(Widget world) => widget.shotDir == null
+        ? world
+        : RepaintBoundary(key: _shotKey, child: world);
     return Scaffold(
       backgroundColor: context.designTokens.colors.background.level01,
       body: Focus(
         autofocus: true,
         onKeyEvent: _onKey,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Listener(
-                onPointerDown: _onPointerDown,
-                onPointerMove: _onPointerMove,
-                onPointerUp: _onPointerUp,
-                onPointerCancel: (event) => _pointer.cancel(event.pointer),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    _viewSize = constraints.biggest;
-                    // The frame clock invalidates paint, leaving hosted
-                    // widget elements out of the per-frame build path.
-                    return PlazaRepaint(
-                      frames: _frame,
-                      child: SceneView(
-                        _sceneController.scene,
-                        cameraBuilder: (_) =>
-                            _frameCamera ??
-                            _camera.camera(
-                              farClip: math.max(
-                                1400,
-                                (_world.plaza?.overview.y ?? 0) * 4,
+        child: capturable(
+          Stack(
+            children: [
+              Positioned.fill(
+                child: Listener(
+                  onPointerDown: _onPointerDown,
+                  onPointerMove: _onPointerMove,
+                  onPointerUp: _onPointerUp,
+                  onPointerCancel: (event) => _pointer.cancel(event.pointer),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      _viewSize = constraints.biggest;
+                      // The frame clock invalidates paint, leaving hosted
+                      // widget elements out of the per-frame build path.
+                      return PlazaRepaint(
+                        frames: _frame,
+                        child: SceneView(
+                          _sceneController.scene,
+                          cameraBuilder: (_) =>
+                              _frameCamera ??
+                              _camera.camera(
+                                farClip: math.max(
+                                  1400,
+                                  (_world.plaza?.overview.y ?? 0) * 4,
+                                ),
                               ),
-                            ),
-                        autoTick: false,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            PlazaHud(
-              projectLabel: _world.projectLabel,
-              isCategory: _world.isCategory,
-              taskCount: _world.liveTaskCount,
-              weekCount: _world.builtWeeks,
-              attentionCount: _world.anomalies.length,
-              onMorningWalk: _startWalk,
-              onOverview: _flyOverview,
-              onHome: _flyHome,
-              onExit: widget.onExit,
-              frameRate: _frameRate,
-              onFrameRateChanged: (rate) {
-                setState(() => _frameRate = rate);
-                _wakeForInput();
-              },
-              showPenguins:
-                  _showPenguins &&
-                  _penguinModel != null &&
-                  _world.ambientCreatures > 0,
-              onShowPenguinsChanged:
-                  _penguinModel == null || _world.ambientCreatures == 0
-                  ? null
-                  : (show) {
-                      setState(() => _showPenguins = show);
-                      _characters?.enabled = show;
-                      _wakeForInput();
+                          autoTick: false,
+                        ),
+                      );
                     },
-              showConnections: _showConnections,
-              onShowConnectionsChanged: _world.connections.isEmpty
-                  ? null
-                  : (show) {
-                      setState(() => _showConnections = show);
-                      _cables?.root.visible = show;
-                      _wakeForInput();
-                    },
-              showMeerkats:
-                  _showMeerkats &&
-                  _meerkatModel != null &&
-                  _world.ambientCreatures >= 4,
-              onShowMeerkatsChanged:
-                  _meerkatModel == null || _world.ambientCreatures < 4
-                  ? null
-                  : (show) {
-                      setState(() => _showMeerkats = show);
-                      _wakeForInput();
-                    },
-              showDebug: _showDebug,
-              onShowDebugChanged: (show) => setState(() => _showDebug = show),
-              toast: _toast,
-              walkChip: _walk == null
-                  ? null
-                  : '${context.messages.plazaMorningWalk} · ${_walk!.index + 1}/${_walk!.stops.length} · ${_walk!.paused ? context.messages.plazaPaused : context.messages.plazaTourControls}',
-            ),
-            if (_searchOpen)
-              PlazaSearchSheet(
-                tasks: _world.tasks,
-                attentionOf: _world.attentionOf,
-                weekOf: _world.weekOf,
-                onPick: (task) {
-                  setState(() => _searchOpen = false);
-                  _flyToTask(task);
-                },
-                onClose: () => setState(() => _searchOpen = false),
-              ),
-            if (panel != null)
-              TaskSidePanel(
-                attention: panel.attention,
-                categoryLabel: _world.categoryLabelOf(panel.task),
-                ticks: _ticks,
-                onClose: () => setState(() => _panel = null),
-              ),
-            if (_showDebug)
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      context.designTokens.spacing.step3,
-                      context.designTokens.spacing.step10,
-                      context.designTokens.spacing.step3,
-                      context.designTokens.spacing.step3,
-                    ),
-                    child: PlazaDebugOverlay(
-                      stats: _stats,
-                      config: _config,
-                      knobs: _knobs,
-                      datasetLabel: _world.projectLabel,
-                      onConfigChanged: () => setState(() {}),
-                      onKnobsApplied: _applyKnobs,
-                    ),
                   ),
                 ),
               ),
-          ],
+              PlazaHud(
+                projectLabel: _world.projectLabel,
+                isCategory: _world.isCategory,
+                taskCount: _world.liveTaskCount,
+                weekCount: _world.builtWeeks,
+                attentionCount: _world.anomalies.length,
+                onMorningWalk: _startWalk,
+                onOverview: _flyOverview,
+                onHome: _flyHome,
+                onExit: widget.onExit,
+                skyMode: _skyMode,
+                onSkyModeChanged: _setSkyMode,
+                palette: _palette,
+                frameRate: _frameRate,
+                onFrameRateChanged: (rate) {
+                  setState(() => _frameRate = rate);
+                  _wakeForInput();
+                },
+                showPenguins:
+                    _showPenguins &&
+                    _penguinModel != null &&
+                    _world.ambientCreatures > 0,
+                onShowPenguinsChanged:
+                    _penguinModel == null || _world.ambientCreatures == 0
+                    ? null
+                    : (show) {
+                        setState(() => _showPenguins = show);
+                        _characters?.enabled = show;
+                        _wakeForInput();
+                      },
+                showConnections: _showConnections,
+                onShowConnectionsChanged: _world.connections.isEmpty
+                    ? null
+                    : (show) {
+                        setState(() => _showConnections = show);
+                        _cables?.root.visible = show;
+                        _wakeForInput();
+                      },
+                showMeerkats:
+                    _showMeerkats &&
+                    _meerkatModel != null &&
+                    _world.ambientCreatures >= 4,
+                onShowMeerkatsChanged:
+                    _meerkatModel == null || _world.ambientCreatures < 4
+                    ? null
+                    : (show) {
+                        setState(() => _showMeerkats = show);
+                        _wakeForInput();
+                      },
+                showDebug: _showDebug,
+                onShowDebugChanged: (show) => setState(() => _showDebug = show),
+                toast: _toast,
+                walkChip: _walk == null
+                    ? null
+                    : '${context.messages.plazaMorningWalk} · ${_walk!.index + 1}/${_walk!.stops.length} · ${_walk!.paused ? context.messages.plazaPaused : context.messages.plazaTourControls}',
+              ),
+              if (_searchOpen)
+                PlazaSearchSheet(
+                  tasks: _world.tasks,
+                  attentionOf: _world.attentionOf,
+                  weekOf: _world.weekOf,
+                  onPick: (task) {
+                    setState(() => _searchOpen = false);
+                    _flyToTask(task);
+                  },
+                  onClose: () => setState(() => _searchOpen = false),
+                ),
+              if (panel != null)
+                TaskSidePanel(
+                  attention: panel.attention,
+                  categoryLabel: _world.categoryLabelOf(panel.task),
+                  ticks: _ticks,
+                  onClose: () => setState(() => _panel = null),
+                ),
+              if (_showDebug)
+                SafeArea(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        context.designTokens.spacing.step3,
+                        context.designTokens.spacing.step10,
+                        context.designTokens.spacing.step3,
+                        context.designTokens.spacing.step3,
+                      ),
+                      child: PlazaDebugOverlay(
+                        stats: _stats,
+                        config: _config,
+                        knobs: _knobs,
+                        datasetLabel: _world.projectLabel,
+                        onConfigChanged: () => setState(() {}),
+                        onKnobsApplied: _applyKnobs,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
