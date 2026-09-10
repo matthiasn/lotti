@@ -18,8 +18,8 @@ const double chatAmplitudeMaxNormalized = 1;
 /// oldest sample when the window overflows.
 ///
 /// Pure: returns a new list and never mutates [history], so the controller can
-/// hand it straight to `state.copyWith`. Shared by the batch and realtime
-/// recording paths to keep the rolling-window behaviour identical.
+/// hand it straight to `state.copyWith`. Used by the batch recorder
+/// to maintain its rolling waveform window.
 List<double> appendAmplitudeSample(
   List<double> history,
   double dbfs, {

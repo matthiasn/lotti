@@ -1481,12 +1481,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCardTitle => 'AI-oversigt';
 
   @override
-  String get aiChatAssistantResponding => 'Assistenten svarer';
-
-  @override
-  String get aiChatMessageCopied => 'Kopieret til clipboard';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Kunne ikke indlæse modellerne. Prøv venligst igen.';
 

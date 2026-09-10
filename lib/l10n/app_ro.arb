@@ -621,8 +621,6 @@
   "aiCardReadMore": "Citiți mai mult",
   "aiCardShowLess": "Afișați mai puțin",
   "aiCardTitle": "Rezumat AI",
-  "aiChatAssistantResponding": "Asistentul răspunde",
-  "aiChatMessageCopied": "Copiat în clipboard",
   "aiConfigFailedToLoadModelsGeneric": "Eșec la încărcarea modelelor. Vă rugăm să încercați din nou.",
   "aiConfigNoModelsAvailable": "Nu sunt configurate modele AI încă. Vă rugăm să adăugați unul în setări.",
   "aiConfigNoSuitableModelsAvailable": "Niciun model nu îndeplinește cerințele pentru acest prompt. Vă rugăm să configurați modele cu capabilitățile necesare.",

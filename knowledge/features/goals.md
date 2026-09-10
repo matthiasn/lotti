@@ -127,11 +127,11 @@ sources:
   - id: chat-composer
     resource: ../../lib/features/agents/ui/chat/agent_chat_view.dart
     title: AgentChatView — voice-enabled goal chat composer
-    last_modified: 2026-08-14
+    last_modified: 2026-09-10
   - id: recorder-controller
-    resource: ../../lib/features/ai_chat/ui/controllers/chat_recorder_controller.dart
+    resource: ../../lib/features/agents/ui/chat/chat_recorder_controller.dart
     title: ChatRecorderController — shared voice recorder
-    last_modified: 2026-08-14
+    last_modified: 2026-09-10
 ---
 
 # Goal Agents — Runtime

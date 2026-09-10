@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai_chat/ui/controllers/chat_amplitude_history.dart';
+import 'package:lotti/features/agents/ui/chat/chat_amplitude_history.dart';
 
 void main() {
   group('appendAmplitudeSample', () {

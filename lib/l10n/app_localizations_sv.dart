@@ -1489,12 +1489,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardTitle => 'AI-sammanfattning';
 
   @override
-  String get aiChatAssistantResponding => 'Assistenten svarar';
-
-  @override
-  String get aiChatMessageCopied => 'Kopierat till skrivplatta';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Misslyckades med att ladda modellerna. Försök igen, tack.';
 

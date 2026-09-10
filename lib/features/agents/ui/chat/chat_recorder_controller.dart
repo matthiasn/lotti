@@ -4,16 +4,16 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/ui/chat/chat_amplitude_history.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
-import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
-import 'package:lotti/features/ai_chat/ui/controllers/chat_amplitude_history.dart';
-import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
+import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
-export 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
+export 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
 
 /// Drives the shared AI voice-input recorder — record to a temp `.m4a` file,
 /// then batch-transcribe — exposing a single [ChatRecorderState] to the UI.

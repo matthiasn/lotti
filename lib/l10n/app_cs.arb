@@ -628,8 +628,6 @@
   "aiCardReadMore": "Číst více",
   "aiCardShowLess": "Skrýt podrobnosti",
   "aiCardTitle": "Souhrn AI",
-  "aiChatAssistantResponding": "Asistent odpovídá",
-  "aiChatMessageCopied": "Zkopírováno do schránky",
   "aiConfigFailedToLoadModelsGeneric": "Nepodařilo se načíst modely. Prosím, zkuste to znovu.",
   "aiConfigNoModelsAvailable": "Žádné AI modely zatím nejsou konfigurovány. Prosím, přidejte je v nastavení.",
   "aiConfigNoSuitableModelsAvailable": "Žádný model nesplňuje požadavky pro tento prompt. Prosím, nakonfigurujte modely, které podporují požadované schopnosti.",

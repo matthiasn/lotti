@@ -1,4 +1,4 @@
-import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Controller that starts in recording state.

@@ -1502,12 +1502,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardTitle => 'Rezumat AI';
 
   @override
-  String get aiChatAssistantResponding => 'Asistentul răspunde';
-
-  @override
-  String get aiChatMessageCopied => 'Copiat în clipboard';
-
-  @override
   String get aiConfigFailedToLoadModelsGeneric =>
       'Eșec la încărcarea modelelor. Vă rugăm să încercați din nou.';
 

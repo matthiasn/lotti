@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
-import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart'
+import 'package:lotti/features/ai/services/audio_transcription_service.dart'
     show AttributedTranscriptionException, TranscriptionEvidenceState;
 import 'package:lotti/features/daily_os_next/services/day_agent_job_executor.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';

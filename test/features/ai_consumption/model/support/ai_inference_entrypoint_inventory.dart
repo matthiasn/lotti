@@ -96,12 +96,9 @@ const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
     outputCarrier: null,
   ),
   AiInferenceEntrypoint(
-    id: 'ai-chat',
-    owner: 'lib/features/ai_chat',
-    workTypes: {
-      AiWorkType.textGeneration,
-      AiWorkType.audioTranscription,
-    },
+    id: 'batch-audio-transcription',
+    owner: 'lib/features/ai/services/audio_transcription_service.dart',
+    workTypes: {AiWorkType.audioTranscription},
     coverage: AiAttributionCoverage.interactionOnly,
     outputCarrier: null,
   ),

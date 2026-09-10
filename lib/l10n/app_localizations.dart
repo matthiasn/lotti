@@ -2616,18 +2616,6 @@ abstract class AppLocalizations {
   /// **'AI summary'**
   String get aiCardTitle;
 
-  /// No description provided for @aiChatAssistantResponding.
-  ///
-  /// In en, this message translates to:
-  /// **'Assistant is responding'**
-  String get aiChatAssistantResponding;
-
-  /// No description provided for @aiChatMessageCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Copied to clipboard'**
-  String get aiChatMessageCopied;
-
   /// No description provided for @aiConfigFailedToLoadModelsGeneric.
   ///
   /// In en, this message translates to:

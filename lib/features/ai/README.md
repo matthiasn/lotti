@@ -39,7 +39,8 @@ one.
 Provider, model, prompt and inference-profile configuration; the built-in skill
 catalog; prompt assembly and context injection; routing a request to the right
 provider endpoint; the multi-turn conversation and tool-calling loop; local
-embeddings and vector search; and the AI settings surfaces.
+embeddings and vector search; shared batch audio transcription for agent voice
+input and Daily OS processing; and the AI settings surfaces.
 
 It does **not** decide when an agent wakes or what an agent's lifecycle looks
 like — that is the [agents feature](../agents/README.md). It also does not own

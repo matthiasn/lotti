@@ -621,8 +621,6 @@
   "aiCardReadMore": "Lire plus",
   "aiCardShowLess": "Afficher moins",
   "aiCardTitle": "Résumé IA",
-  "aiChatAssistantResponding": "L’assistant répond",
-  "aiChatMessageCopied": "Copié dans le presse-papiers",
   "aiConfigFailedToLoadModelsGeneric": "Échec du chargement des modèles. Réessaie s'il te plaît.",
   "aiConfigNoModelsAvailable": "Aucun modèle d'IA n'est encore configuré. Ajoute-en un dans les paramètres.",
   "aiConfigNoSuitableModelsAvailable": "Aucun modèle ne répond aux exigences de ce prompt. Configure des modèles avec les capacités requises.",

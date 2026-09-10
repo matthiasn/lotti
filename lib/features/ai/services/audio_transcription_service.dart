@@ -48,7 +48,7 @@ class _ProviderTranscriptionFailure implements Exception {
 }
 
 /// Service that transcribes a local audio file to text using the
-/// configured cloud inference provider and selected audio-capable model.
+/// configured inference provider and selected audio-capable model.
 class AudioTranscriptionService {
   /// Creates an [AudioTranscriptionService] backed by Riverpod [Ref].
   AudioTranscriptionService(this.ref);

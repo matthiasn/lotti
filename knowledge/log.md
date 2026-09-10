@@ -1,5 +1,11 @@
 # Knowledge Bundle Update Log
 
+## 2026-09-10
+* **Reorganisation**: Removed the obsolete AI chat module. Its active primitives
+  now belong to [agent chat input and reasoning](features/agents/chat-input-and-reasoning.md)
+  and [AI batch transcription](features/ai/batch-transcription.md), preserving
+  agent improvement, goal/relationship chat, and Daily OS audio processing.
+
 ## 2026-08-20
 * **Correction**: [Screenshots](conventions/screenshots.md) — R2 is the **only**
   destination for captured images, for the manual catalog and for pull-request

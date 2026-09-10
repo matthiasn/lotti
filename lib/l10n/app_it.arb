@@ -703,8 +703,6 @@
   "aiCardReadMore": "Leggi tutto",
   "aiCardShowLess": "Mostra di meno",
   "aiCardTitle": "Riepilogo dell'AI",
-  "aiChatAssistantResponding": "L’assistente sta rispondendo",
-  "aiChatMessageCopied": "Copiato negli appunti",
   "aiConfigFailedToLoadModelsGeneric": "Non caricare modelli. Si prega di riprovare.",
   "aiConfigNoModelsAvailable": "Non sono ancora configurati modelli AI. Si prega di aggiungere uno nelle impostazioni.",
   "aiConfigNoSuitableModelsAvailable": "Nessun modello soddisfa i requisiti per questo prompt. Si prega di configurare i modelli che supportano le funzionalità richieste.",
