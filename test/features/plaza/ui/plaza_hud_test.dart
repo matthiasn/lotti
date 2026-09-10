@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/plaza/domain/attention.dart';
 import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/plaza_hud.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
+import 'package:lotti/features/plaza/ui/plaza_style.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
@@ -18,6 +21,7 @@ void main() {
   late bool showPenguins;
   late bool showMeerkats;
   late bool showConnections;
+  PlazaSkyMode? skyMode;
 
   setUp(() {
     walks = 0;
@@ -29,6 +33,7 @@ void main() {
     showPenguins = true;
     showMeerkats = true;
     showConnections = true;
+    skyMode = null;
   });
 
   Widget host({
@@ -38,6 +43,7 @@ void main() {
     bool penguinsAvailable = true,
     bool meerkatsAvailable = true,
     bool connectionsAvailable = false,
+    PlazaSkyMode sky = PlazaSkyMode.night,
   }) => makeTestableWidget2(
     Scaffold(
       body: PlazaHud(
@@ -52,6 +58,9 @@ void main() {
         onExit: () => exits++,
         frameRate: frameRate,
         onFrameRateChanged: (rate) => frameRate = rate,
+        skyMode: sky,
+        palette: PlazaPalette.of(sky),
+        onSkyModeChanged: (mode) => skyMode = mode,
         showMeerkats: showMeerkats,
         onShowMeerkatsChanged: meerkatsAvailable
             ? (show) => showMeerkats = show
@@ -251,5 +260,88 @@ void main() {
     expect(disabled.onChanged, isNull);
     await tester.tap(find.text('Meerkats'));
     expect(showMeerkats, isFalse);
+  });
+
+  testWidgets('the sky control offers both hours and reports the switch', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(host());
+    // Each segment draws its label twice: once visible, once as the ghost
+    // that reserves the selected width.
+    expect(find.text('Night'), findsNWidgets(2));
+    expect(find.text('Day'), findsNWidgets(2));
+    expect(skyMode, isNull, reason: 'nothing reported before a tap');
+    await tester.tap(find.text('Day').hitTestable().first);
+    await tester.pump();
+    expect(skyMode, PlazaSkyMode.day);
+    await tester.pumpWidget(host(sky: PlazaSkyMode.day));
+    await tester.tap(find.text('Night').hitTestable().first);
+    await tester.pump();
+    expect(skyMode, PlazaSkyMode.night);
+  });
+
+  testWidgets('the status legend wears the colours the roofs do', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    Color? pillColor(String label) => tester
+        .widgetList<DsPill>(find.byType(DsPill))
+        .where((pill) => pill.label == label)
+        .map((pill) => pill.color)
+        .firstOrNull;
+
+    await tester.pumpWidget(host());
+    const open = 'Open';
+    expect(pillColor(open), PlazaPalette.night.lanterns.of(LanternState.open));
+    await tester.pumpWidget(host(sky: PlazaSkyMode.day));
+    await tester.pump();
+    expect(
+      pillColor(open),
+      PlazaPalette.day.lanterns.of(LanternState.open),
+      reason: 'a key that shows night colours over a daylit street is a lie',
+    );
+  });
+
+  testWidgets('daylight puts the chrome on a scrim and night does not', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // White type and tinted pills drawn straight onto sunlit concrete do
+    // not read; over the night street they do, and a scrim there would
+    // obstruct the view for nothing.
+    Iterable<Color?> scrims() => tester
+        .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+        .map((box) => box.decoration)
+        .whereType<BoxDecoration>()
+        .map((decoration) => decoration.color)
+        .where((color) => color?.withValues(alpha: 1) == PlazaStyle.panel);
+
+    await tester.pumpWidget(host());
+    expect(scrims(), isEmpty);
+
+    await tester.pumpWidget(host(sky: PlazaSkyMode.day));
+    await tester.pump();
+    expect(
+      scrims(),
+      hasLength(2),
+      reason: 'the controls above and the legend below each get one',
+    );
+    expect(
+      scrims().first!.a,
+      closeTo(SurfaceAlphas.linework, 0.001),
+      reason: 'the scrim opacity is a design-system step, not a local number',
+    );
   });
 }

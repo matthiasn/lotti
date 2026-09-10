@@ -10187,6 +10187,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plazaShowPenguins => 'Penguins';
 
   @override
+  String get plazaSkyDay => 'Day';
+
+  @override
+  String get plazaSkyNight => 'Night';
+
+  @override
   String plazaStaleReason(int days) {
     return 'quiet for $days days — pick it back up';
   }

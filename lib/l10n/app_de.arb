@@ -3868,6 +3868,8 @@
   "plazaProjectOverdue": "Überfällige Aufgaben: {count}",
   "plazaSearchHint": "Aufgaben suchen, Enter zum Hinfliegen",
   "plazaShowPenguins": "Pinguine",
+  "plazaSkyDay": "Tag",
+  "plazaSkyNight": "Nacht",
   "plazaStaleReason": "seit {days} Tagen ruhig — nimm es wieder auf",
   "plazaStats": "{tasks} Aufgaben · {weeks} Wochen · {attention} brauchen Aufmerksamkeit",
   "plazaTaskCount": "Aufgaben: {count}",

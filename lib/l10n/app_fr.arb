@@ -3868,6 +3868,8 @@
   "plazaProjectOverdue": "Tâches en retard : {count}",
   "plazaSearchHint": "Cherche une tâche, Entrée pour y aller",
   "plazaShowPenguins": "Manchots",
+  "plazaSkyDay": "Jour",
+  "plazaSkyNight": "Nuit",
   "plazaStaleReason": "sans activité depuis {days} jours — reprends-la",
   "plazaStats": "{tasks} tâches · {weeks} semaines · {attention} demandent ton attention",
   "plazaTaskCount": "Tâches : {count}",

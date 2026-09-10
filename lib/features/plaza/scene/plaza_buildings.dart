@@ -21,15 +21,14 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     );
     final parade = stableIndex(task.id, 'parade', WallTextures.paradeVariants);
     final kit = stableIndex(task.id, 'kit', WallTextures.tileFamilies);
-    final colors = dsTokensDark.colors;
-    final wallTint = linearColor(PlazaStyle.categoryWall(task));
+    final wallTint = linearColor(palette.categoryWall(task));
     final stone = _boxes.solid(wallTint);
-    final cornice = _boxes.solid(linearColor(colors.background.level03));
+    final cornice = _boxes.solid(linearColor(palette.surfaces.cornice));
     final structure = PlazaArchitecture(_boxes).build(
       architecture,
       wall: stone,
       trim: cornice,
-      light: _boxes.solid(linearColor(PlazaStyle.taskColor(attention))),
+      light: _boxes.solid(linearColor(palette.taskColor(attention))),
       onVolume: (tier, volume, {required groundFloor}) {
         if (!_shown('walls')) return;
         _windowedBox(
@@ -47,11 +46,17 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
       },
     )..localTransform = Matrix4.translation(Vector3(0, -h / 2, 0));
     node.add(structure);
+    _addShadow(
+      Vector3(placement.x, 0, placement.z),
+      width: w,
+      depth: d,
+      height: h,
+    );
     _box(
       node,
       Vector3(0, -h / 2 + 0.02, 0),
       Vector3(w + 3, 0.04, d + 3),
-      PlazaSceneController._pavementMaterial,
+      _pavementMaterial,
     );
     // A canopy shadows the recessed entrances without entering the street.
     _box(
@@ -68,7 +73,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
         attention.lantern == LanternState.blocked ||
         attention.lantern == LanternState.overdue;
     if (alarm) {
-      final spill = PlazaStyle.taskColor(attention);
+      final spill = palette.taskColor(attention);
       final sinF = math.sin(facing);
       final cosF = math.cos(facing);
       final cx = placement.x + normal.x * setback;
@@ -93,7 +98,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
       node,
       Vector3(0, -h / 2 + 0.35, 0),
       Vector3(w + 0.1, 0.7, d + 0.1),
-      _boxes.solid(linearColor(const Color(0xFF0A0910))),
+      _boxes.solid(linearColor(palette.surfaces.plotBase)),
     );
 
     final facadeW = architecture.facadeWidth;
@@ -151,7 +156,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
           architecture.front + 0.12,
         ),
         Vector3(facadeW * pct, 0.28, 0.12),
-        _boxes.solid(linearColor(PlazaStyle.lightBar(attention))),
+        _boxes.solid(linearColor(palette.taskColor(attention))),
       );
     }
     // Quarter ticks so the bar has a scale.
@@ -160,7 +165,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
         node,
         Vector3(facadeW / 2 - facadeW * q, plinthY, architecture.front + 0.16),
         Vector3(0.06, 0.28, 0.04),
-        _boxes.solid(linearColor(const Color(0xFF07060D))),
+        _boxes.solid(linearColor(palette.surfaces.plotRim)),
       );
     }
 
@@ -177,23 +182,23 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     };
     final categoryNeon = PlazaStyle.neon(PlazaStyle.categoryBright(task));
     final neonColor = Color.lerp(
-      const Color(0xFF0B0A14),
+      palette.surfaces.unlitNeon,
       categoryNeon,
       emissive,
     )!;
     // One colour rule: on an anomaly the state owns the brightest register
     // (the two verticals and their glow burn in the lantern colour); the
     // category survives on the roofline at half power.
-    final stateNeon = PlazaStyle.taskColor(attention);
+    final stateNeon = palette.taskColor(attention);
     // Lit neon goes past white so the bloom pass carries it; a dark shop's
     // strips stay under the threshold.
-    final boost = emissive >= 0.7 ? PlazaSceneController.neonBoost : 1.0;
+    final boost = emissive >= 0.7 ? neonBoost : 1.0;
     final vertical = UnlitMaterial()
       ..baseColorFactor = emissiveColor(alarm ? stateNeon : neonColor, boost);
     final roofline = UnlitMaterial()
       ..baseColorFactor = emissiveColor(
         alarm
-            ? Color.lerp(const Color(0xFF0B0A14), categoryNeon, 0.5)!
+            ? Color.lerp(palette.surfaces.unlitNeon, categoryNeon, 0.5)!
             : neonColor,
         boost,
       );
@@ -241,7 +246,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
         width: facadeW * (alarm ? 0.8 : 1),
         length: alarm ? facadeH * 1.2 : 3,
         yaw: facing,
-        color: alarm ? stateNeon : const Color(0xFFFFC46B),
+        color: alarm ? stateNeon : palette.lights.parade,
         alpha: alarm ? 0.09 : 0.07,
       );
     }
@@ -250,7 +255,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // remains above it and supplies a second, screen-sized status cue.
     final crown = architecture.volumes.last;
     final statusRoof = _boxes.solid(
-      linearColor(PlazaStyle.taskColor(attention)),
+      linearColor(palette.taskColor(attention)),
     );
     _box(
       node,
@@ -269,7 +274,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
           placement.z + normal.z * (placement.depth / 2 + facadeW * 0.3),
         ),
         radius: facadeW * 0.55,
-        color: PlazaStyle.taskColor(attention),
+        color: palette.taskColor(attention),
         alpha: attention.lantern == LanternState.open ? 0.13 : 0.26,
       );
     }
@@ -285,8 +290,8 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     // the far-tier colour language on arrival.
     final ringMaterial = UnlitMaterial()
       ..baseColorFactor = emissiveColor(
-        PlazaStyle.taskColor(attention),
-        PlazaSceneController.neonBoost,
+        palette.taskColor(attention),
+        neonBoost,
       )
       ..depthBias = PlazaSceneController.glowDepthBias;
     const t = 0.12;
@@ -345,7 +350,7 @@ extension _PlazaBuildingsBuilder on PlazaSceneController {
     scene.add(
       _boxes.node(
         Vector3(placement.width, 0.5, placement.depth),
-        _boxes.solid(linearColor(const Color(0xFF14161C))),
+        _boxes.solid(linearColor(palette.surfaces.riser)),
         transform: Matrix4.translation(
           Vector3(placement.x, 0.25, placement.z),
         )..rotateY(placement.facingRadians),

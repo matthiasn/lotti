@@ -10,6 +10,7 @@ import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
 import 'package:lotti/features/plaza/scene/plaza_scene_records.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 import 'package:vector_math/vector_math.dart' hide Colors;
 
@@ -27,15 +28,20 @@ class PlazaSprites {
     required this.scene,
     required this.world,
     required PlazaSceneBindings bindings,
+    this.palette = PlazaPalette.night,
   }) {
-    for (final anchor in bindings.lampAnchors) {
+    // Street lamps stand in both hours; only at night do they burn. A
+    // daylight lamp keeps its post and loses its bulb and halo, so nothing
+    // hangs a glowing dot over sunlit paving.
+    for (final anchor
+        in palette.lights.lampsLit ? bindings.lampAnchors : const <Node>[]) {
       final bulb = Sprite(
-        color: linearColor(PlazaStyle.lamp),
+        color: linearColor(palette.lights.lamp),
         width: lampBulbSize,
         height: lampBulbSize,
       );
       final halo = Sprite(
-        color: linearColor(PlazaStyle.lamp, alpha: 0.35),
+        color: linearColor(palette.lights.lamp, alpha: 0.35),
         width: lampHaloSize,
         height: lampHaloSize,
       );
@@ -54,7 +60,7 @@ class PlazaSprites {
     }
     for (final anchor in bindings.spireAnchors) {
       final sprite = Sprite(
-        color: linearColor(PlazaStyle.warning),
+        color: linearColor(palette.lights.warning),
         width: spireLightSize,
         height: spireLightSize,
       );
@@ -85,7 +91,7 @@ class PlazaSprites {
       );
     }
     for (final building in bindings.buildings) {
-      final color = PlazaStyle.taskColor(building.attention);
+      final color = palette.taskColor(building.attention);
       final sprite = Sprite(color: linearColor(color));
       final node = Node(mesh: sprite.mesh)..raycastable = false;
       building.lanternAnchor.add(node);
@@ -107,7 +113,9 @@ class PlazaSprites {
       );
     }
     for (final beacon in world.beacons) {
-      final teal = linearColor(PlazaStyle.beaconColor(beacon, world));
+      final teal = linearColor(
+        PlazaStyle.beaconColor(beacon, world, palette: palette),
+      );
       final position = Vector3(beacon.markerX, beacon.markerY, beacon.markerZ);
       final dot = Sprite(color: teal);
       final dotNode = Node(
@@ -139,6 +147,10 @@ class PlazaSprites {
   }
 
   final Scene scene;
+
+  /// The hour the sprites burn in. It decides whether the street lamps are
+  /// lit at all, and what colour a roof lantern reads as against the sky.
+  final PlazaPalette palette;
   final PlazaWorld world;
   final List<_Lantern> _lanterns = [];
   final List<_BeaconSprite> _beacons = [];

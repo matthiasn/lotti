@@ -5889,6 +5889,14 @@
   },
   "plazaSearchHint": "Search tasks, Enter to fly",
   "plazaShowPenguins": "Penguins",
+  "plazaSkyDay": "Day",
+  "@plazaSkyDay": {
+    "description": "Segment label for the daylight sky in the Plaza world."
+  },
+  "plazaSkyNight": "Night",
+  "@plazaSkyNight": {
+    "description": "Segment label for the night sky in the Plaza world."
+  },
   "plazaStaleReason": "quiet for {days} days — pick it back up",
   "@plazaStaleReason": {
     "placeholders": {

@@ -3,6 +3,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/features/plaza/scene/category_world_generator.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
+import 'package:lotti/features/plaza/state/plaza_sky_mode_controller.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/plaza_copy.dart';
@@ -106,6 +107,8 @@ class _CategoryPlazaPageState extends ConsumerState<CategoryPlazaPage> {
               );
             },
             onExit: () => Navigator.of(context).pop(),
+            initialSkyMode: ref.watch(plazaSkyModeProvider),
+            onSkyModeChanged: ref.read(plazaSkyModeProvider.notifier).set,
           );
         },
       ),

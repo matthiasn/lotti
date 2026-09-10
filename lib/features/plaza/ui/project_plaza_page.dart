@@ -6,9 +6,11 @@ import 'package:lotti/features/plaza/data/plaza_repository.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
 import 'package:lotti/features/plaza/scene/project_world_generator.dart';
+import 'package:lotti/features/plaza/state/plaza_sky_mode_controller.dart';
 import 'package:lotti/features/plaza/state/project_plaza_provider.dart';
 import 'package:lotti/features/plaza/ui/checklist_ticks.dart';
 import 'package:lotti/features/plaza/ui/plaza_copy.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_view.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -22,6 +24,8 @@ typedef ProjectPlazaSceneBuilder =
       required ChecklistTicks ticks,
       required ValueChanged<PlazaTask> onOpenTask,
       required VoidCallback onExit,
+      PlazaSkyMode initialSkyMode,
+      ValueChanged<PlazaSkyMode>? onSkyModeChanged,
     });
 
 /// A live project world. The current scene remains mounted across background
@@ -151,6 +155,8 @@ class _ProjectPlazaPageState extends ConsumerState<ProjectPlazaPage> {
               ),
             ),
             onExit: () => Navigator.of(context).pop(),
+            initialSkyMode: ref.watch(plazaSkyModeProvider),
+            onSkyModeChanged: ref.read(plazaSkyModeProvider.notifier).set,
           );
         },
       ),

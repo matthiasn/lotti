@@ -5,6 +5,7 @@ import 'package:lotti/features/plaza/domain/plaza_layout.dart';
 import 'package:lotti/features/plaza/domain/plaza_task.dart';
 import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -31,8 +32,8 @@ void main() {
       final cancelled = _task(PlazaTaskState.cancelled);
       final success = dsTokensDark.colors.alert.success.defaultColor;
       expect(PlazaStyle.chip(attentionFor(done, now)).fill, success);
-      expect(PlazaStyle.categoryRoof(done), success);
-      final wall = HSLColor.fromColor(PlazaStyle.categoryWall(done));
+      expect(PlazaPalette.night.categoryRoof(done), success);
+      final wall = HSLColor.fromColor(PlazaPalette.night.categoryWall(done));
       final roof = HSLColor.fromColor(success);
       expect(wall.hue, closeTo(roof.hue, 2));
       expect(wall.lightness, lessThan(roof.lightness));
@@ -112,8 +113,8 @@ void main() {
   test('category colours: the category itself, then two darker tints', () {
     final task = _task(PlazaTaskState.open, color: 0xFFFF0000);
     expect(PlazaStyle.categoryBright(task), const Color(0xFFFF0000));
-    final wall = HSLColor.fromColor(PlazaStyle.categoryWall(task));
-    final roof = HSLColor.fromColor(PlazaStyle.categoryRoof(task));
+    final wall = HSLColor.fromColor(PlazaPalette.night.categoryWall(task));
+    final roof = HSLColor.fromColor(PlazaPalette.night.categoryRoof(task));
     // Still red: the hue sits at the top or the bottom of the wheel.
     bool red(double hue) => hue < 10 || hue > 350;
     expect(red(wall.hue), isTrue, reason: 'wall hue ${wall.hue}');
@@ -121,4 +122,31 @@ void main() {
     expect(wall.lightness, greaterThan(roof.lightness));
     expect(wall.lightness, lessThan(0.5));
   });
+
+  test(
+    'an attention beacon takes its lantern from the palette it is given',
+    () {
+      final tasks = syntheticPlazaTasks();
+      final world = PlazaWorld(
+        tasks: tasks,
+        now: syntheticNow(tasks),
+        projectLabel: 'Test',
+        layout: StreetLayout(projectSeed: 1337),
+      );
+      final beacon = world.beacons.firstWhere(
+        (b) => b.kind == BeaconKind.attention,
+      );
+      final attention = world.attention[beacon.taskId]!;
+      expect(
+        PlazaStyle.beaconColor(beacon, world),
+        PlazaPalette.night.lanterns.of(attention.lantern),
+        reason: 'the default is the sky the district was designed in',
+      );
+      expect(
+        PlazaStyle.beaconColor(beacon, world, palette: PlazaPalette.day),
+        PlazaPalette.day.lanterns.of(attention.lantern),
+        reason: 'a daylight beacon must not be a night lantern on a bright sky',
+      );
+    },
+  );
 }

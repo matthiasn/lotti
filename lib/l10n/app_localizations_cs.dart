@@ -10364,6 +10364,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get plazaShowPenguins => 'Tučňáci';
 
   @override
+  String get plazaSkyDay => 'Den';
+
+  @override
+  String get plazaSkyNight => 'Noc';
+
+  @override
   String plazaStaleReason(int days) {
     return 'bez aktivity $days dní — vrať se k tomu';
   }

@@ -8,6 +8,7 @@ import 'package:lotti/features/plaza/domain/street_layout.dart';
 import 'package:lotti/features/plaza/scene/plaza_primitives.dart';
 import 'package:lotti/features/plaza/scene/plaza_static_meshes.dart';
 import 'package:lotti/features/plaza/scene/plaza_world.dart';
+import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
 import 'package:vector_math/vector_math.dart';
 
@@ -277,19 +278,23 @@ class PlazaCables {
     required Scene scene,
     required PlazaWorld world,
     required TextureSource glowTexture,
+    PlazaPalette palette = PlazaPalette.night,
   }) {
+    // Cables read as dark catenaries against either sky; only how far
+    // their travelling lights are pushed past white changes with the hour.
+    final boost = palette.lights.emissiveBoost;
     scene.add(root);
     final stationary = Node()..raycastable = false;
     root.add(stationary);
     final body = UnlitMaterial()
-      ..baseColorFactor = linearColor(dsTokensDark.colors.background.level03);
+      ..baseColorFactor = linearColor(palette.surfaces.cable);
     final lit = UnlitMaterial()
       ..baseColorFactor = emissiveColor(
         dsTokensDark.colors.text.highEmphasis,
-        1.6,
+        boost,
       );
     final selected = UnlitMaterial()
-      ..baseColorFactor = emissiveColor(PlazaStyle.teal, 1.6);
+      ..baseColorFactor = emissiveColor(PlazaStyle.teal, boost);
     _selection = PlazaCableSelection(
       paths: world.cablePaths,
       root: root,

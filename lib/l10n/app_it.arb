@@ -4342,6 +4342,8 @@
   "plazaProjectOverdue": "Attività scadute: {count}",
   "plazaSearchHint": "Cerca attività, Invio per volare",
   "plazaShowPenguins": "Pinguini",
+  "plazaSkyDay": "Giorno",
+  "plazaSkyNight": "Notte",
   "plazaStaleReason": "ferma da {days} giorni — riprendila",
   "plazaStats": "{tasks} attività · {weeks} settimane · {attention} richiedono attenzione",
   "plazaTaskCount": "Attività: {count}",

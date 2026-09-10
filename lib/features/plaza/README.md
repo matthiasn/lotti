@@ -22,6 +22,18 @@ project. Entering a project opens its own task world; Back returns to the
 category. Completed projects occupy the more distant avenues. Category worlds
 only show projects within the selected category and the current privacy scope.
 
+**Night** and **Day** switch the hour the district is built under. Night is the
+neon city the world was designed in. Day is a clear mid-morning: a blue sky with
+a sun in it, pale aerial haze instead of indigo fog, concrete and asphalt at
+their daylight values, glass that mirrors the sky rather than glowing, and soft
+shade under every building, sign and bench. Emitters fall back to their
+housings — the lamps go out, the ground keeps no pools of light, and only the
+sun blooms. Status still reads: the signs, the shutters, the hoardings and the
+flames over an overdue task carry it where the lights did. Switching rebuilds
+the scene where the camera stands and repaints the wall textures in the
+background, so the world never goes untextured. The choice is remembered
+between visits.
+
 Black-and-white penguin companions stroll through the streets and open square,
 alone or in pairs, with balancing flippers and orange webbed feet. Companions
 occasionally glance toward one another as if in conversation, with eyes leading
@@ -62,6 +74,10 @@ and widget textures belong to `flutter_scene`.
 - `state/project_plaza_provider.dart` refreshes snapshots and the attention clock.
 - `scene/project_world_generator.dart` and `category_world_generator.dart`
   generate task timelines and project avenues.
+- `ui/plaza_palette.dart` is the hour: sky, haze, surfaces, how far emitters
+  are pushed and where the sun stands. Scene code keeps no colour of its own.
+- `state/plaza_sky_mode_controller.dart` remembers the chosen sky, and
+  `ui/plaza_wall_swap.dart` decides which painted texture set to load for it.
 - `domain/` holds geometry, attention, routes, collisions and the Morning walk.
 - `scene/` builds geometry, manages facade detail and captures, and animates
   status lights, flames and ambient life.

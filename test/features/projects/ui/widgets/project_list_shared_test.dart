@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -174,6 +175,135 @@ void main() {
       await tester.pump();
       expect(find.text('Project Alpha'), findsOneWidget);
       expect(find.byIcon(LottiIcons.collapse), findsOneWidget);
+    });
+
+    testWidgets("docks Explore category in the header's trailing corner", (
+      tester,
+    ) async {
+      // It used to sit on a row of its own under every category header,
+      // left-aligned, repeated down a narrow pane. It belongs where this
+      // list's other row-level actions are: the trailing corner.
+      final group = makeGroupedProjectsSection();
+      var explored = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+            onExplorePlaza: () => explored++,
+          ),
+        ),
+      );
+
+      final action = find.byType(DesignSystemIconAction);
+      expect(action, findsOneWidget);
+      final headerRect = tester.getRect(find.byType(InkWell).first);
+      final actionRect = tester.getRect(action);
+      final labelRect = tester.getRect(find.text('Work'));
+      expect(
+        actionRect.center.dx,
+        greaterThan(labelRect.right),
+        reason: 'the action sits after the category name, not under it',
+      );
+      expect(
+        actionRect.center.dy,
+        closeTo(headerRect.center.dy, 0.1),
+        reason: 'and on the header row, not on a row of its own',
+      );
+      expect(
+        tester.getRect(find.byIcon(LottiIcons.collapse)).center.dx,
+        greaterThan(actionRect.center.dx),
+        reason: 'the fold chevron keeps the outermost corner',
+      );
+      expect(explored, 0);
+    });
+
+    testWidgets('entering the world does not fold the group behind it', (
+      tester,
+    ) async {
+      final group = makeGroupedProjectsSection();
+      var explored = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+            onExplorePlaza: () => explored++,
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(DesignSystemIconAction));
+      await tester.pump();
+      expect(explored, 1);
+      expect(
+        find.text('Project Alpha'),
+        findsOneWidget,
+        reason: "the header InkWell must not receive the action's tap",
+      );
+      expect(find.byIcon(LottiIcons.collapse), findsOneWidget);
+    });
+
+    testWidgets('the way in survives folding the group', (tester) async {
+      // On its old row it disappeared with the projects, so a folded
+      // category could not be entered at all.
+      final group = makeGroupedProjectsSection();
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+            onExplorePlaza: () {},
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Work'));
+      await tester.pump();
+      expect(find.text('Project Alpha'), findsNothing);
+      expect(find.byType(DesignSystemIconAction), findsOneWidget);
+    });
+
+    testWidgets('a category with nowhere to go shows no action', (
+      tester,
+    ) async {
+      final group = makeGroupedProjectsSection();
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+          ),
+        ),
+      );
+      expect(
+        find.byType(DesignSystemIconAction),
+        findsNothing,
+        reason: 'no callback means the host has no world to open',
+      );
+    });
+
+    testWidgets('the unassigned group has no world of its own', (tester) async {
+      final group = ProjectCategoryGroup(
+        categoryId: null,
+        category: null,
+        projects: makeGroupedProjectsSection().projects,
+      );
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+            onExplorePlaza: () {},
+          ),
+        ),
+      );
+      expect(find.byType(DesignSystemIconAction), findsNothing);
     });
 
     testWidgets('centers the visible group header inside its 48dp tap target', (

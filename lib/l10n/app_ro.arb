@@ -3868,6 +3868,8 @@
   "plazaProjectOverdue": "Sarcini întârziate: {count}",
   "plazaSearchHint": "Căutați sarcini, Enter pentru a zbura",
   "plazaShowPenguins": "Pinguini",
+  "plazaSkyDay": "Zi",
+  "plazaSkyNight": "Noapte",
   "plazaStaleReason": "fără activitate de {days} zile — reluați-o",
   "plazaStats": "{tasks} sarcini · {weeks} săptămâni · {attention} necesită atenție",
   "plazaTaskCount": "Sarcini: {count}",

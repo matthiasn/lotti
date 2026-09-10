@@ -222,7 +222,9 @@ void main() {
         .element(find.byType(ProjectsTabPage))
         .messages
         .plazaExploreCategory;
-    await tester.tap(find.text(label).first);
+    // The way in is the map glyph in the category header's trailing
+    // corner; its tooltip and semantics carry the label.
+    await tester.tap(find.byTooltip(label).first);
     await tester.pumpAndSettle();
     expect(
       tester

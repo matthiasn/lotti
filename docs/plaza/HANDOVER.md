@@ -16,6 +16,9 @@ same renderer and generator configuration as the app:
 fvm flutter run -d macos -t lib/features/plaza/dev_main.dart
 ```
 
+`PLAZA_DAY=1` boots it in daylight; the HUD's Night / Day toggle switches at
+any time.
+
 The macOS, Linux and Windows runners enable Flutter GPU at engine startup.
 The fixture can also be built without opening a window:
 
@@ -45,6 +48,7 @@ provide the GPU context needed to render the scene.
 | Escape | Close the demo panel and end the walk. |
 | Backtick | Toggle rendering diagnostics. |
 | Penguins / Meerkats checkboxes | Hide or show each species without moving the camera. |
+| Night / Day toggle | Rebuild the district under the other sky, keeping the camera where it stands. |
 
 Any manual movement exits the Morning walk. App task facades persist checklist
 edits and open the normal task details page; category facades enter their
@@ -75,6 +79,23 @@ captures and raster completion before announcing a settled stop. These images
 are useful for Linux geometry and UI review; frame times from a VM do not
 establish macOS GPU performance. Target-device runs still need a real display
 and should only be launched when a visible window is welcome.
+
+## Frame captures without a display server
+
+`PLAZA_SHOT_DIR` writes one PNG per settled tour stop from inside the harness,
+read back out of the widget tree rather than off the screen. It needs no X11, no
+window manager and no macOS screen-recording permission, and both skies are
+framed identically — which is what a before/after pair needs.
+
+```sh
+PLAZA_TOUR=1 PLAZA_TOUR_ONLY=home,overview,attention-closeup \
+  PLAZA_SHOT_DIR=/tmp/lotti-pr-screenshots/plaza/after \
+  build/macos/Build/Products/Debug/LottiDev.app/Contents/MacOS/LottiDev
+```
+
+On macOS the debug app is sandboxed: point `PLAZA_SHOT_DIR` inside its own
+container (`~/Library/Containers/com.matthiasn.lotti.dev/Data/...`) and copy the
+frames out, or the writes fail with `Operation not permitted`.
 
 ## Review captures
 
@@ -108,6 +129,13 @@ pacer. Compare the same build mode, fixture, display scale, viewport and frame
 cap, including the Penguins checkbox state. Penguins start hidden; enable them
 when comparing against older runs with companions on. Normal idle caps deliberately reduce FPS, so idle FPS is not a throughput
 measurement. `PLAZA_HIDE=fire,life` isolates the new animation layers.
+
+Switching the sky throws the scene away and builds a new one — geometry,
+materials and a second set of wall textures — the same path the layout knobs
+take, but reachable from the shipped HUD rather than only from the debug
+overlay. `flutter_scene` exposes no explicit teardown for geometry or textures,
+so if you are chasing memory growth, toggling Night / Day repeatedly is the
+path to watch.
 
 The integration's measurement record and hardware limitations are kept in
 [the implementation notes](../implementation_plans/2026-09-07_plaza_integration.md).
