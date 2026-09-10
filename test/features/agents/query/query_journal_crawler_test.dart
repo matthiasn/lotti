@@ -126,4 +126,45 @@ void main() {
     expect(original!.text, audio.data.transcripts!.last.transcript);
     expect(original.version, startsWith('transcript:'));
   });
+
+  test('empty descriptions retain task and project titles as evidence', () {
+    final task = testTask.copyWith(entryText: const EntryText(plainText: ''));
+    final project = makeTestProject().copyWith(
+      entryText: const EntryText(plainText: '   '),
+    );
+    for (final entry in [task, project]) {
+      final document = QuerySourceDocument.fromEntry(entry);
+      expect(document, isNotNull);
+      expect(document!.text, document.label);
+      expect(document.version, startsWith('title:'));
+    }
+  });
+
+  test('notes-only coverage excludes missing recording transcripts', () async {
+    final bench = QueryTestBench()
+      ..add('task')
+      ..link('task', 'recording');
+    bench.entries['recording'] = testAudioEntry.copyWith(
+      meta: testAudioEntry.meta.copyWith(id: 'recording', categoryId: null),
+      entryText: null,
+      data: testAudioEntry.data.copyWith(transcripts: []),
+    );
+    const scope = QueryScope(kind: QueryScopeKind.task, id: 'task');
+    final notes = await bench.crawler.discover(
+      scope,
+      [],
+      kind: QuerySourceKind.text,
+    );
+    expect(notes.documents.map((d) => d.entry.meta.id), ['task']);
+    expect(notes.coverage.missingTranscripts, 0);
+    expect(notes.coverage.incomplete, isFalse);
+    final recordings = await bench.crawler.discover(
+      scope,
+      [],
+      kind: QuerySourceKind.recording,
+    );
+    expect(recordings.documents, isEmpty);
+    expect(recordings.coverage.missingTranscripts, 1);
+    expect(recordings.coverage.incomplete, isTrue);
+  });
 }

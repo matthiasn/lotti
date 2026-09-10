@@ -217,6 +217,11 @@ void main() {
         ],
       );
       addTearDown(privateContainer.dispose);
+      final privacySubscription = privateContainer.listen(
+        configFlagProvider('private'),
+        (_, _) {},
+      );
+      addTearDown(privacySubscription.close);
       final privateController = privateContainer.read(provider.notifier);
       await privateContainer.read(configFlagProvider('private').future);
       bench.showPrivate = true;

@@ -365,6 +365,7 @@ void main() {
       await tester.tap(find.text('Home scope only'));
       await tester.tap(find.text('Recordings'));
       await tester.enterText(find.byType(TextField), 'Which feeder recording?');
+      await tester.pump();
       await tester.tap(find.byIcon(LottiIcons.send));
       await tester.pump();
       await tester.pump();
@@ -381,4 +382,67 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  for (final hideSource in [false, true]) {
+    testWidgets(
+      'rename clears sensitive text when ${hideSource ? 'its source becomes private' : 'private entries are hidden'}',
+      (tester) async {
+        bench.add('note', category: categoryMindfulness.id);
+        events.add(
+          event(
+            'reply',
+            'feeder',
+            const QueryChatEventData.answer(
+              questionId: 'q',
+              text: 'Feeder decision',
+              coverage: QueryCoverage(),
+              dependencies: [
+                QuerySourceRef(
+                  id: 'note',
+                  private: false,
+                  categoryPrivate: false,
+                ),
+              ],
+            ),
+          ),
+        );
+        await pump(tester);
+        if (!hideSource) {
+          privacy.add(true);
+          await tester.pump();
+        }
+        await switcher(tester);
+        await tester.tap(find.byIcon(LottiIcons.more).first);
+        await tester.pump();
+        await tester.tap(find.text('Rename chat'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField).last,
+          'Private feeder title',
+        );
+        expect(find.text('Private feeder title'), findsOneWidget);
+        if (hideSource) {
+          bench.entries['note'] = bench.entries['note']!.copyWith(
+            meta: bench.entries['note']!.meta.copyWith(private: true),
+          );
+          data.add(snapshot());
+        } else {
+          privacy.add(false);
+        }
+        await tester.pump();
+        expect(find.text('Private feeder title'), findsNothing);
+        await tester.pumpAndSettle();
+        expect(find.text('Save'), findsNothing);
+        verifyNever(
+          () => store.rename(
+            any(),
+            any(),
+            any(),
+            private: any(named: 'private'),
+          ),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
 }
