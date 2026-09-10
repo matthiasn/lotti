@@ -18706,7 +18706,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryTranscribing.
   ///
   /// In en, this message translates to:
-  /// **'Transcribing… nothing is sent until you press Send.'**
+  /// **'Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.'**
   String get queryTranscribing;
 
   /// No description provided for @queryUnavailable.

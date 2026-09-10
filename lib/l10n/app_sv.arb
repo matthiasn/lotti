@@ -4732,7 +4732,7 @@
   "querySourceDeleted": "Källan borttagen",
   "querySourceMoved": "Källan flyttad till en annan kategori",
   "querySurroundingText": "Visa omgivande text",
-  "queryTranscribing": "Transkriberar… inget skickas förrän du trycker på Skicka.",
+  "queryTranscribing": "Transkriberar… din fråga skickas först när du trycker på Skicka. Ljudet kan redan ha skickats till din transkriptionsleverantör.",
   "queryUnavailable": "Det här området är inte längre tillgängligt med dina nuvarande synlighetsinställningar.",
   "queryUnread": "Nytt svar",
   "queueCatchUpNowButton": "Ta igen nu",

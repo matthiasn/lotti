@@ -6374,7 +6374,7 @@
   "querySourceDeleted": "Source deleted",
   "querySourceMoved": "Source moved to another category",
   "querySurroundingText": "Show surrounding text",
-  "queryTranscribing": "Transcribing… nothing is sent until you press Send.",
+  "queryTranscribing": "Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.",
   "queryUnavailable": "This scope is no longer available with your current visibility settings.",
   "queryUnread": "New answer",
   "queueCatchUpNowButton": "Catch up now",

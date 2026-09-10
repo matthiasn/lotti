@@ -16,6 +16,7 @@ void main() {
   late QueryEvidence evidence;
   late List<String> copied;
   late List<String> opened;
+  late PageStorageBucket storage;
   setUp(() {
     bench = QueryTestBench()..add('meeting');
     final entry = bench.entries['meeting']!.copyWith(
@@ -46,6 +47,7 @@ void main() {
     );
     copied = [];
     opened = [];
+    storage = PageStorageBucket();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
           if (call.method == 'Clipboard.setData') {
@@ -61,18 +63,21 @@ void main() {
   Future<void> pump(WidgetTester tester, {QueryAccessSnapshot? access}) =>
       tester.pumpWidget(
         makeTestableWidget(
-          QueryEvidenceCard(
-            key: const PageStorageKey('quote'),
-            evidence: evidence,
-            number: 1,
-            access:
-                access ??
-                QueryAccessSnapshot(
-                  showPrivate: false,
-                  categories: {for (final c in bench.categories) c.id: c},
-                  entries: bench.entries,
-                ),
-            onOpen: opened.add,
+          PageStorage(
+            bucket: storage,
+            child: QueryEvidenceCard(
+              key: const PageStorageKey('quote'),
+              evidence: evidence,
+              number: 1,
+              access:
+                  access ??
+                  QueryAccessSnapshot(
+                    showPrivate: false,
+                    categories: {for (final c in bench.categories) c.id: c},
+                    entries: bench.entries,
+                  ),
+              onOpen: opened.add,
+            ),
           ),
           overrides: [
             querySourceAccessProvider.overrideWithValue(bench.crawler.access),
@@ -138,6 +143,40 @@ void main() {
       await pump(tester);
       expect(find.text('Source deleted'), findsOneWidget);
       expect(find.text('Open entry'), findsNothing);
+      expect(
+        tester
+            .widget<SelectableText>(find.byType(SelectableText))
+            .textSpan!
+            .toPlainText(),
+        evidence.quote,
+      );
+    },
+  );
+
+  testWidgets(
+    'returning to a moved source restores its expanded historical context',
+    (tester) async {
+      await pump(tester);
+      await tester.tap(find.text('Show exact text'));
+      await tester.pump();
+      await tester.tap(find.text('Show surrounding text'));
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      final source = bench.entries['meeting']!;
+      bench.entries['meeting'] = source.copyWith(
+        meta: source.meta.copyWith(categoryId: bench.categories.single.id),
+      );
+      await pump(tester);
+      expect(find.text('Source moved to another category'), findsOneWidget);
+      expect(
+        tester
+            .widget<SelectableText>(find.byType(SelectableText))
+            .textSpan!
+            .toPlainText(),
+        evidence.sourceText,
+      );
+      await tester.tap(find.text('Hide surrounding text'));
+      await tester.pump();
       expect(
         tester
             .widget<SelectableText>(find.byType(SelectableText))

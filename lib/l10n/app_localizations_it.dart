@@ -11236,7 +11236,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Trascrizione… nulla viene inviato finché non premi Invia.';
+      'Trascrizione… la tua domanda viene inviata solo quando premi Invia. L’audio potrebbe essere già stato inviato al tuo fornitore di trascrizione.';
 
   @override
   String get queryUnavailable =>

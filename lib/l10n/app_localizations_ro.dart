@@ -11307,7 +11307,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Se transcrie… nimic nu este trimis până nu apăsați Trimiteți.';
+      'Se transcrie… întrebarea este trimisă doar când apăsați Trimiteți. Este posibil ca sunetul să fi fost deja trimis furnizorului dumneavoastră de transcriere.';
 
   @override
   String get queryUnavailable =>

@@ -4732,7 +4732,7 @@
   "querySourceDeleted": "Fonte eliminata",
   "querySourceMoved": "Fonte spostata in un’altra categoria",
   "querySurroundingText": "Mostra contesto",
-  "queryTranscribing": "Trascrizione… nulla viene inviato finché non premi Invia.",
+  "queryTranscribing": "Trascrizione… la tua domanda viene inviata solo quando premi Invia. L’audio potrebbe essere già stato inviato al tuo fornitore di trascrizione.",
   "queryUnavailable": "Questo ambito non è più disponibile con le tue impostazioni di visibilità attuali.",
   "queryUnread": "Nuova risposta",
   "queueCatchUpNowButton": "Prenditi ora",

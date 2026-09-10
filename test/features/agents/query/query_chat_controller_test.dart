@@ -25,6 +25,7 @@ void main() {
   late QueryPersistenceBench bench;
   late ProviderContainer container;
   late QueryChatController controller;
+  late StreamController<QueryChatData> history;
   late Future<void> Function(String chatId) inspect;
   var malformed = false;
   var unavailable = false;
@@ -36,10 +37,11 @@ void main() {
     inspect = (_) async {};
     malformed = false;
     unavailable = false;
+    history = StreamController<QueryChatData>.broadcast();
     container = ProviderContainer(
       overrides: [
         queryChatStoreProvider.overrideWithValue(bench.store),
-        queryChatDataProvider(key).overrideWith((ref) => const Stream.empty()),
+        queryChatDataProvider(key).overrideWith((ref) => history.stream),
         configFlagProvider(
           'private',
         ).overrideWith((ref) => Stream.value(false)),
@@ -87,6 +89,7 @@ void main() {
   });
   tearDown(() async {
     container.dispose();
+    await history.close();
     await bench.close();
   });
 
@@ -168,6 +171,128 @@ void main() {
       expect(data.chats, isEmpty);
       expect(data.memories, isEmpty);
       expect(container.read(provider).chats.containsKey(id), isFalse);
+    }),
+  );
+
+  test(
+    'explicit cancellation persists a retryable turn without publishing an answer',
+    () => withClock(Clock.fixed(now), () async {
+      final id = await controller.create('Feeder');
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      inspect = (_) async {
+        entered.complete();
+        await release.future;
+      };
+      controller.updateDraft(id, 'Decision?');
+      final running = controller.send(id);
+      await entered.future;
+      controller.cancel(id);
+      expect(
+        container.read(provider).local(id).status,
+        QueryTurnStatus.cancelled,
+      );
+      controller.updateDraft(id, 'Follow-up after cancellation');
+      await controller.send(id);
+      expect(
+        (await bench.store.load('agent')).chats.single.questions.length,
+        1,
+      );
+      release.complete();
+      await running;
+      final projection = await bench.store.load('agent');
+      final chat = projection.chats.single;
+      expect(
+        chat.events.last.data,
+        QueryChatEventData.cancelled(questionId: chat.questions.single.id),
+      );
+      expect(chat.answerFor(chat.questions.single.id), isNull);
+      expect(projection.memories, isEmpty);
+      expect(
+        container.read(provider).local(id).draft,
+        'Follow-up after cancellation',
+      );
+      expect(
+        container.read(provider).local(id).status,
+        QueryTurnStatus.cancelled,
+      );
+      inspect = (_) async {};
+      await controller.send(id, retryQuestionId: chat.questions.single.id);
+      final retried = (await bench.store.load('agent')).chats.single;
+      expect(retried.questions.length, 1);
+      expect(retried.answerFor(chat.questions.single.id), isNotNull);
+      expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
+    }),
+  );
+
+  test(
+    'synced deletion cancels inference and removes the selected chat draft',
+    () => withClock(Clock.fixed(now), () async {
+      final id = await controller.create('Feeder');
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      inspect = (_) async {
+        entered.complete();
+        await release.future;
+      };
+      controller.updateDraft(id, 'Decision?');
+      final running = controller.send(id);
+      await entered.future;
+      final access = await bench.crawler.access.load(['task']);
+      history.add(
+        QueryChatData(
+          projection: await bench.store.load('agent'),
+          access: access,
+        ),
+      );
+      await container.read(queryChatDataProvider(key).future);
+      controller.updateDraft(id, 'Unsent private follow-up');
+      await bench.store.delete('agent', id, forget: true);
+      final removed = Completer<void>();
+      final subscription = container.listen(provider, (_, next) {
+        if (next.selectedId == null && !removed.isCompleted) removed.complete();
+      });
+      addTearDown(subscription.close);
+      history.add(
+        QueryChatData(
+          projection: await bench.store.load('agent'),
+          access: access,
+        ),
+      );
+      await removed.future;
+      expect(container.read(provider).chats.containsKey(id), isFalse);
+      release.complete();
+      await running;
+      expect(container.read(provider).selectedId, isNull);
+      expect(container.read(provider).chats.containsKey(id), isFalse);
+      expect((await bench.store.load('agent')).memories, isEmpty);
+    }),
+  );
+
+  test(
+    'private drafts and stale retries cannot append a question or rerun inference',
+    () => withClock(Clock.fixed(now), () async {
+      final id = await controller.create('Feeder');
+      controller.updateDraft(id, 'Private decision?', private: true);
+      await controller.send(id);
+      expect((await bench.store.load('agent')).chats.single.questions, isEmpty);
+      expect(container.read(provider).local(id).draft, 'Private decision?');
+      controller.updateDraft(id, 'Public decision?', private: false);
+      await controller.send(id);
+      final answered = (await bench.store.load('agent')).chats.single;
+      inspect = (_) =>
+          throw StateError('A stale retry must not inspect sources');
+      for (final questionId in [
+        answered.questions.single.id,
+        'unknown-question',
+      ]) {
+        await controller.send(id, retryQuestionId: questionId);
+        expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
+        expect(
+          (await bench.store.load('agent')).chats.single.events,
+          answered.events,
+        );
+      }
     }),
   );
 

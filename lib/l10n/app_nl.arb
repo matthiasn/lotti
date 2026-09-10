@@ -4731,7 +4731,7 @@
   "querySourceDeleted": "Bron verwijderd",
   "querySourceMoved": "Bron verplaatst naar een andere categorie",
   "querySurroundingText": "Omringende tekst tonen",
-  "queryTranscribing": "Transcriberen… er wordt niets verstuurd voordat je op Verzenden drukt.",
+  "queryTranscribing": "Transcriberen… je vraag wordt pas verstuurd als je op Verzenden drukt. De audio is mogelijk al naar je transcriptieprovider verstuurd.",
   "queryUnavailable": "Dit bereik is niet meer beschikbaar met je huidige zichtbaarheidsinstellingen.",
   "queryUnread": "Nieuw antwoord",
   "queueCatchUpNowButton": "Inhalen nu",

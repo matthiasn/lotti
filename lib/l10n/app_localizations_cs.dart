@@ -11244,7 +11244,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Přepisování… nic se neodešle, dokud nestiskneš Odeslat.';
+      'Přepisování… otázka se odešle až po stisknutí Odeslat. Zvuk už mohl být odeslán tvému poskytovateli přepisu.';
 
   @override
   String get queryUnavailable =>

@@ -11044,7 +11044,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Transcribing… nothing is sent until you press Send.';
+      'Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.';
 
   @override
   String get queryUnavailable =>

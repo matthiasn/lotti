@@ -4258,7 +4258,7 @@
   "querySourceDeleted": "Source supprimée",
   "querySourceMoved": "Source déplacée vers une autre catégorie",
   "querySurroundingText": "Afficher le contexte",
-  "queryTranscribing": "Transcription… rien n’est envoyé avant d’appuyer sur Envoyer.",
+  "queryTranscribing": "Transcription… ta question est envoyée uniquement quand tu appuies sur Envoyer. L’audio a peut-être déjà été envoyé à ton fournisseur de transcription.",
   "queryUnavailable": "Ce périmètre n’est plus accessible avec tes paramètres de visibilité actuels.",
   "queryUnread": "Nouvelle réponse",
   "queueCatchUpNowButton": "Rattraper maintenant",

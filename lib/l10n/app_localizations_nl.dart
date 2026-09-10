@@ -11117,7 +11117,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Transcriberen… er wordt niets verstuurd voordat je op Verzenden drukt.';
+      'Transcriberen… je vraag wordt pas verstuurd als je op Verzenden drukt. De audio is mogelijk al naar je transcriptieprovider verstuurd.';
 
   @override
   String get queryUnavailable =>

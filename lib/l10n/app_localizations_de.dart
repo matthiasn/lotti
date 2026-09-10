@@ -11169,7 +11169,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Transkription läuft… erst mit Senden wird der Text abgeschickt.';
+      'Transkription läuft… deine Frage wird erst mit Senden abgeschickt. Die Audiodaten wurden möglicherweise bereits an deinen Transkriptionsanbieter gesendet.';
 
   @override
   String get queryUnavailable =>

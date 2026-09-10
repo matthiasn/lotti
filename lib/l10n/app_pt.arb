@@ -4731,7 +4731,7 @@
   "querySourceDeleted": "Fonte eliminada",
   "querySourceMoved": "Fonte movida para outra categoria",
   "querySurroundingText": "Mostrar contexto",
-  "queryTranscribing": "A transcrever… nada é enviado até carregares em Enviar.",
+  "queryTranscribing": "A transcrever… a tua pergunta só é enviada quando carregas em Enviar. O áudio pode já ter sido enviado ao teu fornecedor de transcrição.",
   "queryUnavailable": "Este âmbito já não está disponível com as tuas definições de visibilidade atuais.",
   "queryUnread": "Nova resposta",
   "queueCatchUpNowButton": "Acompanhe agora",

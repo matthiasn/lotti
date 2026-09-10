@@ -4265,7 +4265,7 @@
   "querySourceDeleted": "Zdroj smazán",
   "querySourceMoved": "Zdroj přesunut do jiné kategorie",
   "querySurroundingText": "Zobrazit okolní text",
-  "queryTranscribing": "Přepisování… nic se neodešle, dokud nestiskneš Odeslat.",
+  "queryTranscribing": "Přepisování… otázka se odešle až po stisknutí Odeslat. Zvuk už mohl být odeslán tvému poskytovateli přepisu.",
   "queryUnavailable": "Tento rozsah už není s tvým nastavením viditelnosti dostupný.",
   "queryUnread": "Nová odpověď",
   "queueCatchUpNowButton": "Dohnat nyní",

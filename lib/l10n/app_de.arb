@@ -4258,7 +4258,7 @@
   "querySourceDeleted": "Quelle gelöscht",
   "querySourceMoved": "Quelle in eine andere Kategorie verschoben",
   "querySurroundingText": "Umgebenden Text anzeigen",
-  "queryTranscribing": "Transkription läuft… erst mit Senden wird der Text abgeschickt.",
+  "queryTranscribing": "Transkription läuft… deine Frage wird erst mit Senden abgeschickt. Die Audiodaten wurden möglicherweise bereits an deinen Transkriptionsanbieter gesendet.",
   "queryUnavailable": "Dieser Bereich ist mit deinen aktuellen Sichtbarkeitseinstellungen nicht mehr verfügbar.",
   "queryUnread": "Neue Antwort",
   "queueCatchUpNowButton": "Jetzt aufholen",

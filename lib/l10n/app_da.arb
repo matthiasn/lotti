@@ -4732,7 +4732,7 @@
   "querySourceDeleted": "Kilde slettet",
   "querySourceMoved": "Kilde flyttet til en anden kategori",
   "querySurroundingText": "Vis omgivende tekst",
-  "queryTranscribing": "Transskriberer… intet sendes, før du trykker på Send.",
+  "queryTranscribing": "Transskriberer… dit spørgsmål sendes først, når du trykker på Send. Lyden kan allerede være sendt til din transskriptionsudbyder.",
   "queryUnavailable": "Dette område er ikke længere tilgængeligt med dine nuværende synlighedsindstillinger.",
   "queryUnread": "Nyt svar",
   "queueCatchUpNowButton": "Følg med nu",

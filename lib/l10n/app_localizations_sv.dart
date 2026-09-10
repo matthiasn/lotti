@@ -11108,7 +11108,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Transkriberar… inget skickas förrän du trycker på Skicka.';
+      'Transkriberar… din fråga skickas först när du trycker på Skicka. Ljudet kan redan ha skickats till din transkriptionsleverantör.';
 
   @override
   String get queryUnavailable =>

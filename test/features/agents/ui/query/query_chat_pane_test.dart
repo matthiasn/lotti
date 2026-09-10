@@ -143,6 +143,7 @@ void main() {
     QueryChatSession? session,
     bool noAgent = false,
     bool sourceDetailLoading = false,
+    ChatRecorderController? activeRecorder,
   }) async {
     final activeKey = (agentId: 'agent', scope: activeScope);
     if (activeScope != scope) {
@@ -196,7 +197,9 @@ void main() {
             yield false;
             yield* privacy.stream;
           }),
-          chatRecorderControllerProvider.overrideWith(() => recorder),
+          chatRecorderControllerProvider.overrideWith(
+            () => activeRecorder ?? recorder,
+          ),
           queryBuilderFactoryProvider.overrideWithValue((
             scope,
             agentId,
@@ -240,6 +243,101 @@ void main() {
     expect(inferenceCalls, 0);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets(
+    'transcription discloses audio delivery without sending a question',
+    (tester) async {
+      await pump(
+        tester,
+        activeRecorder: ProcessingTestController(partialTranscript: null),
+      );
+      expect(
+        find.text(
+          'Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.',
+        ),
+        findsOneWidget,
+      );
+      expect(inferenceCalls, 0);
+      verifyNever(
+        () => store.ask(any(), any(), any(), private: any(named: 'private')),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('failed chat creation shows an error and preserves the draft', (
+    tester,
+  ) async {
+    when(
+      () => store.create('agent', scope, 'New chat'),
+    ).thenThrow(StateError('database unavailable'));
+    await pump(tester);
+    await tester.enterText(find.byType(TextField), 'Unsent feeder question');
+    await switcher(tester);
+    await tester.tap(find.text('New chat'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Error'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'Unsent feeder question',
+    );
+    expect(inferenceCalls, 0);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'category chat recall and rename disappear when its category becomes private',
+    (tester) async {
+      final categoryScope = QueryScope(
+        kind: QueryScopeKind.category,
+        id: categoryMindfulness.id,
+      );
+      events.add(
+        event(
+          'recalled',
+          'older-chat',
+          const QueryChatEventData.memory(
+            questionId: 'older-question',
+            text: 'Feeder selected.',
+          ),
+        ),
+      );
+      await pump(tester, activeScope: categoryScope);
+      expect(
+        find.text('Conclusions available from earlier chats: 1'),
+        findsOneWidget,
+      );
+      await switcher(tester);
+      await tester.tap(find.byIcon(LottiIcons.more).first);
+      await tester.pump();
+      await tester.tap(find.text('Rename chat'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField).last,
+        'Sensitive category title',
+      );
+      bench.categories[0] = bench.categories[0].copyWith(private: true);
+      data.add(snapshot());
+      await tester.pump();
+      expect(find.text('Sensitive category title'), findsNothing);
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'This scope is no longer available with your current visibility settings.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Conclusions available from earlier chats: 1'),
+        findsNothing,
+      );
+      verifyNever(
+        () => store.rename(any(), any(), any(), private: any(named: 'private')),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets(
     'dictation stays editable until Send and missing inference retains it',
@@ -691,13 +789,13 @@ void main() {
       failHistory = true;
       await pump(tester);
       expect(find.text('Feeder calibration'), findsNothing);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Try Again'), findsOneWidget);
       failHistory = false;
-      await tester.tap(find.text('Retry'));
+      await tester.tap(find.text('Try Again'));
       await tester.pump();
       await tester.pump();
       expect(find.text('Feeder calibration'), findsOneWidget);
-      expect(find.text('Retry'), findsNothing);
+      expect(find.text('Try Again'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -770,7 +868,7 @@ void main() {
       );
       await pump(tester);
       expect(find.text('Which feeder did we select?'), findsOneWidget);
-      await tester.tap(find.text('Retry'));
+      await tester.tap(find.text('Try Again'));
       await tester.pump();
       expect(inferenceCalls, 1);
       expect(find.textContaining('No usable inference setup'), findsOneWidget);
@@ -845,6 +943,7 @@ void main() {
         findsOneWidget,
       );
       await tester.ensureVisible(find.text('What was searched'));
+      await tester.pump();
       await tester.tap(find.text('What was searched'));
       await tester.pumpAndSettle();
       expect(find.text('Sources checked: 3'), findsOneWidget);
@@ -853,9 +952,11 @@ void main() {
         findsOneWidget,
       );
       await tester.ensureVisible(find.text('Show exact text'));
+      await tester.pump();
       await tester.tap(find.text('Show exact text'));
       await tester.pump();
       await tester.ensureVisible(find.text('Open entry'));
+      await tester.pump();
       await tester.tap(find.text('Open entry'));
       await tester.pump();
       await tester.pump();

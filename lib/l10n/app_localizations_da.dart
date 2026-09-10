@@ -11097,7 +11097,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Transskriberer… intet sendes, før du trykker på Send.';
+      'Transskriberer… dit spørgsmål sendes først, når du trykker på Send. Lyden kan allerede være sendt til din transskriptionsudbyder.';
 
   @override
   String get queryUnavailable =>

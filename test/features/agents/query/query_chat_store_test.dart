@@ -127,6 +127,53 @@ void main() {
   );
 
   test(
+    'publication rejects an answer that drops question provenance',
+    () => withClock(Clock.fixed(now), () async {
+      bench.add('meeting');
+      final chat = await store.create('agent', scope, 'Feeder');
+      final first = await store.ask('agent', chat, 'What did we decide?');
+      final firstResult = result(first);
+      final access = await bench.crawler.access.load(['task', 'meeting']);
+      await store.publish(
+        'agent',
+        chat,
+        QueryBuiltAnswer(
+          answer: firstResult.answer.copyWith(
+            dependencies: [
+              ...firstResult.answer.dependencies,
+              access.reference(bench.entries['meeting']!),
+            ],
+          ),
+        ),
+      );
+      final next = await store.ask('agent', chat, 'Why?');
+      final full = result(next);
+      expect(full.answer.dependencies.map((source) => source.id), [
+        'task',
+        'meeting',
+      ]);
+      final incomplete = QueryBuiltAnswer(
+        answer: full.answer.copyWith(
+          dependencies: [full.answer.dependencies.first],
+        ),
+      );
+      await expectLater(
+        store.publish('agent', chat, incomplete),
+        throwsA(isA<QueryScopeUnavailable>()),
+      );
+      expect(
+        (await store.load('agent')).chats.single.answerFor(next.id),
+        isNull,
+      );
+      expect(await store.publish('agent', chat, full), isTrue);
+      expect(
+        (await store.load('agent')).chats.single.answerFor(next.id),
+        isNotNull,
+      );
+    }),
+  );
+
+  test(
     'private-authored titles and questions cannot become public after a visibility toggle',
     () => withClock(Clock.fixed(now), () async {
       final chat = await store.create('agent', scope, 'Public chat');

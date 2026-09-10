@@ -11199,7 +11199,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'A transcrever… nada é enviado até carregares em Enviar.';
+      'A transcrever… a tua pergunta só é enviada quando carregas em Enviar. O áudio pode já ter sido enviado ao teu fornecedor de transcrição.';
 
   @override
   String get queryUnavailable =>

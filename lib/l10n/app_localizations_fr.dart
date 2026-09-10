@@ -11295,7 +11295,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Transcription… rien n’est envoyé avant d’appuyer sur Envoyer.';
+      'Transcription… ta question est envoyée uniquement quand tu appuies sur Envoyer. L’audio a peut-être déjà été envoyé à ton fournisseur de transcription.';
 
   @override
   String get queryUnavailable =>

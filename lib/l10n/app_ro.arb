@@ -4258,7 +4258,7 @@
   "querySourceDeleted": "Sursă ștearsă",
   "querySourceMoved": "Sursă mutată în altă categorie",
   "querySurroundingText": "Afișați textul din jur",
-  "queryTranscribing": "Se transcrie… nimic nu este trimis până nu apăsați Trimiteți.",
+  "queryTranscribing": "Se transcrie… întrebarea este trimisă doar când apăsați Trimiteți. Este posibil ca sunetul să fi fost deja trimis furnizorului dumneavoastră de transcriere.",
   "queryUnavailable": "Acest domeniu nu mai este disponibil cu setările dvs. actuale de vizibilitate.",
   "queryUnread": "Răspuns nou",
   "queueCatchUpNowButton": "Recuperați acum",
