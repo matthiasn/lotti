@@ -11112,7 +11112,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Diktovaný text můžeš upravit. Nic se neodešle, dokud nestiskneš Odeslat.';
+      'Přepis můžeš upravit před odesláním otázky. Zvuk už mohl být odeslán tvému poskytovateli přepisu.';
 
   @override
   String get queryEmptyBody =>
@@ -11144,7 +11144,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryHideSurrounding => 'Skrýt okolní text';
 
   @override
-  String get queryHomeOnly => 'Jen výchozí rozsah';
+  String get queryHomeOnly => 'Jen základní rozsah';
 
   @override
   String get queryIncomplete =>
@@ -11168,7 +11168,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Nahrávky bez prohledávatelného textu: $count. Otevři nahrávku v deníku a přepiš ji.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count nahrávek nemá prohledávatelný text. Otevři je v deníku a přepiš je.',
+      few:
+          '$count nahrávky nemají prohledávatelný text. Otevři je v deníku a přepiš je.',
+      one:
+          '1 nahrávka nemá prohledávatelný text. Otevři ji v deníku a přepiš ji.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11185,7 +11195,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryOpenEntry => 'Otevřít záznam';
 
   @override
-  String get queryOtherProject => 'Mimo výchozí rozsah';
+  String get queryOtherProject => 'Mimo základní rozsah';
 
   @override
   String queryReachCategory(String category) {

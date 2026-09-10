@@ -205,7 +205,9 @@ void main() {
       );
       expect(inferenceCalls, 0);
       expect(
-        find.textContaining('Nothing is sent until you press Send'),
+        find.textContaining(
+          'Audio may already have been sent to your transcription provider.',
+        ),
         findsOneWidget,
       );
       await tester.tap(find.byIcon(LottiIcons.send));

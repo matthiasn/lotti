@@ -11058,7 +11058,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queryCopyQuote => 'Copiar citação';
 
   @override
-  String get queryCoverage => 'Onde foi feita a pesquisa';
+  String get queryCoverage => 'O que foi pesquisado';
 
   @override
   String get queryDeleteChat => 'Eliminar chat';
@@ -11069,7 +11069,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Podes editar o texto ditado. Nada é enviado até carregares em Enviar.';
+      'Podes editar a transcrição antes de enviares a pergunta. O áudio pode já ter sido enviado ao teu fornecedor de transcrição.';
 
   @override
   String get queryEmptyBody =>
@@ -11101,7 +11101,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queryHideSurrounding => 'Ocultar contexto';
 
   @override
-  String get queryHomeOnly => 'Só âmbito inicial';
+  String get queryHomeOnly => 'Só âmbito de origem';
 
   @override
   String get queryIncomplete =>
@@ -11125,7 +11125,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Gravações sem texto pesquisável: $count. Abre a gravação no diário para a transcrever.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count gravações não têm texto pesquisável. Abre-as no diário para as transcrever.',
+      one:
+          '1 gravação não tem texto pesquisável. Abre-a no diário para a transcrever.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11133,7 +11141,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryNoAgent =>
-      'Este âmbito precisa do seu agente habitual. Volta aos detalhes para o atribuir.';
+      'Este âmbito precisa do teu agente habitual. Volta aos detalhes para o atribuir.';
 
   @override
   String get queryNotes => 'Notas';
@@ -11142,7 +11150,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queryOpenEntry => 'Abrir entrada';
 
   @override
-  String get queryOtherProject => 'Fora do âmbito inicial';
+  String get queryOtherProject => 'Fora do âmbito de origem';
 
   @override
   String queryReachCategory(String category) {

@@ -10976,7 +10976,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Du kan redigera den dikterade texten. Inget skickas förrän du trycker på Skicka.';
+      'Du kan redigera transkriptionen innan du skickar din fråga. Ljudet kan redan ha skickats till din transkriberingsleverantör.';
 
   @override
   String get queryEmptyBody =>
@@ -11033,7 +11033,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Inspelningar utan sökbar text: $count. Öppna inspelningen i journalen för att transkribera den.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count inspelningar saknar sökbar text. Öppna dem i journalen för att transkribera dem.',
+      one:
+          '1 inspelning saknar sökbar text. Öppna den i journalen för att transkribera den.',
+    );
+    return '$_temp0';
   }
 
   @override

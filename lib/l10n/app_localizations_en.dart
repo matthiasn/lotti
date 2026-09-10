@@ -10914,7 +10914,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Dictated text is editable. Nothing is sent until you press Send.';
+      'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.';
 
   @override
   String get queryEmptyBody =>
@@ -10970,7 +10970,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Recordings without searchable text: $count. Open the recording in the journal to transcribe it.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count recordings have no searchable text. Open them in the journal to transcribe them.',
+      one:
+          '1 recording has no searchable text. Open it in the journal to transcribe it.',
+    );
+    return '$_temp0';
   }
 
   @override

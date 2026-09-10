@@ -18496,7 +18496,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryDictated.
   ///
   /// In en, this message translates to:
-  /// **'Dictated text is editable. Nothing is sent until you press Send.'**
+  /// **'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.'**
   String get queryDictated;
 
   /// No description provided for @queryEmptyBody.
@@ -18592,7 +18592,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryMissingTranscripts.
   ///
   /// In en, this message translates to:
-  /// **'Recordings without searchable text: {count}. Open the recording in the journal to transcribe it.'**
+  /// **'{count, plural, one{1 recording has no searchable text. Open it in the journal to transcribe it.} other{{count} recordings have no searchable text. Open them in the journal to transcribe them.}}'**
   String queryMissingTranscripts(int count);
 
   /// No description provided for @queryNewChat.

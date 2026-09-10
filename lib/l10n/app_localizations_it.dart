@@ -11094,7 +11094,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryCopyQuote => 'Copia citazione';
 
   @override
-  String get queryCoverage => 'Dove è stata effettuata la ricerca';
+  String get queryCoverage => 'Cosa è stato cercato';
 
   @override
   String get queryDeleteChat => 'Elimina chat';
@@ -11105,7 +11105,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Puoi modificare il testo dettato. Nulla viene inviato finché non premi Invia.';
+      'Puoi modificare la trascrizione prima di inviare la domanda. L’audio potrebbe essere già stato inviato al tuo servizio di trascrizione.';
 
   @override
   String get queryEmptyBody =>
@@ -11162,7 +11162,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Registrazioni senza testo consultabile: $count. Apri la registrazione nel diario per trascriverla.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count registrazioni non hanno testo consultabile. Aprile nel diario per trascriverle.',
+      one:
+          '1 registrazione non ha testo consultabile. Aprila nel diario per trascriverla.',
+    );
+    return '$_temp0';
   }
 
   @override

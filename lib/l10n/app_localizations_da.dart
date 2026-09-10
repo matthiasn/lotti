@@ -10966,7 +10966,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Du kan redigere den dikterede tekst. Intet sendes, før du trykker på Send.';
+      'Du kan redigere transskriptionen, før du sender dit spørgsmål. Lyden kan allerede være sendt til din transskriptionsudbyder.';
 
   @override
   String get queryEmptyBody =>
@@ -10998,7 +10998,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryHideSurrounding => 'Skjul omgivende tekst';
 
   @override
-  String get queryHomeOnly => 'Kun startområdet';
+  String get queryHomeOnly => 'Kun udgangsområdet';
 
   @override
   String get queryIncomplete =>
@@ -11022,7 +11022,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Optagelser uden søgbar tekst: $count. Åbn optagelsen i journalen for at transskribere den.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count optagelser har ingen søgbar tekst. Åbn dem i journalen for at transskribere dem.',
+      one:
+          '1 optagelse har ingen søgbar tekst. Åbn den i journalen for at transskribere den.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11039,7 +11047,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryOpenEntry => 'Åbn indlæg';
 
   @override
-  String get queryOtherProject => 'Uden for startområdet';
+  String get queryOtherProject => 'Uden for udgangsområdet';
 
   @override
   String queryReachCategory(String category) {

@@ -10981,11 +10981,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryDeleteExplanation =>
-      'Deze conversatie verwijderen? Kies wat er met de gedeelde conclusies gebeurt. Bronvermeldingen blijven intact.';
+      'Deze conversatie verwijderen? Kies wat er met de gedeelde conclusies gebeurt. Bronitems blijven intact.';
 
   @override
   String get queryDictated =>
-      'Je kunt de gedicteerde tekst bewerken. Er wordt niets verstuurd voordat je op Verzenden drukt.';
+      'Je kunt de transcriptie bewerken voordat je je vraag verstuurt. De audio kan al naar je transcriptieaanbieder zijn verstuurd.';
 
   @override
   String get queryEmptyBody =>
@@ -11019,7 +11019,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryHideSurrounding => 'Omringende tekst verbergen';
 
   @override
-  String get queryHomeOnly => 'Alleen beginbereik';
+  String get queryHomeOnly => 'Alleen eigen bereik';
 
   @override
   String get queryIncomplete =>
@@ -11043,7 +11043,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Opnamen zonder doorzoekbare tekst: $count. Open de opname in het dagboek om deze te transcriberen.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count opnamen hebben geen doorzoekbare tekst. Open ze in het dagboek om ze te transcriberen.',
+      one:
+          '1 opname heeft geen doorzoekbare tekst. Open deze in het dagboek om de opname te transcriberen.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11060,7 +11068,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryOpenEntry => 'Item openen';
 
   @override
-  String get queryOtherProject => 'Buiten het beginbereik';
+  String get queryOtherProject => 'Buiten het eigen bereik';
 
   @override
   String queryReachCategory(String category) {

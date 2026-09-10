@@ -11124,13 +11124,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queryAsk => 'Demander';
 
   @override
-  String get queryAskCategory => 'Questionner cette catégorie';
+  String get queryAskCategory => 'Poser une question sur cette catégorie';
 
   @override
-  String get queryAskProject => 'Questionner ce projet';
+  String get queryAskProject => 'Poser une question sur ce projet';
 
   @override
-  String get queryAskTask => 'Questionner cette tâche';
+  String get queryAskTask => 'Poser une question sur cette tâche';
 
   @override
   String get queryCategoryAgent => 'Agent de catégorie';
@@ -11161,7 +11161,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Tu peux modifier le texte dicté. Rien n’est envoyé avant d’appuyer sur Envoyer.';
+      'Tu peux modifier la transcription avant d’envoyer ta question. L’audio a peut-être déjà été envoyé à ton fournisseur de transcription.';
 
   @override
   String get queryEmptyBody =>
@@ -11219,7 +11219,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Enregistrements sans texte consultable : $count. Ouvre l’enregistrement dans le journal pour le transcrire.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count enregistrements n’ont pas de texte consultable. Ouvre-les dans le journal pour les transcrire.',
+      one:
+          '1 enregistrement n’a pas de texte consultable. Ouvre-le dans le journal pour le transcrire.',
+    );
+    return '$_temp0';
   }
 
   @override

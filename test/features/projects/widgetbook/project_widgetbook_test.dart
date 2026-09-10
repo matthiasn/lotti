@@ -14,6 +14,8 @@ void main() {
     testWidgets('renders the desktop project list and detail showcase', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       final component = buildProjectListDetailWidgetbookComponent();
       final useCase = component.useCases.firstWhere(
         (useCase) => useCase.name == 'Desktop',

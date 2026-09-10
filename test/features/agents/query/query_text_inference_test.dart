@@ -221,7 +221,13 @@ void main() {
   test('a silent backend times out and cancels its subscription', () {
     fakeAsync((async) {
       var cancelled = false;
-      final stream = StreamController<String>(onCancel: () => cancelled = true);
+      final cleanup = Completer<void>();
+      final stream = StreamController<String>(
+        onCancel: () {
+          cancelled = true;
+          return cleanup.future;
+        },
+      );
       Object? failure;
       QueryCancellation()
           .collect(stream.stream)
@@ -235,8 +241,11 @@ void main() {
         ..flushMicrotasks()
         ..elapse(const Duration(minutes: 2))
         ..flushMicrotasks();
-      expect(failure, isA<TimeoutException>());
       expect(cancelled, isTrue);
+      expect(failure, isNull, reason: 'The request awaits stream cleanup');
+      cleanup.complete();
+      async.flushMicrotasks();
+      expect(failure, isA<TimeoutException>());
       unawaited(stream.close());
       async.flushMicrotasks();
     });

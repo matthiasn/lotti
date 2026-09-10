@@ -6311,7 +6311,7 @@
   "queryCoverage": "What was searched",
   "queryDeleteChat": "Delete chat",
   "queryDeleteExplanation": "Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.",
-  "queryDictated": "Dictated text is editable. Nothing is sent until you press Send.",
+  "queryDictated": "You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.",
   "queryEmptyBody": "Ask about meetings, decisions, or earlier notes. Answers include exact stored passages you can inspect.",
   "queryEmptyTitle": "Find the discussion behind a decision",
   "queryExactText": "Show exact text",
@@ -6334,7 +6334,7 @@
       }
     }
   },
-  "queryMissingTranscripts": "Recordings without searchable text: {count}. Open the recording in the journal to transcribe it.",
+  "queryMissingTranscripts": "{count, plural, one{1 recording has no searchable text. Open it in the journal to transcribe it.} other{{count} recordings have no searchable text. Open them in the journal to transcribe them.}}",
   "@queryMissingTranscripts": {
     "placeholders": {
       "count": {

@@ -11161,7 +11161,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryCopyQuote => 'Copiați citatul';
 
   @override
-  String get queryCoverage => 'Unde s-a căutat';
+  String get queryCoverage => 'Ce s-a căutat';
 
   @override
   String get queryDeleteChat => 'Ștergeți conversația';
@@ -11172,7 +11172,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryDictated =>
-      'Puteți edita textul dictat. Nimic nu este trimis până nu apăsați Trimiteți.';
+      'Puteți edita transcrierea înainte de a trimite întrebarea. Este posibil ca sunetul să fi fost deja trimis furnizorului dvs. de transcriere.';
 
   @override
   String get queryEmptyBody =>
@@ -11229,7 +11229,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Înregistrări audio fără text căutabil: $count. Deschideți înregistrarea în jurnal pentru a o transcrie.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de înregistrări audio nu au text căutabil. Deschideți-le în jurnal pentru a le transcrie.',
+      few:
+          '$count înregistrări audio nu au text căutabil. Deschideți-le în jurnal pentru a le transcrie.',
+      one:
+          '1 înregistrare audio nu are text căutabil. Deschideți-o în jurnal pentru a o transcrie.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -11250,21 +11260,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Caută mai întâi în acest domeniu, apoi în $category.';
+    return 'Se caută mai întâi în acest domeniu, apoi în $category.';
   }
 
   @override
   String queryReachCategoryOnly(String category) {
-    return 'Caută în $category.';
+    return 'Se caută în $category.';
   }
 
   @override
   String get queryReachUncategorized =>
-      'Caută doar în această sarcină și în înregistrările fără categorie legate direct de ea.';
+      'Se caută doar în această sarcină și în înregistrările fără categorie legate direct de ea.';
 
   @override
   String get queryRecall =>
-      'Folosește concluzii relevante din conversații anterioare.';
+      'Sunt utilizate concluzii relevante din conversații anterioare.';
 
   @override
   String get queryRecordings => 'Înregistrări audio';

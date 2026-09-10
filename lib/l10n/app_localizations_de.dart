@@ -11031,11 +11031,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queryDeleteExplanation =>
-      'Diesen Chat löschen? Wähle, was mit seinen geteilten Erkenntnissen geschieht. Quelleinträge bleiben erhalten.';
+      'Diesen Chat löschen? Wähle, was mit seinen geteilten Erkenntnissen geschieht. Quelleneinträge bleiben erhalten.';
 
   @override
   String get queryDictated =>
-      'Du kannst den diktierten Text bearbeiten. Erst mit Senden wird er abgeschickt.';
+      'Du kannst das Transkript bearbeiten, bevor du deine Frage sendest. Das Audio wurde möglicherweise bereits an deinen Transkriptionsanbieter gesendet.';
 
   @override
   String get queryEmptyBody =>
@@ -11094,7 +11094,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String queryMissingTranscripts(int count) {
-    return 'Aufnahmen ohne durchsuchbaren Text: $count. Öffne die Aufnahme im Journal, um sie zu transkribieren.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count Aufnahmen haben keinen durchsuchbaren Text. Öffne sie im Journal, um sie zu transkribieren.',
+      one:
+          '1 Aufnahme hat keinen durchsuchbaren Text. Öffne sie im Journal, um sie zu transkribieren.',
+    );
+    return '$_temp0';
   }
 
   @override
