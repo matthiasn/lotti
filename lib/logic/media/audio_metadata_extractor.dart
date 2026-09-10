@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:path/path.dart' as p;
 
 /// Function type for reading audio duration from a file.
 typedef AudioMetadataReader = Future<Duration> Function(String filePath);
@@ -62,10 +63,18 @@ class AudioMetadataExtractor {
   /// Returns the parsed DateTime if successful, null otherwise.
   /// The parsed timestamp is converted to local time.
   ///
+  /// Parsing is **strict**: the whole name must be the timestamp. Lenient
+  /// parsing accepts trailing characters, so `…-203 2.m4a` and
+  /// `…-203-copy.m4a` both read back as the timestamp of `…-203.m4a` and
+  /// therefore compute the same storage path — three different recordings
+  /// overwriting one file. A name that is only *nearly* a Lotti timestamp is
+  /// not one, and falls back to the file's modification time instead.
+  ///
   /// Examples:
   /// - `2024-01-15_10-30-45-123.m4a` → DateTime(2024, 1, 15, 10, 30, 45, 123)
   /// - `invalid-format.m4a` → null
   /// - `2024-01-15.m4a` → null (missing time components)
+  /// - `2024-01-15_10-30-45-123 2.m4a` → null (trailing characters)
   static DateTime? parseFilenameTimestamp(String filename) {
     try {
       // Remove file extension before parsing
@@ -74,7 +83,7 @@ class AudioMetadataExtractor {
       // Try to parse using Lotti's audio filename format
       return DateFormat(
         AudioRecorderConstants.fileNameDateFormat,
-      ).parse(nameWithoutExtension, true).toLocal();
+      ).parseStrict(nameWithoutExtension, true).toLocal();
     } on FormatException {
       // Return null if parsing fails (expected for non-Lotti filenames)
       return null;
@@ -100,6 +109,65 @@ class AudioMetadataExtractor {
       AudioRecorderConstants.fileNameDateFormat,
     ).format(timestamp);
     return '$base.$extension';
+  }
+
+  /// Claims a free name under [directory], starting from [preferredFileName]
+  /// and appending `-1`, `-2`, … before the extension until one is taken.
+  ///
+  /// **Creates the file**, empty, as it claims it — the caller is expected to
+  /// write over it, and to delete it if the import then fails. Claiming is a
+  /// single atomic `create(exclusive: true)` rather than an existence check
+  /// followed by a copy, because two imports can overlap: duration extraction
+  /// holds each one open for seconds, which is more than enough for a second
+  /// drop to check the same name, find it free, and overwrite the first.
+  ///
+  /// Import target names are derived purely from the recording's timestamp,
+  /// so two distinct sources can compute the same name — two recorders that
+  /// stamped the same millisecond, or two files whose modification times
+  /// agree because they were unpacked from the same archive. Copying over an
+  /// occupied name destroys the earlier recording while its journal entry
+  /// keeps pointing at the path, so that entry silently starts playing (and
+  /// transcribing) the newer recording's audio.
+  ///
+  /// The loop terminates: every iteration probes a name no earlier iteration
+  /// probed, and a directory holds finitely many files.
+  static String claimAvailableFileName({
+    required String directory,
+    required String preferredFileName,
+  }) {
+    final extension = p.extension(preferredFileName);
+    final base = p.basenameWithoutExtension(preferredFileName);
+    var candidate = preferredFileName;
+    var suffix = 0;
+    while (!_claimFile(p.join(directory, candidate))) {
+      suffix++;
+      candidate = '$base-$suffix$extension';
+    }
+    return candidate;
+  }
+
+  /// Creates [path] and reports whether this caller is the one that made it.
+  /// `false` means the name was already taken.
+  ///
+  /// `createSync(exclusive: true)` raises the same [FileSystemException] for
+  /// an occupied name and for a failure that has nothing to do with the name
+  /// — a read-only or full volume, a missing or unwritable directory. Only
+  /// the first is a reason to try the next suffix; treating the rest as
+  /// "taken" would spin [claimAvailableFileName] forever on a failure that
+  /// repeats for every candidate, blocking the isolate outright. So anything
+  /// that did not leave a file behind is rethrown, and `importAudioXFiles`
+  /// logs it and moves on to the next file.
+  ///
+  /// This also keeps the loop finite: it only advances when the candidate
+  /// really does exist, and a directory holds finitely many entries.
+  static bool _claimFile(String path) {
+    try {
+      File(path).createSync(exclusive: true);
+      return true;
+    } on FileSystemException {
+      if (!File(path).existsSync()) rethrow;
+      return false;
+    }
   }
 
   /// Selects the appropriate audio metadata reader based on environment.

@@ -11,6 +11,7 @@ import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -1423,6 +1424,504 @@ void main() {
 
       // Verify player was disposed (via _cleanup → _disposeActivePlayer).
       verify(() => mockPlayer.dispose()).called(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Switching the selected note.
+  //
+  // The regression these cover: `setAudioNote` and `play` were issued as two
+  // un-awaited calls, so `play` ran while `setAudioNote` was still resolving
+  // the new note's path, took its "reopen after teardown" branch against the
+  // *previous* `state.audioNote`, and re-opened that file after the new one
+  // had already been opened. Every card after the first therefore played (and
+  // handed the transcriber) the first recording's audio.
+  //
+  // Each test records the exact `open`/`play` sequence the media_kit Player
+  // receives, because the media that is loaded when `play()` lands is the
+  // thing the user actually hears — state alone cannot show it.
+  // ---------------------------------------------------------------------
+  group('AudioPlayerController - switching between audio notes', () {
+    JournalAudio buildNote(String id, String file) => JournalAudio(
+      meta: Metadata(
+        id: id,
+        createdAt: DateTime(2024, 1, 15),
+        updatedAt: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+        dateTo: DateTime(2024, 1, 15),
+      ),
+      data: AudioData(
+        audioFile: file,
+        audioDirectory: '/audio/2024-01-15/',
+        duration: const Duration(minutes: 3),
+        dateTo: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+      ),
+    );
+
+    final audioOne = buildNote('audio-one-id', 'audio-one.m4a');
+    final audioTwo = buildNote('audio-two-id', 'audio-two.m4a');
+    final audioThree = buildNote('audio-three-id', 'audio-three.m4a');
+
+    late List<String> calls;
+    String? loaded;
+
+    setUp(() {
+      calls = <String>[];
+      loaded = null;
+      when(() => mockPlayer.open(any(), play: any(named: 'play'))).thenAnswer((
+        invocation,
+      ) async {
+        final media = invocation.positionalArguments.first as Media;
+        loaded = media.uri.split('/').last;
+        calls.add('open:$loaded');
+      });
+      when(() => mockPlayer.play()).thenAnswer((_) async {
+        calls.add('play:$loaded');
+      });
+    });
+
+    /// Runs the current note to its natural end so the controller's completion
+    /// handler tears the Player down — the state every following tap starts
+    /// from.
+    void completePlayback(FakeAsync async) {
+      completedController.add(true);
+      async
+        ..flushMicrotasks()
+        ..elapse(const Duration(milliseconds: 20));
+    }
+
+    test(
+      'a note played after an earlier one completed plays its own audio',
+      () {
+        fakeAsync((async) {
+          final controller = container.read(
+            audioPlayerControllerProvider.notifier,
+          )..completionDelayForTest = const Duration(milliseconds: 10);
+
+          controller.playAudioNote(audioOne);
+          async.flushMicrotasks();
+
+          completePlayback(async);
+
+          controller.playAudioNote(audioTwo);
+          async.flushMicrotasks();
+
+          expect(calls, [
+            'open:audio-one.m4a',
+            'play:audio-one.m4a',
+            'open:audio-two.m4a',
+            'play:audio-two.m4a',
+          ]);
+        });
+      },
+    );
+
+    test('a third note plays its own audio, not an earlier one', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..completionDelayForTest = const Duration(milliseconds: 10);
+
+        controller.playAudioNote(audioOne);
+        async.flushMicrotasks();
+        completePlayback(async);
+
+        controller.playAudioNote(audioTwo);
+        async.flushMicrotasks();
+        completePlayback(async);
+
+        controller.playAudioNote(audioThree);
+        async.flushMicrotasks();
+
+        expect(calls.last, 'play:audio-three.m4a');
+        expect(calls.sublist(calls.length - 2), [
+          'open:audio-three.m4a',
+          'play:audio-three.m4a',
+        ]);
+      });
+    });
+
+    test('the note reported in state is the one the player loaded', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..completionDelayForTest = const Duration(milliseconds: 10);
+
+        controller.playAudioNote(audioOne);
+        async.flushMicrotasks();
+        completePlayback(async);
+        controller.playAudioNote(audioTwo);
+        async.flushMicrotasks();
+
+        // The visible symptom was exactly this pair disagreeing: the card for
+        // audio two lit up as active while audio one was coming out.
+        expect(
+          container
+              .read(audioPlayerControllerProvider)
+              .audioNote
+              ?.data
+              .audioFile,
+          loaded,
+        );
+      });
+    });
+
+    test('replaying the already-loaded note does not reopen the file', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        );
+
+        controller.playAudioNote(audioOne);
+        async.flushMicrotasks();
+        controller.playAudioNote(audioOne);
+        async.flushMicrotasks();
+
+        expect(calls, [
+          'open:audio-one.m4a',
+          'play:audio-one.m4a',
+          'play:audio-one.m4a',
+        ]);
+      });
+    });
+
+    test('a hand-sequenced setAudioNote + play pair is ordered correctly', () {
+      fakeAsync((async) {
+        // Not the call shape the widget uses any more, but the serialization
+        // has to hold for any caller that still sequences the two by hand —
+        // otherwise the same interleaving comes back through a new call site.
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..completionDelayForTest = const Duration(milliseconds: 10);
+
+        controller.playAudioNote(audioOne);
+        async.flushMicrotasks();
+        completePlayback(async);
+
+        controller
+          ..setAudioNote(audioTwo)
+          ..play();
+        async.flushMicrotasks();
+
+        expect(calls.sublist(calls.length - 2), [
+          'open:audio-two.m4a',
+          'play:audio-two.m4a',
+        ]);
+      });
+    });
+  });
+
+  group('AudioPlayerController - operation serialization', () {
+    final audioNote = JournalAudio(
+      meta: Metadata(
+        id: 'queued-audio-id',
+        createdAt: DateTime(2024, 1, 15),
+        updatedAt: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+        dateTo: DateTime(2024, 1, 15),
+      ),
+      data: AudioData(
+        audioFile: 'queued.m4a',
+        audioDirectory: '/audio/2024-01-15/',
+        duration: const Duration(minutes: 3),
+        dateTo: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+      ),
+    );
+
+    test('a later operation waits for the one already in flight', () {
+      fakeAsync((async) {
+        final openGate = Completer<void>();
+        when(
+          () => mockPlayer.open(any(), play: any(named: 'play')),
+        ).thenAnswer((_) => openGate.future);
+
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..setAudioNote(audioNote);
+        async.flushMicrotasks();
+
+        controller.setSpeed(2);
+        async.flushMicrotasks();
+
+        verifyNever(() => mockPlayer.setRate(2));
+
+        openGate.complete();
+        async.flushMicrotasks();
+
+        verify(() => mockPlayer.setRate(2)).called(1);
+        expect(container.read(audioPlayerControllerProvider).speed, 2);
+      });
+    });
+
+    test('operations queued behind each other all run, in call order', () {
+      fakeAsync((async) {
+        final order = <String>[];
+        when(
+          () => mockPlayer.open(any(), play: any(named: 'play')),
+        ).thenAnswer((_) async => order.add('open'));
+        when(
+          () => mockPlayer.play(),
+        ).thenAnswer((_) async => order.add('play'));
+        when(() => mockPlayer.pause()).thenAnswer((_) async {
+          order.add('pause');
+        });
+
+        container.read(audioPlayerControllerProvider.notifier)
+          ..setAudioNote(audioNote)
+          ..play()
+          ..pause();
+        async.flushMicrotasks();
+
+        expect(order, ['open', 'play', 'pause']);
+      });
+    });
+
+    test('a hung operation does not wedge the queue forever', () {
+      fakeAsync((async) {
+        // mpv can hang; without a bound on the wait, one stuck native call
+        // would take every later pause/seek/play down with it for the rest
+        // of the session.
+        when(
+          () => mockPlayer.open(any(), play: any(named: 'play')),
+        ).thenAnswer((_) => Completer<void>().future);
+
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..setAudioNote(audioNote);
+        async.flushMicrotasks();
+
+        controller.pause();
+        async.flushMicrotasks();
+        verifyNever(() => mockPlayer.pause());
+
+        async.elapse(AudioPlayerConstants.operationQueueTimeout);
+
+        verify(() => mockPlayer.pause()).called(1);
+        expect(
+          container.read(audioPlayerControllerProvider).status,
+          AudioPlayerStatus.paused,
+        );
+      });
+    });
+
+    test('the stuck player is abandoned rather than shared with the next '
+        'operation', () {
+      fakeAsync((async) {
+        final stuckOpen = Completer<void>();
+        when(
+          () => mockPlayer.open(any(), play: any(named: 'play')),
+        ).thenAnswer((_) => stuckOpen.future);
+
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..setAudioNote(audioNote);
+        async.flushMicrotasks();
+
+        controller.pause();
+        async.flushMicrotasks();
+        async.elapse(AudioPlayerConstants.operationQueueTimeout);
+
+        // A Player wedged inside open() will not play for the next operation
+        // either, so handing it over buys nothing and lets the stuck native
+        // call land after a newer open — the wrong-recording race again. It
+        // is disposed instead, and the waiter builds a fresh one.
+        verify(() => mockPlayer.dispose()).called(1);
+
+        // When the stuck call finally returns it must write nothing: the
+        // player's 5-minute duration never reaches state, which keeps the
+        // note's own 3-minute metadata.
+        stuckOpen.complete();
+        async.flushMicrotasks();
+        expect(
+          container.read(audioPlayerControllerProvider).totalDuration,
+          const Duration(minutes: 3),
+        );
+      });
+    });
+
+    test('a scrub lands in state before the queue drains', () {
+      fakeAsync((async) {
+        final openGate = Completer<void>();
+        when(
+          () => mockPlayer.open(any(), play: any(named: 'play')),
+        ).thenAnswer((_) => openGate.future);
+
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..setAudioNote(audioNote);
+        async.flushMicrotasks();
+
+        controller.seek(const Duration(seconds: 42));
+        async.flushMicrotasks();
+
+        // setAudioNote publishes the note — and so makes the card active and
+        // its waveform scrubbable — before `open` resolves. Queueing the
+        // position bookkeeping too would pin the thumb until the file loaded.
+        expect(
+          container.read(audioPlayerControllerProvider).progress,
+          const Duration(seconds: 42),
+        );
+        verifyNever(() => mockPlayer.seek(any()));
+
+        openGate.complete();
+        async.flushMicrotasks();
+
+        // The call on the player itself still waits its turn.
+        verify(() => mockPlayer.seek(const Duration(seconds: 42))).called(1);
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Teardown does not go through the operation queue: the completion timer
+  // (and provider disposal) can dispose the Player while an operation is
+  // suspended on an await. The generation guard is what stops that operation
+  // from finishing its work against a player that no longer exists.
+  // ---------------------------------------------------------------------
+  group('AudioPlayerController - superseded operations', () {
+    final audioNote = JournalAudio(
+      meta: Metadata(
+        id: 'superseded-audio-id',
+        createdAt: DateTime(2024, 1, 15),
+        updatedAt: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+        dateTo: DateTime(2024, 1, 15),
+      ),
+      data: AudioData(
+        audioFile: 'superseded.m4a',
+        audioDirectory: '/audio/2024-01-15/',
+        duration: const Duration(minutes: 3),
+        dateTo: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+      ),
+    );
+
+    /// Fires the completion handler and lets its delay elapse, which tears the
+    /// live Player down mid-operation.
+    void tearDownPlayerMidFlight(
+      FakeAsync async,
+      AudioPlayerController controller,
+    ) {
+      controller.handleCompletedForTest(isCompleted: true);
+      async.elapse(const Duration(milliseconds: 20));
+    }
+
+    test('setAudioNote abandons its open when the player is torn down', () {
+      fakeAsync((async) {
+        final openGate = Completer<void>();
+        when(
+          () => mockPlayer.open(any(), play: any(named: 'play')),
+        ).thenAnswer((_) => openGate.future);
+
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..completionDelayForTest = const Duration(milliseconds: 10);
+
+        controller.setAudioNote(audioNote);
+        async.flushMicrotasks();
+
+        tearDownPlayerMidFlight(async, controller);
+        openGate.complete();
+        async.flushMicrotasks();
+
+        // The player's 5-minute duration must NOT be written back: that value
+        // came from a Player this operation no longer owns. The note's own
+        // 3-minute metadata stands.
+        expect(
+          container.read(audioPlayerControllerProvider).totalDuration,
+          const Duration(minutes: 3),
+        );
+      });
+    });
+
+    test('play abandons its reopen when the player is torn down', () {
+      fakeAsync((async) {
+        final openGate = Completer<void>();
+        when(
+          () => mockPlayer.open(any(), play: any(named: 'play')),
+        ).thenAnswer((_) => openGate.future);
+
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..completionDelayForTest = const Duration(milliseconds: 10);
+        // The post-teardown shape play()'s reopen branch exists for: a note is
+        // selected but no file is loaded.
+        controller.stateForTest = AudioPlayerState(
+          status: AudioPlayerStatus.stopped,
+          totalDuration: const Duration(minutes: 3),
+          audioNote: audioNote,
+        );
+
+        controller.play();
+        async.flushMicrotasks();
+
+        tearDownPlayerMidFlight(async, controller);
+        openGate.complete();
+        async.flushMicrotasks();
+
+        verifyNever(() => mockPlayer.play());
+        expect(
+          container.read(audioPlayerControllerProvider).status,
+          isNot(AudioPlayerStatus.playing),
+        );
+      });
+    });
+
+    test(
+      'play does not start on a player torn down while setting the rate',
+      () {
+        fakeAsync((async) {
+          final rateGate = Completer<void>();
+          when(
+            () => mockPlayer.setRate(any()),
+          ).thenAnswer((_) => rateGate.future);
+
+          final controller =
+              container.read(
+                  audioPlayerControllerProvider.notifier,
+                )
+                ..completionDelayForTest = const Duration(milliseconds: 10)
+                ..hasOpenAudioForTest = true;
+          controller.stateForTest = AudioPlayerState(
+            status: AudioPlayerStatus.stopped,
+            totalDuration: const Duration(minutes: 3),
+            audioNote: audioNote,
+          );
+
+          controller.play();
+          async.flushMicrotasks();
+
+          tearDownPlayerMidFlight(async, controller);
+          rateGate.complete();
+          async.flushMicrotasks();
+
+          verifyNever(() => mockPlayer.play());
+          expect(
+            container.read(audioPlayerControllerProvider).status,
+            isNot(AudioPlayerStatus.playing),
+          );
+        });
+      },
+    );
+
+    test('an operation that keeps its player runs to completion', () {
+      fakeAsync((async) {
+        // The other side of the guard: with nothing tearing the player down,
+        // setAudioNote must still write the player-reported duration.
+        container
+            .read(audioPlayerControllerProvider.notifier)
+            .setAudioNote(
+              audioNote,
+            );
+        async.flushMicrotasks();
+
+        expect(
+          container.read(audioPlayerControllerProvider).totalDuration,
+          const Duration(minutes: 5),
+        );
+      });
     });
   });
 }

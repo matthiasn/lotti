@@ -46,9 +46,15 @@ class _FakeAudioPlayerController extends AudioPlayerController {
   Duration? lastSeekPosition;
   double? lastSpeedSet;
   JournalAudio? lastAudioNoteSet;
+  JournalAudio? lastPlayedAudioNote;
 
   @override
   AudioPlayerState build() => _state;
+
+  @override
+  Future<void> playAudioNote(JournalAudio audioNote) async {
+    lastPlayedAudioNote = audioNote;
+  }
 
   @override
   Future<void> play() async {
@@ -343,9 +349,36 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Play audio'));
     await tester.pump();
 
-    expect(controller.lastAudioNoteSet?.meta.id, journalAudio.meta.id);
-    expect(controller.playWasCalled, isTrue);
+    expect(controller.lastPlayedAudioNote?.meta.id, journalAudio.meta.id);
   });
+
+  testWidgets(
+    'tapping play on an inactive card never sequences setAudioNote and play '
+    'as two separate calls',
+    (WidgetTester tester) async {
+      // The regression this guards: as two un-awaited calls, `play()` ran
+      // while `setAudioNote()` was still resolving the path, re-opened the
+      // previously selected recording and played *that* instead. The widget
+      // must hand the controller one atomic request.
+      final journalAudio = buildJournalAudio();
+      final state = buildState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: journalAudio.data.duration,
+        progress: Duration.zero,
+        pausedAt: Duration.zero,
+        speed: 1,
+      );
+
+      await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+      await tester.tap(find.bySemanticsLabel('Play audio'));
+      await tester.pump();
+
+      expect(controller.lastAudioNoteSet, isNull);
+      expect(controller.playWasCalled, isFalse);
+      expect(controller.lastPlayedAudioNote, same(journalAudio));
+    },
+  );
 
   testWidgets('tapping pause button when playing calls pause', (
     WidgetTester tester,

@@ -17,7 +17,8 @@ check-in.
   agent is woken.
 - **Plays recordings back properly.** Progress, playback speed, and a waveform to
   scrub through — with one player for the whole app, so a recording never plays
-  over another.
+  over another, and each recording in a task plays and transcribes as itself
+  however many others sit beside it.
 - **Turns speech into text.** Transcription runs after the recording is saved,
   using whichever model the user configured, including local ones. There is no
   live "watch the words appear" mode — the recording is always saved first.

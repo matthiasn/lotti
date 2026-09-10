@@ -422,4 +422,158 @@ void main() {
       expect(captured.data.dateFrom, equals(expectedTimestamp));
     });
   });
+
+  group('importDroppedAudio target-name collisions', () {
+    /// Writes [content] into `<tempDir>/<sourceDir>/<name>` and returns it as
+    /// a droppable [XFile]. Two sources sharing [name] compute the same
+    /// timestamp, and therefore the same storage path.
+    Future<XFile> sourceNamed({
+      required String sourceDir,
+      required String name,
+      required String content,
+    }) async {
+      final file = File(path.join(tempDir.path, sourceDir, name));
+      await file.create(recursive: true);
+      await file.writeAsString(content);
+      return XFile(file.path);
+    }
+
+    List<JournalAudio> capturedEntries() => verify(
+      () => mockPersistenceLogic.createDbEntity(
+        captureAny(that: isA<JournalAudio>()),
+        linkedId: any(named: 'linkedId'),
+        shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+        enqueueSync: any(named: 'enqueueSync'),
+      ),
+    ).captured.cast<JournalAudio>();
+
+    File storedFileFor(JournalAudio entry) => File(
+      path.join(
+        tempDir.path,
+        entry.data.audioDirectory.replaceFirst('/', ''),
+        entry.data.audioFile,
+      ),
+    );
+
+    const sharedName = '2025-10-20_16-49-32-203.m4a';
+
+    test('a second source with the same timestamp gets its own file', () async {
+      await importAudioXFiles([
+        await sourceNamed(
+          sourceDir: 'first',
+          name: sharedName,
+          content: 'audio-one',
+        ),
+      ]);
+      await importAudioXFiles([
+        await sourceNamed(
+          sourceDir: 'second',
+          name: sharedName,
+          content: 'audio-two',
+        ),
+      ]);
+
+      final entries = capturedEntries();
+      expect(entries, hasLength(2));
+      expect(
+        entries[1].data.audioFile,
+        isNot(entries[0].data.audioFile),
+        reason: "the second import must not reuse the first entry's path",
+      );
+    });
+
+    test('the first recording survives a colliding second import', () async {
+      await importAudioXFiles([
+        await sourceNamed(
+          sourceDir: 'first',
+          name: sharedName,
+          content: 'audio-one',
+        ),
+      ]);
+      await importAudioXFiles([
+        await sourceNamed(
+          sourceDir: 'second',
+          name: sharedName,
+          content: 'audio-two',
+        ),
+      ]);
+
+      // The reported symptom, at the storage layer: before the fix the copy
+      // overwrote the first file, so entry one played (and transcribed) the
+      // second recording's audio.
+      final entries = capturedEntries();
+      expect(storedFileFor(entries[0]).readAsStringSync(), 'audio-one');
+      expect(storedFileFor(entries[1]).readAsStringSync(), 'audio-two');
+    });
+
+    test(
+      'a third colliding import is distinct from both earlier ones',
+      () async {
+        for (final content in ['audio-one', 'audio-two', 'audio-three']) {
+          await importAudioXFiles([
+            await sourceNamed(
+              sourceDir: content,
+              name: sharedName,
+              content: content,
+            ),
+          ]);
+        }
+
+        final entries = capturedEntries();
+        expect(entries.map((e) => e.data.audioFile).toSet(), hasLength(3));
+        expect(
+          entries.map((e) => storedFileFor(e).readAsStringSync()),
+          ['audio-one', 'audio-two', 'audio-three'],
+        );
+      },
+    );
+
+    test('a claimed name is cleaned up when the import fails', () async {
+      // The claim creates the file before the copy runs, so a failure between
+      // the two must not leave a zero-byte squatter blocking that name.
+      when(
+        () => mockPersistenceLogic.createDbEntity(
+          any(that: isA<JournalAudio>()),
+          linkedId: any(named: 'linkedId'),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).thenThrow(Exception('DB creation failed'));
+
+      await importAudioXFiles([
+        await sourceNamed(
+          sourceDir: 'first',
+          name: sharedName,
+          content: 'audio-one',
+        ),
+      ]);
+
+      final audioDir = Directory(path.join(tempDir.path, 'audio'));
+      expect(
+        audioDir.existsSync()
+            ? audioDir.listSync(recursive: true).whereType<File>().toList()
+            : <File>[],
+        isEmpty,
+      );
+    });
+
+    test('an uncontested import keeps the plain timestamp name', () async {
+      await importAudioXFiles([
+        await sourceNamed(
+          sourceDir: 'only',
+          name: sharedName,
+          content: 'audio-one',
+        ),
+      ]);
+
+      final entry = capturedEntries().single;
+      final timestamp = AudioMetadataExtractor.parseFilenameTimestamp(
+        sharedName,
+      )!;
+      expect(
+        entry.data.audioFile,
+        AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a'),
+      );
+    });
+  });
 }

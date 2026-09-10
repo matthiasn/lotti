@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -110,9 +112,11 @@ class _PlayerBody extends StatelessWidget {
 
     void handleTap() {
       if (!isActive) {
-        controller
-          ..setAudioNote(journalAudio)
-          ..play();
+        // One queued operation, not two un-awaited calls: `play()` used to run
+        // while `setAudioNote()` was still resolving this entry's path, so it
+        // re-opened the *previously* selected recording and every card after
+        // the first played the first one's audio.
+        unawaited(controller.playAudioNote(journalAudio));
         return;
       }
 
