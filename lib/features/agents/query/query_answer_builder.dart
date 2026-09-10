@@ -104,6 +104,7 @@ class QueryAnswerBuilder {
     );
     cancellation.check();
     final evidence = <QueryEvidence>[];
+    final acceptedPassages = <(String, int, int)>{};
     final dependencies = <String, QuerySourceRef>{
       for (final event in history)
         for (final source in queryEventDependencies(event.data))
@@ -185,12 +186,7 @@ class QueryAnswerBuilder {
             continue;
           }
           final start = offset + localStart;
-          if (evidence.any(
-            (e) =>
-                e.source.id == source.id &&
-                e.start == start &&
-                e.end == start + quote.length,
-          )) {
+          if (!acceptedPassages.add((source.id, start, start + quote.length))) {
             continue;
           }
           evidence.add(
@@ -201,9 +197,11 @@ class QueryAnswerBuilder {
               sourceDate: document.entry.meta.dateFrom,
               textVersion: document.version,
               fingerprint: document.fingerprint,
-              sourceText: document.text,
-              start: start,
-              end: start + quote.length,
+              // Keep bounded surrounding discussion, not an unbounded copy
+              // of the full journal entry for every accepted passage.
+              sourceText: section,
+              start: localStart,
+              end: localStart + quote.length,
               summary: passage['summary'] is String
                   ? passage['summary'] as String
                   : '',

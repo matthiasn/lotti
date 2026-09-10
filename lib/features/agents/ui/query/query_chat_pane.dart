@@ -135,45 +135,88 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     QueryChatHistory chat,
   ) async {
     _closeMenu();
-    final authoredPrivate =
+    var authoredPrivate =
         chat.private || ref.read(configFlagProvider('private')).value == true;
     final text = TextEditingController(text: chat.title);
     try {
       final result = await ModalUtils.showSinglePageModal<String>(
         context: context,
-        builder: (context) {
-          final tokens = context.designTokens;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DesignSystemTextInput(
-                controller: text,
-                label: context.messages.queryRenameChat,
-                autofocus: true,
-              ),
-              SizedBox(height: tokens.spacing.step5),
-              DesignSystemModalActionBar(
-                primary: DesignSystemButton(
-                  label: context.messages.saveButton,
-                  fullWidth: true,
-                  onPressed: () {
-                    if (text.text.trim().isNotEmpty &&
-                        text.text.trim().length <= 120) {
-                      Navigator.of(context).pop(text.text.trim());
-                    }
-                  },
+        builder: (context) => Consumer(
+          builder: (context, ref, _) {
+            final data = ref.watch(queryChatDataProvider(controller.key)).value;
+            final showPrivate =
+                ref.watch(configFlagProvider('private')).value ?? false;
+            final lockdown = ref.watch(lockdownControllerProvider);
+            final access = data == null
+                ? null
+                : QueryAccessSnapshot(
+                    showPrivate: showPrivate,
+                    categories: data.access.categories,
+                    entries: data.access.entries,
+                    lockdown: lockdown,
+                  );
+            final current = data?.projection.chats
+                .where((candidate) => candidate.id == chat.id)
+                .firstOrNull;
+            final home = access?.entries[widget.scope.id];
+            final homeVisible =
+                access != null &&
+                (widget.scope.kind == QueryScopeKind.category
+                    ? access.allowsCategory(widget.scope.id)
+                    : home != null && access.allowsEntry(home));
+            final visible =
+                homeVisible &&
+                current != null &&
+                (!(authoredPrivate || current.private) || showPrivate) &&
+                current.events.every(
+                  (event) => access.allowsEvent(event.data),
+                );
+            authoredPrivate = authoredPrivate || showPrivate;
+            if (!visible) {
+              // Remove the field before the modal's dismissal animation so
+              // neither the saved title nor newly typed text flashes on lock.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted &&
+                    ModalRoute.of(context)?.isCurrent == true) {
+                  text.clear();
+                  Navigator.of(context).pop();
+                }
+              });
+              return const SizedBox.shrink();
+            }
+            final tokens = context.designTokens;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DesignSystemTextInput(
+                  controller: text,
+                  label: context.messages.queryRenameChat,
+                  autofocus: true,
                 ),
-                secondary: [
-                  DesignSystemButton(
-                    label: context.messages.cancelButton,
-                    onPressed: () => Navigator.of(context).pop(),
-                    variant: DesignSystemButtonVariant.secondary,
+                SizedBox(height: tokens.spacing.step5),
+                DesignSystemModalActionBar(
+                  primary: DesignSystemButton(
+                    label: context.messages.saveButton,
+                    fullWidth: true,
+                    onPressed: () {
+                      if (text.text.trim().isNotEmpty &&
+                          text.text.trim().length <= 120) {
+                        Navigator.of(context).pop(text.text.trim());
+                      }
+                    },
                   ),
-                ],
-              ),
-            ],
-          );
-        },
+                  secondary: [
+                    DesignSystemButton(
+                      label: context.messages.cancelButton,
+                      onPressed: () => Navigator.of(context).pop(),
+                      variant: DesignSystemButtonVariant.secondary,
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
       );
       if (result != null) {
         await controller.rename(chat.id, result, private: authoredPrivate);

@@ -106,7 +106,7 @@ void main() {
     ).thenAnswer((call) async {
       events.add(
         event(
-          'archive',
+          'archive-${events.length}',
           call.positionalArguments[1] as String,
           QueryChatEventData.archived(
             archived: call.namedArguments[#archived] as bool,
@@ -445,4 +445,144 @@ void main() {
       },
     );
   }
+
+  testWidgets(
+    'rename validates the title, preserves Cancel and saves the chosen name',
+    (tester) async {
+      when(
+        () => store.rename(
+          'agent',
+          'feeder',
+          any(),
+          private: any(named: 'private'),
+        ),
+      ).thenAnswer((call) async {
+        events.add(
+          event(
+            'rename',
+            'feeder',
+            QueryChatEventData.renamed(
+              title: call.positionalArguments[2] as String,
+            ),
+          ),
+        );
+        data.add(snapshot());
+      });
+      await pump(tester);
+      Future<void> openRename() async {
+        await switcher(tester);
+        await tester.tap(find.byIcon(LottiIcons.more).first);
+        await tester.pump();
+        await tester.tap(find.text('Rename chat'));
+        await tester.pumpAndSettle();
+      }
+
+      await openRename();
+      await tester.enterText(find.byType(TextField).last, 'Ignored rename');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Feeder calibration'), findsOneWidget);
+      await openRename();
+      for (final invalid in [' ', 'x' * 121]) {
+        await tester.enterText(find.byType(TextField).last, invalid);
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        verifyNever(
+          () => store.rename(
+            'agent',
+            'feeder',
+            any(),
+            private: any(named: 'private'),
+          ),
+        );
+      }
+      await tester.enterText(find.byType(TextField).last, '  Chosen feeder  ');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      verify(
+        () => store.rename('agent', 'feeder', 'Chosen feeder'),
+      ).called(1);
+      expect(find.text('Chosen feeder'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'archive disables composition and restoring preserves the draft',
+    (tester) async {
+      await pump(tester);
+      await tester.enterText(find.byType(TextField), 'Feeder follow-up');
+      await switcher(tester);
+      await tester.tap(find.byIcon(LottiIcons.more).first);
+      await tester.pump();
+      await tester.tap(find.text('Archive chat'));
+      await tester.pump();
+      await tester.pump();
+      verify(() => store.archive('agent', 'feeder', archived: true)).called(1);
+      await switcher(tester);
+      await tester.tap(find.text('Archived chats'));
+      await tester.pump();
+      await tester.tap(find.text('Feeder calibration').last);
+      await tester.pump();
+      expect(find.textContaining('This chat is archived.'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      await tester.tap(find.text('Restore chat'));
+      await tester.pump();
+      await tester.pump();
+      verify(() => store.archive('agent', 'feeder', archived: false)).called(1);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Feeder follow-up',
+      );
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).enabled,
+        isNot(false),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('New chat starts isolated and examples only populate its draft', (
+    tester,
+  ) async {
+    when(
+      () => store.create('agent', scope, 'New chat'),
+    ).thenAnswer((_) async {
+      events.add(
+        event(
+          'new-created',
+          'new-id',
+          const QueryChatEventData.created(scope: scope, title: 'New chat'),
+        ),
+      );
+      data.add(snapshot());
+      return 'new-id';
+    });
+    await pump(tester);
+    await tester.enterText(find.byType(TextField), 'Old draft');
+    await switcher(tester);
+    await tester.tap(find.text('New chat'));
+    await tester.pump();
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      isEmpty,
+    );
+    final example = find.text('In which meeting did we discuss this?');
+    await tester.tap(example);
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'In which meeting did we discuss this?',
+    );
+    expect(inferenceCalls, 0);
+    await switcher(tester);
+    await tester.tap(find.text('Feeder calibration').last);
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'Old draft',
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

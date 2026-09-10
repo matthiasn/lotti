@@ -223,8 +223,8 @@ void main() {
           );
       expect(result.answer.evidence.map((e) => e.quote), quotes);
       for (final evidence in result.answer.evidence) {
-      expect(evidence.sourceText.length, lessThanOrEqualTo(12000));
-      expect(evidence.label.length, lessThanOrEqualTo(120));
+        expect(evidence.sourceText.length, lessThanOrEqualTo(12000));
+        expect(evidence.label.length, lessThanOrEqualTo(120));
         expect(text, contains(evidence.sourceText));
         expect(evidence.hasValidPassage, isTrue);
       }

@@ -27,12 +27,16 @@ class QuerySourceDocument {
 
   String get fingerprint => sha256.convert(utf8.encode(text)).toString();
 
-  String get label => switch (entry) {
-    Task(:final data) => data.title,
-    ProjectEntry(:final data) => data.title,
-    JournalAudio(:final data) => data.audioFile,
-    _ => text.split('\n').first.trim(),
-  };
+  String get label {
+    final title = switch (entry) {
+      Task(:final data) => data.title,
+      ProjectEntry(:final data) => data.title,
+      JournalAudio(:final data) => data.audioFile,
+      _ => text.split('\n').first.trim(),
+    };
+    // A single-paragraph note must not duplicate the whole source as metadata.
+    return title.length > 120 ? '${title.substring(0, 117)}...' : title;
+  }
 
   static QuerySourceDocument? fromEntry(JournalEntity entry) {
     final kind = switch (entry) {
@@ -44,7 +48,12 @@ class QuerySourceDocument {
     };
     var text = entry.entryText?.plainText;
     var version = 'entryText';
-    if (text == null) {
+    if (text == null ||
+        (text.trim().isEmpty &&
+            (entry is Task ||
+                entry is ProjectEntry ||
+                entry is Checklist ||
+                entry is ChecklistItem))) {
       switch (entry) {
         case JournalAudio(:final data):
           final transcripts = [...?data.transcripts]
@@ -224,7 +233,10 @@ class QueryJournalCrawler {
       }
       final document = QuerySourceDocument.fromEntry(entry);
       if (document == null) {
-        if (entry is JournalAudio) missingTranscripts++;
+        if (entry is JournalAudio &&
+            (kind == null || kind == QuerySourceKind.recording)) {
+          missingTranscripts++;
+        }
         continue;
       }
       if (kind != null && document.kind != kind) continue;

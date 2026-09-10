@@ -165,4 +165,20 @@ void main() {
     expect(QueryChatProjection(rows).chats.single.unread, isFalse);
     expect(QueryChatProjection(rows.reversed).chats.single.unread, isFalse);
   });
+
+  test('failure status belongs to its unanswered question', () {
+    final history = QueryChatProjection([
+      created,
+      question,
+      event(2, const QueryChatEventData.cancelled(questionId: 'other')),
+      event(3, const QueryChatEventData.failed(questionId: '1')),
+    ]).chats.single;
+    expect(history.failed('1'), isTrue);
+    expect(history.failed('other'), isTrue);
+    expect(history.failed('unrelated'), isFalse);
+    expect(
+      QueryChatProjection([...history.events, answer]).chats.single.failed('1'),
+      isFalse,
+    );
+  });
 }

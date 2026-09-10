@@ -78,8 +78,10 @@ transcripts and limits contribute to incomplete coverage; a failed database or
 inference operation is retryable, not a claim that no discussion occurred.
 
 Text comes from one stored representation: `entryText.plainText` if present,
-otherwise the newest audio transcript or a task/project/checklist title. An
-intentionally empty edit does not revive an older transcript. Binary audio and
+otherwise the newest audio transcript or a task/project/checklist title. Empty
+descriptions on title-bearing entries fall back to the title; an intentionally
+empty audio edit does not revive an older transcript. Notes-only queries do not
+count excluded recordings as missing transcripts. Binary audio and
 images are not inspected by this crawler.
 
 # Request lifecycle and context
@@ -136,8 +138,11 @@ it does not retain an additional raw prompt log.
 # Evidence, memory and deletion
 
 `QueryEvidence` saves one identified source representation, its fingerprint,
-version, source date, affiliations and character offsets. Those offsets are
-Dart string offsets, **not audio timestamps**. The UI shows a short summary,
+version, source date, affiliations and character offsets within the saved
+surrounding-text window (at most 12,000 characters). A long source is not copied
+in full for every passage; overlapping windows deduplicate by original source
+position before converting to saved-window offsets. Labels are capped at 120
+characters. The offsets are Dart string offsets, **not audio timestamps**. The UI shows a short summary,
 expandable exact text and optional surrounding text. Source edits, deletion or
 category moves leave the saved quote intact with a note; machine transcripts
 are identified as stored wording that has not been checked against the audio.
@@ -175,7 +180,8 @@ preventing duplicate or late replies from resurrecting a deleted chat.
   is no longer visible; it exposes no hidden-content counter or placeholder.
 - Authoring privacy travels with a draft or open rename dialog across awaits;
   hiding private entries before the write completes rejects that write instead
-  of relabeling its contents as public.
+  of relabeling its contents as public. The rename modal removes its text field
+  before dismissal when source access or authoring visibility is lost.
 - Content authored while private entries are shown is conservatively marked
   private even if its known source dependencies are public.
 - Entry privacy, category privacy and lockdown apply before inference, before

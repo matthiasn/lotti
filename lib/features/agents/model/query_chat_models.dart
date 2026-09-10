@@ -35,7 +35,8 @@ abstract class QuerySourceRef with _$QuerySourceRef {
 }
 
 /// A verified contiguous passage in one identified stored text version.
-/// Offsets are Dart string offsets; they are never audio timestamps.
+/// Offsets address [sourceText], the saved surrounding text window, using Dart
+/// string offsets. They are neither whole-document offsets nor audio timestamps.
 @freezed
 abstract class QueryEvidence with _$QueryEvidence {
   const factory QueryEvidence({

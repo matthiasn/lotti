@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -63,6 +64,7 @@ void main() {
       await assertion;
       await controller.close();
       expect(stopped, isTrue);
+      expect(token.isCancelled, isTrue);
       expect(
         await QueryCancellation().collect(Stream.value('other chat')),
         'other chat',
@@ -161,6 +163,7 @@ void main() {
         profile: ResolvedProfile(
           thinkingModelId: 'query-model',
           thinkingProvider: provider,
+          thinkingModel: testAiModel(id: 'query-config'),
         ),
         agentId: 'agent',
         chatId: 'chat',
@@ -182,6 +185,7 @@ void main() {
       final event = attribution.recordedInteractions.single;
       expect(event.providerModelId, 'query-model');
       expect(event.configId, provider.id);
+      expect(event.modelId, 'query-config');
       expect(event.agentId, 'agent');
       expect(event.threadId, 'chat');
       expect(event.inputTokens, 60);
@@ -190,4 +194,48 @@ void main() {
       expect(event.thoughtsTokens, 4);
     },
   );
+
+  test(
+    'oversized and failed streams reject the response and release subscriptions',
+    () async {
+      await expectLater(
+        QueryCancellation().collect(Stream.value('x' * 64001)),
+        throwsFormatException,
+      );
+      final error = StateError('inference disconnected');
+      await expectLater(
+        QueryCancellation().collect(Stream.error(error)),
+        throwsA(same(error)),
+      );
+      await expectLater(
+        QueryTextInference(generate: (_, _) => Stream.value('[]')).complete(
+          system: 'inspect',
+          input: {},
+          cancellation: QueryCancellation(),
+        ),
+        throwsFormatException,
+      );
+    },
+  );
+
+  test('a silent backend times out and cancels its subscription', () {
+    fakeAsync((async) {
+      var cancelled = false;
+      final stream = StreamController<String>(onCancel: () => cancelled = true);
+      Object? failure;
+      QueryCancellation()
+          .collect(stream.stream)
+          .then<void>(
+            (_) => fail('A silent backend must not produce a reply'),
+            onError: (Object error) => failure = error,
+          );
+      async
+        ..elapse(const Duration(minutes: 2))
+        ..flushMicrotasks();
+      expect(failure, isA<TimeoutException>());
+      expect(cancelled, isTrue);
+      unawaited(stream.close());
+      async.flushMicrotasks();
+    });
+  });
 }

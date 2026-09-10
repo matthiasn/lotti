@@ -149,4 +149,68 @@ void main() {
       expect(projection.chats.single.questions, isEmpty);
     }),
   );
+
+  test(
+    'failed and cancelled attempts remain retryable until an answer arrives',
+    () => withClock(Clock.fixed(now), () async {
+      final chat = await store.create('agent', scope, 'Feeder');
+      final question = await store.ask('agent', chat, 'Which feeder?');
+      expect(
+        (await store.load('agent')).chats.single.failed(question.id),
+        isFalse,
+      );
+      await store.fail('agent', chat, question.id);
+      expect(
+        (await store.load('agent')).chats.single.failed(question.id),
+        isTrue,
+      );
+      await store.fail('agent', chat, question.id, cancelled: true);
+      final cancelled = (await store.load('agent')).chats.single;
+      expect(
+        cancelled.events.last.data,
+        QueryChatEventData.cancelled(questionId: question.id),
+      );
+      await store.publish('agent', chat, result(question));
+      final answered = (await store.load('agent')).chats.single;
+      expect(answered.failed(question.id), isFalse);
+      await store.fail('agent', chat, question.id);
+      expect((await store.load('agent')).chats.single.events, answered.events);
+    }),
+  );
+
+  test(
+    'invalid titles and archived or blank questions cannot create events',
+    () => withClock(Clock.fixed(now), () async {
+      for (final title in ['', ' ' * 5, 'x' * 121]) {
+        await expectLater(
+          store.create('agent', scope, title),
+          throwsArgumentError,
+        );
+      }
+      expect((await store.load('agent')).chats, isEmpty);
+      final chat = await store.create('agent', scope, 'Feeder');
+      await expectLater(store.ask('agent', chat, '  '), throwsArgumentError);
+      await store.archive('agent', chat, archived: true);
+      await expectLater(
+        store.ask('agent', chat, 'Question?'),
+        throwsArgumentError,
+      );
+      expect((await store.load('agent')).chats.single.questions, isEmpty);
+      final category = bench.categories.single;
+      final categoryChat = await store.create(
+        'category-agent',
+        QueryScope(kind: QueryScopeKind.category, id: category.id),
+        'Category question',
+      );
+      expect(
+        (await store.load('category-agent')).chats.single.id,
+        categoryChat,
+      );
+      bench.categories[0] = category.copyWith(private: true);
+      await expectLater(
+        store.ask('category-agent', categoryChat, 'Hidden?'),
+        throwsA(isA<QueryScopeUnavailable>()),
+      );
+    }),
+  );
 }
