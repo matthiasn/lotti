@@ -62,6 +62,9 @@ class FakeTtsEngine implements TtsEngine {
 /// [TtsAudioPlayer] with manually-driven streams so tests control playback
 /// position and completion timing.
 class FakeTtsAudioPlayer implements TtsAudioPlayer {
+  FakeTtsAudioPlayer({this.stopError});
+
+  final Error? stopError;
   final StreamController<Duration> _position =
       StreamController<Duration>.broadcast();
   final StreamController<Duration> _duration =
@@ -81,6 +84,7 @@ class FakeTtsAudioPlayer implements TtsAudioPlayer {
   @override
   Future<void> stop() async {
     stopCount++;
+    if (stopError != null) throw stopError!;
   }
 
   @override

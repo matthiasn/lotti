@@ -889,6 +889,10 @@ void main() {
       );
       addTearDown(tearDownTestGetIt);
       bench.add('note', category: categoryMindfulness.id);
+      bench.entries['note'] = testAudioEntry.copyWith(
+        meta: bench.entries['note']!.meta,
+        entryText: bench.entries['note']!.entryText,
+      );
       final document = QuerySourceDocument.fromEntry(bench.entries['note']!)!;
       final source = QuerySourceRef(
         id: 'note',
@@ -933,6 +937,7 @@ void main() {
         ),
       ]);
       await pump(tester, sourceDetailLoading: true);
+      expect(find.text('Prepare audio excerpt'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Follow-up draft');
       expect(
         find.textContaining('The feeder decision is recorded (1).'),

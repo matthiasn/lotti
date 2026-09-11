@@ -57,6 +57,23 @@ void main() {
     );
   });
 
+  test('repeated prefixes backtrack to the unique complete quotation', () {
+    final result = locate(
+      evidence: audioEvidence(text: 'a b a c'),
+      timing: audioTiming(
+        segments: const [
+          AudioTimedSegment(
+            text: 'a b a b a c',
+            startMilliseconds: 0,
+            endMilliseconds: 60000,
+          ),
+        ],
+      ),
+    )!;
+    expect(result.start, Duration.zero);
+    expect(result.end, const Duration(seconds: 65));
+  });
+
   test('keeps a long quotation intact and clamps to recording bounds', () {
     final result = locate(
       timing: audioTiming(

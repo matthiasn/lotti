@@ -8,6 +8,8 @@ import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -115,6 +117,113 @@ void main() {
     verify(file.delete).called(1);
     expect(player.stopCount, 1);
   });
+
+  test(
+    'an already removed temporary WAV does not prevent stopping speech',
+    () async {
+      final file = MockIoFile();
+      when(file.existsSync).thenReturn(true);
+      when(file.delete).thenThrow(
+        const FileSystemException('Already removed', '', OSError('', 2)),
+      );
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        engine: FakeTtsEngine(output: file),
+        player: player,
+      );
+      final controller = controllerOf(h.container);
+      await controller.speak(sourceId: 'chat', text: 'Answer');
+      await controller.stop();
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.stopped,
+      );
+      expect(player.stopCount, 1);
+      verify(file.delete).called(1);
+    },
+  );
+
+  test(
+    'failed native shutdown is reported and still deletes private audio',
+    () async {
+      final logger = MockDomainLogger();
+      await getIt.unregister<DomainLogger>();
+      getIt.registerSingleton<DomainLogger>(logger);
+      final file = MockIoFile();
+      when(file.existsSync).thenReturn(true);
+      when(file.delete).thenAnswer((_) async => file);
+      final player = FakeTtsAudioPlayer(
+        stopError: StateError('native stop failed'),
+      );
+      addTearDown(player.dispose);
+      final h = harness(
+        engine: FakeTtsEngine(output: file),
+        player: player,
+      );
+      await controllerOf(
+        h.container,
+      ).speak(sourceId: 'chat', text: 'Private answer');
+
+      h.container.invalidate(ttsPlaybackControllerProvider);
+      await h.container.pump();
+
+      expect(player.stopCount, 1);
+      verify(file.delete).called(1);
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          any(),
+          subDomain: 'ttsPlayback.stop',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'WAV permission failures are reported without disclosing its path',
+    () async {
+      final logger = MockDomainLogger();
+      await getIt.unregister<DomainLogger>();
+      getIt.registerSingleton<DomainLogger>(logger);
+      final file = MockIoFile();
+      when(file.existsSync).thenReturn(true);
+      when(file.delete).thenThrow(
+        const FileSystemException(
+          'Permission denied',
+          '/private/answer.wav',
+          OSError('Permission denied', 13),
+        ),
+      );
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        engine: FakeTtsEngine(output: file),
+        player: player,
+      );
+      final controller = controllerOf(h.container);
+      await controller.speak(sourceId: 'chat', text: 'Private answer');
+      await controller.stop();
+
+      expect(player.stopCount, 1);
+      verify(file.delete).called(1);
+      final errors = verify(
+        () => logger.error(
+          LogDomain.speech,
+          captureAny(),
+          subDomain: 'ttsPlayback.delete',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).captured;
+      expect(errors.single.toString(), contains('13'));
+      expect(errors.single.toString(), isNot(contains('/private/answer.wav')));
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.stopped,
+      );
+    },
+  );
 
   test('stopping preparation prevents late synthesis from playing', () async {
     final pending = Completer<File>();

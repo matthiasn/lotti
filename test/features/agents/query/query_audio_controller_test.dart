@@ -4,17 +4,20 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:media_kit/media_kit.dart';
@@ -24,6 +27,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../../tts/test_utils.dart';
 import '../ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import 'query_audio_test_bench.dart';
@@ -58,6 +62,62 @@ void main() {
     actionId: 'answer:0',
     evidence: bench.evidence,
     generate: generate,
+  );
+
+  test(
+    'default audio providers enrich and play an archived file with attribution',
+    () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'lotti_query_audio_',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      final live = QueryAudioTestBench(useDefaultAudioServices: true);
+      addTearDown(live.close);
+      final attribution = AiInteractionCaptureTestBench.create();
+      getIt
+        ..registerSingleton<Directory>(directory)
+        ..registerSingleton<PersistenceLogic>(live.persistence)
+        ..registerSingleton<AiInteractionCapture>(attribution.capture);
+      final recording = File(
+        '${directory.path}${live.audio.data.audioDirectory}${live.audio.data.audioFile}',
+      );
+      await recording.parent.create(recursive: true);
+      await recording.writeAsBytes(live.bytes);
+      live.audio = live.audio.copyWith(
+        data: live.audio.data.copyWith(transcriptTimings: {}),
+      );
+      final wired = ProviderContainer(overrides: live.overrides);
+      addTearDown(wired.dispose);
+      final listener = wired.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await wired.read(configFlagProvider('private').future);
+      await wired.read(queryChatDataProvider(key.home).future);
+      final actions = wired.read(provider.notifier);
+      await http.runWithClient(
+        () => actions.playEvidence(
+          actionId: 'answer:0',
+          evidence: live.evidence,
+          generate: true,
+        ),
+        live.createTimingClient,
+      );
+      expect(live.requests, 1);
+      expect(live.writes, 1);
+      expect(wired.read(provider).status, QueryAudioStatus.playing);
+      final media =
+          verify(
+                () => live.player.open(captureAny(), play: false),
+              ).captured.single
+              as Media;
+      expect(media.uri, recording.path);
+      expect(media.start, const Duration(seconds: 95));
+      expect(
+        attribution.recordedInteractions.single.entryId,
+        live.audio.meta.id,
+      );
+      expect(await recording.readAsBytes(), live.bytes);
+      await actions.stop();
+    },
   );
 
   test(
@@ -477,6 +537,62 @@ void main() {
     expect(container.read(provider).status, QueryAudioStatus.failed);
     expect(bench.speechPlayer.playCount, 0);
   });
+
+  test('starting voice input stops an excerpt already playing', () async {
+    final recorder = TranscriptEmittingController();
+    final recording = ProviderContainer(
+      overrides: [
+        ...bench.overrides,
+        chatRecorderControllerProvider.overrideWith(() => recorder),
+      ],
+    );
+    addTearDown(recording.dispose);
+    final listener = recording.listen(provider, (_, _) {});
+    addTearDown(listener.close);
+    final actions = recording.read(provider.notifier);
+    await actions.playEvidence(actionId: 'clip', evidence: bench.evidence);
+    expect(recording.read(provider).status, QueryAudioStatus.playing);
+    recorder.emitRecording();
+    await recording.pump();
+    expect(recording.read(provider).status, QueryAudioStatus.idle);
+    verify(bench.player.dispose).called(1);
+  });
+
+  test(
+    'category chat audio validates the category home and plays its saved evidence',
+    () async {
+      final scope = QueryScope(
+        kind: QueryScopeKind.category,
+        id: categoryMindfulness.id,
+      );
+      final home = (agentId: 'agent', scope: scope);
+      final audioKey = (home: home, chatId: 'chat');
+      bench.events[0] = bench.events[0].copyWith(
+        data: QueryChatEventData.created(
+          scope: scope,
+          title: 'Category discussion',
+        ),
+      );
+      final category = ProviderContainer(
+        overrides: [
+          ...bench.overrides,
+          queryChatDataProvider(
+            home,
+          ).overrideWith((ref) => Stream.value(bench.snapshot())),
+        ],
+      );
+      addTearDown(category.dispose);
+      final audio = queryAudioControllerProvider(audioKey);
+      final listener = category.listen(audio, (_, _) {});
+      addTearDown(listener.close);
+      final actions = category.read(audio.notifier);
+      await actions.playEvidence(actionId: 'clip', evidence: bench.evidence);
+      expect(category.read(audio).status, QueryAudioStatus.playing);
+      verify(bench.player.play).called(1);
+      expect(bench.requests, 0);
+      await actions.stop();
+    },
+  );
 
   test(
     'a disabled speech flag or unknown answer cannot trigger synthesis',

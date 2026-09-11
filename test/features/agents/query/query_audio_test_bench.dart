@@ -25,6 +25,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -38,7 +39,7 @@ import 'query_test_utils.dart';
 /// Synthetic penguin source, real timing service/writer and controllable
 /// native boundaries, shared by controller and interaction tests.
 class QueryAudioTestBench extends QueryTestBench {
-  QueryAudioTestBench() {
+  QueryAudioTestBench({this.useDefaultAudioServices = false}) {
     entries['task'] = testTask.copyWith(
       meta: testTask.meta.copyWith(
         id: 'task',
@@ -140,6 +141,7 @@ class QueryAudioTestBench extends QueryTestBench {
   static const scope = QueryScope(kind: QueryScopeKind.task, id: 'task');
   static const QueryChatKey home = (agentId: 'agent', scope: scope);
   static const QueryAudioChatKey key = (home: home, chatId: 'chat');
+  final bool useDefaultAudioServices;
   final store = MockQueryChatStore();
   final persistence = MockPersistenceLogic();
   final file = MockIoFile();
@@ -204,30 +206,22 @@ class QueryAudioTestBench extends QueryTestBench {
       yield true;
       yield* ttsEnabled.stream;
     }),
-    queryAudioFileProvider.overrideWithValue((_) async => file),
+    if (!useDefaultAudioServices)
+      queryAudioFileProvider.overrideWithValue((_) async => file),
     queryProfileProvider(home).overrideWith((ref) async => profile),
-    queryAudioTimingWriterProvider.overrideWithValue(
-      QueryAudioTimingWriter(journal: db, persistence: persistence),
-    ),
-    queryAudioTimingServiceProvider.overrideWithValue(
-      QueryAudioTimingService(
-        createRepository: () => MistralTranscriptionRepository(
-          httpClient: MockClient((_) async {
-            requests++;
-            await beforeResponse?.call();
-            return http.Response(
-              jsonEncode({
-                'text': queryAudioWords,
-                'segments': [
-                  {'text': queryAudioWords, 'start': 120, 'end': 130},
-                ],
-              }),
-              200,
-            );
-          }),
+    journalDbProvider.overrideWithValue(db),
+    if (!useDefaultAudioServices)
+      queryAudioTimingWriterProvider.overrideWithValue(
+        QueryAudioTimingWriter(journal: db, persistence: persistence),
+      ),
+    if (!useDefaultAudioServices)
+      queryAudioTimingServiceProvider.overrideWithValue(
+        QueryAudioTimingService(
+          createRepository: () => MistralTranscriptionRepository(
+            httpClient: createTimingClient(),
+          ),
         ),
       ),
-    ),
     playerFactoryProvider.overrideWithValue(() {
       playerCreations++;
       return player;
@@ -236,6 +230,20 @@ class QueryAudioTestBench extends QueryTestBench {
     ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
     ttsAudioPlayerProvider.overrideWithValue(speechPlayer),
   ];
+
+  http.Client createTimingClient() => MockClient((_) async {
+    requests++;
+    await beforeResponse?.call();
+    return http.Response(
+      jsonEncode({
+        'text': queryAudioWords,
+        'segments': [
+          {'text': queryAudioWords, 'start': 120, 'end': 130},
+        ],
+      }),
+      200,
+    );
+  });
 
   Future<void> close() async {
     await completion.close();

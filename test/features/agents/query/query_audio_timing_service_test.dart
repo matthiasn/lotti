@@ -113,6 +113,7 @@ void main() {
             expect(multipart.fields['model'], 'whisper-large-v3');
             expect(multipart.fields['response_format'], 'verbose_json');
             expect(multipart.fields, isNot(contains('diarize')));
+            expect(multipart.followRedirects, isFalse);
             await body.drain<void>();
             return http.StreamedResponse(
               Stream.value(
@@ -191,11 +192,66 @@ void main() {
       );
       expect(request!.fields['model'], 'voxtral-mini-latest');
       expect(request!.fields['timestamp_granularities'], 'segment');
+      expect(request!.followRedirects, isFalse);
       expect(result.audioSha256, sha256.convert(bytes).toString());
       expect(result.sourceFingerprint, audioEvidence().fingerprint);
       expect(result.createdAt, created);
       expect(result.segments.single.startMilliseconds, 120125);
       expect(result.segments.single.endMilliseconds, 130500);
+    },
+  );
+
+  test(
+    'insecure or malformed endpoints never receive audio or credentials',
+    () async {
+      var calls = 0;
+      final service = QueryAudioTimingService(
+        createRepository: () => MistralTranscriptionRepository(
+          httpClient: MockClient((_) async {
+            calls++;
+            return http.Response(response, 200);
+          }),
+        ),
+        createMeliousRepository: () => MeliousInferenceRepository(
+          httpClient: MockClient((_) async {
+            calls++;
+            return http.Response(response, 200);
+          }),
+        ),
+      );
+      for (final type in [
+        InferenceProviderType.mistral,
+        InferenceProviderType.melious,
+      ]) {
+        for (final url in [
+          'http://api.example.com/v1',
+          'http://localhost:8080',
+          'https:/missing-host',
+          '://invalid',
+        ]) {
+          await expectLater(
+            service.generate(
+              profile: profile(
+                model: type == InferenceProviderType.melious
+                    ? 'whisper-large-v3'
+                    : 'voxtral-mini-latest',
+                transcriptionProvider: provider.copyWith(
+                  inferenceProviderType: type,
+                  baseUrl: url,
+                ),
+              ),
+              audioBytes: bytes,
+              evidence: audioEvidence(),
+              cancellation: QueryCancellation(),
+              authorize: () async {},
+              agentId: 'agent',
+              chatId: 'chat',
+            ),
+            throwsA(isA<QueryAudioTimingUnavailable>()),
+          );
+        }
+      }
+      expect(calls, 0);
     },
   );
 
