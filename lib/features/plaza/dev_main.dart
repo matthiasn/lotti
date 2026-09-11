@@ -4,6 +4,8 @@ library;
 
 import 'dart:io' show Platform;
 
+import 'package:flutter/services.dart' show SystemNavigator;
+
 import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
@@ -53,6 +55,11 @@ class PlazaDevApp extends StatelessWidget {
           shotDir: env['PLAZA_SHOT_DIR'],
           initialFrameRate: PlazaFrameRate.fromEnvironment(env),
           initialSkyMode: PlazaSkyMode.fromEnvironment(env),
+          initialToolbarOpen: env['PLAZA_TOOLBAR'] == '1',
+          // The harness is a client of the same chrome the app gets, so it
+          // renders the same Back button. There is no route under this one,
+          // so leaving is the platform's business — a no-op on desktop.
+          onExit: SystemNavigator.pop,
         ),
       ),
     );

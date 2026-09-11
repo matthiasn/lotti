@@ -10088,7 +10088,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back';
+      'WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · T toolbar · Esc dismiss · ⌘[ back';
 
   @override
   String plazaCornerAfter(String week) {
@@ -10203,6 +10203,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plazaTitle => 'Plaza';
+
+  @override
+  String get plazaToggleToolbar => 'Show / hide toolbar';
 
   @override
   String get plazaToLet => 'TO LET';

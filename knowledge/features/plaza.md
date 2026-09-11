@@ -51,7 +51,7 @@ sources:
   - id: view
     resource: ../../lib/features/plaza/ui/plaza_view.dart
     title: GPU boot, camera and frame lifecycle
-    last_modified: 2026-09-08
+    last_modified: 2026-09-11
   - id: scene
     resource: ../../lib/features/plaza/scene/plaza_scene.dart
     title: Geometry and static batching
@@ -120,6 +120,18 @@ sources:
     resource: ../../lib/features/plaza/scene/wall_textures.dart
     title: Painted walls per hour, and the shadow mask
     last_modified: 2026-09-10
+  - id: top-bar
+    resource: ../../lib/features/plaza/ui/plaza_top_bar.dart
+    title: The collapsible toolbar, its glass and its keyboard contract
+    last_modified: 2026-09-11
+  - id: world-glass
+    resource: ../../lib/features/design_system/theme/world_chrome_tokens.dart
+    title: The design-system glass that chrome over a world wears
+    last_modified: 2026-09-11
+  - id: hud
+    resource: ../../lib/features/plaza/ui/plaza_hud.dart
+    title: What collapses and what stays on screen
+    last_modified: 2026-09-11
   - id: penguin-model
     resource: ../../tool/plaza/build_penguin.py
     title: Original penguin mesh and skin generator
@@ -586,8 +598,90 @@ shadow reads as a stain. `WallTextures.paintShadow` is opaque across the middle
 and feathers only at the rim.
 
 Chrome over a bright world needs help the night never asked for: in daylight
-the HUD's blocks sit on a scrim, because white type and tinted status pills
-drawn straight onto sunlit concrete do not read.
+the status key and the keyboard legend sit on a scrim, because white type and
+tinted status pills drawn straight onto sunlit concrete do not read. The
+toolbar above needs none of it — it brings its own glass, `WorldGlass`. That
+is a design-system token rather than a plaza-local colour: chrome over an
+arbitrary backdrop is a case the design system already recognises, and
+`PhotoNeutralGlass` is its sibling. The difference is strength. Black at 45%
+works over a still photograph; over a walking camera it strobes as the street
+slides past, so this glass is near-opaque and tinted — a cool navy that stays a
+panel while the world moves underneath it. `PlazaStyle` keeps scene content
+only.
+
+# The chrome, and how it hides
+
+The world is the point of the screen, so the controls collapse. What stands
+over the street at all times is two round buttons in the top-left corner —
+leave, and show/hide — plus the status key and the keyboard legend along the
+bottom. Everything else the HUD used to hold permanently on screen (the project
+title, the counts, the three navigation buttons, the two segmented controls and
+the four checkboxes) lives inside `PlazaTopBar`'s toolbar, which is closed on
+arrival and slides out to the right of the buttons.
+
+The two buttons are the layout's fixed point. They are laid out *before* the
+toolbar in the same row, so revealing it cannot move them, and the toggle can
+be pressed twice without the pointer having to chase it. The toolbar carries
+its own glass — fill, backdrop blur and drop — rather than borrowing the
+daylight scrim, so it reads under either sky.
+
+A closed toolbar is **not built**, not merely transparent. An invisible widget
+still holding the width of the whole toolbar would sit over the street
+swallowing drags, and the one thing a hidden toolbar must not do is interfere
+with walking. Mid-animation it is in the tree and held inert by `IgnorePointer`,
+so the press that dismissed it cannot land on a control on its way out.
+
+Two things constrain how that reveal is animated. Reduced motion collapses it
+to a single frame, as it already does for the penguins and the meerkats. And
+the fade cannot be an `Opacity` around the panel: an opacity layer is a save
+layer, and a `BackdropFilter` nested inside one has no backdrop left to sample,
+so the glass would render flat for the whole transition and snap into blur on
+the frame the opacity reached 1. The fade is spent instead on the surface's own
+alpha, on the shadow's, and on an `Opacity` *inside* the filter.
+
+`PlazaToolbarKey` states the keyboard contract as data — `T` flips the toolbar,
+`Esc` only ever shuts it — because `PlazaView` needs a live GPU context to build
+and is therefore beyond the test suite's reach. Only the *first* press counts:
+the renderer's handler deliberately accepts key repeats, because walking is a
+key held down, and a toggle fed repeats strobes and lands wherever the user let
+go. `Esc` then falls through to the rest of the handler: the same press still
+dismisses the task panel and ends a Morning walk.
+
+`PlazaKeyRouting`, stated the same way and for the same reason, decides who a
+press belongs to. The world binds nearly every key — `WASD`, `Tab`, `Space`,
+`H`, `M` — from a `Focus` that sits *above* the chrome, so it answers `Tab`
+before the app's own traversal ever sees it; that is why the toolbar's controls
+and the corner buttons were reachable by pointer only. The way in is the
+toolbar itself. While it is shut, which is nearly all of a visit, every key is
+the world's exactly as before. Open it and `Tab` hands the keyboard to the
+chrome instead of stepping to the next beacon; once a control holds it, every
+press is that control's; `Esc` hands it back. Shutting the toolbar by any route
+returns focus to the world, because a control that has left the screen must not
+keep the keyboard.
+
+The buttons themselves are `FocusableActionDetector`s, so a focused one takes
+`Enter` and `Space`, wears a ring of the interactive teal, and publishes
+`focused` and `toggled` rather than answering "is it open?" in teal alone. The
+glass chip is `ControlSizes.iconChip`; the thing you have to hit is
+`TapTargets.minimum` around it, because a glyph-only control has no label to
+borrow hit area from.
+
+The toolbar hides controls, not feedback. The flight toast sits outside it,
+under the buttons, because a message nobody can see is not a message.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Closed: arrival
+  Closed --> Opening: toggle or T
+  Opening --> Open: unfolded
+  Open --> Closing: toggle, T or Esc
+  Closing --> Closed: folded, and dropped from the tree
+  Opening --> Closing: toggled again mid-flight
+  Closing --> Opening: toggled again mid-flight
+```
+
+Open or closed is renderer state and lasts as long as the view. The sky is a
+preference worth remembering between visits; an open toolbar is not.
 
 # Ambient companions
 

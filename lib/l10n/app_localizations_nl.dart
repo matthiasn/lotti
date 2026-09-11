@@ -10153,7 +10153,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD lopen · houd Shift ingedrukt: 8× snelheid · sleep om rond te kijken · Tab volgend baken · H start · M overzicht · / zoeken · ⌘[ terug';
+      'WASD lopen · houd Shift ingedrukt: 8× snelheid · sleep om rond te kijken · Tab volgend baken · H start · M overzicht · / zoeken · T werkbalk · Esc sluiten · ⌘[ terug';
 
   @override
   String plazaCornerAfter(String week) {
@@ -10269,6 +10269,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get plazaTitle => 'Plein';
+
+  @override
+  String get plazaToggleToolbar => 'Werkbalk tonen / verbergen';
 
   @override
   String get plazaToLet => 'TE HUUR';

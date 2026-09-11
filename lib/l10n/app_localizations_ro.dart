@@ -10332,7 +10332,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD mers · țineți apăsat Shift: viteză ×8 · trageți pentru a privi · Tab următorul reper · H acasă · M vedere de ansamblu · / căutare · ⌘[ înapoi';
+      'WASD mers · țineți apăsat Shift: viteză ×8 · trageți pentru a privi · Tab următorul reper · H acasă · M vedere de ansamblu · / căutare · T bara de instrumente · Esc închide · ⌘[ înapoi';
 
   @override
   String plazaCornerAfter(String week) {
@@ -10448,6 +10448,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get plazaTitle => 'Piață';
+
+  @override
+  String get plazaToggleToolbar => 'Afișați / ascundeți bara de instrumente';
 
   @override
   String get plazaToLet => 'DE ÎNCHIRIAT';
