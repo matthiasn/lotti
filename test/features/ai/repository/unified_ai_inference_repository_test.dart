@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -10,12 +11,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -1095,22 +1096,21 @@ void main() {
 
       // A stream that includes a chunk with usage data
       // ignore: prefer_const_constructors
-      final chunkWithUsage = CreateChatCompletionStreamResponse(
+      final chunkWithUsage = LottiInferenceChunk(
         id: 'response-with-usage',
-        choices: [
-          const ChatCompletionStreamResponseChoice(
+        created: 1710493800,
+        choices: const [
+          LottiChunkChoice(
             index: 0,
-            delta: ChatCompletionStreamResponseDelta(content: 'Answer'),
-            finishReason: ChatCompletionFinishReason.stop,
+            delta: LottiDelta(content: 'Answer'),
+            finishReason: LottiFinishReason.stop,
           ),
         ],
-        usage: const CompletionUsage(
+        usage: const LottiUsage(
           promptTokens: 50,
           completionTokens: 20,
           totalTokens: 70,
         ),
-        object: 'chat.completion.chunk',
-        created: 1710493800,
       );
       final mockStream = Stream.fromIterable([chunkWithUsage]);
 

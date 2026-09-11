@@ -7,11 +7,11 @@ import 'dart:typed_data';
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 typedef AudioToTemporaryMp3Encoder = Future<File> Function(Uint8List bytes);
@@ -65,7 +65,7 @@ final class TemporaryMp3ChatAudioProvider {
 /// this request and deleted after success or failure. Provider repositories
 /// supply only their JSON dialect and diagnostic identity, keeping conversion,
 /// timeout accounting, response parsing, and cleanup identical.
-Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
+Stream<LottiInferenceChunk> transcribeTemporaryMp3ChatAudio({
   required http.Client httpClient,
   required TemporaryMp3ChatAudioProvider provider,
   required String model,
@@ -84,7 +84,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
 }) {
   final abortTrigger = Completer<void>();
   var canceled = false;
-  late final StreamController<CreateChatCompletionStreamResponse> controller;
+  late final StreamController<LottiInferenceChunk> controller;
 
   Future<void> transcribe() async {
     try {
@@ -113,7 +113,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
     }
   }
 
-  controller = StreamController<CreateChatCompletionStreamResponse>(
+  controller = StreamController<LottiInferenceChunk>(
     onListen: () => unawaited(transcribe()),
     onCancel: () {
       canceled = true;
@@ -123,7 +123,7 @@ Stream<CreateChatCompletionStreamResponse> transcribeTemporaryMp3ChatAudio({
   return controller.stream;
 }
 
-Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
+Future<LottiInferenceChunk> _transcribeTemporaryMp3ChatAudio({
   required http.Client httpClient,
   required TemporaryMp3ChatAudioProvider provider,
   required String model,
@@ -288,18 +288,17 @@ Future<CreateChatCompletionStreamResponse> _transcribeTemporaryMp3ChatAudio({
     final responseId = decoded['id'];
     final responseCreated = decoded['created'];
     final responseModel = decoded['model'];
-    return CreateChatCompletionStreamResponse(
+    return LottiInferenceChunk(
       id: responseId is String ? responseId : requestId,
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-          finishReason: ChatCompletionFinishReason.stop,
-        ),
-      ],
-      object: 'chat.completion.chunk',
       created: responseCreated is int ? responseCreated : 0,
       model: responseModel is String ? responseModel : normalizedModel,
+      choices: [
+        LottiChunkChoice(
+          index: 0,
+          delta: LottiDelta(content: content),
+          finishReason: LottiFinishReason.stop,
+        ),
+      ],
       usage: parseCompletionUsage(decoded['usage']),
     );
   } on TranscriptionException catch (error) {

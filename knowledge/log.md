@@ -145,3 +145,4 @@
 * **Update**: Moved `lib/features/sync/current_architecture.md` to
   `docs/architecture/sync_current_architecture.md`; an investigation log is not
   product documentation.
+* **Creation**: Recorded [the inference domain and its client adapter](features/ai/inference-domain-and-adapter.md) when `openai_dart` went from 0.6 to 8.1 — the library's generated types had become the app's own inference vocabulary across ~160 files, and are now confined to one adapter.

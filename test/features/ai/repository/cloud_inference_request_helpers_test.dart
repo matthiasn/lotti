@@ -2,31 +2,26 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
   const helpers = CloudInferenceRequestHelpers();
 
-  CreateChatCompletionStreamResponse chunk(String content) {
-    return CreateChatCompletionStreamResponse(
+  LottiInferenceChunk chunk(String content) {
+    return LottiInferenceChunk(
       id: 'response-id',
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-        ),
-      ],
-      object: 'chat.completion.chunk',
       created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+      choices: [
+        LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+      ],
     );
   }
 
   group('createBaseRequest tool-choice resolution', () {
     test('explicit toolChoice is forwarded verbatim', () {
-      const explicit = ChatCompletionToolChoiceOption.mode(
-        ChatCompletionToolChoiceMode.none,
-      );
+      const explicit = LottiToolChoice.none();
       final request = helpers.createBaseRequest(
         messages: const [],
         model: 'gpt-4',
@@ -40,17 +35,12 @@ void main() {
         messages: const [],
         model: 'gpt-4',
         tools: const [
-          ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(name: 'do_thing'),
-          ),
+          LottiTool(name: 'do_thing'),
         ],
       );
       expect(
         request.toolChoice,
-        const ChatCompletionToolChoiceOption.mode(
-          ChatCompletionToolChoiceMode.auto,
-        ),
+        const LottiToolChoice.auto(),
       );
     });
 
@@ -70,14 +60,13 @@ void main() {
         temperature: 0.3,
         maxCompletionTokens: 128,
         maxTokens: 256,
-        reasoningEffort: ReasoningEffort.high,
+        reasoningEffort: LottiReasoningEffort.high,
       );
-      expect(request.model.toString(), contains('gpt-4o'));
+      expect(request.model, contains('gpt-4o'));
       expect(request.temperature, 0.3);
       expect(request.maxCompletionTokens, 128);
       expect(request.maxTokens, 256);
-      expect(request.reasoningEffort, ReasoningEffort.high);
-      expect(request.stream, isTrue);
+      expect(request.reasoningEffort, LottiReasoningEffort.high);
     });
   });
 
@@ -86,11 +75,11 @@ void main() {
       const flash = 'models/gemini-3-flash-preview';
       expect(
         helpers.geminiReasoningEffort(flash, GeminiThinkingMode.minimal),
-        ReasoningEffort.minimal,
+        LottiReasoningEffort.minimal,
       );
       expect(
         helpers.geminiReasoningEffort(flash, GeminiThinkingMode.medium),
-        ReasoningEffort.medium,
+        LottiReasoningEffort.medium,
       );
     });
 
@@ -99,11 +88,11 @@ void main() {
       // Pro only accepts low/high; minimal collapses to low, medium to high.
       expect(
         helpers.geminiReasoningEffort(pro, GeminiThinkingMode.minimal),
-        ReasoningEffort.low,
+        LottiReasoningEffort.low,
       );
       expect(
         helpers.geminiReasoningEffort(pro, GeminiThinkingMode.medium),
-        ReasoningEffort.high,
+        LottiReasoningEffort.high,
       );
     });
   });
@@ -129,7 +118,7 @@ void main() {
 
   group('filterAnthropicPings', () {
     test('swallows Anthropic ping errors and keeps valid chunks', () async {
-      final source = Stream<CreateChatCompletionStreamResponse>.multi((c) {
+      final source = Stream<LottiInferenceChunk>.multi((c) {
         c
           ..add(chunk('first'))
           ..addError(
@@ -147,8 +136,32 @@ void main() {
       expect(result[1].choices?.first.delta?.content, 'second');
     });
 
+    test(
+      "swallows the current client's parse failure for a ping frame",
+      () async {
+        // The pre-1.0 client threw a raw cast error here; the current one
+        // raises a typed parse failure. Matching only the old spelling would
+        // have let this protection lapse silently across the upgrade.
+        final source = Stream<LottiInferenceChunk>.multi((c) {
+          c
+            ..add(chunk('first'))
+            ..addError(
+              const ParseException(message: 'Failed to parse streaming chunk'),
+            )
+            ..add(chunk('second'))
+            ..close();
+        });
+
+        final result = await helpers.filterAnthropicPings(source).toList();
+
+        expect(result, hasLength(2));
+        expect(result[0].choices?.first.delta?.content, 'first');
+        expect(result[1].choices?.first.delta?.content, 'second');
+      },
+    );
+
     test('propagates non-Anthropic errors downstream', () {
-      final source = Stream<CreateChatCompletionStreamResponse>.multi((c) {
+      final source = Stream<LottiInferenceChunk>.multi((c) {
         c
           ..add(chunk('only'))
           ..addError('Network error: Connection refused')

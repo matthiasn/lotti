@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -50,7 +51,6 @@ import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Backward-compatible name used throughout the workflow and its tests.
@@ -551,13 +551,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
     final allTools = [
       for (final tool in goalAgentTools)
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.parameters,
-          ),
+        LottiTool(
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
         ),
     ];
 
@@ -587,8 +584,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
         ? allTools
         : [
             for (final tool in allTools)
-              if (tool.function.name != GoalAgentToolNames.createGoalAd &&
-                  tool.function.name != GoalAgentToolNames.rerunGoalAd)
+              if (tool.name != GoalAgentToolNames.createGoalAd &&
+                  tool.name != GoalAgentToolNames.rerunGoalAd)
                 tool,
           ];
     final inferenceRepo = CloudInferenceWrapper(
@@ -714,7 +711,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       strategy.recordFinalResponse(
         manager?.messages.reversed
             .map(
-              (m) => m.mapOrNull(assistant: (a) => a.content),
+              (m) => m.assistantContent,
             )
             .whereType<String>()
             .firstOrNull,
@@ -996,7 +993,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     })
     resolved,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required GoalAgentStrategy strategy,
     required String? agentId,
     required String? runKey,
@@ -1020,20 +1017,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
         inferenceRepo: inferenceRepo,
         tools: [
           for (final tool in tools)
-            if (tool.function.name == GoalAgentToolNames.createGoalAd ||
+            if (tool.name == GoalAgentToolNames.createGoalAd ||
                 (!userRequestedAd &&
-                    tool.function.name == GoalAgentToolNames.rerunGoalAd))
+                    tool.name == GoalAgentToolNames.rerunGoalAd))
               tool,
         ],
         toolChoice: userRequestedAd
-            ? const ChatCompletionToolChoiceOption.tool(
-                ChatCompletionNamedToolChoice(
-                  type: ChatCompletionNamedToolChoiceType.function,
-                  function: ChatCompletionFunctionCallOption(
-                    name: GoalAgentToolNames.createGoalAd,
-                  ),
-                ),
-              )
+            ? const LottiToolChoice.specific(GoalAgentToolNames.createGoalAd)
             : null,
         temperature: 0,
         strategy: strategy,
@@ -1399,7 +1389,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     })
     resolved,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required GoalAgentStrategy strategy,
     required String? agentId,
     required String? runKey,
@@ -1415,15 +1405,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         inferenceRepo: inferenceRepo,
         tools: [
           for (final tool in tools)
-            if (tool.function.name == GoalAgentToolNames.updateGoalReport) tool,
+            if (tool.name == GoalAgentToolNames.updateGoalReport) tool,
         ],
-        toolChoice: const ChatCompletionToolChoiceOption.tool(
-          ChatCompletionNamedToolChoice(
-            type: ChatCompletionNamedToolChoiceType.function,
-            function: ChatCompletionFunctionCallOption(
-              name: GoalAgentToolNames.updateGoalReport,
-            ),
-          ),
+        toolChoice: const LottiToolChoice.specific(
+          GoalAgentToolNames.updateGoalReport,
         ),
         temperature: 0,
         strategy: strategy,
@@ -1452,7 +1437,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     })
     resolved,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required GoalAgentStrategy strategy,
     required String? agentId,
     required String? runKey,
@@ -1472,15 +1457,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         inferenceRepo: inferenceRepo,
         tools: [
           for (final tool in tools)
-            if (tool.function.name == GoalAgentToolNames.replyToUser) tool,
+            if (tool.name == GoalAgentToolNames.replyToUser) tool,
         ],
-        toolChoice: const ChatCompletionToolChoiceOption.tool(
-          ChatCompletionNamedToolChoice(
-            type: ChatCompletionNamedToolChoiceType.function,
-            function: ChatCompletionFunctionCallOption(
-              name: GoalAgentToolNames.replyToUser,
-            ),
-          ),
+        toolChoice: const LottiToolChoice.specific(
+          GoalAgentToolNames.replyToUser,
         ),
         temperature: 0,
         strategy: strategy,

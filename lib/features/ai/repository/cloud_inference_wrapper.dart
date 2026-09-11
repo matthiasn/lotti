@@ -3,9 +3,9 @@ import 'dart:developer' as developer;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Wrapper that adapts CloudInferenceRepository to work with the conversation system
 ///
@@ -25,18 +25,18 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
 
   final CloudInferenceRepository cloudRepository;
   final GeminiThinkingMode? geminiThinkingMode;
-  final ReasoningEffort? reasoningEffort;
+  final LottiReasoningEffort? reasoningEffort;
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) {
     // Delegate to the cloud repository
     return cloudRepository.generate(
@@ -56,14 +56,14 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -103,8 +103,8 @@ class CloudInferenceWrapper implements InferenceRepositoryInterface {
         final delta = chunk.choices!.first.delta;
         if (delta?.toolCalls != null) {
           for (final toolCall in delta!.toolCalls!) {
-            if (toolCall.function?.arguments != null &&
-                toolCall.function!.arguments!.contains('}{')) {
+            if (toolCall.arguments != null &&
+                toolCall.arguments!.contains('}{')) {
               developer.log(
                 'WARNING: Detected concatenated JSON in tool call arguments. '
                 'Provider ${provider.inferenceProviderType} may be returning malformed tool calls.',

@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -39,7 +40,6 @@ import 'package:lotti/features/relationships/workflow/relationship_agent_strateg
 import 'package:lotti/features/relationships/workflow/relationship_facts_renderer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Stable output IDs let a wake recognize that its interactive reply's
@@ -399,13 +399,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     );
     final tools = [
       for (final tool in relationshipAgentTools)
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.parameters,
-          ),
+        LottiTool(
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
         ),
     ];
     final inferenceRepo = CloudInferenceWrapper(
@@ -511,7 +508,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       final manager = _conversationRepository.getConversation(conversationId);
       strategy.recordFinalResponse(
         manager?.messages.reversed
-            .map((m) => m.mapOrNull(assistant: (a) => a.content))
+            .map((m) => m.assistantContent)
             .whereType<String>()
             .firstOrNull,
       );
@@ -1098,7 +1095,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     required String conversationId,
     required RelationshipModelResolution resolved,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required RelationshipAgentStrategy strategy,
     required bool recordConsumption,
     required String agentId,

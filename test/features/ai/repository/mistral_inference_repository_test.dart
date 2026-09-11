@@ -9,12 +9,12 @@ import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -778,10 +778,6 @@ void main() {
         // Assert
         expect(results.length, equals(3));
         expect(results[0].choices?.first.delta?.content, equals(chunk1));
-        expect(
-          results[0].choices?.first.delta?.role,
-          equals(ChatCompletionMessageRole.assistant),
-        );
         expect(results[1].choices?.first.delta?.content, equals(chunk2));
 
         // Verify the request
@@ -935,19 +931,16 @@ void main() {
         );
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'get_weather',
-              description: 'Get the weather for a location',
-              parameters: {
-                'type': 'object',
-                'properties': {
-                  'location': {'type': 'string'},
-                },
-                'required': ['location'],
+          const LottiTool(
+            name: 'get_weather',
+            description: 'Get the weather for a location',
+            parameters: {
+              'type': 'object',
+              'properties': {
+                'location': {'type': 'string'},
               },
-            ),
+              'required': ['location'],
+            },
           ),
         ];
 
@@ -971,7 +964,7 @@ void main() {
           equals('call_123'),
         );
         expect(
-          results[0].choices?.first.delta?.toolCalls?.first.function?.name,
+          results[0].choices?.first.delta?.toolCalls?.first.name,
           equals('get_weather'),
         );
 
@@ -995,17 +988,9 @@ void main() {
         );
 
         const tools = [
-          ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(name: 'draft_day_plan'),
-          ),
+          LottiTool(name: 'draft_day_plan'),
         ];
-        const toolChoice = ChatCompletionToolChoiceOption.tool(
-          ChatCompletionNamedToolChoice(
-            type: ChatCompletionNamedToolChoiceType.function,
-            function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
-          ),
-        );
+        const toolChoice = LottiToolChoice.specific('draft_day_plan');
 
         final stream = repository.generateText(
           prompt: prompt,
@@ -1032,11 +1017,11 @@ void main() {
       test(
         'serializes each tool-choice mode to its Mistral spelling',
         () async {
-          const expected = {
-            ChatCompletionToolChoiceMode.none: 'none',
-            ChatCompletionToolChoiceMode.auto: 'auto',
+          final expected = <LottiToolChoice, String>{
+            const LottiToolChoice.none(): 'none',
+            const LottiToolChoice.auto(): 'auto',
             // Mistral forces a tool call with `any`, not OpenAI's `required`.
-            ChatCompletionToolChoiceMode.required: 'any',
+            const LottiToolChoice.required(): 'any',
           };
 
           for (final mode in expected.keys) {
@@ -1056,12 +1041,9 @@ void main() {
                   baseUrl: baseUrl,
                   apiKey: apiKey,
                   tools: const [
-                    ChatCompletionTool(
-                      type: ChatCompletionToolType.function,
-                      function: FunctionObject(name: 'draft_day_plan'),
-                    ),
+                    LottiTool(name: 'draft_day_plan'),
                   ],
-                  toolChoice: ChatCompletionToolChoiceOption.mode(mode),
+                  toolChoice: mode,
                 )
                 .toList();
           }
@@ -1153,12 +1135,8 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.system(
-            content: 'You are a helpful assistant.',
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          const LottiMessage.system('You are a helpful assistant.'),
+          LottiMessage.userText('Hello'),
         ];
 
         // Act
@@ -1199,15 +1177,13 @@ void main() {
         );
 
         final stream = repository.generateTextWithMessages(
-          messages: const [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hello'),
-            ),
+          messages: [
+            LottiMessage.userText('Hello'),
           ],
           model: model,
           baseUrl: baseUrl,
           apiKey: apiKey,
-          reasoningEffort: ReasoningEffort.high,
+          reasoningEffort: LottiReasoningEffort.high,
         );
 
         await stream.toList();
@@ -1233,19 +1209,14 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('What is 2+2?'),
-          ),
-          const ChatCompletionMessage.assistant(
+          LottiMessage.userText('What is 2+2?'),
+          const LottiMessage.assistant(
             content: 'Let me calculate that.',
             toolCalls: [
-              ChatCompletionMessageToolCall(
+              LottiToolCall(
                 id: 'call_123',
-                type: ChatCompletionMessageToolCallType.function,
-                function: ChatCompletionMessageFunctionCall(
-                  name: 'calculate',
-                  arguments: '{"expression": "2+2"}',
-                ),
+                name: 'calculate',
+                arguments: '{"expression": "2+2"}',
               ),
             ],
           ),
@@ -1296,10 +1267,7 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.tool(
-            toolCallId: 'call_123',
-            content: '4',
-          ),
+          const LottiMessage.tool(toolCallId: 'call_123', content: '4'),
         ];
 
         // Act
@@ -1342,22 +1310,14 @@ void main() {
           );
 
           final messages = [
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.parts([
-                ChatCompletionMessageContentPart.text(text: 'Describe this'),
-                ChatCompletionMessageContentPart.image(
-                  imageUrl: ChatCompletionMessageImageUrl(
-                    url: 'https://example.com/cat.png',
-                  ),
-                ),
-                ChatCompletionMessageContentPart.audio(
-                  inputAudio: ChatCompletionMessageInputAudio(
-                    data: 'AAAA',
-                    format: ChatCompletionMessageInputAudioFormat.wav,
-                  ),
-                ),
-              ]),
-            ),
+            LottiMessage.userParts(const [
+              LottiContentPart.text('Describe this'),
+              LottiContentPart.image('https://example.com/cat.png'),
+              LottiContentPart.audio(
+                base64Data: 'AAAA',
+                format: LottiAudioFormat.wav,
+              ),
+            ]),
           ];
 
           // Act
@@ -1405,50 +1365,6 @@ void main() {
         },
       );
 
-      test('should convert function messages correctly', () async {
-        // Arrange
-        final events = [
-          createSseChunkEvent(content: 'Response'),
-          createSseFinalEvent(),
-        ];
-
-        when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async => createSseStreamedResponse(events: events),
-        );
-
-        final messages = [
-          const ChatCompletionMessage.function(
-            name: 'get_weather',
-            content: '{"temp": 21}',
-          ),
-        ];
-
-        // Act
-        final stream = repository.generateTextWithMessages(
-          messages: messages,
-          model: model,
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
-        await stream.toList();
-
-        // Assert
-        final captured = verify(
-          () => mockHttpClient.send(captureAny()),
-        ).captured;
-        final request = captured.first as http.Request;
-        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
-
-        final reqMessages = requestBody['messages'] as List<dynamic>;
-        expect(reqMessages.length, equals(1));
-
-        final functionMsg = reqMessages[0] as Map<String, dynamic>;
-        expect(functionMsg['role'], equals('function'));
-        expect(functionMsg['name'], equals('get_weather'));
-        expect(functionMsg['content'], equals('{"temp": 21}'));
-      });
-
       test('should convert developer messages correctly', () async {
         // Arrange
         final events = [
@@ -1461,11 +1377,7 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.developer(
-            content: ChatCompletionDeveloperMessageContent.text(
-              'Follow these rules',
-            ),
-          ),
+          const LottiMessage.developer('Follow these rules'),
         ];
 
         // Act
@@ -1490,12 +1402,10 @@ void main() {
 
         final developerMsg = reqMessages[0] as Map<String, dynamic>;
         expect(developerMsg['role'], equals('developer'));
-        // The developer content is carried through as the freezed union map,
-        // which serializes to a value/runtimeType pair.
-        final developerContent =
-            developerMsg['content'] as Map<String, dynamic>;
-        expect(developerContent['value'], equals('Follow these rules'));
-        expect(developerContent['runtimeType'], equals('text'));
+        // Previously this serialized the freezed content union, so Mistral
+        // received a `{value, runtimeType}` object where the API expects a
+        // string. The domain models developer content as plain text.
+        expect(developerMsg['content'], equals('Follow these rules'));
       });
     });
 
@@ -1638,10 +1548,6 @@ void main() {
 
         // Assert
         expect(results[0].choices?.first.delta?.content, isNull);
-        expect(
-          results[0].choices?.first.delta?.role,
-          equals(ChatCompletionMessageRole.assistant),
-        );
       });
 
       test('should handle empty array content', () async {
@@ -1729,10 +1635,8 @@ void main() {
           );
 
           final messages = [
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('run tool'),
-            ),
-            const ChatCompletionMessage.tool(
+            LottiMessage.userText('run tool'),
+            const LottiMessage.tool(
               toolCallId: 'call-42',
               content: 'tool says hi',
             ),
@@ -2061,9 +1965,9 @@ data: not valid json 5
         expect(toolCalls?.length, equals(1));
         expect(toolCalls?.first.id, equals('call_abc123'));
         expect(toolCalls?.first.index, equals(0));
-        expect(toolCalls?.first.function?.name, equals('get_weather'));
+        expect(toolCalls?.first.name, equals('get_weather'));
         expect(
-          toolCalls?.first.function?.arguments,
+          toolCalls?.first.arguments,
           equals('{"location": "Paris"}'),
         );
       });
@@ -2114,8 +2018,8 @@ data: not valid json 5
         // Assert
         final toolCalls = results[0].choices?.first.delta?.toolCalls;
         expect(toolCalls?.length, equals(2));
-        expect(toolCalls?[0].function?.name, equals('tool_a'));
-        expect(toolCalls?[1].function?.name, equals('tool_b'));
+        expect(toolCalls?[0].name, equals('tool_a'));
+        expect(toolCalls?[1].name, equals('tool_b'));
       });
 
       test('should handle null tool_calls', () async {
@@ -2208,7 +2112,7 @@ data: not valid json 5
         // Assert
         expect(
           results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.stop),
+          equals(LottiFinishReason.stop),
         );
       });
 
@@ -2236,7 +2140,7 @@ data: not valid json 5
         // Assert
         expect(
           results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.toolCalls),
+          equals(LottiFinishReason.toolCalls),
         );
       });
 
@@ -2273,7 +2177,7 @@ data: not valid json 5
         // Assert - should fallback to stop
         expect(
           results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.stop),
+          equals(LottiFinishReason.stop),
         );
       });
     });
@@ -2315,10 +2219,6 @@ data: not valid json 5
         final results = await stream.toList();
 
         // Assert
-        expect(
-          results[0].choices?.first.delta?.role,
-          equals(ChatCompletionMessageRole.assistant),
-        );
         expect(results[0].choices?.first.delta?.content, equals('hi'));
       });
     });
@@ -2588,7 +2488,7 @@ data: not valid json 5
   });
 }
 
-/// A generated list of [ChatCompletionMessage]s covering every supported
+/// A generated list of [LottiMessage]s covering every supported
 /// role variant, paired with per-message expectations for the converted map.
 class _MistralMessagesScenario {
   _MistralMessagesScenario({required int count, required int seed})
@@ -2596,38 +2496,22 @@ class _MistralMessagesScenario {
 
   final List<int> _kinds;
 
-  List<ChatCompletionMessage> get messages => [
+  List<LottiMessage> get messages => [
     for (var i = 0; i < _kinds.length; i++)
       switch (_kinds[i]) {
-        0 => ChatCompletionMessage.system(content: 'sys $i'),
-        1 => ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('hello $i'),
-        ),
-        2 => ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'part $i'),
-            ChatCompletionMessageContentPart.image(
-              imageUrl: ChatCompletionMessageImageUrl(url: 'http://img/$i'),
-            ),
-          ]),
-        ),
-        3 => ChatCompletionMessage.assistant(
+        0 => LottiMessage.system('sys $i'),
+        1 => LottiMessage.userText('hello $i'),
+        2 => LottiMessage.userParts([
+          LottiContentPart.text('part $i'),
+          LottiContentPart.image('http://img/$i'),
+        ]),
+        3 => LottiMessage.assistant(
           content: 'answer $i',
           toolCalls: [
-            ChatCompletionMessageToolCall(
-              id: 'tc-$i',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'fn$i',
-                arguments: '{"x":$i}',
-              ),
-            ),
+            LottiToolCall(id: 'tc-$i', name: 'fn$i', arguments: '{"x":$i}'),
           ],
         ),
-        _ => ChatCompletionMessage.tool(
-          toolCallId: 'call-$i',
-          content: 'result $i',
-        ),
+        _ => LottiMessage.tool(toolCallId: 'call-$i', content: 'result $i'),
       },
   ];
 

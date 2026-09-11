@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_multiturn_inference.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 AiConfigInferenceProvider _provider() => AiConfigInferenceProvider(
   id: 'prov',
@@ -44,10 +44,8 @@ class _RecordingStreamClient extends http.BaseClient {
   }
 }
 
-List<ChatCompletionMessage> _messages() => [
-  const ChatCompletionMessage.user(
-    content: ChatCompletionUserMessageContent.string('hi'),
-  ),
+List<LottiMessage> _messages() => [
+  LottiMessage.userText('hi'),
 ];
 
 void main() {
@@ -157,14 +155,14 @@ void main() {
 
       final toolCall = events
           .expand(
-            (e) => e.choices ?? const <ChatCompletionStreamResponseChoice>[],
+            (e) => e.choices ?? const <LottiChunkChoice>[],
           )
           .map((c) => c.delta?.toolCalls)
-          .whereType<List<ChatCompletionStreamMessageToolCallChunk>>()
+          .whereType<List<LottiToolCallChunk>>()
           .expand((t) => t)
           .first;
       expect(toolCall.id, 'tool_turn2_0');
-      expect(toolCall.function?.name, 'do_thing');
+      expect(toolCall.name, 'do_thing');
     });
 
     test('throws on a non-2xx streaming status', () async {

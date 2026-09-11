@@ -17,13 +17,13 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -159,16 +159,13 @@ void main() {
             ),
           ).thenAnswer(
             (_) => Stream.value(
-              const CreateChatCompletionStreamResponse(
+              const LottiInferenceChunk(
                 id: 'response',
-                object: 'chat.completion.chunk',
                 created: 0,
                 choices: [
-                  ChatCompletionStreamResponseChoice(
+                  LottiChunkChoice(
                     index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: '{"passages":[]}',
-                    ),
+                    delta: LottiDelta(content: '{"passages":[]}'),
                   ),
                 ],
               ),

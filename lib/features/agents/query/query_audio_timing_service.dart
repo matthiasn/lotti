@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
@@ -16,7 +17,6 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Timing uses the explicitly configured transcription slot. No provider or
 /// model is substituted, and no model is configured on the user's behalf.
@@ -91,7 +91,7 @@ class QueryAudioTimingService {
     final impact = InferenceImpactCollector();
     final detach = cancellation.onCancel(repository.close);
     List<AudioTimedSegment>? segments;
-    Stream<CreateChatCompletionStreamResponse> invoke() async* {
+    Stream<LottiInferenceChunk> invoke() async* {
       await authorize();
       cancellation.check();
       if (repository is MeliousInferenceRepository) {

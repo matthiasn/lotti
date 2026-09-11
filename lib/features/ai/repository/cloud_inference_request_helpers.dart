@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 
 /// Stateless request/stream helpers shared by the cloud-inference generate
 /// collaborators (`CloudInferenceGenerate` and `CloudInferenceGenerateMore`).
@@ -17,65 +18,68 @@ class CloudInferenceRequestHelpers {
   const CloudInferenceRequestHelpers();
 
   /// Helper method to create common request parameters
-  CreateChatCompletionRequest createBaseRequest({
-    required List<ChatCompletionMessage> messages,
+  LottiInferenceRequest createBaseRequest({
+    required List<LottiMessage> messages,
     required String model,
     double? temperature,
     int? maxCompletionTokens,
     int? maxTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
-    bool stream = true,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
   }) {
-    final ChatCompletionToolChoiceOption? effectiveToolChoice;
+    final LottiToolChoice? effectiveToolChoice;
     if (toolChoice != null) {
       effectiveToolChoice = toolChoice;
     } else if (tools != null && tools.isNotEmpty) {
-      effectiveToolChoice = const ChatCompletionToolChoiceOption.mode(
-        ChatCompletionToolChoiceMode.auto,
-      );
+      effectiveToolChoice = const LottiToolChoice.auto();
     } else {
       effectiveToolChoice = null;
     }
 
-    return CreateChatCompletionRequest(
+    return LottiInferenceRequest(
       messages: messages,
-      model: ChatCompletionModel.modelId(model),
+      model: model,
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
       maxTokens: maxTokens,
       reasoningEffort: reasoningEffort,
-      stream: stream,
       tools: tools,
       toolChoice: effectiveToolChoice,
     );
   }
 
-  /// Filters out Anthropic ping messages from the stream
-  Stream<CreateChatCompletionStreamResponse> filterAnthropicPings(
-    Stream<CreateChatCompletionStreamResponse> stream,
+  /// Drops keep-alive frames that the client cannot read as chat chunks.
+  ///
+  /// Anthropic interleaves ping frames carrying no `choices`. The older client
+  /// surfaced those as a raw cast error; the current one reports a parse
+  /// failure instead. Both are recognized, because a single unreadable frame
+  /// must not tear down an otherwise healthy stream — and because matching
+  /// only the old spelling would let this protection lapse unnoticed.
+  Stream<LottiInferenceChunk> filterAnthropicPings(
+    Stream<LottiInferenceChunk> stream,
   ) {
     // Use where to filter out errors instead of handleError
-    final controller = StreamController<CreateChatCompletionStreamResponse>();
+    final controller = StreamController<LottiInferenceChunk>();
 
     stream.listen(
       controller.add,
       onError: (Object error, StackTrace stackTrace) {
-        // Check if this is specifically an Anthropic ping message error
         final errorString = error.toString();
 
-        // Anthropic ping messages cause a specific null subtype error when parsing choices
+        // The pre-1.0 client threw a raw cast error on a frame without
+        // `choices`; the current one raises a typed parse failure.
         final isAnthropicPingError =
-            errorString.contains(
-              "type 'Null' is not a subtype of type 'List<dynamic>'",
-            ) &&
-            errorString.contains('choices');
+            (errorString.contains(
+                  "type 'Null' is not a subtype of type 'List<dynamic>'",
+                ) &&
+                errorString.contains('choices')) ||
+            isUnparseableStreamFrame(error);
 
         if (isAnthropicPingError) {
           // Log but don't propagate the error
           developer.log(
-            'Skipping Anthropic ping message',
+            'Skipping unreadable stream frame (Anthropic ping)',
             name: 'CloudInferenceRepository',
             error: error,
             stackTrace: stackTrace,
@@ -112,15 +116,15 @@ class CloudInferenceRequestHelpers {
   /// value for [model], collapsing modes that the model does not support
   /// (non-Flash Gemini 3 only accepts low/high) via
   /// [GeminiThinkingConfig.effectiveMode].
-  ReasoningEffort geminiReasoningEffort(
+  LottiReasoningEffort geminiReasoningEffort(
     String model,
     GeminiThinkingMode mode,
   ) {
     return switch (GeminiThinkingConfig.effectiveMode(model, mode)) {
-      GeminiThinkingMode.minimal => ReasoningEffort.minimal,
-      GeminiThinkingMode.low => ReasoningEffort.low,
-      GeminiThinkingMode.medium => ReasoningEffort.medium,
-      GeminiThinkingMode.high => ReasoningEffort.high,
+      GeminiThinkingMode.minimal => LottiReasoningEffort.minimal,
+      GeminiThinkingMode.low => LottiReasoningEffort.low,
+      GeminiThinkingMode.medium => LottiReasoningEffort.medium,
+      GeminiThinkingMode.high => LottiReasoningEffort.high,
     };
   }
 }

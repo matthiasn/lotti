@@ -6,11 +6,11 @@ import 'dart:convert';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -1233,7 +1233,7 @@ data: [DONE]
         expect(results.length, equals(1));
         expect(
           results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.stop),
+          equals(LottiFinishReason.stop),
         );
       });
 
@@ -1272,7 +1272,7 @@ data: [DONE]
         expect(results.length, equals(1));
         expect(
           results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.contentFilter),
+          equals(LottiFinishReason.contentFilter),
         );
       });
 

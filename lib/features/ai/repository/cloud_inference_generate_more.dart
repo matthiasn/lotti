@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:collection/collection.dart';
-
 import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'
     show CloudInferenceRepository;
@@ -14,17 +14,18 @@ import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dar
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/inference_client.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/omlx_transcription_repository.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Audio transcription, multi-turn, image generation, model install, and
 /// resource cleanup paths for [CloudInferenceRepository].
@@ -67,7 +68,7 @@ class CloudInferenceGenerateMore {
   /// Routes audio to the selected provider. Embedded sherpa transcription does
   /// not apply [speechDictionaryTerms] or task-context prompts: its current
   /// Whisper bindings do not expose prompt conditioning.
-  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
+  Stream<LottiInferenceChunk> generateWithAudio(
     String prompt, {
     required String model,
     required String audioBase64,
@@ -75,11 +76,10 @@ class CloudInferenceGenerateMore {
     required String apiKey,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
-    List<ChatCompletionTool>? tools,
+    LottiInferenceClient? overrideClient,
+    List<LottiTool>? tools,
     bool stream = true,
-    ChatCompletionMessageInputAudioFormat audioFormat =
-        ChatCompletionMessageInputAudioFormat.mp3,
+    LottiAudioFormat audioFormat = LottiAudioFormat.mp3,
     List<String>? speechDictionaryTerms,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
@@ -104,10 +104,7 @@ class CloudInferenceGenerateMore {
 
     final client =
         overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
+        OpenAiCompatInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
 
     // For Voxtral, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.voxtral) {
@@ -233,7 +230,7 @@ class CloudInferenceGenerateMore {
     // OpenAI-compatible chat completions format with audio content parts.
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
@@ -258,31 +255,23 @@ class CloudInferenceGenerateMore {
 
     return client
         .createChatCompletionStream(
-          request: _helpers.createBaseRequest(
+          _helpers.createBaseRequest(
             messages: [
-              if (systemMessage != null)
-                ChatCompletionMessage.system(content: systemMessage),
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.parts(
-                  [
-                    ChatCompletionMessageContentPart.text(
-                      text: promptWithDictionary,
-                    ),
-                    ChatCompletionMessageContentPart.audio(
-                      inputAudio: ChatCompletionMessageInputAudio(
-                        data: effectiveAudioBase64,
-                        format: audioFormat,
-                      ),
-                    ),
-                  ],
-                ),
+              if (systemMessage != null) LottiMessage.system(systemMessage),
+              LottiMessage.userParts(
+                [
+                  LottiContentPart.text(promptWithDictionary),
+                  LottiContentPart.audio(
+                    base64Data: effectiveAudioBase64,
+                    format: audioFormat,
+                  ),
+                ],
               ),
             ],
             model: model,
             maxCompletionTokens: maxCompletionTokens,
             tools: tools,
             reasoningEffort: reasoningEffort,
-            stream: stream,
           ),
         )
         .asBroadcastStream();
@@ -334,19 +323,19 @@ class CloudInferenceGenerateMore {
   /// - [thoughtSignatures]: Optional signatures from previous turns (Gemini only)
   /// - [signatureCollector]: Optional collector for new signatures (Gemini only)
   /// - [turnIndex]: Current turn number for unique tool call ID generation
-  Stream<CreateChatCompletionStreamResponse> generateWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double? temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     GeminiThinkingMode? geminiThinkingMode,
-    ReasoningEffort? reasoningEffort,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     if (provider.inferenceProviderType == InferenceProviderType.sherpa) {
@@ -371,8 +360,9 @@ class CloudInferenceGenerateMore {
 
       // Extract system message from messages if present
       final systemMessage = messages
-          .firstWhereOrNull((m) => m.role == ChatCompletionMessageRole.system)
-          ?.mapOrNull(system: (s) => s.content);
+          .whereType<LottiSystemMessage>()
+          .firstOrNull
+          ?.content;
 
       return _geminiRepository.generateTextWithMessages(
         messages: messages,
@@ -433,20 +423,20 @@ class CloudInferenceGenerateMore {
     }
 
     // For other providers (OpenAI, OpenRouter, Anthropic), use full message history
-    final client = OpenAIClient(
+    final client = OpenAiCompatInferenceClient(
       baseUrl: provider.baseUrl,
       apiKey: provider.apiKey,
     );
 
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to multi-turn API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to multi-turn API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
 
     final res = client.createChatCompletionStream(
-      request: _helpers.createBaseRequest(
+      _helpers.createBaseRequest(
         messages: messages,
         model: model,
         temperature: temperature,

@@ -8,10 +8,10 @@ import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -105,7 +105,7 @@ void main() {
           strategy,
         }) async {
           final turnIndex = perTurn.length;
-          final handedOver = tools ?? const <ChatCompletionTool>[];
+          final handedOver = tools ?? const <LottiTool>[];
           // Mirrors `ConversationRepository.sendMessage`: the strategy gets to
           // narrow the list the workflow handed over, per turn.
           final forTurn =
@@ -115,8 +115,8 @@ void main() {
               ) ??
               handedOver;
           perTurn.add((
-            handedOver: handedOver.map((tool) => tool.function.name).toList(),
-            forTurn: forTurn.map((tool) => tool.function.name).toList(),
+            handedOver: handedOver.map((tool) => tool.name).toList(),
+            forTurn: forTurn.map((tool) => tool.name).toList(),
           ));
           return null;
         };

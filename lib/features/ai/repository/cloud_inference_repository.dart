@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart'
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_client.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
@@ -23,7 +25,6 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Facade over the cloud-inference generate collaborators.
 ///
@@ -95,7 +96,7 @@ class CloudInferenceRepository {
   late final CloudInferenceGenerateMore _generateMore;
   late final MistralOcrRepository _mistralOcrRepository;
 
-  Stream<CreateChatCompletionStreamResponse> generate(
+  Stream<LottiInferenceChunk> generate(
     String prompt, {
     required String model,
     required double? temperature,
@@ -103,12 +104,12 @@ class CloudInferenceRepository {
     required String apiKey,
     String? systemMessage,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
+    LottiInferenceClient? overrideClient,
     AiConfigInferenceProvider? provider,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
-    ReasoningEffort? reasoningEffort,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) => _generate.generate(
     prompt,
@@ -127,7 +128,7 @@ class CloudInferenceRepository {
     impactCollector: impactCollector,
   );
 
-  Stream<CreateChatCompletionStreamResponse> generateWithImages(
+  Stream<LottiInferenceChunk> generateWithImages(
     String prompt, {
     required String baseUrl,
     required String apiKey,
@@ -135,10 +136,10 @@ class CloudInferenceRepository {
     required double? temperature,
     required List<String> images,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
+    LottiInferenceClient? overrideClient,
     AiConfigInferenceProvider? provider,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
     InferenceImpactCollector? impactCollector,
@@ -159,7 +160,7 @@ class CloudInferenceRepository {
     impactCollector: impactCollector,
   );
 
-  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
+  Stream<LottiInferenceChunk> generateWithAudio(
     String prompt, {
     required String model,
     required String audioBase64,
@@ -167,11 +168,10 @@ class CloudInferenceRepository {
     required String apiKey,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
-    List<ChatCompletionTool>? tools,
+    LottiInferenceClient? overrideClient,
+    List<LottiTool>? tools,
     bool stream = true,
-    ChatCompletionMessageInputAudioFormat audioFormat =
-        ChatCompletionMessageInputAudioFormat.mp3,
+    LottiAudioFormat audioFormat = LottiAudioFormat.mp3,
     List<String>? speechDictionaryTerms,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
@@ -186,7 +186,6 @@ class CloudInferenceRepository {
     maxCompletionTokens: maxCompletionTokens,
     overrideClient: overrideClient,
     tools: tools,
-    stream: stream,
     audioFormat: audioFormat,
     speechDictionaryTerms: speechDictionaryTerms,
     systemMessage: systemMessage,
@@ -194,19 +193,19 @@ class CloudInferenceRepository {
     impactCollector: impactCollector,
   );
 
-  Stream<CreateChatCompletionStreamResponse> generateWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double? temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     GeminiThinkingMode? geminiThinkingMode,
-    ReasoningEffort? reasoningEffort,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) => _generateMore.generateWithMessages(
     messages: messages,

@@ -7,9 +7,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Callback used by [DayAgentStrategy] for non-local tool execution.
@@ -118,17 +118,17 @@ class DayAgentStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     await _recordAssistantMessage();
 
     for (var index = 0; index < toolCalls.length; index += 1) {
       final call = toolCalls[index];
-      final toolName = call.function.name;
+      final toolName = call.name;
       late final Map<String, dynamic> args;
       try {
-        args = _parseToolArguments(call.function.arguments);
+        args = _parseToolArguments(call.arguments);
       } catch (e) {
         final errorMsg =
             'Error: invalid arguments format — expected a JSON object. '
@@ -212,7 +212,7 @@ class DayAgentStrategy extends ConversationStrategy {
   }
 
   Future<void> _recordCallsSkippedAfterTerminalArtifact({
-    required Iterable<ChatCompletionMessageToolCall> calls,
+    required Iterable<LottiToolCall> calls,
     required String terminalToolName,
     required ConversationManager manager,
   }) async {
@@ -220,9 +220,9 @@ class DayAgentStrategy extends ConversationStrategy {
         'Error: skipped because terminal tool "$terminalToolName" already '
         'persisted this wake artifact.';
     for (final call in calls) {
-      final toolName = call.function.name;
+      final toolName = call.name;
       try {
-        final args = _parseToolArguments(call.function.arguments);
+        final args = _parseToolArguments(call.arguments);
         await _recordActionMessage(toolName: toolName, args: args);
       } catch (_) {
         // The skipped rejection remains the primary result. A malformed call

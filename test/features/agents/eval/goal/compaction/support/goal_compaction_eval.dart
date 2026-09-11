@@ -22,11 +22,11 @@ import 'package:crypto/crypto.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../../../../tool/goal_compaction_eval_report.dart';
 import '../../support/goal_agent_eval_runner.dart';
@@ -172,7 +172,7 @@ class CachedLlmDigestWriter implements GoalCheckInDigestWriter {
 String assistantText(ConversationManager? manager) {
   if (manager == null) return '';
   return manager.messages
-      .map((m) => m.mapOrNull(assistant: (a) => a.content) ?? '')
+      .map((m) => m.assistantContent ?? '')
       .where((c) => c.isNotEmpty)
       .join('\n');
 }
@@ -579,13 +579,10 @@ class GoalCompactionEvalRunner {
         // the tool-set comparison meaningful.
         if (tool.name != GoalAgentToolNames.createGoalAd &&
             tool.name != GoalAgentToolNames.rerunGoalAd)
-          ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: tool.name,
-              description: tool.description,
-              parameters: tool.parameters,
-            ),
+          LottiTool(
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters,
           ),
     ];
 

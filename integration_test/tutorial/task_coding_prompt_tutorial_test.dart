@@ -38,13 +38,14 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_client.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../test/helpers/manual_screenshot_locale.dart';
 import '../../test/test_utils/material_ui_finders.dart';
@@ -64,7 +65,7 @@ class _FakeCloudInferenceRepository extends CloudInferenceRepository {
   final String _response;
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generate(
+  Stream<LottiInferenceChunk> generate(
     String prompt, {
     required String model,
     required double? temperature,
@@ -72,27 +73,23 @@ class _FakeCloudInferenceRepository extends CloudInferenceRepository {
     required String apiKey,
     String? systemMessage,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
+    LottiInferenceClient? overrideClient,
     AiConfigInferenceProvider? provider,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
-    ReasoningEffort? reasoningEffort,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
-    return Stream<CreateChatCompletionStreamResponse>.fromFuture(
-      Future<CreateChatCompletionStreamResponse>.delayed(
+    return Stream<LottiInferenceChunk>.fromFuture(
+      Future<LottiInferenceChunk>.delayed(
         const Duration(seconds: 3),
-        () => CreateChatCompletionStreamResponse(
+        () => LottiInferenceChunk(
           id: 'tutorial-prompt-response',
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              delta: ChatCompletionStreamResponseDelta(content: _response),
-              index: 0,
-            ),
-          ],
-          object: 'chat.completion.chunk',
           created: 0,
+          choices: [
+            LottiChunkChoice(index: 0, delta: LottiDelta(content: _response)),
+          ],
         ),
       ),
     );

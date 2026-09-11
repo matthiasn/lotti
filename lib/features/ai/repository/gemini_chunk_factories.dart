@@ -1,8 +1,8 @@
 import 'dart:developer' as developer;
 
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 // ---------------------------------------------------------------------------
 // OpenAI-compatible response-chunk factories shared by the chat, multiturn
@@ -10,49 +10,44 @@ import 'package:openai_dart/openai_dart.dart';
 // ---------------------------------------------------------------------------
 
 /// Creates a response chunk containing a thinking block.
-CreateChatCompletionStreamResponse createThinkingChunk({
+LottiInferenceChunk createThinkingChunk({
   required String id,
   required int created,
   required String model,
   required String thinking,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: id,
     created: created,
     model: model,
     choices: [
-      ChatCompletionStreamResponseChoice(
+      LottiChunkChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(
-          content: '<think>\n$thinking\n</think>\n',
-        ),
+        delta: LottiDelta(content: '<think>\n$thinking\n</think>\n'),
       ),
     ],
   );
 }
 
 /// Creates a response chunk containing visible text content.
-CreateChatCompletionStreamResponse createTextChunk({
+LottiInferenceChunk createTextChunk({
   required String id,
   required int created,
   required String model,
   required String text,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: id,
     created: created,
     model: model,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta(content: text),
-      ),
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: text)),
     ],
   );
 }
 
 /// Creates a response chunk containing a tool call.
-CreateChatCompletionStreamResponse createToolCallChunk({
+LottiInferenceChunk createToolCallChunk({
   required String id,
   required int created,
   required String model,
@@ -61,22 +56,20 @@ CreateChatCompletionStreamResponse createToolCallChunk({
   required String name,
   required String arguments,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: id,
     created: created,
     model: model,
     choices: [
-      ChatCompletionStreamResponseChoice(
+      LottiChunkChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(
+        delta: LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: index,
+            LottiToolCallChunk(
               id: toolCallId,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: name,
-                arguments: arguments,
-              ),
+              index: index,
+              name: name,
+              arguments: arguments,
             ),
           ],
         ),
@@ -86,7 +79,7 @@ CreateChatCompletionStreamResponse createToolCallChunk({
 }
 
 /// Creates a response chunk containing usage statistics.
-CreateChatCompletionStreamResponse createUsageChunk({
+LottiInferenceChunk createUsageChunk({
   required String id,
   required int created,
   required String model,
@@ -94,18 +87,16 @@ CreateChatCompletionStreamResponse createUsageChunk({
   int? completionTokens,
   int? thoughtsTokens,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: id,
     created: created,
     model: model,
     choices: const [],
-    usage: CompletionUsage(
+    usage: LottiUsage(
       promptTokens: promptTokens,
       completionTokens: completionTokens,
       totalTokens: (promptTokens ?? 0) + (completionTokens ?? 0),
-      completionTokensDetails: thoughtsTokens != null
-          ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
-          : null,
+      reasoningTokens: thoughtsTokens,
     ),
   );
 }

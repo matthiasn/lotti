@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 
 /// Utility class for AI feature error handling.
 class AiErrorUtils {
@@ -160,14 +161,12 @@ class AiErrorUtils {
       );
     }
 
-    // Check for OpenAI-style API errors by examining the error structure
-    // Note: We use string-based type checking here because the openai_dart package
-    // doesn't expose specific exception types that we can check with 'is'.
-    // This approach is brittle but necessary given the current library constraints.
-    if (error.runtimeType.toString().contains('OpenAI') ||
-        error.runtimeType.toString().contains('RequestException')) {
-      return _handleApiError(error);
-    }
+    // Client-library failures carry their classification in their type.
+    // `openAiErrorType` lives in the adapter so this file never names the
+    // library, and returns null for anything that did not come from it. The
+    // message-shaped checks below still run first, because providers Lotti
+    // reaches without the typed client put the status only in the text; this
+    // is the fallback when none of them match.
 
     // Check for ModelNotInstalledException first (most specific)
     if (error is ModelNotInstalledException) {
@@ -191,6 +190,14 @@ class AiErrorUtils {
           originalError: error,
         );
       }
+      return InferenceError(
+        message: extractDetailedErrorMessage(
+          error,
+          defaultMessage: 'The requested resource was not found.',
+        ),
+        type: InferenceErrorType.invalidRequest,
+        originalError: error,
+      );
     }
 
     // HTTP status code errors
@@ -237,10 +244,11 @@ class AiErrorUtils {
       );
     }
 
-    // Default to unknown error with extracted message
+    // Nothing in the message identified it, so trust the exception type when
+    // the client gave us one.
     return InferenceError(
       message: extractDetailedErrorMessage(error),
-      type: InferenceErrorType.unknown,
+      type: openAiErrorType(error as Object) ?? InferenceErrorType.unknown,
       originalError: error,
     );
   }
@@ -262,78 +270,5 @@ class AiErrorUtils {
     }
 
     return 'Unable to connect to the AI service. Please check your internet connection and try again.';
-  }
-
-  static InferenceError _handleApiError(dynamic error) {
-    // Try to extract status code from error
-    final errorString = error.toString();
-
-    // Handle 404 errors (model not found, etc.)
-    if (errorString.contains('404') || errorString.contains('Not Found')) {
-      final detailedMessage = extractDetailedErrorMessage(error);
-      // Check if this is a model not found error
-      if (detailedMessage.contains('not found') &&
-          detailedMessage.contains('model')) {
-        return InferenceError(
-          message: detailedMessage,
-          type: InferenceErrorType.invalidRequest,
-          originalError: error,
-        );
-      }
-      return InferenceError(
-        message: extractDetailedErrorMessage(
-          error,
-          defaultMessage: 'The requested resource was not found.',
-        ),
-        type: InferenceErrorType.invalidRequest,
-        originalError: error,
-      );
-    }
-
-    if (errorString.contains('401') || errorString.contains('Unauthorized')) {
-      return InferenceError(
-        message: 'Invalid API key. Please check your API key configuration.',
-        type: InferenceErrorType.authentication,
-        originalError: error,
-      );
-    }
-
-    if (errorString.contains('429') || errorString.contains('Rate limit')) {
-      return InferenceError(
-        message:
-            'Rate limit exceeded. Please wait before making more requests.',
-        type: InferenceErrorType.rateLimit,
-        originalError: error,
-      );
-    }
-
-    if (errorString.contains('400') || errorString.contains('Bad Request')) {
-      return InferenceError(
-        message: extractDetailedErrorMessage(error),
-        type: InferenceErrorType.invalidRequest,
-        originalError: error,
-      );
-    }
-
-    if (errorString.contains('500') ||
-        errorString.contains('502') ||
-        errorString.contains('503') ||
-        errorString.contains('504') ||
-        errorString.contains('Internal Server Error') ||
-        errorString.contains('Bad Gateway') ||
-        errorString.contains('Service Unavailable')) {
-      return InferenceError(
-        message:
-            'The AI service is experiencing issues. Please try again later.',
-        type: InferenceErrorType.serverError,
-        originalError: error,
-      );
-    }
-
-    return InferenceError(
-      message: extractDetailedErrorMessage(error),
-      type: InferenceErrorType.unknown,
-      originalError: error,
-    );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -8,7 +9,6 @@ import 'package:lotti/features/onboarding/services/onboarding_task_structuring_s
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -36,18 +36,13 @@ void main() {
   /// assert the resolved model id, temperature, and trimmed transcript.
   Invocation? lastGenerate;
 
-  CreateChatCompletionStreamResponse chunk(String content) =>
-      CreateChatCompletionStreamResponse(
-        id: 'r',
-        object: 'chat.completion.chunk',
-        created: 0,
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            delta: ChatCompletionStreamResponseDelta(content: content),
-            index: 0,
-          ),
-        ],
-      );
+  LottiInferenceChunk chunk(String content) => LottiInferenceChunk(
+    id: 'r',
+    created: 0,
+    choices: [
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+    ],
+  );
 
   void stubCategory({String? defaultProfileId}) {
     when(() => categoryRepo.getCategoryById(categoryId)).thenAnswer(
@@ -117,7 +112,7 @@ void main() {
         geminiThinkingMode: any(named: 'geminiThinkingMode'),
       ),
     ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.error(error),
+      (_) => Stream<LottiInferenceChunk>.error(error),
     );
   }
 
@@ -293,19 +288,16 @@ void main() {
         ).thenAnswer(
           (_) => Stream.fromIterable([
             chunk('{"title":"Plan launch","items":[]}'),
-            const CreateChatCompletionStreamResponse(
+            const LottiInferenceChunk(
               id: 'usage',
-              object: 'chat.completion.chunk',
               created: 0,
               choices: [],
-              usage: CompletionUsage(
+              usage: LottiUsage(
                 promptTokens: 12,
                 completionTokens: 8,
                 totalTokens: 20,
-                promptTokensDetails: PromptTokensDetails(cachedTokens: 3),
-                completionTokensDetails: CompletionTokensDetails(
-                  reasoningTokens: 2,
-                ),
+                cachedInputTokens: 3,
+                reasoningTokens: 2,
               ),
             ),
           ]),

@@ -596,16 +596,14 @@ void main() {
         );
         expect(
           [
-            for (final tool in conversationRepository.lastTools)
-              tool.function.name,
+            for (final tool in conversationRepository.lastTools) tool.name,
           ],
           isNot(contains(DayAgentToolNames.issueDayDirective)),
           reason: 'A per-day agent must not even see the tool.',
         );
         expect(
           [
-            for (final tool in conversationRepository.lastTools)
-              tool.function.name,
+            for (final tool in conversationRepository.lastTools) tool.name,
           ],
           contains(DayAgentToolNames.raiseDayStatus),
           reason: 'Every day owner may raise status upward.',
@@ -615,8 +613,7 @@ void main() {
           workflow(directiveService: directiveService),
         );
         expect([
-          for (final tool in conversationRepository.lastTools)
-            tool.function.name,
+          for (final tool in conversationRepository.lastTools) tool.name,
         ], contains(DayAgentToolNames.issueDayDirective));
         expect(
           conversationRepository.lastSystemMessage,

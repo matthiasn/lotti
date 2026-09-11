@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Utilities for building Gemini HTTP requests and decoding stream framing.
 ///
@@ -124,8 +124,8 @@ class GeminiUtils {
   /// - Always includes the `prompt` as a single user message.
   /// - Adds `systemInstruction` when provided.
   /// - Serializes [GeminiThinkingConfig] into `generationConfig.thinkingConfig`.
-  /// - Maps OpenAI-style [ChatCompletionTool] to Gemini `functionDeclarations`.
-  /// - Maps OpenAI-style forced [ChatCompletionToolChoiceOption] values to
+  /// - Maps OpenAI-style [LottiTool] to Gemini `functionDeclarations`.
+  /// - Maps OpenAI-style forced [LottiToolChoice] values to
   ///   Gemini's native `toolConfig.functionCallingConfig`.
   static Map<String, dynamic> buildRequestBody({
     required String prompt,
@@ -134,8 +134,8 @@ class GeminiUtils {
     String? systemMessage,
     String? modelId,
     int? maxTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) {
     final contents = <Map<String, dynamic>>[
       {
@@ -195,22 +195,22 @@ class GeminiUtils {
   /// - [tools]: Optional function declarations
   /// - [toolChoice]: Optional forced/disabled/automatic function-calling mode
   static Map<String, dynamic> buildMultiTurnRequestBody({
-    required List<ChatCompletionMessage> messages,
+    required List<LottiMessage> messages,
     required double temperature,
     required GeminiThinkingConfig thinkingConfig,
     Map<String, String>? thoughtSignatures,
     String? systemMessage,
     String? modelId,
     int? maxTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) {
     // Build mapping of toolCallId -> functionName from assistant messages
     // This is needed because tool responses only have the ID, not the name
     final toolCallIdToName = <String, String>{
-      for (final msg in messages.whereType<ChatCompletionAssistantMessage>())
+      for (final msg in messages.whereType<LottiAssistantMessage>())
         if (msg.toolCalls != null)
-          for (final tc in msg.toolCalls!) tc.id: tc.function.name,
+          for (final tc in msg.toolCalls!) tc.id: tc.name,
     };
 
     final contents = <Map<String, dynamic>>[];
@@ -333,172 +333,146 @@ class GeminiUtils {
   /// [toolCallIdToName] maps tool call IDs to function names, used for
   /// converting tool response messages (which only have ID, not name).
   static Map<String, dynamic>? _convertMessageToGeminiContent(
-    ChatCompletionMessage message, {
+    LottiMessage message, {
     Map<String, String>? thoughtSignatures,
     Map<String, String>? toolCallIdToName,
   }) {
-    return message.map(
-      system: (_) => null, // System messages handled separately
-      user: (user) {
-        final content = user.content;
-        return {
-          'role': 'user',
-          'parts': [
-            {
-              'text': content.map(
-                string: (s) => s.value,
-                parts: (p) {
-                  // Extract text from content parts using toJson()
-                  final textParts = <String>[];
-                  for (final part in p.value) {
-                    final partMap = part.toJson();
-                    if (partMap['type'] == 'text') {
-                      final text = partMap['text'];
-                      if (text is String && text.isNotEmpty) {
-                        textParts.add(text);
-                      }
-                    }
-                    // For images, audio, files - add placeholder
-                    else if (partMap['type'] == 'image_url') {
-                      textParts.add('[image]');
-                    } else if (partMap['type'] == 'input_audio') {
-                      textParts.add('[audio]');
-                    } else if (partMap['type'] == 'file') {
-                      textParts.add('[file]');
-                    }
-                  }
-                  return textParts.join();
-                },
-              ),
+    return switch (message) {
+      // System messages are sent as `systemInstruction`, and Gemini has no
+      // developer role at all.
+      LottiSystemMessage() || LottiDeveloperMessage() => null,
+      LottiUserMessage(:final content) => {
+        'role': 'user',
+        'parts': [
+          {
+            'text': switch (content) {
+              LottiUserText(:final text) => text,
+              // Gemini's native API takes text only on this path; non-text
+              // parts are reduced to a placeholder so the turn still reads
+              // coherently.
+              LottiUserParts(:final parts) =>
+                parts
+                    .map(
+                      (part) => switch (part) {
+                        LottiTextPart(:final text) => text,
+                        LottiImagePart() => '[image]',
+                        LottiAudioPart() => '[audio]',
+                      },
+                    )
+                    .join(),
             },
-          ],
-        };
+          },
+        ],
       },
-      assistant: (assistant) {
-        final parts = <Map<String, dynamic>>[];
-
-        // Add text content if present
-        if (assistant.content != null && assistant.content!.isNotEmpty) {
-          parts.add({'text': assistant.content});
-        }
-
-        // Add function calls with signatures if present
-        if (assistant.toolCalls != null) {
-          for (final toolCall in assistant.toolCalls!) {
-            // Defensive JSON parsing for tool call arguments
-            dynamic args;
-            try {
-              args = jsonDecode(toolCall.function.arguments);
-            } on FormatException catch (e) {
-              developer.log(
-                'Failed to parse tool call arguments as JSON: ${e.message}. '
-                'Using empty object. Raw: ${toolCall.function.arguments}',
-                name: 'GeminiUtils',
-              );
-              args = <String, dynamic>{};
-            }
-
-            // Build function call part - signature is at part level as sibling
-            final functionCallPart = <String, dynamic>{
-              'functionCall': {'name': toolCall.function.name, 'args': args},
-            };
-
-            // Include thought signature at part level (sibling of functionCall)
-            // Per Gemini docs, signature must NOT be nested inside functionCall
-            final signature = thoughtSignatures?[toolCall.id];
-            if (signature != null) {
-              functionCallPart['thoughtSignature'] = signature;
-            }
-
-            parts.add(functionCallPart);
-          }
-        }
-
-        if (parts.isEmpty) return null;
-
-        return {'role': 'model', 'parts': parts};
-      },
-      tool: (tool) {
-        // Look up the function name from the mapping, fall back to toolCallId
-        // if not found (shouldn't happen in well-formed conversations)
-        final functionName =
-            toolCallIdToName?[tool.toolCallId] ?? tool.toolCallId;
-        return {
-          'role': 'function',
-          'parts': [
-            {
-              'functionResponse': {
-                'name': functionName,
-                'response': {'result': tool.content},
-              },
+      LottiAssistantMessage(:final content, :final toolCalls) =>
+        _assistantContentToGemini(
+          content: content,
+          toolCalls: toolCalls,
+          thoughtSignatures: thoughtSignatures,
+        ),
+      LottiToolMessage(:final toolCallId, :final content) => {
+        'role': 'function',
+        'parts': [
+          {
+            'functionResponse': {
+              // Fall back to the id when the name is unknown, which should
+              // not happen in a well-formed conversation.
+              'name': toolCallIdToName?[toolCallId] ?? toolCallId,
+              'response': {'result': content},
             },
-          ],
-        };
+          },
+        ],
       },
-      function: (func) {
-        // Legacy function message format - convert to tool format
-        return {
-          'role': 'function',
-          'parts': [
-            {
-              'functionResponse': {
-                'name': func.name,
-                'response': {'result': func.content ?? ''},
-              },
-            },
-          ],
-        };
-      },
-      developer: (_) => null, // Not supported by Gemini
-    );
+    };
   }
 
-  /// Converts OpenAI-style [ChatCompletionTool] objects to Gemini
+  /// Builds the Gemini `model` turn for an assistant message, pairing each
+  /// function call with its thought signature.
+  ///
+  /// Returns null when the turn carried neither text nor tool calls, so the
+  /// caller drops it rather than sending an empty part list.
+  static Map<String, dynamic>? _assistantContentToGemini({
+    required String? content,
+    required List<LottiToolCall>? toolCalls,
+    required Map<String, String>? thoughtSignatures,
+  }) {
+    final parts = <Map<String, dynamic>>[];
+
+    if (content != null && content.isNotEmpty) {
+      parts.add({'text': content});
+    }
+
+    for (final toolCall in toolCalls ?? const <LottiToolCall>[]) {
+      // Defensive JSON parsing for tool call arguments
+      dynamic args;
+      try {
+        args = jsonDecode(toolCall.arguments);
+      } on FormatException catch (e) {
+        developer.log(
+          'Failed to parse tool call arguments as JSON: ${e.message}. '
+          'Using empty object. Raw: ${toolCall.arguments}',
+          name: 'GeminiUtils',
+        );
+        args = <String, dynamic>{};
+      }
+
+      // Signature sits at part level as a sibling of functionCall; per the
+      // Gemini docs it must NOT be nested inside it.
+      final functionCallPart = <String, dynamic>{
+        'functionCall': {'name': toolCall.name, 'args': args},
+      };
+      final signature = thoughtSignatures?[toolCall.id];
+      if (signature != null) {
+        functionCallPart['thoughtSignature'] = signature;
+      }
+      parts.add(functionCallPart);
+    }
+
+    if (parts.isEmpty) return null;
+
+    return {'role': 'model', 'parts': parts};
+  }
+
+  /// Converts OpenAI-style [LottiTool] objects to Gemini
   /// `functionDeclarations`, stripping JSON Schema keywords that Gemini's
   /// native API does not support (e.g. `additionalProperties`).
   static List<Map<String, dynamic>> _buildFunctionDeclarations(
-    List<ChatCompletionTool> tools,
+    List<LottiTool> tools,
   ) {
     return tools
         .map(
           (t) => {
-            'name': t.function.name,
-            if (t.function.description != null)
-              'description': t.function.description,
-            if (t.function.parameters != null)
-              'parameters': _stripAdditionalProperties(
-                t.function.parameters!,
-              ),
+            'name': t.name,
+            if (t.description != null) 'description': t.description,
+            if (t.parameters != null)
+              'parameters': _stripAdditionalProperties(t.parameters!),
           },
         )
         .toList();
   }
 
   static Map<String, dynamic>? _buildToolConfig(
-    ChatCompletionToolChoiceOption? toolChoice,
+    LottiToolChoice? toolChoice,
   ) {
     if (toolChoice == null) return null;
 
-    return toolChoice.map(
-      mode: (choice) {
-        final mode = switch (choice.value) {
-          ChatCompletionToolChoiceMode.none => 'NONE',
-          ChatCompletionToolChoiceMode.auto => 'AUTO',
-          ChatCompletionToolChoiceMode.required => 'ANY',
-        };
-        return {
-          'functionCallingConfig': {'mode': mode},
-        };
+    return switch (toolChoice) {
+      LottiToolChoiceNone() => const {
+        'functionCallingConfig': {'mode': 'NONE'},
       },
-      tool: (choice) {
-        return {
-          'functionCallingConfig': {
-            'mode': 'ANY',
-            'allowedFunctionNames': [choice.value.function.name],
-          },
-        };
+      LottiToolChoiceAuto() => const {
+        'functionCallingConfig': {'mode': 'AUTO'},
       },
-    );
+      LottiToolChoiceRequired() => const {
+        'functionCallingConfig': {'mode': 'ANY'},
+      },
+      LottiToolChoiceSpecific(:final name) => {
+        'functionCallingConfig': {
+          'mode': 'ANY',
+          'allowedFunctionNames': [name],
+        },
+      },
+    };
   }
 
   /// Recursively strips `additionalProperties` from a JSON Schema map.

@@ -9,23 +9,24 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 typedef MeliousChatCompletionStreamFactory =
-    Stream<CreateChatCompletionStreamResponse> Function({
+    Stream<LottiInferenceChunk> Function({
       required String baseUrl,
       required String apiKey,
-      required CreateChatCompletionRequest request,
+      required LottiInferenceRequest request,
     });
 
 /// Melious.ai inference repository.
@@ -82,9 +83,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// that do not need one would silently change their thinking budget.
   ///
   /// The two models differ on `none` — the 27B accepts it, Max rejects it —
-  /// but `ReasoningEffort` in openai_dart 0.6.2 is only
+  /// but [LottiReasoningEffort] models only the four levels Lotti offers,
   /// `{minimal, low, medium, high}`, so no caller can express `none` and the
-  /// distinction is unreachable. Revisit if that enum ever gains the value.
+  /// distinction is unreachable. Adding it means adding the value there and
+  /// mapping it in `openai_compat_adapter.dart`.
   static const modelsRequiringReasoningEffort = <String>{
     meliousQwen3827BModelId,
     meliousQwen38MaxModelId,
@@ -93,13 +95,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// Used when a caller supplied no effort for a model that demands one.
   /// Matches [CloudInferenceRequestHelpers.resolveGeminiThinkingConfig], which
   /// also treats `low` as the app-wide default thinking level.
-  static const ReasoningEffort _defaultRequiredReasoningEffort =
-      ReasoningEffort.low;
+  static const LottiReasoningEffort _defaultRequiredReasoningEffort =
+      LottiReasoningEffort.low;
 
   /// The strongest effort the models in [modelsRequiringReasoningEffort]
   /// accept; `high` is rejected as malformed.
-  static const ReasoningEffort _maxRequiredReasoningEffort =
-      ReasoningEffort.medium;
+  static const LottiReasoningEffort _maxRequiredReasoningEffort =
+      LottiReasoningEffort.medium;
 
   /// Resolves the `reasoning_effort` to send for [model].
   ///
@@ -108,15 +110,17 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// [_defaultRequiredReasoningEffort] when the caller asked for nothing, and
   /// clamps `high` down to [_maxRequiredReasoningEffort] rather than letting
   /// the request fail. Idempotent, so applying it twice on one path is safe.
-  static ReasoningEffort? resolveReasoningEffort(
+  static LottiReasoningEffort? resolveReasoningEffort(
     String model,
-    ReasoningEffort? requested,
+    LottiReasoningEffort? requested,
   ) {
     if (!modelsRequiringReasoningEffort.contains(model.trim())) {
       return requested;
     }
     if (requested == null) return _defaultRequiredReasoningEffort;
-    if (requested == ReasoningEffort.high) return _maxRequiredReasoningEffort;
+    if (requested == LottiReasoningEffort.high) {
+      return _maxRequiredReasoningEffort;
+    }
     return requested;
   }
 
@@ -316,7 +320,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// the buffered reply is re-emitted as a single synthetic stream chunk so
   /// existing consumers are unchanged. Without a collector the original
   /// streaming path is used verbatim.
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required String baseUrl,
@@ -324,17 +328,14 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     String? systemMessage,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     final messages = [
-      if (systemMessage != null)
-        ChatCompletionMessage.system(content: systemMessage),
-      ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.string(prompt),
-      ),
+      if (systemMessage != null) LottiMessage.system(systemMessage),
+      LottiMessage.userText(prompt),
     ];
     if (impactCollector != null) {
       return _nonStreamingChat(
@@ -369,16 +370,16 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
   /// Generates with full conversation history through Melious' OpenAI-compatible
   /// streaming endpoint.
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required String baseUrl,
     required String apiKey,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     if (impactCollector != null) {
@@ -414,7 +415,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
 
   /// Generates with text plus image inputs through Melious' OpenAI-compatible
   /// vision chat endpoint.
-  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+  Stream<LottiInferenceChunk> generateWithImages({
     required String prompt,
     required String model,
     required String baseUrl,
@@ -423,25 +424,18 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     String? systemMessage,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     InferenceImpactCollector? impactCollector,
   }) {
     final messages = [
-      if (systemMessage != null)
-        ChatCompletionMessage.system(content: systemMessage),
-      ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: prompt),
-          ...images.map(
-            (image) => ChatCompletionMessageContentPart.image(
-              imageUrl: ChatCompletionMessageImageUrl(
-                url: 'data:image/jpeg;base64,$image',
-              ),
-            ),
-          ),
-        ]),
-      ),
+      if (systemMessage != null) LottiMessage.system(systemMessage),
+      LottiMessage.userParts([
+        LottiContentPart.text(prompt),
+        ...images.map(
+          (image) => LottiContentPart.image('data:image/jpeg;base64,$image'),
+        ),
+      ]),
     ];
     if (impactCollector != null) {
       return _nonStreamingChat(
@@ -471,14 +465,16 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     ).asBroadcastStream();
   }
 
-  static Stream<CreateChatCompletionStreamResponse>
-  _createChatCompletionStream({
+  static Stream<LottiInferenceChunk> _createChatCompletionStream({
     required String baseUrl,
     required String apiKey,
-    required CreateChatCompletionRequest request,
+    required LottiInferenceRequest request,
   }) {
-    final client = OpenAIClient(baseUrl: baseUrl, apiKey: apiKey);
-    return client.createChatCompletionStream(request: request);
+    final client = OpenAiCompatInferenceClient(
+      baseUrl: baseUrl,
+      apiKey: apiKey,
+    );
+    return client.createChatCompletionStream(request);
   }
 
   /// Non-streaming Melious chat: one raw POST that returns the full body
@@ -491,17 +487,17 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// when the call completes (or [_chatCompletionTimeout] trips). Melious only
   /// reports impact/cost on non-streaming responses, and streaming display is
   /// not needed for the measured call sites.
-  Stream<CreateChatCompletionStreamResponse> _nonStreamingChat({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> _nonStreamingChat({
+    required List<LottiMessage> messages,
     required String model,
     required String baseUrl,
     required String apiKey,
     required InferenceImpactCollector impactCollector,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
   }) async* {
     final result = await _postChatCompletion(
       baseUrl: baseUrl,
@@ -514,7 +510,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         tools: tools,
         toolChoice: toolChoice,
         reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
-        stream: false,
       ),
     );
     if (result.impact.hasData) {
@@ -522,18 +517,18 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
 
     final id = 'melious-chat-${const Uuid().v4()}';
-    yield CreateChatCompletionStreamResponse(
+    yield LottiInferenceChunk(
       id: id,
       created: 0,
       model: model,
       choices: [
-        ChatCompletionStreamResponseChoice(
+        LottiChunkChoice(
           index: 0,
-          finishReason: result.finishReason,
-          delta: ChatCompletionStreamResponseDelta(
+          delta: LottiDelta(
             content: result.content.isEmpty ? null : result.content,
             toolCalls: result.toolCalls.isEmpty ? null : result.toolCalls,
           ),
+          finishReason: result.finishReason,
         ),
       ],
     );
@@ -541,7 +536,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     // frame that consumers read token counts from.
     final usage = result.usage;
     if (usage != null) {
-      yield CreateChatCompletionStreamResponse(
+      yield LottiInferenceChunk(
         id: id,
         created: 0,
         model: model,
@@ -554,7 +549,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   Future<_MeliousChatResult> _postChatCompletion({
     required String baseUrl,
     required String apiKey,
-    required CreateChatCompletionRequest request,
+    required LottiInferenceRequest request,
     Duration timeout = _chatCompletionTimeout,
   }) async {
     final uri = _buildEndpointUri(baseUrl, 'chat/completions');
@@ -567,7 +562,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
               'Accept': 'application/json',
               'Authorization': 'Bearer ${apiKey.trim()}',
             },
-            body: jsonEncode(request.toJson()),
+            body: jsonEncode(openAiRequestJson(request, stream: false)),
           )
           .timeout(timeout);
 
@@ -627,11 +622,11 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     }
   }
 
-  static List<ChatCompletionStreamMessageToolCallChunk> _parseToolCalls(
+  static List<LottiToolCallChunk> _parseToolCalls(
     Object? raw,
   ) {
     if (raw is! List) return const [];
-    final out = <ChatCompletionStreamMessageToolCallChunk>[];
+    final out = <LottiToolCallChunk>[];
     for (final (index, item) in raw.indexed) {
       if (item is! Map) continue;
       final map = item.cast<String, dynamic>();
@@ -642,23 +637,21 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       final name = fn['name'];
       final arguments = fn['arguments'];
       out.add(
-        ChatCompletionStreamMessageToolCallChunk(
-          index: index,
+        LottiToolCallChunk(
           id: id is String ? id : 'tool_$index',
-          function: ChatCompletionStreamMessageFunctionCall(
-            name: name is String ? name : null,
-            arguments: arguments is String ? arguments : '',
-          ),
+          index: index,
+          name: name is String ? name : null,
+          arguments: arguments is String ? arguments : '',
         ),
       );
     }
     return out;
   }
 
-  static ChatCompletionFinishReason? _parseFinishReason(Object? raw) {
+  static LottiFinishReason? _parseFinishReason(Object? raw) {
     if (raw is! String) return null;
     final normalized = raw.replaceAll('_', '').toLowerCase();
-    for (final reason in ChatCompletionFinishReason.values) {
+    for (final reason in LottiFinishReason.values) {
       if (reason.name.toLowerCase() == normalized) return reason;
     }
     return null;
@@ -685,7 +678,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// is a single buffered POST, so it always carries the impact fields a
   /// streamed chat response would omit. Fields absent from the response leave
   /// the collector untouched.
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<LottiInferenceChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -724,7 +717,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     );
   }
 
-  Stream<CreateChatCompletionStreamResponse> _transcribeAudioUploads({
+  Stream<LottiInferenceChunk> _transcribeAudioUploads({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -739,13 +732,13 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     final abortTrigger = Completer<void>();
     final incurredImpact = impactCollector ?? InferenceImpactCollector();
     var completedSegments = 0;
-    CompletionUsage? usage;
+    LottiUsage? usage;
     final timedSegments = <AudioTimedSegment>[];
-    late final StreamController<CreateChatCompletionStreamResponse> controller;
+    late final StreamController<LottiInferenceChunk> controller;
     Future<void> run() async {
       try {
         final bytes = base64Decode(audioBase64);
-        Future<CreateChatCompletionStreamResponse> upload(
+        Future<LottiInferenceChunk> upload(
           Uint8List payload,
           String filename,
         ) async {
@@ -807,7 +800,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           }
         } else {
           final texts = <String>[];
-          CreateChatCompletionStreamResponse? last;
+          LottiInferenceChunk? last;
           await for (final file in _audioSegmentEncoder(bytes)) {
             if (canceled) break;
             final payload = await _temporaryFileReader(file);
@@ -829,11 +822,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             controller.add(
               last.copyWith(
                 choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: texts.join('\n\n'),
-                    ),
+                  LottiChunkChoice(
                     index: 0,
+                    delta: LottiDelta(content: texts.join('\n\n')),
                   ),
                 ],
                 usage: usage,
@@ -870,7 +861,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       }
     }
 
-    controller = StreamController<CreateChatCompletionStreamResponse>(
+    controller = StreamController<LottiInferenceChunk>(
       onListen: () => unawaited(run()),
       onCancel: () {
         canceled = true;
@@ -880,7 +871,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     return controller.stream;
   }
 
-  Stream<CreateChatCompletionStreamResponse> _transcribeAudioBytes({
+  Stream<LottiInferenceChunk> _transcribeAudioBytes({
     required String model,
     required Uint8List audioBytes,
     required String filename,
@@ -976,7 +967,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// a much smaller temporary MP3 for transmission. Conversion failures are
   /// surfaced rather than falling back to a request that cannot apply context
   /// during recognition. The MP3 is deleted after every request outcome.
-  Stream<CreateChatCompletionStreamResponse> transcribeChatAudio({
+  Stream<LottiInferenceChunk> transcribeChatAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -1540,9 +1531,9 @@ class _MeliousChatResult {
   });
 
   final String content;
-  final ChatCompletionFinishReason? finishReason;
-  final List<ChatCompletionStreamMessageToolCallChunk> toolCalls;
-  final CompletionUsage? usage;
+  final LottiFinishReason? finishReason;
+  final List<LottiToolCallChunk> toolCalls;
+  final LottiUsage? usage;
   final MeliousCallImpact impact;
 }
 

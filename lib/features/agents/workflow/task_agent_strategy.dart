@@ -17,17 +17,17 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/agents/model/observation_record.dart'
     show ObservationRecord;
 
-part 'task_agent_tool_handlers.dart';
 part 'task_agent_change_handlers.dart';
+part 'task_agent_tool_handlers.dart';
 
 /// Callback that resolves a journal entity's category ID from its entity ID.
 typedef ResolveCategoryId = Future<String?> Function(String entityId);
@@ -217,7 +217,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   final TaskAgentStagedToolExposure? stagedToolExposure;
 
   @override
-  List<ChatCompletionTool>? toolsForTurn({
+  List<LottiTool>? toolsForTurn({
     required int turnIndex,
     required ConversationManager manager,
   }) => stagedToolExposure?.toolsForTurn(turnIndex);
@@ -241,7 +241,7 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     // Persist the assistant message (the one that requested tool calls).
@@ -255,13 +255,13 @@ class TaskAgentStrategy extends ConversationStrategy {
     final stagedBeforeTurn = changeSetBuilder?.proposedFingerprints ?? const {};
 
     for (final call in toolCalls) {
-      final rawToolName = call.function.name;
+      final rawToolName = call.name;
 
       Map<String, dynamic> parsedArgs;
       try {
-        parsedArgs = parseToolArguments(call.function.arguments);
+        parsedArgs = parseToolArguments(call.arguments);
       } catch (e) {
-        final rawBytes = utf8.encode(call.function.arguments).length;
+        final rawBytes = utf8.encode(call.arguments).length;
         developer.log(
           'Failed to parse tool call arguments for $rawToolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',

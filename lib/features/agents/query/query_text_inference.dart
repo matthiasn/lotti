@@ -3,12 +3,12 @@ import 'dart:convert';
 
 import 'package:lotti/features/agents/ui/chat/thinking_parser.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 class QueryCancelled implements Exception {
   const QueryCancelled();
@@ -103,7 +103,7 @@ class QueryTextInference {
       final provider = profile.thinkingProvider;
       final model = profile.thinkingModel;
       final impact = InferenceImpactCollector();
-      Stream<CreateChatCompletionStreamResponse> raw() => cloud.generate(
+      Stream<LottiInferenceChunk> raw() => cloud.generate(
         prompt,
         model: profile.thinkingModelId,
         temperature: 0.2,
@@ -134,10 +134,8 @@ class QueryTextInference {
                     : AiCapturedUsage(
                         inputTokens: usage.promptTokens,
                         outputTokens: usage.completionTokens,
-                        cachedInputTokens:
-                            usage.promptTokensDetails?.cachedTokens,
-                        thoughtsTokens:
-                            usage.completionTokensDetails?.reasoningTokens,
+                        cachedInputTokens: usage.cachedInputTokens,
+                        thoughtsTokens: usage.reasoningTokens,
                         totalTokens: usage.totalTokens,
                       );
               },

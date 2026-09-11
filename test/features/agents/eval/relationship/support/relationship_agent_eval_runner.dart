@@ -22,11 +22,11 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../ai/eval/support/eval_text_matchers.dart';
 import '../../support/eval_cost_table.dart';
@@ -303,13 +303,13 @@ class RelationshipAgentEvalStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     for (final call in toolCalls) {
       final recorded = RelationshipAgentEvalToolCall(
-        name: call.function.name,
-        argumentsJson: call.function.arguments,
+        name: call.name,
+        argumentsJson: call.arguments,
         exchangeIndex: _exchangeIndex,
       );
       _toolCalls.add(recorded);
@@ -794,13 +794,10 @@ class RelationshipAgentInferenceEvalRunner {
           // tools. The eval measures the surface the app actually presents.
           tools: [
             for (final tool in relationshipAgentTools)
-              ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: tool.name,
-                  description: tool.description,
-                  parameters: tool.parameters,
-                ),
+              LottiTool(
+                name: tool.name,
+                description: tool.description,
+                parameters: tool.parameters,
               ),
           ],
           temperature: temperature,
@@ -861,7 +858,7 @@ class RelationshipAgentInferenceEvalRunner {
     if (manager == null) return '';
     return manager.messages
         .map(
-          (message) => message.mapOrNull(assistant: (m) => m.content) ?? '',
+          (message) => message.assistantContent ?? '',
         )
         .where((content) => content.isNotEmpty)
         .join('\n');

@@ -24,13 +24,13 @@ import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -2072,28 +2072,22 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  LottiToolCall(
                     id: 'call-def-1',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.createTask,
-                      arguments: jsonEncode({
-                        'title': 'Add monitoring',
-                        'description': 'Set up alerts',
-                        'priority': 'HIGH',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.createTask,
+                    arguments: jsonEncode({
+                      'title': 'Add monitoring',
+                      'description': 'Set up alerts',
+                      'priority': 'HIGH',
+                    }),
                   ),
-                  ChatCompletionMessageToolCall(
+                  LottiToolCall(
                     id: 'call-def-2',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectStatus,
-                      arguments: jsonEncode({
-                        'status': 'at_risk',
-                        'reason': 'Dependency delayed',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.updateProjectStatus,
+                    arguments: jsonEncode({
+                      'status': 'at_risk',
+                      'reason': 'Dependency delayed',
+                    }),
                   ),
                 ];
 
@@ -2329,26 +2323,23 @@ void main() {
               }) async {
                 if (strategy != null) {
                   final toolCalls = [
-                    ChatCompletionMessageToolCall(
+                    LottiToolCall(
                       id: 'call-rec-1',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: ProjectAgentToolNames.recommendNextSteps,
-                        arguments: jsonEncode({
-                          'steps': [
-                            {
-                              'title': 'Prioritize API',
-                              'rationale': 'Scaling issues',
-                              'priority': 'high',
-                            },
-                            {
-                              'title': 'Write tests',
-                              'rationale': 'Coverage low',
-                              'priority': 'medium',
-                            },
-                          ],
-                        }),
-                      ),
+                      name: ProjectAgentToolNames.recommendNextSteps,
+                      arguments: jsonEncode({
+                        'steps': [
+                          {
+                            'title': 'Prioritize API',
+                            'rationale': 'Scaling issues',
+                            'priority': 'high',
+                          },
+                          {
+                            'title': 'Write tests',
+                            'rationale': 'Coverage low',
+                            'priority': 'medium',
+                          },
+                        ],
+                      }),
                     ),
                   ];
 
@@ -2457,20 +2448,17 @@ void main() {
               }) async {
                 if (strategy != null) {
                   final toolCalls = [
-                    ChatCompletionMessageToolCall(
+                    LottiToolCall(
                       id: 'call-rpt',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: ProjectAgentToolNames.updateProjectReport,
-                        arguments: jsonEncode({
-                          'markdown': '# Status Report\nAll good.',
-                          'tldr': 'On track.',
-                          'one_liner': 'Steady progress; API v2 next.',
-                          'health_band': 'on_track',
-                          'health_rationale': 'Recent work is landing well.',
-                          'health_confidence': 0.88,
-                        }),
-                      ),
+                      name: ProjectAgentToolNames.updateProjectReport,
+                      arguments: jsonEncode({
+                        'markdown': '# Status Report\nAll good.',
+                        'tldr': 'On track.',
+                        'one_liner': 'Steady progress; API v2 next.',
+                        'health_band': 'on_track',
+                        'health_rationale': 'Recent work is landing well.',
+                        'health_confidence': 0.88,
+                      }),
                     ),
                   ];
 
@@ -2557,15 +2545,12 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  LottiToolCall(
                     id: 'call-obs',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.recordObservations,
-                      arguments: jsonEncode({
-                        'observations': ['Team morale is high'],
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.recordObservations,
+                    arguments: jsonEncode({
+                      'observations': ['Team morale is high'],
+                    }),
                   ),
                 ];
 
@@ -2613,7 +2598,7 @@ void main() {
 
       test('persists final assistant response as thought', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.assistant(
+          const LottiMessage.assistant(
             content: 'Here is my analysis of the project.',
           ),
         ]);
@@ -2789,19 +2774,16 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  LottiToolCall(
                     id: 'call-rpt2',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectReport,
-                      arguments: jsonEncode({
-                        'markdown': 'Updated report.',
-                        'tldr': 'Still waiting on confirmation.',
-                        'health_band': 'watch',
-                        'health_rationale':
-                            'A dependency still needs confirmation.',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.updateProjectReport,
+                    arguments: jsonEncode({
+                      'markdown': 'Updated report.',
+                      'tldr': 'Still waiting on confirmation.',
+                      'health_band': 'watch',
+                      'health_rationale':
+                          'A dependency still needs confirmation.',
+                    }),
                   ),
                 ];
                 final manager = mockConversationRepository.getConversation(
@@ -3242,19 +3224,16 @@ void main() {
             }) async {
               if (strategy != null) {
                 final toolCalls = [
-                  ChatCompletionMessageToolCall(
+                  LottiToolCall(
                     id: 'call-status',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: ProjectAgentToolNames.updateProjectStatus,
-                      // Not `on_track`: that canonicalizes to the status the
-                      // fixture project already has, which the wake now
-                      // refuses rather than queues.
-                      arguments: jsonEncode({
-                        'status': 'monitoring',
-                        'reason': 'Nothing is scheduled this cycle',
-                      }),
-                    ),
+                    name: ProjectAgentToolNames.updateProjectStatus,
+                    // Not `on_track`: that canonicalizes to the status the
+                    // fixture project already has, which the wake now
+                    // refuses rather than queues.
+                    arguments: jsonEncode({
+                      'status': 'monitoring',
+                      'reason': 'Nothing is scheduled this cycle',
+                    }),
                   ),
                 ];
 
@@ -3828,13 +3807,10 @@ void main() {
               }) async {
                 if (strategy != null) {
                   final toolCalls = [
-                    ChatCompletionMessageToolCall(
+                    LottiToolCall(
                       id: 'call-rec-empty',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: ProjectAgentToolNames.recommendNextSteps,
-                        arguments: jsonEncode({'steps': <dynamic>[]}),
-                      ),
+                      name: ProjectAgentToolNames.recommendNextSteps,
+                      arguments: jsonEncode({'steps': <dynamic>[]}),
                     ),
                   ];
 
@@ -3920,8 +3896,8 @@ void main() {
         /// Runs a wake in which the model issues [toolCalls], and returns
         /// everything the wake persisted.
         Future<List<Object?>> runWake(
-          List<ChatCompletionMessageToolCall> toolCalls, {
-          void Function(List<ChatCompletionTool>? tools)? onTools,
+          List<LottiToolCall> toolCalls, {
+          void Function(List<LottiTool>? tools)? onTools,
         }) async {
           mockConversationRepository.sendMessageDelegate =
               ({
@@ -3966,15 +3942,11 @@ void main() {
           ).captured;
         }
 
-        ChatCompletionMessageToolCall createTaskCall(String title) =>
-            ChatCompletionMessageToolCall(
-              id: 'call-create',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: ProjectAgentToolNames.createTask,
-                arguments: jsonEncode({'title': title}),
-              ),
-            );
+        LottiToolCall createTaskCall(String title) => LottiToolCall(
+          id: 'call-create',
+          name: ProjectAgentToolNames.createTask,
+          arguments: jsonEncode({'title': title}),
+        );
 
         test('writes a proposal that is genuinely new', () async {
           final captured = await runWake([
@@ -4032,13 +4004,10 @@ void main() {
 
           final captured = await runWake([
             createTaskCall('Define Launch Roadmap and Milestones'),
-            ChatCompletionMessageToolCall(
+            LottiToolCall(
               id: 'call-create-2',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: ProjectAgentToolNames.createTask,
-                arguments: jsonEncode({'title': 'Book the launch venue'}),
-              ),
+              name: ProjectAgentToolNames.createTask,
+              arguments: jsonEncode({'title': 'Book the launch venue'}),
             ),
           ]);
 
@@ -4051,12 +4020,12 @@ void main() {
         });
 
         test('withholds retract_suggestions when nothing is open', () async {
-          List<ChatCompletionTool>? offered;
+          List<LottiTool>? offered;
           await runWake(const [], onTools: (tools) => offered = tools);
 
           expect(offered, isNotNull);
           expect(
-            offered!.map((tool) => tool.function.name),
+            offered!.map((tool) => tool.name),
             isNot(contains(ProjectAgentToolNames.retractSuggestions)),
           );
         });
@@ -4065,12 +4034,12 @@ void main() {
           stubLedger(
             ProposalLedger(open: [openEntry(proposal)], resolved: const []),
           );
-          List<ChatCompletionTool>? offered;
+          List<LottiTool>? offered;
           await runWake(const [], onTools: (tools) => offered = tools);
 
           expect(offered, isNotNull);
           expect(
-            offered!.map((tool) => tool.function.name),
+            offered!.map((tool) => tool.name),
             contains(ProjectAgentToolNames.retractSuggestions),
           );
         });
@@ -4094,20 +4063,17 @@ void main() {
           ).thenAnswer((_) async => pendingSet(proposal));
 
           final captured = await runWake([
-            ChatCompletionMessageToolCall(
+            LottiToolCall(
               id: 'call-retract',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: ProjectAgentToolNames.retractSuggestions,
-                arguments: jsonEncode({
-                  'proposals': [
-                    {
-                      'fingerprint': ChangeItem.fingerprint(proposal),
-                      'reason': 'the user created this task by hand',
-                    },
-                  ],
-                }),
-              ),
+              name: ProjectAgentToolNames.retractSuggestions,
+              arguments: jsonEncode({
+                'proposals': [
+                  {
+                    'fingerprint': ChangeItem.fingerprint(proposal),
+                    'reason': 'the user created this task by hand',
+                  },
+                ],
+              }),
             ),
           ]);
 
@@ -4145,20 +4111,17 @@ void main() {
             ).thenAnswer((_) async => pendingSet(proposal));
 
             final captured = await runWake([
-              ChatCompletionMessageToolCall(
+              LottiToolCall(
                 id: 'call-retract',
-                type: ChatCompletionMessageToolCallType.function,
-                function: ChatCompletionMessageFunctionCall(
-                  name: ProjectAgentToolNames.retractSuggestions,
-                  arguments: jsonEncode({
-                    'proposals': [
-                      {
-                        'fingerprint': ChangeItem.fingerprint(proposal),
-                        'reason': 'superseded',
-                      },
-                    ],
-                  }),
-                ),
+                name: ProjectAgentToolNames.retractSuggestions,
+                arguments: jsonEncode({
+                  'proposals': [
+                    {
+                      'fingerprint': ChangeItem.fingerprint(proposal),
+                      'reason': 'superseded',
+                    },
+                  ],
+                }),
               ),
               createTaskCall('Define Launch Roadmap and Milestones'),
             ]);

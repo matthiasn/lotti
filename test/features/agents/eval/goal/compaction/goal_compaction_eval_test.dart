@@ -7,10 +7,10 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import 'support/goal_compaction_eval.dart';
 import 'support/goal_compaction_fixtures.dart';
@@ -36,24 +36,24 @@ class _ScriptedInference extends InferenceRepositoryInterface {
   final prompts = <String>[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     InferenceImpactCollector? impactCollector,
   }) {
     final last = messages.last;
-    if (last.role == ChatCompletionMessageRole.tool) {
+    if (last.role == LottiMessageRole.tool) {
       return Stream.value(_text('done', promptTokens: 10));
     }
-    final user = last.mapOrNull(user: (m) => m.content.value)?.toString() ?? '';
+    final user = last.userContent ?? '';
     prompts.add(user);
     if (failOn != null && user.contains(failOn!)) {
       return Stream.error(Exception('scripted failure'));
@@ -117,53 +117,45 @@ class _ScriptedInference extends InferenceRepositoryInterface {
     );
   }
 
-  CreateChatCompletionStreamResponse _text(
+  LottiInferenceChunk _text(
     String text, {
     required int promptTokens,
-  }) => CreateChatCompletionStreamResponse(
+  }) => LottiInferenceChunk(
     id: 'r',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta(content: text),
-      ),
-    ],
-    object: 'chat.completion.chunk',
     created: 1,
-    usage: CompletionUsage(
+    choices: [
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: text)),
+    ],
+    usage: LottiUsage(
       promptTokens: promptTokens,
       completionTokens: 20,
       totalTokens: promptTokens + 20,
     ),
   );
 
-  CreateChatCompletionStreamResponse _tools(
+  LottiInferenceChunk _tools(
     List<(String, String)> calls, {
     required int promptTokens,
-  }) => CreateChatCompletionStreamResponse(
+  }) => LottiInferenceChunk(
     id: 'r',
+    created: 1,
     choices: [
-      ChatCompletionStreamResponseChoice(
+      LottiChunkChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(
+        delta: LottiDelta(
           toolCalls: [
             for (final (i, call) in calls.indexed)
-              ChatCompletionStreamMessageToolCallChunk(
-                index: i,
+              LottiToolCallChunk(
                 id: 'call-$i',
-                type: ChatCompletionStreamMessageToolCallChunkType.function,
-                function: ChatCompletionStreamMessageFunctionCall(
-                  name: call.$1,
-                  arguments: call.$2,
-                ),
+                index: i,
+                name: call.$1,
+                arguments: call.$2,
               ),
           ],
         ),
       ),
     ],
-    object: 'chat.completion.chunk',
-    created: 1,
-    usage: CompletionUsage(
+    usage: LottiUsage(
       promptTokens: promptTokens,
       completionTokens: 40,
       totalTokens: promptTokens + 40,

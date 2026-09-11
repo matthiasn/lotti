@@ -466,7 +466,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
     required String modelId,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required DayAgentStrategy strategy,
     required String captureId,
     required String? consumptionAgentId,
@@ -478,17 +478,12 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
       'tool choice',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: DayAgentToolNames.parseCaptureToItems,
-        ),
-      ),
+    const forcedToolChoice = LottiToolChoice.specific(
+      DayAgentToolNames.parseCaptureToItems,
     );
     final parseOnlyTools = tools
         .where(
-          (tool) => tool.function.name == DayAgentToolNames.parseCaptureToItems,
+          (tool) => tool.name == DayAgentToolNames.parseCaptureToItems,
         )
         .toList(growable: false);
 
@@ -519,7 +514,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
     required String modelId,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required DayAgentStrategy strategy,
     required String? consumptionAgentId,
     required String? consumptionWakeRunKey,
@@ -529,16 +524,11 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
       'drafting wake missed draft_day_plan — retrying with forced tool choice',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: DayAgentToolNames.draftDayPlan,
-        ),
-      ),
+    const forcedToolChoice = LottiToolChoice.specific(
+      DayAgentToolNames.draftDayPlan,
     );
     final draftOnlyTools = tools
-        .where((tool) => tool.function.name == DayAgentToolNames.draftDayPlan)
+        .where((tool) => tool.name == DayAgentToolNames.draftDayPlan)
         .toList(growable: false);
 
     return conversationRepository.sendMessage(
@@ -562,7 +552,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
     );
   }
 
-  List<ChatCompletionTool> _buildToolDefinitions({
+  List<LottiTool> _buildToolDefinitions({
     required String agentId,
     required DailyOsPlannerWakeContext wakeContext,
     required CaptureContext? captureContext,
@@ -577,13 +567,10 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
           ),
         )
         .map((tool) {
-          return ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: tool.name,
-              description: tool.description,
-              parameters: tool.parameters,
-            ),
+          return LottiTool(
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters,
           );
         })
         .toList();
@@ -593,7 +580,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''' : ''}'''
     if (manager == null) return null;
     final messages = manager.messages;
     for (var i = messages.length - 1; i >= 0; i--) {
-      final content = messages[i].mapOrNull(assistant: (a) => a.content);
+      final content = messages[i].assistantContent;
       if (content != null && content.isNotEmpty) {
         return content;
       }

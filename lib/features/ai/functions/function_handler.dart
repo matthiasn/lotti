@@ -1,4 +1,4 @@
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 /// Base interface for handling different function types in conversations
 abstract class FunctionHandler {
@@ -6,7 +6,7 @@ abstract class FunctionHandler {
   String get functionName;
 
   /// Process a function call and return the result
-  FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call);
+  FunctionCallResult processFunctionCall(LottiToolCall call);
 
   /// Check if this result would be a duplicate
   bool isDuplicate(FunctionCallResult result);

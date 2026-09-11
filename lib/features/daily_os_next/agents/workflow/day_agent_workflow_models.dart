@@ -9,9 +9,9 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Model-facing mode of one day-agent wake.
@@ -124,8 +124,8 @@ class DayAgentOutputBudgetInferenceRepository
       ? maxCompletionTokens
       : requested;
 
-  Stream<CreateChatCompletionStreamResponse> _bound(
-    Stream<CreateChatCompletionStreamResponse> source,
+  Stream<LottiInferenceChunk> _bound(
+    Stream<LottiInferenceChunk> source,
     int effectiveLimit,
     InferenceProviderType providerType,
   ) async* {
@@ -134,8 +134,7 @@ class DayAgentOutputBudgetInferenceRepository
       final choices = response.choices;
       if (choices != null &&
           choices.any(
-            (choice) =>
-                choice.finishReason == ChatCompletionFinishReason.length,
+            (choice) => choice.finishReason == LottiFinishReason.length,
           )) {
         reachedLimit = true;
       }
@@ -145,7 +144,7 @@ class DayAgentOutputBudgetInferenceRepository
           ? null
           : completionTokens +
                 (providerType == InferenceProviderType.gemini
-                    ? usage?.completionTokensDetails?.reasoningTokens ?? 0
+                    ? usage?.reasoningTokens ?? 0
                     : 0);
       if (effectiveCompletionTokens != null &&
           effectiveCompletionTokens >= effectiveLimit) {
@@ -162,14 +161,14 @@ class DayAgentOutputBudgetInferenceRepository
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -196,15 +195,15 @@ class DayAgentOutputBudgetInferenceRepository
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) {
     final effectiveLimit = _effectiveLimit(maxCompletionTokens);
     return _bound(
@@ -266,10 +265,7 @@ class DayAgentTimeoutInferenceRepository
   final Duration timeout;
   Timer? _wakeDeadline;
   final _active =
-      <
-        StreamController<CreateChatCompletionStreamResponse>,
-        Future<void> Function()
-      >{};
+      <StreamController<LottiInferenceChunk>, Future<void> Function()>{};
   var _expired = false;
   var _disposed = false;
 
@@ -309,13 +305,13 @@ class DayAgentTimeoutInferenceRepository
     }
   }
 
-  Stream<CreateChatCompletionStreamResponse> _bound(
-    Stream<CreateChatCompletionStreamResponse> source,
+  Stream<LottiInferenceChunk> _bound(
+    Stream<LottiInferenceChunk> source,
   ) {
-    late final StreamController<CreateChatCompletionStreamResponse> controller;
-    StreamSubscription<CreateChatCompletionStreamResponse>? subscription;
+    late final StreamController<LottiInferenceChunk> controller;
+    StreamSubscription<LottiInferenceChunk>? subscription;
 
-    controller = StreamController<CreateChatCompletionStreamResponse>(
+    controller = StreamController<LottiInferenceChunk>(
       sync: true,
       onListen: () {
         if (_disposed) {
@@ -366,14 +362,14 @@ class DayAgentTimeoutInferenceRepository
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -395,15 +391,15 @@ class DayAgentTimeoutInferenceRepository
   );
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) => _bound(
     delegate.generateText(
       prompt: prompt,

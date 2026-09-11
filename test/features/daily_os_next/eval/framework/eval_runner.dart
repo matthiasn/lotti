@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart'
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:meta/meta.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../ai_consumption/test_utils.dart';
 import '../../integration/day_agent_pipeline_harness.dart';
@@ -792,8 +792,8 @@ class EvalPromptRecorder extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     String? consumptionAgentId,

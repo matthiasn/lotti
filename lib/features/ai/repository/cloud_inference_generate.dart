@@ -3,23 +3,25 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'
     show CloudInferenceRepository;
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/inference_client.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 
 /// Text and image generation paths for [CloudInferenceRepository].
 ///
 /// Routes the single-prompt `generate` and `generateWithImages` flows to the
 /// provider-specific repositories (Ollama, Gemini, Mistral, Melious) or, for
 /// OpenAI-compatible providers, builds the request via the shared
-/// [CloudInferenceRequestHelpers] and streams from an [OpenAIClient].
+/// [CloudInferenceRequestHelpers] and streams from a [LottiInferenceClient].
 class CloudInferenceGenerate {
   CloudInferenceGenerate({
     required this._ollamaRepository,
@@ -37,7 +39,7 @@ class CloudInferenceGenerate {
   final MistralOcrRepository _mistralOcrRepository;
   final CloudInferenceRequestHelpers _helpers;
 
-  Stream<CreateChatCompletionStreamResponse> generate(
+  Stream<LottiInferenceChunk> generate(
     String prompt, {
     required String model,
     required double? temperature,
@@ -45,12 +47,12 @@ class CloudInferenceGenerate {
     required String apiKey,
     String? systemMessage,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
+    LottiInferenceClient? overrideClient,
     AiConfigInferenceProvider? provider,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
-    ReasoningEffort? reasoningEffort,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     if (provider?.inferenceProviderType == InferenceProviderType.sherpa) {
@@ -60,7 +62,7 @@ class CloudInferenceGenerate {
       'CloudInferenceRepository.generate called with:\n'
       '  model: $model\n'
       '  provider: ${provider?.inferenceProviderType}\n'
-      '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.function.name).join(', ') ?? 'none'}\n'
+      '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.name).join(', ') ?? 'none'}\n'
       '  systemMessage: ${systemMessage != null && systemMessage.length > 100 ? '${systemMessage.substring(0, 100)}...' : systemMessage}',
       name: 'CloudInferenceRepository',
     );
@@ -134,26 +136,20 @@ class CloudInferenceGenerate {
 
     final client =
         overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
+        OpenAiCompatInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
 
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to OpenAI API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to OpenAI API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
 
     final res = client.createChatCompletionStream(
-      request: _helpers.createBaseRequest(
+      _helpers.createBaseRequest(
         messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string(prompt),
-          ),
+          if (systemMessage != null) LottiMessage.system(systemMessage),
+          LottiMessage.userText(prompt),
         ],
         model: model,
         temperature: temperature,
@@ -167,7 +163,7 @@ class CloudInferenceGenerate {
     return _helpers.filterAnthropicPings(res).asBroadcastStream();
   }
 
-  Stream<CreateChatCompletionStreamResponse> generateWithImages(
+  Stream<LottiInferenceChunk> generateWithImages(
     String prompt, {
     required String baseUrl,
     required String apiKey,
@@ -175,10 +171,10 @@ class CloudInferenceGenerate {
     required double? temperature,
     required List<String> images,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
+    LottiInferenceClient? overrideClient,
     AiConfigInferenceProvider? provider,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
     InferenceImpactCollector? impactCollector,
@@ -188,10 +184,7 @@ class CloudInferenceGenerate {
     }
     final client =
         overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
+        OpenAiCompatInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
 
     // For Ollama, use the dedicated repository.
     //
@@ -252,31 +245,26 @@ class CloudInferenceGenerate {
 
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to image API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to image API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
 
     final res = client.createChatCompletionStream(
-      request: _helpers.createBaseRequest(
+      _helpers.createBaseRequest(
         messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.parts(
-              [
-                ChatCompletionMessageContentPart.text(text: prompt),
-                ...images.map(
-                  (image) {
-                    return ChatCompletionMessageContentPart.image(
-                      imageUrl: ChatCompletionMessageImageUrl(
-                        url: 'data:image/jpeg;base64,$image',
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
+          if (systemMessage != null) LottiMessage.system(systemMessage),
+          LottiMessage.userParts(
+            [
+              LottiContentPart.text(prompt),
+              ...images.map(
+                (image) {
+                  return LottiContentPart.image(
+                    'data:image/jpeg;base64,$image',
+                  );
+                },
+              ),
+            ],
           ),
         ],
         model: model,

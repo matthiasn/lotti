@@ -13,8 +13,8 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -438,17 +438,13 @@ void main() {
       final tools = builder.buildToolDefinitions();
 
       expect(tools, isNotEmpty);
-      for (final tool in tools) {
-        expect(tool.type, ChatCompletionToolType.function);
-      }
-      final names = tools.map((t) => t.function.name).toSet();
+      final names = tools.map((t) => t.name).toSet();
       expect(names, contains('update_report'));
     });
 
     test('uses evidence-first report and mutation authority descriptions', () {
       final toolsByName = {
-        for (final tool in builder.buildToolDefinitions())
-          tool.function.name: tool.function,
+        for (final tool in builder.buildToolDefinitions()) tool.name: tool,
       };
       final report = toolsByName['update_report']!;
 
@@ -491,8 +487,8 @@ void main() {
     test('returns the last assistant message with text content', () {
       final manager = MockConversationManager();
       when(() => manager.messages).thenReturn([
-        const ChatCompletionMessage.assistant(content: 'first'),
-        const ChatCompletionMessage.assistant(content: 'final answer'),
+        const LottiMessage.assistant(content: 'first'),
+        const LottiMessage.assistant(content: 'final answer'),
       ]);
 
       expect(builder.extractFinalAssistantContent(manager), 'final answer');

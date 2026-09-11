@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Repository for Mistral OCR via the dedicated `/v1/ocr` endpoint.
@@ -70,7 +70,7 @@ class MistralOcrRepository {
   /// stream is created; operational failures (HTTP, parse, timeout) surface as
   /// a [MistralOcrException] **on the returned stream**. A caller that only
   /// attaches `handleError` must therefore also guard the synchronous case.
-  Stream<CreateChatCompletionStreamResponse> extractText({
+  Stream<LottiInferenceChunk> extractText({
     required String model,
     required List<String> images,
     required String baseUrl,
@@ -102,7 +102,7 @@ class MistralOcrRepository {
     ).asBroadcastStream();
   }
 
-  Future<CreateChatCompletionStreamResponse> _extractAll({
+  Future<LottiInferenceChunk> _extractAll({
     required String model,
     required List<String> images,
     required String baseUrl,
@@ -135,18 +135,15 @@ class MistralOcrRepository {
         .where((markdown) => markdown.isNotEmpty)
         .toList();
 
-    return CreateChatCompletionStreamResponse(
+    return LottiInferenceChunk(
       id: 'mistral-ocr-${_uuid.v4()}',
+      created: 0,
       choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(
-            content: sections.join('\n\n'),
-          ),
+        LottiChunkChoice(
           index: 0,
+          delta: LottiDelta(content: sections.join('\n\n')),
         ),
       ],
-      object: 'chat.completion.chunk',
-      created: 0,
     );
   }
 

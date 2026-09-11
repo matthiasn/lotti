@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart'
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
@@ -37,7 +38,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
@@ -507,20 +507,16 @@ void main() {
   /// Creates a stream response chunk with the given content. Providers report
   /// [usage] on the final chunk, so tests exercising consumption recording
   /// attach it there.
-  CreateChatCompletionStreamResponse makeStreamChunk(
+  LottiInferenceChunk makeStreamChunk(
     String content, {
-    CompletionUsage? usage,
+    LottiUsage? usage,
   }) {
-    return CreateChatCompletionStreamResponse(
+    return LottiInferenceChunk(
       id: 'resp-1',
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-        ),
-      ],
-      object: 'chat.completion.chunk',
       created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+      choices: [
+        LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+      ],
       usage: usage,
     );
   }
@@ -820,7 +816,7 @@ void main() {
               provider: 'Melious',
               statusCode: 503,
               completedSegments: 1,
-              partialUsage: const CompletionUsage(
+              partialUsage: const LottiUsage(
                 promptTokens: 10,
                 completionTokens: 5,
                 totalTokens: 15,
@@ -907,14 +903,12 @@ void main() {
               makeStreamChunk('Hello'),
               makeStreamChunk(
                 ' World',
-                usage: const CompletionUsage(
+                usage: const LottiUsage(
                   promptTokens: 120,
                   completionTokens: 45,
                   totalTokens: 165,
-                  promptTokensDetails: PromptTokensDetails(cachedTokens: 30),
-                  completionTokensDetails: CompletionTokensDetails(
-                    reasoningTokens: 12,
-                  ),
+                  cachedInputTokens: 30,
+                  reasoningTokens: 12,
                 ),
               ),
             ]),
@@ -1795,7 +1789,7 @@ void main() {
         }
 
         void stubImageInference(
-          List<CreateChatCompletionStreamResponse> chunks,
+          List<LottiInferenceChunk> chunks,
         ) {
           when(
             () => mockCloudRepo.generateWithImages(
@@ -1815,36 +1809,32 @@ void main() {
           ).thenAnswer((_) => Stream.fromIterable(chunks));
         }
 
-        CreateChatCompletionStreamResponse tierChunk() =>
-            CreateChatCompletionStreamResponse(
-              id: 'resp-img',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
-                        index: 0,
-                        id: 'call-1',
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: entrySummaryToolName,
-                          arguments: jsonEncode({
-                            EntrySummaryToolArgs.oneLiner:
-                                'Dashboard shows the error rate flat at 0.2%.',
-                            EntrySummaryToolArgs.tldr:
-                                'The rollout has not moved the error rate.',
-                            EntrySummaryToolArgs.summary:
-                                '## Observed\n- Error rate 0.2%',
-                          }),
-                        ),
-                      ),
-                    ],
+        LottiInferenceChunk tierChunk() => LottiInferenceChunk(
+          id: 'resp-img',
+          created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+          choices: [
+            LottiChunkChoice(
+              index: 0,
+              delta: LottiDelta(
+                toolCalls: [
+                  LottiToolCallChunk(
+                    id: 'call-1',
+                    index: 0,
+                    name: entrySummaryToolName,
+                    arguments: jsonEncode({
+                      EntrySummaryToolArgs.oneLiner:
+                          'Dashboard shows the error rate flat at 0.2%.',
+                      EntrySummaryToolArgs.tldr:
+                          'The rollout has not moved the error rate.',
+                      EntrySummaryToolArgs.summary:
+                          '## Observed\n- Error rate 0.2%',
+                    }),
                   ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
-            );
+                ],
+              ),
+            ),
+          ],
+        );
 
         setUp(() {
           when(
@@ -1957,9 +1947,9 @@ void main() {
             ).captured;
 
             final userMessage = captured[0] as String;
-            final tools = captured[1] as List<ChatCompletionTool>?;
+            final tools = captured[1] as List<LottiTool>?;
             expect(tools, hasLength(1));
-            expect(tools!.single.function.name, entrySummaryToolName);
+            expect(tools!.single.name, entrySummaryToolName);
             expect(captured[2], isNotNull);
             // The prompt must actually ask for the tool, or a model free to
             // ignore it would answer in prose.
@@ -3280,33 +3270,30 @@ void main() {
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
-              CreateChatCompletionStreamResponse(
+              LottiInferenceChunk(
                 id: 'resp-tool',
+                created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
                 choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
+                  LottiChunkChoice(
+                    index: 0,
+                    delta: LottiDelta(
                       toolCalls: [
-                        ChatCompletionStreamMessageToolCallChunk(
-                          index: 0,
+                        LottiToolCallChunk(
                           id: 'call-1',
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            name: entrySummaryToolName,
-                            arguments: jsonEncode({
-                              EntrySummaryToolArgs.oneLiner:
-                                  'Migration owners agreed.',
-                              EntrySummaryToolArgs.tldr:
-                                  'Each step has an owner.',
-                              EntrySummaryToolArgs.summary: '## Owners',
-                            }),
-                          ),
+                          index: 0,
+                          name: entrySummaryToolName,
+                          arguments: jsonEncode({
+                            EntrySummaryToolArgs.oneLiner:
+                                'Migration owners agreed.',
+                            EntrySummaryToolArgs.tldr:
+                                'Each step has an owner.',
+                            EntrySummaryToolArgs.summary: '## Owners',
+                          }),
                         ),
                       ],
                     ),
-                    index: 0,
                   ),
                 ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
               ),
             ]),
           );
@@ -3491,45 +3478,42 @@ void main() {
         (i) => 'We discussed migration step $i and who owns it.',
       ).join(' ');
 
-      CreateChatCompletionStreamResponse makeToolCallChunk({
+      LottiInferenceChunk makeToolCallChunk({
         String oneLiner = 'Agreed to ship the export flow behind a flag.',
         String tldr = 'The team chose a flagged rollout.',
         String summary = '## Decisions\n- Ship behind a flag',
         String toolName = entrySummaryToolName,
         String? rawArguments,
-        CompletionUsage? usage,
-      }) => CreateChatCompletionStreamResponse(
+        LottiUsage? usage,
+      }) => LottiInferenceChunk(
         id: 'resp-tool',
+        created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
         choices: [
-          ChatCompletionStreamResponseChoice(
-            delta: ChatCompletionStreamResponseDelta(
+          LottiChunkChoice(
+            index: 0,
+            delta: LottiDelta(
               toolCalls: [
-                ChatCompletionStreamMessageToolCallChunk(
-                  index: 0,
+                LottiToolCallChunk(
                   id: 'call-1',
-                  function: ChatCompletionStreamMessageFunctionCall(
-                    name: toolName,
-                    arguments:
-                        rawArguments ??
-                        jsonEncode({
-                          EntrySummaryToolArgs.oneLiner: oneLiner,
-                          EntrySummaryToolArgs.tldr: tldr,
-                          EntrySummaryToolArgs.summary: summary,
-                        }),
-                  ),
+                  index: 0,
+                  name: toolName,
+                  arguments:
+                      rawArguments ??
+                      jsonEncode({
+                        EntrySummaryToolArgs.oneLiner: oneLiner,
+                        EntrySummaryToolArgs.tldr: tldr,
+                        EntrySummaryToolArgs.summary: summary,
+                      }),
                 ),
               ],
             ),
-            index: 0,
           ),
         ],
-        object: 'chat.completion.chunk',
-        created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
         usage: usage,
       );
 
       void stubGenerate(
-        List<CreateChatCompletionStreamResponse> Function() chunks,
+        List<LottiInferenceChunk> Function() chunks,
       ) {
         when(
           () => mockCloudRepo.generate(
@@ -3689,9 +3673,9 @@ void main() {
           expect(userMessage, contains('Sentence 1999 about'));
           expect(userMessage, isNot(contains('...')));
 
-          final tools = captured[1] as List<ChatCompletionTool>?;
+          final tools = captured[1] as List<LottiTool>?;
           expect(tools, hasLength(1));
-          expect(tools!.first.function.name, entrySummaryToolName);
+          expect(tools!.first.name, entrySummaryToolName);
           expect(captured[2], isNotNull);
         },
       );
@@ -3870,7 +3854,7 @@ void main() {
                 ? [
                     makeStreamChunk(
                       'Prose, not a tool call.',
-                      usage: const CompletionUsage(
+                      usage: const LottiUsage(
                         promptTokens: 100,
                         completionTokens: 10,
                         totalTokens: 110,
@@ -3879,7 +3863,7 @@ void main() {
                   ]
                 : [
                     makeToolCallChunk(
-                      usage: const CompletionUsage(
+                      usage: const LottiUsage(
                         promptTokens: 120,
                         completionTokens: 30,
                         totalTokens: 150,
@@ -4054,23 +4038,19 @@ void main() {
                     costCredits: 7,
                   );
             final usage = call == 1
-                ? const CompletionUsage(
+                ? const LottiUsage(
                     promptTokens: 100,
                     completionTokens: 10,
                     totalTokens: 110,
-                    promptTokensDetails: PromptTokensDetails(cachedTokens: 40),
-                    completionTokensDetails: CompletionTokensDetails(
-                      reasoningTokens: 5,
-                    ),
+                    cachedInputTokens: 40,
+                    reasoningTokens: 5,
                   )
-                : const CompletionUsage(
+                : const LottiUsage(
                     promptTokens: 120,
                     completionTokens: 30,
                     totalTokens: 150,
-                    promptTokensDetails: PromptTokensDetails(cachedTokens: 20),
-                    completionTokensDetails: CompletionTokensDetails(
-                      reasoningTokens: 7,
-                    ),
+                    cachedInputTokens: 20,
+                    reasoningTokens: 7,
                   );
             return Stream.fromIterable([
               if (call == 1)
@@ -4114,7 +4094,7 @@ void main() {
             () => [
               makeStreamChunk(
                 'Still prose.',
-                usage: const CompletionUsage(
+                usage: const LottiUsage(
                   promptTokens: 50,
                   completionTokens: 5,
                   totalTokens: 55,
@@ -4164,28 +4144,22 @@ void main() {
           // Name first with no arguments, then the JSON one character at a
           // time with no id and no name — the accumulator has only the index
           // to go on.
-          final chunks = <CreateChatCompletionStreamResponse>[
+          final chunks = <LottiInferenceChunk>[
             makeToolCallChunk(rawArguments: ''),
             for (final ch in fullArgs.split(''))
-              CreateChatCompletionStreamResponse(
+              LottiInferenceChunk(
                 id: 'resp-tool',
+                created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
                 choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
+                  LottiChunkChoice(
+                    index: 0,
+                    delta: LottiDelta(
                       toolCalls: [
-                        ChatCompletionStreamMessageToolCallChunk(
-                          index: 0,
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            arguments: ch,
-                          ),
-                        ),
+                        LottiToolCallChunk(index: 0, arguments: ch),
                       ],
                     ),
-                    index: 0,
                   ),
                 ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
               ),
           ];
           stubGenerate(() => chunks);

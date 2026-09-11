@@ -7,9 +7,9 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// A banner brief accumulated from one `create_relationship_ad` call.
 typedef RelationshipAdRequest = ({NudgeBrief brief, String? reasonSummary});
@@ -93,21 +93,21 @@ class RelationshipAgentStrategy extends ConversationStrategy
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     await recordAssistantMessage();
 
     for (final call in toolCalls) {
-      final toolName = call.function.name;
+      final toolName = call.name;
 
       Map<String, dynamic> args;
       try {
-        args = parseAgentToolArguments(call.function.arguments);
+        args = parseAgentToolArguments(call.arguments);
       } catch (e) {
         developer.log(
           'Failed to parse tool call arguments for $toolName '
-          '(rawBytes=${utf8.encode(call.function.arguments).length}, '
+          '(rawBytes=${utf8.encode(call.arguments).length}, '
           'errorType=${e.runtimeType})',
           name: 'RelationshipAgentStrategy',
         );
@@ -156,7 +156,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
   String? getContinuationPrompt(ConversationManager manager) => null;
 
   Future<void> _handleTaskProposal(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -197,7 +197,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    _deferredItems.add({'toolName': call.function.name, 'args': normalized});
+    _deferredItems.add({'toolName': call.name, 'args': normalized});
     await _accept(
       call,
       manager,
@@ -206,7 +206,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleUpdateReport(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -266,7 +266,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleReplyToUser(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -292,7 +292,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleCreateAd(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -351,7 +351,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleSnoozeAd(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -446,22 +446,22 @@ class RelationshipAgentStrategy extends ConversationStrategy
   String _trimmed(Object? value) => value is String ? value.trim() : '';
 
   Future<void> _accept(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     ConversationManager manager,
     String response,
   ) async {
     manager.addToolResponse(toolCallId: call.id, response: response);
-    await recordToolResultMessage(toolName: call.function.name);
+    await recordToolResultMessage(toolName: call.name);
   }
 
   Future<void> _reject({
-    required ChatCompletionMessageToolCall call,
+    required LottiToolCall call,
     required ConversationManager manager,
     required String error,
   }) async {
     manager.addToolResponse(toolCallId: call.id, response: error);
     await recordToolResultMessage(
-      toolName: call.function.name,
+      toolName: call.name,
       errorMessage: error,
     );
   }

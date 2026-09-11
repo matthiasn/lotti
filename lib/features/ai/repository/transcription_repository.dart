@@ -4,10 +4,10 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/audio_transcript_timing.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 export 'transcription_exception.dart';
@@ -32,7 +32,7 @@ class TranscriptionRepository {
   /// Shared transcription template.
   ///
   /// Handles timeout calculation, developer logging, response parsing,
-  /// `CreateChatCompletionStreamResponse` wrapping, and the full error
+  /// `LottiInferenceChunk` wrapping, and the full error
   /// catch cascade.
   ///
   /// [providerName] is used for logging and exception diagnostics.
@@ -49,7 +49,7 @@ class TranscriptionRepository {
   /// into an impact collector. The raw response is passed alongside the decoded
   /// map because recovering a provider's unmodified decimal digits requires the
   /// body text, which `jsonDecode` has already lost.
-  Stream<CreateChatCompletionStreamResponse> executeTranscription({
+  Stream<LottiInferenceChunk> executeTranscription({
     required String providerName,
     required String responseIdPrefix,
     required Future<http.Response> Function(
@@ -127,18 +127,12 @@ class TranscriptionRepository {
             name: providerName,
           );
 
-          return CreateChatCompletionStreamResponse(
+          return LottiInferenceChunk(
             id: '$responseIdPrefix${_uuid.v4()}',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created: 0,
+            choices: [
+              LottiChunkChoice(index: 0, delta: LottiDelta(content: text)),
+            ],
             usage: usage,
           );
         } on TranscriptionException {

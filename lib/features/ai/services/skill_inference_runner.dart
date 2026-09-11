@@ -18,6 +18,7 @@ import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/image_generation_error.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_consumption_mapping.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -50,7 +51,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:openai_dart/openai_dart.dart' hide Error;
 
 part 'skill_inference_runner_internals.dart';
 
@@ -858,8 +858,8 @@ class SkillInferenceRunner {
         Future<
           ({
             String content,
-            List<ChatCompletionMessageToolCall> toolCalls,
-            CompletionUsage? usage,
+            List<LottiToolCall> toolCalls,
+            LottiUsage? usage,
             MeliousCallImpact? impact,
           })
         >
@@ -1536,7 +1536,7 @@ class SkillInferenceRunner {
   /// needed prompting twice — exactly the model whose cost the user most needs
   /// to see. Null operands pass through so a provider that reports usage on
   /// only one attempt still contributes what it did report.
-  static CompletionUsage? _mergeUsage(CompletionUsage? a, CompletionUsage? b) =>
+  static LottiUsage? _mergeUsage(LottiUsage? a, LottiUsage? b) =>
       combineCompletionUsage(a, b);
 
   /// Marks every parent task of [sourceEntryId] stale after an
@@ -1588,7 +1588,7 @@ class SkillInferenceRunner {
   }
 
   /// Drains a chat-completion stream, concatenating content deltas, capturing
-  /// the last reported [CompletionUsage] (providers emit usage on the final
+  /// the last reported [LottiUsage] (providers emit usage on the final
   /// chunk), and reassembling any streamed tool calls. Shared by the
   /// transcription, image-analysis, prompt-generation and audio-summary paths
   /// so the accumulation logic lives in one place.
@@ -1602,16 +1602,16 @@ class SkillInferenceRunner {
   Future<
     ({
       String content,
-      CompletionUsage? usage,
-      List<ChatCompletionMessageToolCall> toolCalls,
+      LottiUsage? usage,
+      List<LottiToolCall> toolCalls,
     })
   >
   _collectStream(
-    Stream<CreateChatCompletionStreamResponse> stream,
+    Stream<LottiInferenceChunk> stream,
   ) async {
     final buffer = StringBuffer();
     final toolCallAccumulator = ToolCallAccumulator();
-    CompletionUsage? usage;
+    LottiUsage? usage;
     await for (final chunk in stream) {
       if (chunk.usage != null) usage = chunk.usage;
       final delta = chunk.choices?.firstOrNull?.delta;
@@ -1675,7 +1675,7 @@ class SkillInferenceRunner {
     required AiConfigInferenceProvider provider,
     required String modelId,
     required AiResponseType responseType,
-    required CompletionUsage? usage,
+    required LottiUsage? usage,
     required MeliousCallImpact? impact,
     required DateTime start,
     required AiInteractionKind interactionKind,
@@ -1741,7 +1741,7 @@ class SkillInferenceRunner {
     required AiConfigInferenceProvider provider,
     required String modelId,
     required AiResponseType responseType,
-    required CompletionUsage? usage,
+    required LottiUsage? usage,
     required MeliousCallImpact? impact,
     required DateTime start,
     required DateTime completedAt,
@@ -1770,8 +1770,8 @@ class SkillInferenceRunner {
     durationMs: completedAt.difference(start).inMilliseconds,
     inputTokens: usage?.promptTokens,
     outputTokens: usage?.completionTokens,
-    cachedInputTokens: usage?.promptTokensDetails?.cachedTokens,
-    thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+    cachedInputTokens: usage?.cachedInputTokens,
+    thoughtsTokens: usage?.reasoningTokens,
     totalTokens: usage?.totalTokens,
     credits: impact?.costCredits,
     costCreditsDecimal: impact?.costCreditsDecimal,

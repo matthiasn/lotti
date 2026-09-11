@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -39,37 +39,29 @@ void main() {
   final provider = testInferenceProvider(apiKey: 'k-123');
   final recordedAt = DateTime.utc(2026, 8, 18, 14, 20);
 
-  Stream<CreateChatCompletionStreamResponse> streamOf(String body) =>
-      Stream.fromIterable([
-        CreateChatCompletionStreamResponse(
-          id: 'chunk',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: body),
-            ),
-          ],
-        ),
-        // A usage chunk, so the token accounting the pills read is exercised
-        // rather than assumed.
-        const CreateChatCompletionStreamResponse(
-          id: 'usage',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [],
-          usage: CompletionUsage(
-            promptTokens: 120,
-            completionTokens: 40,
-            totalTokens: 160,
-            promptTokensDetails: PromptTokensDetails(cachedTokens: 20),
-            completionTokensDetails: CompletionTokensDetails(
-              reasoningTokens: 8,
-            ),
-          ),
-        ),
-      ]);
+  Stream<LottiInferenceChunk> streamOf(String body) => Stream.fromIterable([
+    LottiInferenceChunk(
+      id: 'chunk',
+      created: 0,
+      choices: [
+        LottiChunkChoice(index: 0, delta: LottiDelta(content: body)),
+      ],
+    ),
+    // A usage chunk, so the token accounting the pills read is exercised
+    // rather than assumed.
+    const LottiInferenceChunk(
+      id: 'usage',
+      created: 0,
+      choices: [],
+      usage: LottiUsage(
+        promptTokens: 120,
+        completionTokens: 40,
+        totalTokens: 160,
+        cachedInputTokens: 20,
+        reasoningTokens: 8,
+      ),
+    ),
+  ]);
 
   setUp(() {
     inference = MockCloudInferenceRepository();
@@ -91,7 +83,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         provider: any(named: 'provider'),
         geminiThinkingMode: GeminiThinkingMode.minimal,
-        reasoningEffort: ReasoningEffort.minimal,
+        reasoningEffort: LottiReasoningEffort.minimal,
         impactCollector: any(named: 'impactCollector'),
       ),
     ).thenAnswer((invocation) {
@@ -411,7 +403,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         provider: any(named: 'provider'),
         geminiThinkingMode: GeminiThinkingMode.minimal,
-        reasoningEffort: ReasoningEffort.minimal,
+        reasoningEffort: LottiReasoningEffort.minimal,
         impactCollector: any(named: 'impactCollector'),
       ),
     ).thenThrow(Exception('provider is down'));

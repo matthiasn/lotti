@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for oMLX speech-to-text models served through the local
 /// OpenAI-compatible API.
@@ -33,7 +33,7 @@ class OmlxTranscriptionRepository extends TranscriptionRepository {
 
   /// Transcribes audio through oMLX's OpenAI-compatible
   /// `/audio/transcriptions` endpoint.
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<LottiInferenceChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,

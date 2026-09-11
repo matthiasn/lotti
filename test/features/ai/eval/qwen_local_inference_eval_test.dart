@@ -5,8 +5,8 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import 'support/qwen_local_inference_eval.dart';
 
@@ -650,19 +650,19 @@ class _RecordedRequest {
 class _FakeInferenceRepository extends InferenceRepositoryInterface {
   _FakeInferenceRepository(this.responses, {this.error});
 
-  final List<CreateChatCompletionStreamResponse> responses;
+  final List<LottiInferenceChunk> responses;
   final Object? error;
   final requests = <_RecordedRequest>[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     InferenceImpactCollector? impactCollector,
@@ -671,135 +671,106 @@ class _FakeInferenceRepository extends InferenceRepositoryInterface {
     requests.add(
       _RecordedRequest(
         model: model,
-        toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
+        toolNames: tools?.map((tool) => tool.name).toList() ?? [],
       ),
     );
     final error = this.error;
     if (error != null) {
-      return Stream<CreateChatCompletionStreamResponse>.error(error);
+      return Stream<LottiInferenceChunk>.error(error);
     }
     return Stream.fromIterable(responses);
   }
 }
 
-CreateChatCompletionStreamResponse _content(String text) {
-  return CreateChatCompletionStreamResponse(
+LottiInferenceChunk _content(String text) {
+  return LottiInferenceChunk(
     id: 'content',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta(content: text),
-        index: 0,
-      ),
-    ],
-    object: 'chat.completion.chunk',
     created: 0,
+    choices: [
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: text)),
+    ],
   );
 }
 
-CreateChatCompletionStreamResponse _toolCall({
+LottiInferenceChunk _toolCall({
   required String name,
   required String argumentsJson,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'tool',
+    created: 0,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta.fromJson({
-          'tool_calls': [
-            {
-              'index': 0,
-              'id': 'call-1',
-              'type': 'function',
-              'function': {
-                'name': name,
-                'arguments': argumentsJson,
-              },
-            },
-          ],
-        }),
+      LottiChunkChoice(
         index: 0,
+        delta: LottiDelta(
+          toolCalls: [
+            LottiToolCallChunk(
+              index: 0,
+              id: 'call-1',
+              name: name,
+              arguments: argumentsJson,
+            ),
+          ],
+        ),
       ),
     ],
-    object: 'chat.completion.chunk',
-    created: 0,
   );
 }
 
-CreateChatCompletionStreamResponse _toolCallChunk({
+LottiInferenceChunk _toolCallChunk({
   required String argumentsJson,
   String? id,
   String? name,
 }) {
-  final function = <String, Object?>{
-    'arguments': argumentsJson,
-  };
-  if (name != null) {
-    function['name'] = name;
-  }
-  final toolCall = <String, Object?>{
-    'index': 0,
-    'type': 'function',
-    'function': function,
-  };
-  if (id != null) {
-    toolCall['id'] = id;
-  }
+  // `id` and `name` stay optional: providers omit them on continuation
+  // fragments, which is exactly what this builder exercises.
+  final toolCall = LottiToolCallChunk(
+    index: 0,
+    id: id,
+    name: name,
+    arguments: argumentsJson,
+  );
 
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'tool',
+    created: 0,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta.fromJson({
-          'tool_calls': [toolCall],
-        }),
+      LottiChunkChoice(
         index: 0,
+        delta: LottiDelta(toolCalls: [toolCall]),
       ),
     ],
-    object: 'chat.completion.chunk',
-    created: 0,
   );
 }
 
-CreateChatCompletionStreamResponse _toolCallChunkWithoutFunction() {
-  return CreateChatCompletionStreamResponse(
+LottiInferenceChunk _toolCallChunkWithoutFunction() {
+  return const LottiInferenceChunk(
     id: 'tool',
+    created: 0,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta.fromJson({
-          'tool_calls': [
-            {
-              'index': 0,
-              'id': 'call-1',
-              'type': 'function',
-            },
-          ],
-        }),
+      LottiChunkChoice(
         index: 0,
+        delta: LottiDelta(
+          toolCalls: [LottiToolCallChunk(index: 0, id: 'call-1')],
+        ),
       ),
     ],
-    object: 'chat.completion.chunk',
-    created: 0,
   );
 }
 
-CreateChatCompletionStreamResponse _chunkWithoutChoices() {
-  return const CreateChatCompletionStreamResponse(
-    id: 'empty',
-    object: 'chat.completion.chunk',
-    created: 0,
-  );
+LottiInferenceChunk _chunkWithoutChoices() {
+  return const LottiInferenceChunk(id: 'empty', created: 0);
 }
 
-CreateChatCompletionStreamResponse _usage({
+LottiInferenceChunk _usage({
   required int inputTokens,
   required int outputTokens,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'usage',
-    choices: const [],
-    object: 'chat.completion.chunk',
     created: 0,
-    usage: CompletionUsage(
+    choices: const [],
+    usage: LottiUsage(
       promptTokens: inputTokens,
       completionTokens: outputTokens,
       totalTokens: inputTokens + outputTokens,

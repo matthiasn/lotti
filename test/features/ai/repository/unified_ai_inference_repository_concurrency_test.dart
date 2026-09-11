@@ -10,9 +10,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -100,15 +100,13 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.value(
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'test-id',
             created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            choices: const [
+              LottiChunkChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
+                delta: LottiDelta(content: 'Test response'),
               ),
             ],
           ),
@@ -680,16 +678,19 @@ void main() {
         ).thenAnswer((_) async => '{"task": "details"}');
 
         // Create stream with multiple tool calls with empty IDs
-        final streamController = StreamController<CreateChatCompletionStreamResponse>()
+        final streamController = StreamController<LottiInferenceChunk>()
           // Add chunks with multiple tool calls, all with empty IDs
           // Since the implementation uses dynamic checking, we can send a custom object
           ..add(
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'test-completion-id',
+              created:
+                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              model: 'test-model',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                LottiChunkChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: LottiDelta(
                     toolCalls: [
                       createMockToolCall(
                         index: 0,
@@ -716,10 +717,6 @@ void main() {
                   ),
                 ),
               ],
-              created:
-                  DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
-              model: 'test-model',
-              object: 'chat.completion.chunk',
             ),
           )
           // Add content chunk
@@ -795,7 +792,7 @@ void main() {
         ).thenAnswer((_) async => '{"task": "details"}');
 
         // Create stream with concatenated JSON in a single tool call
-        final streamController = StreamController<CreateChatCompletionStreamResponse>()
+        final streamController = StreamController<LottiInferenceChunk>()
           ..add(
             createStreamChunkWithToolCalls([
               createMockToolCall(

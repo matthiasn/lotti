@@ -9,8 +9,8 @@ import 'package:glados/glados.dart'
         IntAnys,
         ListAnys,
         any;
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 class _GeneratedToolCallStream {
   const _GeneratedToolCallStream({
@@ -68,18 +68,15 @@ class _GeneratedCompleteToolCallBatch {
 
   String argumentsFor(int callIndex) => '{"value":${values[callIndex]}}';
 
-  ChatCompletionStreamResponseDelta get delta {
-    return ChatCompletionStreamResponseDelta(
+  LottiDelta get delta {
+    return LottiDelta(
       toolCalls: [
         for (var callIndex = 0; callIndex < values.length; callIndex++)
-          ChatCompletionStreamMessageToolCallChunk(
-            index: 0,
+          LottiToolCallChunk(
             id: idFor(callIndex),
-            type: ChatCompletionStreamMessageToolCallChunkType.function,
-            function: ChatCompletionStreamMessageFunctionCall(
-              name: nameFor(callIndex),
-              arguments: argumentsFor(callIndex),
-            ),
+            index: 0,
+            name: nameFor(callIndex),
+            arguments: argumentsFor(callIndex),
           ),
       ],
     );
@@ -138,16 +135,13 @@ class _AccumulatorBench {
   }) {
     for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
       _accumulator.processChunk(
-        ChatCompletionStreamResponseDelta(
+        LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: callIndex,
+            LottiToolCallChunk(
               id: startWithEmptyIds ? '' : scenario.idFor(callIndex),
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: scenario.nameFor(callIndex),
-                arguments: scenario.argumentPart(callIndex, 0),
-              ),
+              index: callIndex,
+              name: scenario.nameFor(callIndex),
+              arguments: scenario.argumentPart(callIndex, 0),
             ),
           ],
         ),
@@ -161,14 +155,12 @@ class _AccumulatorBench {
         }
 
         _accumulator.processChunk(
-          ChatCompletionStreamResponseDelta(
+          LottiDelta(
             toolCalls: [
-              ChatCompletionStreamMessageToolCallChunk(
-                index: callIndex,
+              LottiToolCallChunk(
                 id: continueWithEmptyIds ? '' : null,
-                function: ChatCompletionStreamMessageFunctionCall(
-                  arguments: scenario.argumentPart(callIndex, partIndex),
-                ),
+                index: callIndex,
+                arguments: scenario.argumentPart(callIndex, partIndex),
               ),
             ],
           ),
@@ -191,11 +183,11 @@ class _AccumulatorBench {
 
     for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
       final toolCall = toolCalls.singleWhere(
-        (call) => call.function.name == scenario.nameFor(callIndex),
+        (call) => call.name == scenario.nameFor(callIndex),
       );
       expect(toolCall.id, idMatcher(callIndex));
       expect(
-        toolCall.function.arguments,
+        toolCall.arguments,
         scenario.expectedArgumentsFor(callIndex),
         reason: '$reasonForArguments for $scenario',
       );
@@ -221,24 +213,19 @@ void main() {
       });
 
       test('handles delta without tool calls', () {
-        const delta = ChatCompletionStreamResponseDelta(
-          content: 'Hello',
-        );
+        const delta = LottiDelta(content: 'Hello');
         accumulator.processChunk(delta);
         expect(accumulator.hasToolCalls, isFalse);
       });
 
       test('accumulates single complete tool call', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_123',
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"key": "value"}',
-              ),
+              index: 0,
+              name: 'test_function',
+              arguments: '{"key": "value"}',
             ),
           ],
         );
@@ -249,26 +236,22 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1);
-        expect(toolCalls.first.function.name, 'test_function');
-        expect(toolCalls.first.function.arguments, '{"key": "value"}');
+        expect(toolCalls.first.name, 'test_function');
+        expect(toolCalls.first.arguments, '{"key": "value"}');
       });
 
       test('accumulates multiple complete tool calls in single chunk', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            LottiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'function_one',
-                arguments: '{"a": 1}',
-              ),
+              name: 'function_one',
+              arguments: '{"a": 1}',
             ),
-            ChatCompletionStreamMessageToolCallChunk(
+            LottiToolCallChunk(
               index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'function_two',
-                arguments: '{"b": 2}',
-              ),
+              name: 'function_two',
+              arguments: '{"b": 2}',
             ),
           ],
         );
@@ -278,47 +261,34 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 2);
-        expect(toolCalls[0].function.name, 'function_one');
-        expect(toolCalls[1].function.name, 'function_two');
+        expect(toolCalls[0].name, 'function_one');
+        expect(toolCalls[1].name, 'function_two');
       });
 
       test('accumulates streamed tool call chunks by ID', () {
         // First chunk - starts the tool call
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_abc',
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_function',
-                arguments: '{"par',
-              ),
+              index: 0,
+              name: 'my_function',
+              arguments: '{"par',
             ),
           ],
         );
 
         // Second chunk - continues arguments (no ID, uses index)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: 'am": "val',
-              ),
-            ),
+            LottiToolCallChunk(index: 0, arguments: 'am": "val'),
           ],
         );
 
         // Third chunk - finishes arguments
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: 'ue"}',
-              ),
-            ),
+            LottiToolCallChunk(index: 0, arguments: 'ue"}'),
           ],
         );
 
@@ -331,60 +301,46 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1);
-        expect(toolCalls.first.function.name, 'my_function');
-        expect(toolCalls.first.function.arguments, '{"param": "value"}');
+        expect(toolCalls.first.name, 'my_function');
+        expect(toolCalls.first.arguments, '{"param": "value"}');
       });
 
       test('accumulates multiple parallel tool calls', () {
         // First tool call starts
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_a',
-                arguments: '{"x": ',
-              ),
+              index: 0,
+              name: 'func_a',
+              arguments: '{"x": ',
             ),
           ],
         );
 
         // Second tool call starts
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 1,
+            LottiToolCallChunk(
               id: 'call_2',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_b',
-                arguments: '{"y": ',
-              ),
+              index: 1,
+              name: 'func_b',
+              arguments: '{"y": ',
             ),
           ],
         );
 
         // First tool call continues
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '1}',
-              ),
-            ),
+            LottiToolCallChunk(index: 0, arguments: '1}'),
           ],
         );
 
         // Second tool call continues
-        const chunk4 = ChatCompletionStreamResponseDelta(
+        const chunk4 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 1,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '2}',
-              ),
-            ),
+            LottiToolCallChunk(index: 1, arguments: '2}'),
           ],
         );
 
@@ -400,50 +356,40 @@ void main() {
         expect(toolCalls.length, 2);
 
         final funcA = toolCalls.firstWhere(
-          (tc) => tc.function.name == 'func_a',
+          (tc) => tc.name == 'func_a',
         );
         final funcB = toolCalls.firstWhere(
-          (tc) => tc.function.name == 'func_b',
+          (tc) => tc.name == 'func_b',
         );
 
-        expect(funcA.function.arguments, '{"x": 1}');
-        expect(funcB.function.arguments, '{"y": 2}');
+        expect(funcA.arguments, '{"x": 1}');
+        expect(funcB.arguments, '{"y": 2}');
       });
 
       test('continues last tool call when chunk has no ID or index', () {
         // Start a tool call
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_func',
-                arguments: '{"start": ',
-              ),
+              index: 0,
+              name: 'my_func',
+              arguments: '{"start": ',
             ),
           ],
         );
 
         // Continue without ID or index (should append to last)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '"middle", ',
-              ),
-            ),
+            LottiToolCallChunk(arguments: '"middle", '),
           ],
         );
 
         // Another continuation without ID or index
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '"end": true}',
-              ),
-            ),
+            LottiToolCallChunk(arguments: '"end": true}'),
           ],
         );
 
@@ -455,21 +401,19 @@ void main() {
         expect(accumulator.count, 1);
         final toolCalls = accumulator.toToolCalls();
         expect(
-          toolCalls.first.function.arguments,
+          toolCalls.first.arguments,
           '{"start": "middle", "end": true}',
         );
       });
 
       test('handles chunk with empty ID string', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            LottiToolCallChunk(
               index: 0,
               id: '', // Empty string ID
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'empty_id_func',
-                arguments: '{"test": true}',
-              ),
+              name: 'empty_id_func',
+              arguments: '{"test": true}',
             ),
           ],
         );
@@ -479,30 +423,26 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.first.id, startsWith('tool_'));
-        expect(toolCalls.first.function.name, 'empty_id_func');
+        expect(toolCalls.first.name, 'empty_id_func');
       });
 
       test('handles continuation chunk without function data', () {
         // Start a tool call
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_func',
-                arguments: '{"key": "value"}',
-              ),
+              index: 0,
+              name: 'my_func',
+              arguments: '{"key": "value"}',
             ),
           ],
         );
 
         // Continuation chunk without function (edge case)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-            ),
+            LottiToolCallChunk(index: 0),
           ],
         );
 
@@ -513,18 +453,14 @@ void main() {
         // Should still have the original tool call unchanged
         expect(accumulator.count, 1);
         final toolCalls = accumulator.toToolCalls();
-        expect(toolCalls.first.function.arguments, '{"key": "value"}');
+        expect(toolCalls.first.arguments, '{"key": "value"}');
       });
 
       test('ignores continuation when no tool calls exist', () {
         // Try to continue without any existing tool calls
-        const chunk = ChatCompletionStreamResponseDelta(
+        const chunk = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: 'orphan data',
-              ),
-            ),
+            LottiToolCallChunk(arguments: 'orphan data'),
           ],
         );
 
@@ -536,16 +472,13 @@ void main() {
       });
 
       test('appends continuation chunks that repeat the explicit ID', () {
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_repeat',
-              type: ChatCompletionStreamMessageToolCallChunkType.function,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'repeat_func',
-                arguments: '{"a": ',
-              ),
+              index: 0,
+              name: 'repeat_func',
+              arguments: '{"a": ',
             ),
           ],
         );
@@ -553,27 +486,19 @@ void main() {
         // Some providers repeat the same non-empty id on continuation chunks
         // and only ship more arguments. The accumulator must append rather
         // than reset the entry.
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_repeat',
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '1, "b": ',
-              ),
+              index: 0,
+              arguments: '1, "b": ',
             ),
           ],
         );
 
-        const chunk3 = ChatCompletionStreamResponseDelta(
+        const chunk3 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              id: 'call_repeat',
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '2}',
-              ),
-            ),
+            LottiToolCallChunk(id: 'call_repeat', index: 0, arguments: '2}'),
           ],
         );
 
@@ -586,34 +511,27 @@ void main() {
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls, hasLength(1));
         expect(toolCalls.first.id, 'call_repeat');
-        expect(toolCalls.first.function.name, 'repeat_func');
-        expect(toolCalls.first.function.arguments, '{"a": 1, "b": 2}');
+        expect(toolCalls.first.name, 'repeat_func');
+        expect(toolCalls.first.arguments, '{"a": 1, "b": 2}');
       });
 
       test('preserves function name when continuing with only arguments', () {
         // Start a tool call with name and partial arguments
-        const chunk1 = ChatCompletionStreamResponseDelta(
+        const chunk1 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'my_function',
-                arguments: '{"a": ',
-              ),
+              index: 0,
+              name: 'my_function',
+              arguments: '{"a": ',
             ),
           ],
         );
 
         // Continue with only arguments (no name)
-        const chunk2 = ChatCompletionStreamResponseDelta(
+        const chunk2 = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                arguments: '1}',
-              ),
-            ),
+            LottiToolCallChunk(index: 0, arguments: '1}'),
           ],
         );
 
@@ -623,8 +541,8 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1);
-        expect(toolCalls.first.function.name, 'my_function');
-        expect(toolCalls.first.function.arguments, '{"a": 1}');
+        expect(toolCalls.first.name, 'my_function');
+        expect(toolCalls.first.arguments, '{"a": 1}');
       });
 
       Glados(any.toolCallStream).test(
@@ -678,11 +596,11 @@ void main() {
           for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
             expect(toolCalls[callIndex].id, scenario.idFor(callIndex));
             expect(
-              toolCalls[callIndex].function.name,
+              toolCalls[callIndex].name,
               scenario.nameFor(callIndex),
             );
             expect(
-              toolCalls[callIndex].function.arguments,
+              toolCalls[callIndex].arguments,
               scenario.argumentsFor(callIndex),
             );
           }
@@ -698,23 +616,19 @@ void main() {
       });
 
       test('skips tool calls with empty arguments', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_empty',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'empty_func',
-                arguments: '',
-              ),
+              index: 0,
+              name: 'empty_func',
+              arguments: '',
             ),
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 1,
+            LottiToolCallChunk(
               id: 'call_valid',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'valid_func',
-                arguments: '{"valid": true}',
-              ),
+              index: 1,
+              name: 'valid_func',
+              arguments: '{"valid": true}',
             ),
           ],
         );
@@ -724,26 +638,14 @@ void main() {
 
         final toolCalls = accumulator.toToolCalls();
         expect(toolCalls.length, 1); // But only valid one is returned
-        expect(toolCalls.first.function.name, 'valid_func');
+        expect(toolCalls.first.name, 'valid_func');
       });
 
       test('generates unique IDs for tool calls without IDs', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_1',
-                arguments: '{"a": 1}',
-              ),
-            ),
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func_2',
-                arguments: '{"b": 2}',
-              ),
-            ),
+            LottiToolCallChunk(index: 0, name: 'func_1', arguments: '{"a": 1}'),
+            LottiToolCallChunk(index: 0, name: 'func_2', arguments: '{"b": 2}'),
           ],
         );
 
@@ -756,16 +658,17 @@ void main() {
         expect(toolCalls[1].id, startsWith('tool_'));
       });
 
-      test('sets function type on all tool calls', () {
-        const delta = ChatCompletionStreamResponseDelta(
+      // The wire `type` discriminator is gone from the domain — every Lotti
+      // tool call is a function call — so what is worth asserting here is
+      // that the fragment's identity survives accumulation intact.
+      test('carries id, name and arguments through accumulation', () {
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'test_func',
-                arguments: '{}',
-              ),
+              index: 0,
+              name: 'test_func',
+              arguments: '{}',
             ),
           ],
         );
@@ -773,10 +676,10 @@ void main() {
         accumulator.processChunk(delta);
         final toolCalls = accumulator.toToolCalls();
 
-        expect(
-          toolCalls.first.type,
-          ChatCompletionMessageToolCallType.function,
-        );
+        expect(toolCalls, hasLength(1));
+        expect(toolCalls.first.id, 'call_1');
+        expect(toolCalls.first.name, 'test_func');
+        expect(toolCalls.first.arguments, '{}');
       });
     });
 
@@ -786,15 +689,13 @@ void main() {
       });
 
       test('returns true after processing tool calls', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func',
-                arguments: '{}',
-              ),
+              index: 0,
+              name: 'func',
+              arguments: '{}',
             ),
           ],
         );
@@ -810,23 +711,19 @@ void main() {
       });
 
       test('returns correct count after processing', () {
-        const delta = ChatCompletionStreamResponseDelta(
+        const delta = LottiDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 0,
+            LottiToolCallChunk(
               id: 'call_1',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func1',
-                arguments: '{}',
-              ),
+              index: 0,
+              name: 'func1',
+              arguments: '{}',
             ),
-            ChatCompletionStreamMessageToolCallChunk(
-              index: 1,
+            LottiToolCallChunk(
               id: 'call_2',
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: 'func2',
-                arguments: '{}',
-              ),
+              index: 1,
+              name: 'func2',
+              arguments: '{}',
             ),
           ],
         );

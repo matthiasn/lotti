@@ -5,13 +5,13 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Mistral-specific inference operations
 ///
@@ -425,7 +425,7 @@ class MistralInferenceRepository {
   /// Mistral's native payload represents `input_audio` as the base64 string,
   /// unlike the OpenAI-compatible object used by Melious. Task instructions
   /// and speech-dictionary context remain in the adjacent text content part.
-  Stream<CreateChatCompletionStreamResponse> transcribeChatAudio({
+  Stream<LottiInferenceChunk> transcribeChatAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -476,7 +476,7 @@ class MistralInferenceRepository {
   ///
   /// Returns:
   ///   Stream of chat completion responses
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required String baseUrl,
@@ -484,9 +484,9 @@ class MistralInferenceRepository {
     String? systemMessage,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
   }) async* {
     yield* _generate(
       messages: [
@@ -507,16 +507,16 @@ class MistralInferenceRepository {
   ///
   /// This method supports multi-turn conversations with Mistral's API and
   /// the same tool-selection override as [generateText].
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required String baseUrl,
     required String apiKey,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
   }) async* {
     yield* _generate(
       messages: convertMessages(messages),
@@ -530,118 +530,73 @@ class MistralInferenceRepository {
     );
   }
 
-  /// Convert openai_dart messages to plain maps for manual serialization.
+  /// Convert Lotti messages to plain maps for manual serialization.
   @visibleForTesting
-  List<Map<String, dynamic>> convertMessages(
-    List<ChatCompletionMessage> messages,
-  ) {
-    return messages.map((message) {
-      final role = message.role;
-      switch (role) {
-        case ChatCompletionMessageRole.system:
-          return message.mapOrNull(
-            system: (m) => {
-              'role': 'system',
-              'content': m.content,
-            },
-          )!;
-
-        case ChatCompletionMessageRole.user:
-          return message.mapOrNull(
-            user: (m) {
-              final content = m.content.mapOrNull(
-                string: (c) => c.value,
-                parts: (c) => c.value
-                    .map(
-                      (part) => part.mapOrNull(
-                        text: (t) => {'type': 'text', 'text': t.text},
-                        image: (i) => {
-                          'type': 'image_url',
-                          'image_url': {'url': i.imageUrl.url},
-                        },
-                        audio: (a) => {
-                          'type': 'input_audio',
-                          'input_audio': {
-                            'data': a.inputAudio.data,
-                            'format': a.inputAudio.format.name,
-                          },
-                        },
-                      ),
-                    )
-                    .whereType<Map<String, dynamic>>()
-                    .toList(),
-              );
-              return {
-                'role': 'user',
-                'content': content,
-              };
-            },
-          )!;
-
-        case ChatCompletionMessageRole.assistant:
-          return message.mapOrNull(
-            assistant: (m) {
-              final map = <String, dynamic>{'role': 'assistant'};
-              if (m.content != null) {
-                map['content'] = m.content;
-              }
-              if (m.toolCalls != null && m.toolCalls!.isNotEmpty) {
-                map['tool_calls'] = m.toolCalls!
-                    .map(
-                      (tc) => {
-                        'id': tc.id,
-                        'type': 'function',
-                        'function': {
-                          'name': tc.function.name,
-                          'arguments': tc.function.arguments,
-                        },
-                      },
-                    )
-                    .toList();
-              }
-              return map;
-            },
-          )!;
-
-        case ChatCompletionMessageRole.tool:
-          return message.mapOrNull(
-            tool: (m) => {
-              'role': 'tool',
-              'tool_call_id': m.toolCallId,
-              'content': m.content,
-            },
-          )!;
-
-        case ChatCompletionMessageRole.function:
-          return message.mapOrNull(
-            function: (m) => {
-              'role': 'function',
-              'name': m.name,
-              'content': m.content,
-            },
-          )!;
-
-        case ChatCompletionMessageRole.developer:
-          return message.mapOrNull(
-            developer: (m) => {
-              'role': 'developer',
-              'content': m.content,
-            },
-          )!;
-      }
-    }).toList();
+  List<Map<String, dynamic>> convertMessages(List<LottiMessage> messages) {
+    return messages.map(_convertMessage).toList();
   }
 
+  Map<String, dynamic> _convertMessage(LottiMessage message) =>
+      switch (message) {
+        LottiSystemMessage(:final content) => {
+          'role': 'system',
+          'content': content,
+        },
+        LottiDeveloperMessage(:final content) => {
+          'role': 'developer',
+          'content': content,
+        },
+        LottiUserMessage(:final content) => {
+          'role': 'user',
+          'content': switch (content) {
+            LottiUserText(:final text) => text,
+            LottiUserParts(:final parts) =>
+              parts.map(_convertContentPart).toList(),
+          },
+        },
+        LottiAssistantMessage(:final content, :final toolCalls) => {
+          'role': 'assistant',
+          'content': ?content,
+          if (toolCalls != null && toolCalls.isNotEmpty)
+            'tool_calls': [
+              for (final tc in toolCalls)
+                {
+                  'id': tc.id,
+                  'type': 'function',
+                  'function': {'name': tc.name, 'arguments': tc.arguments},
+                },
+            ],
+        },
+        LottiToolMessage(:final toolCallId, :final content) => {
+          'role': 'tool',
+          'tool_call_id': toolCallId,
+          'content': content,
+        },
+      };
+
+  Map<String, dynamic> _convertContentPart(LottiContentPart part) =>
+      switch (part) {
+        LottiTextPart(:final text) => {'type': 'text', 'text': text},
+        LottiImagePart(:final url) => {
+          'type': 'image_url',
+          'image_url': {'url': url},
+        },
+        LottiAudioPart(:final base64Data, :final format) => {
+          'type': 'input_audio',
+          'input_audio': {'data': base64Data, 'format': format.name},
+        },
+      };
+
   /// Internal method to generate text with streaming.
-  Stream<CreateChatCompletionStreamResponse> _generate({
+  Stream<LottiInferenceChunk> _generate({
     required List<Map<String, dynamic>> messages,
     required String model,
     required String baseUrl,
     required String apiKey,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) async* {
     final requestBody = <String, dynamic>{
       'model': model,
@@ -657,10 +612,9 @@ class MistralInferenceRepository {
         return {
           'type': 'function',
           'function': {
-            'name': tool.function.name,
-            'description': tool.function.description,
-            if (tool.function.parameters != null)
-              'parameters': tool.function.parameters,
+            'name': tool.name,
+            'description': tool.description,
+            if (tool.parameters != null) 'parameters': tool.parameters,
           },
         };
       }).toList();
@@ -777,29 +731,27 @@ class MistralInferenceRepository {
     }
   }
 
-  Object? _serializeToolChoice(ChatCompletionToolChoiceOption? toolChoice) {
+  Object? _serializeToolChoice(LottiToolChoice? toolChoice) {
     if (toolChoice == null) return null;
 
-    return toolChoice.map(
-      mode: (choice) => switch (choice.value) {
-        ChatCompletionToolChoiceMode.none => 'none',
-        ChatCompletionToolChoiceMode.auto => 'auto',
-        // Mistral forces a tool call with `any`; `required` (the OpenAI
-        // spelling) is rejected with a 400 Bad Request.
-        ChatCompletionToolChoiceMode.required => 'any',
-      },
-      tool: (choice) => {
+    return switch (toolChoice) {
+      LottiToolChoiceNone() => 'none',
+      LottiToolChoiceAuto() => 'auto',
+      // Mistral forces a tool call with `any`; `required` (the OpenAI
+      // spelling) is rejected with a 400 Bad Request.
+      LottiToolChoiceRequired() => 'any',
+      LottiToolChoiceSpecific(:final name) => {
         'type': 'function',
-        'function': {'name': choice.value.function.name},
+        'function': {'name': name},
       },
-    );
+    };
   }
 
   /// Parse a streaming response chunk from Mistral's API.
   ///
   /// This method handles Mistral's response format where content may be
   /// returned as an array instead of a string.
-  CreateChatCompletionStreamResponse? _parseStreamResponse(
+  LottiInferenceChunk? _parseStreamResponse(
     Map<String, dynamic> json,
   ) {
     final choices = json['choices'] as List<dynamic>?;
@@ -807,7 +759,7 @@ class MistralInferenceRepository {
       return null;
     }
 
-    final parsedChoices = <ChatCompletionStreamResponseChoice>[];
+    final parsedChoices = <LottiChunkChoice>[];
 
     for (final choice in choices) {
       final choiceMap = choice as Map<String, dynamic>;
@@ -820,36 +772,22 @@ class MistralInferenceRepository {
       // Handle tool calls
       final toolCalls = _parseToolCalls(delta['tool_calls']);
 
-      // Handle role
-      final roleStr = delta['role'] as String?;
-      ChatCompletionMessageRole? role;
-      if (roleStr != null) {
-        role = ChatCompletionMessageRole.values.firstWhere(
-          (r) => r.name == roleStr,
-          orElse: () => ChatCompletionMessageRole.assistant,
-        );
-      }
-
       // Handle finish reason - convert snake_case from API to camelCase enum
       final finishReasonStr = choiceMap['finish_reason'] as String?;
-      ChatCompletionFinishReason? finishReason;
+      LottiFinishReason? finishReason;
       if (finishReasonStr != null) {
         // Convert snake_case to camelCase for enum matching
         final camelCaseReason = _snakeToCamel(finishReasonStr);
-        finishReason = ChatCompletionFinishReason.values.firstWhere(
+        finishReason = LottiFinishReason.values.firstWhere(
           (r) => r.name == camelCaseReason,
-          orElse: () => ChatCompletionFinishReason.stop,
+          orElse: () => LottiFinishReason.stop,
         );
       }
 
       parsedChoices.add(
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(
-            content: content,
-            role: role,
-            toolCalls: toolCalls,
-          ),
+        LottiChunkChoice(
           index: choiceMap['index'] as int? ?? 0,
+          delta: LottiDelta(content: content, toolCalls: toolCalls),
           finishReason: finishReason,
         ),
       );
@@ -860,26 +798,25 @@ class MistralInferenceRepository {
     }
 
     // Parse usage if present
-    CompletionUsage? usage;
+    LottiUsage? usage;
     final usageJson = json['usage'] as Map<String, dynamic>?;
     if (usageJson != null) {
-      usage = CompletionUsage(
-        completionTokens: usageJson['completion_tokens'] as int? ?? 0,
+      usage = LottiUsage(
         promptTokens: usageJson['prompt_tokens'] as int? ?? 0,
+        completionTokens: usageJson['completion_tokens'] as int? ?? 0,
         totalTokens: usageJson['total_tokens'] as int? ?? 0,
       );
     }
 
-    return CreateChatCompletionStreamResponse(
+    return LottiInferenceChunk(
       id:
           json['id'] as String? ??
           'mistral-${DateTime.now().millisecondsSinceEpoch}',
-      choices: parsedChoices,
-      object: 'chat.completion.chunk',
       created:
           json['created'] as int? ??
           DateTime.now().millisecondsSinceEpoch ~/ 1000,
       model: json['model'] as String?,
+      choices: parsedChoices,
       usage: usage,
     );
   }
@@ -934,29 +871,25 @@ class MistralInferenceRepository {
   }
 
   /// Parse tool calls from the delta.
-  List<ChatCompletionStreamMessageToolCallChunk>? _parseToolCalls(
+  List<LottiToolCallChunk>? _parseToolCalls(
     dynamic toolCalls,
   ) {
     if (toolCalls == null) return null;
 
     if (toolCalls is! List) return null;
 
-    final result = <ChatCompletionStreamMessageToolCallChunk>[];
+    final result = <LottiToolCallChunk>[];
 
     for (final tc in toolCalls) {
       if (tc is Map<String, dynamic>) {
         final function = tc['function'] as Map<String, dynamic>?;
 
         result.add(
-          ChatCompletionStreamMessageToolCallChunk(
+          LottiToolCallChunk(
             id: tc['id'] as String?,
             index: tc['index'] as int?,
-            function: function != null
-                ? ChatCompletionStreamMessageFunctionCall(
-                    name: function['name'] as String?,
-                    arguments: function['arguments'] as String?,
-                  )
-                : null,
+            name: function?['name'] as String?,
+            arguments: function?['arguments'] as String?,
           ),
         );
       }

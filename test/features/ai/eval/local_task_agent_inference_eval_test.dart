@@ -10,10 +10,11 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import 'support/local_task_agent_inference_eval.dart';
 
@@ -90,7 +91,7 @@ void main() {
     expect(parseLocalTaskAgentEvalReasoningEffort('  '), isNull);
     expect(
       parseLocalTaskAgentEvalReasoningEffort(' high '),
-      ReasoningEffort.high,
+      LottiReasoningEffort.high,
     );
     expect(
       () => parseLocalTaskAgentEvalReasoningEffort('maximum'),
@@ -124,7 +125,7 @@ void main() {
           .toList();
 
       expect(
-        buildLocalTaskAgentEvalTools().map((tool) => tool.function.name),
+        buildLocalTaskAgentEvalTools().map((tool) => tool.name),
         equals(expected),
       );
       expect(expected, contains(TaskAgentToolNames.updateReport));
@@ -137,23 +138,23 @@ void main() {
       promptVariant: LocalTaskAgentEvalPromptVariant.evidenceSynthesis,
     );
     final reportTool = tools.singleWhere(
-      (tool) => tool.function.name == TaskAgentToolNames.updateReport,
+      (tool) => tool.name == TaskAgentToolNames.updateReport,
     );
     final mutationTool = tools.singleWhere(
-      (tool) => tool.function.name == TaskAgentToolNames.setTaskTitle,
+      (tool) => tool.name == TaskAgentToolNames.setTaskTitle,
     );
     final reportProperties =
-        reportTool.function.parameters!['properties']! as Map<String, dynamic>;
+        reportTool.parameters!['properties']! as Map<String, dynamic>;
 
     expect(
-      reportTool.function.description,
+      reportTool.description,
       allOf(
         contains('stale report claims'),
         contains('out-of-scope concepts completely'),
       ),
     );
     expect(
-      mutationTool.function.description,
+      mutationTool.description,
       isNot(contains('out-of-scope concepts')),
     );
     expect(
@@ -248,7 +249,7 @@ void main() {
       results: [result],
       temperature: 0.3,
       executionMode: LocalTaskAgentEvalExecutionMode.singlePass,
-      reasoningEffort: ReasoningEffort.high,
+      reasoningEffort: LottiReasoningEffort.high,
     );
 
     expect(profile.toJson(), {
@@ -1331,9 +1332,7 @@ void main() {
       );
       expect(
         jsonEncode(
-          fakeInference.requests.first.messages
-              .map((message) => message.toJson())
-              .toList(),
+          openAiMessagesJson(fakeInference.requests.first.messages),
         ),
         contains('## Current Task Context'),
       );
@@ -1823,7 +1822,7 @@ void main() {
         inferenceRepository: inferenceRepository,
         executionMode: LocalTaskAgentEvalExecutionMode.twoPass,
         temperature: 0,
-        reasoningEffort: ReasoningEffort.high,
+        reasoningEffort: LottiReasoningEffort.high,
       );
 
       final report = await runner.run(
@@ -1836,7 +1835,7 @@ void main() {
       expect(report.results.single.outputTokens, 30);
       expect(report.results.single.thoughtsTokens, 15);
       expect(report.results.single.cachedInputTokens, 7);
-      expect(report.reasoningEffort, ReasoningEffort.high);
+      expect(report.reasoningEffort, LottiReasoningEffort.high);
       expect(inferenceRepository.requests, hasLength(2));
       expect(
         inferenceRepository.requests.first.toolNames,
@@ -2089,9 +2088,7 @@ void main() {
       expect(result.reportEditorAttempts, 1);
       expect(inferenceRepository.requests, hasLength(2));
       final editorMessages = jsonEncode(
-        inferenceRepository.requests.last.messages
-            .map((message) => message.toJson())
-            .toList(),
+        openAiMessagesJson(inferenceRepository.requests.last.messages),
       );
       expect(editorMessages, contains('requiredCorrections'));
       expect(editorMessages, contains('processNarration'));
@@ -2199,9 +2196,7 @@ void main() {
       ]);
       expect(
         jsonEncode(
-          inferenceRepository.requests[2].messages
-              .map((message) => message.toJson())
-              .toList(),
+          openAiMessagesJson(inferenceRepository.requests[2].messages),
         ),
         contains('You did not call `update_report` before stopping.'),
       );
@@ -2281,9 +2276,7 @@ void main() {
     expect(result.outputTokens, 38);
     expect(inferenceRepository.requests, hasLength(3));
     final repairMessages = jsonEncode(
-      inferenceRepository.requests.last.messages
-          .map((message) => message.toJson())
-          .toList(),
+      openAiMessagesJson(inferenceRepository.requests.last.messages),
     );
     expect(repairMessages, contains('requiredCorrections'));
     expect(repairMessages, contains('missingPriority'));
@@ -2366,9 +2359,7 @@ void main() {
         TaskAgentToolNames.updateReport,
       ]);
       final editorMessages = jsonEncode(
-        inferenceRepository.requests.last.messages
-            .map((message) => message.toJson())
-            .toList(),
+        openAiMessagesJson(inferenceRepository.requests.last.messages),
       );
       expect(editorMessages, contains('draftReport'));
       expect(editorMessages, contains('materialTaskState'));
@@ -2595,7 +2586,7 @@ void main() {
 Future<LocalTaskAgentEvalFailureCategory> _runSingleFailureScenario({
   required AiConfigInferenceProvider provider,
   required LocalTaskAgentEvalProfile profile,
-  required List<CreateChatCompletionStreamResponse> responses,
+  required List<LottiInferenceChunk> responses,
 }) async {
   final runner = _createRunner(
     provider: provider,
@@ -2615,7 +2606,7 @@ LocalTaskAgentInferenceEvalRunner _createRunner({
   required InferenceRepositoryInterface inferenceRepository,
   bool forceReportRetry = true,
   double temperature = 0.3,
-  ReasoningEffort? reasoningEffort,
+  LottiReasoningEffort? reasoningEffort,
   LocalTaskAgentEvalExecutionMode executionMode =
       LocalTaskAgentEvalExecutionMode.singlePass,
   String? reportEditorModelId,
@@ -2716,7 +2707,7 @@ class _RecordedRequest {
     required this.temperature,
   });
 
-  final List<ChatCompletionMessage> messages;
+  final List<LottiMessage> messages;
   final List<String> toolNames;
   final String model;
   final double temperature;
@@ -2752,8 +2743,8 @@ class _ThrowingConversationRepository extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     String? consumptionAgentId,
@@ -2775,19 +2766,19 @@ class _ThrowingConversationRepository extends ConversationRepository {
 class _QueuedInferenceRepository extends InferenceRepositoryInterface {
   _QueuedInferenceRepository(this.responsesByRequest);
 
-  final List<List<CreateChatCompletionStreamResponse>> responsesByRequest;
+  final List<List<LottiInferenceChunk>> responsesByRequest;
   final requests = <_RecordedRequest>[];
   var _requestIndex = 0;
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     InferenceImpactCollector? impactCollector,
@@ -2796,14 +2787,14 @@ class _QueuedInferenceRepository extends InferenceRepositoryInterface {
     requests.add(
       _RecordedRequest(
         messages: messages,
-        toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
+        toolNames: tools?.map((tool) => tool.name).toList() ?? [],
         model: model,
         temperature: temperature,
       ),
     );
     final responses = _requestIndex < responsesByRequest.length
         ? responsesByRequest[_requestIndex]
-        : const <CreateChatCompletionStreamResponse>[];
+        : const <LottiInferenceChunk>[];
     _requestIndex++;
     return Stream.fromIterable(responses);
   }
@@ -2813,14 +2804,14 @@ class _FailThenSucceedInferenceRepository extends InferenceRepositoryInterface {
   final requests = <_RecordedRequest>[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     InferenceImpactCollector? impactCollector,
@@ -2829,7 +2820,7 @@ class _FailThenSucceedInferenceRepository extends InferenceRepositoryInterface {
     requests.add(
       _RecordedRequest(
         messages: messages,
-        toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
+        toolNames: tools?.map((tool) => tool.name).toList() ?? [],
         model: model,
         temperature: temperature,
       ),
@@ -2868,70 +2859,57 @@ class _FailThenSucceedInferenceRepository extends InferenceRepositoryInterface {
   }
 }
 
-CreateChatCompletionStreamResponse _content(String text) {
-  return CreateChatCompletionStreamResponse(
+LottiInferenceChunk _content(String text) {
+  return LottiInferenceChunk(
     id: 'content',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta(content: text),
-        index: 0,
-      ),
-    ],
-    object: 'chat.completion.chunk',
     created: 0,
+    choices: [
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: text)),
+    ],
   );
 }
 
-CreateChatCompletionStreamResponse _usage({
+LottiInferenceChunk _usage({
   required int inputTokens,
   required int outputTokens,
   int? thoughtsTokens,
   int? cachedInputTokens,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'usage',
-    choices: const [],
-    object: 'chat.completion.chunk',
     created: 0,
-    usage: CompletionUsage(
+    choices: const [],
+    usage: LottiUsage(
       promptTokens: inputTokens,
       completionTokens: outputTokens,
       totalTokens: inputTokens + outputTokens,
-      promptTokensDetails: cachedInputTokens == null
-          ? null
-          : PromptTokensDetails(cachedTokens: cachedInputTokens),
-      completionTokensDetails: thoughtsTokens == null
-          ? null
-          : CompletionTokensDetails(reasoningTokens: thoughtsTokens),
+      cachedInputTokens: cachedInputTokens,
+      reasoningTokens: thoughtsTokens,
     ),
   );
 }
 
-CreateChatCompletionStreamResponse _toolCalls(
+LottiInferenceChunk _toolCalls(
   List<({String name, String argumentsJson})> calls,
 ) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'tool',
+    created: 0,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta.fromJson({
-          'tool_calls': [
-            for (var i = 0; i < calls.length; i++)
-              {
-                'index': i,
-                'id': 'call-$i',
-                'type': 'function',
-                'function': {
-                  'name': calls[i].name,
-                  'arguments': calls[i].argumentsJson,
-                },
-              },
-          ],
-        }),
+      LottiChunkChoice(
         index: 0,
+        delta: LottiDelta(
+          toolCalls: [
+            for (var i = 0; i < calls.length; i++)
+              LottiToolCallChunk(
+                index: i,
+                id: 'call-$i',
+                name: calls[i].name,
+                arguments: calls[i].argumentsJson,
+              ),
+          ],
+        ),
       ),
     ],
-    object: 'chat.completion.chunk',
-    created: 0,
   );
 }

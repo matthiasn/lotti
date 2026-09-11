@@ -1,4 +1,4 @@
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 /// Manages AI conversations with context preservation and multi-turn support
 ///
@@ -19,14 +19,14 @@ class ConversationManager {
   final int maxTurns;
   final int maxHistorySize;
 
-  final List<ChatCompletionMessage> _messages = [];
+  final List<LottiMessage> _messages = [];
   String? _lastError;
 
   /// Thought signatures from Gemini 3 models, keyed by tool call ID.
   /// Required for multi-turn function calling to maintain reasoning context.
   final Map<String, String> _thoughtSignatures = {};
 
-  List<ChatCompletionMessage> get messages => List.unmodifiable(_messages);
+  List<LottiMessage> get messages => List.unmodifiable(_messages);
 
   /// Most recent inference error recorded for this conversation, if any.
   // Used by test/evaluation tooling, which `dcm check-unused-code lib` does not
@@ -42,7 +42,7 @@ class ConversationManager {
       Map.unmodifiable(_thoughtSignatures);
 
   int get turnCount =>
-      _messages.where((m) => m.role == ChatCompletionMessageRole.user).length;
+      _messages.where((m) => m.role == LottiMessageRole.user).length;
 
   /// Initialize conversation with optional system message
   void initialize({String? systemMessage}) {
@@ -51,16 +51,14 @@ class ConversationManager {
     _lastError = null;
 
     if (systemMessage != null) {
-      _messages.add(ChatCompletionMessage.system(content: systemMessage));
+      _messages.add(LottiMessage.system(systemMessage));
     }
   }
 
   /// Add a user message to the conversation
   void addUserMessage(String message) {
     _messages.add(
-      ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.string(message),
-      ),
+      LottiMessage.userText(message),
     );
 
     _trimHistoryIfNeeded();
@@ -73,7 +71,7 @@ class ConversationManager {
   /// requests for multi-turn function calling.
   void addAssistantMessage({
     String? content,
-    List<ChatCompletionMessageToolCall>? toolCalls,
+    List<LottiToolCall>? toolCalls,
     Map<String, String>? signatures,
   }) {
     // Store thought signatures for later use
@@ -82,10 +80,7 @@ class ConversationManager {
     }
 
     _messages.add(
-      ChatCompletionMessage.assistant(
-        content: content,
-        toolCalls: toolCalls,
-      ),
+      LottiMessage.assistant(content: content, toolCalls: toolCalls),
     );
   }
 
@@ -95,10 +90,7 @@ class ConversationManager {
     required String response,
   }) {
     _messages.add(
-      ChatCompletionMessage.tool(
-        toolCallId: toolCallId,
-        content: response,
-      ),
+      LottiMessage.tool(toolCallId: toolCallId, content: response),
     );
   }
 
@@ -108,19 +100,25 @@ class ConversationManager {
   }
 
   /// Get messages formatted for API request
-  List<ChatCompletionMessage> getMessagesForRequest() {
+  List<LottiMessage> getMessagesForRequest() {
     return _messages
-        .map((message) {
-          final normalized = message.mapOrNull(
-            assistant: (assistant) {
-              if (assistant.content == null) {
-                return assistant.copyWith(content: '');
-              }
-              return null;
-            },
-          );
-          return normalized ?? message;
-        })
+        .map(
+          (message) => switch (message) {
+            // Some providers reject an assistant turn whose content is null;
+            // an empty string is the neutral equivalent.
+            LottiAssistantMessage(
+              content: null,
+              :final toolCalls,
+              :final name,
+            ) =>
+              LottiMessage.assistant(
+                content: '',
+                toolCalls: toolCalls,
+                name: name,
+              ),
+            _ => message,
+          },
+        )
         .toList(growable: false);
   }
 
@@ -133,7 +131,7 @@ class ConversationManager {
 
     final hasInitialSystem =
         _messages.isNotEmpty &&
-        _messages.first.role == ChatCompletionMessageRole.system &&
+        _messages.first.role == LottiMessageRole.system &&
         !_isTruncationNotice(_messages.first);
     final minimumRetainedSize = hasInitialSystem ? 3 : 2;
     final effectiveMaxSize = maxHistorySize < minimumRetainedSize
@@ -162,13 +160,13 @@ class ConversationManager {
     // cannot empty the tail today; the guard below future-proofs against a
     // caller that trims after a tool/assistant append.
     while (retainedTail.isNotEmpty &&
-        retainedTail.first.role == ChatCompletionMessageRole.tool) {
+        retainedTail.first.role == LottiMessageRole.tool) {
       retainedTail.removeAt(0);
     }
     if (retainedTail.isEmpty) return;
     final retainedMessages = [
       if (hasInitialSystem) _messages.first,
-      const ChatCompletionMessage.system(content: _truncationNotice),
+      const LottiMessage.system(_truncationNotice),
       ...retainedTail,
     ];
 
@@ -177,17 +175,15 @@ class ConversationManager {
       ..addAll(retainedMessages);
   }
 
-  bool _isTruncationNotice(ChatCompletionMessage message) {
-    return message.role == ChatCompletionMessageRole.system &&
-        message.content == _truncationNotice;
-  }
+  bool _isTruncationNotice(LottiMessage message) =>
+      message is LottiSystemMessage && message.content == _truncationNotice;
 }
 
 /// Strategy for handling conversations
 abstract class ConversationStrategy {
   /// Process tool calls and determine next action
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   });
 
@@ -208,7 +204,7 @@ abstract class ConversationStrategy {
   ///
   /// Returning null is the default and leaves behaviour exactly as before, so
   /// strategies that do not care are unaffected.
-  List<ChatCompletionTool>? toolsForTurn({
+  List<LottiTool>? toolsForTurn({
     required int turnIndex,
     required ConversationManager manager,
   }) => null;

@@ -68,11 +68,13 @@ import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart'
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/inference_client.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -223,7 +225,6 @@ import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart' as record;
@@ -1360,7 +1361,7 @@ class MockConversationStrategy extends Mock implements ConversationStrategy {}
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
 
-class MockOpenAIClient extends Mock implements OpenAIClient {}
+class MockLottiInferenceClient extends Mock implements LottiInferenceClient {}
 
 class MockGeminiInferenceRepository extends Mock
     implements GeminiInferenceRepository {}
@@ -1439,8 +1440,7 @@ class FakeAiConfigModel extends Fake implements AiConfigModel {}
 class FakeAiConfigInferenceProvider extends Fake
     implements AiConfigInferenceProvider {}
 
-class FakeCreateChatCompletionRequest extends Fake
-    implements CreateChatCompletionRequest {}
+class FakeLottiInferenceRequest extends Fake implements LottiInferenceRequest {}
 
 class FakeChecklistData extends Fake implements ChecklistData {}
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -63,19 +63,15 @@ AiConfig _audioModel({
   );
 }
 
-CreateChatCompletionStreamResponse _contentChunk(
+LottiInferenceChunk _contentChunk(
   String content, {
-  CompletionUsage? usage,
+  LottiUsage? usage,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: '0',
-    object: 'chat.completion.chunk',
     created: 0,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta(content: content),
-      ),
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
     ],
     usage: usage,
   );
@@ -84,7 +80,7 @@ CreateChatCompletionStreamResponse _contentChunk(
 /// Stubs `generateWithAudio` with a freshly built stream per invocation.
 void _stubGenerateWithAudioStream(
   MockCloudInferenceRepository mock,
-  Stream<CreateChatCompletionStreamResponse> Function() stream,
+  Stream<LottiInferenceChunk> Function() stream,
 ) {
   when(
     () => mock.generateWithAudio(
@@ -308,14 +304,12 @@ void main() {
       () => Stream.value(
         _contentChunk(
           'attributed transcript',
-          usage: const CompletionUsage(
+          usage: const LottiUsage(
             promptTokens: 21,
             completionTokens: 8,
             totalTokens: 29,
-            promptTokensDetails: PromptTokensDetails(cachedTokens: 5),
-            completionTokensDetails: CompletionTokensDetails(
-              reasoningTokens: 3,
-            ),
+            cachedInputTokens: 5,
+            reasoningTokens: 3,
           ),
         ),
       ),
@@ -683,28 +677,15 @@ void main() {
       mockCloud,
       () => Stream.fromIterable([
         // Chunk with null choices
-        const CreateChatCompletionStreamResponse(
-          id: '1',
-          object: 'chat.completion.chunk',
-          created: 0,
-        ),
+        const LottiInferenceChunk(id: '1', created: 0),
         // Chunk with empty choices list
-        const CreateChatCompletionStreamResponse(
-          id: '2',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [],
-        ),
+        const LottiInferenceChunk(id: '2', created: 0, choices: []),
         // Chunk with null delta content
-        const CreateChatCompletionStreamResponse(
+        const LottiInferenceChunk(
           id: '3',
-          object: 'chat.completion.chunk',
           created: 0,
           choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(),
-            ),
+            LottiChunkChoice(index: 0, delta: LottiDelta()),
           ],
         ),
         // Normal chunk with content

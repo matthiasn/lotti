@@ -3,11 +3,11 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_worker.dart';
 import 'package:lotti/features/ai/util/audio_converter_channel.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Adapts embedded recognition to the same stream used by HTTP transcription.
@@ -26,7 +26,7 @@ class SherpaTranscriptionRepository {
   final Future<Uint8List> Function(Uint8List) convert;
   final Directory temporaryDirectory;
 
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<LottiInferenceChunk> transcribeAudio({
     required String model,
     required String audioBase64,
   }) async* {
@@ -59,17 +59,14 @@ class SherpaTranscriptionRepository {
         ),
       )) {
         if (text.trim().isEmpty) continue;
-        yield CreateChatCompletionStreamResponse(
+        yield LottiInferenceChunk(
           id: id,
-          model: model,
-          object: 'chat.completion.chunk',
           created: 0,
+          model: model,
           choices: [
-            ChatCompletionStreamResponseChoice(
+            LottiChunkChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(
-                content: '${hasText ? ' ' : ''}${text.trim()}',
-              ),
+              delta: LottiDelta(content: '${hasText ? ' ' : ''}${text.trim()}'),
             ),
           ],
         );

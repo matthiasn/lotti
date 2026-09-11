@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -10,12 +11,12 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import 'unified_ai_inference_repository_test_helpers.dart';
@@ -63,7 +64,7 @@ void main() {
         );
       }
 
-      ChatCompletionMessageToolCall langCall(String json) {
+      LottiToolCall langCall(String json) {
         return createMockMessageToolCall(
           id: 'lang-call-1',
           functionName: TaskFunctions.setTaskLanguage,
@@ -389,19 +390,16 @@ void main() {
                       '{"languageCode":"de","confidence":"high","reason":"German text"}',
                 ),
               ]),
-              CreateChatCompletionStreamResponse(
+              LottiInferenceChunk(
                 id: 'response-text',
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
                 choices: const [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Zusammenfassung der Aufgabe',
-                    ),
-                    finishReason: ChatCompletionFinishReason.stop,
+                  LottiChunkChoice(
                     index: 0,
+                    delta: LottiDelta(content: 'Zusammenfassung der Aufgabe'),
+                    finishReason: LottiFinishReason.stop,
                   ),
                 ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             ]);
           });

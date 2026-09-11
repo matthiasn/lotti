@@ -15,12 +15,12 @@ import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -180,25 +180,19 @@ void main() {
                     if (callIndex == 1 && strategy is TaskAgentStrategy) {
                       await strategy.processToolCalls(
                         toolCalls: [
-                          const ChatCompletionMessageToolCall(
+                          const LottiToolCall(
                             id: 'priority-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: TaskAgentToolNames.updateTaskPriority,
-                              arguments: '{"priority":"P1"}',
-                            ),
+                            name: TaskAgentToolNames.updateTaskPriority,
+                            arguments: '{"priority":"P1"}',
                           ),
-                          ChatCompletionMessageToolCall(
+                          LottiToolCall(
                             id: 'draft-report-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: TaskAgentToolNames.updateReport,
-                              arguments: jsonEncode({
-                                'oneLiner': 'Task configured',
-                                'tldr': 'Priority updated. Ready to begin.',
-                                'content': '## Progress\nTask configured.',
-                              }),
-                            ),
+                            name: TaskAgentToolNames.updateReport,
+                            arguments: jsonEncode({
+                              'oneLiner': 'Task configured',
+                              'tldr': 'Priority updated. Ready to begin.',
+                              'content': '## Progress\nTask configured.',
+                            }),
                           ),
                         ],
                         manager: mockConversationManager,
@@ -213,13 +207,10 @@ void main() {
                     }
                     await strategy!.processToolCalls(
                       toolCalls: [
-                        ChatCompletionMessageToolCall(
+                        LottiToolCall(
                           id: 'editor-call-$callIndex',
-                          type: ChatCompletionMessageToolCallType.function,
-                          function: ChatCompletionMessageFunctionCall(
-                            name: TaskAgentToolNames.updateReport,
-                            arguments: editorArguments[callIndex - 2],
-                          ),
+                          name: TaskAgentToolNames.updateReport,
+                          arguments: editorArguments[callIndex - 2],
                         ),
                       ],
                       manager: mockConversationManager,
@@ -1154,14 +1145,10 @@ not describe task configuration or tool activity as progress.
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const LottiToolCall(
                         id: 'obs-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'record_observations',
-                          arguments:
-                              '{"observations":["Pattern A","Pattern B"]}',
-                        ),
+                        name: 'record_observations',
+                        arguments: '{"observations":["Pattern A","Pattern B"]}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1208,15 +1195,12 @@ not describe task configuration or tool activity as progress.
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const LottiToolCall(
                         id: 'obs-structured',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'record_observations',
-                          arguments:
-                              '{"observations":[{"text":"User is frustrated",'
-                              ' "priority":"critical","category":"grievance"}]}',
-                        ),
+                        name: 'record_observations',
+                        arguments:
+                            '{"observations":[{"text":"User is frustrated",'
+                            ' "priority":"critical","category":"grievance"}]}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1439,7 +1423,7 @@ not describe task configuration or tool activity as progress.
               <
                 ({
                   String message,
-                  ChatCompletionToolChoiceOption? toolChoice,
+                  LottiToolChoice? toolChoice,
                   double temperature,
                 })
               >[];
@@ -1498,14 +1482,10 @@ not describe task configuration or tool activity as progress.
           // Second call: forced update_report.
           final retryToolChoice = calls[1].toolChoice;
           expect(retryToolChoice, isNotNull);
-          retryToolChoice!.map(
-            mode: (_) => fail('Expected named tool choice, got mode.'),
-            tool: (named) {
-              expect(
-                named.value.function.name,
-                TaskAgentStrategy.reportToolName,
-              );
-            },
+          expect(retryToolChoice, isA<LottiToolChoiceSpecific>());
+          expect(
+            (retryToolChoice! as LottiToolChoiceSpecific).name,
+            TaskAgentStrategy.reportToolName,
           );
           expect(
             calls[1].message,
@@ -1532,7 +1512,7 @@ not describe task configuration or tool activity as progress.
           () => mockAgentRepository.getLatestReport(agentId, 'current'),
         ).thenAnswer((_) async => previousReport);
 
-        final calls = <ChatCompletionToolChoiceOption?>[];
+        final calls = <LottiToolChoice?>[];
         mockConversationRepository
           ..maxDelegateCalls = 2
           ..sendMessageDelegate =
@@ -1552,13 +1532,10 @@ not describe task configuration or tool activity as progress.
                 if (toolChoice == null) {
                   await strategy.processToolCalls(
                     toolCalls: const [
-                      ChatCompletionMessageToolCall(
+                      LottiToolCall(
                         id: 'add-action',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.addMultipleChecklistItems,
-                          arguments: '{"items":[{"title":"Run release QA"}]}',
-                        ),
+                        name: TaskAgentToolNames.addMultipleChecklistItems,
+                        arguments: '{"items":[{"title":"Run release QA"}]}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1566,14 +1543,11 @@ not describe task configuration or tool activity as progress.
                 } else {
                   await strategy.processToolCalls(
                     toolCalls: const [
-                      ChatCompletionMessageToolCall(
+                      LottiToolCall(
                         id: 'fresh-report',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.updateReport,
-                          arguments:
-                              r'''{"oneLiner":"Release QA is next","tldr":"Run release QA next.","content":"## Next action\nRun release QA."}''',
-                        ),
+                        name: TaskAgentToolNames.updateReport,
+                        arguments:
+                            r'''{"oneLiner":"Release QA is next","tldr":"Run release QA next.","content":"## Next action\nRun release QA."}''',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1635,7 +1609,7 @@ not describe task configuration or tool activity as progress.
             () => mockAgentRepository.getLatestReport(agentId, 'current'),
           ).thenAnswer((_) async => previousReport);
 
-          final calls = <ChatCompletionToolChoiceOption?>[];
+          final calls = <LottiToolChoice?>[];
           mockConversationRepository
             ..maxDelegateCalls = 2
             ..sendMessageDelegate =
@@ -1702,13 +1676,10 @@ not describe task configuration or tool activity as progress.
                   if (strategy is TaskAgentStrategy) {
                     await strategy.processToolCalls(
                       toolCalls: const [
-                        ChatCompletionMessageToolCall(
+                        LottiToolCall(
                           id: 'obs-1',
-                          type: ChatCompletionMessageToolCallType.function,
-                          function: ChatCompletionMessageFunctionCall(
-                            name: 'record_observations',
-                            arguments: '{"observations":["important finding"]}',
-                          ),
+                          name: 'record_observations',
+                          arguments: '{"observations":["important finding"]}',
                         ),
                       ],
                       manager: mockConversationManager,
@@ -1815,14 +1786,11 @@ not describe task configuration or tool activity as progress.
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: const [
-                      ChatCompletionMessageToolCall(
+                      LottiToolCall(
                         id: 'report-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              '{"oneLiner":"one","tldr":"tldr","content":"body"}',
-                        ),
+                        name: 'update_report',
+                        arguments:
+                            '{"oneLiner":"one","tldr":"tldr","content":"body"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1879,14 +1847,11 @@ not describe task configuration or tool activity as progress.
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const LottiToolCall(
                         id: 'rpt-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              r'{"content":"# Report\nAll good.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
-                        ),
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Report\nAll good.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1943,17 +1908,14 @@ not describe task configuration or tool activity as progress.
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    ChatCompletionMessageToolCall(
+                    LottiToolCall(
                       id: 'rpt-call',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: 'update_report',
-                        arguments: jsonEncode({
-                          'content': '# Detailed Report\nFull analysis.',
-                          'oneLiner': 'Implementation done, release next',
-                          'tldr': 'Brief summary.',
-                        }),
-                      ),
+                      name: 'update_report',
+                      arguments: jsonEncode({
+                        'content': '# Detailed Report\nFull analysis.',
+                        'oneLiner': 'Implementation done, release next',
+                        'tldr': 'Brief summary.',
+                      }),
                     ),
                   ],
                   manager: mockConversationManager,
@@ -1990,7 +1952,7 @@ not describe task configuration or tool activity as progress.
 
       test('persists thought message when LLM produces final text', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.assistant(
+          const LottiMessage.assistant(
             content: 'I analyzed the task and it looks good.',
           ),
         ]);
@@ -2053,14 +2015,11 @@ not describe task configuration or tool activity as progress.
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    const ChatCompletionMessageToolCall(
+                    const LottiToolCall(
                       id: 'rpt-call',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: 'update_report',
-                        arguments:
-                            '{"content":"# Updated","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
-                      ),
+                      name: 'update_report',
+                      arguments:
+                          '{"content":"# Updated","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                     ),
                   ],
                   manager: mockConversationManager,
@@ -2179,14 +2138,11 @@ not describe task configuration or tool activity as progress.
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const LottiToolCall(
                         id: 'rpt-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
-                        ),
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -2286,14 +2242,11 @@ not describe task configuration or tool activity as progress.
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    const ChatCompletionMessageToolCall(
+                    const LottiToolCall(
                       id: 'rpt-call',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: 'update_report',
-                        arguments:
-                            r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"done","tldr":"done."}',
-                      ),
+                      name: 'update_report',
+                      arguments:
+                          r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"done","tldr":"done."}',
                     ),
                   ],
                   manager: mockConversationManager,

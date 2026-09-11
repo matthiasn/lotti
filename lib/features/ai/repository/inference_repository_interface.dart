@@ -1,11 +1,16 @@
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference_chunk.dart';
+import 'package:lotti/features/ai/model/inference_message.dart';
+import 'package:lotti/features/ai/model/inference_tool.dart';
 
 /// Abstract interface for inference repositories
 /// This allows different providers (Ollama, Cloud) to be used interchangeably
 /// in the conversation system
+///
+/// Implementations speak Lotti's own inference types rather than the client
+/// library's; see `openai_compat_adapter.dart` for the boundary.
 abstract class InferenceRepositoryInterface {
   /// Generate text with full conversation history
   /// This is the main method used by the conversation system
@@ -19,20 +24,20 @@ abstract class InferenceRepositoryInterface {
   /// - [tools]: Optional function declarations
   /// - [toolChoice]: Optional override of tool selection policy. When `null`
   ///   the provider defaults to `auto` (or `none` when no tools are provided).
-  ///   Pass `ChatCompletionToolChoiceOption.tool(...)` to force the model to
-  ///   call a specific function — currently honored only on the
-  ///   OpenAI-compatible path.
+  ///   Pass `LottiToolChoice.specific(...)` to force the model to call a
+  ///   specific function — currently honored only on the OpenAI-compatible
+  ///   path.
   /// - [thoughtSignatures]: Previous thought signatures for multi-turn (Gemini 3)
   /// - [signatureCollector]: Collector for capturing new signatures from response
   /// - [turnIndex]: Current turn number for unique tool call ID generation
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -40,26 +45,21 @@ abstract class InferenceRepositoryInterface {
   });
 
   /// Optional: Generate text with a simple prompt (for backwards compatibility)
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) {
     // Default implementation converts simple prompt to messages format
-    final messages = <ChatCompletionMessage>[];
-    if (systemMessage != null) {
-      messages.add(ChatCompletionMessage.system(content: systemMessage));
-    }
-    messages.add(
-      ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.string(prompt),
-      ),
-    );
+    final messages = <LottiMessage>[
+      if (systemMessage != null) LottiMessage.system(systemMessage),
+      LottiMessage.userText(prompt),
+    ];
 
     return generateTextWithMessages(
       messages: messages,

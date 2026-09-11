@@ -1,21 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
-import 'package:openai_dart/openai_dart.dart';
 
-ChatCompletionMessageToolCall _call(
+LottiToolCall _call(
   String arguments, {
   String name = entrySummaryToolName,
   String id = 'call-1',
-}) => ChatCompletionMessageToolCall(
-  id: id,
-  type: ChatCompletionMessageToolCallType.function,
-  function: ChatCompletionMessageFunctionCall(
-    name: name,
-    arguments: arguments,
-  ),
-);
+}) => LottiToolCall(id: id, name: name, arguments: arguments);
 
 String _args({
   String? oneLiner = 'Agreed to ship the export flow behind a flag.',
@@ -230,7 +223,7 @@ void main() {
 
   group('entrySummaryTool schema', () {
     test('requires exactly the three tiers and forbids extra properties', () {
-      final parameters = entrySummaryTool.function.parameters!;
+      final parameters = entrySummaryTool.parameters!;
       final properties = parameters['properties']! as Map<String, dynamic>;
 
       expect(
@@ -248,8 +241,7 @@ void main() {
     test('states the one-liner character budget in the schema the model '
         'reads, so the limit and the prompt cannot drift apart', () {
       final properties =
-          entrySummaryTool.function.parameters!['properties']!
-              as Map<String, dynamic>;
+          entrySummaryTool.parameters!['properties']! as Map<String, dynamic>;
       final oneLiner =
           properties[EntrySummaryToolArgs.oneLiner]! as Map<String, dynamic>;
 

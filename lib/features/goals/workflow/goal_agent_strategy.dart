@@ -9,8 +9,8 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// A banner brief accumulated from one `create_goal_ad` call.
 typedef GoalAdRequest = ({NudgeBrief brief, String? reasonSummary});
@@ -151,22 +151,22 @@ class GoalAgentStrategy extends ConversationStrategy
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     _toolCallBatch++;
     await recordAssistantMessage();
 
     for (final call in toolCalls) {
-      final toolName = call.function.name;
+      final toolName = call.name;
 
       Map<String, dynamic> args;
       try {
-        args = parseAgentToolArguments(call.function.arguments);
+        args = parseAgentToolArguments(call.arguments);
       } catch (e) {
         developer.log(
           'Failed to parse tool call arguments for $toolName '
-          '(rawBytes=${utf8.encode(call.function.arguments).length}, '
+          '(rawBytes=${utf8.encode(call.arguments).length}, '
           'errorType=${e.runtimeType})',
           name: 'GoalAgentStrategy',
         );
@@ -221,7 +221,7 @@ class GoalAgentStrategy extends ConversationStrategy
   String? getContinuationPrompt(ConversationManager manager) => null;
 
   Future<void> _handleUpdateReport(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -408,7 +408,7 @@ class GoalAgentStrategy extends ConversationStrategy
   );
 
   Future<void> _handleReplyToUser(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -435,7 +435,7 @@ class GoalAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleCreateAd(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -479,7 +479,7 @@ class GoalAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleAdAction(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
     List<GoalAdAction> sink,
@@ -530,7 +530,7 @@ class GoalAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleSnoozeAd(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -626,7 +626,7 @@ class GoalAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleProposeRevision(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -659,7 +659,7 @@ class GoalAgentStrategy extends ConversationStrategy
   }
 
   Future<void> _handleObservation(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
@@ -694,27 +694,27 @@ class GoalAgentStrategy extends ConversationStrategy
   String _trimmed(Object? value) => value is String ? value.trim() : '';
 
   Future<void> _accept(
-    ChatCompletionMessageToolCall call,
+    LottiToolCall call,
     ConversationManager manager,
     String response,
   ) async {
-    if (_rejectedToolBatchByName[call.function.name] != _toolCallBatch) {
-      _unresolvedRejectedTools.remove(call.function.name);
+    if (_rejectedToolBatchByName[call.name] != _toolCallBatch) {
+      _unresolvedRejectedTools.remove(call.name);
     }
     manager.addToolResponse(toolCallId: call.id, response: response);
-    await recordToolResultMessage(toolName: call.function.name);
+    await recordToolResultMessage(toolName: call.name);
   }
 
   Future<void> _reject({
-    required ChatCompletionMessageToolCall call,
+    required LottiToolCall call,
     required ConversationManager manager,
     required String error,
   }) async {
-    _unresolvedRejectedTools.add(call.function.name);
-    _rejectedToolBatchByName[call.function.name] = _toolCallBatch;
+    _unresolvedRejectedTools.add(call.name);
+    _rejectedToolBatchByName[call.name] = _toolCallBatch;
     manager.addToolResponse(toolCallId: call.id, response: error);
     await recordToolResultMessage(
-      toolName: call.function.name,
+      toolName: call.name,
       errorMessage: error,
     );
   }

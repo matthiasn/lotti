@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -143,32 +143,26 @@ void main() {
       ).thenAnswer((call) {
         prompts.add(call.positionalArguments.first as String);
         return Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const LottiInferenceChunk(
             id: 'chunk',
-            object: 'chat.completion.chunk',
             created: 0,
             choices: [
-              ChatCompletionStreamResponseChoice(
+              LottiChunkChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: '{"passages":[]}',
-                ),
+                delta: LottiDelta(content: '{"passages":[]}'),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const LottiInferenceChunk(
             id: 'usage',
-            object: 'chat.completion.chunk',
             created: 0,
             choices: [],
-            usage: CompletionUsage(
+            usage: LottiUsage(
               promptTokens: 60,
               completionTokens: 15,
               totalTokens: 75,
-              promptTokensDetails: PromptTokensDetails(cachedTokens: 10),
-              completionTokensDetails: CompletionTokensDetails(
-                reasoningTokens: 4,
-              ),
+              cachedInputTokens: 10,
+              reasoningTokens: 4,
             ),
           ),
         ]);

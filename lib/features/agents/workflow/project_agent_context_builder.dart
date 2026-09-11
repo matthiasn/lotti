@@ -11,8 +11,8 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Callback used by the agent context builders to surface non-fatal errors
 /// through the owning workflow's structured logger.
@@ -309,19 +309,16 @@ is listed under `## Open Proposal Guard` with its fingerprint.
   ///
   /// [hasOpenProposals] admits `retract_suggestions`; an agent with nothing
   /// open has nothing it could withdraw.
-  List<ChatCompletionTool> buildToolDefinitions({
+  List<LottiTool> buildToolDefinitions({
     bool hasOpenProposals = false,
   }) {
     return projectAgentToolsFor(hasOpenProposals: hasOpenProposals).map((
       tool,
     ) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        ),
+      return LottiTool(
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
       );
     }).toList();
   }
@@ -331,7 +328,7 @@ is listed under `## Open Proposal Guard` with its fingerprint.
     final messages = manager.messages;
     for (var i = messages.length - 1; i >= 0; i--) {
       final msg = messages[i];
-      final content = msg.mapOrNull(assistant: (a) => a.content);
+      final content = msg.assistantContent;
       if (content != null && content.isNotEmpty) {
         return content;
       }

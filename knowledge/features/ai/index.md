@@ -7,6 +7,7 @@ conversation state and embeddings. It does not own agent lifecycles.
 * [Execution paths](execution-paths.md) - the legacy prompt path, the skill/profile path, the category consent gate, and per-invocation overrides.
 * [Profile resolution, pinning and locality](profile-resolution.md) - which profile drives a run, and the fail-closed check that keeps synced audio local.
 * [Provider routing](provider-routing.md) - the routing table, per-provider catalogs and quirks, audio transcoding, Gemini thinking, local HTTP transcription.
+* [Inference domain and the client adapter](inference-domain-and-adapter.md) - the Lotti-owned inference types, and the single file that maps them onto `openai_dart`.
 * [Embedded speech recognition](embedded-speech.md) - sherpa model downloads, background decoding, cancellation, and native packaging.
 * [Batch transcription](batch-transcription.md) - the shared transcription service used by agent voice input and Daily OS, including model discovery and usage attribution.
 * [Conversations and tool calling](conversations-and-tools.md) - the reusable multi-turn loop.

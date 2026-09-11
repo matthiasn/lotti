@@ -14,12 +14,12 @@ import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -105,13 +105,10 @@ void main() {
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    ChatCompletionMessageToolCall(
+                    LottiToolCall(
                       id: 'tool-call-1',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: toolName,
-                        arguments: arguments,
-                      ),
+                      name: toolName,
+                      arguments: arguments,
                     ),
                   ],
                   manager: mockConversationManager,
@@ -196,7 +193,7 @@ void main() {
           ).thenAnswer((_) async => null);
           when(() => mockConversationManager.messages).thenReturn([]);
 
-          List<ChatCompletionTool>? exposedTools;
+          List<LottiTool>? exposedTools;
           mockConversationRepository.sendMessageDelegate =
               ({
                 required conversationId,
@@ -223,7 +220,7 @@ void main() {
           expect(result.success, isTrue);
           expect(exposedTools, isNotNull);
           expect(
-            exposedTools!.map((tool) => tool.function.name),
+            exposedTools!.map((tool) => tool.name),
             isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
           );
         },
@@ -336,13 +333,10 @@ void main() {
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    ChatCompletionMessageToolCall(
+                    LottiToolCall(
                       id: 'tc-1',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: toolName,
-                        arguments: arguments,
-                      ),
+                      name: toolName,
+                      arguments: arguments,
                     ),
                   ],
                   manager: mockConversationManager,
@@ -1436,13 +1430,10 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const LottiToolCall(
                         id: 'tc-2',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'set_task_title',
-                          arguments: '{"title":"Test"}',
-                        ),
+                        name: 'set_task_title',
+                        arguments: '{"title":"Test"}',
                       ),
                     ],
                     manager: mockConversationManager,

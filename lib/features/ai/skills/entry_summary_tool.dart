@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 /// Name of the tool a summary skill must call to publish its result.
 const entrySummaryToolName = 'publish_entry_summary';
@@ -69,64 +69,55 @@ class EntrySummaryToolException implements Exception {
 /// `additionalProperties: false` plus an explicit `required` list is what lets
 /// [parseEntrySummaryToolCall] treat a decode failure as a real error rather
 /// than a shape it should tolerate.
-const ChatCompletionTool entrySummaryTool = ChatCompletionTool(
-  type: ChatCompletionToolType.function,
-  function: FunctionObject(
-    name: entrySummaryToolName,
-    description:
-        'Publish the summary of this recording. You MUST call this tool '
-        'exactly once, and respond with nothing else. Provide all three '
-        'tiers: a one-line label, a short TLDR, and the full markdown '
-        'summary.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        EntrySummaryToolArgs.oneLiner: {
-          'type': 'string',
-          'description':
-              'ONE plain sentence naming what this recording is about, at '
-              'most $entrySummaryOneLinerMaxChars characters. This is shown '
-              'as the collapsed label for the recording in the task log, so '
-              'it must stand alone and be specific — never "a voice note" or '
-              '"the user discusses several topics". No markdown, no bullet '
-              'points, no leading label, no trailing ellipsis.',
-        },
-        EntrySummaryToolArgs.tldr: {
-          'type': 'string',
-          'description':
-              'One to three sentences covering what was said and what it '
-              'means for the task. Shown when the recording is expanded but '
-              'the full summary is still collapsed, so it must stand on its '
-              'own. Plain prose, no headings.',
-        },
-        EntrySummaryToolArgs.summary: {
-          'type': 'string',
-          'description':
-              'The full summary as a markdown document. Organise it under '
-              'headings and bullets so a long recording stays scannable; up '
-              'to about half a page for a long meeting, much shorter for a '
-              'brief note. Do not repeat the TLDR verbatim as the opening '
-              'line, and do not transcribe the recording back — summarise '
-              'it.',
-        },
+const LottiTool entrySummaryTool = LottiTool(
+  name: entrySummaryToolName,
+  description:
+      'Publish the summary of this recording. You MUST call this tool '
+      'exactly once, and respond with nothing else. Provide all three '
+      'tiers: a one-line label, a short TLDR, and the full markdown '
+      'summary.',
+  parameters: {
+    'type': 'object',
+    'properties': {
+      EntrySummaryToolArgs.oneLiner: {
+        'type': 'string',
+        'description':
+            'ONE plain sentence naming what this recording is about, at '
+            'most $entrySummaryOneLinerMaxChars characters. This is shown '
+            'as the collapsed label for the recording in the task log, so '
+            'it must stand alone and be specific — never "a voice note" or '
+            '"the user discusses several topics". No markdown, no bullet '
+            'points, no leading label, no trailing ellipsis.',
       },
-      'required': EntrySummaryToolArgs.required,
-      'additionalProperties': false,
+      EntrySummaryToolArgs.tldr: {
+        'type': 'string',
+        'description':
+            'One to three sentences covering what was said and what it '
+            'means for the task. Shown when the recording is expanded but '
+            'the full summary is still collapsed, so it must stand on its '
+            'own. Plain prose, no headings.',
+      },
+      EntrySummaryToolArgs.summary: {
+        'type': 'string',
+        'description':
+            'The full summary as a markdown document. Organise it under '
+            'headings and bullets so a long recording stays scannable; up '
+            'to about half a page for a long meeting, much shorter for a '
+            'brief note. Do not repeat the TLDR verbatim as the opening '
+            'line, and do not transcribe the recording back — summarise '
+            'it.',
+      },
     },
-  ),
+    'required': EntrySummaryToolArgs.required,
+    'additionalProperties': false,
+  },
 );
 
 /// Pins the model to [entrySummaryTool] so the summary cannot come back as
 /// prose the caller would have to parse.
-const ChatCompletionToolChoiceOption entrySummaryToolChoice =
-    ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: entrySummaryToolName,
-        ),
-      ),
-    );
+const LottiToolChoice entrySummaryToolChoice = LottiToolChoice.specific(
+  entrySummaryToolName,
+);
 
 /// Decodes and validates the [entrySummaryToolName] call out of [toolCalls].
 ///
@@ -140,13 +131,13 @@ const ChatCompletionToolChoiceOption entrySummaryToolChoice =
 /// rejected — some providers echo a duplicate final call, and a usable first
 /// result should not be thrown away over it.
 EntrySummary parseEntrySummaryToolCall(
-  List<ChatCompletionMessageToolCall> toolCalls,
+  List<LottiToolCall> toolCalls,
 ) {
   final call = toolCalls
-      .where((toolCall) => toolCall.function.name == entrySummaryToolName)
+      .where((toolCall) => toolCall.name == entrySummaryToolName)
       .firstOrNull;
   if (call == null) {
-    final seen = toolCalls.map((c) => c.function.name).join(', ');
+    final seen = toolCalls.map((c) => c.name).join(', ');
     throw EntrySummaryToolException(
       seen.isEmpty
           ? 'model published no tool call'
@@ -156,7 +147,7 @@ EntrySummary parseEntrySummaryToolCall(
 
   Object? decoded;
   try {
-    decoded = jsonDecode(call.function.arguments);
+    decoded = jsonDecode(call.arguments);
   } on FormatException catch (e) {
     throw EntrySummaryToolException(
       'arguments are not valid JSON: ${e.message}',

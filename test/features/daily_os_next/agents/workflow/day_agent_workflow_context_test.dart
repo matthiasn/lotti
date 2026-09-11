@@ -70,7 +70,7 @@ void main() {
         expect(result.success, isTrue);
         expect(conversationRepository.deletedConversationCount, 1);
         expect(
-          conversationRepository.lastTools.map((tool) => tool.function.name),
+          conversationRepository.lastTools.map((tool) => tool.name),
           containsAll([
             DayAgentToolNames.recordObservations,
             DayAgentToolNames.setNextWake,
@@ -395,7 +395,7 @@ void main() {
         );
         conversationRepository
           ..toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
+            const <LottiToolCall>[],
             [
               toolCall(
                 id: 'parse-call',
@@ -448,17 +448,13 @@ void main() {
           contains('You did not call `parse_capture_to_items`'),
         );
         expect(retryCall.message, contains('capture `capture-1`'));
-        expect(retryCall.tools.map((tool) => tool.function.name), [
+        expect(retryCall.tools.map((tool) => tool.name), [
           DayAgentToolNames.parseCaptureToItems,
         ]);
-        retryCall.toolChoice!.map(
-          mode: (_) => fail('Expected named tool choice, got mode.'),
-          tool: (named) {
-            expect(
-              named.value.function.name,
-              DayAgentToolNames.parseCaptureToItems,
-            );
-          },
+        expect(retryCall.toolChoice, isA<LottiToolChoiceSpecific>());
+        expect(
+          (retryCall.toolChoice! as LottiToolChoiceSpecific).name,
+          DayAgentToolNames.parseCaptureToItems,
         );
 
         final args =
@@ -486,8 +482,8 @@ void main() {
           final captureService = MockDayAgentCaptureService();
           stubCaptureContext(captureService);
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
-            const <ChatCompletionMessageToolCall>[],
+            const <LottiToolCall>[],
+            const <LottiToolCall>[],
           ];
 
           final result = await execute(

@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
@@ -16,7 +17,6 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Tool name marking a stored check-in summary in the agent log.
 const goalCheckInSummaryToolName = 'goal_compact_check_in';
@@ -329,7 +329,7 @@ class GoalCheckInCompactor {
 
     final captureRegistered = getIt.isRegistered<AiInteractionCapture>();
     final impactCollector = InferenceImpactCollector();
-    Stream<CreateChatCompletionStreamResponse> invoke() => _inference.generate(
+    Stream<LottiInferenceChunk> invoke() => _inference.generate(
       prompt,
       model: model,
       temperature: _temperature,
@@ -338,7 +338,7 @@ class GoalCheckInCompactor {
       systemMessage: _systemMessage,
       maxCompletionTokens: maxSummaryTokens,
       geminiThinkingMode: GeminiThinkingMode.minimal,
-      reasoningEffort: ReasoningEffort.minimal,
+      reasoningEffort: LottiReasoningEffort.minimal,
       provider: provider,
       impactCollector: captureRegistered ? impactCollector : null,
     );
@@ -362,8 +362,8 @@ class GoalCheckInCompactor {
               return AiCapturedUsage(
                 inputTokens: usage.promptTokens,
                 outputTokens: usage.completionTokens,
-                cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
-                thoughtsTokens: usage.completionTokensDetails?.reasoningTokens,
+                cachedInputTokens: usage.cachedInputTokens,
+                thoughtsTokens: usage.reasoningTokens,
                 totalTokens: usage.totalTokens,
               );
             },

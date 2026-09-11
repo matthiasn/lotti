@@ -5,6 +5,7 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
 import 'package:lotti/features/ai/repository/gemini_image_generation.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 export 'package:lotti/features/ai/repository/gemini_inference_payloads.dart'
     show GeneratedImage;
@@ -26,7 +26,7 @@ export 'package:lotti/features/ai/repository/gemini_inference_payloads.dart'
 /// - Calls Gemini's `:streamGenerateContent` REST endpoint directly using
 ///   the base URL and API key from the selected `AiConfigInferenceProvider`.
 /// - Translates Gemini responses (including thinking parts and function
-///   calls) into OpenAI-compatible `CreateChatCompletionStreamResponse` deltas
+///   calls) into OpenAI-compatible `LottiInferenceChunk` deltas
 ///   so the rest of the app can consume a uniform format.
 /// - Implements robust, allocation-friendly parsing of mixed streaming
 ///   formats (NDJSON, SSE `data:` lines, and JSON array framing) without
@@ -102,7 +102,7 @@ class GeminiInferenceRepository {
   ///
   /// If the streaming call completes without emitting anything, a
   /// non-streaming fallback is invoked to avoid an empty response bubble.
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
@@ -110,8 +110,8 @@ class GeminiInferenceRepository {
     required AiConfigInferenceProvider provider,
     String? systemMessage,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     ThoughtSignatureCollector? signatureCollector,
   }) async* {
     final uri = GeminiUtils.buildStreamGenerateContentUri(
@@ -390,23 +390,21 @@ class GeminiInferenceRepository {
           );
         }
         if (payload.toolChunks.isNotEmpty) {
-          yield CreateChatCompletionStreamResponse(
+          yield LottiInferenceChunk(
             id: idPrefix,
             created: created,
             model: model,
             choices: [
-              ChatCompletionStreamResponseChoice(
+              LottiChunkChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  toolCalls: payload.toolChunks,
-                ),
+                delta: LottiDelta(toolCalls: payload.toolChunks),
               ),
             ],
           );
         }
         // Emit usage for fallback response
         if (payload.usage != null) {
-          yield CreateChatCompletionStreamResponse(
+          yield LottiInferenceChunk(
             id: idPrefix,
             created: created,
             model: model,
@@ -429,8 +427,8 @@ class GeminiInferenceRepository {
   /// Multi-turn streaming over an explicit message history. Thin delegator
   /// to [generateGeminiTextWithMessages] so the method remains a mockable
   /// class member.
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required GeminiThinkingConfig thinkingConfig,
@@ -438,8 +436,8 @@ class GeminiInferenceRepository {
     Map<String, String>? thoughtSignatures,
     String? systemMessage,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
   }) => generateGeminiTextWithMessages(

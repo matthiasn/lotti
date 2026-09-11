@@ -11,40 +11,37 @@ import 'package:http/testing.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 class _ChatStreamProbe {
   _ChatStreamProbe({required this.content});
 
   final String content;
-  final requests = <CreateChatCompletionRequest>[];
+  final requests = <LottiInferenceRequest>[];
   final baseUrls = <String>[];
   final apiKeys = <String>[];
 
-  Stream<CreateChatCompletionStreamResponse> call({
+  Stream<LottiInferenceChunk> call({
     required String baseUrl,
     required String apiKey,
-    required CreateChatCompletionRequest request,
+    required LottiInferenceRequest request,
   }) {
     baseUrls.add(baseUrl);
     apiKeys.add(apiKey);
     requests.add(request);
 
     return Stream.value(
-      CreateChatCompletionStreamResponse(
+      LottiInferenceChunk(
         id: 'chatcmpl-melious-test',
-        choices: [
-          ChatCompletionStreamResponseChoice(
-            delta: ChatCompletionStreamResponseDelta(content: content),
-            index: 0,
-          ),
-        ],
-        object: 'chat.completion.chunk',
         created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+        choices: [
+          LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+        ],
       ),
     );
   }
@@ -498,15 +495,20 @@ void main() {
       expect(probe.baseUrls.single, baseUrl);
       expect(probe.apiKeys.single, apiKey);
       final request = probe.requests.single;
-      expect(request.model.toString(), contains('minimax-m2.7'));
-      expect(request.stream, isTrue);
+      expect(request.model, contains('minimax-m2.7'));
       expect(request.temperature, 0.2);
       expect(request.maxCompletionTokens, 128);
       expect(request.messages, hasLength(2));
-      expect(request.messages.first.role, ChatCompletionMessageRole.system);
-      expect(request.messages.last.role, ChatCompletionMessageRole.user);
-      expect(request.toString(), contains('Say hello'));
-      expect(request.toString(), contains('Be concise.'));
+      expect(request.messages.first.role, LottiMessageRole.system);
+      expect(request.messages.last.role, LottiMessageRole.user);
+      expect(
+        jsonEncode(openAiRequestJson(request)),
+        contains('Say hello'),
+      );
+      expect(
+        jsonEncode(openAiRequestJson(request)),
+        contains('Be concise.'),
+      );
     });
 
     test(
@@ -521,11 +523,9 @@ void main() {
         final chunks = await repository
             .generateTextWithMessages(
               messages: [
-                const ChatCompletionMessage.system(content: 'System context.'),
-                const ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string(
-                    'Previous user turn',
-                  ),
+                const LottiMessage.system('System context.'),
+                LottiMessage.userText(
+                  'Previous user turn',
                 ),
               ],
               model: 'deepseek-v4-pro',
@@ -543,12 +543,15 @@ void main() {
         expect(probe.baseUrls.single, baseUrl);
         expect(probe.apiKeys.single, apiKey);
         final request = probe.requests.single;
-        expect(request.model.toString(), contains('deepseek-v4-pro'));
+        expect(request.model, contains('deepseek-v4-pro'));
         expect(request.maxCompletionTokens, 256);
         expect(request.messages, hasLength(2));
-        expect(request.messages.first.role, ChatCompletionMessageRole.system);
-        expect(request.messages.last.role, ChatCompletionMessageRole.user);
-        expect(request.toString(), contains('Previous user turn'));
+        expect(request.messages.first.role, LottiMessageRole.system);
+        expect(request.messages.last.role, LottiMessageRole.user);
+        expect(
+          jsonEncode(openAiRequestJson(request)),
+          contains('Previous user turn'),
+        );
       },
     );
 
@@ -575,11 +578,11 @@ void main() {
       expect(probe.baseUrls.single, baseUrl);
       expect(probe.apiKeys.single, apiKey);
       final request = probe.requests.single;
-      expect(request.model.toString(), contains('gemma-4-26b-a4b'));
+      expect(request.model, contains('gemma-4-26b-a4b'));
       expect(request.messages, hasLength(2));
-      expect(request.messages.first.role, ChatCompletionMessageRole.system);
-      expect(request.messages.last.role, ChatCompletionMessageRole.user);
-      final requestString = request.toString();
+      expect(request.messages.first.role, LottiMessageRole.system);
+      expect(request.messages.last.role, LottiMessageRole.user);
+      final requestString = jsonEncode(openAiRequestJson(request));
       expect(requestString, contains('Describe this image'));
       expect(requestString, contains('Use visual evidence only.'));
       expect(requestString, contains('data:image/jpeg;base64,abc123'));
@@ -1282,7 +1285,7 @@ void main() {
           }),
         );
         addTearDown(repository.close);
-        final results = <CreateChatCompletionStreamResponse>[];
+        final results = <LottiInferenceChunk>[];
         final subscription = repository
             .transcribeAudio(
               model: 'whisper-large-v3',
@@ -1341,7 +1344,7 @@ void main() {
             }),
           );
           addTearDown(repository.close);
-          final received = <CreateChatCompletionStreamResponse>[];
+          final received = <LottiInferenceChunk>[];
           await expectLater(
             repository
                 .transcribeAudio(
@@ -2733,18 +2736,16 @@ void main() {
       return repository;
     }
 
-    Future<List<CreateChatCompletionStreamResponse>> collectChat(
+    Future<List<LottiInferenceChunk>> collectChat(
       MeliousInferenceRepository repository,
       InferenceImpactCollector collector, {
       String model = 'glm-5.2',
-      ReasoningEffort? reasoningEffort,
+      LottiReasoningEffort? reasoningEffort,
     }) {
       return repository
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('hi'),
-              ),
+            messages: [
+              LottiMessage.userText('hi'),
             ],
             model: model,
             baseUrl: baseUrl,
@@ -2755,26 +2756,24 @@ void main() {
           .toList();
     }
 
-    String contentOf(List<CreateChatCompletionStreamResponse> chunks) {
+    String contentOf(List<LottiInferenceChunk> chunks) {
       return chunks
           .expand(
-            (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
+            (c) => c.choices ?? const <LottiChunkChoice>[],
           )
           .map((ch) => ch.delta?.content ?? '')
           .join();
     }
 
-    List<ChatCompletionStreamMessageToolCallChunk> toolCallsOf(
-      List<CreateChatCompletionStreamResponse> chunks,
+    List<LottiToolCallChunk> toolCallsOf(
+      List<LottiInferenceChunk> chunks,
     ) {
       return chunks
           .expand(
-            (c) => c.choices ?? const <ChatCompletionStreamResponseChoice>[],
+            (c) => c.choices ?? const <LottiChunkChoice>[],
           )
           .expand(
-            (ch) =>
-                ch.delta?.toolCalls ??
-                const <ChatCompletionStreamMessageToolCallChunk>[],
+            (ch) => ch.delta?.toolCalls ?? const <LottiToolCallChunk>[],
           )
           .toList();
     }
@@ -2821,7 +2820,7 @@ void main() {
         final chunks = await collectChat(
           repo,
           collector,
-          reasoningEffort: ReasoningEffort.high,
+          reasoningEffort: LottiReasoningEffort.high,
         );
 
         // A non-streaming POST to /chat/completions was issued.
@@ -2835,8 +2834,8 @@ void main() {
         final usage = chunks.firstWhere((c) => c.usage != null).usage!;
         expect(usage.promptTokens, 1000);
         expect(usage.completionTokens, 500);
-        expect(usage.promptTokensDetails?.cachedTokens, 100);
-        expect(usage.completionTokensDetails?.reasoningTokens, 250);
+        expect(usage.cachedInputTokens, 100);
+        expect(usage.reasoningTokens, 250);
 
         // Impact surfaced via the side-channel.
         expect(collector.impact, isNotNull);
@@ -2881,8 +2880,8 @@ void main() {
       final toolCalls = toolCallsOf(chunks);
       expect(toolCalls, hasLength(1));
       expect(toolCalls.first.id, 'call_1');
-      expect(toolCalls.first.function?.name, 'do_thing');
-      expect(toolCalls.first.function?.arguments, '{"x":1}');
+      expect(toolCalls.first.name, 'do_thing');
+      expect(toolCalls.first.arguments, '{"x":1}');
       // No impact block in the response → collector stays empty.
       expect(collector.impact, isNull);
     });
@@ -2907,7 +2906,7 @@ void main() {
 
       expect(
         chunks.first.choices!.single.finishReason,
-        ChatCompletionFinishReason.length,
+        LottiFinishReason.length,
       );
     });
 
@@ -3142,12 +3141,12 @@ void main() {
         reason: 'skipped entries keep their slot in the index sequence',
       );
       expect(toolCalls.first.id, 'tool_1');
-      expect(toolCalls.first.function?.name, isNull);
-      expect(toolCalls.first.function?.arguments, '');
+      expect(toolCalls.first.name, isNull);
+      expect(toolCalls.first.arguments, '');
       expect(toolCalls.last.index, 2);
       expect(toolCalls.last.id, 'tool_2');
-      expect(toolCalls.last.function?.name, isNull);
-      expect(toolCalls.last.function?.arguments, '');
+      expect(toolCalls.last.name, isNull);
+      expect(toolCalls.last.arguments, '');
 
       final usage = chunks.firstWhere((c) => c.usage != null).usage!;
       expect(usage.promptTokens, 12, reason: 'string counts are coerced');
@@ -3162,7 +3161,7 @@ void main() {
         reason: 'missing total falls back to prompt + completion',
       );
       expect(
-        usage.promptTokensDetails,
+        usage.cachedInputTokens,
         isNull,
         reason: 'unparseable cached_tokens yields no details block',
       );
@@ -3223,7 +3222,7 @@ void main() {
     test('supplies a default effort for a model that demands one', () {
       expect(
         MeliousInferenceRepository.resolveReasoningEffort(quirkedModel, null),
-        ReasoningEffort.low,
+        LottiReasoningEffort.low,
       );
     });
 
@@ -3233,9 +3232,9 @@ void main() {
         expect(
           MeliousInferenceRepository.resolveReasoningEffort(
             model,
-            ReasoningEffort.high,
+            LottiReasoningEffort.high,
           ),
-          ReasoningEffort.medium,
+          LottiReasoningEffort.medium,
           reason: '$model rejects high; medium is the nearest it accepts',
         );
       }
@@ -3245,17 +3244,17 @@ void main() {
       // The property that actually matters: whatever a caller asks for, what
       // goes on the wire must be something the model answers 200 for.
       // Measured accepted set for both models, over the values
-      // ReasoningEffort can express in openai_dart 0.6.2.
+      // LottiReasoningEffort can express in openai_dart 0.6.2.
       const accepted = {
-        ReasoningEffort.minimal,
-        ReasoningEffort.low,
-        ReasoningEffort.medium,
+        LottiReasoningEffort.minimal,
+        LottiReasoningEffort.low,
+        LottiReasoningEffort.medium,
       };
       for (final model
           in MeliousInferenceRepository.modelsRequiringReasoningEffort) {
-        for (final requested in <ReasoningEffort?>[
+        for (final requested in <LottiReasoningEffort?>[
           null,
-          ...ReasoningEffort.values,
+          ...LottiReasoningEffort.values,
         ]) {
           expect(
             accepted,
@@ -3275,9 +3274,9 @@ void main() {
 
     test('passes an already-supported effort through untouched', () {
       for (final effort in [
-        ReasoningEffort.minimal,
-        ReasoningEffort.low,
-        ReasoningEffort.medium,
+        LottiReasoningEffort.minimal,
+        LottiReasoningEffort.low,
+        LottiReasoningEffort.medium,
       ]) {
         expect(
           MeliousInferenceRepository.resolveReasoningEffort(
@@ -3303,16 +3302,16 @@ void main() {
       expect(
         MeliousInferenceRepository.resolveReasoningEffort(
           unaffectedModel,
-          ReasoningEffort.high,
+          LottiReasoningEffort.high,
         ),
-        ReasoningEffort.high,
+        LottiReasoningEffort.high,
       );
     });
 
     test('is idempotent, so applying it twice on one path is safe', () {
       const once = MeliousInferenceRepository.resolveReasoningEffort;
       for (final model in [quirkedModel, unaffectedModel]) {
-        for (final effort in [null, ...ReasoningEffort.values]) {
+        for (final effort in [null, ...LottiReasoningEffort.values]) {
           expect(
             once(model, once(model, effort)),
             once(model, effort),
@@ -3328,7 +3327,7 @@ void main() {
           '  $quirkedModel  ',
           null,
         ),
-        ReasoningEffort.low,
+        LottiReasoningEffort.low,
       );
     });
 
@@ -3350,7 +3349,7 @@ void main() {
 
       // Assert on the serialised body, because that is what the provider
       // parses — a non-null Dart field that failed to encode would still 400.
-      final json = probe.requests.single.toJson();
+      final json = openAiRequestJson(probe.requests.single);
       expect(
         json['reasoning_effort'],
         'low',
@@ -3379,7 +3378,9 @@ void main() {
             .toList();
 
         expect(
-          probe.requests.single.toJson().containsKey('reasoning_effort'),
+          openAiRequestJson(
+            probe.requests.single,
+          ).containsKey('reasoning_effort'),
           isFalse,
         );
       },
@@ -3406,7 +3407,10 @@ void main() {
             )
             .toList();
 
-        expect(probe.requests.single.toJson()['reasoning_effort'], 'low');
+        expect(
+          openAiRequestJson(probe.requests.single)['reasoning_effort'],
+          'low',
+        );
       },
     );
 
@@ -3419,19 +3423,20 @@ void main() {
 
       await repository
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+            messages: [
+              LottiMessage.userText('Hi'),
             ],
             model: quirkedModel,
             baseUrl: baseUrl,
             apiKey: apiKey,
-            reasoningEffort: ReasoningEffort.high,
+            reasoningEffort: LottiReasoningEffort.high,
           )
           .toList();
 
-      expect(probe.requests.single.toJson()['reasoning_effort'], 'medium');
+      expect(
+        openAiRequestJson(probe.requests.single)['reasoning_effort'],
+        'medium',
+      );
     });
   });
 }

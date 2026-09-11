@@ -9,10 +9,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -98,20 +98,17 @@ void main() {
           ).thenAnswer((_) async => '{"audio": "test.mp3"}');
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Transcribed text',
-                  ),
-                  finishReason: ChatCompletionFinishReason.stop,
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              choices: const [
+                LottiChunkChoice(
+                  index: 0,
+                  delta: LottiDelta(content: 'Transcribed text'),
+                  finishReason: LottiFinishReason.stop,
+                ),
+              ],
             ),
           ]);
           stubGenerateWithAudio(mockCloudInferenceRepo, stream: mockStream);
@@ -205,20 +202,17 @@ void main() {
           ).thenAnswer((_) async => '{"task": "Test Task"}');
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Task analysis result',
-                  ),
-                  finishReason: ChatCompletionFinishReason.stop,
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              choices: const [
+                LottiChunkChoice(
+                  index: 0,
+                  delta: LottiDelta(content: 'Task analysis result'),
+                  finishReason: LottiFinishReason.stop,
+                ),
+              ],
             ),
           ]);
           stubGenerate(mockCloudInferenceRepo, stream: mockStream);
@@ -330,21 +324,20 @@ If the image IS relevant:
         final statusChanges = <InferenceStatus>[];
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
+                index: 0,
+                delta: LottiDelta(
                   content:
                       'This appears to be a photo of ducks by a lake, which seems unrelated to your database migration task. Moving on...',
                 ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
+                finishReason: LottiFinishReason.stop,
               ),
             ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -495,20 +488,19 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           );
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'The image shows a cat sitting on a windowsill.',
-                  ),
-                  finishReason: ChatCompletionFinishReason.stop,
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              choices: const [
+                LottiChunkChoice(
+                  index: 0,
+                  delta: LottiDelta(
+                    content: 'The image shows a cat sitting on a windowsill.',
+                  ),
+                  finishReason: LottiFinishReason.stop,
+                ),
+              ],
             ),
           ]);
 
@@ -647,21 +639,20 @@ be consulted to ensure accuracy.''',
         final statusChanges = <InferenceStatus>[];
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
+                index: 0,
+                delta: LottiDelta(
                   content:
                       'John Smith: Thank you for having me. Let me tell you about our latest project.',
                 ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
+                finishReason: LottiFinishReason.stop,
               ),
             ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         ]);
 
@@ -796,20 +787,19 @@ Take into account the following task context:
           );
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'This is the transcribed audio content.',
-                  ),
-                  finishReason: ChatCompletionFinishReason.stop,
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              choices: const [
+                LottiChunkChoice(
+                  index: 0,
+                  delta: LottiDelta(
+                    content: 'This is the transcribed audio content.',
+                  ),
+                  finishReason: LottiFinishReason.stop,
+                ),
+              ],
             ),
           ]);
 

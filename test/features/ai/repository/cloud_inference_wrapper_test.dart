@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
-class FakeChatCompletionTool extends Fake implements ChatCompletionTool {}
+class FakeLottiTool extends Fake implements LottiTool {}
 
 void main() {
   late CloudInferenceWrapper wrapper;
@@ -18,8 +18,8 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
-    registerFallbackValue(FakeChatCompletionTool());
-    registerFallbackValue(<ChatCompletionMessage>[]);
+    registerFallbackValue(FakeLottiTool());
+    registerFallbackValue(<LottiMessage>[]);
     registerFallbackValue(<String, String>{});
     registerFallbackValue(ThoughtSignatureCollector());
   });
@@ -41,19 +41,16 @@ void main() {
     group('generateText', () {
       test('delegates to cloud repository with correct parameters', () async {
         final responseStream = Stream.value(
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'test-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
+                index: 0,
+                delta: LottiDelta(content: 'Test response'),
+              ),
+            ],
           ),
         );
 
@@ -73,12 +70,9 @@ void main() {
         ).thenAnswer((_) => responseStream);
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'A test function',
-            ),
+          const LottiTool(
+            name: 'test_function',
+            description: 'A test function',
           ),
         ];
 
@@ -112,8 +106,7 @@ void main() {
       });
 
       test('works without optional parameters', () async {
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<LottiInferenceChunk>.empty();
 
         when(
           () => mockCloudRepository.generate(
@@ -158,40 +151,29 @@ void main() {
     group('generateTextWithMessages', () {
       test('delegates to cloud repository generateWithMessages', () async {
         final messages = [
-          const ChatCompletionMessage.system(
-            content: 'You are a helpful assistant',
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-          const ChatCompletionMessage.assistant(
-            content: 'Hi there!',
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('How are you?'),
-          ),
+          const LottiMessage.system('You are a helpful assistant'),
+          LottiMessage.userText('Hello'),
+          const LottiMessage.assistant(content: 'Hi there!'),
+          LottiMessage.userText('How are you?'),
         ];
 
         final responseStream = Stream.value(
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'test-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: "I'm doing well, thank you!",
-                ),
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
+                index: 0,
+                delta: LottiDelta(content: "I'm doing well, thank you!"),
+              ),
+            ],
           ),
         );
 
         wrapper = CloudInferenceWrapper(
           cloudRepository: mockCloudRepository,
-          reasoningEffort: ReasoningEffort.high,
+          reasoningEffort: LottiReasoningEffort.high,
         );
 
         when(
@@ -229,28 +211,21 @@ void main() {
             model: 'gpt-4',
             temperature: 0.7,
             provider: provider,
-            reasoningEffort: ReasoningEffort.high,
+            reasoningEffort: LottiReasoningEffort.high,
           ),
         ).called(1);
       });
 
       test('handles messages with tool and function responses', () async {
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Use a tool'),
-          ),
-          const ChatCompletionMessage.tool(
+          LottiMessage.userText('Use a tool'),
+          const LottiMessage.tool(
             toolCallId: 'tool-1',
             content: 'Tool result: 42',
           ),
-          const ChatCompletionMessage.function(
-            name: 'test_function',
-            content: 'Function result: success',
-          ),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<LottiInferenceChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -292,13 +267,10 @@ void main() {
 
       test('detects and logs concatenated JSON in tool calls', () async {
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Call functions'),
-          ),
+          LottiMessage.userText('Call functions'),
         ];
 
-        final responseController =
-            StreamController<CreateChatCompletionStreamResponse>();
+        final responseController = StreamController<LottiInferenceChunk>();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -325,30 +297,25 @@ void main() {
 
         // Add response with concatenated JSON
         responseController.add(
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'test-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: LottiDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
-                      index: 0,
+                    LottiToolCallChunk(
                       id: 'tool-1',
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'function1',
-                        arguments: '{"a": 1}{"b": 2}', // Concatenated JSON
-                      ),
+                      index: 0,
+                      name: 'function1',
+                      arguments: '{"a": 1}{"b": 2}',
                     ),
                   ],
                 ),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -358,24 +325,15 @@ void main() {
         expect(result.length, 1);
         // The malformed JSON is passed through but logged as a warning
         expect(
-          result
-              .first
-              .choices
-              ?.first
-              .delta
-              ?.toolCalls
-              ?.first
-              .function
-              ?.arguments,
+          result.first.choices?.first.delta?.toolCalls?.first.arguments,
           contains('}{'),
         );
       });
 
       test('handles empty messages list', () async {
-        final messages = <ChatCompletionMessage>[];
+        final messages = <LottiMessage>[];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<LottiInferenceChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -417,30 +375,15 @@ void main() {
 
       test('preserves tools parameter', () async {
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Use tools'),
-          ),
+          LottiMessage.userText('Use tools'),
         ];
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'tool1',
-              description: 'First tool',
-            ),
-          ),
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'tool2',
-              description: 'Second tool',
-            ),
-          ),
+          const LottiTool(name: 'tool1', description: 'First tool'),
+          const LottiTool(name: 'tool2', description: 'Second tool'),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<LottiInferenceChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -486,13 +429,10 @@ void main() {
         final signatures = {'tool_0': 'sig-abc123'};
 
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          LottiMessage.userText('Hello'),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<LottiInferenceChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -547,13 +487,10 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test gemini'),
-          ),
+          LottiMessage.userText('Test gemini'),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<LottiInferenceChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(

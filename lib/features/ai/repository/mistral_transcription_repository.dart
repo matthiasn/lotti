@@ -4,9 +4,9 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/audio_transcript_timing.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Repository for handling Mistral transcription via the dedicated
@@ -51,7 +51,7 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   /// [onSegments] receives validated recording-relative timings when requested
   /// by an evidence caller. Ordinary transcription remains text-only and also
   /// accepts responses without usable timestamps.
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<LottiInferenceChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -228,18 +228,12 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
             name: _providerName,
           );
 
-          return CreateChatCompletionStreamResponse(
+          return LottiInferenceChunk(
             id: 'mistral-transcription-${_uuid.v4()}',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created: 0,
+            choices: [
+              LottiChunkChoice(index: 0, delta: LottiDelta(content: text)),
+            ],
           );
         } on TranscriptionException {
           rethrow;

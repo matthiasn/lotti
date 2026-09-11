@@ -20,9 +20,9 @@ import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart'
 import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
 import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
 import 'package:lotti/features/ai/functions/task_priority_handler.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
@@ -107,13 +107,10 @@ extension TaskToolHandlers on TaskToolDispatcher {
       }
     }
 
-    final toolCall = ChatCompletionMessageToolCall(
+    final toolCall = LottiToolCall(
       id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
+      name: toolName,
+      arguments: jsonEncode(args),
     );
 
     // Only estimate, due date, and priority tools are routed here by the
@@ -296,13 +293,10 @@ extension TaskToolHandlers on TaskToolDispatcher {
       checklistRepository: checklistRepository,
     );
 
-    final toolCall = ChatCompletionMessageToolCall(
+    final toolCall = LottiToolCall(
       id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
+      name: toolName,
+      arguments: jsonEncode(args),
     );
 
     final parseResult = handler.processFunctionCall(toolCall);
@@ -352,13 +346,10 @@ extension TaskToolHandlers on TaskToolDispatcher {
       checklistRepository: checklistRepository,
     );
 
-    final toolCall = ChatCompletionMessageToolCall(
+    final toolCall = LottiToolCall(
       id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
+      name: toolName,
+      arguments: jsonEncode(args),
     );
 
     final parseResult = handler.processFunctionCall(toolCall);

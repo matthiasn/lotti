@@ -103,9 +103,11 @@ dependencies:
   multi_select_flutter: ^4.0.0
   objectbox: ^5.2.0
   objectbox_flutter_libs: ^5.2.0
-  # openai_dart 1.x+ is a rewritten client (the ChatCompletion* request and
-  # message types are gone); the inference layer is built on the 0.6 API.
-  openai_dart: ^0.6.1
+  # Confined to lib/features/ai/repository/openai_compat_adapter.dart, the
+  # only file allowed to import it. Everything upstream speaks the Lotti
+  # types in lib/features/ai/model/inference_*.dart, so a future major bump
+  # touches the adapter rather than every provider and agent workflow.
+  openai_dart: ^8.1.0
   package_info_plus: ^9.0.0
   path: ^1.8.1
   path_provider: ^2.0.12

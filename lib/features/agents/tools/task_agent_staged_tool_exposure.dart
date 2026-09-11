@@ -1,5 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 /// Widens the task agent's tool surface as a wake proceeds.
 ///
@@ -35,7 +35,7 @@ class TaskAgentStagedToolExposure {
            openingTurnExclusions ?? defaultOpeningTurnExclusions;
 
   /// Every tool the wake would otherwise advertise on every turn.
-  final List<ChatCompletionTool> allTools;
+  final List<LottiTool> allTools;
 
   /// Tool names withheld from the opening turn only.
   final Set<String> openingTurnExclusions;
@@ -53,11 +53,11 @@ class TaskAgentStagedToolExposure {
   ///
   /// Returns the full list from the second turn onward, so nothing is
   /// permanently unreachable and a wake can always finish its report.
-  List<ChatCompletionTool> toolsForTurn(int turnIndex) {
+  List<LottiTool> toolsForTurn(int turnIndex) {
     if (turnIndex > 0) return allTools;
     return [
       for (final tool in allTools)
-        if (!openingTurnExclusions.contains(tool.function.name)) tool,
+        if (!openingTurnExclusions.contains(tool.name)) tool,
     ];
   }
 }

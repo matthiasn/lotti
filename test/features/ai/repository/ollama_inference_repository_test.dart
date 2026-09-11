@@ -5,10 +5,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -101,13 +101,7 @@ void main() {
         const temperature = 0.7;
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
-          ),
+          const LottiTool(name: 'test_function', description: 'Test function'),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -160,12 +154,9 @@ void main() {
         const temperature = 0.7;
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'get_weather',
-              description: 'Get weather information',
-            ),
+          const LottiTool(
+            name: 'get_weather',
+            description: 'Get weather information',
           ),
         ];
 
@@ -519,7 +510,7 @@ void main() {
     });
   });
 
-  group('Content Extraction from ChatCompletionUserMessageContent', () {
+  group('Content Extraction from LottiUserContent', () {
     late OllamaInferenceRepository repository;
     late MockHttpClient mockHttpClient;
 
@@ -530,12 +521,10 @@ void main() {
 
     test('should extract text from list of content parts', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'Hello'),
-            ChatCompletionMessageContentPart.text(text: ' world'),
-          ]),
-        ),
+        LottiMessage.userParts(const [
+          LottiContentPart.text('Hello'),
+          LottiContentPart.text(' world'),
+        ]),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -580,10 +569,8 @@ void main() {
 
     test('should handle string content directly', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(
-            'Direct string content',
-          ),
+        LottiMessage.userText(
+          'Direct string content',
         ),
       ];
 
@@ -629,9 +616,7 @@ void main() {
 
     test('should capture thinking content wrapped in think tags', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       final chunks = [
@@ -680,9 +665,7 @@ void main() {
 
     test('null or empty thinking fields add no think tags', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       // One chunk with thinking explicitly null, one with an empty string —
@@ -732,7 +715,7 @@ void main() {
 
     test('should handle tool messages correctly', () async {
       final messages = [
-        const ChatCompletionMessage.tool(
+        const LottiMessage.tool(
           toolCallId: 'tool-123',
           content: 'Tool execution result',
         ),
@@ -781,16 +764,9 @@ void main() {
 
     test('should handle messages with null content', () async {
       final messages = [
-        const ChatCompletionMessage.assistant(
+        const LottiMessage.assistant(
           toolCalls: [
-            ChatCompletionMessageToolCall(
-              id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{}',
-              ),
-            ),
+            LottiToolCall(id: 'tool-1', name: 'test_function', arguments: '{}'),
           ],
         ),
       ];
@@ -838,9 +814,7 @@ void main() {
     test('should handle content that cannot be JSON encoded', () async {
       // Create a message with standard content
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('test content'),
-        ),
+        LottiMessage.userText('test content'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -886,9 +860,7 @@ void main() {
 
     test('should include maxCompletionTokens in options', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -933,15 +905,11 @@ void main() {
 
     test('should handle empty text parts in content', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: ''),
-            ChatCompletionMessageContentPart.text(
-              text: '  ',
-            ), // Only whitespace
-            ChatCompletionMessageContentPart.text(text: 'Valid text'),
-          ]),
-        ),
+        LottiMessage.userParts(const [
+          LottiContentPart.text(''),
+          LottiContentPart.text('  '), // Only whitespace
+          LottiContentPart.text('Valid text'),
+        ]),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -997,9 +965,7 @@ void main() {
 
     test('should handle malformed JSON in stream', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1200,9 +1166,7 @@ void main() {
 
     test('should handle tool calls with existing ID in stream', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1233,13 +1197,7 @@ void main() {
         temperature: 0.7,
         provider: provider,
         tools: [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
-          ),
+          const LottiTool(name: 'test_function', description: 'Test function'),
         ],
       );
 
@@ -1289,9 +1247,7 @@ void main() {
         // The repository must use the response's index (not the loop variable)
         // so the downstream accumulator treats them as separate calls.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          LottiMessage.userText('Test'),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1321,19 +1277,10 @@ void main() {
           temperature: 0.7,
           provider: provider,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'set_task_title',
-                description: 'Set title',
-              ),
-            ),
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'set_task_language',
-                description: 'Set language',
-              ),
+            const LottiTool(name: 'set_task_title', description: 'Set title'),
+            const LottiTool(
+              name: 'set_task_language',
+              description: 'Set language',
             ),
           ],
         );
@@ -1395,21 +1342,19 @@ void main() {
         final firstToolCalls = responses[0].choices!.first.delta!.toolCalls!;
         expect(firstToolCalls.length, 1);
         expect(firstToolCalls.first.index, 0);
-        expect(firstToolCalls.first.function?.name, 'set_task_title');
+        expect(firstToolCalls.first.name, 'set_task_title');
 
         // Second response should have index 1 (not 0!)
         final secondToolCalls = responses[1].choices!.first.delta!.toolCalls!;
         expect(secondToolCalls.length, 1);
         expect(secondToolCalls.first.index, 1);
-        expect(secondToolCalls.first.function?.name, 'set_task_language');
+        expect(secondToolCalls.first.name, 'set_task_language');
       },
     );
 
     test('falls back to loop index when response has no index field', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1468,13 +1413,7 @@ void main() {
             temperature: 0.7,
             provider: provider,
             tools: [
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'test_fn',
-                  description: 'Test',
-                ),
-              ),
+              const LottiTool(name: 'test_fn', description: 'Test'),
             ],
           )
           .toList();
@@ -1493,9 +1432,7 @@ void main() {
         // Two separate stream chunks each with one tool call, both missing
         // id and index. The counter must assign 0 and 1, not 0 and 0.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          LottiMessage.userText('Test'),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1559,20 +1496,8 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_a',
-                    description: 'Test A',
-                  ),
-                ),
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_b',
-                    description: 'Test B',
-                  ),
-                ),
+                const LottiTool(name: 'fn_a', description: 'Test A'),
+                const LottiTool(name: 'fn_b', description: 'Test B'),
               ],
             )
             .toList();
@@ -1592,9 +1517,7 @@ void main() {
         // First chunk has id + index, second chunk has same id but no index.
         // Both should get the same dense index so they merge downstream.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          LottiMessage.userText('Test'),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1663,13 +1586,7 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_a',
-                    description: 'A',
-                  ),
-                ),
+                const LottiTool(name: 'fn_a', description: 'A'),
               ],
             )
             .toList();
@@ -1690,9 +1607,7 @@ void main() {
       'remaps sparse Ollama indices to dense 0-based sequence',
       () async {
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          LottiMessage.userText('Test'),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1752,20 +1667,8 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_a',
-                    description: 'A',
-                  ),
-                ),
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_b',
-                    description: 'B',
-                  ),
-                ),
+                const LottiTool(name: 'fn_a', description: 'A'),
+                const LottiTool(name: 'fn_b', description: 'B'),
               ],
             )
             .toList();
@@ -1785,9 +1688,7 @@ void main() {
         // Some Ollama versions put index inside the function object rather
         // than at the tool-call level. The parser should handle both.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          LottiMessage.userText('Test'),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1838,13 +1739,7 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'test_fn',
-                    description: 'Test',
-                  ),
-                ),
+                const LottiTool(name: 'test_fn', description: 'Test'),
               ],
             )
             .toList();
@@ -1859,9 +1754,7 @@ void main() {
 
     test('should handle tool calls with pre-encoded arguments', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1909,27 +1802,19 @@ void main() {
         temperature: 0.7,
         provider: provider,
         tools: [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
-          ),
+          const LottiTool(name: 'test_function', description: 'Test function'),
         ],
       );
 
       final responses = await stream.toList();
       expect(responses.length, 1);
       final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
-      expect(toolCall?.function?.arguments, '{"already": "encoded"}');
+      expect(toolCall?.arguments, '{"already": "encoded"}');
     });
 
     test('should generate tool call ID if missing', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        LottiMessage.userText('Test'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1976,13 +1861,7 @@ void main() {
         temperature: 0.7,
         provider: provider,
         tools: [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
-          ),
+          const LottiTool(name: 'test_function', description: 'Test function'),
         ],
       );
 
@@ -1998,9 +1877,7 @@ void main() {
       'should throw exception on non-200 status with generic error',
       () async {
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          LottiMessage.userText('Hello'),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -2046,9 +1923,7 @@ void main() {
 
     test('should handle malformed JSON in stream gracefully', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        LottiMessage.userText('Hello'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -2090,9 +1965,7 @@ void main() {
 
     test('should handle empty stream lines', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        LottiMessage.userText('Hello'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -2134,9 +2007,7 @@ void main() {
 
     test('should capture thinking content from response', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        LottiMessage.userText('Hello'),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -2409,9 +2280,7 @@ void main() {
       final events = await thinkingRepo
           .generateTextWithMessages(
             messages: [
-              const ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+              LottiMessage.userText('Hi'),
             ],
             model: 'gemma4:26b',
             temperature: 0.7,
@@ -2462,9 +2331,7 @@ void main() {
       final events = await thinkingRepo
           .generateTextWithMessages(
             messages: [
-              const ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+              LottiMessage.userText('Hi'),
             ],
             model: 'gemma4:26b',
             temperature: 0.7,
@@ -2522,9 +2389,7 @@ void main() {
         final events = await thinkingRepo
             .generateTextWithMessages(
               messages: [
-                const ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hi'),
-                ),
+                LottiMessage.userText('Hi'),
               ],
               model: 'gemma4:26b',
               temperature: 0.7,
@@ -2580,9 +2445,7 @@ void main() {
         final events = await thinkingRepo
             .generateTextWithMessages(
               messages: [
-                const ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hi'),
-                ),
+                LottiMessage.userText('Hi'),
               ],
               model: 'gemma4:26b',
               temperature: 0.7,
@@ -2633,9 +2496,7 @@ void main() {
       final events = await thinkingRepo
           .generateTextWithMessages(
             messages: [
-              const ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+              LottiMessage.userText('Hi'),
             ],
             model: 'gemma4:26b',
             temperature: 0.7,
@@ -2700,17 +2561,11 @@ void main() {
       'developer message with parts content falls into jsonEncode branch '
       '(line 139)',
       () async {
-        // ChatCompletionDeveloperMessageContent is NOT a String and NOT a
-        // ChatCompletionUserMessageContent, so it hits the `else if` branch
+        // LottiDeveloperMessageContent is NOT a String and NOT a
+        // LottiUserContent, so it hits the `else if` branch
         // at line 136–142 and jsonEncode is called.
         final messages = [
-          const ChatCompletionMessage.developer(
-            content: ChatCompletionDeveloperMessageContent.parts([
-              ChatCompletionMessageContentPart.text(
-                text: 'You are helpful',
-              ),
-            ]),
-          ),
+          const LottiMessage.developer('You are helpful'),
         ];
 
         when(

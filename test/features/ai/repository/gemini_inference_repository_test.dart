@@ -8,9 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import 'gemini_test_clients.dart';
 
@@ -249,8 +249,8 @@ void main() {
       expect(delta.toolCalls, isNotNull);
       expect(delta.toolCalls!.length, 1);
       final call = delta.toolCalls!.first;
-      expect(call.function!.name, 'get_task_summaries');
-      expect(call.function!.arguments, contains('start_date'));
+      expect(call.name, 'get_task_summaries');
+      expect(call.arguments, contains('start_date'));
     });
 
     test(
@@ -724,7 +724,7 @@ void main() {
       expect(usageEvent.usage, isNotNull);
       expect(usageEvent.usage!.promptTokens, 50);
       expect(usageEvent.usage!.completionTokens, 20);
-      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 10);
+      expect(usageEvent.usage!.reasoningTokens, 10);
     });
 
     test('parses usageMetadata and emits in final chunk', () async {
@@ -779,7 +779,7 @@ void main() {
       expect(usageEvent.usage, isNotNull);
       expect(usageEvent.usage!.promptTokens, 100);
       expect(usageEvent.usage!.completionTokens, 50);
-      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 25);
+      expect(usageEvent.usage!.reasoningTokens, 25);
     });
 
     test('accumulates usageMetadata across multiple chunks', () async {
@@ -847,7 +847,7 @@ void main() {
       expect(usageEvent.usage, isNotNull);
       expect(usageEvent.usage!.promptTokens, 100);
       expect(usageEvent.usage!.completionTokens, 50);
-      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 25);
+      expect(usageEvent.usage!.reasoningTokens, 25);
     });
 
     test('emits no usage event when usageMetadata is absent', () async {
@@ -936,8 +936,8 @@ void main() {
       final toolCalls = events.first.choices!.first.delta!.toolCalls;
       expect(toolCalls, isNotNull);
       expect(toolCalls!.length, 1);
-      expect(toolCalls.first.function!.name, 'test_function');
-      expect(toolCalls.first.function!.arguments, '{"arg1":"value1"}');
+      expect(toolCalls.first.name, 'test_function');
+      expect(toolCalls.first.arguments, '{"arg1":"value1"}');
       // Note: thoughtSignature is logged but not exposed in OpenAI-compat types
     });
 
@@ -994,12 +994,12 @@ void main() {
       // First function call
       final firstToolCalls = events[0].choices!.first.delta!.toolCalls;
       expect(firstToolCalls, isNotNull);
-      expect(firstToolCalls!.first.function!.name, 'function_one');
+      expect(firstToolCalls!.first.name, 'function_one');
 
       // Second function call
       final secondToolCalls = events[1].choices!.first.delta!.toolCalls;
       expect(secondToolCalls, isNotNull);
-      expect(secondToolCalls!.first.function!.name, 'function_two');
+      expect(secondToolCalls!.first.name, 'function_two');
     });
   });
 
@@ -1037,7 +1037,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        List<CreateChatCompletionStreamResponse>? events;
+        List<LottiInferenceChunk>? events;
         repo
             .generateText(
               prompt: 'test',
@@ -1098,7 +1098,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        List<CreateChatCompletionStreamResponse>? events;
+        List<LottiInferenceChunk>? events;
         repo
             .generateText(
               prompt: 'test',
@@ -1152,7 +1152,7 @@ void main() {
             .toList()
             .catchError((Object e) {
               caughtError = e;
-              return <CreateChatCompletionStreamResponse>[];
+              return <LottiInferenceChunk>[];
             });
 
         // Attempt 1: gets 429, schedules 500ms backoff
@@ -1478,19 +1478,16 @@ void main() {
             thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 0),
             provider: provider,
             tools: [
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'get_weather',
-                  description: 'Get weather for a location',
-                  parameters: {
-                    'type': 'object',
-                    'properties': {
-                      'location': {'type': 'string'},
-                    },
-                    'required': ['location'],
+              const LottiTool(
+                name: 'get_weather',
+                description: 'Get weather for a location',
+                parameters: {
+                  'type': 'object',
+                  'properties': {
+                    'location': {'type': 'string'},
                   },
-                ),
+                  'required': ['location'],
+                },
               ),
             ],
           )
@@ -1808,13 +1805,9 @@ void main() {
       );
 
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
-        const ChatCompletionMessage.assistant(content: 'Hi there!'),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('How are you?'),
-        ),
+        LottiMessage.userText('Hello'),
+        const LottiMessage.assistant(content: 'Hi there!'),
+        LottiMessage.userText('How are you?'),
       ];
 
       final events = await repo
@@ -1871,22 +1864,17 @@ void main() {
       );
 
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Add items'),
-        ),
-        const ChatCompletionMessage.assistant(
+        LottiMessage.userText('Add items'),
+        const LottiMessage.assistant(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            LottiToolCall(
               id: 'call-123',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'add_item',
-                arguments: '{"title":"Buy milk"}',
-              ),
+              name: 'add_item',
+              arguments: '{"title":"Buy milk"}',
             ),
           ],
         ),
-        const ChatCompletionMessage.tool(
+        const LottiMessage.tool(
           toolCallId: 'call-123',
           content: 'Item added successfully',
         ),
@@ -1959,10 +1947,8 @@ void main() {
 
       await repo
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Add item'),
-              ),
+            messages: [
+              LottiMessage.userText('Add item'),
             ],
             model: 'gemini-3-flash',
             temperature: 0.5,
@@ -2004,10 +1990,8 @@ void main() {
 
       final events = await repo
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Think hard'),
-              ),
+            messages: [
+              LottiMessage.userText('Think hard'),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2060,10 +2044,8 @@ void main() {
 
       final events = await repo
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hello'),
-              ),
+            messages: [
+              LottiMessage.userText('Hello'),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2077,7 +2059,7 @@ void main() {
       expect(events.last.usage, isNotNull);
       expect(events.last.usage!.promptTokens, 200);
       expect(events.last.usage!.completionTokens, 100);
-      expect(events.last.usage!.completionTokensDetails?.reasoningTokens, 50);
+      expect(events.last.usage!.reasoningTokens, 50);
     });
 
     test('throws on non-2xx status in multi-turn mode', () async {
@@ -2096,10 +2078,8 @@ void main() {
       expect(
         () => repo
             .generateTextWithMessages(
-              messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hello'),
-                ),
+              messages: [
+                LottiMessage.userText('Hello'),
               ],
               model: 'gemini-2.5-pro',
               temperature: 0.5,
@@ -2138,10 +2118,8 @@ void main() {
 
       final events = await repo
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Think'),
-              ),
+            messages: [
+              LottiMessage.userText('Think'),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2184,10 +2162,8 @@ void main() {
 
       final events = await repo
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+            messages: [
+              LottiMessage.userText('Hi'),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2234,11 +2210,9 @@ void main() {
 
       await repo
           .generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string(
-                  'Do something',
-                ),
+            messages: [
+              LottiMessage.userText(
+                'Do something',
               ),
             ],
             model: 'gemini-2.5-pro',
@@ -2296,7 +2270,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        List<CreateChatCompletionStreamResponse>? events;
+        List<LottiInferenceChunk>? events;
         repo
             .generateText(
               prompt: 'test',
@@ -2704,7 +2678,7 @@ void main() {
             inferenceProviderType: InferenceProviderType.gemini,
           );
 
-          List<CreateChatCompletionStreamResponse>? events;
+          List<LottiInferenceChunk>? events;
           repo
               .generateText(
                 prompt: 'test',
@@ -2766,7 +2740,7 @@ void main() {
             inferenceProviderType: InferenceProviderType.gemini,
           );
 
-          List<CreateChatCompletionStreamResponse>? events;
+          List<LottiInferenceChunk>? events;
           repo
               .generateText(
                 prompt: 'test',
@@ -2821,7 +2795,7 @@ void main() {
             .toList()
             .catchError((Object e) {
               caughtError = e;
-              return <CreateChatCompletionStreamResponse>[];
+              return <LottiInferenceChunk>[];
             });
 
         // Attempt 1 times out, schedules 500ms delay.

@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_consumption_mapping.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -37,7 +38,6 @@ import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:openai_dart/openai_dart.dart' hide Error;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
@@ -52,7 +52,7 @@ class PreparedAudio {
   });
 
   final String base64;
-  final ChatCompletionMessageInputAudioFormat format;
+  final LottiAudioFormat format;
 }
 
 /// Repository for unified AI inference handling
@@ -286,10 +286,8 @@ class UnifiedAiInferenceRepository {
                 return AiCapturedUsage(
                   inputTokens: chunkUsage.promptTokens,
                   outputTokens: chunkUsage.completionTokens,
-                  cachedInputTokens:
-                      chunkUsage.promptTokensDetails?.cachedTokens,
-                  thoughtsTokens:
-                      chunkUsage.completionTokensDetails?.reasoningTokens,
+                  cachedInputTokens: chunkUsage.cachedInputTokens,
+                  thoughtsTokens: chunkUsage.reasoningTokens,
                   totalTokens: chunkUsage.totalTokens,
                 );
               },
@@ -310,7 +308,7 @@ class UnifiedAiInferenceRepository {
       // Process the stream and accumulate tool calls
       final toolCallAccumulator = ToolCallAccumulator();
       String? pendingProgress;
-      CompletionUsage? usage;
+      LottiUsage? usage;
 
       await for (final chunk in stream) {
         // Capture usage metadata from the final chunk
@@ -349,7 +347,7 @@ class UnifiedAiInferenceRepository {
       }
 
       // Process accumulated tool calls
-      List<ChatCompletionMessageToolCall>? toolCalls;
+      List<LottiToolCall>? toolCalls;
       if (toolCallAccumulator.hasToolCalls) {
         developer.log(
           'Processing ${toolCallAccumulator.count} accumulated tool calls',
@@ -474,12 +472,12 @@ class UnifiedAiInferenceRepository {
     // All providers accept M4A bytes labeled as mp3
     return PreparedAudio(
       base64: base64Encode(bytes),
-      format: ChatCompletionMessageInputAudioFormat.mp3,
+      format: LottiAudioFormat.mp3,
     );
   }
 
   /// Run cloud inference
-  Future<Stream<CreateChatCompletionStreamResponse>> _runCloudInference({
+  Future<Stream<LottiInferenceChunk>> _runCloudInference({
     required String prompt,
     required String systemMessage,
     required AiConfigModel model,
@@ -568,7 +566,7 @@ class UnifiedAiInferenceRepository {
       // No tools attached — checklist updates and task summaries are
       // handled by the agent system. Other response types (image analysis,
       // audio transcription, prompt generation) don't use function calling.
-      const List<ChatCompletionTool>? _ = null;
+      const List<LottiTool>? _ = null;
 
       return cloudRepo.generate(
         prompt,
@@ -586,7 +584,7 @@ class UnifiedAiInferenceRepository {
   }
 
   /// Extract text from stream chunk
-  String _extractTextFromChunk(CreateChatCompletionStreamResponse chunk) {
+  String _extractTextFromChunk(LottiInferenceChunk chunk) {
     try {
       // Handle potential null values in Anthropic's response
       final choices = chunk.choices;
@@ -622,8 +620,8 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     required String outputId,
-    List<ChatCompletionMessageToolCall>? toolCalls,
-    CompletionUsage? usage,
+    List<LottiToolCall>? toolCalls,
+    LottiUsage? usage,
     int? durationMs,
     double? temperature,
     String? effectiveSystemMessage,
@@ -712,7 +710,7 @@ class UnifiedAiInferenceRepository {
       type: promptConfig.aiResponseType,
       inputTokens: usage?.promptTokens,
       outputTokens: usage?.completionTokens,
-      thoughtsTokens: usage?.completionTokensDetails?.reasoningTokens,
+      thoughtsTokens: usage?.reasoningTokens,
       durationMs: durationMs,
       aiAttribution: attributionEnvelope,
     );
@@ -1004,7 +1002,7 @@ class UnifiedAiInferenceRepository {
   /// detection. Returns true if language was detected and set.
   @visibleForTesting
   Future<bool> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required Task task,
   }) => _toolCallProcessor.process(toolCalls: toolCalls, task: task);
 

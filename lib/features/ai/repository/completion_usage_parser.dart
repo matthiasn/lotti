@@ -1,12 +1,12 @@
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference_chunk.dart';
 
-/// Parses OpenAI-compatible `usage` payloads into [CompletionUsage].
+/// Parses OpenAI-compatible `usage` payloads into [LottiUsage].
 ///
 /// Providers are not perfectly consistent: streamed chat completions usually
 /// report `prompt_tokens`/`completion_tokens`, while a few compatible servers
 /// use input/output naming or camelCase keys. Unsupported duration-only usage
 /// payloads (for example audio seconds without token counts) return null.
-CompletionUsage? parseCompletionUsage(Object? raw) {
+LottiUsage? parseCompletionUsage(Object? raw) {
   if (raw is! Map<dynamic, dynamic>) return null;
   final usage = raw;
 
@@ -49,16 +49,12 @@ CompletionUsage? parseCompletionUsage(Object? raw) {
   final promptTokenCount = promptTokens ?? 0;
   final completionTokenCount = completionTokens ?? 0;
 
-  return CompletionUsage(
+  return LottiUsage(
     promptTokens: promptTokenCount,
     completionTokens: completionTokenCount,
     totalTokens: totalTokens ?? promptTokenCount + completionTokenCount,
-    promptTokensDetails: cachedTokens != null
-        ? PromptTokensDetails(cachedTokens: cachedTokens)
-        : null,
-    completionTokensDetails: reasoningTokens != null
-        ? CompletionTokensDetails(reasoningTokens: reasoningTokens)
-        : null,
+    cachedInputTokens: cachedTokens,
+    reasoningTokens: reasoningTokens,
   );
 }
 
@@ -75,39 +71,24 @@ int? _integerValue(Object? value) {
 }
 
 /// Sums token usage across physical requests belonging to one logical call.
-CompletionUsage? combineCompletionUsage(
-  CompletionUsage? a,
-  CompletionUsage? b,
-) {
+LottiUsage? combineCompletionUsage(LottiUsage? a, LottiUsage? b) {
   if (a == null) return b;
   if (b == null) return a;
   int? sum(int? x, int? y) =>
       x == null && y == null ? null : (x ?? 0) + (y ?? 0);
-  final aDetails = a.completionTokensDetails;
-  final bDetails = b.completionTokensDetails;
-  final aPrompt = a.promptTokensDetails;
-  final bPrompt = b.promptTokensDetails;
-  return CompletionUsage(
+  // Cached and reasoning counts are carried rather than dropped: the
+  // consumption event reads them, so losing them here would report null
+  // cached input on exactly the runs that retried.
+  return LottiUsage(
     promptTokens: sum(a.promptTokens, b.promptTokens),
     completionTokens: sum(a.completionTokens, b.completionTokens),
     totalTokens: sum(a.totalTokens, b.totalTokens),
-    completionTokensDetails: aDetails == null && bDetails == null
-        ? null
-        : CompletionTokensDetails(
-            reasoningTokens: sum(
-              aDetails?.reasoningTokens,
-              bDetails?.reasoningTokens,
-            ),
-            audioTokens: sum(aDetails?.audioTokens, bDetails?.audioTokens),
-          ),
-    // Carried for the same reason as the completion details: the
-    // consumption event reads `cachedTokens` off this, so dropping it would
-    // report null cached input on exactly the runs that retried.
-    promptTokensDetails: aPrompt == null && bPrompt == null
-        ? null
-        : PromptTokensDetails(
-            cachedTokens: sum(aPrompt?.cachedTokens, bPrompt?.cachedTokens),
-            audioTokens: sum(aPrompt?.audioTokens, bPrompt?.audioTokens),
-          ),
+    cachedInputTokens: sum(a.cachedInputTokens, b.cachedInputTokens),
+    reasoningTokens: sum(a.reasoningTokens, b.reasoningTokens),
+    promptAudioTokens: sum(a.promptAudioTokens, b.promptAudioTokens),
+    completionAudioTokens: sum(
+      a.completionAudioTokens,
+      b.completionAudioTokens,
+    ),
   );
 }

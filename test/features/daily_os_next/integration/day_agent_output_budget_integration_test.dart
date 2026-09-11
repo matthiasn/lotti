@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -55,53 +55,49 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.value(
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'truncated-draft',
             created: 0,
             model: 'models/day',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              LottiChunkChoice(
                 index: 0,
-                finishReason: ChatCompletionFinishReason.length,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: LottiDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
-                      index: 0,
+                    LottiToolCallChunk(
                       id: 'draft-call',
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: DayAgentToolNames.draftDayPlan,
-                        arguments: jsonEncode({
-                          'dayId': dayId,
-                          'blocks': [
-                            {
-                              'title': 'This must not be persisted',
-                              'categoryId': 'work',
-                              'start': DateTime(
-                                2030,
-                                1,
-                                15,
-                                9,
-                              ).toIso8601String(),
-                              'end': DateTime(
-                                2030,
-                                1,
-                                15,
-                                10,
-                              ).toIso8601String(),
-                              'reason':
-                                  'The provider marked this response truncated.',
-                            },
-                          ],
-                        }),
-                      ),
+                      index: 0,
+                      name: DayAgentToolNames.draftDayPlan,
+                      arguments: jsonEncode({
+                        'dayId': dayId,
+                        'blocks': [
+                          {
+                            'title': 'This must not be persisted',
+                            'categoryId': 'work',
+                            'start': DateTime(
+                              2030,
+                              1,
+                              15,
+                              9,
+                            ).toIso8601String(),
+                            'end': DateTime(
+                              2030,
+                              1,
+                              15,
+                              10,
+                            ).toIso8601String(),
+                            'reason':
+                                'The provider marked this response truncated.',
+                          },
+                        ],
+                      }),
                     ),
                   ],
                 ),
+                finishReason: LottiFinishReason.length,
               ),
             ],
-            usage: const CompletionUsage(
+            usage: const LottiUsage(
               promptTokens: 2048,
               completionTokens: 8192,
               totalTokens: 10240,

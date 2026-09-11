@@ -6,10 +6,10 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -54,7 +54,7 @@ void main() {
   /// consumption ledger — the only place a test can stand in for a provider
   /// reporting usage.
   EvalModelTarget scriptedTarget({
-    required List<List<ChatCompletionMessageToolCall>> turns,
+    required List<List<LottiToolCall>> turns,
     String id = 'scripted',
     void Function()? onOpen,
     Future<void> Function()? onClose,
@@ -101,7 +101,7 @@ void main() {
     'taskId': ?taskId,
   };
 
-  ChatCompletionMessageToolCall draftCall({
+  LottiToolCall draftCall({
     required DateTime planDate,
     required List<Map<String, Object?>> blocks,
     String id = 'draft-call',

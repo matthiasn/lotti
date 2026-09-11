@@ -11,9 +11,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -99,19 +99,18 @@ void main() {
       ).thenAnswer((_) async => false);
 
       // Stream a single assign_task_labels tool call for X and Y
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'tool-1',
-                  functionName: 'assign_task_labels',
-                  arguments: '{"labelIds":["X","Y"]}',
-                ),
-              ]),
-            )
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'tool-1',
+              functionName: 'assign_task_labels',
+              arguments: '{"labelIds":["X","Y"]}',
+            ),
+          ]),
+        )
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -224,21 +223,20 @@ void main() {
       ).thenAnswer((_) async => '{"task": "details"}');
 
       // Stream with one tool call using array-of-objects; grouped comma stays within title
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'add_multiple_checklist_items',
-                  arguments:
-                      '{"items": [{"title": "Start database (index cache, warm)"}, {"title": "Verify"}]}',
-                ),
-              ]),
-            )
-            ..add(createStreamChunk('Done'))
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'add_multiple_checklist_items',
+              arguments:
+                  '{"items": [{"title": "Start database (index cache, warm)"}, {"title": "Verify"}]}',
+            ),
+          ]),
+        )
+        ..add(createStreamChunk('Done'))
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -347,20 +345,19 @@ void main() {
       );
 
       // Create stream with add_multiple_checklist_items tool call
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'add_multiple_checklist_items',
-                  arguments: '{"items": [{"title": "Review documentation"}]}',
-                ),
-              ]),
-            )
-            ..add(createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'add_multiple_checklist_items',
+              arguments: '{"items": [{"title": "Review documentation"}]}',
+            ),
+          ]),
+        )
+        ..add(createStreamChunk('Task analysis complete'))
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -464,20 +461,19 @@ void main() {
       ).thenAnswer((_) async => newChecklistItem);
 
       // Create stream with add_multiple_checklist_items tool call
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'add_multiple_checklist_items',
-                  arguments: '{"items": [{"title": "New checklist item"}]}',
-                ),
-              ]),
-            )
-            ..add(createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'add_multiple_checklist_items',
+              arguments: '{"items": [{"title": "New checklist item"}]}',
+            ),
+          ]),
+        )
+        ..add(createStreamChunk('Task analysis complete'))
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -597,33 +593,32 @@ void main() {
         );
 
         // Create stream with a single add_multiple_checklist_items tool call containing multiple items
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>()
-              ..add(
-                createStreamChunkWithToolCalls([
-                  createMockToolCall(
-                    index: 0,
-                    id: 'call-1',
-                    functionName: 'add_multiple_checklist_items',
-                    arguments:
-                        '{"items": [{"title": "First item"}, {"title": "Second item"}, {"title": "Third item"}]}',
-                  ),
-                  createMockToolCall(
-                    index: 1,
-                    id: 'call-2',
-                    functionName: 'add_multiple_checklist_items',
-                    arguments: '{"items": [{"title": "noop"}]}',
-                  ),
-                  createMockToolCall(
-                    index: 2,
-                    id: 'call-3',
-                    functionName: 'add_multiple_checklist_items',
-                    arguments: '{"items": [{"title": "noop2"}]}',
-                  ),
-                ]),
-              )
-              ..add(createStreamChunk('Task analysis complete'))
-              ..close();
+        final streamController = StreamController<LottiInferenceChunk>()
+          ..add(
+            createStreamChunkWithToolCalls([
+              createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'add_multiple_checklist_items',
+                arguments:
+                    '{"items": [{"title": "First item"}, {"title": "Second item"}, {"title": "Third item"}]}',
+              ),
+              createMockToolCall(
+                index: 1,
+                id: 'call-2',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "noop"}]}',
+              ),
+              createMockToolCall(
+                index: 2,
+                id: 'call-3',
+                functionName: 'add_multiple_checklist_items',
+                arguments: '{"items": [{"title": "noop2"}]}',
+              ),
+            ]),
+          )
+          ..add(createStreamChunk('Task analysis complete'))
+          ..close();
 
         stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -750,21 +745,20 @@ void main() {
       ).thenAnswer((_) async => true);
 
       // Create stream with high confidence suggestion
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-1","reason":"Task completed","confidence":"high"}',
-                ),
-              ]),
-            )
-            ..add(createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-1","reason":"Task completed","confidence":"high"}',
+            ),
+          ]),
+        )
+        ..add(createStreamChunk('Task analysis complete'))
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -845,21 +839,20 @@ void main() {
       ).thenAnswer((_) async => '{"task": "details"}');
 
       // Create stream with medium confidence suggestion
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-2","reason":"Might be done","confidence":"medium"}',
-                ),
-              ]),
-            )
-            ..add(createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-2","reason":"Might be done","confidence":"medium"}',
+            ),
+          ]),
+        )
+        ..add(createStreamChunk('Task analysis complete'))
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -948,21 +941,20 @@ void main() {
       ).thenAnswer((_) async => alreadyCheckedItem);
 
       // Create stream with high confidence suggestion for already checked item
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-3","reason":"Task completed","confidence":"high"}',
-                ),
-              ]),
-            )
-            ..add(createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-3","reason":"Task completed","confidence":"high"}',
+            ),
+          ]),
+        )
+        ..add(createStreamChunk('Task analysis complete'))
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -1051,21 +1043,20 @@ void main() {
         () => mockJournalRepo.getJournalEntityById('item-user'),
       ).thenAnswer((_) async => userOwnedItem);
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(
-              createStreamChunkWithToolCalls([
-                createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-user","reason":"Completed","confidence":"high"}',
-                ),
-              ]),
-            )
-            ..add(createStreamChunk('Task analysis complete'))
-            ..close();
+      final streamController = StreamController<LottiInferenceChunk>()
+        ..add(
+          createStreamChunkWithToolCalls([
+            createMockToolCall(
+              index: 0,
+              id: 'call-1',
+              functionName: 'suggest_checklist_completion',
+              arguments:
+                  '{"checklistItemId":"item-user","reason":"Completed","confidence":"high"}',
+            ),
+          ]),
+        )
+        ..add(createStreamChunk('Task analysis complete'))
+        ..close();
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -1226,8 +1217,7 @@ void main() {
         aiResponseType: AiResponseType.imageAnalysis,
       );
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>();
+      final streamController = StreamController<LottiInferenceChunk>();
 
       when(
         () => mockAiInputRepo.getEntity(any()),
@@ -1271,56 +1261,43 @@ void main() {
       // Add chunks with empty tool call IDs and continuation by index
       streamController
         ..add(
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: LottiDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
+                    LottiToolCallChunk(
+                      id: '',
                       index: 0,
-                      id: '', // Empty ID - should generate tool_0
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'add_multiple_checklist_items',
-                        arguments: '{"items":[{"title":',
-                      ),
+                      name: 'add_multiple_checklist_items',
+                      arguments: '{"items":[{"title":',
                     ),
                   ],
                 ),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         )
         // Continue by index without ID
         ..add(
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            created:
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: LottiDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
-                      index: 0, // Same index, no ID
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        arguments: '"Test item"}]}',
-                      ),
-                    ),
+                    LottiToolCallChunk(index: 0, arguments: '"Test item"}]}'),
                   ],
                 ),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created:
-                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
         );
 
@@ -1353,8 +1330,7 @@ void main() {
         aiResponseType: AiResponseType.imageAnalysis,
       );
 
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>();
+      final streamController = StreamController<LottiInferenceChunk>();
 
       when(
         () => mockAiInputRepo.getEntity(any()),
@@ -1397,30 +1373,26 @@ void main() {
 
       // Add chunk with no ID but with function name - should create new tool call
       streamController.add(
-        CreateChatCompletionStreamResponse(
+        LottiInferenceChunk(
           id: 'response-1',
-          choices: [
-            const ChatCompletionStreamResponseChoice(
+          created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+          choices: const [
+            LottiChunkChoice(
               index: 0,
-              delta: ChatCompletionStreamResponseDelta(
+              delta: LottiDelta(
                 toolCalls: [
-                  ChatCompletionStreamMessageToolCallChunk(
+                  LottiToolCallChunk(
                     index: 0,
                     // No ID field
-                    type: ChatCompletionStreamMessageToolCallChunkType.function,
-                    function: ChatCompletionStreamMessageFunctionCall(
-                      name:
-                          'add_multiple_checklist_items', // Has name - indicates new tool call
-                      arguments:
-                          '{"items":[{"title":"Item with name but no ID"}]}',
-                    ),
+                    name:
+                        'add_multiple_checklist_items', // Has name - indicates new tool call
+                    arguments:
+                        '{"items":[{"title":"Item with name but no ID"}]}',
                   ),
                 ],
               ),
             ),
           ],
-          object: 'chat.completion.chunk',
-          created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
         ),
       );
 

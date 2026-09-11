@@ -75,8 +75,8 @@ void main() {
 
       expect(result.toolChunks, hasLength(2));
       expect(result.toolChunks.first.id, 'tool_turn3_0');
-      expect(result.toolChunks.first.function?.name, 'set_title');
-      expect(result.toolChunks.first.function?.arguments, '{"title":"A"}');
+      expect(result.toolChunks.first.name, 'set_title');
+      expect(result.toolChunks.first.arguments, '{"title":"A"}');
       expect(result.toolChunks.last.id, 'tool_turn3_1');
       // Only the first call carried a signature.
       expect(result.signatures, {'tool_turn3_0': 'sig-1'});
@@ -100,7 +100,7 @@ void main() {
       expect(result.usage?.promptTokens, 10);
       expect(result.usage?.completionTokens, 5);
       expect(result.usage?.totalTokens, 15);
-      expect(result.usage?.completionTokensDetails?.reasoningTokens, 7);
+      expect(result.usage?.reasoningTokens, 7);
     });
 
     test('returns empty result for malformed payloads', () {

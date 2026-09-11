@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../ai_consumption/test_utils.dart';
@@ -678,18 +678,11 @@ void main() {
   });
 
   group('RelationshipAgentEvalStrategy', () {
-    ChatCompletionMessageToolCall toolCall(
+    LottiToolCall toolCall(
       String id,
       String name,
       String arguments,
-    ) => ChatCompletionMessageToolCall(
-      id: id,
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: name,
-        arguments: arguments,
-      ),
-    );
+    ) => LottiToolCall(id: id, name: name, arguments: arguments);
 
     test(
       'records calls with their exchange index and acknowledges them',
@@ -723,7 +716,7 @@ void main() {
         expect(strategy.toolCalls[0].exchangeIndex, 0);
         expect(strategy.toolCalls[1].exchangeIndex, 1);
         final responses = manager.messages
-            .map((m) => m.mapOrNull(tool: (t) => t.content))
+            .map((m) => m.toolContent)
             .whereType<String>()
             .toList();
         expect(responses, hasLength(2));
@@ -741,7 +734,7 @@ void main() {
           manager: manager,
         );
         final response = manager.messages
-            .map((m) => m.mapOrNull(tool: (t) => t.content))
+            .map((m) => m.toolContent)
             .whereType<String>()
             .single;
         expect(response, contains('Unknown tool'));
@@ -765,7 +758,7 @@ void main() {
           manager: manager,
         );
         final response = manager.messages
-            .map((m) => m.mapOrNull(tool: (t) => t.content))
+            .map((m) => m.toolContent)
             .whereType<String>()
             .single;
         expect(response, contains('Invalid JSON arguments'));

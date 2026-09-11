@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -12,11 +13,11 @@ import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeneratedImage;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -64,17 +65,13 @@ class _TestBench {
 void main() {
   /// Canonical single-chunk stream response used across the request-shape
   /// tests — only the delta content varies.
-  CreateChatCompletionStreamResponse minimalStreamResponse(String content) {
-    return CreateChatCompletionStreamResponse(
+  LottiInferenceChunk minimalStreamResponse(String content) {
+    return LottiInferenceChunk(
       id: 'response-id',
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-        ),
-      ],
-      object: 'chat.completion.chunk',
       created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+      choices: [
+        LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+      ],
     );
   }
 
@@ -82,13 +79,13 @@ void main() {
 
   setUpAll(() {
     // Register fallback values for mocktail
-    registerFallbackValue(FakeCreateChatCompletionRequest());
+    registerFallbackValue(FakeLottiInferenceRequest());
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeRequest());
     registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(FakeGeminiThinkingConfig());
     registerFallbackValue(FakeAiConfigInferenceProvider());
-    registerFallbackValue(<ChatCompletionTool>[]);
+    registerFallbackValue(<LottiTool>[]);
   });
 
   test(
@@ -127,7 +124,7 @@ void main() {
   );
 
   group('CloudInferenceRepository', () {
-    late MockOpenAIClient mockClient;
+    late MockLottiInferenceClient mockClient;
     late MockHttpClient mockHttpClient;
     late ProviderContainer container;
     late CloudInferenceRepository repository;
@@ -141,7 +138,7 @@ void main() {
     const prompt = 'Hello, AI!';
 
     setUp(() {
-      mockClient = MockOpenAIClient();
+      mockClient = MockLottiInferenceClient();
       bench = _TestBench();
       mockHttpClient = bench.mockHttpClient!;
       container = bench.container;
@@ -165,9 +162,7 @@ void main() {
       () {
         // Arrange
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -186,20 +181,17 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.model.toString(), contains(model));
+        final request = captured.first as LottiInferenceRequest;
+        expect(request.model, contains(model));
         expect(request.temperature, temperature);
         expect(request.messages.length, 1);
-        expect(request.messages.first.role, ChatCompletionMessageRole.user);
-        expect(request.stream, isTrue);
+        expect(request.messages.first.role, LottiMessageRole.user);
 
         // For simple string prompts, check that the content contains the prompt
-        expect(request.toString(), contains(prompt));
+        expect(jsonEncode(openAiRequestJson(request)), contains(prompt));
       },
     );
 
@@ -208,38 +200,30 @@ void main() {
       () async {
         // Arrange
         final expectedResponses = [
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-id-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Hello',
-                ),
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
                 index: 0,
+                delta: LottiDelta(content: 'Hello'),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-id-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: ' World!',
-                ),
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
                 index: 0,
+                delta: LottiDelta(content: ' World!'),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer((_) => Stream.fromIterable(expectedResponses));
 
         // Act
@@ -264,9 +248,7 @@ void main() {
         final images = ['image1-base64', 'image2-base64'];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test image response'),
@@ -286,20 +268,17 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.model.toString(), contains(model));
+        final request = captured.first as LottiInferenceRequest;
+        expect(request.model, contains(model));
         expect(request.temperature, temperature);
         expect(request.messages.length, 1);
-        expect(request.messages.first.role, ChatCompletionMessageRole.user);
-        expect(request.stream, isTrue);
+        expect(request.messages.first.role, LottiMessageRole.user);
 
         // Verify that request contains the images
-        final requestString = request.toString();
+        final requestString = jsonEncode(openAiRequestJson(request));
         expect(requestString.contains(prompt), isTrue);
         for (final image in images) {
           expect(requestString.contains(image), isTrue);
@@ -314,9 +293,7 @@ void main() {
         const audioBase64 = 'audio-base64-string';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test audio response'),
@@ -336,20 +313,17 @@ void main() {
 
         // Capture call  for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.model.toString(), contains(model));
+        final request = captured.first as LottiInferenceRequest;
+        expect(request.model, contains(model));
         expect(request.messages.length, 1);
-        expect(request.messages.first.role, ChatCompletionMessageRole.user);
+        expect(request.messages.first.role, LottiMessageRole.user);
         expect(request.reasoningEffort, isNull);
-        expect(request.stream, isTrue);
 
         // Verify audio content parameters by checking the string representation
-        final requestString = request.toString();
+        final requestString = jsonEncode(openAiRequestJson(request));
         expect(requestString.contains(prompt), isTrue);
         expect(requestString.contains(audioBase64), isTrue);
         // Default audioFormat is mp3
@@ -374,9 +348,7 @@ void main() {
                 as AiConfigInferenceProvider;
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer((_) => const Stream.empty());
 
         repository.generateWithAudio(
@@ -391,14 +363,15 @@ void main() {
 
         final request =
             verify(
-                  () => mockClient.createChatCompletionStream(
-                    request: captureAny(named: 'request'),
-                  ),
+                  () => mockClient.createChatCompletionStream(captureAny()),
                 ).captured.first
-                as CreateChatCompletionRequest;
+                as LottiInferenceRequest;
         // requiresDataUriForAudio providers get the data-URI wrapper; the
         // raw base64 must not be sent bare.
-        expect(request.toString(), contains('data:;base64,$audioBase64'));
+        expect(
+          jsonEncode(openAiRequestJson(request)),
+          contains('data:;base64,$audioBase64'),
+        );
       },
     );
 
@@ -408,9 +381,7 @@ void main() {
       () {
         const audioBase64 = 'QUJD';
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer((_) => const Stream.empty());
 
         repository.generateWithAudio(
@@ -425,12 +396,10 @@ void main() {
 
         final request =
             verify(
-                  () => mockClient.createChatCompletionStream(
-                    request: captureAny(named: 'request'),
-                  ),
+                  () => mockClient.createChatCompletionStream(captureAny()),
                 ).captured.first
-                as CreateChatCompletionRequest;
-        final str = request.toString();
+                as LottiInferenceRequest;
+        final str = jsonEncode(openAiRequestJson(request));
         expect(str, contains(audioBase64));
         expect(str, isNot(contains('data:;base64,')));
       },
@@ -445,9 +414,7 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test audio response'),
@@ -465,13 +432,11 @@ void main() {
         );
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.reasoningEffort, ReasoningEffort.low);
+        final request = captured.first as LottiInferenceRequest;
+        expect(request.reasoningEffort, LottiReasoningEffort.low);
       },
     );
 
@@ -482,9 +447,7 @@ void main() {
         const maxCompletionTokens = 2000;
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -504,12 +467,10 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
+        final request = captured.first as LottiInferenceRequest;
         expect(request.maxCompletionTokens, equals(maxCompletionTokens));
       },
     );
@@ -522,9 +483,7 @@ void main() {
         const images = ['base64ImageData'];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -545,12 +504,10 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
+        final request = captured.first as LottiInferenceRequest;
         // Note: generateWithImages uses maxTokens instead of maxCompletionTokens
         expect(request.maxTokens, equals(maxCompletionTokens));
       },
@@ -564,9 +521,7 @@ void main() {
         const audioBase64 = 'base64AudioData';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -587,12 +542,10 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
+        final request = captured.first as LottiInferenceRequest;
         expect(request.maxCompletionTokens, equals(maxCompletionTokens));
       },
     );
@@ -607,9 +560,7 @@ void main() {
       const systemMessage = 'You are a helpful assistant.';
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test response'),
@@ -629,24 +580,20 @@ void main() {
 
       // Capture call for verification
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(captureAny()),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
+      final request = captured.first as LottiInferenceRequest;
       expect(request.messages.length, 2); // System message + user message
-      expect(request.messages.first.role, ChatCompletionMessageRole.system);
-      expect(request.messages.last.role, ChatCompletionMessageRole.user);
-      expect(request.toString(), contains(systemMessage));
+      expect(request.messages.first.role, LottiMessageRole.system);
+      expect(request.messages.last.role, LottiMessageRole.user);
+      expect(jsonEncode(openAiRequestJson(request)), contains(systemMessage));
     });
 
     test('generate returns broadcast stream', () async {
       // Arrange
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test'),
@@ -674,9 +621,7 @@ void main() {
       const images = ['image1'];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test'),
@@ -703,9 +648,7 @@ void main() {
       const audioBase64 = 'audio-data';
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test'),
@@ -729,22 +672,19 @@ void main() {
 
     test('_filterAnthropicPings filters out Anthropic ping errors', () async {
       // Arrange - Create a stream that will emit an Anthropic ping error
-      final errorStream = Stream<CreateChatCompletionStreamResponse>.multi(
+      final errorStream = Stream<LottiInferenceChunk>.multi(
         (controller) {
           controller
             ..add(
-              CreateChatCompletionStreamResponse(
+              LottiInferenceChunk(
                 id: 'response-1',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Valid response',
-                    ),
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+                choices: const [
+                  LottiChunkChoice(
                     index: 0,
+                    delta: LottiDelta(content: 'Valid response'),
                   ),
                 ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             )
             // Add an error that matches the Anthropic ping pattern
@@ -752,18 +692,15 @@ void main() {
               "type 'Null' is not a subtype of type 'List<dynamic>' in type cast (choices)",
             )
             ..add(
-              CreateChatCompletionStreamResponse(
+              LottiInferenceChunk(
                 id: 'response-2',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Another valid response',
-                    ),
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+                choices: const [
+                  LottiChunkChoice(
                     index: 0,
+                    delta: LottiDelta(content: 'Another valid response'),
                   ),
                 ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             )
             ..close();
@@ -771,9 +708,7 @@ void main() {
       );
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer((_) => errorStream);
 
       // Act
@@ -795,22 +730,19 @@ void main() {
 
     test('_filterAnthropicPings propagates non-Anthropic errors', () async {
       // Arrange - Create a stream with a different kind of error
-      final errorStream = Stream<CreateChatCompletionStreamResponse>.multi(
+      final errorStream = Stream<LottiInferenceChunk>.multi(
         (controller) {
           controller
             ..add(
-              CreateChatCompletionStreamResponse(
+              LottiInferenceChunk(
                 id: 'response-1',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Valid response',
-                    ),
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+                choices: const [
+                  LottiChunkChoice(
                     index: 0,
+                    delta: LottiDelta(content: 'Valid response'),
                   ),
                 ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             )
             // Add a different error
@@ -820,9 +752,7 @@ void main() {
       );
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer((_) => errorStream);
 
       // Act
@@ -849,9 +779,7 @@ void main() {
         const audioBase64 = 'audio-base64-data';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -871,9 +799,7 @@ void main() {
 
         // Verify standard OpenAI client was used
         verify(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).called(1);
       },
     );
@@ -889,7 +815,7 @@ void main() {
       );
 
       // Just verify the stream is created (it will fail to connect, but that tests the path)
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<LottiInferenceChunk>>());
       expect(stream.isBroadcast, isTrue);
     });
 
@@ -907,7 +833,7 @@ void main() {
         );
 
         // Just verify the stream is created (it will fail to connect, but that tests the path)
-        expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+        expect(stream, isA<Stream<LottiInferenceChunk>>());
         expect(stream.isBroadcast, isTrue);
       },
     );
@@ -924,7 +850,7 @@ void main() {
       );
 
       // Just verify the stream is created (it will fail to connect, but that tests the path)
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<LottiInferenceChunk>>());
       expect(stream.isBroadcast, isTrue);
     });
 
@@ -933,9 +859,7 @@ void main() {
       const images = ['image1'];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test'),
@@ -966,9 +890,7 @@ void main() {
         const audioBase64 = 'audio-data';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test'),
@@ -999,15 +921,12 @@ void main() {
 
     test('_filterAnthropicPings handles stream close correctly', () async {
       // Arrange - Create a stream that closes normally
-      final normalStream =
-          Stream<CreateChatCompletionStreamResponse>.fromIterable([
-            minimalStreamResponse('Test response'),
-          ]);
+      final normalStream = Stream<LottiInferenceChunk>.fromIterable([
+        minimalStreamResponse('Test response'),
+      ]);
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer((_) => normalStream);
 
       // Act
@@ -1076,7 +995,6 @@ void main() {
         expect(response.choices?.length, 1);
         expect(response.choices?[0].delta?.content, transcribedText);
         expect(response.id, startsWith('whisper-'));
-        expect(response.object, 'chat.completion.chunk');
 
         // Verify the HTTP call was made with correct parameters
         verify(
@@ -1427,21 +1345,17 @@ void main() {
 
         // Verify response structure
         expect(response.id, startsWith('whisper-'));
-        expect(response.object, equals('chat.completion.chunk'));
         expect(response.created, isA<int>());
         expect(response.choices, hasLength(1));
         expect(response.choices?[0].index, equals(0));
         expect(response.choices?[0].delta?.content, equals(transcribedText));
-        expect(response.choices?[0].delta?.role, isNull);
       },
     );
 
     test('generate sets verbosity to null for Gemini compatibility', () async {
       // Arrange
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test response'),
@@ -1462,13 +1376,11 @@ void main() {
 
       // Assert
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(captureAny()),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
-      expect(request.verbosity, isNull);
+      final request = captured.first as LottiInferenceRequest;
+      expect(openAiRequestJson(request).containsKey('verbosity'), isFalse);
     });
 
     test(
@@ -1478,9 +1390,7 @@ void main() {
         const images = ['base64-image-data'];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -1502,13 +1412,11 @@ void main() {
 
         // Assert
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.verbosity, isNull);
+        final request = captured.first as LottiInferenceRequest;
+        expect(openAiRequestJson(request).containsKey('verbosity'), isFalse);
       },
     );
 
@@ -1519,9 +1427,7 @@ void main() {
         const audioBase64 = 'base64-audio-data';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -1543,13 +1449,11 @@ void main() {
 
         // Assert
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.verbosity, isNull);
+        final request = captured.first as LottiInferenceRequest;
+        expect(openAiRequestJson(request).containsKey('verbosity'), isFalse);
       },
     );
 
@@ -1568,9 +1472,7 @@ void main() {
                 as AiConfigInferenceProvider;
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer((_) => const Stream.empty());
 
         await repository
@@ -1588,13 +1490,11 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.reasoningEffort, ReasoningEffort.high);
+        final request = captured.first as LottiInferenceRequest;
+        expect(request.reasoningEffort, LottiReasoningEffort.high);
       },
     );
 
@@ -1613,9 +1513,7 @@ void main() {
                 as AiConfigInferenceProvider;
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer((_) => const Stream.empty());
 
         await repository
@@ -1633,12 +1531,10 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
+        final request = captured.first as LottiInferenceRequest;
         expect(request.reasoningEffort, isNull);
       },
     );
@@ -1661,17 +1557,15 @@ void main() {
         // Gemini 3 Pro only accepts low/high; minimal must collapse to low
         // (mirroring GeminiThinkingConfig's thinkingLevel collapse).
         const expectedByMode = {
-          GeminiThinkingMode.minimal: ReasoningEffort.low,
-          GeminiThinkingMode.low: ReasoningEffort.low,
-          GeminiThinkingMode.medium: ReasoningEffort.high,
-          GeminiThinkingMode.high: ReasoningEffort.high,
+          GeminiThinkingMode.minimal: LottiReasoningEffort.low,
+          GeminiThinkingMode.low: LottiReasoningEffort.low,
+          GeminiThinkingMode.medium: LottiReasoningEffort.high,
+          GeminiThinkingMode.high: LottiReasoningEffort.high,
         };
 
         for (final entry in expectedByMode.entries) {
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(any()),
           ).thenAnswer((_) => const Stream.empty());
 
           await repository
@@ -1688,12 +1582,10 @@ void main() {
               .toList();
 
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(captureAny()),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
+          final request = captured.first as LottiInferenceRequest;
           expect(
             request.reasoningEffort,
             entry.value,
@@ -1718,17 +1610,15 @@ void main() {
                 as AiConfigInferenceProvider;
 
         const expectedByMode = {
-          GeminiThinkingMode.minimal: ReasoningEffort.minimal,
-          GeminiThinkingMode.low: ReasoningEffort.low,
-          GeminiThinkingMode.medium: ReasoningEffort.medium,
-          GeminiThinkingMode.high: ReasoningEffort.high,
+          GeminiThinkingMode.minimal: LottiReasoningEffort.minimal,
+          GeminiThinkingMode.low: LottiReasoningEffort.low,
+          GeminiThinkingMode.medium: LottiReasoningEffort.medium,
+          GeminiThinkingMode.high: LottiReasoningEffort.high,
         };
 
         for (final entry in expectedByMode.entries) {
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(any()),
           ).thenAnswer((_) => const Stream.empty());
 
           await repository
@@ -1745,12 +1635,10 @@ void main() {
               .toList();
 
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(captureAny()),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
+          final request = captured.first as LottiInferenceRequest;
           expect(
             request.reasoningEffort,
             entry.value,
@@ -1762,12 +1650,10 @@ void main() {
 
     test('generate with empty tools list does not set toolChoice', () async {
       // Arrange
-      final emptyTools = <ChatCompletionTool>[];
+      final emptyTools = <LottiTool>[];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test response'),
@@ -1789,12 +1675,10 @@ void main() {
 
       // Assert
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(captureAny()),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
+      final request = captured.first as LottiInferenceRequest;
       expect(request.toolChoice, isNull);
       expect(request.tools, isEmpty);
     });
@@ -1802,19 +1686,11 @@ void main() {
     test('generate with non-empty tools list sets toolChoice', () async {
       // Arrange
       final tools = [
-        const ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'test_function',
-            description: 'A test function',
-          ),
-        ),
+        const LottiTool(name: 'test_function', description: 'A test function'),
       ];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test response'),
@@ -1836,12 +1712,10 @@ void main() {
 
       // Assert
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(captureAny()),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
+      final request = captured.first as LottiInferenceRequest;
       expect(request.toolChoice, isNotNull);
       expect(request.tools, hasLength(1));
     });
@@ -1890,14 +1764,14 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'test-id',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
-              choices: [
-                const ChatCompletionStreamResponseChoice(
+              choices: const [
+                LottiChunkChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+                  delta: LottiDelta(content: 'Hello'),
                 ),
               ],
             ),
@@ -2141,16 +2015,13 @@ void main() {
       final provider = createGeminiProvider();
       const model = 'gemini-2.5-pro';
       final tools = [
-        const ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'test_function',
-            description: 'A test function',
-            parameters: <String, dynamic>{
-              'type': 'object',
-              'properties': <String, dynamic>{},
-            },
-          ),
+        const LottiTool(
+          name: 'test_function',
+          description: 'A test function',
+          parameters: <String, dynamic>{
+            'type': 'object',
+            'properties': <String, dynamic>{},
+          },
         ),
       ];
 
@@ -2254,14 +2125,14 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'test-id',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
-              choices: [
-                const ChatCompletionStreamResponseChoice(
+              choices: const [
+                LottiChunkChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Response'),
+                  delta: LottiDelta(content: 'Response'),
                 ),
               ],
             ),
@@ -2269,13 +2140,9 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-          const ChatCompletionMessage.assistant(content: 'Hi there!'),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('How are you?'),
-          ),
+          LottiMessage.userText('Hello'),
+          const LottiMessage.assistant(content: 'Hi there!'),
+          LottiMessage.userText('How are you?'),
         ];
 
         final result = await repository
@@ -2307,13 +2174,8 @@ void main() {
       () async {
         final provider = createGeminiProvider();
         const model = 'gemini-2.5-pro';
-        const toolChoice = ChatCompletionToolChoiceOption.tool(
-          ChatCompletionNamedToolChoice(
-            type: ChatCompletionNamedToolChoiceType.function,
-            function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
-          ),
-        );
-        ChatCompletionToolChoiceOption? capturedToolChoice;
+        const toolChoice = LottiToolChoice.specific('draft_day_plan');
+        LottiToolChoice? capturedToolChoice;
 
         when(
           () => mockGeminiRepo.generateTextWithMessages(
@@ -2332,26 +2194,20 @@ void main() {
           ),
         ).thenAnswer((invocation) {
           capturedToolChoice =
-              invocation.namedArguments[#toolChoice]
-                  as ChatCompletionToolChoiceOption?;
+              invocation.namedArguments[#toolChoice] as LottiToolChoice?;
           return const Stream.empty();
         });
 
         await repository
             .generateWithMessages(
-              messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Plan'),
-                ),
+              messages: [
+                LottiMessage.userText('Plan'),
               ],
               model: model,
               temperature: 0.5,
               provider: provider,
               tools: const [
-                ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(name: 'draft_day_plan'),
-                ),
+                LottiTool(name: 'draft_day_plan'),
               ],
               toolChoice: toolChoice,
             )
@@ -2383,10 +2239,8 @@ void main() {
 
       await repository
           .generateWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Continue'),
-              ),
+            messages: [
+              LottiMessage.userText('Continue'),
             ],
             model: model,
             temperature: 0.5,
@@ -2436,10 +2290,8 @@ void main() {
 
         await repository
             .generateWithMessages(
-              messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Test'),
-                ),
+              messages: [
+                LottiMessage.userText('Test'),
               ],
               model: model,
               temperature: 0.5,
@@ -2486,10 +2338,8 @@ void main() {
 
         await repository
             .generateWithMessages(
-              messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Test'),
-                ),
+              messages: [
+                LottiMessage.userText('Test'),
               ],
               model: model,
               temperature: 0.5,
@@ -2891,14 +2741,14 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'test-id',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
-              choices: [
-                const ChatCompletionStreamResponseChoice(
+              choices: const [
+                LottiChunkChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Ollama'),
+                  delta: LottiDelta(content: 'Ollama'),
                 ),
               ],
             ),
@@ -2906,9 +2756,7 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          LottiMessage.userText('Hello'),
         ];
 
         final result = await repository
@@ -2940,12 +2788,12 @@ void main() {
   // The functionality is tested via integration/manual testing.
 
   group('CloudInferenceRepository - Nullable Temperature', () {
-    late MockOpenAIClient mockClient;
+    late MockLottiInferenceClient mockClient;
     late CloudInferenceRepository repository;
     late _TestBench bench;
 
     setUp(() {
-      mockClient = MockOpenAIClient();
+      mockClient = MockLottiInferenceClient();
       bench = _TestBench(withHttpClient: false);
       repository = bench.repository;
     });
@@ -2954,9 +2802,7 @@ void main() {
 
     test('generate accepts null temperature parameter', () {
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test response'),
@@ -2974,20 +2820,16 @@ void main() {
       );
 
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(captureAny()),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
+      final request = captured.first as LottiInferenceRequest;
       expect(request.temperature, isNull);
     });
 
     test('generateWithImages accepts null temperature parameter', () {
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test response'),
@@ -3006,12 +2848,10 @@ void main() {
       );
 
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(captureAny()),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
+      final request = captured.first as LottiInferenceRequest;
       expect(request.temperature, isNull);
     });
 
@@ -3026,9 +2866,7 @@ void main() {
       );
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
           minimalStreamResponse('Test response'),
@@ -3039,10 +2877,8 @@ void main() {
       // Note: generateWithMessages doesn't have overrideClient, so we test
       // that null temperature is accepted by the method signature
       final stream = repository.generateWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+        messages: [
+          LottiMessage.userText('Hello'),
         ],
         model: 'gpt-5-nano',
         temperature: null,
@@ -3051,7 +2887,7 @@ void main() {
 
       // Verify stream is created (actual API call would fail without mock,
       // but this tests the null temperature parameter is accepted)
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<LottiInferenceChunk>>());
     });
   });
 
@@ -3081,17 +2917,15 @@ void main() {
       // Temperature handling for OpenAI is done at the caller level
       // (conversation_repository or unified_ai_inference_repository)
       final stream = repository.generateWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+        messages: [
+          LottiMessage.userText('Hello'),
         ],
         model: 'gpt-5.2',
         temperature: 1, // OpenAI GPT-5 only accepts 1.0
         provider: openAiProvider,
       );
 
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<LottiInferenceChunk>>());
       expect(stream.isBroadcast, isTrue);
     });
 
@@ -3108,17 +2942,15 @@ void main() {
         );
 
         final stream = repository.generateWithMessages(
-          messages: const [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hello'),
-            ),
+          messages: [
+            LottiMessage.userText('Hello'),
           ],
           model: 'custom-model',
           temperature: 0.7,
           provider: genericProvider,
         );
 
-        expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+        expect(stream, isA<Stream<LottiInferenceChunk>>());
         expect(stream.isBroadcast, isTrue);
       },
     );
@@ -3134,17 +2966,15 @@ void main() {
       );
 
       final stream = repository.generateWithMessages(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+        messages: [
+          LottiMessage.userText('Hello'),
         ],
         model: 'claude-opus-4',
         temperature: 0.5,
         provider: anthropicProvider,
       );
 
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<LottiInferenceChunk>>());
       expect(stream.isBroadcast, isTrue);
     });
 
@@ -3360,7 +3190,7 @@ void main() {
 
           // The stream should be created (even though it won't work in practice)
           // It should NOT have sent to OpenAI's transcription endpoint
-          expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+          expect(stream, isA<Stream<LottiInferenceChunk>>());
         },
       );
     });
@@ -3484,7 +3314,7 @@ void main() {
           );
 
           // Should NOT route to Mistral transcription
-          expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+          expect(stream, isA<Stream<LottiInferenceChunk>>());
         },
       );
 
@@ -3565,7 +3395,7 @@ void main() {
           );
 
           // Non-voxtral model should use chat completions fallback
-          expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+          expect(stream, isA<Stream<LottiInferenceChunk>>());
         },
       );
     });
@@ -3574,12 +3404,12 @@ void main() {
   group(
     'CloudInferenceRepository - generateWithAudio audioFormat parameter',
     () {
-      late MockOpenAIClient mockClient;
+      late MockLottiInferenceClient mockClient;
       late CloudInferenceRepository repository;
       late _TestBench bench;
 
       setUp(() {
-        mockClient = MockOpenAIClient();
+        mockClient = MockLottiInferenceClient();
         bench = _TestBench();
         repository = bench.repository;
       });
@@ -3600,9 +3430,7 @@ void main() {
           );
 
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(any()),
           ).thenAnswer(
             (_) => Stream.fromIterable([
               minimalStreamResponse('Test response'),
@@ -3618,22 +3446,20 @@ void main() {
             apiKey: 'test-key',
             provider: openAiProvider,
             overrideClient: mockClient,
-            audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+            audioFormat: LottiAudioFormat.wav,
           );
 
           // Assert
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(captureAny()),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
-          final requestString = request.toString();
+          final request = captured.first as LottiInferenceRequest;
+          final requestString = jsonEncode(openAiRequestJson(request));
           // Check for format: wav in the audio input configuration
           expect(
             requestString,
-            contains('format: ChatCompletionMessageInputAudioFormat.wav'),
+            contains('"format":"wav"'),
           );
         },
       );
@@ -3652,9 +3478,7 @@ void main() {
           );
 
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(any()),
           ).thenAnswer(
             (_) => Stream.fromIterable([
               minimalStreamResponse('Test response'),
@@ -3674,17 +3498,15 @@ void main() {
 
           // Assert
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
-            ),
+            () => mockClient.createChatCompletionStream(captureAny()),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
-          final requestString = request.toString();
+          final request = captured.first as LottiInferenceRequest;
+          final requestString = jsonEncode(openAiRequestJson(request));
           // Check for format: mp3 in the audio input configuration
           expect(
             requestString,
-            contains('format: ChatCompletionMessageInputAudioFormat.mp3'),
+            contains('"format":"mp3"'),
           );
         },
       );
@@ -3701,9 +3523,7 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -3719,22 +3539,20 @@ void main() {
           apiKey: 'test-key',
           provider: mistralProvider,
           overrideClient: mockClient,
-          audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+          audioFormat: LottiAudioFormat.wav,
         );
 
         // Assert
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final request = captured.first as LottiInferenceRequest;
+        final requestString = jsonEncode(openAiRequestJson(request));
         // Check for format: wav in the audio input configuration
         expect(
           requestString,
-          contains('format: ChatCompletionMessageInputAudioFormat.wav'),
+          contains('"format":"wav"'),
         );
       });
 
@@ -3750,9 +3568,7 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -3768,21 +3584,19 @@ void main() {
           apiKey: 'test-key',
           provider: genericProvider,
           overrideClient: mockClient,
-          audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+          audioFormat: LottiAudioFormat.wav,
         );
 
         // Assert - should use the passed audioFormat (wav)
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final request = captured.first as LottiInferenceRequest;
+        final requestString = jsonEncode(openAiRequestJson(request));
         expect(
           requestString,
-          contains('format: ChatCompletionMessageInputAudioFormat.wav'),
+          contains('"format":"wav"'),
         );
       });
 
@@ -3798,9 +3612,7 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Transcribed text'),
@@ -3820,13 +3632,11 @@ void main() {
 
         // Assert - audio data should be prefixed with data URI
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final request = captured.first as LottiInferenceRequest;
+        final requestString = jsonEncode(openAiRequestJson(request));
         expect(requestString, contains('data:;base64,dGVzdC1hdWRpbw=='));
       });
 
@@ -3842,9 +3652,7 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(any()),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             minimalStreamResponse('Test response'),
@@ -3864,13 +3672,11 @@ void main() {
 
         // Assert - audio data should NOT have data URI prefix
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final request = captured.first as LottiInferenceRequest;
+        final requestString = jsonEncode(openAiRequestJson(request));
         expect(requestString, isNot(contains('data:;base64,')));
         expect(requestString, contains('dGVzdC1hdWRpbw=='));
       });
@@ -3964,10 +3770,8 @@ void main() {
 
         final result = await repository
             .generateWithMessages(
-              messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hi'),
-                ),
+              messages: [
+                LottiMessage.userText('Hi'),
               ],
               model: 'mistral-large',
               temperature: 0.5,
@@ -3997,24 +3801,14 @@ void main() {
         stubSseSend('Planned');
 
         const tools = [
-          ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(name: 'draft_day_plan'),
-          ),
+          LottiTool(name: 'draft_day_plan'),
         ];
-        const toolChoice = ChatCompletionToolChoiceOption.tool(
-          ChatCompletionNamedToolChoice(
-            type: ChatCompletionNamedToolChoiceType.function,
-            function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
-          ),
-        );
+        const toolChoice = LottiToolChoice.specific('draft_day_plan');
 
         await repository
             .generateWithMessages(
-              messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Plan'),
-                ),
+              messages: [
+                LottiMessage.userText('Plan'),
               ],
               model: 'mistral-large',
               temperature: 0.5,
@@ -4080,7 +3874,7 @@ void main() {
   });
 
   group('CloudInferenceRepository - tools and system message logging', () {
-    late MockOpenAIClient mockClient;
+    late MockLottiInferenceClient mockClient;
     late MockGeminiInferenceRepository mockGeminiRepo;
     late ProviderContainer container;
     late CloudInferenceRepository repository;
@@ -4090,38 +3884,29 @@ void main() {
     const apiKey = 'test-key';
 
     final tools = [
-      const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: 'lookup',
-          description: 'Look something up',
-        ),
-      ),
+      const LottiTool(name: 'lookup', description: 'Look something up'),
     ];
 
     setUp(() {
-      mockClient = MockOpenAIClient();
+      mockClient = MockLottiInferenceClient();
       bench = _TestBench(withHttpClient: false);
       mockGeminiRepo = bench.geminiRepo;
       container = bench.container;
       repository = bench.repository;
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => mockClient.createChatCompletionStream(any()),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
                 index: 0,
+                delta: LottiDelta(content: 'ok'),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
       );
@@ -4149,19 +3934,17 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
-        final request = captured.first as CreateChatCompletionRequest;
+        final request = captured.first as LottiInferenceRequest;
 
         // System message prepended (line 277) + user image message.
         expect(request.messages, hasLength(2));
-        expect(request.messages.first.role, ChatCompletionMessageRole.system);
-        expect(request.toString(), contains('You see images'));
+        expect(request.messages.first.role, LottiMessageRole.system);
+        expect(request.messages.first.textContent, contains('You see images'));
         // Tools forwarded (lines 266-268 logging branch executed).
         expect(request.tools, hasLength(1));
-        expect(request.tools!.first.function.name, 'lookup');
+        expect(request.tools!.first.name, 'lookup');
       },
     );
 
@@ -4192,19 +3975,17 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
+          () => mockClient.createChatCompletionStream(captureAny()),
         ).captured;
-        final request = captured.first as CreateChatCompletionRequest;
+        final request = captured.first as LottiInferenceRequest;
 
         // System message prepended (line 457) + user audio message.
         expect(request.messages, hasLength(2));
-        expect(request.messages.first.role, ChatCompletionMessageRole.system);
-        expect(request.toString(), contains('You transcribe'));
+        expect(request.messages.first.role, LottiMessageRole.system);
+        expect(request.messages.first.textContent, contains('You transcribe'));
         // Tools forwarded (lines 440-442 logging branch executed).
         expect(request.tools, hasLength(1));
-        expect(request.tools!.first.function.name, 'lookup');
+        expect(request.tools!.first.name, 'lookup');
       },
     );
 
@@ -4243,11 +4024,9 @@ void main() {
 
         await repository
             .generateWithMessages(
-              messages: const [
-                ChatCompletionMessage.system(content: 'System directive here'),
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Question'),
-                ),
+              messages: [
+                const LottiMessage.system('System directive here'),
+                LottiMessage.userText('Question'),
               ],
               model: 'gemini-2.5-pro',
               temperature: 0.6,
@@ -4276,10 +4055,8 @@ void main() {
         // that the synchronous tools-logging branch (lines 595-597) runs and a
         // broadcast stream is returned without throwing.
         final stream = repository.generateWithMessages(
-          messages: const [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hi'),
-            ),
+          messages: [
+            LottiMessage.userText('Hi'),
           ],
           model: 'gpt-4o',
           temperature: 0.5,

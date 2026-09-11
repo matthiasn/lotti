@@ -43,6 +43,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -63,7 +64,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -288,7 +288,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
     required String modelId,
     required AiConfigInferenceProvider provider,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required TaskAgentStrategy strategy,
     required double temperature,
     String? consumptionAgentId,
@@ -301,16 +301,11 @@ class TaskAgentWorkflow with AgentErrorLogging {
       'no report published — retrying with forced update_report',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: TaskAgentStrategy.reportToolName,
-        ),
-      ),
+    const forcedToolChoice = LottiToolChoice.specific(
+      TaskAgentStrategy.reportToolName,
     );
     final reportOnlyTools = tools
-        .where((tool) => tool.function.name == TaskAgentStrategy.reportToolName)
+        .where((tool) => tool.name == TaskAgentStrategy.reportToolName)
         .toList(growable: false);
 
     try {

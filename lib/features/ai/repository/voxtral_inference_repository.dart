@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Voxtral-specific inference operations
 ///
@@ -107,7 +107,7 @@ class VoxtralInferenceRepository {
   /// Throws:
   ///   ArgumentError if required parameters are empty
   ///   VoxtralInferenceException if transcription fails
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<LottiInferenceChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -205,38 +205,36 @@ class VoxtralInferenceRepository {
           final message = choice['message'] as Map<String, dynamic>?;
           final content = message?['content'] as String?;
           if (content != null && content.isNotEmpty) {
-            yield CreateChatCompletionStreamResponse(
+            yield LottiInferenceChunk(
               id:
                   json['id'] as String? ??
                   'voxtral-${DateTime.now().millisecondsSinceEpoch}',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(content: content),
-                  index: 0,
-                  finishReason: ChatCompletionFinishReason.stop,
-                ),
-              ],
-              object: 'chat.completion.chunk',
               created:
                   json['created'] as int? ??
                   DateTime.now().millisecondsSinceEpoch ~/ 1000,
               model: json['model'] as String?,
+              choices: [
+                LottiChunkChoice(
+                  index: 0,
+                  delta: LottiDelta(content: content),
+                  finishReason: LottiFinishReason.stop,
+                ),
+              ],
               usage: usage,
             );
             return;
           }
         }
         if (usage != null) {
-          yield CreateChatCompletionStreamResponse(
+          yield LottiInferenceChunk(
             id:
                 json['id'] as String? ??
                 'voxtral-${DateTime.now().millisecondsSinceEpoch}',
-            choices: const [],
-            object: 'chat.completion.chunk',
             created:
                 json['created'] as int? ??
                 DateTime.now().millisecondsSinceEpoch ~/ 1000,
             model: json['model'] as String?,
+            choices: const [],
             usage: usage,
           );
         }
@@ -317,28 +315,25 @@ class VoxtralInferenceRepository {
                     );
                   }
 
-                  yield CreateChatCompletionStreamResponse(
+                  yield LottiInferenceChunk(
                     id:
                         json['id'] as String? ??
                         'voxtral-${DateTime.now().millisecondsSinceEpoch}',
+                    created:
+                        json['created'] as int? ??
+                        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                    model: json['model'] as String?,
                     choices: hasContent
                         ? [
-                            ChatCompletionStreamResponseChoice(
-                              delta: ChatCompletionStreamResponseDelta(
-                                content: content,
-                              ),
+                            LottiChunkChoice(
                               index: 0,
+                              delta: LottiDelta(content: content),
                               finishReason: finishReason != null
                                   ? _chatFinishReasonFromApi(finishReason)
                                   : null,
                             ),
                           ]
                         : const [],
-                    object: 'chat.completion.chunk',
-                    created:
-                        json['created'] as int? ??
-                        DateTime.now().millisecondsSinceEpoch ~/ 1000,
-                    model: json['model'] as String?,
                     usage: usage,
                   );
                 }
@@ -352,16 +347,15 @@ class VoxtralInferenceRepository {
                   );
                 }
               } else if (usage != null) {
-                yield CreateChatCompletionStreamResponse(
+                yield LottiInferenceChunk(
                   id:
                       json['id'] as String? ??
                       'voxtral-${DateTime.now().millisecondsSinceEpoch}',
-                  choices: const [],
-                  object: 'chat.completion.chunk',
                   created:
                       json['created'] as int? ??
                       DateTime.now().millisecondsSinceEpoch ~/ 1000,
                   model: json['model'] as String?,
+                  choices: const [],
                   usage: usage,
                 );
               }
@@ -417,11 +411,11 @@ class VoxtralInferenceRepository {
   void close() => _httpClient.close();
 }
 
-ChatCompletionFinishReason _chatFinishReasonFromApi(String finishReason) {
+LottiFinishReason _chatFinishReasonFromApi(String finishReason) {
   final normalized = finishReason.replaceAll('_', '').toLowerCase();
-  return ChatCompletionFinishReason.values.firstWhere(
+  return LottiFinishReason.values.firstWhere(
     (value) => value.name.toLowerCase() == normalized,
-    orElse: () => ChatCompletionFinishReason.stop,
+    orElse: () => LottiFinishReason.stop,
   );
 }
 

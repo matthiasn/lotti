@@ -79,6 +79,7 @@ README, this is the way in:
 | [`lib/classes/`](../lib/classes) | [Domain concepts](domain/) | the entity unions; not every class |
 | [`lib/features/goals/`](../lib/features/goals) | [Goal agents — deterministic runtime](features/goals.md) | Phase A: signal reading, evaluation, registers, escalation; entities/vocabulary live in `lib/classes` |
 | [`lib/features/plaza/`](../lib/features/plaza) | [Project plaza](features/plaza.md) | scoped project/task worlds, category avenues, generation, GPU lifecycle, LOD and navigation |
+| [`lib/features/ai/model/inference*.dart`](../lib/features/ai/model) + [`repository/openai_compat_adapter.dart`](../lib/features/ai/repository/openai_compat_adapter.dart) | [Inference domain and the client adapter](features/ai/inference-domain-and-adapter.md) | the Lotti inference types and the single `openai_dart` importer; the rest of `model/` is other config |
 | [`lib/l10n/`](../lib/l10n) | [Localization](conventions/localization.md) | the ARB workflow |
 | [`lib/logic/signals/`](../lib/logic/signals) | [Signals — shared journal series](architecture/signals.md) | the whole directory: day bucketing, `SignalReader`, `HabitRuleEvaluator` |
 | [`lib/widgets/day_indicators/`](../lib/widgets/day_indicators) | [Day indicators — shared day-mark model and cells](architecture/day-indicators.md) | `DayMark`/`DayMarkState`/`DayVerdict`, `DayMarkCell`, `DayMarkStrip`, `DayTrack` |

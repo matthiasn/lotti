@@ -64,7 +64,7 @@ void main() {
       final blocks = plan['blocks'] as List<dynamic>;
       expect((blocks.single as Map<String, dynamic>)['id'], 'block-1');
       final offeredTools = conversationRepository.sendMessageCalls.single.tools
-          .map((tool) => tool.function.name)
+          .map((tool) => tool.name)
           .toSet();
       expect(offeredTools, contains(DayAgentToolNames.proposePlanDiff));
       expect(offeredTools, isNot(contains(DayAgentToolNames.draftDayPlan)));

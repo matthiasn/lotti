@@ -21,10 +21,10 @@ import 'package:lotti/features/agents/workflow/project_agent_context_builder.dar
     show LogErrorCallback;
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/tasks/model/directed_relation.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 part 'task_agent_context_builder_formatters.dart';
 
@@ -465,12 +465,12 @@ class TaskAgentContextBuilder {
   }
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
-  /// [ChatCompletionTool] objects.
+  /// [LottiTool] objects.
   ///
   /// [facts] drops tools whose precondition this wake does not meet. It
   /// defaults to permissive, so a caller that does not pass it advertises
   /// exactly what it always has.
-  List<ChatCompletionTool> buildToolDefinitions({
+  List<LottiTool> buildToolDefinitions({
     TaskAgentWakeFacts facts = TaskAgentWakeFacts.permissive,
   }) {
     final visible = visibleTaskAgentToolNames(facts);
@@ -478,20 +478,17 @@ class TaskAgentContextBuilder {
         .where((def) => def.enabled && visible.contains(def.name))
         .map((def) {
           final optimizeReport = def.name == TaskAgentToolNames.updateReport;
-          return ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: def.name,
-              description: TaskAgentEvidenceSynthesis.toolDescription(
-                def.name,
-                def.description,
-              ),
-              parameters: optimizeReport
-                  ? TaskAgentEvidenceSynthesis.updateReportParameters(
-                      def.parameters,
-                    )
-                  : def.parameters,
+          return LottiTool(
+            name: def.name,
+            description: TaskAgentEvidenceSynthesis.toolDescription(
+              def.name,
+              def.description,
             ),
+            parameters: optimizeReport
+                ? TaskAgentEvidenceSynthesis.updateReportParameters(
+                    def.parameters,
+                  )
+                : def.parameters,
           );
         })
         .toList();
@@ -504,15 +501,9 @@ class TaskAgentContextBuilder {
     // Walk backwards through messages to find the last assistant message
     // with text content (not a tool-call-only message).
     for (final message in manager.messages.reversed) {
-      if (message case ChatCompletionMessage(
-        role: ChatCompletionMessageRole.assistant,
-      )) {
-        final content = message.mapOrNull(
-          assistant: (m) => m.content,
-        );
-        if (content != null && content.isNotEmpty) {
-          return content;
-        }
+      final content = message.assistantContent;
+      if (content != null && content.isNotEmpty) {
+        return content;
       }
     }
     return null;

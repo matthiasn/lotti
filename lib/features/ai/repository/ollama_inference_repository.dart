@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 export 'package:lotti/features/ai/repository/ollama_api_client.dart'
     show ModelNotInstalledException, OllamaPullProgress;
@@ -38,15 +37,15 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// - Handles Ollama-specific response format
   /// - Provides comprehensive error handling
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice, // Ignored for Ollama
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice, // Ignored for Ollama
   }) {
     // Validate inputs
     _api.validateRequest(
@@ -73,52 +72,32 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// This method accepts the full conversation messages for proper context.
   /// Note: Ollama doesn't support thought signatures, so those parameters are ignored.
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice, // Ignored for Ollama
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice, // Ignored for Ollama
     Map<String, String>? thoughtSignatures, // Ignored for Ollama
     ThoughtSignatureCollector? signatureCollector, // Ignored for Ollama
     int? turnIndex, // Ignored for Ollama
     InferenceImpactCollector? impactCollector, // Ignored for Ollama (no impact)
   }) {
-    // Convert ChatCompletionMessage objects to Ollama format
+    // Convert LottiMessage objects to Ollama format
     final ollamaMessages = messages.map((msg) {
-      final content = msg.content;
-      String? contentStr;
-
-      if (content is ChatCompletionUserMessageContent) {
-        // Extract text from ChatCompletionUserMessageContent
-        contentStr = ContentExtractionHelper.extractTextFromUserContent(
-          content,
-        );
-      } else if (content is String) {
-        contentStr = content;
-      } else if (content != null) {
-        // For other types, try to get JSON representation
-        try {
-          contentStr = jsonEncode(content);
-        } catch (_) {
-          contentStr = content.toString();
-        }
-      }
-
-      // For tool responses, Ollama expects a different format
-      if (msg.role == ChatCompletionMessageRole.tool) {
-        return <String, dynamic>{
-          'role': 'tool',
-          'content': contentStr ?? '',
-        };
-      }
-
-      return <String, dynamic>{
-        'role': msg.role.name,
-        'content': contentStr ?? '',
+      final contentStr = switch (msg) {
+        LottiSystemMessage(:final content) => content,
+        LottiDeveloperMessage(:final content) => content,
+        LottiUserMessage(:final content) =>
+          ContentExtractionHelper.extractTextFromUserContent(content),
+        // A tool-call-only assistant turn has no text to send.
+        LottiAssistantMessage(:final content) => content ?? '',
+        LottiToolMessage(:final content) => content,
       };
+
+      return <String, dynamic>{'role': msg.role.name, 'content': contentStr};
     }).toList();
 
     // Convert tools to Ollama format if provided
@@ -128,9 +107,9 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                 (tool) => {
                   'type': 'function',
                   'function': {
-                    'name': tool.function.name,
-                    'description': tool.function.description,
-                    'parameters': tool.function.parameters ?? {},
+                    'name': tool.name,
+                    'description': tool.description,
+                    'parameters': tool.parameters ?? {},
                   },
                 },
               )
@@ -138,7 +117,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         : null;
 
     final toolsLog = ollamaTools != null && tools != null
-        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.function.name).join(', ')}'
+        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.name).join(', ')}'
         : '';
     developer.log(
       'Preparing Ollama chat request for model: $model$toolsLog with ${messages.length} messages',
@@ -178,7 +157,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
   /// Image analysis. Thin delegator to [OllamaApiClient.generateWithImages]
   /// so the method remains a mockable class member.
-  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+  Stream<LottiInferenceChunk> generateWithImages({
     required String prompt,
     required String model,
     required double temperature,

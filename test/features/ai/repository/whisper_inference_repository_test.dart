@@ -97,7 +97,6 @@ void main() {
         expect(response.choices, hasLength(1));
         expect(response.choices?[0].delta?.content, equals(transcribedText));
         expect(response.id, startsWith('whisper-'));
-        expect(response.object, equals('chat.completion.chunk'));
         expect(response.created, isA<int>());
 
         // Verify HTTP call
@@ -164,8 +163,8 @@ void main() {
         expect(response.usage?.promptTokens, 12);
         expect(response.usage?.completionTokens, 8);
         expect(response.usage?.totalTokens, 20);
-        expect(response.usage?.promptTokensDetails?.cachedTokens, 3);
-        expect(response.usage?.completionTokensDetails?.reasoningTokens, 2);
+        expect(response.usage?.cachedInputTokens, 3);
+        expect(response.usage?.reasoningTokens, 2);
       });
 
       test('throws TranscriptionException on HTTP error', () async {

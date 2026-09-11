@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
@@ -23,7 +24,6 @@ import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -33,7 +33,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeBaseRequest());
-    registerFallbackValue(FakeCreateChatCompletionRequest());
+    registerFallbackValue(FakeLottiInferenceRequest());
     registerFallbackValue(FakeAiConfigInferenceProvider());
   });
 
@@ -93,9 +93,7 @@ void main() {
     expect(
       () => generateMore.generateWithMessages(
         messages: [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('private prompt'),
-          ),
+          LottiMessage.userText('private prompt'),
         ],
         model: 'tiny',
         temperature: null,
@@ -107,14 +105,13 @@ void main() {
   });
 
   test('sherpa audio routes to the embedded runner without HTTP', () async {
-    const chunk = CreateChatCompletionStreamResponse(
+    const chunk = LottiInferenceChunk(
       id: 'embedded',
-      object: 'chat.completion.chunk',
       created: 0,
       choices: [
-        ChatCompletionStreamResponseChoice(
+        LottiChunkChoice(
           index: 0,
-          delta: ChatCompletionStreamResponseDelta(content: 'local transcript'),
+          delta: LottiDelta(content: 'local transcript'),
         ),
       ],
     );
@@ -561,11 +558,7 @@ void main() {
         mistralRepository: fakeMistralRepository,
       );
       final mistralProvider = providerOfType(InferenceProviderType.mistral);
-      const messages = [
-        ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('hello'),
-        ),
-      ];
+      final messages = [LottiMessage.userText('hello')];
 
       final chunks = await mistralGenerateMore
           .generateWithMessages(
@@ -573,7 +566,7 @@ void main() {
             model: 'mistral-small-latest',
             temperature: 0.2,
             provider: mistralProvider,
-            reasoningEffort: ReasoningEffort.high,
+            reasoningEffort: LottiReasoningEffort.high,
           )
           .toList();
 
@@ -582,7 +575,7 @@ void main() {
       expect(fakeMistralRepository.messageCalls.single.messages, messages);
       expect(
         fakeMistralRepository.messageCalls.single.reasoningEffort,
-        ReasoningEffort.high,
+        LottiReasoningEffort.high,
       );
     });
 
@@ -592,11 +585,9 @@ void main() {
         meliousRepository: meliousRepository,
       );
       final meliousProvider = providerOfType(InferenceProviderType.melious);
-      const messages = [
-        ChatCompletionMessage.system(content: 'answer tersely'),
-        ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('hello'),
-        ),
+      final messages = [
+        const LottiMessage.system('answer tersely'),
+        LottiMessage.userText('hello'),
       ];
 
       final chunks = await meliousGenerateMore
@@ -606,7 +597,7 @@ void main() {
             temperature: 0.2,
             provider: meliousProvider,
             maxCompletionTokens: 256,
-            reasoningEffort: ReasoningEffort.high,
+            reasoningEffort: LottiReasoningEffort.high,
           )
           .toList();
 
@@ -620,7 +611,7 @@ void main() {
       expect(call.apiKey, 'key');
       expect(call.temperature, 0.2);
       expect(call.maxCompletionTokens, 256);
-      expect(call.reasoningEffort, ReasoningEffort.high);
+      expect(call.reasoningEffort, LottiReasoningEffort.high);
     });
   });
 
@@ -728,13 +719,13 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
   final messageCalls =
       <
         ({
-          List<ChatCompletionMessage> messages,
-          ReasoningEffort? reasoningEffort,
+          List<LottiMessage> messages,
+          LottiReasoningEffort? reasoningEffort,
         })
       >[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> transcribeChatAudio({
+  Stream<LottiInferenceChunk> transcribeChatAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -761,16 +752,16 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required String baseUrl,
     required String apiKey,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
   }) {
     messageCalls.add((
       messages: messages,
@@ -811,13 +802,13 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   final messageCalls =
       <
         ({
-          List<ChatCompletionMessage> messages,
+          List<LottiMessage> messages,
           String model,
           String baseUrl,
           String apiKey,
           double? temperature,
           int? maxCompletionTokens,
-          ReasoningEffort? reasoningEffort,
+          LottiReasoningEffort? reasoningEffort,
         })
       >[];
   final imageCalls =
@@ -830,7 +821,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
       >[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<LottiInferenceChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -857,7 +848,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> transcribeChatAudio({
+  Stream<LottiInferenceChunk> transcribeChatAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -886,16 +877,16 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required String baseUrl,
     required String apiKey,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     messageCalls.add(
@@ -927,20 +918,16 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     return const GeneratedImage(bytes: [9, 8, 7], mimeType: 'image/png');
   }
 
-  static CreateChatCompletionStreamResponse _chunk({
+  static LottiInferenceChunk _chunk({
     required String id,
     required String content,
   }) {
-    return CreateChatCompletionStreamResponse(
+    return LottiInferenceChunk(
       id: id,
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-        ),
-      ],
-      object: 'chat.completion.chunk',
       created: 0,
+      choices: [
+        LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+      ],
     );
   }
 }

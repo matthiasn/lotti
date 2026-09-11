@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
@@ -27,7 +28,6 @@ import 'package:lotti/features/relationships/workflow/relationship_agent_workflo
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -138,18 +138,11 @@ void main() {
     ).thenAnswer((_) async => meliousProvider);
   }
 
-  ChatCompletionMessageToolCall toolCall(
+  LottiToolCall toolCall(
     String name,
     Map<String, dynamic> args, {
     String id = 'call-1',
-  }) => ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
-  );
+  }) => LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
 
   Map<String, dynamic> briefingArgs() => {
     'healthBand': 'needsAttention',
@@ -1158,7 +1151,7 @@ void main() {
     stubGlmResolution();
     when(() => conversationManager.messages).thenReturn(
       const [
-        ChatCompletionMessage.assistant(content: 'Done — see the briefing.'),
+        LottiMessage.assistant(content: 'Done — see the briefing.'),
       ],
     );
     conversationRepository.sendMessageDelegate =

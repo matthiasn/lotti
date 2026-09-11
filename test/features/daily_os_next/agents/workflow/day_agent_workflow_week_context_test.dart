@@ -350,7 +350,7 @@ void main() {
       test('offers the write_day_summary tool only when configured', () async {
         await execute(workflow(weekContextService: weekContextStub()));
         expect(
-          conversationRepository.lastTools.map((t) => t.function.name),
+          conversationRepository.lastTools.map((t) => t.name),
           contains(DayAgentToolNames.writeDaySummary),
         );
         expect(
@@ -374,7 +374,7 @@ void main() {
 
         await execute(workflow());
         expect(
-          conversationRepository.lastTools.map((t) => t.function.name),
+          conversationRepository.lastTools.map((t) => t.name),
           isNot(contains(DayAgentToolNames.writeDaySummary)),
         );
         expect(

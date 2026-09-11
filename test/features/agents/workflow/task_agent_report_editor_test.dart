@@ -10,10 +10,11 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 void main() {
   final provider = AiConfigInferenceProvider(
@@ -104,12 +105,12 @@ turn task metadata or a checklist edit into an accomplishment.
   test('report-only tool localizes every field', () {
     final reportTool = TaskAgentReportEditor.buildTool(languageCode: 'de');
     final properties =
-        reportTool.function.parameters!['properties']! as Map<String, dynamic>;
+        reportTool.parameters!['properties']! as Map<String, dynamic>;
 
-    expect(reportTool.function.name, TaskAgentToolNames.updateReport);
-    expect(reportTool.function.description, contains('German'));
-    expect(reportTool.function.description, contains('informal `du/dein`'));
-    expect(reportTool.function.description, contains('never formal `Sie/Ihr`'));
+    expect(reportTool.name, TaskAgentToolNames.updateReport);
+    expect(reportTool.description, contains('German'));
+    expect(reportTool.description, contains('informal `du/dein`'));
+    expect(reportTool.description, contains('never formal `Sie/Ihr`'));
     expect(
       (properties['oneLiner']! as Map<String, dynamic>)['description'],
       allOf(contains('German'), contains('target date'), contains('12 words')),
@@ -136,7 +137,7 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(
       TaskAgentReportEditor.buildTool(
         languageCode: 'xx',
-      ).function.description,
+      ).description,
       contains('language code `xx`'),
     );
   });
@@ -1508,7 +1509,7 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(request.temperature, 0);
     expect(request.toolNames, [TaskAgentToolNames.updateReport]);
     final serializedMessages = jsonEncode(
-      request.messages.map((message) => message.toJson()).toList(),
+      openAiMessagesJson(request.messages),
     );
     expect(serializedMessages, contains('materialTaskState'));
     expect(serializedMessages, contains('estimateMinutes'));
@@ -1571,9 +1572,7 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(result.revision?.content, contains('run regression'));
     expect(result.attempts, 2);
     final repairMessages = jsonEncode(
-      inferenceRepository.requests.last.messages
-          .map((message) => message.toJson())
-          .toList(),
+      openAiMessagesJson(inferenceRepository.requests.last.messages),
     );
     expect(repairMessages, contains('deferredScopeLeak'));
     expect(repairMessages, isNot(contains('newsletter')));
@@ -1622,9 +1621,7 @@ turn task metadata or a checklist edit into an accomplishment.
       expect(result.revision, isNotNull);
       expect(result.attempts, 1);
       final messages = jsonEncode(
-        inferenceRepository.requests.single.messages
-            .map((message) => message.toJson())
-            .toList(),
+        openAiMessagesJson(inferenceRepository.requests.single.messages),
       );
       expect(messages, contains('requiredCorrections'));
       expect(messages, contains('processNarration'));
@@ -1678,9 +1675,7 @@ turn task metadata or a checklist edit into an accomplishment.
 
       expect(result.revision, isNotNull);
       final messages = jsonEncode(
-        inferenceRepository.requests.single.messages
-            .map((message) => message.toJson())
-            .toList(),
+        openAiMessagesJson(inferenceRepository.requests.single.messages),
       );
       expect(messages, contains('rejectedReport'));
       expect(messages, isNot(contains('dashboard')));
@@ -1736,9 +1731,7 @@ turn task metadata or a checklist edit into an accomplishment.
 
     expect(result.revision, isNotNull);
     final messages = jsonEncode(
-      inferenceRepository.requests.single.messages
-          .map((message) => message.toJson())
-          .toList(),
+      openAiMessagesJson(inferenceRepository.requests.single.messages),
     ).toLowerCase();
     expect(messages, isNot(contains('awaiting security')));
     expect(messages, isNot(contains('actively underway')));
@@ -1788,9 +1781,7 @@ turn task metadata or a checklist edit into an accomplishment.
 
     expect(result.revision, isNotNull);
     final messages = jsonEncode(
-      inferenceRepository.requests.single.messages
-          .map((message) => message.toJson())
-          .toList(),
+      openAiMessagesJson(inferenceRepository.requests.single.messages),
     ).toLowerCase();
     expect(messages, isNot(contains('did not fully resolve')));
     expect(messages, isNot(contains('has not stabilized')));
@@ -1844,9 +1835,7 @@ turn task metadata or a checklist edit into an accomplishment.
     expect(result.usage?.inputTokens, 90);
     expect(result.usage?.outputTokens, 18);
     final repairMessages = jsonEncode(
-      inferenceRepository.requests.last.messages
-          .map((message) => message.toJson())
-          .toList(),
+      openAiMessagesJson(inferenceRepository.requests.last.messages),
     );
     expect(repairMessages, contains('rejectedReport'));
     expect(repairMessages, contains('requiredCorrections'));
@@ -2069,7 +2058,7 @@ class _RecordedRequest {
     required this.temperature,
   });
 
-  final List<ChatCompletionMessage> messages;
+  final List<LottiMessage> messages;
   final List<String> toolNames;
   final String model;
   final double temperature;
@@ -2078,19 +2067,19 @@ class _RecordedRequest {
 class _QueuedInferenceRepository extends InferenceRepositoryInterface {
   _QueuedInferenceRepository(this.responsesByRequest);
 
-  final List<List<CreateChatCompletionStreamResponse>> responsesByRequest;
+  final List<List<LottiInferenceChunk>> responsesByRequest;
   final requests = <_RecordedRequest>[];
   var _requestIndex = 0;
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     InferenceImpactCollector? impactCollector,
@@ -2099,14 +2088,14 @@ class _QueuedInferenceRepository extends InferenceRepositoryInterface {
     requests.add(
       _RecordedRequest(
         messages: messages,
-        toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
+        toolNames: tools?.map((tool) => tool.name).toList() ?? [],
         model: model,
         temperature: temperature,
       ),
     );
     final responses = _requestIndex < responsesByRequest.length
         ? responsesByRequest[_requestIndex]
-        : const <CreateChatCompletionStreamResponse>[];
+        : const <LottiInferenceChunk>[];
     _requestIndex++;
     return Stream.fromIterable(responses);
   }
@@ -2138,8 +2127,8 @@ class _ThrowingConversationRepository extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     String? consumptionAgentId,
@@ -2155,17 +2144,14 @@ class _ThrowingConversationRepository extends ConversationRepository {
     }
     await strategy!.processToolCalls(
       toolCalls: [
-        ChatCompletionMessageToolCall(
+        LottiToolCall(
           id: 'invalid-report-$sendCount',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: TaskAgentToolNames.updateReport,
-            arguments: jsonEncode({
-              'oneLiner': 'Run evaluation',
-              'tldr': 'Ready to begin.',
-              'content': 'Checklist created.',
-            }),
-          ),
+          name: TaskAgentToolNames.updateReport,
+          arguments: jsonEncode({
+            'oneLiner': 'Run evaluation',
+            'tldr': 'Ready to begin.',
+            'content': 'Checklist created.',
+          }),
         ),
       ],
       manager: _manager,
@@ -2179,16 +2165,15 @@ class _ThrowingConversationRepository extends ConversationRepository {
   }
 }
 
-CreateChatCompletionStreamResponse _usage({
+LottiInferenceChunk _usage({
   required int inputTokens,
   required int outputTokens,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'usage',
-    choices: const [],
-    object: 'chat.completion.chunk',
     created: 0,
-    usage: CompletionUsage(
+    choices: const [],
+    usage: LottiUsage(
       promptTokens: inputTokens,
       completionTokens: outputTokens,
       totalTokens: inputTokens + outputTokens,
@@ -2196,31 +2181,27 @@ CreateChatCompletionStreamResponse _usage({
   );
 }
 
-CreateChatCompletionStreamResponse _toolCalls(
+LottiInferenceChunk _toolCalls(
   List<({String name, String argumentsJson})> calls,
 ) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'tools',
+    created: 0,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta.fromJson({
-          'tool_calls': [
-            for (var index = 0; index < calls.length; index++)
-              {
-                'index': index,
-                'id': 'tool-$index',
-                'type': 'function',
-                'function': {
-                  'name': calls[index].name,
-                  'arguments': calls[index].argumentsJson,
-                },
-              },
-          ],
-        }),
+      LottiChunkChoice(
         index: 0,
+        delta: LottiDelta(
+          toolCalls: [
+            for (var index = 0; index < calls.length; index++)
+              LottiToolCallChunk(
+                index: index,
+                id: 'tool-$index',
+                name: calls[index].name,
+                arguments: calls[index].argumentsJson,
+              ),
+          ],
+        ),
       ),
     ],
-    object: 'chat.completion.chunk',
-    created: 0,
   );
 }

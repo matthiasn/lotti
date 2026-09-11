@@ -179,6 +179,7 @@ an established picker with a full loading shell.
 * [Execution paths](execution-paths.md) - the legacy prompt path, the skill/profile path, the category consent gate, and per-invocation overrides.
 * [Profile resolution](profile-resolution.md) - which profile drives a run, pinning, and the fail-closed locality check.
 * [Provider routing](provider-routing.md) - the routing table, per-provider specifics, audio transcoding, and local HTTP transcription.
+* [Inference domain and the client adapter](inference-domain-and-adapter.md) - the Lotti-owned types every provider speaks, and the single file that maps them onto `openai_dart`.
 * [Conversations and tool calling](conversations-and-tools.md) - the reusable multi-turn loop.
 * [Seeding and config lifecycle](seeding-and-lifecycle.md) - gated seeds, soft deletes, and migration-safe upgrades.
 * [Embeddings and semantic search](embeddings-and-search.md) - local vector search over ObjectBox shards.

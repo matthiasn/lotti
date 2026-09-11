@@ -1,7 +1,7 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import 'qwen_local_eval_config.dart';
 import 'qwen_local_eval_report.dart';
@@ -48,18 +48,16 @@ class QwenLocalInferenceEvalRunner {
   ) async {
     final stopwatch = Stopwatch()..start();
     final content = StringBuffer();
-    final toolCalls = <ChatCompletionMessageToolCall>[];
+    final toolCalls = <LottiToolCall>[];
     final argumentBuffers = <String, StringBuffer>{};
-    CompletionUsage? usage;
+    LottiUsage? usage;
 
     try {
       await for (final response in repository.generateTextWithMessages(
         messages: [
-          ChatCompletionMessage.system(content: scenario.systemPrompt),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string(
-              scenario.userPrompt,
-            ),
+          LottiMessage.system(scenario.systemPrompt),
+          LottiMessage.userText(
+            scenario.userPrompt,
           ),
         ],
         model: profile.providerModelId,
@@ -90,8 +88,8 @@ class QwenLocalInferenceEvalRunner {
       final evalToolCalls = toolCalls
           .map(
             (call) => QwenLocalEvalToolCall(
-              name: call.function.name,
-              argumentsJson: call.function.arguments,
+              name: call.name,
+              argumentsJson: call.arguments,
             ),
           )
           .toList(growable: false);
@@ -129,9 +127,9 @@ class QwenLocalInferenceEvalRunner {
 }
 
 void _accumulateToolCallChunks({
-  required List<ChatCompletionMessageToolCall> toolCalls,
+  required List<LottiToolCall> toolCalls,
   required Map<String, StringBuffer> argumentBuffers,
-  required List<ChatCompletionStreamMessageToolCallChunk> chunks,
+  required List<LottiToolCallChunk> chunks,
 }) {
   for (final chunk in chunks) {
     var existingIndex = -1;
@@ -145,34 +143,27 @@ void _accumulateToolCallChunks({
 
     if (existingIndex >= 0) {
       final existing = toolCalls[existingIndex];
-      final updatedName = chunk.function?.name;
+      final updatedName = chunk.name;
       final buffer =
-          argumentBuffers[existing.id] ??
-          StringBuffer(existing.function.arguments);
+          argumentBuffers[existing.id] ?? StringBuffer(existing.arguments);
       argumentBuffers[existing.id] = buffer;
-      buffer.write(chunk.function?.arguments ?? '');
-      toolCalls[existingIndex] = ChatCompletionMessageToolCall(
+      buffer.write(chunk.arguments ?? '');
+      toolCalls[existingIndex] = LottiToolCall(
         id: existing.id,
-        type: existing.type,
-        function: ChatCompletionMessageFunctionCall(
-          name: updatedName != null && updatedName.isNotEmpty
-              ? updatedName
-              : existing.function.name,
-          arguments: buffer.toString(),
-        ),
+        name: updatedName != null && updatedName.isNotEmpty
+            ? updatedName
+            : existing.name,
+        arguments: buffer.toString(),
       );
-    } else if (chunk.function != null) {
+    } else if (chunk.name != null || chunk.arguments != null) {
       final toolCallId = chunk.id ?? 'tool_${chunk.index ?? toolCalls.length}';
-      final arguments = chunk.function!.arguments ?? '';
+      final arguments = chunk.arguments ?? '';
       argumentBuffers[toolCallId] = StringBuffer(arguments);
       toolCalls.add(
-        ChatCompletionMessageToolCall(
+        LottiToolCall(
           id: toolCallId,
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: chunk.function!.name ?? '',
-            arguments: arguments,
-          ),
+          name: chunk.name ?? '',
+          arguments: arguments,
         ),
       );
     }
@@ -212,7 +203,7 @@ QwenLocalEvalFailureCategory _classifyResult({
   return QwenLocalEvalFailureCategory.none;
 }
 
-List<ChatCompletionTool> _toolsForScenario(QwenLocalEvalScenario scenario) {
+List<LottiTool> _toolsForScenario(QwenLocalEvalScenario scenario) {
   final byName = {
     for (final definition in AgentToolRegistry.taskAgentTools)
       if (definition.enabled) definition.name: definition,
@@ -224,13 +215,10 @@ List<ChatCompletionTool> _toolsForScenario(QwenLocalEvalScenario scenario) {
         if (definition == null) {
           throw StateError('Unknown enabled task-agent tool "$name".');
         }
-        return ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: definition.name,
-            description: definition.description,
-            parameters: definition.parameters,
-          ),
+        return LottiTool(
+          name: definition.name,
+          description: definition.description,
+          parameters: definition.parameters,
         );
       })
       .toList(growable: false);

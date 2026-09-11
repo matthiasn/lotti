@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -19,7 +20,6 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -246,14 +246,12 @@ void main() {
           mockCloudInferenceRepo,
           stream: createMockTextStream(
             ['done'],
-            usage: const CompletionUsage(
+            usage: const LottiUsage(
               promptTokens: 150,
               completionTokens: 60,
               totalTokens: 210,
-              promptTokensDetails: PromptTokensDetails(cachedTokens: 40),
-              completionTokensDetails: CompletionTokensDetails(
-                reasoningTokens: 25,
-              ),
+              cachedInputTokens: 40,
+              reasoningTokens: 25,
             ),
           ),
           impact: const MeliousCallImpact(
@@ -1647,30 +1645,25 @@ void main() {
         final statusChanges = <InferenceStatus>[];
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(index: 0, delta: LottiDelta()),
+            ],
           ),
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
+                index: 0,
+                delta: LottiDelta(content: 'Hello'),
+                finishReason: LottiFinishReason.stop,
+              ),
+            ],
           ),
         ]);
 
@@ -1834,20 +1827,17 @@ void main() {
           const transcriptText = 'This is the transcribed audio content.';
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: transcriptText,
-                  ),
-                  finishReason: ChatCompletionFinishReason.stop,
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              choices: const [
+                LottiChunkChoice(
+                  index: 0,
+                  delta: LottiDelta(content: transcriptText),
+                  finishReason: LottiFinishReason.stop,
+                ),
+              ],
             ),
           ]);
 
@@ -2155,20 +2145,17 @@ void main() {
           const newTranscriptText = 'This is the new AI transcription.';
 
           final mockStream = Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            LottiInferenceChunk(
               id: 'response-1',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: newTranscriptText,
-                  ),
-                  finishReason: ChatCompletionFinishReason.stop,
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
               created:
                   DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+              choices: const [
+                LottiChunkChoice(
+                  index: 0,
+                  delta: LottiDelta(content: newTranscriptText),
+                  finishReason: LottiFinishReason.stop,
+                ),
+              ],
             ),
           ]);
 
@@ -2296,18 +2283,17 @@ void main() {
             'This image shows a beautiful landscape with mountains.';
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: analysisText),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
+                index: 0,
+                delta: LottiDelta(content: analysisText),
+                finishReason: LottiFinishReason.stop,
+              ),
+            ],
           ),
         ]);
 
@@ -2421,18 +2407,17 @@ void main() {
             'This image shows a beautiful landscape with mountains.';
 
         final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          LottiInferenceChunk(
             id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: analysisText),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
+            choices: const [
+              LottiChunkChoice(
+                index: 0,
+                delta: LottiDelta(content: analysisText),
+                finishReason: LottiFinishReason.stop,
+              ),
+            ],
           ),
         ]);
 

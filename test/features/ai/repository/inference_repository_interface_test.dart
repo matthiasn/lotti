@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Concrete test subclass that records received arguments and returns a fixed
 /// stream from [generateTextWithMessages].
 class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   /// The messages passed to the last [generateTextWithMessages] call.
-  List<ChatCompletionMessage>? lastMessages;
+  List<LottiMessage>? lastMessages;
 
   /// The model passed to the last call.
   String? lastModel;
@@ -26,10 +26,10 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   int? lastMaxCompletionTokens;
 
   /// The tools passed to the last call.
-  List<ChatCompletionTool>? lastTools;
+  List<LottiTool>? lastTools;
 
   /// The toolChoice passed to the last call.
-  ChatCompletionToolChoiceOption? lastToolChoice;
+  LottiToolChoice? lastToolChoice;
 
   /// The thoughtSignatures passed to the last call.
   Map<String, String>? lastThoughtSignatures;
@@ -44,18 +44,17 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   int? lastTurnIndex;
 
   /// The stream to return from [generateTextWithMessages].
-  Stream<CreateChatCompletionStreamResponse> streamToReturn =
-      const Stream.empty();
+  Stream<LottiInferenceChunk> streamToReturn = const Stream.empty();
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     InferenceImpactCollector? impactCollector,
@@ -108,16 +107,12 @@ void main() {
           expect(repository.lastMessages, hasLength(2));
           expect(
             repository.lastMessages![0],
-            const ChatCompletionMessage.system(
-              content: 'You are a helpful assistant.',
-            ),
+            const LottiMessage.system('You are a helpful assistant.'),
           );
           expect(
             repository.lastMessages![1],
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string(
-                'Hello, world!',
-              ),
+            LottiMessage.userText(
+              'Hello, world!',
             ),
           );
         },
@@ -137,10 +132,8 @@ void main() {
           expect(repository.lastMessages, hasLength(1));
           expect(
             repository.lastMessages![0],
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string(
-                'Just a prompt',
-              ),
+            LottiMessage.userText(
+              'Just a prompt',
             ),
           );
         },
@@ -150,13 +143,7 @@ void main() {
         'passes all parameters through to generateTextWithMessages',
         () {
           const tools = [
-            ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
-            ),
+            LottiTool(name: 'test_function', description: 'A test function'),
           ];
 
           repository.generateText(
@@ -183,10 +170,8 @@ void main() {
           final collector = InferenceImpactCollector();
 
           repository.generateTextWithMessages(
-            messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('hi'),
-              ),
+            messages: [
+              LottiMessage.userText('hi'),
             ],
             model: 'glm-5.2',
             temperature: 0.7,
@@ -202,18 +187,15 @@ void main() {
         'returns the stream from generateTextWithMessages',
         () async {
           final responses = [
-            const CreateChatCompletionStreamResponse(
+            const LottiInferenceChunk(
               id: 'test-response',
+              created: 1710500000,
               choices: [
-                ChatCompletionStreamResponseChoice(
+                LottiChunkChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Hello!',
-                  ),
+                  delta: LottiDelta(content: 'Hello!'),
                 ),
               ],
-              object: 'chat.completion.chunk',
-              created: 1710500000,
             ),
           ];
 

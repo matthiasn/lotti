@@ -73,7 +73,9 @@ so downstream consumers collect text and `usage` identically for every provider.
 
 `completion_usage_parser.dart` accepts the common OpenAI-compatible token shapes
 — `prompt_tokens`/`completion_tokens`, input/output aliases, cached and reasoning
-token details. **Duration-only audio usage is intentionally ignored** because it
+token details — and produces a `LottiUsage`, which flattens the two
+`*_tokens_details` blocks into the leaves consumers actually read (see
+[the inference domain](inference-domain-and-adapter.md)). **Duration-only audio usage is intentionally ignored** because it
 cannot be represented as token consumption, so Whisper-style
 `/audio/transcriptions` responses carry token usage only when the endpoint
 actually reports it. Voxtral's streaming adapter emits final usage-only SSE

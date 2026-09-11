@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/soul_evolution_context_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -30,12 +31,11 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 part 'soul_evolution_workflow.dart';
-part 'template_evolution_session.dart';
 part 'template_evolution_helpers.dart';
+part 'template_evolution_session.dart';
 
 // Library-private helpers shared by the workflow and its extension parts.
 const _uuid = Uuid();

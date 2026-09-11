@@ -11,11 +11,11 @@ import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import 'eval_text_matchers.dart';
 
@@ -99,10 +99,12 @@ const _missingInitialReportPrompt =
     '`content`. This is the final step of the wake and is mandatory. Do not '
     'respond with anything else.';
 
-ReasoningEffort? parseLocalTaskAgentEvalReasoningEffort(String? value) {
+LottiReasoningEffort? parseLocalTaskAgentEvalReasoningEffort(
+  String? value,
+) {
   final normalized = value?.trim();
   if (normalized == null || normalized.isEmpty) return null;
-  return ReasoningEffort.values.firstWhere(
+  return LottiReasoningEffort.values.firstWhere(
     (effort) => effort.name == normalized,
     orElse: () => throw FormatException(
       'Unknown task-agent eval reasoning effort "$value".',
@@ -643,7 +645,7 @@ String localTaskAgentEvalToolResponse({
   return 'Eval harness accepted $toolName.';
 }
 
-List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
+List<LottiTool> buildLocalTaskAgentEvalTools({
   LocalTaskAgentEvalPromptVariant? promptVariant,
 }) {
   return AgentToolRegistry.taskAgentTools
@@ -654,20 +656,17 @@ List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
       .map((definition) {
         final optimizeReport =
             definition.name == TaskAgentToolNames.updateReport;
-        return ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: definition.name,
-            description: TaskAgentEvidenceSynthesis.toolDescription(
-              definition.name,
-              definition.description,
-            ),
-            parameters: optimizeReport
-                ? TaskAgentEvidenceSynthesis.updateReportParameters(
-                    definition.parameters,
-                  )
-                : definition.parameters,
+        return LottiTool(
+          name: definition.name,
+          description: TaskAgentEvidenceSynthesis.toolDescription(
+            definition.name,
+            definition.description,
           ),
+          parameters: optimizeReport
+              ? TaskAgentEvidenceSynthesis.updateReportParameters(
+                  definition.parameters,
+                )
+              : definition.parameters,
         );
       })
       .toList(growable: false);
@@ -2281,7 +2280,7 @@ class LocalTaskAgentEvalReport {
   final List<LocalTaskAgentEvalCaseResult> results;
   final double temperature;
   final LocalTaskAgentEvalExecutionMode executionMode;
-  final ReasoningEffort? reasoningEffort;
+  final LottiReasoningEffort? reasoningEffort;
   final String? reportEditorModelId;
   final int reportEditorMaxAttempts;
 
@@ -2480,7 +2479,7 @@ class LocalTaskAgentInferenceEvalRunner {
   final double temperature;
   final bool forceReportRetry;
   final LocalTaskAgentEvalExecutionMode executionMode;
-  final ReasoningEffort? reasoningEffort;
+  final LottiReasoningEffort? reasoningEffort;
   final String? reportEditorModelId;
   final int reportEditorMaxAttempts;
 
@@ -2572,8 +2571,7 @@ class LocalTaskAgentInferenceEvalRunner {
             executionMode == LocalTaskAgentEvalExecutionMode.twoPass
             ? allTools
                   .where(
-                    (tool) =>
-                        tool.function.name != TaskAgentToolNames.updateReport,
+                    (tool) => tool.name != TaskAgentToolNames.updateReport,
                   )
                   .toList(growable: false)
             : allTools;
@@ -2628,17 +2626,11 @@ class LocalTaskAgentInferenceEvalRunner {
             consumptionThreadId: scenario.id,
             tools: allTools
                 .where(
-                  (tool) =>
-                      tool.function.name == TaskAgentToolNames.updateReport,
+                  (tool) => tool.name == TaskAgentToolNames.updateReport,
                 )
                 .toList(growable: false),
-            toolChoice: const ChatCompletionToolChoiceOption.tool(
-              ChatCompletionNamedToolChoice(
-                type: ChatCompletionNamedToolChoiceType.function,
-                function: ChatCompletionFunctionCallOption(
-                  name: TaskAgentToolNames.updateReport,
-                ),
-              ),
+            toolChoice: const LottiToolChoice.specific(
+              TaskAgentToolNames.updateReport,
             ),
             temperature: temperature,
             strategy: strategy,
@@ -2930,13 +2922,13 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     for (final call in toolCalls) {
       final recorded = LocalTaskAgentEvalToolCall(
-        name: call.function.name,
-        argumentsJson: call.function.arguments,
+        name: call.name,
+        argumentsJson: call.arguments,
         phase: _phase,
       );
       _toolCalls.add(recorded);
@@ -3100,19 +3092,17 @@ LocalTaskAgentEvalToolCall? _latestReportCall(
 bool _hasAssistantMessage(ConversationManager? manager) {
   if (manager == null) return false;
   return manager.messages.any(
-    (message) => message.role == ChatCompletionMessageRole.assistant,
+    (message) => message.role == LottiMessageRole.assistant,
   );
 }
 
 String? _extractFinalAssistantContent(ConversationManager? manager) {
   if (manager == null) return null;
   for (final message in manager.messages.reversed) {
-    if (message case ChatCompletionMessage(
-      role: ChatCompletionMessageRole.assistant,
+    if (message case LottiMessage(
+      role: LottiMessageRole.assistant,
     )) {
-      final content = message.mapOrNull(
-        assistant: (message) => message.content,
-      );
+      final content = message.assistantContent;
       if (content != null && content.isNotEmpty) return content;
     }
   }

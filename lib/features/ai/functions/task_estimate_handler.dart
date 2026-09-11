@@ -4,8 +4,8 @@ import 'dart:developer' as developer;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Maximum allowed estimate in minutes (24 hours).
 ///
@@ -153,11 +153,11 @@ class TaskEstimateHandler {
   /// 4. **Success**: Updates task and returns success result
   /// 5. **Repository error**: Returns error result, logs exception
   Future<TaskEstimateResult> processToolCall(
-    ChatCompletionMessageToolCall call, [
+    LottiToolCall call, [
     ConversationManager? manager,
   ]) async {
     try {
-      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      final args = jsonDecode(call.arguments) as Map<String, dynamic>;
       final rawMinutes = args['minutes'];
 
       // Extract and normalize values using shared utility

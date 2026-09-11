@@ -5,11 +5,11 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Handler for batch checklist item creation in Lotti
 class LottiBatchChecklistHandler extends FunctionHandler {
@@ -32,19 +32,19 @@ class LottiBatchChecklistHandler extends FunctionHandler {
   String get functionName => 'add_multiple_checklist_items';
 
   @override
-  FunctionCallResult processFunctionCall(ChatCompletionMessageToolCall call) {
+  FunctionCallResult processFunctionCall(LottiToolCall call) {
     // Early check: verify function name matches
-    if (call.function.name != functionName) {
+    if (call.name != functionName) {
       return FunctionCallResult(
         success: false,
         data: {'toolCallId': call.id},
         error:
-            'Function name mismatch: expected "$functionName", got "${call.function.name}"',
+            'Function name mismatch: expected "$functionName", got "${call.name}"',
       );
     }
 
     try {
-      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      final args = jsonDecode(call.arguments) as Map<String, dynamic>;
       final raw = args['items'];
 
       if (raw is! List) {

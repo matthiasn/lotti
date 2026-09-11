@@ -4,26 +4,19 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
-ChatCompletionMessageToolCall _call({
+LottiToolCall _call({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
-}) => ChatCompletionMessageToolCall(
-  id: id,
-  type: ChatCompletionMessageToolCallType.function,
-  function: ChatCompletionMessageFunctionCall(
-    name: name,
-    arguments: jsonEncode(args),
-  ),
-);
+}) => LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
 
 void main() {
   late MockAgentSyncService syncService;
@@ -1409,13 +1402,10 @@ void main() {
     () async {
       await strategy.processToolCalls(
         toolCalls: [
-          const ChatCompletionMessageToolCall(
+          const LottiToolCall(
             id: 'call-raw',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: GoalAgentToolNames.updateGoalReport,
-              arguments: '{not json',
-            ),
+            name: GoalAgentToolNames.updateGoalReport,
+            arguments: '{not json',
           ),
         ],
         manager: manager,

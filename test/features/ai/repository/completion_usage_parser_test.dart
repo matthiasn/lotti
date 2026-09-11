@@ -24,8 +24,8 @@ void main() {
       expect(usage!.promptTokens, 12);
       expect(usage.completionTokens, 8);
       expect(usage.totalTokens, 20);
-      expect(usage.promptTokensDetails?.cachedTokens, 3);
-      expect(usage.completionTokensDetails?.reasoningTokens, 5);
+      expect(usage.cachedInputTokens, 3);
+      expect(usage.reasoningTokens, 5);
     });
 
     test('uses camelCase and input/output token aliases', () {
@@ -40,8 +40,8 @@ void main() {
       expect(usage!.promptTokens, 4);
       expect(usage.completionTokens, 6);
       expect(usage.totalTokens, 10);
-      expect(usage.promptTokensDetails?.cachedTokens, 2);
-      expect(usage.completionTokensDetails?.reasoningTokens, 1);
+      expect(usage.cachedInputTokens, 2);
+      expect(usage.reasoningTokens, 1);
     });
 
     test(

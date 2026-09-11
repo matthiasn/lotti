@@ -13,7 +13,6 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -340,18 +339,15 @@ void main() {
       final tools = builder.buildToolDefinitions();
 
       expect(tools, isNotEmpty);
-      final names = tools.map((t) => t.function.name).toSet();
+      final names = tools.map((t) => t.name).toSet();
       expect(names, contains('update_project_report'));
-      for (final tool in tools) {
-        expect(tool.type, ChatCompletionToolType.function);
-      }
     });
 
     test('withholds retract_suggestions when nothing is open', () {
       // Offering it with nothing to withdraw invites a hallucinated
       // fingerprint and a wasted turn.
       expect(
-        builder.buildToolDefinitions().map((t) => t.function.name),
+        builder.buildToolDefinitions().map((t) => t.name),
         isNot(contains(ProjectAgentToolNames.retractSuggestions)),
       );
     });
@@ -359,13 +355,13 @@ void main() {
     test('offers retract_suggestions when proposals are open', () {
       final tools = builder.buildToolDefinitions(hasOpenProposals: true);
       expect(
-        tools.map((t) => t.function.name),
+        tools.map((t) => t.name),
         contains(ProjectAgentToolNames.retractSuggestions),
       );
       final retract = tools.firstWhere(
-        (t) => t.function.name == ProjectAgentToolNames.retractSuggestions,
+        (t) => t.name == ProjectAgentToolNames.retractSuggestions,
       );
-      final parameters = retract.function.parameters!;
+      final parameters = retract.parameters!;
       expect(parameters['required'], ['proposals']);
       final proposals = (parameters['properties']! as Map)['proposals']! as Map;
       expect(

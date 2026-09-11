@@ -1,21 +1,23 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _FakeCreateChatCompletionRequest extends Fake
-    implements CreateChatCompletionRequest {}
+class _FakeLottiInferenceRequest extends Fake
+    implements LottiInferenceRequest {}
 
 class _FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
@@ -26,14 +28,14 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
           String prompt,
           String model,
           String baseUrl,
-          ReasoningEffort? reasoningEffort,
+          LottiReasoningEffort? reasoningEffort,
         })
       >[];
   final imageCalls =
       <({String prompt, String model, String baseUrl, List<String> images})>[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required String baseUrl,
@@ -41,9 +43,9 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     String? systemMessage,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
   }) {
     textCalls.add((
@@ -56,7 +58,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+  Stream<LottiInferenceChunk> generateWithImages({
     required String prompt,
     required String model,
     required String baseUrl,
@@ -65,8 +67,8 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     String? systemMessage,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     InferenceImpactCollector? impactCollector,
   }) {
     imageCalls.add((
@@ -78,27 +80,25 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     return Stream.value(_chunk('melious vision'));
   }
 
-  static CreateChatCompletionStreamResponse _chunk(String content) {
-    return CreateChatCompletionStreamResponse(
+  static LottiInferenceChunk _chunk(String content) {
+    return LottiInferenceChunk(
       id: 'melious-response-id',
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-        ),
-      ],
-      object: 'chat.completion.chunk',
       created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+      choices: [
+        LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+      ],
     );
   }
 }
 
 class _FakeMistralInferenceRepository extends MistralInferenceRepository {
   final textCalls =
-      <({String prompt, String model, ReasoningEffort? reasoningEffort})>[];
+      <
+        ({String prompt, String model, LottiReasoningEffort? reasoningEffort})
+      >[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required String baseUrl,
@@ -106,9 +106,9 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
     String? systemMessage,
     double? temperature,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
+    LottiReasoningEffort? reasoningEffort,
   }) {
     textCalls.add((
       prompt: prompt,
@@ -124,7 +124,7 @@ class _FakeMistralOcrRepository extends MistralOcrRepository {
       <({String model, String baseUrl, String apiKey, List<String> images})>[];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> extractText({
+  Stream<LottiInferenceChunk> extractText({
     required String model,
     required List<String> images,
     required String baseUrl,
@@ -138,16 +138,15 @@ class _FakeMistralOcrRepository extends MistralOcrRepository {
       images: images,
     ));
     return Stream.value(
-      const CreateChatCompletionStreamResponse(
+      const LottiInferenceChunk(
         id: 'mistral-ocr-response-id',
+        created: 0,
         choices: [
-          ChatCompletionStreamResponseChoice(
-            delta: ChatCompletionStreamResponseDelta(content: 'ocr markdown'),
+          LottiChunkChoice(
             index: 0,
+            delta: LottiDelta(content: 'ocr markdown'),
           ),
         ],
-        object: 'chat.completion.chunk',
-        created: 0,
       ),
     );
   }
@@ -155,10 +154,10 @@ class _FakeMistralOcrRepository extends MistralOcrRepository {
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(_FakeCreateChatCompletionRequest());
+    registerFallbackValue(_FakeLottiInferenceRequest());
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(_FakeGeminiThinkingConfig());
-    registerFallbackValue(<ChatCompletionTool>[]);
+    registerFallbackValue(<LottiTool>[]);
   });
 
   late MockOllamaInferenceRepository ollamaRepo;
@@ -166,7 +165,7 @@ void main() {
   late MeliousInferenceRepository meliousRepo;
   late MistralInferenceRepository mistralRepo;
   late MistralOcrRepository mistralOcrRepo;
-  late MockOpenAIClient client;
+  late MockLottiInferenceClient client;
   late CloudInferenceGenerate generate;
 
   const baseUrl = 'https://api.openai.com/v1';
@@ -186,17 +185,13 @@ void main() {
         as AiConfigInferenceProvider;
   }
 
-  CreateChatCompletionStreamResponse chunk(String content) {
-    return CreateChatCompletionStreamResponse(
+  LottiInferenceChunk chunk(String content) {
+    return LottiInferenceChunk(
       id: 'response-id',
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-        ),
-      ],
-      object: 'chat.completion.chunk',
       created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+      choices: [
+        LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+      ],
     );
   }
 
@@ -206,7 +201,7 @@ void main() {
     meliousRepo = MeliousInferenceRepository();
     mistralRepo = MistralInferenceRepository();
     mistralOcrRepo = MistralOcrRepository();
-    client = MockOpenAIClient();
+    client = MockLottiInferenceClient();
     generate = CloudInferenceGenerate(
       ollamaRepository: ollamaRepo,
       geminiRepository: geminiRepo,
@@ -253,7 +248,7 @@ void main() {
         throwsUnsupportedError,
       );
       verifyNever(
-        () => client.createChatCompletionStream(request: any(named: 'request')),
+        () => client.createChatCompletionStream(any()),
       );
     },
   );
@@ -264,9 +259,7 @@ void main() {
       'broadcast stream',
       () async {
         when(
-          () => client.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => client.createChatCompletionStream(any()),
         ).thenAnswer((_) => Stream.fromIterable([chunk('hi')]));
 
         final stream = generate.generate(
@@ -285,18 +278,15 @@ void main() {
 
         final request =
             verify(
-                  () => client.createChatCompletionStream(
-                    request: captureAny(named: 'request'),
-                  ),
+                  () => client.createChatCompletionStream(captureAny()),
                 ).captured.single
-                as CreateChatCompletionRequest;
+                as LottiInferenceRequest;
         // system + user message, temperature forwarded, streaming on.
         expect(request.messages, hasLength(2));
-        expect(request.messages.first.role, ChatCompletionMessageRole.system);
-        expect(request.messages.last.role, ChatCompletionMessageRole.user);
+        expect(request.messages.first.role, LottiMessageRole.system);
+        expect(request.messages.last.role, LottiMessageRole.user);
         expect(request.temperature, 0.7);
-        expect(request.stream, isTrue);
-        expect(request.toString(), contains(prompt));
+        expect(request.messages.last.textContent, contains(prompt));
       },
     );
 
@@ -340,9 +330,7 @@ void main() {
         ),
       ).called(1);
       verifyNever(
-        () => client.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => client.createChatCompletionStream(any()),
       );
     });
 
@@ -368,7 +356,7 @@ void main() {
             provider: meliousProvider,
             systemMessage: 'be brief',
             maxCompletionTokens: 512,
-            reasoningEffort: ReasoningEffort.high,
+            reasoningEffort: LottiReasoningEffort.high,
           )
           .toList();
 
@@ -378,16 +366,14 @@ void main() {
       expect(fakeMeliousRepo.textCalls.single.model, 'qwen/qwen3-vl-plus');
       expect(
         fakeMeliousRepo.textCalls.single.reasoningEffort,
-        ReasoningEffort.high,
+        LottiReasoningEffort.high,
       );
       expect(
         fakeMeliousRepo.textCalls.single.baseUrl,
         'https://api.melious.ai/v1',
       );
       verifyNever(
-        () => client.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => client.createChatCompletionStream(any()),
       );
     });
 
@@ -411,7 +397,7 @@ void main() {
             baseUrl: 'https://api.mistral.ai/v1',
             apiKey: 'sk-mistral-test',
             provider: providerOfType(InferenceProviderType.mistral),
-            reasoningEffort: ReasoningEffort.high,
+            reasoningEffort: LottiReasoningEffort.high,
           )
           .toList();
 
@@ -420,7 +406,7 @@ void main() {
       expect(fakeMistralRepo.textCalls.single.prompt, prompt);
       expect(
         fakeMistralRepo.textCalls.single.reasoningEffort,
-        ReasoningEffort.high,
+        LottiReasoningEffort.high,
       );
     });
   });
@@ -431,9 +417,7 @@ void main() {
       () async {
         final geminiProvider = providerOfType(InferenceProviderType.gemini);
         when(
-          () => client.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => client.createChatCompletionStream(any()),
         ).thenAnswer((_) => const Stream.empty());
 
         await generate
@@ -452,14 +436,15 @@ void main() {
 
         final request =
             verify(
-                  () => client.createChatCompletionStream(
-                    request: captureAny(named: 'request'),
-                  ),
+                  () => client.createChatCompletionStream(captureAny()),
                 ).captured.single
-                as CreateChatCompletionRequest;
-        expect(request.reasoningEffort, ReasoningEffort.high);
+                as LottiInferenceRequest;
+        expect(request.reasoningEffort, LottiReasoningEffort.high);
         // Image content is encoded as a data URI in the request payload.
-        expect(request.toString(), contains('data:image/jpeg;base64,'));
+        expect(
+          jsonEncode(openAiRequestJson(request)),
+          contains('data:image/jpeg;base64,'),
+        );
       },
     );
 
@@ -500,9 +485,7 @@ void main() {
         ),
       ).called(1);
       verifyNever(
-        () => client.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => client.createChatCompletionStream(any()),
       );
     });
 
@@ -540,9 +523,7 @@ void main() {
         const ['image-a', 'image-b'],
       );
       verifyNever(
-        () => client.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
+        () => client.createChatCompletionStream(any()),
       );
     });
 
@@ -579,9 +560,7 @@ void main() {
         expect(fakeOcrRepo.calls.single.baseUrl, 'https://api.mistral.ai/v1');
         // Crucially, the OCR model must NOT hit chat completions.
         verifyNever(
-          () => client.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => client.createChatCompletionStream(any()),
         );
       },
     );
@@ -599,9 +578,7 @@ void main() {
           helpers: const CloudInferenceRequestHelpers(),
         );
         when(
-          () => client.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
+          () => client.createChatCompletionStream(any()),
         ).thenAnswer((_) => Stream.fromIterable([chunk('pixtral vision')]));
 
         final chunks = await generate

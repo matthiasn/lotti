@@ -1,4 +1,4 @@
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 /// Consolidated (non-streaming) Gemini payload, decomposed for downstream
 /// chunk emission.
@@ -13,8 +13,8 @@ class ProcessedGeminiPayload {
 
   final String thinking;
   final String visible;
-  final List<ChatCompletionStreamMessageToolCallChunk> toolChunks;
-  final CompletionUsage? usage;
+  final List<LottiToolCallChunk> toolChunks;
+  final LottiUsage? usage;
 
   /// Thought signatures captured from function calls, keyed by tool call ID.
   final Map<String, String> signatures;

@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -14,34 +14,20 @@ const _agentId = 'agent-001';
 const _threadId = 'thread-001';
 const _runKey = 'run-key-001';
 
-ChatCompletionMessageToolCall _makeToolCall({
+LottiToolCall _makeToolCall({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
 }) {
-  return ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
-  );
+  return LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
 }
 
-ChatCompletionMessageToolCall _makeRawToolCall({
+LottiToolCall _makeRawToolCall({
   required String name,
   required String rawArguments,
   String id = 'call-1',
 }) {
-  return ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: rawArguments,
-    ),
-  );
+  return LottiToolCall(id: id, name: name, arguments: rawArguments);
 }
 
 void main() {

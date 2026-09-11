@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 enum _GeneratedConversationOperationKind {
   initializeEmpty,
@@ -274,19 +274,16 @@ extension _AnyGeneratedConversationScenario on glados.Any {
   );
 }
 
-ChatCompletionMessageToolCall _generatedToolCall(String toolId) {
-  return ChatCompletionMessageToolCall(
+LottiToolCall _generatedToolCall(String toolId) {
+  return LottiToolCall(
     id: toolId,
-    type: ChatCompletionMessageToolCallType.function,
-    function: const ChatCompletionMessageFunctionCall(
-      name: 'generated_function',
-      arguments: '{"ok": true}',
-    ),
+    name: 'generated_function',
+    arguments: '{"ok": true}',
   );
 }
 
 List<_GeneratedConversationRole> _conversationRoles(
-  List<ChatCompletionMessage> messages,
+  List<LottiMessage> messages,
 ) {
   return messages.map((message) {
     if (_isGeneratedTruncationNotice(message)) {
@@ -294,21 +291,18 @@ List<_GeneratedConversationRole> _conversationRoles(
     }
 
     return switch (message.role) {
-      ChatCompletionMessageRole.system => _GeneratedConversationRole.system,
-      ChatCompletionMessageRole.user => _GeneratedConversationRole.user,
-      ChatCompletionMessageRole.assistant =>
-        _GeneratedConversationRole.assistant,
-      ChatCompletionMessageRole.tool => _GeneratedConversationRole.tool,
-      ChatCompletionMessageRole.function => _GeneratedConversationRole.tool,
-      ChatCompletionMessageRole.developer => _GeneratedConversationRole.system,
+      LottiMessageRole.system => _GeneratedConversationRole.system,
+      LottiMessageRole.user => _GeneratedConversationRole.user,
+      LottiMessageRole.assistant => _GeneratedConversationRole.assistant,
+      LottiMessageRole.tool => _GeneratedConversationRole.tool,
+      LottiMessageRole.developer => _GeneratedConversationRole.system,
     };
   }).toList();
 }
 
-bool _isGeneratedTruncationNotice(ChatCompletionMessage message) {
-  return message.role == ChatCompletionMessageRole.system &&
-      (message.content?.toString().contains('Previous messages truncated') ??
-          false);
+bool _isGeneratedTruncationNotice(LottiMessage message) {
+  return message.role == LottiMessageRole.system &&
+      (message.textContent?.contains('Previous messages truncated') ?? false);
 }
 
 void main() {
@@ -331,7 +325,7 @@ void main() {
         expect(manager.messages.length, 20);
         expect(
           manager.messages.any(
-            (msg) => msg.content?.toString().contains('truncated') ?? false,
+            (msg) => msg.textContent?.contains('truncated') ?? false,
           ),
           false,
         );
@@ -347,10 +341,9 @@ void main() {
         expect(manager.messages.length, lessThanOrEqualTo(50));
 
         // Should have truncation notice as the first message
-        expect(manager.messages.first.role, ChatCompletionMessageRole.system);
+        expect(manager.messages.first.role, LottiMessageRole.system);
         expect(
-          manager.messages.first.content?.toString().contains('truncated') ??
-              false,
+          manager.messages.first.textContent?.contains('truncated') ?? false,
           true,
         );
       });
@@ -365,16 +358,16 @@ void main() {
         }
 
         // System message should still be first
-        expect(manager.messages.first.role, ChatCompletionMessageRole.system);
+        expect(manager.messages.first.role, LottiMessageRole.system);
         expect(
-          manager.messages.first.content?.toString() ?? '',
+          manager.messages.first.textContent ?? '',
           contains('helpful assistant'),
         );
 
         // Truncation notice should be second
-        expect(manager.messages[1].role, ChatCompletionMessageRole.system);
+        expect(manager.messages[1].role, LottiMessageRole.system);
         expect(
-          manager.messages[1].content?.toString() ?? '',
+          manager.messages[1].textContent ?? '',
           contains('truncated'),
         );
       });
@@ -405,14 +398,14 @@ void main() {
 
         // Should have system messages
         final systemMessages = messages
-            .where((m) => m.role == ChatCompletionMessageRole.system)
+            .where((m) => m.role == LottiMessageRole.system)
             .toList();
         expect(systemMessages.length, greaterThanOrEqualTo(1));
 
         // Should have truncation notice
         expect(
           messages.any(
-            (m) => m.content?.toString().contains('truncated') ?? false,
+            (m) => m.textContent?.contains('truncated') ?? false,
           ),
           true,
         );
@@ -445,7 +438,7 @@ void main() {
           // The orphaned tool result (its tool_use parent was trimmed) is gone.
           expect(
             messages.any(
-              (x) => x.content?.toString().contains('ORPHAN_A') ?? false,
+              (x) => x.textContent?.contains('ORPHAN_A') ?? false,
             ),
             isFalse,
           );
@@ -453,7 +446,7 @@ void main() {
           // kept — the strip is not over-eager.
           expect(
             messages.any(
-              (x) => x.content?.toString().contains('KEPT_B') ?? false,
+              (x) => x.textContent?.contains('KEPT_B') ?? false,
             ),
             isTrue,
           );
@@ -461,11 +454,11 @@ void main() {
           // Every surviving tool message is preceded by an assistant message —
           // no orphan tool result remains.
           for (var i = 0; i < messages.length; i++) {
-            if (messages[i].role == ChatCompletionMessageRole.tool) {
+            if (messages[i].role == LottiMessageRole.tool) {
               expect(
                 messages
                     .sublist(0, i)
-                    .any((x) => x.role == ChatCompletionMessageRole.assistant),
+                    .any((x) => x.role == LottiMessageRole.assistant),
                 isTrue,
                 reason: 'tool message at $i has no preceding assistant',
               );
@@ -482,9 +475,9 @@ void main() {
         expect(manager.messages.length, 1);
         expect(
           manager.messages.single.role,
-          ChatCompletionMessageRole.user,
+          LottiMessageRole.user,
         );
-        expect(manager.messages.single.toJson()['content'], 'Test message');
+        expect(manager.messages.single.textContent, 'Test message');
       });
     });
 
@@ -506,25 +499,25 @@ void main() {
         );
 
         expect(manager.messages.length, 1);
-        expect(manager.messages.first.role, ChatCompletionMessageRole.tool);
-        expect(manager.messages.first.content, 'Tool executed successfully');
+        expect(manager.messages.first.role, LottiMessageRole.tool);
+        expect(
+          manager.messages.first.textContent,
+          'Tool executed successfully',
+        );
       });
     });
 
     group('Assistant Message Handling', () {
       const sampleToolCalls = [
-        ChatCompletionMessageToolCall(
+        LottiToolCall(
           id: 'tool-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'test_function',
-            arguments: '{"arg": "value"}',
-          ),
+          name: 'test_function',
+          arguments: '{"arg": "value"}',
         ),
       ];
 
       test('stores each content/toolCalls combination', () {
-        final cases = <(String, String?, List<ChatCompletionMessageToolCall>?)>[
+        final cases = <(String, String?, List<LottiToolCall>?)>[
           (
             'content only',
             'This is the assistant response',
@@ -555,18 +548,16 @@ void main() {
           expect(caseManager.messages.length, 1, reason: description);
           expect(
             storedMessage.role,
-            ChatCompletionMessageRole.assistant,
+            LottiMessageRole.assistant,
             reason: description,
           );
           expect(
-            storedMessage.content,
+            storedMessage.textContent,
             content,
             reason: description,
           );
           expect(
-            storedMessage.mapOrNull(
-              assistant: (message) => message.toolCalls,
-            ),
+            storedMessage.assistantToolCalls,
             toolCalls,
             reason: description,
           );
@@ -595,8 +586,8 @@ void main() {
         // Should have only the system message; signatures from the previous
         // conversation must not leak into the new one.
         expect(manager.messages.length, 1);
-        expect(manager.messages.first.role, ChatCompletionMessageRole.system);
-        expect(manager.messages.first.content, 'New system message');
+        expect(manager.messages.first.role, LottiMessageRole.system);
+        expect(manager.messages.first.textContent, 'New system message');
         expect(manager.thoughtSignatures, isEmpty);
         expect(manager.lastError, isNull);
       });
@@ -663,30 +654,21 @@ void main() {
 
         // But contain the same data
         expect(messages1.length, messages2.length);
-        expect(messages1.first.content, messages2.first.content);
+        expect(messages1.first.textContent, messages2.first.textContent);
       });
 
       test('adds empty content to assistant tool calls for strict APIs', () {
         const toolCalls = [
-          ChatCompletionMessageToolCall(
-            id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_report',
-              arguments: '{}',
-            ),
-          ),
+          LottiToolCall(id: 'tool-1', name: 'update_report', arguments: '{}'),
         ];
         manager.addAssistantMessage(toolCalls: toolCalls);
 
-        expect(manager.messages.single.content, isNull);
+        expect(manager.messages.single.textContent, isNull);
 
         final requestMessage = manager.getMessagesForRequest().single;
-        expect(requestMessage.content, '');
+        expect(requestMessage.textContent, '');
         expect(
-          requestMessage.mapOrNull(
-            assistant: (assistant) => assistant.toolCalls,
-          ),
+          requestMessage.assistantToolCalls,
           toolCalls,
         );
       });
@@ -694,14 +676,12 @@ void main() {
       test('adds empty content to thinking-only assistant turns', () {
         manager.addAssistantMessage();
 
-        expect(manager.messages.single.content, isNull);
+        expect(manager.messages.single.textContent, isNull);
 
         final requestMessage = manager.getMessagesForRequest().single;
-        expect(requestMessage.content, '');
+        expect(requestMessage.textContent, '');
         expect(
-          requestMessage.mapOrNull(
-            assistant: (assistant) => assistant.toolCalls,
-          ),
+          requestMessage.assistantToolCalls,
           isNull,
         );
       });
@@ -718,7 +698,7 @@ void main() {
         // No truncation message
         expect(
           manager.messages.any(
-            (msg) => msg.content?.toString().contains('truncated') ?? false,
+            (msg) => msg.textContent?.contains('truncated') ?? false,
           ),
           false,
         );
@@ -741,7 +721,7 @@ void main() {
         // Should have truncation notice
         expect(
           smallManager.messages.any(
-            (msg) => msg.content?.toString().contains('truncated') ?? false,
+            (msg) => msg.textContent?.contains('truncated') ?? false,
           ),
           true,
         );
@@ -764,13 +744,10 @@ void main() {
     group('Thought Signatures', () {
       test('stores thought signatures when adding assistant message', () {
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const LottiToolCall(
             id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test_function',
-              arguments: '{"arg": "value"}',
-            ),
+            name: 'test_function',
+            arguments: '{"arg": "value"}',
           ),
         ];
 
@@ -784,25 +761,11 @@ void main() {
 
       test('accumulates signatures across multiple messages', () {
         final toolCalls1 = [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'func1',
-              arguments: '{}',
-            ),
-          ),
+          const LottiToolCall(id: 'tool-1', name: 'func1', arguments: '{}'),
         ];
 
         final toolCalls2 = [
-          const ChatCompletionMessageToolCall(
-            id: 'tool-2',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'func2',
-              arguments: '{}',
-            ),
-          ),
+          const LottiToolCall(id: 'tool-2', name: 'func2', arguments: '{}'),
         ];
 
         manager
@@ -836,13 +799,10 @@ void main() {
 
       test('does not store signatures when null', () {
         final toolCalls = [
-          const ChatCompletionMessageToolCall(
+          const LottiToolCall(
             id: 'tool-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'test_function',
-              arguments: '{}',
-            ),
+            name: 'test_function',
+            arguments: '{}',
           ),
         ];
 
@@ -958,7 +918,7 @@ void main() {
               .length;
           final retainedUserMessages = messages
               .where(
-                (message) => message.role == ChatCompletionMessageRole.user,
+                (message) => message.role == LottiMessageRole.user,
               )
               .toList();
 
@@ -979,13 +939,13 @@ void main() {
           );
 
           if (scenario.hasSystemMessage) {
-            expect(messages.first.content, 'generated system');
+            expect(messages.first.textContent, 'generated system');
           } else {
             expect(
               messages
                   .where(
                     (message) =>
-                        message.role == ChatCompletionMessageRole.system &&
+                        message.role == LottiMessageRole.system &&
                         !_isGeneratedTruncationNotice(message),
                   )
                   .toList(),
@@ -996,7 +956,7 @@ void main() {
 
           if (scenario.userMessageCount > 0) {
             expect(
-              messages.last.content?.toString(),
+              messages.last.textContent,
               contains('generated user ${scenario.userMessageCount - 1}'),
               reason: '$scenario',
             );

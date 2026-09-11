@@ -5,10 +5,10 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -29,19 +29,16 @@ extension _AnyObservationStrings on glados.Any {
       );
 }
 
-ChatCompletionMessageToolCall _toolCall({
+LottiToolCall _toolCall({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
   String? rawArguments,
 }) {
-  return ChatCompletionMessageToolCall(
+  return LottiToolCall(
     id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: rawArguments ?? jsonEncode(args),
-    ),
+    name: name,
+    arguments: rawArguments ?? jsonEncode(args),
   );
 }
 

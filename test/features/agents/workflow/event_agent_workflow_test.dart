@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
@@ -20,7 +21,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -189,36 +189,27 @@ void main() {
               ),
             ).thenReturn(null);
 
-            final calls = <ChatCompletionMessageToolCall>[
-              ChatCompletionMessageToolCall(
+            final calls = <LottiToolCall>[
+              LottiToolCall(
                 id: 'call-rpt',
-                type: ChatCompletionMessageToolCallType.function,
-                function: ChatCompletionMessageFunctionCall(
-                  name: EventAgentToolNames.updateReport,
-                  arguments: jsonEncode({
-                    'oneLiner': "Maya's 30th, rooftop at dusk.",
-                    'tldr': 'A warm rooftop birthday. 🎂',
-                    'content': '# The night\nEveryone showed up.',
-                  }),
-                ),
+                name: EventAgentToolNames.updateReport,
+                arguments: jsonEncode({
+                  'oneLiner': "Maya's 30th, rooftop at dusk.",
+                  'tldr': 'A warm rooftop birthday. 🎂',
+                  'content': '# The night\nEveryone showed up.',
+                }),
               ),
               if (observations.isNotEmpty)
-                ChatCompletionMessageToolCall(
+                LottiToolCall(
                   id: 'call-obs',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: EventAgentToolNames.recordObservations,
-                    arguments: jsonEncode({'observations': observations}),
-                  ),
+                  name: EventAgentToolNames.recordObservations,
+                  arguments: jsonEncode({'observations': observations}),
                 ),
               for (var i = 0; i < followUpTitles.length; i++)
-                ChatCompletionMessageToolCall(
+                LottiToolCall(
                   id: 'call-followup-$i',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: EventAgentToolNames.suggestFollowUpTask,
-                    arguments: jsonEncode({'title': followUpTitles[i]}),
-                  ),
+                  name: EventAgentToolNames.suggestFollowUpTask,
+                  arguments: jsonEncode({'title': followUpTitles[i]}),
                 ),
             ];
 
@@ -270,17 +261,14 @@ void main() {
               ).thenReturn(null);
               await strategy.processToolCalls(
                 toolCalls: [
-                  ChatCompletionMessageToolCall(
+                  LottiToolCall(
                     id: 'call-forced',
-                    type: ChatCompletionMessageToolCallType.function,
-                    function: ChatCompletionMessageFunctionCall(
-                      name: EventAgentToolNames.updateReport,
-                      arguments: jsonEncode({
-                        'oneLiner': oneLiner,
-                        'tldr': tldr,
-                        'content': content,
-                      }),
-                    ),
+                    name: EventAgentToolNames.updateReport,
+                    arguments: jsonEncode({
+                      'oneLiner': oneLiner,
+                      'tldr': tldr,
+                      'content': content,
+                    }),
                   ),
                 ],
                 manager: manager,
@@ -633,7 +621,7 @@ void main() {
         // The conversation leaves a final assistant message (the agent's thought)
         // and reports token usage with data.
         when(() => mockConversationManager.messages).thenReturn(const [
-          ChatCompletionMessage.assistant(
+          LottiMessage.assistant(
             content: 'I wove the linked photos and notes into a warm recap.',
           ),
         ]);

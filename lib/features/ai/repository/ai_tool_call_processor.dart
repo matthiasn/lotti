@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
@@ -20,7 +21,6 @@ import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:openai_dart/openai_dart.dart';
 
 /// Dispatches streamed assistant tool calls for the unified AI inference path:
 /// checklist completion suggestions, checklist add/update, task language
@@ -46,7 +46,7 @@ class AiToolCallProcessor {
       autoChecklistServiceResolver();
 
   Future<bool> process({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required Task task,
   }) async {
     var languageWasSet = false;
@@ -60,8 +60,8 @@ class AiToolCallProcessor {
     for (var i = 0; i < toolCalls.length; i++) {
       final tc = toolCalls[i];
       developer.log(
-        'Tool call [$i]: name=${tc.function.name}, '
-        'args=${tc.function.arguments.length > 200 ? '${tc.function.arguments.substring(0, 200)}...' : tc.function.arguments}',
+        'Tool call [$i]: name=${tc.name}, '
+        'args=${tc.arguments.length > 200 ? '${tc.arguments.substring(0, 200)}...' : tc.arguments}',
         name: 'UnifiedAiInferenceRepository',
       );
     }
@@ -70,14 +70,14 @@ class AiToolCallProcessor {
 
     for (final toolCall in toolCalls) {
       developer.log(
-        'Processing tool call: ${toolCall.function.name}',
+        'Processing tool call: ${toolCall.name}',
         name: 'UnifiedAiInferenceRepository',
       );
 
-      if (toolCall.function.name ==
+      if (toolCall.name ==
           ChecklistCompletionFunctions.suggestChecklistCompletion) {
         // Handle case where multiple JSON objects might be concatenated
-        final jsonObjects = extractJsonObjects(toolCall.function.arguments);
+        final jsonObjects = extractJsonObjects(toolCall.arguments);
 
         if (jsonObjects.isEmpty) {
           // Log metadata only — raw arguments can carry user content/PII
@@ -85,7 +85,7 @@ class AiToolCallProcessor {
           developer.log(
             'No valid JSON found in arguments '
             '(toolCallId=${toolCall.id}, '
-            'length=${toolCall.function.arguments.length})',
+            'length=${toolCall.arguments.length})',
             name: 'UnifiedAiInferenceRepository',
           );
           continue;
@@ -126,12 +126,12 @@ class AiToolCallProcessor {
             );
           }
         }
-      } else if (toolCall.function.name ==
+      } else if (toolCall.name ==
           ChecklistCompletionFunctions.addMultipleChecklistItems) {
         // Handle add checklist item(s)
         try {
           final arguments =
-              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
+              jsonDecode(toolCall.arguments) as Map<String, dynamic>;
 
           // Array-of-objects only
           final itemsField = arguments['items'];
@@ -256,7 +256,7 @@ class AiToolCallProcessor {
             error: e,
           );
         }
-      } else if (toolCall.function.name ==
+      } else if (toolCall.name ==
           ChecklistCompletionFunctions.updateChecklistItems) {
         try {
           final updateHandler = LottiChecklistUpdateHandler(
@@ -294,11 +294,11 @@ class AiToolCallProcessor {
             stackTrace: stackTrace,
           );
         }
-      } else if (toolCall.function.name == TaskFunctions.setTaskLanguage) {
+      } else if (toolCall.name == TaskFunctions.setTaskLanguage) {
         // Handle set task language
         try {
           final result = SetTaskLanguageResult.fromJson(
-            jsonDecode(toolCall.function.arguments) as Map<String, dynamic>,
+            jsonDecode(toolCall.arguments) as Map<String, dynamic>,
           );
           final languageCode = result.languageCode;
           final confidence = result.confidence.name;
@@ -360,10 +360,10 @@ class AiToolCallProcessor {
             error: e,
           );
         }
-      } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
+      } else if (toolCall.name == LabelFunctions.assignTaskLabels) {
         // Handle assign task labels (add-only)
         try {
-          final parsed = parseLabelCallArgs(toolCall.function.arguments);
+          final parsed = parseLabelCallArgs(toolCall.arguments);
           final requested = LinkedHashSet<String>.from(
             parsed.selectedIds,
           ).toList();
@@ -372,7 +372,7 @@ class AiToolCallProcessor {
           if (requested.isEmpty) {
             developer.log(
               'assign_task_labels called without valid labels or labelIds - '
-              'raw args: ${toolCall.function.arguments}',
+              'raw args: ${toolCall.arguments}',
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
@@ -439,7 +439,7 @@ class AiToolCallProcessor {
         }
       } else {
         developer.log(
-          'Skipping unknown tool call: ${toolCall.function.name}',
+          'Skipping unknown tool call: ${toolCall.name}',
           name: 'UnifiedAiInferenceRepository',
         );
       }

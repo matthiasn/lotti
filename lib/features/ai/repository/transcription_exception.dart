@@ -1,5 +1,5 @@
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 
 /// Exception thrown when audio transcription fails.
 ///
@@ -31,7 +31,7 @@ class TranscriptionException implements Exception {
   final int completedSegments;
 
   /// Provider-reported usage already incurred by the completed segments.
-  final CompletionUsage? partialUsage;
+  final LottiUsage? partialUsage;
 
   /// Provider-reported billing and impact already incurred before failure.
   final MeliousCallImpact? partialImpact;

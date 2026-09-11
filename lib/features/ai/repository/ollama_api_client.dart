@@ -5,8 +5,8 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Raw HTTP access to the Ollama API: chat streaming (incl. image analysis),
 /// request validation, retry/backoff, and model management.
@@ -37,12 +37,12 @@ class OllamaApiClient {
     return model.startsWith(_gemma4Prefix);
   }
 
-  Stream<CreateChatCompletionStreamResponse> generateTextWithChat({
+  Stream<LottiInferenceChunk> generateTextWithChat({
     required String prompt,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
-    List<ChatCompletionTool>? tools,
+    List<LottiTool>? tools,
     String? systemMessage,
     int? maxCompletionTokens,
   }) {
@@ -53,9 +53,9 @@ class OllamaApiClient {
                 (tool) => {
                   'type': 'function',
                   'function': {
-                    'name': tool.function.name,
-                    'description': tool.function.description,
-                    'parameters': tool.function.parameters ?? {},
+                    'name': tool.name,
+                    'description': tool.description,
+                    'parameters': tool.parameters ?? {},
                   },
                 },
               )
@@ -63,7 +63,7 @@ class OllamaApiClient {
         : null;
 
     final toolsLog = ollamaTools != null && tools != null
-        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.function.name).join(', ')}'
+        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.name).join(', ')}'
         : '';
     developer.log(
       'Preparing Ollama chat request for model: $model$toolsLog',
@@ -106,7 +106,7 @@ class OllamaApiClient {
   }
 
   /// Stream Ollama chat API responses (supports function calling)
-  Stream<CreateChatCompletionStreamResponse> streamChatRequest({
+  Stream<LottiInferenceChunk> streamChatRequest({
     required Map<String, dynamic> requestBody,
     required Duration timeout,
     required String retryContext,
@@ -225,7 +225,7 @@ class OllamaApiClient {
               // Convert Ollama tool calls to OpenAI format
               // We need to create a response that mimics OpenAI's streaming format
               // Since Ollama returns complete tool calls, we'll convert them to the expected format
-              final toolCallsList = <dynamic>[];
+              final toolCallsList = <LottiToolCallChunk>[];
               for (var i = 0; i < toolCalls.length; i++) {
                 final toolCall = toolCalls[i] as Map<String, dynamic>;
                 final functionCall =
@@ -277,49 +277,39 @@ class OllamaApiClient {
                 if (toolId != null) {
                   idToIndex[toolId] = denseIndex;
                 }
-                toolCallsList.add({
-                  'index': denseIndex,
-                  if (toolCall['id'] != null) 'id': toolCall['id'],
-                  'type': 'function',
-                  'function': {
-                    'name': functionCall['name'],
-                    'arguments': argumentsStr,
-                  },
-                });
+                toolCallsList.add(
+                  LottiToolCallChunk(
+                    id: toolCall['id'] as String?,
+                    index: denseIndex,
+                    name: functionCall['name'] as String?,
+                    arguments: argumentsStr,
+                  ),
+                );
               }
 
               // Create the response with tool calls
               // We'll emit this as a single chunk containing all tool calls
               final toolNow = DateTime.now();
-              yield CreateChatCompletionStreamResponse(
+              yield LottiInferenceChunk(
                 id: '$ollamaResponseIdPrefix${toolNow.microsecondsSinceEpoch}',
+                created: toolNow.millisecondsSinceEpoch ~/ 1000,
                 choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta.fromJson({
-                      'tool_calls': toolCallsList,
-                    }),
+                  LottiChunkChoice(
                     index: 0,
+                    delta: LottiDelta(toolCalls: toolCallsList),
                   ),
                 ],
-                object: 'chat.completion.chunk',
-                created: toolNow.millisecondsSinceEpoch ~/ 1000,
               );
             } else if (message['content'] != null) {
               // Regular content response
               final frag = message['content'] as String;
               final contentNow = DateTime.now();
-              yield CreateChatCompletionStreamResponse(
+              yield LottiInferenceChunk(
                 id: '$ollamaResponseIdPrefix${contentNow.microsecondsSinceEpoch}',
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: frag,
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
                 created: contentNow.millisecondsSinceEpoch ~/ 1000,
+                choices: [
+                  LottiChunkChoice(index: 0, delta: LottiDelta(content: frag)),
+                ],
               );
             }
           }
@@ -343,12 +333,11 @@ class OllamaApiClient {
               final prompt = promptEval is int ? promptEval : 0;
               final completion = evalCount is int ? evalCount : 0;
               final usageNow = DateTime.now();
-              yield CreateChatCompletionStreamResponse(
+              yield LottiInferenceChunk(
                 id: '$ollamaResponseIdPrefix${usageNow.microsecondsSinceEpoch}',
-                choices: const [],
-                object: 'chat.completion.chunk',
                 created: usageNow.millisecondsSinceEpoch ~/ 1000,
-                usage: CompletionUsage(
+                choices: const [],
+                usage: LottiUsage(
                   promptTokens: prompt,
                   completionTokens: completion,
                   totalTokens: prompt + completion,
@@ -453,7 +442,7 @@ class OllamaApiClient {
   /// - Uses the unified /api/chat endpoint with image support
   /// - Handles Ollama-specific response format
   /// - Provides comprehensive error handling
-  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+  Stream<LottiInferenceChunk> generateWithImages({
     required String prompt,
     required String model,
     required double temperature,
@@ -665,18 +654,14 @@ class OllamaApiClient {
 ///
 /// Uses `DateTime.now().microsecondsSinceEpoch` for the id so chunks
 /// emitted within the same millisecond still receive distinct ids.
-CreateChatCompletionStreamResponse _contentChunk(String content) {
+LottiInferenceChunk _contentChunk(String content) {
   final now = DateTime.now();
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: '$ollamaResponseIdPrefix${now.microsecondsSinceEpoch}',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta(content: content),
-        index: 0,
-      ),
-    ],
-    object: 'chat.completion.chunk',
     created: now.millisecondsSinceEpoch ~/ 1000,
+    choices: [
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+    ],
   );
 }
 

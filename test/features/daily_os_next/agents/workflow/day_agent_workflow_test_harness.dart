@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
@@ -25,7 +26,6 @@ import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -54,6 +54,7 @@ export 'package:lotti/features/agents/workflow/wake_result.dart';
 export 'package:lotti/features/ai/conversation/conversation_manager.dart';
 export 'package:lotti/features/ai/conversation/conversation_repository.dart';
 export 'package:lotti/features/ai/model/ai_config.dart';
+export 'package:lotti/features/ai/model/inference.dart';
 export 'package:lotti/features/ai/model/inference_usage.dart';
 export 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 export 'package:lotti/features/ai/repository/inference_repository_interface.dart';
@@ -70,7 +71,6 @@ export 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_
 export 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 export 'package:lotti/get_it.dart';
 export 'package:mocktail/mocktail.dart';
-export 'package:openai_dart/openai_dart.dart';
 
 export '../../../../helpers/fallbacks.dart';
 export '../../../../mocks/mocks.dart';
@@ -498,19 +498,12 @@ void expectCanonicalSectionOrder(ParsedDayAgentPrompt sent) {
   expect(sent.tagsInOrder, DayAgentPromptTags.all.where(sent.has).toList());
 }
 
-ChatCompletionMessageToolCall toolCall({
+LottiToolCall toolCall({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
 }) {
-  return ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
-  );
+  return LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
 }
 
 class ToolValidationScenario {
@@ -531,27 +524,27 @@ class ConversationHarness extends ConversationRepository {
   int createdConversationCount = 0;
   int deletedConversationCount = 0;
 
-  List<ChatCompletionMessageToolCall> toolCalls = const [];
+  List<LottiToolCall> toolCalls = const [];
   String? finalResponse;
   InferenceUsage? usage;
   Exception? errorToThrow;
   String? lastSystemMessage;
   String? lastUserMessage;
-  List<ChatCompletionTool> lastTools = const [];
+  List<LottiTool> lastTools = const [];
   final sendMessageCalls =
       <
         ({
           InferenceRepositoryInterface inferenceRepo,
           String message,
           String model,
-          ChatCompletionToolChoiceOption? toolChoice,
-          List<ChatCompletionTool> tools,
+          LottiToolChoice? toolChoice,
+          List<LottiTool> tools,
           String? consumptionAgentId,
           String? consumptionWakeRunKey,
           String? consumptionThreadId,
         })
       >[];
-  List<List<ChatCompletionMessageToolCall>> toolCallsByInvocation = const [];
+  List<List<LottiToolCall>> toolCallsByInvocation = const [];
   List<InferenceUsage?> usageByInvocation = const [];
   final toolResponses = <String>[];
 
@@ -577,8 +570,8 @@ class ConversationHarness extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     String? consumptionAgentId,
@@ -598,7 +591,7 @@ class ConversationHarness extends ConversationRepository {
       message: message,
       model: model,
       toolChoice: toolChoice,
-      tools: tools ?? const <ChatCompletionTool>[],
+      tools: tools ?? const <LottiTool>[],
       consumptionAgentId: consumptionAgentId,
       consumptionWakeRunKey: consumptionWakeRunKey,
       consumptionThreadId: consumptionThreadId,
@@ -619,9 +612,9 @@ class ConversationHarness extends ConversationRepository {
         ..addAll(
           manager.messages
               .where(
-                (message) => message.role == ChatCompletionMessageRole.tool,
+                (message) => message.role == LottiMessageRole.tool,
               )
-              .map((message) => message.content)
+              .map((message) => message.textContent)
               .whereType<String>(),
         );
     }

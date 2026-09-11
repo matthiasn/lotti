@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart'
     show ModelNotInstalledException;
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 // A generic error class that might have a body or message
 class TestErrorWithMessage {
@@ -58,7 +59,8 @@ class TestErrorToStringReturnsEmpty {
   String toString() => '  '; // Whitespace
 }
 
-// Mock OpenAI error for runtime type testing
+// A provider error that surfaces only as a formatted string — the shape
+// Ollama and bare HTTP failures arrive in, and the fallback path's subject.
 class _MockOpenAIError {
   _MockOpenAIError(this.code, this.message);
   final String code;
@@ -154,7 +156,8 @@ class _GeneratedCategorizedError {
     _GeneratedErrorCategoryShape.server503 => InferenceErrorType.serverError,
     _GeneratedErrorCategoryShape.modelNotFound404 =>
       InferenceErrorType.invalidRequest,
-    _GeneratedErrorCategoryShape.generic404 => InferenceErrorType.unknown,
+    _GeneratedErrorCategoryShape.generic404 =>
+      InferenceErrorType.invalidRequest,
     _GeneratedErrorCategoryShape.unknown => InferenceErrorType.unknown,
   };
 
@@ -409,27 +412,67 @@ OpenAIClientException({
         );
       });
 
-      test('handles OpenAI API errors with different runtime types', () {
-        // Mock error with OpenAI runtime type
-        final openAiError = _MockOpenAIError('401', 'Unauthorized');
-        final result1 = AiErrorUtils.categorizeError(openAiError);
-        expect(result1.type, InferenceErrorType.authentication);
+      test('classifies client exceptions by type, not by message shape', () {
+        // These are the real exceptions the client throws. Before they were
+        // typed, this path matched on the runtime type *name* containing
+        // "OpenAI" — which none of them do, so a fake was the only thing that
+        // ever exercised it.
+        expect(
+          AiErrorUtils.categorizeError(
+            const AuthenticationException(message: 'Invalid API key'),
+          ).type,
+          InferenceErrorType.authentication,
+        );
+        expect(
+          AiErrorUtils.categorizeError(
+            const RateLimitException(message: 'Slow down'),
+          ).type,
+          InferenceErrorType.rateLimit,
+        );
+        expect(
+          AiErrorUtils.categorizeError(
+            const NotFoundException(message: 'No such model'),
+          ).type,
+          InferenceErrorType.invalidRequest,
+        );
+        expect(
+          AiErrorUtils.categorizeError(
+            const InternalServerException(
+              message: 'Upstream exploded',
+              statusCode: 500,
+            ),
+          ).type,
+          InferenceErrorType.serverError,
+        );
+      });
 
-        // Mock error with RequestException runtime type
+      test('still classifies string-shaped provider errors', () {
+        // Providers Lotti reaches without the typed client (Ollama, raw HTTP)
+        // surface status codes only in the message, so the fallback matters.
+        final openAiError = _MockOpenAIError('401', 'Unauthorized');
+        expect(
+          AiErrorUtils.categorizeError(openAiError).type,
+          InferenceErrorType.authentication,
+        );
+
         final requestError = _MockRequestException(
           '429',
           'Rate limit exceeded',
         );
-        final result2 = AiErrorUtils.categorizeError(requestError);
-        expect(result2.type, InferenceErrorType.rateLimit);
+        expect(
+          AiErrorUtils.categorizeError(requestError).type,
+          InferenceErrorType.rateLimit,
+        );
       });
 
       test('handles 404 errors that are not model related', () {
         const error = 'HTTP 404 Not Found - Endpoint does not exist';
         final result = AiErrorUtils.categorizeError(error);
-        // This gets categorized as unknown because it doesn't match OpenAI/RequestException pattern
-        // and the 404 check happens after the API error type check
-        expect(result.type, InferenceErrorType.unknown);
+        // A 404 from a provider is a bad request whichever shape the error
+        // arrives in. It used to land on `unknown` here purely because the
+        // generic branch lived behind a runtime-type-name check that a bare
+        // string could not match.
+        expect(result.type, InferenceErrorType.invalidRequest);
         expect(result.message, contains('HTTP 404 Not Found'));
       });
 
@@ -469,7 +512,7 @@ OpenAIClientException({
         }
       });
 
-      test('handles API errors through _handleApiError', () {
+      test('maps string-shaped status codes onto error types', () {
         // Test 404 resource not found (non-model)
         final notFoundError = _MockOpenAIError('404', 'Not Found');
         final result1 = AiErrorUtils.categorizeError(notFoundError);

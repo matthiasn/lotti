@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
@@ -164,7 +164,7 @@ class AudioTranscriptionService {
     final useGeminiThinkingMode =
         provider.inferenceProviderType == InferenceProviderType.gemini &&
         GeminiThinkingConfig.isGemini3(model.providerModelId);
-    Stream<CreateChatCompletionStreamResponse> invoke() async* {
+    Stream<LottiInferenceChunk> invoke() async* {
       var receivedTranscript = false;
       try {
         await for (final chunk in cloud.generateWithAudio(
@@ -220,8 +220,8 @@ class AudioTranscriptionService {
               return AiCapturedUsage(
                 inputTokens: usage.promptTokens,
                 outputTokens: usage.completionTokens,
-                cachedInputTokens: usage.promptTokensDetails?.cachedTokens,
-                thoughtsTokens: usage.completionTokensDetails?.reasoningTokens,
+                cachedInputTokens: usage.cachedInputTokens,
+                thoughtsTokens: usage.reasoningTokens,
                 totalTokens: usage.totalTokens,
               );
             },

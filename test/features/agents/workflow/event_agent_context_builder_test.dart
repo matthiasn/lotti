@@ -7,8 +7,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -167,7 +167,7 @@ void main() {
       final tools = builder.buildToolDefinitions();
 
       expect(tools, hasLength(3));
-      final names = tools.map((t) => t.function.name).toSet();
+      final names = tools.map((t) => t.name).toSet();
       expect(names, {
         EventAgentToolNames.updateReport,
         EventAgentToolNames.recordObservations,
@@ -333,8 +333,8 @@ void main() {
     test('returns the last non-empty assistant content', () {
       final manager = MockConversationManager();
       when(() => manager.messages).thenReturn(const [
-        ChatCompletionMessage.assistant(content: 'first'),
-        ChatCompletionMessage.assistant(content: 'final answer'),
+        LottiMessage.assistant(content: 'first'),
+        LottiMessage.assistant(content: 'final answer'),
       ]);
 
       expect(builder.extractFinalAssistantContent(manager), 'final answer');
@@ -343,8 +343,8 @@ void main() {
     test('skips trailing empty assistant messages', () {
       final manager = MockConversationManager();
       when(() => manager.messages).thenReturn(const [
-        ChatCompletionMessage.assistant(content: 'real content'),
-        ChatCompletionMessage.assistant(content: ''),
+        LottiMessage.assistant(content: 'real content'),
+        LottiMessage.assistant(content: ''),
       ]);
 
       expect(builder.extractFinalAssistantContent(manager), 'real content');

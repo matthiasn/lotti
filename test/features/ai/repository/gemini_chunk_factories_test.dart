@@ -46,8 +46,8 @@ void main() {
       final call = chunk.choices!.single.delta!.toolCalls!.single;
       expect(call.index, 2);
       expect(call.id, 'tool_turn0_2');
-      expect(call.function?.name, 'set_title');
-      expect(call.function?.arguments, '{"title":"A"}');
+      expect(call.name, 'set_title');
+      expect(call.arguments, '{"title":"A"}');
     });
 
     test('createUsageChunk totals tokens and forwards reasoning tokens', () {
@@ -64,7 +64,7 @@ void main() {
       expect(chunk.usage?.promptTokens, 10);
       expect(chunk.usage?.completionTokens, 5);
       expect(chunk.usage?.totalTokens, 15);
-      expect(chunk.usage?.completionTokensDetails?.reasoningTokens, 7);
+      expect(chunk.usage?.reasoningTokens, 7);
     });
 
     test('createUsageChunk omits reasoning details without thought tokens', () {
@@ -76,7 +76,7 @@ void main() {
       );
 
       expect(chunk.usage?.totalTokens, 3);
-      expect(chunk.usage?.completionTokensDetails, isNull);
+      expect(chunk.usage?.reasoningTokens, isNull);
     });
   });
 

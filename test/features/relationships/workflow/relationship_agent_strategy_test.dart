@@ -3,27 +3,20 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_contract.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_strategy.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
-ChatCompletionMessageToolCall _call({
+LottiToolCall _call({
   required String name,
   required Map<String, dynamic> args,
   String id = 'call-1',
-}) => ChatCompletionMessageToolCall(
-  id: id,
-  type: ChatCompletionMessageToolCallType.function,
-  function: ChatCompletionMessageFunctionCall(
-    name: name,
-    arguments: jsonEncode(args),
-  ),
-);
+}) => LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
 
 Map<String, dynamic> _reportArgs({
   String band = 'steady',
@@ -448,13 +441,10 @@ void main() {
     await strategy.processToolCalls(
       toolCalls: [
         _call(name: 'delete_relationship', args: {'id': 'person-1'}),
-        const ChatCompletionMessageToolCall(
+        const LottiToolCall(
           id: 'call-2',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: RelationshipAgentToolNames.replyToUser,
-            arguments: 'not json',
-          ),
+          name: RelationshipAgentToolNames.replyToUser,
+          arguments: 'not json',
         ),
       ],
       manager: manager,

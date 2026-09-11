@@ -9,12 +9,13 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/ai_config_factories.dart';
@@ -141,28 +142,24 @@ class DayAgentWakeBenchmark {
 
   InferenceUsage _observeSend(
     String systemMessage,
-    List<ChatCompletionMessage> requestMessages,
+    List<LottiMessage> requestMessages,
     ScriptedModelTurn turn,
-    List<ChatCompletionTool> tools,
+    List<LottiTool> tools,
   ) {
     final wake = _activeWake;
     if (wake == null) {
       throw StateError('A scripted send occurred outside a measured wake.');
     }
-    final prompt = jsonEncode([
-      for (final message in requestMessages) message.toJson(),
-    ]);
+    final prompt = jsonEncode(openAiMessagesJson(requestMessages));
     _modelPrompts.putIfAbsent(wake, StringBuffer.new).writeln(prompt);
-    final toolSchema = jsonEncode([
-      for (final tool in tools) tool.toJson(),
-    ]);
+    final toolSchema = jsonEncode(openAiToolsJson(tools));
     final output = jsonEncode({
       'content': turn.content,
       'toolCalls': [
         for (final call in turn.toolCalls)
           {
-            'name': call.function.name,
-            'arguments': call.function.arguments,
+            'name': call.name,
+            'arguments': call.arguments,
           },
       ],
     });

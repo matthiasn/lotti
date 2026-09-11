@@ -10,13 +10,13 @@ import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart'
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -84,8 +84,8 @@ class _TestConversationRepository extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     String? consumptionAgentId,
@@ -162,17 +162,14 @@ _strategyWithProposal({
 }) async {
   final strategy = EvolutionStrategy();
   final manager = ConversationManager()..initialize();
-  final toolCall = ChatCompletionMessageToolCall(
+  final toolCall = LottiToolCall(
     id: 'call-1',
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: 'propose_directives',
-      arguments: jsonEncode({
-        'general_directive': generalDirective,
-        'report_directive': reportDirective,
-        'rationale': rationale,
-      }),
-    ),
+    name: 'propose_directives',
+    arguments: jsonEncode({
+      'general_directive': generalDirective,
+      'report_directive': reportDirective,
+      'rationale': rationale,
+    }),
   );
   manager.addAssistantMessage(toolCalls: [toolCall]);
   await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
@@ -661,14 +658,11 @@ void main() {
       final strategy2 = EvolutionStrategy();
 
       final manager = ConversationManager()..initialize();
-      const call1 = ChatCompletionMessageToolCall(
+      const call1 = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"Proposal A","report_directive":"","rationale":"Reason A"}',
-        ),
+        name: 'propose_directives',
+        arguments:
+            '{"general_directive":"Proposal A","report_directive":"","rationale":"Reason A"}',
       );
       manager.addAssistantMessage(toolCalls: [call1]);
       await strategy1.processToolCalls(
@@ -746,27 +740,21 @@ void main() {
 
       // Manually add a proposal by processing a tool call.
       final manager = ConversationManager()..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"Improved directives","report_directive":"","rationale":"Based on data"}',
-        ),
+        name: 'propose_directives',
+        arguments:
+            '{"general_directive":"Improved directives","report_directive":"","rationale":"Based on data"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       // Also add a structured recap.
-      const recapCall = ChatCompletionMessageToolCall(
+      const recapCall = LottiToolCall(
         id: 'call-recap',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'publish_ritual_recap',
-          arguments:
-              r'{"tldr":"Tightened the prompt around brevity.","content":"## Session recap\n\nWe tightened the opening prompt and removed repeated self-congratulation."}',
-        ),
+        name: 'publish_ritual_recap',
+        arguments:
+            r'{"tldr":"Tightened the prompt around brevity.","content":"## Session recap\n\nWe tightened the opening prompt and removed repeated self-congratulation."}',
       );
       manager.addAssistantMessage(toolCalls: [recapCall]);
       await strategy.processToolCalls(
@@ -775,13 +763,10 @@ void main() {
       );
 
       // Also add a pending note.
-      const noteCall = ChatCompletionMessageToolCall(
+      const noteCall = LottiToolCall(
         id: 'call-2',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'record_evolution_note',
-          arguments: '{"kind":"reflection","content":"Users prefer brevity"}',
-        ),
+        name: 'record_evolution_note',
+        arguments: '{"kind":"reflection","content":"Users prefer brevity"}',
       );
       manager.addAssistantMessage(toolCalls: [noteCall]);
       await strategy.processToolCalls(
@@ -1120,14 +1105,11 @@ void main() {
 
       // Add a proposal.
       final manager = ConversationManager()..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"Improved directives","report_directive":"","rationale":"Based on data"}',
-        ),
+        name: 'propose_directives',
+        arguments:
+            '{"general_directive":"Improved directives","report_directive":"","rationale":"Based on data"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(
@@ -1177,14 +1159,11 @@ void main() {
       // (must happen before approveSummaryWith, which creates its own
       // ConversationManager for the proposal).
       final manager = ConversationManager()..initialize();
-      const recapCall = ChatCompletionMessageToolCall(
+      const recapCall = LottiToolCall(
         id: 'call-recap',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'publish_ritual_recap',
-          arguments:
-              r'{"tldr":"Tightened the prompt around brevity.","content":"## Session recap\n\nDetails here."}',
-        ),
+        name: 'publish_ritual_recap',
+        arguments:
+            r'{"tldr":"Tightened the prompt around brevity.","content":"## Session recap\n\nDetails here."}',
       );
       manager.addAssistantMessage(toolCalls: [recapCall]);
       await strategy.processToolCalls(
@@ -1244,16 +1223,11 @@ void main() {
         ).thenAnswer((_) async => makeTestEvolutionSession());
 
         final manager = ConversationManager()..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                // ignore: missing_whitespace_between_adjacent_strings
-                '{"general_directive":"Improved directives",'
-                '"report_directive":"","rationale":""}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Improved directives","report_directive":"","rationale":""}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -1308,14 +1282,11 @@ void main() {
 
       // Add a proposal.
       final manager = ConversationManager()..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"New text","report_directive":"","rationale":"Reason"}',
-        ),
+        name: 'propose_directives',
+        arguments:
+            '{"general_directive":"New text","report_directive":"","rationale":"Reason"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
@@ -1394,13 +1365,10 @@ void main() {
 
       // Add a note.
       final manager = ConversationManager()..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'record_evolution_note',
-          arguments: '{"kind":"decision","content":"Decided to keep tone"}',
-        ),
+        name: 'record_evolution_note',
+        arguments: '{"kind":"decision","content":"Decided to keep tone"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
@@ -1485,13 +1453,10 @@ void main() {
 
       final strategy = EvolutionStrategy();
       final manager = ConversationManager()..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'record_evolution_note',
-          arguments: '{"kind":"decision","content":"A note"}',
-        ),
+        name: 'record_evolution_note',
+        arguments: '{"kind":"decision","content":"A note"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
@@ -1717,14 +1682,11 @@ void main() {
       final manager = ConversationManager()..initialize();
 
       // Add proposal.
-      const proposalCall = ChatCompletionMessageToolCall(
+      const proposalCall = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"Better directives","report_directive":"","rationale":"Evidence"}',
-        ),
+        name: 'propose_directives',
+        arguments:
+            '{"general_directive":"Better directives","report_directive":"","rationale":"Evidence"}',
       );
       manager.addAssistantMessage(toolCalls: [proposalCall]);
       await strategy.processToolCalls(
@@ -1733,13 +1695,10 @@ void main() {
       );
 
       // Add a note.
-      const noteCall = ChatCompletionMessageToolCall(
+      const noteCall = LottiToolCall(
         id: 'call-2',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'record_evolution_note',
-          arguments: '{"kind":"reflection","content":"Tone works well"}',
-        ),
+        name: 'record_evolution_note',
+        arguments: '{"kind":"reflection","content":"Tone works well"}',
       );
       manager.addAssistantMessage(toolCalls: [noteCall]);
       await strategy.processToolCalls(
@@ -1855,14 +1814,11 @@ void main() {
         final manager = ConversationManager()..initialize();
 
         // First proposal.
-        const firstProposal = ChatCompletionMessageToolCall(
+        const firstProposal = LottiToolCall(
           id: 'call-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Old proposal","report_directive":"","rationale":"First attempt"}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Old proposal","report_directive":"","rationale":"First attempt"}',
         );
         manager.addAssistantMessage(toolCalls: [firstProposal]);
         await strategy.processToolCalls(
@@ -1895,14 +1851,11 @@ void main() {
         workflow.rejectProposal(sessionId: 'session-1');
 
         // New proposal arrives.
-        const secondProposal = ChatCompletionMessageToolCall(
+        const secondProposal = LottiToolCall(
           id: 'call-2',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"New proposal","report_directive":"","rationale":"Revised attempt"}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"New proposal","report_directive":"","rationale":"Revised attempt"}',
         );
         manager.addAssistantMessage(toolCalls: [secondProposal]);
         await strategy.processToolCalls(
@@ -1945,14 +1898,11 @@ void main() {
         final manager = ConversationManager()..initialize();
 
         // Add proposal.
-        const proposalCall = ChatCompletionMessageToolCall(
+        const proposalCall = LottiToolCall(
           id: 'call-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Good directives","report_directive":"","rationale":"Evidence"}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Good directives","report_directive":"","rationale":"Evidence"}',
         );
         manager.addAssistantMessage(toolCalls: [proposalCall]);
         await strategy.processToolCalls(
@@ -1961,13 +1911,10 @@ void main() {
         );
 
         // Add first note.
-        const noteCall1 = ChatCompletionMessageToolCall(
+        const noteCall1 = LottiToolCall(
           id: 'call-2',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'record_evolution_note',
-            arguments: '{"kind":"reflection","content":"Note A"}',
-          ),
+          name: 'record_evolution_note',
+          arguments: '{"kind":"reflection","content":"Note A"}',
         );
         manager.addAssistantMessage(toolCalls: [noteCall1]);
         await strategy.processToolCalls(
@@ -2008,13 +1955,10 @@ void main() {
         expect(strategy.pendingNotes, isEmpty);
 
         // New note added between retries.
-        const noteCall2 = ChatCompletionMessageToolCall(
+        const noteCall2 = LottiToolCall(
           id: 'call-3',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'record_evolution_note',
-            arguments: '{"kind":"decision","content":"Note B"}',
-          ),
+          name: 'record_evolution_note',
+          arguments: '{"kind":"decision","content":"Note B"}',
         );
         manager.addAssistantMessage(toolCalls: [noteCall2]);
         await strategy.processToolCalls(
@@ -2061,14 +2005,11 @@ void main() {
         final manager = ConversationManager()..initialize();
 
         // Add proposal.
-        const proposalCall = ChatCompletionMessageToolCall(
+        const proposalCall = LottiToolCall(
           id: 'call-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Some directives","report_directive":"","rationale":"Reason"}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Some directives","report_directive":"","rationale":"Reason"}',
         );
         manager.addAssistantMessage(toolCalls: [proposalCall]);
         await strategy.processToolCalls(
@@ -2078,13 +2019,10 @@ void main() {
 
         // Add two notes.
         for (var i = 0; i < 2; i++) {
-          final noteCall = ChatCompletionMessageToolCall(
+          final noteCall = LottiToolCall(
             id: 'note-$i',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'record_evolution_note',
-              arguments: '{"kind":"reflection","content":"Note $i"}',
-            ),
+            name: 'record_evolution_note',
+            arguments: '{"kind":"reflection","content":"Note $i"}',
           );
           manager.addAssistantMessage(toolCalls: [noteCall]);
           await strategy.processToolCalls(
@@ -2513,14 +2451,11 @@ void main() {
 
       final strategy = EvolutionStrategy();
       final manager = ConversationManager()..initialize();
-      const proposalCall = ChatCompletionMessageToolCall(
+      const proposalCall = LottiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"Improved","report_directive":"","rationale":"Better"}',
-        ),
+        name: 'propose_directives',
+        arguments:
+            '{"general_directive":"Improved","report_directive":"","rationale":"Better"}',
       );
       manager.addAssistantMessage(toolCalls: [proposalCall]);
       await strategy.processToolCalls(
@@ -3054,14 +2989,11 @@ void main() {
       final strategy = EvolutionStrategy();
       final manager = ConversationManager()..initialize();
       // Publish a ritual recap so latestRecap is non-null.
-      const recapCall = ChatCompletionMessageToolCall(
+      const recapCall = LottiToolCall(
         id: 'call-recap',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'publish_ritual_recap',
-          arguments:
-              r'{"tldr":"Good session.","content":"## Recap\n\nWent well."}',
-        ),
+        name: 'publish_ritual_recap',
+        arguments:
+            r'{"tldr":"Good session.","content":"## Recap\n\nWent well."}',
       );
       manager.addAssistantMessage(toolCalls: [recapCall]);
       await strategy.processToolCalls(
@@ -3204,16 +3136,13 @@ void main() {
 
         final strategy = EvolutionStrategy();
         final manager = ConversationManager()..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call-idempotent',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Recovered directives", '
-                '"report_directive":"", '
-                '"rationale":"R"}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Recovered directives", '
+              '"report_directive":"", '
+              '"rationale":"R"}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -3278,16 +3207,13 @@ void main() {
 
         final strategy = EvolutionStrategy();
         final manager = ConversationManager()..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call-rethrow',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Proposed directives", '
-                '"report_directive":"", '
-                '"rationale":"R"}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Proposed directives", '
+              '"report_directive":"", '
+              '"rationale":"R"}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -3370,17 +3296,14 @@ void main() {
             ),
           );
         final manager = ConversationManager()..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call-no-recap',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            // rationale must be empty; at least one directive non-empty.
-            arguments:
-                '{"general_directive":"Some directive", '
-                '"report_directive":"", '
-                '"rationale":""}',
-          ),
+          name: 'propose_directives',
+          // rationale must be empty; at least one directive non-empty.,
+          arguments:
+              '{"general_directive":"Some directive", '
+              '"report_directive":"", '
+              '"rationale":""}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -3483,16 +3406,13 @@ void main() {
 
         final strategy = EvolutionStrategy();
         final manager = ConversationManager()..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call-trans',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Better directives", '
-                '"report_directive":"", '
-                '"rationale":"User insights"}',
-          ),
+          name: 'propose_directives',
+          arguments:
+              '{"general_directive":"Better directives", '
+              '"report_directive":"", '
+              '"rationale":"User insights"}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -3584,8 +3504,8 @@ class _ConversationRepositoryWithManager extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     String? consumptionAgentId,

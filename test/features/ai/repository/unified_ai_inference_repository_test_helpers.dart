@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/functions/checklist_completion_functions.dart'
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart'
     show aiInputRepositoryProvider;
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -31,7 +32,7 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
+
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -80,7 +81,7 @@ class UnifiedAiInferenceRepositoryTestHarness {
     registerAllFallbackValues();
     getIt.pushNewScope();
     registerFallbackValue(InferenceStatus.idle);
-    registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
+    registerFallbackValue(LottiAudioFormat.wav);
     registerFallbackValue(fallbackAiConsumptionEvent);
     suiteTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
   }
@@ -244,18 +245,14 @@ AiConfigInferenceProvider createProvider({
   );
 }
 
-CreateChatCompletionStreamResponse createStreamChunk(String content) {
-  return CreateChatCompletionStreamResponse(
+LottiInferenceChunk createStreamChunk(String content) {
+  return LottiInferenceChunk(
     id: 'test-completion-id',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta(content: content),
-      ),
-    ],
     created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
-    object: 'chat.completion.chunk',
+    choices: [
+      LottiChunkChoice(index: 0, delta: LottiDelta(content: content)),
+    ],
   );
 }
 
@@ -263,25 +260,24 @@ CreateChatCompletionStreamResponse createStreamChunk(String content) {
 /// finish reason. If [usage] is given, the last chunk also carries it, which
 /// mirrors how providers report usage on the final chunk. Replaces verbose
 /// inline [Stream.fromIterable] blocks.
-Stream<CreateChatCompletionStreamResponse> createMockTextStream(
+Stream<LottiInferenceChunk> createMockTextStream(
   List<String> chunks, {
-  CompletionUsage? usage,
+  LottiUsage? usage,
 }) {
   return Stream.fromIterable([
     for (var i = 0; i < chunks.length; i++)
-      CreateChatCompletionStreamResponse(
+      LottiInferenceChunk(
         id: 'response-${i + 1}',
+        created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
         choices: [
-          ChatCompletionStreamResponseChoice(
-            delta: ChatCompletionStreamResponseDelta(content: chunks[i]),
-            finishReason: i == chunks.length - 1
-                ? ChatCompletionFinishReason.stop
-                : null,
+          LottiChunkChoice(
             index: 0,
+            delta: LottiDelta(content: chunks[i]),
+            finishReason: i == chunks.length - 1
+                ? LottiFinishReason.stop
+                : null,
           ),
         ],
-        object: 'chat.completion.chunk',
-        created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
         usage: i == chunks.length - 1 ? usage : null,
       ),
   ]);
@@ -307,7 +303,7 @@ List<AiConsumptionEvent> capturedEvents(AiInteractionCaptureTestBench bench) =>
 /// per-call cost/energy out of band.
 void stubGenerate(
   MockCloudInferenceRepository mock, {
-  required Stream<CreateChatCompletionStreamResponse> stream,
+  required Stream<LottiInferenceChunk> stream,
   MeliousCallImpact? impact,
 }) {
   when(
@@ -337,7 +333,7 @@ void stubGenerate(
 /// Stubs `CloudInferenceRepository.generateWithImages` to return [stream].
 void stubGenerateWithImages(
   MockCloudInferenceRepository mock, {
-  required Stream<CreateChatCompletionStreamResponse> stream,
+  required Stream<LottiInferenceChunk> stream,
 }) {
   when(
     () => mock.generateWithImages(
@@ -357,7 +353,7 @@ void stubGenerateWithImages(
 /// Stubs `CloudInferenceRepository.generateWithAudio` to return [stream].
 void stubGenerateWithAudio(
   MockCloudInferenceRepository mock, {
-  required Stream<CreateChatCompletionStreamResponse> stream,
+  required Stream<LottiInferenceChunk> stream,
 }) {
   when(
     () => mock.generateWithAudio(
@@ -427,53 +423,39 @@ void stubCreateAiResponseEntry(MockAiInputRepository mock) {
   });
 }
 
-CreateChatCompletionStreamResponse createStreamChunkWithToolCalls(
-  List<ChatCompletionStreamMessageToolCallChunk> toolCalls,
+LottiInferenceChunk createStreamChunkWithToolCalls(
+  List<LottiToolCallChunk> toolCalls,
 ) {
-  return CreateChatCompletionStreamResponse(
+  return LottiInferenceChunk(
     id: 'test-completion-id',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta(toolCalls: toolCalls),
-      ),
-    ],
     created: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
     model: 'test-model',
-    object: 'chat.completion.chunk',
+    choices: [
+      LottiChunkChoice(index: 0, delta: LottiDelta(toolCalls: toolCalls)),
+    ],
   );
 }
 
-ChatCompletionMessageToolCall createMockMessageToolCall({
+LottiToolCall createMockMessageToolCall({
   required String id,
   required String functionName,
   required String arguments,
 }) {
-  return ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: functionName,
-      arguments: arguments,
-    ),
-  );
+  return LottiToolCall(id: id, name: functionName, arguments: arguments);
 }
 
 // Create a mock tool call that mimics the structure the implementation expects
-ChatCompletionStreamMessageToolCallChunk createMockToolCall({
+LottiToolCallChunk createMockToolCall({
   required int index,
   required String? id,
   required String functionName,
   required String arguments,
 }) {
   // Use the actual constructor with proper types
-  return ChatCompletionStreamMessageToolCallChunk(
-    index: index,
+  return LottiToolCallChunk(
     id: id,
-    type: ChatCompletionStreamMessageToolCallChunkType.function,
-    function: ChatCompletionStreamMessageFunctionCall(
-      name: functionName,
-      arguments: arguments,
-    ),
+    index: index,
+    name: functionName,
+    arguments: arguments,
   );
 }

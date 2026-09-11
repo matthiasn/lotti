@@ -119,7 +119,7 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
     if (manager == null) return null;
 
     for (final message in manager.messages.reversed) {
-      if (message case ChatCompletionAssistantMessage(
+      if (message case LottiAssistantMessage(
         content: final content?,
       )) {
         if (content.isNotEmpty) return content;
@@ -167,19 +167,19 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
   }
 
   List<Map<String, String>> _snapshotTranscript(
-    List<ChatCompletionMessage> messages,
+    List<LottiMessage> messages,
   ) {
     final transcript = <Map<String, String>>[];
     for (final message in messages) {
       switch (message) {
-        case ChatCompletionUserMessage(:final content):
+        case LottiUserMessage(:final content):
           final text = ContentExtractionHelper.extractTextFromUserContent(
             content,
           ).trim();
           if (text.isNotEmpty) {
             transcript.add({'role': 'user', 'text': text});
           }
-        case ChatCompletionAssistantMessage(content: final content?)
+        case LottiAssistantMessage(content: final content?)
             when content.trim().isNotEmpty:
           transcript.add({'role': 'assistant', 'text': content.trim()});
         default:
@@ -216,16 +216,13 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
   }
 
   /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible
-  /// [ChatCompletionTool] objects, including the GenUI render_surface tool.
-  List<ChatCompletionTool> _buildToolDefinitions({GenUiBridge? bridge}) {
+  /// [LottiTool] objects, including the GenUI render_surface tool.
+  List<LottiTool> _buildToolDefinitions({GenUiBridge? bridge}) {
     final tools = AgentToolRegistry.evolutionAgentTools.map((def) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: def.description,
-          parameters: def.parameters,
-        ),
+      return LottiTool(
+        name: def.name,
+        description: def.description,
+        parameters: def.parameters,
       );
     }).toList();
 
@@ -237,15 +234,12 @@ extension TemplateEvolutionHelpers on TemplateEvolutionWorkflow {
   }
 
   /// Soul session tool definitions — excludes `propose_directives`.
-  List<ChatCompletionTool> _buildSoulToolDefinitions({GenUiBridge? bridge}) {
+  List<LottiTool> _buildSoulToolDefinitions({GenUiBridge? bridge}) {
     final tools = AgentToolRegistry.soulEvolutionAgentTools.map((def) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: def.description,
-          parameters: def.parameters,
-        ),
+      return LottiTool(
+        name: def.name,
+        description: def.description,
+        parameters: def.parameters,
       );
     }).toList();
 

@@ -5,8 +5,8 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/functions/task_priority_handler.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -171,35 +171,29 @@ void main() {
   }
 
   /// Creates a tool call for update_task_priority.
-  ChatCompletionMessageToolCall createPriorityToolCall({
+  LottiToolCall createPriorityToolCall({
     required String priority,
     String? reason,
     String? confidence,
   }) {
-    return ChatCompletionMessageToolCall(
+    return LottiToolCall(
       id: 'call_priority_123',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: 'update_task_priority',
-        arguments: jsonEncode({
-          'priority': priority,
-          'reason': ?reason,
-          'confidence': ?confidence,
-        }),
-      ),
+      name: 'update_task_priority',
+      arguments: jsonEncode({
+        'priority': priority,
+        'reason': ?reason,
+        'confidence': ?confidence,
+      }),
     );
   }
 
-  ChatCompletionMessageToolCall createPriorityToolCallFromArgs(
+  LottiToolCall createPriorityToolCallFromArgs(
     Map<String, Object?> args,
   ) {
-    return ChatCompletionMessageToolCall(
+    return LottiToolCall(
       id: 'call_priority_generated',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: 'update_task_priority',
-        arguments: jsonEncode(args),
-      ),
+      name: 'update_task_priority',
+      arguments: jsonEncode(args),
     );
   }
 
@@ -533,13 +527,10 @@ void main() {
     group('validation errors', () {
       test('should reject null priority', () async {
         final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call_priority_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_priority',
-            arguments: '{"reason": "Some reason"}',
-          ),
+          name: 'update_task_priority',
+          arguments: '{"reason": "Some reason"}',
         );
 
         final handler = TaskPriorityHandler(
@@ -617,14 +608,11 @@ void main() {
         () async {
           // AI might send {"priority": 1} instead of {"priority": "P1"}
           final task = createTask();
-          const toolCall = ChatCompletionMessageToolCall(
+          const toolCall = LottiToolCall(
             id: 'call_priority_123',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_priority',
-              arguments:
-                  '{"priority": 1, "reason": "test", "confidence": "high"}',
-            ),
+            name: 'update_task_priority',
+            arguments:
+                '{"priority": 1, "reason": "test", "confidence": "high"}',
           );
 
           final handler = TaskPriorityHandler(
@@ -648,14 +636,10 @@ void main() {
         () async {
           // AI might send non-string values for optional fields
           final task = createTask();
-          const toolCall = ChatCompletionMessageToolCall(
+          const toolCall = LottiToolCall(
             id: 'call_priority_123',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'update_task_priority',
-              arguments:
-                  '{"priority": "P1", "reason": 123, "confidence": true}',
-            ),
+            name: 'update_task_priority',
+            arguments: '{"priority": "P1", "reason": 123, "confidence": true}',
           );
 
           when(
@@ -678,13 +662,10 @@ void main() {
 
       test('should handle malformed JSON', () async {
         final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call_priority_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_priority',
-            arguments: 'not valid json',
-          ),
+          name: 'update_task_priority',
+          arguments: 'not valid json',
         );
 
         final handler = TaskPriorityHandler(
@@ -978,13 +959,10 @@ void main() {
       test('accepts a priority without optional metadata', () async {
         final task = createTask();
         // Only required field: priority
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = LottiToolCall(
           id: 'call_priority_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_priority',
-            arguments: '{"priority": "P1"}',
-          ),
+          name: 'update_task_priority',
+          arguments: '{"priority": "P1"}',
         );
 
         when(

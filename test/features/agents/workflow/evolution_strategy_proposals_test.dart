@@ -6,7 +6,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'evolution_strategy_test_helpers.dart';
 
 void main() {
@@ -19,19 +19,12 @@ void main() {
       ..initialize(systemMessage: 'You are an evolution agent.');
   });
 
-  ChatCompletionMessageToolCall makeToolCall({
+  LottiToolCall makeToolCall({
     required String name,
     required Map<String, dynamic> args,
     String id = 'call-1',
   }) {
-    return ChatCompletionMessageToolCall(
-      id: id,
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: name,
-        arguments: jsonEncode(args),
-      ),
-    );
+    return LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
   }
 
   group('GenUI bridge delegation', () {
@@ -141,13 +134,10 @@ void main() {
 
   group('malformed arguments', () {
     test('handles invalid JSON gracefully', () async {
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = LottiToolCall(
         id: 'call-bad',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments: 'not valid json',
-        ),
+        name: 'propose_directives',
+        arguments: 'not valid json',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
 

@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -21,7 +22,6 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -404,26 +404,19 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      ChatCompletionMessageToolCall(
+                      LottiToolCall(
                         id: 'retract-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.retractSuggestions,
-                          arguments: jsonEncode({
-                            'proposals': [
-                              {'fingerprint': fingerprint, 'reason': 'done'},
-                            ],
-                          }),
-                        ),
+                        name: TaskAgentToolNames.retractSuggestions,
+                        arguments: jsonEncode({
+                          'proposals': [
+                            {'fingerprint': fingerprint, 'reason': 'done'},
+                          ],
+                        }),
                       ),
-                      const ChatCompletionMessageToolCall(
+                      const LottiToolCall(
                         id: 'report-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              '{"oneLiner":"o","tldr":"t","content":"c"}',
-                        ),
+                        name: 'update_report',
+                        arguments: '{"oneLiner":"o","tldr":"t","content":"c"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -547,38 +540,28 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      ChatCompletionMessageToolCall(
+                      LottiToolCall(
                         id: 'repropose-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.addMultipleChecklistItems,
-                          arguments: jsonEncode({
-                            'items': [
-                              {'title': 'Draft the spec'},
-                            ],
-                          }),
-                        ),
+                        name: TaskAgentToolNames.addMultipleChecklistItems,
+                        arguments: jsonEncode({
+                          'items': [
+                            {'title': 'Draft the spec'},
+                          ],
+                        }),
                       ),
-                      ChatCompletionMessageToolCall(
+                      LottiToolCall(
                         id: 'retract-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.retractSuggestions,
-                          arguments: jsonEncode({
-                            'proposals': [
-                              {'fingerprint': fingerprint, 'reason': 'dup'},
-                            ],
-                          }),
-                        ),
+                        name: TaskAgentToolNames.retractSuggestions,
+                        arguments: jsonEncode({
+                          'proposals': [
+                            {'fingerprint': fingerprint, 'reason': 'dup'},
+                          ],
+                        }),
                       ),
-                      const ChatCompletionMessageToolCall(
+                      const LottiToolCall(
                         id: 'report-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              '{"oneLiner":"o","tldr":"t","content":"c"}',
-                        ),
+                        name: 'update_report',
+                        arguments: '{"oneLiner":"o","tldr":"t","content":"c"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -827,7 +810,7 @@ void main() {
         () async {
           String? systemMessage;
           double? capturedTemperature;
-          List<ChatCompletionTool>? capturedTools;
+          List<LottiTool>? capturedTools;
           final capturingRepo =
               MockConversationRepository(
                   mockConversationManager,
@@ -850,14 +833,11 @@ void main() {
                       if (strategy is TaskAgentStrategy) {
                         await strategy.processToolCalls(
                           toolCalls: const [
-                            ChatCompletionMessageToolCall(
+                            LottiToolCall(
                               id: 'report-call',
-                              type: ChatCompletionMessageToolCallType.function,
-                              function: ChatCompletionMessageFunctionCall(
-                                name: TaskAgentToolNames.updateReport,
-                                arguments:
-                                    '{"oneLiner":"Next action","tldr":"Critical path","content":"Current state"}',
-                              ),
+                              name: TaskAgentToolNames.updateReport,
+                              arguments:
+                                  '{"oneLiner":"Next action","tldr":"Critical path","content":"Current state"}',
                             ),
                           ],
                           manager: mockConversationManager,
@@ -887,11 +867,10 @@ void main() {
           );
 
           final reportTool = capturedTools!.singleWhere(
-            (tool) => tool.function.name == TaskAgentToolNames.updateReport,
+            (tool) => tool.name == TaskAgentToolNames.updateReport,
           );
           final properties =
-              reportTool.function.parameters!['properties']!
-                  as Map<String, dynamic>;
+              reportTool.parameters!['properties']! as Map<String, dynamic>;
           expect(result.success, isTrue);
           expect(capturedTemperature, 0.3);
           expect(
@@ -899,7 +878,7 @@ void main() {
             contains('## Evidence-First Synthesis Protocol'),
           );
           expect(
-            reportTool.function.description,
+            reportTool.description,
             contains('stale report claims'),
           );
           expect(
@@ -947,14 +926,11 @@ void main() {
                     capturedTemperature = temperature;
                     await strategy!.processToolCalls(
                       toolCalls: const [
-                        ChatCompletionMessageToolCall(
+                        LottiToolCall(
                           id: 'qwen-report-call',
-                          type: ChatCompletionMessageToolCallType.function,
-                          function: ChatCompletionMessageFunctionCall(
-                            name: TaskAgentToolNames.updateReport,
-                            arguments:
-                                '{"oneLiner":"Review the active risk","tldr":"Approval remains pending.","content":"Marta must approve deployment."}',
-                          ),
+                          name: TaskAgentToolNames.updateReport,
+                          arguments:
+                              '{"oneLiner":"Review the active risk","tldr":"Approval remains pending.","content":"Marta must approve deployment."}',
                         ),
                       ],
                       manager: mockConversationManager,
@@ -1038,14 +1014,11 @@ void main() {
                       models.add(model);
                       await strategy!.processToolCalls(
                         toolCalls: const [
-                          ChatCompletionMessageToolCall(
+                          LottiToolCall(
                             id: 'executor-report-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: TaskAgentToolNames.updateReport,
-                              arguments:
-                                  '{"oneLiner":"Review next","tldr":"Review the current task.","content":"Review the current task."}',
-                            ),
+                            name: TaskAgentToolNames.updateReport,
+                            arguments:
+                                '{"oneLiner":"Review next","tldr":"Review the current task.","content":"Review the current task."}',
                           ),
                         ],
                         manager: mockConversationManager,
@@ -1133,31 +1106,24 @@ void main() {
                     if (strategy is TaskAgentStrategy) {
                       await strategy.processToolCalls(
                         toolCalls: [
-                          const ChatCompletionMessageToolCall(
+                          const LottiToolCall(
                             id: 'qwen-action-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name:
-                                  TaskAgentToolNames.addMultipleChecklistItems,
-                              arguments:
-                                  '{"items":[{"title":"Fix profile seeding"}]}',
-                            ),
+                            name: TaskAgentToolNames.addMultipleChecklistItems,
+                            arguments:
+                                '{"items":[{"title":"Fix profile seeding"}]}',
                           ),
-                          ChatCompletionMessageToolCall(
+                          LottiToolCall(
                             id: 'qwen-draft-report-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: TaskAgentToolNames.updateReport,
-                              arguments: jsonEncode({
-                                'oneLiner': 'Fix profile seeding',
-                                'tldr':
-                                    'Task is ready to begin. No estimate or '
-                                    'due date is set.',
-                                'content':
-                                    'One workflow item was identified: fix '
-                                    'profile seeding.',
-                              }),
-                            ),
+                            name: TaskAgentToolNames.updateReport,
+                            arguments: jsonEncode({
+                              'oneLiner': 'Fix profile seeding',
+                              'tldr':
+                                  'Task is ready to begin. No estimate or '
+                                  'due date is set.',
+                              'content':
+                                  'One workflow item was identified: fix '
+                                  'profile seeding.',
+                            }),
                           ),
                         ],
                         manager: mockConversationManager,
@@ -1169,17 +1135,14 @@ void main() {
                     }
                     await strategy!.processToolCalls(
                       toolCalls: [
-                        ChatCompletionMessageToolCall(
+                        LottiToolCall(
                           id: 'qwen-repaired-report-call',
-                          type: ChatCompletionMessageToolCallType.function,
-                          function: ChatCompletionMessageFunctionCall(
-                            name: TaskAgentToolNames.updateReport,
-                            arguments: jsonEncode({
-                              'oneLiner': 'Fix profile seeding',
-                              'tldr': 'Fix profile seeding next.',
-                              'content': 'Fix profile seeding.',
-                            }),
-                          ),
+                          name: TaskAgentToolNames.updateReport,
+                          arguments: jsonEncode({
+                            'oneLiner': 'Fix profile seeding',
+                            'tldr': 'Fix profile seeding next.',
+                            'content': 'Fix profile seeding.',
+                          }),
                         ),
                       ],
                       manager: mockConversationManager,
@@ -1259,7 +1222,7 @@ void main() {
         final models = <String>[];
         final messages = <String>[];
         final toolNames = <List<String>>[];
-        final toolChoices = <ChatCompletionToolChoiceOption?>[];
+        final toolChoices = <LottiToolChoice?>[];
         final capturingRepo =
             MockConversationRepository(mockConversationManager)
               ..maxDelegateCalls = 2
@@ -1278,31 +1241,25 @@ void main() {
                     models.add(model);
                     messages.add(message);
                     toolNames.add(
-                      tools?.map((tool) => tool.function.name).toList() ?? [],
+                      tools?.map((tool) => tool.name).toList() ?? [],
                     );
                     toolChoices.add(toolChoice);
                     if (strategy is TaskAgentStrategy) {
                       await strategy.processToolCalls(
                         toolCalls: [
-                          const ChatCompletionMessageToolCall(
+                          const LottiToolCall(
                             id: 'priority-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: TaskAgentToolNames.updateTaskPriority,
-                              arguments: '{"priority":"P1"}',
-                            ),
+                            name: TaskAgentToolNames.updateTaskPriority,
+                            arguments: '{"priority":"P1"}',
                           ),
-                          ChatCompletionMessageToolCall(
+                          LottiToolCall(
                             id: 'draft-report-call',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: TaskAgentToolNames.updateReport,
-                              arguments: jsonEncode({
-                                'oneLiner': 'Task configured',
-                                'tldr': 'Priority updated. Ready to begin.',
-                                'content': '## Progress\nTask configured.',
-                              }),
-                            ),
+                            name: TaskAgentToolNames.updateReport,
+                            arguments: jsonEncode({
+                              'oneLiner': 'Task configured',
+                              'tldr': 'Priority updated. Ready to begin.',
+                              'content': '## Progress\nTask configured.',
+                            }),
                           ),
                         ],
                         manager: mockConversationManager,
@@ -1314,21 +1271,18 @@ void main() {
                     }
                     await strategy!.processToolCalls(
                       toolCalls: [
-                        ChatCompletionMessageToolCall(
+                        LottiToolCall(
                           id: 'edited-report-call',
-                          type: ChatCompletionMessageToolCallType.function,
-                          function: ChatCompletionMessageFunctionCall(
-                            name: TaskAgentToolNames.updateReport,
-                            arguments: jsonEncode({
-                              'oneLiner': 'Validate the P1 model candidate',
-                              'tldr':
-                                  'The P1 validation is ready for its two '
-                                  'remaining actions.',
-                              'content':
-                                  'Run the local evaluation, then compare the '
-                                  'candidate with the reference.',
-                            }),
-                          ),
+                          name: TaskAgentToolNames.updateReport,
+                          arguments: jsonEncode({
+                            'oneLiner': 'Validate the P1 model candidate',
+                            'tldr':
+                                'The P1 validation is ready for its two '
+                                'remaining actions.',
+                            'content':
+                                'Run the local evaluation, then compare the '
+                                'candidate with the reference.',
+                          }),
                         ),
                       ],
                       manager: mockConversationManager,
@@ -1565,13 +1519,9 @@ void main() {
 
       test('picks last assistant message with content', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('hello'),
-          ),
-          const ChatCompletionMessage.assistant(content: 'First response'),
-          const ChatCompletionMessage.assistant(
-            content: 'Final analysis complete.',
-          ),
+          LottiMessage.userText('hello'),
+          const LottiMessage.assistant(content: 'First response'),
+          const LottiMessage.assistant(content: 'Final analysis complete.'),
         ]);
 
         await workflow.execute(
@@ -1639,9 +1589,7 @@ void main() {
 
       test('no thought persisted when no assistant content', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('hello'),
-          ),
+          LottiMessage.userText('hello'),
         ]);
 
         await workflow.execute(
@@ -1667,8 +1615,8 @@ void main() {
 
       test('skips assistant messages with empty content', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.assistant(content: ''),
-          const ChatCompletionMessage.assistant(content: 'Non-empty response'),
+          const LottiMessage.assistant(content: ''),
+          const LottiMessage.assistant(content: 'Non-empty response'),
         ]);
 
         await workflow.execute(

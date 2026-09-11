@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/ai/model/inference.dart';
+import 'package:lotti/features/ai/repository/openai_compat_adapter.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 enum _GeneratedContentPartShape {
   text,
@@ -30,13 +31,11 @@ class _GeneratedContentPartSpec {
 
   String get expectedText => text.trim().isEmpty ? '' : text;
 
-  ChatCompletionMessageContentPart toPart() => switch (shape) {
-    _GeneratedContentPartShape.image => ChatCompletionMessageContentPart.image(
-      imageUrl: ChatCompletionMessageImageUrl(
-        url: 'data:image/jpeg;base64,generated-$seed',
-      ),
+  LottiContentPart toPart() => switch (shape) {
+    _GeneratedContentPartShape.image => LottiContentPart.image(
+      'data:image/jpeg;base64,generated-$seed',
     ),
-    _ => ChatCompletionMessageContentPart.text(text: text),
+    _ => LottiContentPart.text(text),
   };
 
   @override
@@ -56,9 +55,9 @@ class _GeneratedUserContentScenario {
   final int stringSeed;
   final List<_GeneratedContentPartSpec> parts;
 
-  ChatCompletionUserMessageContent get content => asString
-      ? ChatCompletionUserMessageContent.string('generated-string-$stringSeed')
-      : ChatCompletionUserMessageContent.parts(
+  LottiUserContent get content => asString
+      ? LottiUserContent.text('generated-string-$stringSeed')
+      : LottiUserContent.parts(
           parts.map((part) => part.toPart()).toList(),
         );
 
@@ -108,7 +107,7 @@ void main() {
   group('ContentExtractionHelper', () {
     group('extractTextFromUserContent', () {
       test('should extract text from string content', () {
-        const content = ChatCompletionUserMessageContent.string('Hello world');
+        const content = LottiUserContent.text('Hello world');
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
         );
@@ -116,12 +115,12 @@ void main() {
       });
 
       test('should extract and join text from multiple content parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Hello'),
-          ChatCompletionMessageContentPart.text(
-            text: ' ',
+        const content = LottiUserContent.parts([
+          LottiContentPart.text('Hello'),
+          LottiContentPart.text(
+            ' ',
           ), // This will be skipped as it's only whitespace
-          ChatCompletionMessageContentPart.text(text: 'world'),
+          LottiContentPart.text('world'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -130,11 +129,11 @@ void main() {
       });
 
       test('should skip empty text parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Hello'),
-          ChatCompletionMessageContentPart.text(text: ''),
-          ChatCompletionMessageContentPart.text(text: '   '), // Only whitespace
-          ChatCompletionMessageContentPart.text(text: 'world'),
+        const content = LottiUserContent.parts([
+          LottiContentPart.text('Hello'),
+          LottiContentPart.text(''),
+          LottiContentPart.text('   '), // Only whitespace
+          LottiContentPart.text('world'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -143,13 +142,9 @@ void main() {
       });
 
       test('should preserve spacing in non-empty text parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(
-            text: 'Hello ',
-          ), // Trailing space preserved
-          ChatCompletionMessageContentPart.text(
-            text: ' world',
-          ), // Leading space preserved
+        const content = LottiUserContent.parts([
+          LottiContentPart.text('Hello '), // Trailing space preserved
+          LottiContentPart.text(' world'), // Leading space preserved
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -158,10 +153,10 @@ void main() {
       });
 
       test('should join parts with meaningful spacing', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'The quick brown fox'),
-          ChatCompletionMessageContentPart.text(text: ' jumps over '),
-          ChatCompletionMessageContentPart.text(text: 'the lazy dog'),
+        const content = LottiUserContent.parts([
+          LottiContentPart.text('The quick brown fox'),
+          LottiContentPart.text(' jumps over '),
+          LottiContentPart.text('the lazy dog'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -170,7 +165,7 @@ void main() {
       });
 
       test('should handle empty parts list', () {
-        const content = ChatCompletionUserMessageContent.parts([]);
+        const content = LottiUserContent.parts([]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
         );
@@ -179,14 +174,10 @@ void main() {
 
       test('should handle mixed content types (skip non-text parts)', () {
         // Create a content with mixed types (text and image)
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Describe this image:'),
-          ChatCompletionMessageContentPart.image(
-            imageUrl: ChatCompletionMessageImageUrl(
-              url: 'data:image/jpeg;base64,somebase64data',
-            ),
-          ),
-          ChatCompletionMessageContentPart.text(text: ' Please be detailed.'),
+        const content = LottiUserContent.parts([
+          LottiContentPart.text('Describe this image:'),
+          LottiContentPart.image('data:image/jpeg;base64,somebase64data'),
+          LottiContentPart.text(' Please be detailed.'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -195,12 +186,8 @@ void main() {
       });
 
       test('should handle content with only non-text parts', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.image(
-            imageUrl: ChatCompletionMessageImageUrl(
-              url: 'data:image/jpeg;base64,somebase64data',
-            ),
-          ),
+        const content = LottiUserContent.parts([
+          LottiContentPart.image('data:image/jpeg;base64,somebase64data'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -209,10 +196,10 @@ void main() {
       });
 
       test('should handle content with newlines and special characters', () {
-        const content = ChatCompletionUserMessageContent.parts([
-          ChatCompletionMessageContentPart.text(text: 'Line 1\n'),
-          ChatCompletionMessageContentPart.text(text: 'Line 2\t'),
-          ChatCompletionMessageContentPart.text(text: r'Special: @#$%'),
+        const content = LottiUserContent.parts([
+          LottiContentPart.text('Line 1\n'),
+          LottiContentPart.text('Line 2\t'),
+          LottiContentPart.text(r'Special: @#$%'),
         ]);
         final result = ContentExtractionHelper.extractTextFromUserContent(
           content,
@@ -224,7 +211,7 @@ void main() {
         // This is a edge case test for the fallback behavior
         // In practice, the value should always be String or List
         // but we test the fallback just in case
-        const content = ChatCompletionUserMessageContent.string(
+        const content = LottiUserContent.text(
           'Test fallback',
         );
         final result = ContentExtractionHelper.extractTextFromUserContent(
@@ -233,31 +220,28 @@ void main() {
         expect(result, 'Test fallback');
       });
 
-      test('ChatCompletionMessageContentPart JSON schema stability', () {
-        // This test ensures that the toJson() output of ChatCompletionMessageContentPart
-        // maintains a stable schema that our code relies on
-        const textPart = ChatCompletionMessageContentPart.text(
-          text: 'Hello world',
-        );
-        final json = textPart.toJson();
+      test('content parts serialize to a stable OpenAI wire schema', () {
+        // The wire schema lives in the adapter now, but downstream providers
+        // still depend on it, so it is asserted through the adapter rather
+        // than dropped.
+        Map<String, dynamic> partJson(LottiContentPart part) {
+          final message = openAiMessagesJson([
+            LottiMessage.userParts([part]),
+          ]).single;
+          return (message['content']! as List).single as Map<String, dynamic>;
+        }
 
-        // Assert the JSON structure matches our expectations
-        expect(json, isA<Map<String, dynamic>>());
+        final json = partJson(const LottiContentPart.text('Hello world'));
         expect(json['type'], 'text');
-        expect(json['text'], isA<String>());
         expect(json['text'], 'Hello world');
 
-        // Test with empty text
-        const emptyTextPart = ChatCompletionMessageContentPart.text(text: '');
-        final emptyJson = emptyTextPart.toJson();
+        final emptyJson = partJson(const LottiContentPart.text(''));
         expect(emptyJson['type'], 'text');
         expect(emptyJson['text'], '');
 
-        // Test with special characters
-        const specialTextPart = ChatCompletionMessageContentPart.text(
-          text: 'Line 1\nLine 2\t@#\$%',
+        final specialJson = partJson(
+          const LottiContentPart.text('Line 1\nLine 2\t@#\$%'),
         );
-        final specialJson = specialTextPart.toJson();
         expect(specialJson['type'], 'text');
         expect(specialJson['text'], 'Line 1\nLine 2\t@#\$%');
       });

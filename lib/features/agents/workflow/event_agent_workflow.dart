@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -28,7 +29,6 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
@@ -602,7 +602,7 @@ class EventAgentWorkflow with AgentErrorLogging {
     required String modelId,
     required AiConfigInferenceProvider provider,
     required CloudInferenceWrapper inferenceRepo,
-    required List<ChatCompletionTool> tools,
+    required List<LottiTool> tools,
     required EventAgentStrategy strategy,
     String? consumptionAgentId,
     String? consumptionTaskId,
@@ -614,16 +614,11 @@ class EventAgentWorkflow with AgentErrorLogging {
       'no recap published — retrying with forced update_report',
       subDomain: 'execute',
     );
-    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
-      ChatCompletionNamedToolChoice(
-        type: ChatCompletionNamedToolChoiceType.function,
-        function: ChatCompletionFunctionCallOption(
-          name: EventAgentToolNames.updateReport,
-        ),
-      ),
+    const forcedToolChoice = LottiToolChoice.specific(
+      EventAgentToolNames.updateReport,
     );
     final reportOnlyTools = tools
-        .where((tool) => tool.function.name == EventAgentToolNames.updateReport)
+        .where((tool) => tool.name == EventAgentToolNames.updateReport)
         .toList(growable: false);
 
     try {

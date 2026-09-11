@@ -4,10 +4,10 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// A successful task mutation, stripped to the tool name and decoded inputs.
 typedef TaskAgentMutationRecord = ({
@@ -273,13 +273,8 @@ class TaskAgentReportEditor {
           provider: provider,
           inferenceRepo: inferenceRepository,
           tools: [buildTool(languageCode: languageCode)],
-          toolChoice: const ChatCompletionToolChoiceOption.tool(
-            ChatCompletionNamedToolChoice(
-              type: ChatCompletionNamedToolChoiceType.function,
-              function: ChatCompletionFunctionCallOption(
-                name: TaskAgentToolNames.updateReport,
-              ),
-            ),
+          toolChoice: const LottiToolChoice.specific(
+            TaskAgentToolNames.updateReport,
           ),
           temperature: temperature,
           strategy: strategy,
@@ -351,61 +346,58 @@ class TaskAgentReportEditor {
   }
 
   /// Builds the forced report-only tool with locale-specific register rules.
-  static ChatCompletionTool buildTool({required String languageCode}) {
+  static LottiTool buildTool({required String languageCode}) {
     final language = _languageInstructions[languageCode];
     final languageInstruction = language ?? 'language code `$languageCode`';
 
-    return ChatCompletionTool(
-      type: ChatCompletionToolType.function,
-      function: FunctionObject(
-        name: TaskAgentToolNames.updateReport,
-        description:
-            'Return the rewritten user-facing report entirely in '
-            '$languageInstruction.',
-        parameters: {
-          'type': 'object',
-          'additionalProperties': false,
-          'required': ['oneLiner', 'tldr', 'content'],
-          'properties': {
-            'oneLiner': {
-              'type': 'string',
-              'description':
-                  'Write entirely in $languageInstruction using at most 12 '
-                  'words. State the most useful next action, target date, '
-                  'recorded outcome, or active risk. A target date is not a '
-                  'completed outcome.',
-            },
-            'tldr': {
-              'type': 'string',
-              'description':
-                  'Write entirely in $languageInstruction. Be decision-useful '
-                  'without repeating the one-liner. Preserve material '
-                  'priority, estimate, deadline, and execution constraints. '
-                  'Accurately distinguish incomplete work from recorded '
-                  'outcomes. A task status does not prove work started, and a '
-                  'checkmark proves only that the user marked an item '
-                  'complete. Preserve an explicit risk or blocker '
-                  'classification when the draft contains one. Never claim a '
-                  'marked-complete item did or did not prevent, cause, or '
-                  'resolve a later event, and do not explain this evidence '
-                  'rule in the report.',
-            },
-            'content': {
-              'type': 'string',
-              'description':
-                  'Flexible Markdown entirely in $languageInstruction. Follow '
-                  'the supplied reportDirective for structure, headings, '
-                  'title, detail, and section policy. Translate any retained '
-                  'headings into $languageInstruction. Omit empty, process-only, '
-                  'and unsupported Status or Progress sections. '
-                  'Omit Links or Reference unless it contains a real `http://` '
-                  'or `https://` URL. Never say work waits for the user or '
-                  'execution. Describe a checkmark-only item as user-marked '
-                  'complete, never fixed.',
-            },
+    return LottiTool(
+      name: TaskAgentToolNames.updateReport,
+      description:
+          'Return the rewritten user-facing report entirely in '
+          '$languageInstruction.',
+      parameters: {
+        'type': 'object',
+        'additionalProperties': false,
+        'required': const ['oneLiner', 'tldr', 'content'],
+        'properties': {
+          'oneLiner': {
+            'type': 'string',
+            'description':
+                'Write entirely in $languageInstruction using at most 12 '
+                'words. State the most useful next action, target date, '
+                'recorded outcome, or active risk. A target date is not a '
+                'completed outcome.',
+          },
+          'tldr': {
+            'type': 'string',
+            'description':
+                'Write entirely in $languageInstruction. Be decision-useful '
+                'without repeating the one-liner. Preserve material '
+                'priority, estimate, deadline, and execution constraints. '
+                'Accurately distinguish incomplete work from recorded '
+                'outcomes. A task status does not prove work started, and a '
+                'checkmark proves only that the user marked an item '
+                'complete. Preserve an explicit risk or blocker '
+                'classification when the draft contains one. Never claim a '
+                'marked-complete item did or did not prevent, cause, or '
+                'resolve a later event, and do not explain this evidence '
+                'rule in the report.',
+          },
+          'content': {
+            'type': 'string',
+            'description':
+                'Flexible Markdown entirely in $languageInstruction. Follow '
+                'the supplied reportDirective for structure, headings, '
+                'title, detail, and section policy. Translate any retained '
+                'headings into $languageInstruction. Omit empty, process-only, '
+                'and unsupported Status or Progress sections. '
+                'Omit Links or Reference unless it contains a real `http://` '
+                'or `https://` URL. Never say work waits for the user or '
+                'execution. Describe a checkmark-only item as user-marked '
+                'complete, never fixed.',
           },
         },
-      ),
+      },
     );
   }
 
@@ -1373,11 +1365,11 @@ class _TaskAgentReportCaptureStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     for (final call in toolCalls) {
-      if (call.function.name != TaskAgentToolNames.updateReport) {
+      if (call.name != TaskAgentToolNames.updateReport) {
         manager.addToolResponse(
           toolCallId: call.id,
           response: 'Only update_report is accepted.',
@@ -1388,7 +1380,7 @@ class _TaskAgentReportCaptureStrategy extends ConversationStrategy {
 
       TaskAgentReportDraft? candidate;
       try {
-        final decoded = jsonDecode(call.function.arguments);
+        final decoded = jsonDecode(call.arguments);
         if (decoded is Map<String, dynamic>) {
           candidate = TaskAgentReportDraft.fromJson(decoded);
         }

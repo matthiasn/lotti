@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Extracts thinking, visible text, tool calls, and usage metadata from
 /// a complete Gemini response payload.
@@ -14,7 +14,7 @@ ProcessedGeminiPayload processGeminiPayload(
 }) {
   final tb = StringBuffer();
   final cb = StringBuffer();
-  final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
+  final toolChunks = <LottiToolCallChunk>[];
   final signatures = <String, String>{};
   var toolIndex = 0;
 
@@ -49,13 +49,11 @@ ProcessedGeminiPayload processGeminiPayload(
             }
 
             toolChunks.add(
-              ChatCompletionStreamMessageToolCallChunk(
-                index: idx,
+              LottiToolCallChunk(
                 id: toolCallId,
-                function: ChatCompletionStreamMessageFunctionCall(
-                  name: name,
-                  arguments: args,
-                ),
+                index: idx,
+                name: name,
+                arguments: args,
               ),
             );
           }
@@ -65,7 +63,7 @@ ProcessedGeminiPayload processGeminiPayload(
   }
 
   // Parse usage metadata
-  CompletionUsage? usage;
+  LottiUsage? usage;
   final usageMetadata = decoded['usageMetadata'];
   if (usageMetadata is Map<String, dynamic>) {
     final promptTokens = usageMetadata['promptTokenCount'] as int?;
@@ -73,13 +71,11 @@ ProcessedGeminiPayload processGeminiPayload(
     final thoughtsTokens = usageMetadata['thoughtsTokenCount'] as int?;
 
     if (promptTokens != null || candidatesTokens != null) {
-      usage = CompletionUsage(
+      usage = LottiUsage(
         promptTokens: promptTokens,
         completionTokens: candidatesTokens,
         totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
-        completionTokensDetails: thoughtsTokens != null
-            ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
-            : null,
+        reasoningTokens: thoughtsTokens,
       );
     }
   }

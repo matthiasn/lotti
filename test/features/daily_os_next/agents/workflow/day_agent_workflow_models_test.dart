@@ -8,9 +8,9 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../agents/test_utils.dart';
 
@@ -303,10 +303,10 @@ void main() {
 
     test('a completed provider turn stays closed after the wake deadline', () {
       fakeAsync((async) {
-        final source = StreamController<CreateChatCompletionStreamResponse>(
+        final source = StreamController<LottiInferenceChunk>(
           sync: true,
         );
-        final chunks = <CreateChatCompletionStreamResponse>[];
+        final chunks = <LottiInferenceChunk>[];
         final errors = <Object>[];
         final repository = DayAgentTimeoutInferenceRepository(
           delegate: _StreamInferenceRepository(source.stream),
@@ -345,7 +345,7 @@ void main() {
       () {
         fakeAsync((async) {
           var upstreamListened = false;
-          final source = StreamController<CreateChatCompletionStreamResponse>(
+          final source = StreamController<LottiInferenceChunk>(
             sync: true,
             onListen: () {
               upstreamListened = true;
@@ -390,11 +390,11 @@ void main() {
 
     test('a later provider turn cannot start after the deadline expires', () {
       fakeAsync((async) {
-        final first = StreamController<CreateChatCompletionStreamResponse>(
+        final first = StreamController<LottiInferenceChunk>(
           sync: true,
         );
         var secondListened = false;
-        final second = StreamController<CreateChatCompletionStreamResponse>(
+        final second = StreamController<LottiInferenceChunk>(
           sync: true,
           onListen: () {
             secondListened = true;
@@ -446,7 +446,7 @@ void main() {
     test('downstream cancellation cancels the active provider stream', () {
       fakeAsync((async) {
         var upstreamCancelled = false;
-        final source = StreamController<CreateChatCompletionStreamResponse>(
+        final source = StreamController<LottiInferenceChunk>(
           sync: true,
           onCancel: () {
             upstreamCancelled = true;
@@ -479,7 +479,7 @@ void main() {
     test('classifies and cancels a provider stream at the total deadline', () {
       fakeAsync((async) {
         var upstreamCancelled = false;
-        final source = StreamController<CreateChatCompletionStreamResponse>(
+        final source = StreamController<LottiInferenceChunk>(
           sync: true,
           onCancel: () {
             upstreamCancelled = true;
@@ -530,7 +530,7 @@ void main() {
     test('stream activity does not extend the total deadline', () {
       fakeAsync((async) {
         var upstreamCancelled = false;
-        final source = StreamController<CreateChatCompletionStreamResponse>(
+        final source = StreamController<LottiInferenceChunk>(
           sync: true,
           onCancel: () {
             upstreamCancelled = true;
@@ -570,11 +570,11 @@ void main() {
 
     test('later provider turns receive only the remaining wake deadline', () {
       fakeAsync((async) {
-        final first = StreamController<CreateChatCompletionStreamResponse>(
+        final first = StreamController<LottiInferenceChunk>(
           sync: true,
         );
         var secondCancelled = false;
-        final second = StreamController<CreateChatCompletionStreamResponse>(
+        final second = StreamController<LottiInferenceChunk>(
           sync: true,
           onCancel: () {
             secondCancelled = true;
@@ -627,7 +627,7 @@ void main() {
     test('disposing the wake cancels its deadline and active provider', () {
       fakeAsync((async) {
         var upstreamCancelled = false;
-        final source = StreamController<CreateChatCompletionStreamResponse>(
+        final source = StreamController<LottiInferenceChunk>(
           sync: true,
           onCancel: () {
             upstreamCancelled = true;
@@ -668,7 +668,7 @@ void main() {
       'a provider stream subscribed after disposal closes without starting',
       () async {
         var upstreamListened = false;
-        final source = StreamController<CreateChatCompletionStreamResponse>(
+        final source = StreamController<LottiInferenceChunk>(
           sync: true,
           onListen: () {
             upstreamListened = true;
@@ -703,7 +703,7 @@ void main() {
 
     test('absorbs an upstream error surfaced by timeout cancellation', () {
       fakeAsync((async) {
-        final source = StreamController<CreateChatCompletionStreamResponse>(
+        final source = StreamController<LottiInferenceChunk>(
           sync: true,
           onCancel: () => Future<void>.error(
             StateError('detached provider request failed during cancellation'),
@@ -774,10 +774,10 @@ void main() {
       () async {
         final delegate = _RecordingInferenceRepository([
           Stream.value(
-            _textChunk(finishReason: ChatCompletionFinishReason.stop),
+            _textChunk(finishReason: LottiFinishReason.stop),
           ),
           Stream.value(
-            _textChunk(finishReason: ChatCompletionFinishReason.stop),
+            _textChunk(finishReason: LottiFinishReason.stop),
           ),
         ]);
         final repository = DayAgentOutputBudgetInferenceRepository(
@@ -814,7 +814,7 @@ void main() {
         final repository = DayAgentOutputBudgetInferenceRepository(
           delegate: _StreamInferenceRepository(
             Stream.fromIterable([
-              _textChunk(finishReason: ChatCompletionFinishReason.length),
+              _textChunk(finishReason: LottiFinishReason.length),
               _usageChunk(outputTokens: 4096),
             ]),
           ),
@@ -830,8 +830,8 @@ void main() {
             provider: testInferenceProvider(),
           ),
           emitsInOrder([
-            isA<CreateChatCompletionStreamResponse>(),
-            isA<CreateChatCompletionStreamResponse>(),
+            isA<LottiInferenceChunk>(),
+            isA<LottiInferenceChunk>(),
             emitsError(
               isA<DayAgentOutputLimitExceededException>()
                   .having(
@@ -856,7 +856,7 @@ void main() {
         final repository = DayAgentOutputBudgetInferenceRepository(
           delegate: _StreamInferenceRepository(
             Stream.fromIterable([
-              _textChunk(finishReason: ChatCompletionFinishReason.stop),
+              _textChunk(finishReason: LottiFinishReason.stop),
               _usageChunk(outputTokens: 4096),
             ]),
           ),
@@ -885,7 +885,7 @@ void main() {
         final repository = DayAgentOutputBudgetInferenceRepository(
           delegate: _StreamInferenceRepository(
             Stream.fromIterable([
-              _textChunk(finishReason: ChatCompletionFinishReason.stop),
+              _textChunk(finishReason: LottiFinishReason.stop),
               _usageChunk(outputTokens: 3000, reasoningTokens: 1096),
             ]),
           ),
@@ -912,7 +912,7 @@ void main() {
       'OpenAI-compatible completion usage does not double-count reasoning',
       () async {
         final chunks = [
-          _textChunk(finishReason: ChatCompletionFinishReason.stop),
+          _textChunk(finishReason: LottiFinishReason.stop),
           _usageChunk(outputTokens: 3000, reasoningTokens: 1096),
         ];
         final repository = DayAgentOutputBudgetInferenceRepository(
@@ -940,7 +940,7 @@ void main() {
 
     test('a natural response below the ceiling completes normally', () async {
       final chunks = [
-        _textChunk(finishReason: ChatCompletionFinishReason.stop),
+        _textChunk(finishReason: LottiFinishReason.stop),
         _usageChunk(outputTokens: 1200),
       ];
       final repository = DayAgentOutputBudgetInferenceRepository(
@@ -1002,73 +1002,70 @@ void main() {
   });
 }
 
-CreateChatCompletionStreamResponse _thinkingChunk(String model) =>
-    CreateChatCompletionStreamResponse(
-      id: 'thinking',
-      created: 0,
-      model: model,
-      choices: const [],
-    );
+LottiInferenceChunk _thinkingChunk(String model) => LottiInferenceChunk(
+  id: 'thinking',
+  created: 0,
+  model: model,
+  choices: const [],
+);
 
-CreateChatCompletionStreamResponse _textChunk({
-  required ChatCompletionFinishReason finishReason,
-}) => CreateChatCompletionStreamResponse(
+LottiInferenceChunk _textChunk({
+  required LottiFinishReason finishReason,
+}) => LottiInferenceChunk(
   id: 'text',
   created: 0,
   model: 'model',
   choices: [
-    ChatCompletionStreamResponseChoice(
+    LottiChunkChoice(
       index: 0,
-      delta: const ChatCompletionStreamResponseDelta(content: 'response'),
+      delta: const LottiDelta(content: 'response'),
       finishReason: finishReason,
     ),
   ],
 );
 
-CreateChatCompletionStreamResponse _usageChunk({
+LottiInferenceChunk _usageChunk({
   required int outputTokens,
   int? reasoningTokens,
-}) => CreateChatCompletionStreamResponse(
+}) => LottiInferenceChunk(
   id: 'usage',
   created: 0,
   model: 'model',
   choices: const [],
-  usage: CompletionUsage(
+  usage: LottiUsage(
     promptTokens: 100,
     completionTokens: outputTokens,
     totalTokens: 100 + outputTokens,
-    completionTokensDetails: CompletionTokensDetails(
-      reasoningTokens: reasoningTokens,
-    ),
+    reasoningTokens: reasoningTokens,
   ),
 );
 
 class _StreamInferenceRepository implements InferenceRepositoryInterface {
   const _StreamInferenceRepository(this.stream);
 
-  final Stream<CreateChatCompletionStreamResponse> stream;
+  final Stream<LottiInferenceChunk> stream;
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) => stream;
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -1079,32 +1076,32 @@ class _StreamInferenceRepository implements InferenceRepositoryInterface {
 class _SequenceInferenceRepository implements InferenceRepositoryInterface {
   _SequenceInferenceRepository(this.streams);
 
-  final List<Stream<CreateChatCompletionStreamResponse>> streams;
+  final List<Stream<LottiInferenceChunk>> streams;
   var _next = 0;
 
-  Stream<CreateChatCompletionStreamResponse> _take() => streams[_next++];
+  Stream<LottiInferenceChunk> _take() => streams[_next++];
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) => _take();
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -1115,36 +1112,36 @@ class _SequenceInferenceRepository implements InferenceRepositoryInterface {
 class _RecordingInferenceRepository implements InferenceRepositoryInterface {
   _RecordingInferenceRepository(this.streams);
 
-  final List<Stream<CreateChatCompletionStreamResponse>> streams;
+  final List<Stream<LottiInferenceChunk>> streams;
   final List<int?> maxCompletionTokens = [];
   var _next = 0;
 
-  Stream<CreateChatCompletionStreamResponse> _take(int? limit) {
+  Stream<LottiInferenceChunk> _take(int? limit) {
     maxCompletionTokens.add(limit);
     return streams[_next++];
   }
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<LottiInferenceChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
   }) => _take(maxCompletionTokens);
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<LottiInferenceChunk> generateTextWithMessages({
+    required List<LottiMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,

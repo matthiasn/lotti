@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:meta/meta.dart';
-import 'package:openai_dart/openai_dart.dart' hide Error;
 import 'package:uuid/uuid.dart';
 
 /// Matches `<think>...</think>` and `<thinking>...</thinking>` blocks
@@ -48,7 +48,7 @@ String? stripThinkBlocks(String? content) {
 /// - Providers emitting OpenAI‑style deltas should keep id/index stable across chunks.
 /// - In tests, you can bypass stream chunking complexity by stubbing `sendMessage` and directly
 ///   invoking the provided `ConversationStrategy` with predefined
-///   `ChatCompletionMessageToolCall` objects. This preserves the strategy/handler execution path
+///   `LottiToolCall` objects. This preserves the strategy/handler execution path
 ///   while avoiding brittle mock setups.
 final NotifierProvider<ConversationRepository, void>
 conversationRepositoryProvider =
@@ -85,15 +85,15 @@ class ConversationRepository extends Notifier<void> {
   /// all with empty/absent ids, null indices, and non-empty arguments.
   @visibleForTesting
   static bool isGeminiStyleToolCallDelta(
-    List<ChatCompletionStreamMessageToolCallChunk> chunks,
+    List<LottiToolCallChunk> chunks,
   ) {
     return chunks.length > 1 &&
         chunks.every(
           (tc) =>
               (tc.id == null || tc.id!.isEmpty) &&
               tc.index == null &&
-              tc.function?.arguments != null &&
-              tc.function!.arguments!.isNotEmpty,
+              tc.arguments != null &&
+              tc.arguments!.isNotEmpty,
         );
   }
 
@@ -102,21 +102,18 @@ class ConversationRepository extends Notifier<void> {
   /// (`tool_turn<turn>_<n>`).
   @visibleForTesting
   static void appendGeminiToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
-    required List<ChatCompletionStreamMessageToolCallChunk> chunks,
+    required List<LottiToolCall> toolCalls,
+    required List<LottiToolCallChunk> chunks,
     required int turn,
   }) {
     for (final toolCallChunk in chunks) {
-      if (toolCallChunk.function != null) {
+      if (toolCallChunk.name != null || toolCallChunk.arguments != null) {
         final toolCallId = 'tool_turn${turn}_${toolCalls.length}';
         toolCalls.add(
-          ChatCompletionMessageToolCall(
+          LottiToolCall(
             id: toolCallId,
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: toolCallChunk.function!.name ?? '',
-              arguments: toolCallChunk.function!.arguments ?? '',
-            ),
+            name: toolCallChunk.name ?? '',
+            arguments: toolCallChunk.arguments ?? '',
           ),
         );
       }
@@ -129,9 +126,9 @@ class ConversationRepository extends Notifier<void> {
   /// mid-character — reassembles intact.
   @visibleForTesting
   static void accumulateOpenAiToolCallChunks({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<LottiToolCall> toolCalls,
     required Map<String, StringBuffer> argumentBuffers,
-    required List<ChatCompletionStreamMessageToolCallChunk> chunks,
+    required List<LottiToolCallChunk> chunks,
   }) {
     for (final toolCallChunk in chunks) {
       // Find existing tool call by ID or index
@@ -159,40 +156,34 @@ class ConversationRepository extends Notifier<void> {
 
         // Get or create buffer for this tool call
         final buffer =
-            argumentBuffers[toolCallKey] ??
-            StringBuffer(existing.function.arguments);
+            argumentBuffers[toolCallKey] ?? StringBuffer(existing.arguments);
         argumentBuffers[toolCallKey] = buffer;
 
         // Append new chunk to buffer
-        buffer.write(toolCallChunk.function?.arguments ?? '');
+        buffer.write(toolCallChunk.arguments ?? '');
 
         // Update the tool call with buffered arguments
-        toolCalls[existingIndex] = ChatCompletionMessageToolCall(
+        toolCalls[existingIndex] = LottiToolCall(
           id: existing.id,
-          type: existing.type,
-          function: ChatCompletionMessageFunctionCall(
-            name: existing.function.name,
-            arguments: buffer.toString(),
-          ),
+          name: existing.name,
+          arguments: buffer.toString(),
         );
-      } else if (toolCallChunk.function != null) {
+      } else if (toolCallChunk.name != null ||
+          toolCallChunk.arguments != null) {
         // Add new tool call
         final toolCallId =
             toolCallChunk.id ??
             'tool_${toolCallChunk.index ?? toolCalls.length}';
 
         // Initialize buffer for new tool call
-        final initialArgs = toolCallChunk.function!.arguments ?? '';
+        final initialArgs = toolCallChunk.arguments ?? '';
         argumentBuffers[toolCallId] = StringBuffer(initialArgs);
 
         toolCalls.add(
-          ChatCompletionMessageToolCall(
+          LottiToolCall(
             id: toolCallId,
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: toolCallChunk.function!.name ?? '',
-              arguments: initialArgs,
-            ),
+            name: toolCallChunk.name ?? '',
+            arguments: initialArgs,
           ),
         );
       }
@@ -226,8 +217,8 @@ class ConversationRepository extends Notifier<void> {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     // Owner ids for per-turn consumption recording. When [consumptionAgentId]
@@ -324,12 +315,10 @@ class ConversationRepository extends Notifier<void> {
         // retry does exactly that. A staging strategy must not widen it back,
         // or a provider that ignores `toolChoice` could reach a mutation tool
         // during report recovery.
-        // `ChatCompletionToolChoiceOption` is a union: `.mode(auto|none|...)`
-        // or `.tool(named)`. Only the named-tool variant means the caller
-        // pinned this call to one tool.
-        final callerConstrainedTools =
-            toolChoice
-                is ChatCompletionToolChoiceOptionChatCompletionNamedToolChoice;
+        // `LottiToolChoice` is a sealed union: auto/none/required, or one
+        // named tool. Only the named-tool variant means the caller pinned
+        // this call to a single tool.
+        final callerConstrainedTools = toolChoice is LottiToolChoiceSpecific;
         final turnTools =
             (callerConstrainedTools
                 ? null
@@ -340,7 +329,7 @@ class ConversationRepository extends Notifier<void> {
             tools;
 
         // Collect response
-        final toolCalls = <ChatCompletionMessageToolCall>[];
+        final toolCalls = <LottiToolCall>[];
         final contentBuffer = StringBuffer();
         // Use StringBuffer for each tool call to safely accumulate arguments
         // This prevents JSON corruption when chunks are split mid-character or arrive out of order
@@ -351,7 +340,7 @@ class ConversationRepository extends Notifier<void> {
           // Make the provider call with full conversation history. The
           // rethrow contract is intentionally scoped to this stream only;
           // post-inference telemetry and tool handling degrade gracefully.
-          Stream<CreateChatCompletionStreamResponse> invoke() =>
+          Stream<LottiInferenceChunk> invoke() =>
               inferenceRepo.generateTextWithMessages(
                 messages: messages,
                 model: model,
@@ -386,10 +375,8 @@ class ConversationRepository extends Notifier<void> {
                     return AiCapturedUsage(
                       inputTokens: chunkUsage.promptTokens,
                       outputTokens: chunkUsage.completionTokens,
-                      cachedInputTokens:
-                          chunkUsage.promptTokensDetails?.cachedTokens,
-                      thoughtsTokens:
-                          chunkUsage.completionTokensDetails?.reasoningTokens,
+                      cachedInputTokens: chunkUsage.cachedInputTokens,
+                      thoughtsTokens: chunkUsage.reasoningTokens,
                       totalTokens: chunkUsage.totalTokens,
                     );
                   },
@@ -418,8 +405,8 @@ class ConversationRepository extends Notifier<void> {
               turnUsage = InferenceUsage(
                 inputTokens: u.promptTokens,
                 outputTokens: u.completionTokens,
-                thoughtsTokens: u.completionTokensDetails?.reasoningTokens,
-                cachedInputTokens: u.promptTokensDetails?.cachedTokens,
+                thoughtsTokens: u.reasoningTokens,
+                cachedInputTokens: u.cachedInputTokens,
               );
             }
             if (response.choices?.isNotEmpty ?? false) {

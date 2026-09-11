@@ -8,11 +8,11 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
@@ -57,11 +57,11 @@ void main() {
   >
   drive(
     GoalOutcomeEvalScenario scenario, {
-    List<ChatCompletionMessageToolCall> Function(int call)? toolCalls,
+    List<LottiToolCall> Function(int call)? toolCalls,
     int maxDelegateCalls = 1,
   }) async {
     final manager = MockConversationManager();
-    when(() => manager.messages).thenReturn(const <ChatCompletionMessage>[]);
+    when(() => manager.messages).thenReturn(const <LottiMessage>[]);
     final conversationRepository = MockConversationRepository(manager)
       ..maxDelegateCalls = maxDelegateCalls;
     Map<String, Object?>? facts;
@@ -87,7 +87,7 @@ void main() {
               message.lastIndexOf('}') + 1,
             );
             facts = jsonDecode(json) as Map<String, Object?>;
-            toolNames = [for (final tool in tools!) tool.function.name];
+            toolNames = [for (final tool in tools!) tool.name];
           }
           final calls = toolCalls?.call(call) ?? const [];
           if (calls.isNotEmpty) {
@@ -115,18 +115,11 @@ void main() {
     );
   }
 
-  ChatCompletionMessageToolCall toolCall(
+  LottiToolCall toolCall(
     String name,
     Map<String, dynamic> args, {
     String id = 'call-1',
-  }) => ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
-  );
+  }) => LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
 
   GoalTrackStatus statusOf(Map<String, Object?> facts) {
     final evaluation = facts['evaluation']! as Map<String, Object?>;

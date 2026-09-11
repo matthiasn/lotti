@@ -4,12 +4,12 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Generates text with full conversation history for multi-turn interactions.
 ///
@@ -35,9 +35,9 @@ import 'package:openai_dart/openai_dart.dart';
 /// - [turnIndex]: Current turn number for generating unique tool call IDs that
 ///   don't collide across conversation turns. This prevents signature/name
 ///   lookup errors when replaying multi-turn function calls.
-Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
+Stream<LottiInferenceChunk> generateGeminiTextWithMessages({
   required GeminiStreamSender sender,
-  required List<ChatCompletionMessage> messages,
+  required List<LottiMessage> messages,
   required String model,
   required double temperature,
   required GeminiThinkingConfig thinkingConfig,
@@ -45,8 +45,8 @@ Stream<CreateChatCompletionStreamResponse> generateGeminiTextWithMessages({
   Map<String, String>? thoughtSignatures,
   String? systemMessage,
   int? maxCompletionTokens,
-  List<ChatCompletionTool>? tools,
-  ChatCompletionToolChoiceOption? toolChoice,
+  List<LottiTool>? tools,
+  LottiToolChoice? toolChoice,
   ThoughtSignatureCollector? signatureCollector,
   int? turnIndex,
 }) async* {

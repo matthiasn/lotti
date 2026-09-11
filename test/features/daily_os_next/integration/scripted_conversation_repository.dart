@@ -4,18 +4,17 @@ import 'dart:convert';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:openai_dart/openai_dart.dart';
 
-typedef ScriptedToolCallBuilder =
-    List<ChatCompletionMessageToolCall> Function(String message);
+typedef ScriptedToolCallBuilder = List<LottiToolCall> Function(String message);
 
 class ScriptedModelTurn {
   const ScriptedModelTurn({this.content, this.toolCalls = const []});
 
   final String? content;
-  final List<ChatCompletionMessageToolCall> toolCalls;
+  final List<LottiToolCall> toolCalls;
 }
 
 typedef ScriptedModelTurnBuilder = ScriptedModelTurn Function(String message);
@@ -23,9 +22,9 @@ typedef ScriptedModelTurnBuilder = ScriptedModelTurn Function(String message);
 typedef ScriptedSendObserver =
     InferenceUsage? Function(
       String systemMessage,
-      List<ChatCompletionMessage> requestMessages,
+      List<LottiMessage> requestMessages,
       ScriptedModelTurn turn,
-      List<ChatCompletionTool> tools,
+      List<LottiTool> tools,
     );
 
 /// Fake, in-process [ConversationRepository]: replays scripted tool calls
@@ -75,7 +74,7 @@ class ScriptedConversationRepository extends ConversationRepository {
   int get pendingTurns => _turns.length;
 
   /// Queues one model turn. Call once per expected `sendMessage`.
-  void script(List<ChatCompletionMessageToolCall> toolCalls) =>
+  void script(List<LottiToolCall> toolCalls) =>
       _turns.add((_) => ScriptedModelTurn(toolCalls: toolCalls));
 
   /// Queues a terminal prose-only model turn.
@@ -113,8 +112,8 @@ class ScriptedConversationRepository extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<LottiTool>? tools,
+    LottiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
     String? consumptionAgentId,
@@ -125,14 +124,14 @@ class ScriptedConversationRepository extends ConversationRepository {
     bool rethrowInferenceErrors = false,
   }) async {
     final manager = _managers[conversationId]!..addUserMessage(message);
-    final offeredTools = tools ?? const <ChatCompletionTool>[];
+    final offeredTools = tools ?? const <LottiTool>[];
     var currentMessage = message;
     InferenceUsage? accumulated;
     var shouldContinue = true;
     while (shouldContinue) {
       userMessages.add(currentMessage);
       toolNamesBySend.add({
-        for (final tool in offeredTools) tool.function.name,
+        for (final tool in offeredTools) tool.name,
       });
       final requestMessages = manager.getMessagesForRequest();
       final turn = _turns.isEmpty
@@ -180,15 +179,8 @@ class ScriptedConversationRepository extends ConversationRepository {
 }
 
 /// Builds one scripted tool call with JSON-encoded [args].
-ChatCompletionMessageToolCall scriptedToolCall({
+LottiToolCall scriptedToolCall({
   required String id,
   required String name,
   required Map<String, Object?> args,
-}) => ChatCompletionMessageToolCall(
-  id: id,
-  type: ChatCompletionMessageToolCallType.function,
-  function: ChatCompletionMessageFunctionCall(
-    name: name,
-    arguments: jsonEncode(args),
-  ),
-);
+}) => LottiToolCall(id: id, name: name, arguments: jsonEncode(args));

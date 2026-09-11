@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 enum _GeneratedGeminiFrame {
   spaces,
@@ -254,21 +254,10 @@ void main() {
       expect(body.containsKey('tools'), isFalse);
     });
 
-    test('maps ChatCompletionTool list to functionDeclarations', () {
+    test('maps LottiTool list to functionDeclarations', () {
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'lookup',
-            description: 'lookup something',
-          ),
-        ),
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'search',
-          ),
-        ),
+        LottiTool(name: 'lookup', description: 'lookup something'),
+        LottiTool(name: 'search'),
       ];
 
       final body = GeminiUtils.buildRequestBody(
@@ -294,17 +283,9 @@ void main() {
 
     test('serializes forced named tool choice', () {
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(name: 'draft_day_plan'),
-        ),
+        LottiTool(name: 'draft_day_plan'),
       ];
-      const toolChoice = ChatCompletionToolChoiceOption.tool(
-        ChatCompletionNamedToolChoice(
-          type: ChatCompletionNamedToolChoiceType.function,
-          function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
-        ),
-      );
+      const toolChoice = LottiToolChoice.specific('draft_day_plan');
 
       final body = GeminiUtils.buildRequestBody(
         prompt: 'Draft the day',
@@ -325,10 +306,10 @@ void main() {
     });
 
     test('maps each tool-choice mode to a Gemini functionCallingConfig', () {
-      const expected = {
-        ChatCompletionToolChoiceMode.none: 'NONE',
-        ChatCompletionToolChoiceMode.auto: 'AUTO',
-        ChatCompletionToolChoiceMode.required: 'ANY',
+      final expected = <LottiToolChoice, String>{
+        const LottiToolChoice.none(): 'NONE',
+        const LottiToolChoice.auto(): 'AUTO',
+        const LottiToolChoice.required(): 'ANY',
       };
 
       for (final entry in expected.entries) {
@@ -336,7 +317,7 @@ void main() {
           prompt: 'Draft the day',
           temperature: 0.2,
           thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
-          toolChoice: ChatCompletionToolChoiceOption.mode(entry.key),
+          toolChoice: entry.key,
         );
 
         final functionCallingConfig =
@@ -367,15 +348,12 @@ void main() {
     test('handles malformed JSON in tool call arguments gracefully', () {
       // Tool call with invalid JSON arguments
       final messages = [
-        const ChatCompletionMessage.assistant(
+        const LottiMessage.assistant(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            LottiToolCall(
               id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: 'not valid json {{{',
-              ),
+              name: 'test_function',
+              arguments: 'not valid json {{{',
             ),
           ],
         ),
@@ -403,26 +381,16 @@ void main() {
     });
 
     test('serializes forced named tool choice', () {
-      const toolChoice = ChatCompletionToolChoiceOption.tool(
-        ChatCompletionNamedToolChoice(
-          type: ChatCompletionNamedToolChoiceType.function,
-          function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
-        ),
-      );
+      const toolChoice = LottiToolChoice.specific('draft_day_plan');
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
-        messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Draft the day'),
-          ),
+        messages: [
+          LottiMessage.userText('Draft the day'),
         ],
         temperature: 0.2,
         thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
         tools: const [
-          ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(name: 'draft_day_plan'),
-          ),
+          LottiTool(name: 'draft_day_plan'),
         ],
         toolChoice: toolChoice,
       );
@@ -439,15 +407,12 @@ void main() {
 
     test('includes thought signatures in function calls', () {
       final messages = [
-        const ChatCompletionMessage.assistant(
+        const LottiMessage.assistant(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            LottiToolCall(
               id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"key": "value"}',
-              ),
+              name: 'test_function',
+              arguments: '{"key": "value"}',
             ),
           ],
         ),
@@ -473,15 +438,12 @@ void main() {
 
     test('omits thought signature when not in map', () {
       final messages = [
-        const ChatCompletionMessage.assistant(
+        const LottiMessage.assistant(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            LottiToolCall(
               id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"key": "value"}',
-              ),
+              name: 'test_function',
+              arguments: '{"key": "value"}',
             ),
           ],
         ),
@@ -504,24 +466,10 @@ void main() {
 
     test('handles multiple tool calls with mixed signatures', () {
       final messages = [
-        const ChatCompletionMessage.assistant(
+        const LottiMessage.assistant(
           toolCalls: [
-            ChatCompletionMessageToolCall(
-              id: 'tool-0',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'func_a',
-                arguments: '{}',
-              ),
-            ),
-            ChatCompletionMessageToolCall(
-              id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'func_b',
-                arguments: '{}',
-              ),
-            ),
+            LottiToolCall(id: 'tool-0', name: 'func_a', arguments: '{}'),
+            LottiToolCall(id: 'tool-1', name: 'func_b', arguments: '{}'),
           ],
         ),
       ];
@@ -551,9 +499,7 @@ void main() {
 
     test('converts user message with string content', () {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello, world!'),
-        ),
+        LottiMessage.userText('Hello, world!'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -572,9 +518,7 @@ void main() {
 
     test('converts assistant message with text content', () {
       final messages = [
-        const ChatCompletionMessage.assistant(
-          content: 'I am an assistant response',
-        ),
+        const LottiMessage.assistant(content: 'I am an assistant response'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -594,19 +538,12 @@ void main() {
     test('converts tool response message with correct function name', () {
       // Include assistant message with tool calls to build the ID->name mapping
       final messages = [
-        const ChatCompletionMessage.assistant(
+        const LottiMessage.assistant(
           toolCalls: [
-            ChatCompletionMessageToolCall(
-              id: 'call-123',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'lookup_data',
-                arguments: '{}',
-              ),
-            ),
+            LottiToolCall(id: 'call-123', name: 'lookup_data', arguments: '{}'),
           ],
         ),
-        const ChatCompletionMessage.tool(
+        const LottiMessage.tool(
           toolCallId: 'call-123',
           content: 'Tool result data',
         ),
@@ -629,36 +566,10 @@ void main() {
       expect((funcResponse['response'] as Map)['result'], 'Tool result data');
     });
 
-    test('converts function message (legacy format)', () {
-      final messages = [
-        const ChatCompletionMessage.function(
-          name: 'my_function',
-          content: 'Function result',
-        ),
-      ];
-
-      final body = GeminiUtils.buildMultiTurnRequestBody(
-        messages: messages,
-        temperature: 0.7,
-        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
-      );
-
-      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      expect(contents.length, 1);
-      expect(contents.first['role'], 'function');
-      final parts = (contents.first['parts'] as List)
-          .cast<Map<String, dynamic>>();
-      final funcResponse = parts.first['functionResponse'] as Map;
-      expect(funcResponse['name'], 'my_function');
-      expect((funcResponse['response'] as Map)['result'], 'Function result');
-    });
-
     test('skips system messages (handled separately)', () {
       final messages = [
-        const ChatCompletionMessage.system(content: 'You are a helper'),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        const LottiMessage.system('You are a helper'),
+        LottiMessage.userText('Hello'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -678,19 +589,14 @@ void main() {
 
     test('includes tools in request body', () {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Call a function'),
-        ),
+        LottiMessage.userText('Call a function'),
       ];
 
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            description: 'Does something',
-            parameters: {'type': 'object', 'properties': <String, dynamic>{}},
-          ),
+        LottiTool(
+          name: 'my_tool',
+          description: 'Does something',
+          parameters: {'type': 'object', 'properties': <String, dynamic>{}},
         ),
       ];
 
@@ -713,40 +619,35 @@ void main() {
 
     test('strips additionalProperties from tool parameter schemas', () {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Call a function'),
-        ),
+        LottiMessage.userText('Call a function'),
       ];
 
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            description: 'Does something',
-            parameters: {
-              'type': 'object',
-              'properties': {
-                'title': {
-                  'type': 'string',
-                  'description': 'A title',
-                },
+        LottiTool(
+          name: 'my_tool',
+          description: 'Does something',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'title': {
+                'type': 'string',
+                'description': 'A title',
+              },
+              'items': {
+                'type': 'array',
                 'items': {
-                  'type': 'array',
-                  'items': {
-                    'type': 'object',
-                    'properties': {
-                      'name': {'type': 'string'},
-                    },
-                    'required': ['name'],
-                    'additionalProperties': false,
+                  'type': 'object',
+                  'properties': {
+                    'name': {'type': 'string'},
                   },
+                  'required': ['name'],
+                  'additionalProperties': false,
                 },
               },
-              'required': ['title'],
-              'additionalProperties': false,
             },
-          ),
+            'required': ['title'],
+            'additionalProperties': false,
+          },
         ),
       ];
 
@@ -780,39 +681,34 @@ void main() {
       // A schema value that is a List of Map sub-schemas (e.g. anyOf) must
       // have additionalProperties stripped recursively from each list element.
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Call a function'),
-        ),
+        LottiMessage.userText('Call a function'),
       ];
 
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            parameters: {
-              'type': 'object',
-              'properties': {
-                'value': {
-                  'anyOf': [
-                    {
-                      'type': 'object',
-                      'properties': {
-                        'kind': {'type': 'string'},
-                      },
-                      'additionalProperties': false,
+        LottiTool(
+          name: 'my_tool',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'value': {
+                'anyOf': [
+                  {
+                    'type': 'object',
+                    'properties': {
+                      'kind': {'type': 'string'},
                     },
-                    {
-                      'type': 'number',
-                      // Plain string element in the same list exercises the
-                      // non-map branch (returns the element unchanged).
-                    },
-                    'scalar',
-                  ],
-                },
+                    'additionalProperties': false,
+                  },
+                  {
+                    'type': 'number',
+                    // Plain string element in the same list exercises the
+                    // non-map branch (returns the element unchanged).
+                  },
+                  'scalar',
+                ],
               },
             },
-          ),
+          },
         ),
       ];
 
@@ -851,16 +747,13 @@ void main() {
 
     test('strips additionalProperties from buildRequestBody tools too', () {
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            parameters: {
-              'type': 'object',
-              'properties': <String, dynamic>{},
-              'additionalProperties': false,
-            },
-          ),
+        LottiTool(
+          name: 'my_tool',
+          parameters: {
+            'type': 'object',
+            'properties': <String, dynamic>{},
+            'additionalProperties': false,
+          },
         ),
       ];
 
@@ -881,10 +774,8 @@ void main() {
 
     test('skips assistant message with no content or tool calls', () {
       final messages = [
-        const ChatCompletionMessage.assistant(),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        const LottiMessage.assistant(),
+        LottiMessage.userText('Hello'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -901,9 +792,7 @@ void main() {
 
     test('handles empty string system message', () {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        LottiMessage.userText('Hello'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -919,9 +808,7 @@ void main() {
 
     test('includes maxTokens in generation config', () {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        LottiMessage.userText('Hello'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -937,16 +824,10 @@ void main() {
 
     test('converts user message with content parts including image', () {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'Describe this: '),
-            ChatCompletionMessageContentPart.image(
-              imageUrl: ChatCompletionMessageImageUrl(
-                url: 'data:image/png;base64,abc123',
-              ),
-            ),
-          ]),
-        ),
+        LottiMessage.userParts(const [
+          LottiContentPart.text('Describe this: '),
+          LottiContentPart.image('data:image/png;base64,abc123'),
+        ]),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -967,17 +848,13 @@ void main() {
 
     test('converts user message with audio content part', () {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'Transcribe: '),
-            ChatCompletionMessageContentPart.audio(
-              inputAudio: ChatCompletionMessageInputAudio(
-                data: 'base64audiodata',
-                format: ChatCompletionMessageInputAudioFormat.wav,
-              ),
-            ),
-          ]),
-        ),
+        LottiMessage.userParts(const [
+          LottiContentPart.text('Transcribe: '),
+          LottiContentPart.audio(
+            base64Data: 'base64audiodata',
+            format: LottiAudioFormat.wav,
+          ),
+        ]),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -995,14 +872,8 @@ void main() {
 
     test('skips developer messages (not supported by Gemini)', () {
       final messages = [
-        const ChatCompletionMessage.developer(
-          content: ChatCompletionDeveloperMessageContent.text(
-            'Developer instructions',
-          ),
-        ),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        const LottiMessage.developer('Developer instructions'),
+        LottiMessage.userText('Hello'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -1017,37 +888,10 @@ void main() {
       expect(contents.first['role'], 'user');
     });
 
-    test('handles function message with null content', () {
-      final messages = [
-        const ChatCompletionMessage.function(
-          name: 'my_function',
-          content: null,
-        ),
-      ];
-
-      final body = GeminiUtils.buildMultiTurnRequestBody(
-        messages: messages,
-        temperature: 0.7,
-        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 256),
-      );
-
-      final contents = (body['contents'] as List).cast<Map<String, dynamic>>();
-      expect(contents.length, 1);
-      final parts = (contents.first['parts'] as List)
-          .cast<Map<String, dynamic>>();
-      final funcResponse = parts.first['functionResponse'] as Map;
-      expect(funcResponse['name'], 'my_function');
-      // Should use empty string for null content
-      expect((funcResponse['response'] as Map)['result'], '');
-    });
-
     test('falls back to toolCallId when function name not in mapping', () {
       // Tool response without corresponding assistant message
       final messages = [
-        const ChatCompletionMessage.tool(
-          toolCallId: 'unknown-id',
-          content: 'Result',
-        ),
+        const LottiMessage.tool(toolCallId: 'unknown-id', content: 'Result'),
       ];
 
       final body = GeminiUtils.buildMultiTurnRequestBody(
@@ -1071,25 +915,17 @@ void main() {
       test('all $count assistant tool calls produce functionCall parts', () {
         final toolCalls = List.generate(
           count,
-          (i) => ChatCompletionMessageToolCall(
+          (i) => LottiToolCall(
             id: 'call-$i',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'fn_$i',
-              arguments: '{"n": $i}',
-            ),
+            name: 'fn_$i',
+            arguments: '{"n": $i}',
           ),
         );
-        final messages = <ChatCompletionMessage>[
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('go'),
-          ),
-          ChatCompletionMessage.assistant(toolCalls: toolCalls),
+        final messages = <LottiMessage>[
+          LottiMessage.userText('go'),
+          LottiMessage.assistant(toolCalls: toolCalls),
           for (var i = 0; i < count; i++)
-            ChatCompletionMessage.tool(
-              toolCallId: 'call-$i',
-              content: 'result $i',
-            ),
+            LottiMessage.tool(toolCallId: 'call-$i', content: 'result $i'),
         ];
 
         final body = GeminiUtils.buildMultiTurnRequestBody(

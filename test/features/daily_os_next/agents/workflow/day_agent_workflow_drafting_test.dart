@@ -486,7 +486,7 @@ void main() {
           );
           conversationRepository
             ..toolCallsByInvocation = [
-              const <ChatCompletionMessageToolCall>[],
+              const <LottiToolCall>[],
               [
                 toolCall(
                   id: 'draft-call',
@@ -528,14 +528,13 @@ void main() {
             retryCall.message,
             contains('You did not call `draft_day_plan`'),
           );
-          expect(retryCall.tools.map((tool) => tool.function.name), [
+          expect(retryCall.tools.map((tool) => tool.name), [
             DayAgentToolNames.draftDayPlan,
           ]);
-          retryCall.toolChoice!.map(
-            mode: (_) => fail('Expected named tool choice, got mode.'),
-            tool: (named) {
-              expect(named.value.function.name, DayAgentToolNames.draftDayPlan);
-            },
+          expect(retryCall.toolChoice, isA<LottiToolChoiceSpecific>());
+          expect(
+            (retryCall.toolChoice! as LottiToolChoiceSpecific).name,
+            DayAgentToolNames.draftDayPlan,
           );
           verify(
             () => planService.executeTool(
@@ -584,7 +583,7 @@ void main() {
           );
           conversationRepository
             ..toolCallsByInvocation = [
-              const <ChatCompletionMessageToolCall>[],
+              const <LottiToolCall>[],
               [
                 toolCall(
                   id: 'draft-call',
@@ -618,7 +617,7 @@ void main() {
         () async {
           final planService = MockDayAgentPlanService();
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
+            const <LottiToolCall>[],
           ];
 
           final result = await execute(
@@ -666,7 +665,7 @@ void main() {
             ),
           );
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
+            const <LottiToolCall>[],
             [
               toolCall(
                 id: 'draft-call',
@@ -707,8 +706,8 @@ void main() {
           final planService = MockDayAgentPlanService();
           stubDraftingPlanContext(planService);
           conversationRepository.toolCallsByInvocation = [
-            const <ChatCompletionMessageToolCall>[],
-            const <ChatCompletionMessageToolCall>[],
+            const <LottiToolCall>[],
+            const <LottiToolCall>[],
           ];
 
           final result = await execute(

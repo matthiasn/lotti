@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
@@ -32,7 +33,6 @@ import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -240,18 +240,11 @@ void main() {
     ).thenAnswer((_) async => meliousProvider);
   }
 
-  ChatCompletionMessageToolCall toolCall(
+  LottiToolCall toolCall(
     String name,
     Map<String, dynamic> args, {
     String id = 'call-1',
-  }) => ChatCompletionMessageToolCall(
-    id: id,
-    type: ChatCompletionMessageToolCallType.function,
-    function: ChatCompletionMessageFunctionCall(
-      name: name,
-      arguments: jsonEncode(args),
-    ),
-  );
+  }) => LottiToolCall(id: id, name: name, arguments: jsonEncode(args));
 
   setUpAll(registerAllFallbackValues);
 
@@ -962,8 +955,7 @@ void main() {
           strategy,
         }) async {
           handedOver ??= [
-            for (final tool in tools ?? const <ChatCompletionTool>[])
-              tool.function.name,
+            for (final tool in tools ?? const <LottiTool>[]) tool.name,
           ];
           await (strategy! as GoalAgentStrategy).processToolCalls(
             toolCalls: [
@@ -2157,7 +2149,7 @@ void main() {
           } else if (calls == 2) {
             expect(message, contains('Dismissal cooldown does not block'));
             expect(
-              [for (final tool in tools!) tool.function.name],
+              [for (final tool in tools!) tool.name],
               [GoalAgentToolNames.createGoalAd],
             );
             expect(toolChoice, isNotNull);
@@ -2180,7 +2172,7 @@ void main() {
           } else {
             expect(message, contains('A banner was created in this wake'));
             expect(
-              [for (final tool in tools!) tool.function.name],
+              [for (final tool in tools!) tool.name],
               [GoalAgentToolNames.replyToUser],
             );
             expect(toolChoice, isNotNull);
@@ -2377,7 +2369,7 @@ void main() {
     stubSpec();
     stubGlmResolution();
     conversationRepository.maxDelegateCalls = 3;
-    final toolChoices = <ChatCompletionToolChoiceOption?>[];
+    final toolChoices = <LottiToolChoice?>[];
     conversationRepository.sendMessageDelegate =
         ({
           required conversationId,
@@ -2393,7 +2385,7 @@ void main() {
           toolChoices.add(toolChoice);
           if (toolChoices.length == 2) {
             expect(
-              tools!.single.function.name,
+              tools!.single.name,
               GoalAgentToolNames.updateGoalReport,
               reason: 'the retry restricts the surface to the report tool',
             );
@@ -2460,7 +2452,7 @@ void main() {
           } else {
             expect(message, contains('editing a habit day'));
             expect(
-              [for (final tool in tools!) tool.function.name],
+              [for (final tool in tools!) tool.name],
               [GoalAgentToolNames.updateGoalReport],
             );
             expect(toolChoice, isNotNull);
@@ -2856,9 +2848,7 @@ void main() {
     );
 
     when(() => conversationManager.messages).thenReturn([
-      const ChatCompletionMessage.assistant(
-        content: 'Re-running the proven banner.',
-      ),
+      const LottiMessage.assistant(content: 'Re-running the proven banner.'),
     ]);
     workflow = _offTrackWorkflow(
       repository,
@@ -4756,7 +4746,7 @@ void main() {
     final derivation = await _offTrackDerivation(repository, version!, now);
 
     Future<GoalAgentStrategy> strategyWith(
-      List<ChatCompletionMessageToolCall> calls,
+      List<LottiToolCall> calls,
     ) async {
       final strategy = GoalAgentStrategy(
         syncService: syncService,
@@ -4882,7 +4872,7 @@ void main() {
           temperature = 0.7,
           strategy,
         }) async {
-          callTools.add([for (final t in tools!) t.function.name]);
+          callTools.add([for (final t in tools!) t.name]);
           if (callTools.length == 2) {
             expect(
               message,
@@ -5623,7 +5613,7 @@ void main() {
           }
           forcedInstruction = message;
           expect(
-            [for (final tool in tools!) tool.function.name],
+            [for (final tool in tools!) tool.name],
             [GoalAgentToolNames.updateGoalReport],
           );
           expect(toolChoice, isNotNull);
