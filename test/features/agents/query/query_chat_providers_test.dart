@@ -128,9 +128,9 @@ void main() {
       await setUpTestGetIt();
     });
     tearDown(tearDownTestGetIt);
-    for (final kind in [QueryScopeKind.task, QueryScopeKind.category]) {
+    for (final kind in QueryScopeKind.values) {
       test(
-        '$kind uses the existing profile, source access and sync store',
+        '$kind keeps profile loading alive across frames for a query',
         () async {
           final bench = QueryPersistenceBench()
             ..add('task', category: categoryMindfulness.id);
@@ -177,10 +177,15 @@ void main() {
           bench.categories[0] = bench.categories.single.copyWith(
             defaultProfileId: 'category-profile',
           );
+          final started = Completer<void>();
+          final resolved = Completer<ResolvedProfile>();
           final resolver = MockProfileResolver();
           when(
             () => resolver.resolveByProfileId('category-profile'),
-          ).thenAnswer((_) async => profile);
+          ).thenAnswer((_) {
+            started.complete();
+            return resolved.future;
+          });
           final container = ProviderContainer(
             overrides: [
               journalDbProvider.overrideWithValue(bench.db),
@@ -188,23 +193,36 @@ void main() {
               cloudInferenceRepositoryProvider.overrideWithValue(cloud),
               profileResolverProvider.overrideWithValue(resolver),
               agentResolvedSetupProvider('agent').overrideWith(
-                (ref) async => ResolvedAgentSetup(
-                  status: AgentSetupResolutionStatus.resolved,
-                  profile: profile,
-                ),
+                (ref) async {
+                  started.complete();
+                  return ResolvedAgentSetup(
+                    status: AgentSetupResolutionStatus.resolved,
+                    profile: await resolved.future,
+                  );
+                },
               ),
             ],
           );
           addTearDown(container.dispose);
           final scope = QueryScope(
             kind: kind,
-            id: kind == QueryScopeKind.task ? 'task' : categoryMindfulness.id,
+            id: kind == QueryScopeKind.category
+                ? categoryMindfulness.id
+                : 'task',
           );
-          final builder = await container.read(queryBuilderFactoryProvider)(
+          final pending = container.read(queryBuilderFactoryProvider)(
             scope,
             'agent',
             'chat',
           );
+          final completion = expectLater(pending, completes);
+          await started.future;
+          // Database reads take real frames in the app. An immediate mock
+          // resolution conceals disposal of a profile read without a listener.
+          await container.pump();
+          resolved.complete(profile);
+          await completion;
+          final builder = await pending;
           final corpus = await builder.crawler.discover(scope, ['feeder']);
           expect(corpus.documents.map((d) => d.entry.meta.id), ['task']);
           expect(
