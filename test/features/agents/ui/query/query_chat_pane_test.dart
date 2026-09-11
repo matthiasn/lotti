@@ -69,7 +69,8 @@ void main() {
       entries: {...bench.entries},
     ),
   );
-  setUp(() {
+  setUp(() async {
+    await setUpTestGetIt();
     bench = QueryTestBench();
     bench.entries['task'] = testTask.copyWith(
       meta: testTask.meta.copyWith(
@@ -136,6 +137,7 @@ void main() {
     await privacy.close();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null);
+    await tearDownTestGetIt();
   });
   Future<void> pump(
     WidgetTester tester, {
@@ -880,14 +882,9 @@ void main() {
   testWidgets(
     'answer evidence exposes coverage and opens its source without losing the draft',
     (tester) async {
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt
-            ..registerSingleton<UserActivityService>(MockUserActivityService())
-            ..registerSingleton<EditorStateService>(MockEditorStateService());
-        },
-      );
-      addTearDown(tearDownTestGetIt);
+      getIt
+        ..registerSingleton<UserActivityService>(MockUserActivityService())
+        ..registerSingleton<EditorStateService>(MockEditorStateService());
       bench.add('note', category: categoryMindfulness.id);
       bench.entries['note'] = testAudioEntry.copyWith(
         meta: bench.entries['note']!.meta,

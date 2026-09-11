@@ -21,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
 
@@ -79,6 +80,8 @@ Widget _buildShell({
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
 
   group('AiSummaryCard – error gating', () {
     testWidgets(
