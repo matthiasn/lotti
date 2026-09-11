@@ -300,7 +300,9 @@ class QueryChatController extends Notifier<QueryChatSession> {
         _set(id, state.local(id).copyWith(status: QueryTurnStatus.idle));
       }
     } catch (error, stack) {
-      if (error is! QueryCancelled && error is! QueryScopeUnavailable) {
+      if (error is! QueryCancelled &&
+          error is! QueryScopeUnavailable &&
+          error is! QueryInferenceUnavailable) {
         // Provider errors can contain prompts, responses or credentials.
         // Record only their type, stage and numeric HTTP status, never text.
         final httpStatus = error is MeliousInferenceException
@@ -308,10 +310,11 @@ class QueryChatController extends Notifier<QueryChatSession> {
             : null;
         logger.error(
           LogDomain.chat,
-          error.runtimeType,
+          error.runtimeType.toString(),
+          errorType: error.runtimeType,
           message:
-              'Query failed during $stage (errorType=${error.runtimeType}'
-              '${httpStatus == null ? '' : ', httpStatus=$httpStatus'})',
+              'Query failed during $stage'
+              '${httpStatus == null ? '' : ' (httpStatus=$httpStatus)'}',
           subDomain: 'query.send',
           stackTrace: stack,
         );

@@ -127,14 +127,14 @@ void main() {
           isEmpty,
         );
         final status = error is MeliousInferenceException
-            ? ', httpStatus=401'
+            ? ' (httpStatus=401)'
             : '';
         verify(
           () => logger.error(
             LogDomain.chat,
-            error.runtimeType,
-            message:
-                'Query failed during setup (errorType=${error.runtimeType}$status)',
+            error.runtimeType.toString(),
+            errorType: error.runtimeType,
+            message: 'Query failed during setup$status',
             subDomain: 'query.send',
             stackTrace: any(named: 'stackTrace'),
           ),
@@ -406,6 +406,7 @@ void main() {
       );
       expect(container.read(provider).local(id).draft, 'Decision?');
       expect((await bench.store.load('agent')).chats.single.questions, isEmpty);
+      verifyNoMoreInteractions(logger);
     }),
   );
 

@@ -132,7 +132,8 @@ Unexpected failures are logged under `chat/query.send` with their stage,
 exception type and a numeric Melious HTTP status when available. Exception
 messages and response bodies are not logged: they may contain private source
 text or credentials. The diagnostic stack identifies the failing code path.
-Cancellation and visibility changes do not emit error logs. Failure copy does
+Cancellation, visibility changes and an unavailable inference setup do not
+emit error logs. Failure copy does
 not claim the question was saved, because setup or persistence can fail before
 that write.
 
