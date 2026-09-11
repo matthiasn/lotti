@@ -40,6 +40,17 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.9" date="2026-09-12">
+      <description>
+        <p>Added: listen to the recording behind a quoted answer. Query chats can prepare timestamps using Melious Whisper or a compatible Mistral Voxtral model in the agent's transcription profile, then play the matching excerpt from the original recording. Saved quotes and notes keep their wording. Answers can also be read aloud using local text-to-speech when enabled; switching chats or hiding private content stops playback.</p>
+        <p>Changed: the 3D project world now opens with the street in full view. The control bar used to run across the top of the window the whole time you were in there - project title, counts, three navigation buttons, two segmented controls and four checkboxes - covering the part of the district you were walking towards. It starts collapsed now: two round buttons in the corner, one to leave and one to show the controls, which slide out beside them when you want them. Press T to show or hide them, Esc to put them away. With them open, Tab moves between the controls, so the whole bar works from the keyboard. The status key and the control hints along the bottom stay where they were.</p>
+        <p>Fixed: stopping speech preparation now prevents late playback. Cancelling while a voice model is preparing or opening audio no longer lets that audio start afterward.</p>
+        <p>Fixed: asking an agent could fail immediately while its setup was loading. Task, project and category queries now wait for the configured model setup to finish loading before starting the search. Audio timestamp preparation uses the same corrected setup lookup.</p>
+        <p>Fixed: agent chat now opens with a direct invitation to ask about the current task, project or category. Its failure message no longer claims a question was saved when setup failed before saving it.</p>
+        <p>Fixed: large agent searches shortlist sources together before inspecting matches. This reduces model round trips while keeping exact quotes and live privacy checks. Skipped sources are reported as incomplete coverage.</p>
+        <p>Fixed: query chat shows searching while it retrieves evidence. It switches to preparing an answer only when the final response is being composed.</p>
+      </description>
+    </release>
     <release version="1.1.8" date="2026-09-11">
       <description>
         <p>Added: the project world can now be walked in daylight. The district was built for one hour of the day: a neon city at night, where a task's health was told in lit windows, roof lanterns and pools of lamplight. A Night | Day switch in the world's controls now rebuilds it under a clear mid-morning sky - concrete and asphalt at their real colours, glass that mirrors the sky, buildings and benches standing in their own shade - and the choice is remembered the next time you go in. What each task is doing still reads: by day the signs, the shutters, the hoardings and the flames over an overdue job carry it instead of the lights.</p>
