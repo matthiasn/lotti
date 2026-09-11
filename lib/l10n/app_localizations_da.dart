@@ -10968,11 +10968,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Optagelsen er ændret. Forbered tidsstemplerne igen.';
 
   @override
-  String get queryAudioStop => 'Stop lyd';
+  String get queryAudioStop => 'Stop afspilningen';
 
   @override
   String get queryAudioTimingUnavailable =>
-      'Vælg Melious Whisper eller en understøttet Mistral Voxtral-transskriptionsmodel i agentens inferensprofil for at klargøre lyduddrag.';
+      'Vælg Melious Whisper eller en understøttet Mistral Voxtral-transskriptionsmodel i agentens inferensprofil for at klargøre lyduddrag. Udbyderens URL skal bruge HTTPS.';
 
   @override
   String get queryAudioTooLarge =>

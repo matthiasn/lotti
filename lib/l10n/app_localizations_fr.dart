@@ -11167,7 +11167,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queryAudioTimingUnavailable =>
-      'Pour préparer des extraits, sélectionne Melious Whisper ou un modèle de transcription Mistral Voxtral compatible dans le profil d’inférence de cet agent.';
+      'Pour préparer des extraits, sélectionne Melious Whisper ou un modèle de transcription Mistral Voxtral compatible dans le profil d’inférence de cet agent. L’URL du fournisseur doit utiliser HTTPS.';
 
   @override
   String get queryAudioTooLarge =>

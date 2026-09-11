@@ -18,6 +18,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:media_kit/media_kit.dart';
@@ -62,6 +63,44 @@ void main() {
     actionId: 'answer:0',
     evidence: bench.evidence,
     generate: generate,
+  );
+
+  test(
+    'navigation reports native disposal failure without retaining playback',
+    () async {
+      final logger = MockDomainLogger();
+      await getIt.unregister<DomainLogger>();
+      getIt.registerSingleton<DomainLogger>(logger);
+      final local = ProviderContainer(overrides: bench.overrides);
+      addTearDown(local.dispose);
+      final listener = local.listen(provider, (_, _) {});
+      await local.read(configFlagProvider('private').future);
+      await local.read(queryChatDataProvider(key.home).future);
+      await local
+          .read(provider.notifier)
+          .playEvidence(
+            actionId: 'answer:0',
+            evidence: bench.evidence,
+          );
+      expect(local.read(provider).status, QueryAudioStatus.playing);
+      when(
+        bench.player.dispose,
+      ).thenAnswer((_) async => throw StateError('native disposal failed'));
+
+      listener.close();
+      await local.pump();
+
+      verify(bench.player.dispose).called(1);
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          any(),
+          subDomain: 'queryAudio.release',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+      expect(local.exists(provider), isFalse);
+    },
   );
 
   test(

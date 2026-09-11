@@ -43,9 +43,18 @@ class QueryAudioTimingService {
   final MeliousInferenceRepository Function() createMeliousRepository;
   final AiInteractionCapture? capture;
 
-  /// Melious Whisper and direct Mistral transcription models have timed output.
+  /// Melious Whisper and direct Mistral transcription models support timing
+  /// over HTTPS. Insecure or malformed provider endpoints are unavailable.
   /// Chat-audio and realtime models are never rerouted to another endpoint.
   static bool supports(ResolvedProfile? profile) {
+    final endpoint = Uri.tryParse(
+      profile?.transcriptionProvider?.baseUrl ?? '',
+    );
+    if (endpoint == null ||
+        endpoint.scheme != 'https' ||
+        endpoint.host.isEmpty) {
+      return false;
+    }
     final model = profile?.transcriptionModelId;
     if (profile?.transcriptionProvider?.inferenceProviderType ==
         InferenceProviderType.melious) {

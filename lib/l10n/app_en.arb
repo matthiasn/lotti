@@ -6316,7 +6316,7 @@
   "queryAudioReadAloud": "Read answer aloud",
   "queryAudioStale": "The recording has changed. Prepare the timestamps again.",
   "queryAudioStop": "Stop audio",
-  "queryAudioTimingUnavailable": "To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile.",
+  "queryAudioTimingUnavailable": "To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile. The provider URL must use HTTPS.",
   "queryAudioTooLarge": "Preparing timestamps supports recordings up to 25 MB. Choose a smaller recording.",
   "queryAudioUploadNotice": "Preparing timestamps sends this recording to the transcription provider configured for this agent.",
   "queryCategoryAgent": "Category agent",

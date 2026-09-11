@@ -4224,7 +4224,7 @@
   "queryAudioReadAloud": "Antwort vorlesen",
   "queryAudioStale": "Die Aufnahme hat sich geändert. Erstelle die Zeitmarken erneut.",
   "queryAudioStop": "Audio stoppen",
-  "queryAudioTimingUnavailable": "Wähle Melious Whisper oder ein unterstütztes Mistral-Voxtral-Transkriptionsmodell im Inferenzprofil dieses Agenten, um Audioausschnitte vorzubereiten.",
+  "queryAudioTimingUnavailable": "Wähle Melious Whisper oder ein unterstütztes Mistral-Voxtral-Transkriptionsmodell im Inferenzprofil dieses Agenten, um Audioausschnitte vorzubereiten. Die Anbieter-URL muss HTTPS verwenden.",
   "queryAudioTooLarge": "Zeitstempel können für Aufnahmen bis 25 MB vorbereitet werden. Wähle eine kleinere Aufnahme.",
   "queryAudioUploadNotice": "Zum Erstellen der Zeitmarken wird diese Aufnahme an den für diesen Agenten konfigurierten Transkriptionsanbieter gesendet.",
   "queryCategoryAgent": "Kategorie-Agent",

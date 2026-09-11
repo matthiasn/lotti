@@ -928,6 +928,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
                 uri,
                 abortTrigger: abortTrigger,
               )
+              // Timing requests must not redirect private audio off HTTPS.
+              ..followRedirects = onSegments == null
               ..headers['Authorization'] = 'Bearer $normalizedApiKey'
               ..files.add(
                 http.MultipartFile.fromBytes(

@@ -11042,7 +11042,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryAudioFailed =>
-      'Não foi possível preparar ou reproduzir o áudio. Tente novamente.';
+      'Não foi possível preparar ou reproduzir o áudio. Tenta novamente.';
 
   @override
   String queryAudioListen(String start, String end) {
@@ -11055,7 +11055,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryAudioNoMatch =>
-      'Não foi possível associar esta citação de forma inequívoca à gravação. Você ainda pode abrir a entrada completa.';
+      'Não foi possível associar esta citação de forma inequívoca à gravação. Ainda podes abrir a entrada completa.';
 
   @override
   String get queryAudioPrepare => 'Preparar trecho de áudio';
@@ -11075,7 +11075,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryAudioTimingUnavailable =>
-      'Para preparares excertos, seleciona Melious Whisper ou um modelo de transcrição Mistral Voxtral compatível no perfil de inferência deste agente.';
+      'Para preparares excertos, seleciona Melious Whisper ou um modelo de transcrição Mistral Voxtral compatível no perfil de inferência deste agente. O URL do fornecedor tem de usar HTTPS.';
 
   @override
   String get queryAudioTooLarge =>

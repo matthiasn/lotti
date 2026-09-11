@@ -11118,7 +11118,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryAudioTimingUnavailable =>
-      'Pro přípravu úryvků vyber v inferenčním profilu tohoto agenta Melious Whisper nebo podporovaný přepisovací model Mistral Voxtral.';
+      'Pro přípravu úryvků vyber v inferenčním profilu tohoto agenta Melious Whisper nebo podporovaný přepisovací model Mistral Voxtral. URL poskytovatele musí používat HTTPS.';
 
   @override
   String get queryAudioTooLarge =>

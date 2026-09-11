@@ -10982,7 +10982,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryAudioTimingUnavailable =>
-      'Välj Melious Whisper eller en Mistral Voxtral-transkriptionsmodell som stöds i agentens inferensprofil för att förbereda ljudklipp.';
+      'Välj Melious Whisper eller en Mistral Voxtral-transkriptionsmodell som stöds i agentens inferensprofil för att förbereda ljudklipp. Leverantörens URL måste använda HTTPS.';
 
   @override
   String get queryAudioTooLarge =>

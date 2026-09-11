@@ -101,6 +101,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
           final uri = baseUri.resolve('audio/transcriptions');
 
           final request = http.MultipartRequest('POST', uri)
+            // Timing requests must not redirect private audio off HTTPS.
+            ..followRedirects = onSegments == null
             ..headers['Authorization'] = 'Bearer $apiKey'
             ..files.add(
               http.MultipartFile.fromBytes(

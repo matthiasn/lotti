@@ -7,6 +7,8 @@ import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Language-agnostic synthesis mode; Supertonic infers from the text.
 const String kDefaultTtsLanguage = 'na';
@@ -32,9 +34,12 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   Future<void> _preparation = Future<void>.value();
   File? _file;
   TtsAudioPlayer? _player;
+  late DomainLogger _logger;
 
   @override
   TtsPlaybackState build() {
+    // Cleanup can finish after provider disposal, when ref is no longer usable.
+    _logger = getIt<DomainLogger>();
     ref.onDispose(() {
       _generation++;
       _cancelPlayerSubscriptions();
@@ -211,6 +216,13 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   Future<void> _stopAndDelete(TtsAudioPlayer? player, File? file) async {
     try {
       await player?.stop();
+    } catch (error, stackTrace) {
+      _logger.error(
+        LogDomain.speech,
+        StateError('TTS player shutdown failed (${error.runtimeType})'),
+        subDomain: 'ttsPlayback.stop',
+        stackTrace: stackTrace,
+      );
     } finally {
       await _deleteFile(file);
     }
@@ -220,8 +232,17 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     if (file == null) return;
     try {
       if (file.existsSync()) await file.delete();
-    } on FileSystemException {
-      // The operating system may have already removed a temporary WAV.
+    } on FileSystemException catch (error, stackTrace) {
+      // ENOENT also covers a temporary WAV removed between exists and delete.
+      if (error.osError?.errorCode == 2) return;
+      _logger.error(
+        LogDomain.speech,
+        StateError(
+          'Temporary TTS audio deletion failed (OS error ${error.osError?.errorCode})',
+        ),
+        subDomain: 'ttsPlayback.delete',
+        stackTrace: stackTrace,
+      );
     }
   }
 

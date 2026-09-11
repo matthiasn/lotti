@@ -4231,7 +4231,7 @@
   "queryAudioReadAloud": "Přečíst odpověď nahlas",
   "queryAudioStale": "Nahrávka se změnila. Připrav časové značky znovu.",
   "queryAudioStop": "Zastavit zvuk",
-  "queryAudioTimingUnavailable": "Pro přípravu úryvků vyber v inferenčním profilu tohoto agenta Melious Whisper nebo podporovaný přepisovací model Mistral Voxtral.",
+  "queryAudioTimingUnavailable": "Pro přípravu úryvků vyber v inferenčním profilu tohoto agenta Melious Whisper nebo podporovaný přepisovací model Mistral Voxtral. URL poskytovatele musí používat HTTPS.",
   "queryAudioTooLarge": "Časové značky lze připravit pro nahrávky do 25 MB. Vyber menší nahrávku.",
   "queryAudioUploadNotice": "Při přípravě časových značek se tato nahrávka odešle poskytovateli přepisu nastavenému pro tohoto agenta.",
   "queryCategoryAgent": "Agent kategorie",

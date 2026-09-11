@@ -243,7 +243,9 @@ timing adapters support Melious Whisper models and the dedicated Mistral
 `voxtral-mini-latest` / `voxtral-mini-transcribe-*` batch models. Melious Voxtral,
 realtime and instruction-following audio models are excluded. A request never
 substitutes a provider or model. The preparation action discloses the upload;
-an unsupported profile explains what to configure.
+an unsupported profile explains what to configure. Timing preparation requires
+a valid HTTPS provider URL and disables HTTP redirects, so the new upload path
+cannot send credentials or private audio over an insecure connection.
 
 Both the [Mistral segment timestamp contract](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
 and [Melious Whisper verbose JSON](https://melious.ai/docs/reference/audio) are

@@ -62,7 +62,10 @@ but the resulting file is deleted without playback. A caller may provide a
 use that boundary. Source-specific stopping cannot stop another surface's
 utterance. `MediaKitTtsAudioPlayer` also invalidates in-flight open/rate changes
 on stop or disposal. Temporary utterance WAV files are removed after playback,
-cancellation or disposal; model weights remain installed.
+cancellation or disposal; model weights remain installed. Cleanup reports
+native shutdown failures and still attempts file deletion. It ignores only a
+confirmed missing-file error; other filesystem failures are reported through
+the speech logging domain without including the temporary file path or content.
 
 ```mermaid
 stateDiagram-v2

@@ -11167,7 +11167,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryAudioPreparing => 'Se pregătește redarea audio…';
 
   @override
-  String get queryAudioReadAloud => 'Citiți răspunsul cu voce tare';
+  String get queryAudioReadAloud => 'Ascultați răspunsul';
 
   @override
   String get queryAudioStale =>
@@ -11178,7 +11178,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryAudioTimingUnavailable =>
-      'Pentru a pregăti fragmente, selectați Melious Whisper sau un model de transcriere Mistral Voxtral compatibil în profilul de inferență al acestui agent.';
+      'Pentru a pregăti fragmente, selectați Melious Whisper sau un model de transcriere Mistral Voxtral compatibil în profilul de inferență al acestui agent. Adresa URL a furnizorului trebuie să utilizeze HTTPS.';
 
   @override
   String get queryAudioTooLarge =>

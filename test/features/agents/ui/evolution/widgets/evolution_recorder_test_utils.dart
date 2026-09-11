@@ -65,7 +65,7 @@ class ProcessingTestController extends ChatRecorderController {
   }
 }
 
-/// Idle controller that can emit a transcript.
+/// Controller that starts idle and can emit a recording state or transcript.
 class TranscriptEmittingController extends ChatRecorderController {
   int clearResultCalls = 0;
 

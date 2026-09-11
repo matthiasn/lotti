@@ -4224,7 +4224,7 @@
   "queryAudioReadAloud": "Lire la réponse à voix haute",
   "queryAudioStale": "L’enregistrement a changé. Prépare à nouveau les horodatages.",
   "queryAudioStop": "Arrêter le son",
-  "queryAudioTimingUnavailable": "Pour préparer des extraits, sélectionne Melious Whisper ou un modèle de transcription Mistral Voxtral compatible dans le profil d’inférence de cet agent.",
+  "queryAudioTimingUnavailable": "Pour préparer des extraits, sélectionne Melious Whisper ou un modèle de transcription Mistral Voxtral compatible dans le profil d’inférence de cet agent. L’URL du fournisseur doit utiliser HTTPS.",
   "queryAudioTooLarge": "Tu peux préparer des horodatages pour des enregistrements de 25 Mo maximum. Choisis un enregistrement plus petit.",
   "queryAudioUploadNotice": "La préparation des horodatages envoie cet enregistrement au fournisseur de transcription configuré pour cet agent.",
   "queryCategoryAgent": "Agent de catégorie",

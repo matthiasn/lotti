@@ -18502,7 +18502,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryAudioTimingUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile.'**
+  /// **'To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile. The provider URL must use HTTPS.'**
   String get queryAudioTimingUnavailable;
 
   /// No description provided for @queryAudioTooLarge.

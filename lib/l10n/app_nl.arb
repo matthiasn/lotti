@@ -4697,7 +4697,7 @@
   "queryAudioReadAloud": "Antwoord voorlezen",
   "queryAudioStale": "De opname is gewijzigd. Bereid de tijdstempels opnieuw voor.",
   "queryAudioStop": "Audio stoppen",
-  "queryAudioTimingUnavailable": "Selecteer Melious Whisper of een ondersteund Mistral Voxtral-transcriptiemodel in het inferentieprofiel van deze agent om audiofragmenten voor te bereiden.",
+  "queryAudioTimingUnavailable": "Selecteer Melious Whisper of een ondersteund Mistral Voxtral-transcriptiemodel in het inferentieprofiel van deze agent om audiofragmenten voor te bereiden. De URL van de provider moet HTTPS gebruiken.",
   "queryAudioTooLarge": "Je kunt tijdstempels voorbereiden voor opnamen tot 25 MB. Kies een kleinere opname.",
   "queryAudioUploadNotice": "Bij het voorbereiden van tijdstempels wordt deze opname naar de transcriptieprovider gestuurd die voor deze agent is ingesteld.",
   "queryCategoryAgent": "Categorie-agent",
