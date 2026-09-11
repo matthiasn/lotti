@@ -86,6 +86,9 @@ void main() {
       expect(find.textContaining('sends this recording'), findsOneWidget);
       expect(bench.requests, 0);
       await tester.tap(find.text('Prepare audio excerpt'));
+      // Buffered HTTP streams deliver their result through the event queue.
+      // Advance fake time to drain it before checking the persisted sidecar.
+      await tester.pump(Duration.zero);
       await tester.pump();
       expect(bench.requests, 1);
       expect(bench.writes, 1);

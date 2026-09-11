@@ -10,11 +10,14 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../tts/test_utils.dart';
@@ -30,6 +33,7 @@ void main() {
   setUpAll(registerAllFallbackValues);
   setUp(() async {
     await setUpTestGetIt();
+    getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
     bench = QueryAudioTestBench();
     container = ProviderContainer(overrides: bench.overrides);
     subscription = container.listen(provider, (_, _) {});
