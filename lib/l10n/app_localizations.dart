@@ -25444,6 +25444,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// No description provided for @queryAudioPrepare.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare audio excerpt'**
+  String get queryAudioPrepare;
+
+  /// Play the original recording between these timestamps
+  ///
+  /// In en, this message translates to:
+  /// **'Listen · {start}–{end}'**
+  String queryAudioListen(String start, String end);
+
+  /// No description provided for @queryAudioReadAloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Read answer aloud'**
+  String get queryAudioReadAloud;
+
+  /// No description provided for @queryAudioStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop audio'**
+  String get queryAudioStop;
+
+  /// No description provided for @queryAudioUploadNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing timestamps sends this recording to the transcription provider configured for this agent.'**
+  String get queryAudioUploadNotice;
+
+  /// No description provided for @queryAudioPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing audio…'**
+  String get queryAudioPreparing;
+
+  /// No description provided for @queryAudioNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'This quote could not be matched unambiguously to the recording. You can still open the full entry.'**
+  String get queryAudioNoMatch;
+
+  /// No description provided for @queryAudioTimingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'To prepare excerpts, select a Voxtral transcription model with timestamp support in this agent’s inference profile.'**
+  String get queryAudioTimingUnavailable;
+
+  /// No description provided for @queryAudioMissingFile.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording isn’t available on this device yet.'**
+  String get queryAudioMissingFile;
+
+  /// No description provided for @queryAudioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio could not be prepared or played. Try again.'**
+  String get queryAudioFailed;
+
+  /// No description provided for @queryAudioStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording has changed. Prepare the timestamps again.'**
+  String get queryAudioStale;
 }
 
 class _AppLocalizationsDelegate

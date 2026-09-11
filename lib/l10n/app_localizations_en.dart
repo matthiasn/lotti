@@ -15170,6 +15170,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get queryAudioPrepare => 'Prepare audio excerpt';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Listen · $start–$end';
+  }
+
+  @override
+  String get queryAudioReadAloud => 'Read answer aloud';
+
+  @override
+  String get queryAudioStop => 'Stop audio';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Preparing timestamps sends this recording to the transcription provider configured for this agent.';
+
+  @override
+  String get queryAudioPreparing => 'Preparing audio…';
+
+  @override
+  String get queryAudioNoMatch =>
+      'This quote could not be matched unambiguously to the recording. You can still open the full entry.';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'To prepare excerpts, select a Voxtral transcription model with timestamp support in this agent’s inference profile.';
+
+  @override
+  String get queryAudioMissingFile =>
+      'The recording isn’t available on this device yet.';
+
+  @override
+  String get queryAudioFailed =>
+      'Audio could not be prepared or played. Try again.';
+
+  @override
+  String get queryAudioStale =>
+      'The recording has changed. Prepare the timestamps again.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

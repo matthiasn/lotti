@@ -8,7 +8,9 @@ import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
@@ -46,6 +48,73 @@ void main() {
 
   TtsPlaybackController controllerOf(ProviderContainer c) =>
       c.read(ttsPlaybackControllerProvider.notifier);
+
+  for (final throws in [false, true]) {
+    test(
+      'a ${throws ? 'failed' : 'denied'} playback gate deletes synthesized audio without playing it',
+      () async {
+        final file = MockIoFile();
+        when(file.existsSync).thenReturn(true);
+        when(file.delete).thenAnswer((_) async => file);
+        final player = FakeTtsAudioPlayer();
+        addTearDown(player.dispose);
+        final h = harness(
+          engine: FakeTtsEngine(output: file),
+          player: player,
+        );
+        var gates = 0;
+        await controllerOf(h.container).speak(
+          sourceId: 'chat',
+          text: 'Private answer',
+          canPlay: () async {
+            gates++;
+            if (throws) throw StateError('visibility unavailable');
+            return false;
+          },
+        );
+        expect(gates, 1);
+        expect(player.playCount, 0);
+        verify(file.delete).called(1);
+        expect(
+          h.container.read(ttsPlaybackControllerProvider).status,
+          throws ? TtsPlaybackStatus.error : TtsPlaybackStatus.stopped,
+        );
+      },
+    );
+  }
+
+  test('source-specific stop leaves another surface playing', () async {
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(player: player);
+    final controller = controllerOf(h.container);
+    await controller.speak(sourceId: 'task-card', text: 'Summary');
+    await controller.stop(sourceId: 'query-chat');
+    expect(player.stopCount, 0);
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).sourceId,
+      'task-card',
+    );
+    await controller.stop(sourceId: 'task-card');
+    expect(player.stopCount, 1);
+  });
+
+  test('stopping playback removes its temporary synthesized file', () async {
+    final file = MockIoFile();
+    when(file.existsSync).thenReturn(true);
+    when(file.delete).thenAnswer((_) async => file);
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(
+      engine: FakeTtsEngine(output: file),
+      player: player,
+    );
+    final controller = controllerOf(h.container);
+    await controller.speak(sourceId: 'chat', text: 'Answer');
+    await controller.stop();
+    verify(file.delete).called(1);
+    expect(player.stopCount, 1);
+  });
 
   test('stopping preparation prevents late synthesis from playing', () async {
     final pending = Completer<File>();

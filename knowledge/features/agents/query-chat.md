@@ -28,6 +28,26 @@ sources:
     resource: ../../../lib/features/agents/query/query_chat_store.dart
     title: Synced history and atomic publication
     last_modified: 2026-09-11
+  - id: audio-controller
+    resource: ../../../lib/features/agents/query/query_audio_controller.dart
+    title: Chat-owned audio and live authorization
+    last_modified: 2026-09-11
+  - id: timing
+    resource: ../../../lib/classes/audio_transcript_timing.dart
+    title: Recording-bound transcript timing sidecar
+    last_modified: 2026-09-11
+  - id: alignment
+    resource: ../../../lib/features/agents/query/query_audio_excerpt.dart
+    title: Unique word matching and playback ranges
+    last_modified: 2026-09-11
+  - id: timing-provider
+    resource: ../../../lib/features/agents/query/query_audio_timing_service.dart
+    title: Explicit attributed timestamp generation
+    last_modified: 2026-09-11
+  - id: timing-writer
+    resource: ../../../lib/features/agents/query/query_audio_timing_writer.dart
+    title: Transactional source check and sidecar persistence
+    last_modified: 2026-09-11
   - id: pane
     resource: ../../../lib/features/agents/ui/query/query_chat_pane.dart
     title: Conversation, navigation and deletion UI
@@ -199,7 +219,7 @@ preventing duplicate or late replies from resurrecting a deleted chat.
   replaces the form. Returning from chat therefore preserves unsaved category
   fields; the controller still disposes when the details page is left.
 
-# Voice and future scope
+# Voice input
 
 The shared [agent recorder](chat-input-and-reasoning.md) provides record, stop,
 transcribe and editable draft. Submitting the question remains explicit;
@@ -209,7 +229,84 @@ Switching chats or
 leaving the pane cancels pending dictation so a late transcript cannot land in
 the next conversation.
 
-Phase 2 is not implemented: no timestamp alignment, audio snippet extraction,
-text-to-speech conversation or agent face. Sound bites require segment/word
-alignment against the chosen transcript version and playback/export ranges;
-current evidence offsets must never be interpreted as seconds.
+# Audio evidence and spoken answers
+
+`QueryEvidenceAudioControls` adds an explicit preparation or Listen action to
+recording evidence. Opening a chat or expanding a quote does not transcribe
+anything. Listen uses `media_kit` start/end boundaries on the original local
+file; it does not create another recording or export a clip. A missing local
+recording produces a recoverable state.
+
+Preparation uses the agent/category profile's **transcription slot**, resolved
+through the same `queryProfileProvider` as the question-answering setup. The
+initial timing adapter supports the dedicated Mistral `voxtral-mini-latest` and
+`voxtral-mini-transcribe-*` batch models; realtime and instruction-following
+models are excluded. It never substitutes a provider or model. The preparation
+action discloses the upload; an unsupported profile explains what to configure.
+The provider's [segment timestamp contract](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
+is decoded by `MistralTranscriptionRepository.parseTimedSegments` into integer
+milliseconds. Missing, malformed, unordered or excessive segment lists fail as
+a whole. Ordinary text transcription still accepts a response without timings.
+
+`QueryAudioTimingService` owns one cancellable HTTP client per request and uses
+`AiInteractionCapture` for attribution when registered. Returned text stays out
+of chat history, retrieval context and shared memory. The persisted
+`AudioData.transcriptTiming` sidecar contains the submitted recording's SHA-256,
+source text fingerprint/version, provider/model and timed text segments. Older
+entries deserialize without it. Enrichment preserves the note and its existing
+transcripts. `QueryAudioTimingWriter` compares the complete expected entry
+inside a journal transaction before writing through normal persistence/sync;
+a concurrent edit or deletion rejects the result.
+
+`queryAudioExcerpt` matches the saved quote against those segments using a
+linear word matcher. It tolerates case, punctuation, whitespace and generated
+speaker labels, but does not infer substituted words. A repeated or unmatched
+passage has no playable range. The sidecar must carry the saved source text
+fingerprint, and the local recording's checksum is checked before playback.
+A short quote gets about a minute of listening context, clamped to the recording;
+a long quote retains its full segment span with a little context. Provider
+segments determine every boundary: character offsets never become seconds.
+
+A retained historical quote can use already-matching timing after a text edit.
+Generating new timing requires the source text and category still to match the
+saved evidence. Public deletion still retains the written quote, but does not
+grant access to deleted audio. A changed recording requires another explicit
+preparation; unambiguous text matching is still required afterward.
+
+```mermaid
+stateDiagram-v2
+  [*] --> idle
+  idle --> preparing: Prepare, Listen or Read aloud
+  preparing --> playing: authorized range or local speech ready
+  preparing --> unmatched: quote cannot be located
+  preparing --> unavailable: configured model lacks timing
+  preparing --> stale: recording needs new timing
+  preparing --> missingFile: recording not local
+  preparing --> failed: provider or playback failure
+  playing --> failed: playback call fails
+  preparing --> idle: Stop or access lost
+  playing --> idle: Stop, completion or access lost
+  unmatched --> preparing: Retry
+  unavailable --> preparing: Retry after configuration
+  stale --> preparing: Explicit preparation
+  missingFile --> preparing: Retry after file arrives
+  failed --> preparing: Retry
+```
+
+`QueryAudioController` belongs to the selected visible chat, not to a scrolled
+message. It re-reads the chat and all of its privacy dependencies before upload,
+persistence and playback. Evidence must belong to a saved answer. Leaving the
+chat, switching chats, hiding private entries or changing lockdown cancels work
+and releases playback; a delayed provider/native completion cannot start it
+again. Existing journal audio and query playback stop each other from
+speaking simultaneously.
+
+Read answer aloud uses the existing on-device [TTS engine](../tts.md), including
+its settings and `enable_ai_summary_tts` gate. It reads a saved answer, is always
+user-triggered, and rechecks chat visibility after synthesis before playing.
+The shared TTS controller invalidates cancelled preparation, serializes native
+synthesis and removes its temporary WAV on completion or cancellation.
+
+An agent face/avatar remains outside this implementation. Exporting audio clips,
+realtime conversational turn-taking and additional timestamp-provider adapters
+are separate follow-ups.

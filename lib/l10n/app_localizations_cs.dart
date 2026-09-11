@@ -15459,4 +15459,45 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get queryAudioPrepare => 'Připravit zvukový úryvek';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Poslechnout · $start–$end';
+  }
+
+  @override
+  String get queryAudioReadAloud => 'Přečíst odpověď nahlas';
+
+  @override
+  String get queryAudioStop => 'Zastavit zvuk';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Při přípravě časových značek se tato nahrávka odešle poskytovateli přepisu nastavenému pro tohoto agenta.';
+
+  @override
+  String get queryAudioPreparing => 'Připravuji zvuk…';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Tento citát se nepodařilo jednoznačně přiřadit k nahrávce. Stále můžeš otevřít celý záznam.';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Pro přípravu úryvků vyber v inferenčním profilu tohoto agenta přepisový model Voxtral s podporou časových značek.';
+
+  @override
+  String get queryAudioMissingFile =>
+      'Nahrávka na tomto zařízení zatím není dostupná.';
+
+  @override
+  String get queryAudioFailed =>
+      'Zvuk se nepodařilo připravit nebo přehrát. Zkus to znovu.';
+
+  @override
+  String get queryAudioStale =>
+      'Nahrávka se změnila. Připrav časové značky znovu.';
 }

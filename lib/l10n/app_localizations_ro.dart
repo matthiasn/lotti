@@ -15570,4 +15570,45 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get queryAudioPrepare => 'Pregătiți fragmentul audio';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Ascultați · $start–$end';
+  }
+
+  @override
+  String get queryAudioReadAloud => 'Citiți răspunsul cu voce tare';
+
+  @override
+  String get queryAudioStop => 'Opriți redarea audio';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Pregătirea marcajelor temporale trimite această înregistrare furnizorului de transcriere configurat pentru acest agent.';
+
+  @override
+  String get queryAudioPreparing => 'Se pregătește redarea audio…';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Acest citat nu a putut fi asociat fără ambiguitate cu înregistrarea. Puteți deschide în continuare însemnarea completă.';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Pentru a pregăti fragmente, selectați un model de transcriere Voxtral cu marcaje temporale în profilul de inferență al acestui agent.';
+
+  @override
+  String get queryAudioMissingFile =>
+      'Înregistrarea nu este încă disponibilă pe acest dispozitiv.';
+
+  @override
+  String get queryAudioFailed =>
+      'Fișierul audio nu a putut fi pregătit sau redat. Încercați din nou.';
+
+  @override
+  String get queryAudioStale =>
+      'Înregistrarea s-a schimbat. Pregătiți din nou marcajele temporale.';
 }

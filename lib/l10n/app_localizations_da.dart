@@ -15261,4 +15261,45 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get queryAudioPrepare => 'Forbered lyduddrag';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Lyt · $start–$end';
+  }
+
+  @override
+  String get queryAudioReadAloud => 'Læs svaret højt';
+
+  @override
+  String get queryAudioStop => 'Stop lyd';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Når tidsstempler forberedes, sendes denne optagelse til den transskriptionsudbyder, der er konfigureret for denne agent.';
+
+  @override
+  String get queryAudioPreparing => 'Forbereder lyd…';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Citatet kunne ikke knyttes entydigt til optagelsen. Du kan stadig åbne hele posten.';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Vælg en Voxtral-transskriptionsmodel med tidsstempler i agentens inferensprofil for at forberede uddrag.';
+
+  @override
+  String get queryAudioMissingFile =>
+      'Optagelsen er endnu ikke tilgængelig på denne enhed.';
+
+  @override
+  String get queryAudioFailed =>
+      'Lyden kunne ikke forberedes eller afspilles. Prøv igen.';
+
+  @override
+  String get queryAudioStale =>
+      'Optagelsen er ændret. Forbered tidsstemplerne igen.';
 }

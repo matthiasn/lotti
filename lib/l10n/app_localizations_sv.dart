@@ -15282,4 +15282,45 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get queryAudioPrepare => 'Förbered ljudutdrag';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Lyssna · $start–$end';
+  }
+
+  @override
+  String get queryAudioReadAloud => 'Läs upp svaret';
+
+  @override
+  String get queryAudioStop => 'Stoppa ljudet';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'När tidsstämplar förbereds skickas inspelningen till transkriberingsleverantören som är inställd för den här agenten.';
+
+  @override
+  String get queryAudioPreparing => 'Förbereder ljud…';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Citatet kunde inte entydigt kopplas till inspelningen. Du kan fortfarande öppna hela posten.';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Välj en Voxtral-transkriberingsmodell med tidsstämplar i agentens inferensprofil för att förbereda utdrag.';
+
+  @override
+  String get queryAudioMissingFile =>
+      'Inspelningen är ännu inte tillgänglig på den här enheten.';
+
+  @override
+  String get queryAudioFailed =>
+      'Ljudet kunde inte förberedas eller spelas upp. Försök igen.';
+
+  @override
+  String get queryAudioStale =>
+      'Inspelningen har ändrats. Förbered tidsstämplarna igen.';
 }

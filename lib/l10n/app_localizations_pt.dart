@@ -15396,4 +15396,45 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get queryAudioPrepare => 'Preparar trecho de áudio';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Ouvir · $start–$end';
+  }
+
+  @override
+  String get queryAudioReadAloud => 'Ler resposta em voz alta';
+
+  @override
+  String get queryAudioStop => 'Parar áudio';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'A preparação das marcas de tempo envia esta gravação ao provedor de transcrição configurado para este agente.';
+
+  @override
+  String get queryAudioPreparing => 'Preparando áudio…';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Não foi possível associar esta citação de forma inequívoca à gravação. Você ainda pode abrir a entrada completa.';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Para preparar trechos, selecione um modelo de transcrição Voxtral com marcas de tempo no perfil de inferência deste agente.';
+
+  @override
+  String get queryAudioMissingFile =>
+      'A gravação ainda não está disponível neste dispositivo.';
+
+  @override
+  String get queryAudioFailed =>
+      'Não foi possível preparar ou reproduzir o áudio. Tente novamente.';
+
+  @override
+  String get queryAudioStale =>
+      'A gravação mudou. Prepare as marcas de tempo novamente.';
 }

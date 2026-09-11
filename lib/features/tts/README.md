@@ -1,6 +1,6 @@
 # Text-to-speech
 
-Text-to-speech reads a task's AI summary aloud, entirely on the device.
+Text-to-speech reads task summaries and query answers aloud on the device.
 
 No audio and no text leaves the machine — the voice model runs locally.
 
@@ -8,6 +8,8 @@ No audio and no text leaves the machine — the voice model runs locally.
 
 - **Reads the summary aloud.** A speak control on the task card plays the agent's
   TL;DR.
+- **Reads a query answer aloud.** Each saved answer has a speak action when
+  text-to-speech is enabled; leaving the chat or hiding its content stops it.
 - **Works offline and privately.** The model runs on-device; there is no cloud
   service and no API key.
 - **Uses the app's own audio stack**, so playback behaves like every other sound
@@ -19,7 +21,7 @@ quality is still being evaluated.
 ## What it owns
 
 The engine interface and its on-device implementation, the model assets, and the
-playback wiring for spoken summaries.
+playback wiring for spoken content.
 
 ## Where the code lives
 

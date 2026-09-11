@@ -35,16 +35,23 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
   MediaKitTtsAudioPlayer([Player? player]) : _player = player ?? Player();
 
   final Player _player;
+  int _generation = 0;
 
   @override
   Future<void> play(File file, {required double speed}) async {
+    final generation = ++_generation;
     await _player.open(Media(file.path), play: false);
+    if (generation != _generation) return;
     await _player.setRate(speed);
+    if (generation != _generation) return;
     await _player.play();
   }
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() {
+    _generation++;
+    return _player.stop();
+  }
 
   @override
   Stream<Duration> get positionStream => _player.stream.position;
@@ -57,7 +64,10 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
       _player.stream.completed.where((done) => done).map((_) {});
 
   @override
-  Future<void> dispose() => _player.dispose();
+  Future<void> dispose() {
+    _generation++;
+    return _player.dispose();
+  }
 }
 
 // Constructs the real media_kit Player, so it is exercised at runtime rather

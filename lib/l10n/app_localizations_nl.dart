@@ -15302,4 +15302,45 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get queryAudioPrepare => 'Audiofragment voorbereiden';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Luisteren · $start–$end';
+  }
+
+  @override
+  String get queryAudioReadAloud => 'Antwoord voorlezen';
+
+  @override
+  String get queryAudioStop => 'Audio stoppen';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Bij het voorbereiden van tijdstempels wordt deze opname naar de transcriptieprovider gestuurd die voor deze agent is ingesteld.';
+
+  @override
+  String get queryAudioPreparing => 'Audio voorbereiden…';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Dit citaat kon niet eenduidig aan de opname worden gekoppeld. Je kunt nog steeds het volledige item openen.';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Kies een Voxtral-transcriptiemodel met tijdstempels in het inferentieprofiel van deze agent om fragmenten voor te bereiden.';
+
+  @override
+  String get queryAudioMissingFile =>
+      'De opname is nog niet beschikbaar op dit apparaat.';
+
+  @override
+  String get queryAudioFailed =>
+      'De audio kon niet worden voorbereid of afgespeeld. Probeer het opnieuw.';
+
+  @override
+  String get queryAudioStale =>
+      'De opname is gewijzigd. Bereid de tijdstempels opnieuw voor.';
 }
