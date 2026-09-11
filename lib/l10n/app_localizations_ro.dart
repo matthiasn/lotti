@@ -11302,6 +11302,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryOtherProject => 'În afara domeniului inițial';
 
   @override
+  String get queryPreparingAnswer => 'Se pregătește un răspuns…';
+
+  @override
   String queryReachCategory(String category) {
     return 'Se caută mai întâi în acest domeniu, apoi în $category.';
   }
@@ -11318,9 +11321,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get queryRecall =>
       'Sunt utilizate concluzii relevante din conversații anterioare.';
-
-  @override
-  String get queryPreparingAnswer => 'Se pregătește un răspuns…';
 
   @override
   String get queryRecordings => 'Înregistrări audio';

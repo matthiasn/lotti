@@ -11115,6 +11115,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryOtherProject => 'Buiten het eigen bereik';
 
   @override
+  String get queryPreparingAnswer => 'Antwoord voorbereiden…';
+
+  @override
   String queryReachCategory(String category) {
     return 'Zoekt eerst binnen dit bereik, daarna in $category.';
   }
@@ -11130,9 +11133,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryRecall => 'Gebruikt relevante conclusies uit eerdere chats.';
-
-  @override
-  String get queryPreparingAnswer => 'Antwoord voorbereiden…';
 
   @override
   String get queryRecordings => 'Opnamen';

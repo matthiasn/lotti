@@ -11093,6 +11093,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryOtherProject => 'Uden for udgangsområdet';
 
   @override
+  String get queryPreparingAnswer => 'Forbereder et svar…';
+
+  @override
   String queryReachCategory(String category) {
     return 'Søger først i dette område og derefter i $category.';
   }
@@ -11109,9 +11112,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get queryRecall =>
       'Bruger relevante konklusioner fra tidligere chats.';
-
-  @override
-  String get queryPreparingAnswer => 'Forbereder et svar…';
 
   @override
   String get queryRecordings => 'Optagelser';

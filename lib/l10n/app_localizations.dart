@@ -18697,6 +18697,12 @@ abstract class AppLocalizations {
   /// **'Beyond the home scope'**
   String get queryOtherProject;
 
+  /// No description provided for @queryPreparingAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing an answer…'**
+  String get queryPreparingAnswer;
+
   /// No description provided for @queryReachCategory.
   ///
   /// In en, this message translates to:
@@ -18720,12 +18726,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uses relevant conclusions from earlier chats.'**
   String get queryRecall;
-
-  /// No description provided for @queryPreparingAnswer.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing an answer…'**
-  String get queryPreparingAnswer;
 
   /// No description provided for @queryRecordings.
   ///

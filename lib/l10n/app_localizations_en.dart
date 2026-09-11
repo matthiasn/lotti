@@ -11041,6 +11041,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryOtherProject => 'Beyond the home scope';
 
   @override
+  String get queryPreparingAnswer => 'Preparing an answer…';
+
+  @override
   String queryReachCategory(String category) {
     return 'Searches this scope first, then $category.';
   }
@@ -11056,9 +11059,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryRecall => 'Uses relevant conclusions from earlier chats.';
-
-  @override
-  String get queryPreparingAnswer => 'Preparing an answer…';
 
   @override
   String get queryRecordings => 'Recordings';

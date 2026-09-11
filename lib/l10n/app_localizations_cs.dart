@@ -11241,6 +11241,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryOtherProject => 'Mimo základní rozsah';
 
   @override
+  String get queryPreparingAnswer => 'Připravuji odpověď…';
+
+  @override
   String queryReachCategory(String category) {
     return 'Hledá nejprve v tomto rozsahu a pak v kategorii $category.';
   }
@@ -11256,9 +11259,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryRecall => 'Používá relevantní závěry z dřívějších chatů.';
-
-  @override
-  String get queryPreparingAnswer => 'Připravuji odpověď…';
 
   @override
   String get queryRecordings => 'Nahrávky';

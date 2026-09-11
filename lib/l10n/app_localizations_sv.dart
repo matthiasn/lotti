@@ -11104,6 +11104,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryOtherProject => 'Utanför ursprungsområdet';
 
   @override
+  String get queryPreparingAnswer => 'Förbereder ett svar…';
+
+  @override
   String queryReachCategory(String category) {
     return 'Söker först inom det här området och sedan i $category.';
   }
@@ -11120,9 +11123,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get queryRecall =>
       'Använder relevanta slutsatser från tidigare chattar.';
-
-  @override
-  String get queryPreparingAnswer => 'Förbereder ett svar…';
 
   @override
   String get queryRecordings => 'Inspelningar';

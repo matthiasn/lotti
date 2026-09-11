@@ -11165,6 +11165,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queryOtherProject => 'Außerhalb des Ausgangsbereichs';
 
   @override
+  String get queryPreparingAnswer => 'Antwort wird vorbereitet…';
+
+  @override
   String queryReachCategory(String category) {
     return 'Durchsucht zuerst diesen Bereich, dann $category.';
   }
@@ -11180,9 +11183,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queryRecall => 'Nutzt relevante Erkenntnisse aus früheren Chats.';
-
-  @override
-  String get queryPreparingAnswer => 'Antwort wird vorbereitet…';
 
   @override
   String get queryRecordings => 'Aufnahmen';
