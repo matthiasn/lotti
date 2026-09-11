@@ -14,10 +14,16 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 import '../test_data/ai_config_factories.dart';
 import 'query_audio_test_utils.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
   final provider = testInferenceProvider(
     inferenceProviderType: InferenceProviderType.mistral,
   ).copyWith(name: 'Mistral', baseUrl: 'https://api.mistral.ai/v1');
@@ -90,10 +96,12 @@ void main() {
   test(
     'Melious Whisper returns timing through its own verbose endpoint',
     () async {
+      final attribution = AiInteractionCaptureTestBench.create();
       final melious = testInferenceProvider(
         inferenceProviderType: InferenceProviderType.melious,
       ).copyWith(baseUrl: 'https://api.melious.ai/v1');
       final service = QueryAudioTimingService(
+        capture: attribution.capture,
         createRepository: () => throw StateError('Must not call Mistral'),
         createMeliousRepository: () => MeliousInferenceRepository(
           httpClient: MockClient.streaming((request, body) async {
@@ -107,7 +115,15 @@ void main() {
             expect(multipart.fields, isNot(contains('diarize')));
             await body.drain<void>();
             return http.StreamedResponse(
-              Stream.value(utf8.encode(response)),
+              Stream.value(
+                utf8.encode(
+                  jsonEncode({
+                    ...jsonDecode(response) as Map<String, dynamic>,
+                    'billing_cost': {'credits': 0.25},
+                    'environment_impact': {'energy_kwh': 0.5},
+                  }),
+                ),
+              ),
               200,
             );
           }),
@@ -129,6 +145,13 @@ void main() {
       expect(timing.model, 'whisper-large-v3');
       expect(timing.audioSha256, sha256.convert(bytes).toString());
       expect(timing.segments.single.startMilliseconds, 120125);
+      final event = attribution.recordedInteractions.single;
+      expect(event.agentId, 'agent');
+      expect(event.threadId, 'chat');
+      expect(event.entryId, audioEvidence().source.id);
+      expect(event.providerModelId, 'whisper-large-v3');
+      expect(event.credits, 0.25);
+      expect(event.energyKwh, 0.5);
     },
   );
 

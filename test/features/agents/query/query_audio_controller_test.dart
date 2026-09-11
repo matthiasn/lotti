@@ -9,7 +9,11 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
+import 'package:lotti/features/speech/model/audio_player_state.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -21,6 +25,7 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../tts/test_utils.dart';
+import '../ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import 'query_audio_test_bench.dart';
 
 void main() {
@@ -384,6 +389,94 @@ void main() {
       expect(container.read(provider).status, QueryAudioStatus.idle);
     },
   );
+
+  test('playing another recording stops the query excerpt', () async {
+    await play();
+    container
+        .read(audioPlayerControllerProvider.notifier)
+        .stateForTest = container
+        .read(audioPlayerControllerProvider)
+        .copyWith(
+          status: AudioPlayerStatus.playing,
+        );
+    await container.pump();
+    expect(container.read(provider).status, QueryAudioStatus.idle);
+    verify(bench.player.dispose).called(1);
+  });
+
+  test('another surface reading aloud stops the query excerpt', () async {
+    await play();
+    await container
+        .read(ttsPlaybackControllerProvider.notifier)
+        .speak(
+          sourceId: 'task-summary',
+          text: 'Another summary',
+        );
+    expect(container.read(provider).status, QueryAudioStatus.idle);
+    verify(bench.player.dispose).called(1);
+    expect(bench.engine.calls.single.text, 'Another summary');
+    expect(bench.speechPlayer.playCount, 1);
+  });
+
+  test('disabling local speech stops an answer already playing', () async {
+    await controller.speakAnswer(answerId: 'answer');
+    final stoppedBefore = bench.speechPlayer.stopCount;
+    bench.ttsEnabled.add(false);
+    await container.pump();
+    expect(container.read(provider).status, QueryAudioStatus.idle);
+    expect(bench.speechPlayer.stopCount, stoppedBefore + 1);
+  });
+
+  for (final change in ['deleted source', 'failed refresh']) {
+    test('$change stops an excerpt already playing', () async {
+      await play();
+      if (change == 'deleted source') {
+        bench.entries.remove('meeting');
+        bench.history.add(bench.snapshot());
+      } else {
+        bench.history.addError(StateError('Source visibility unavailable'));
+      }
+      await container.pump();
+      expect(container.read(provider).status, QueryAudioStatus.idle);
+      verify(bench.player.dispose).called(1);
+    });
+  }
+
+  test(
+    'neither audio action can begin while voice input is recording',
+    () async {
+      final recording = ProviderContainer(
+        overrides: [
+          ...bench.overrides,
+          chatRecorderControllerProvider.overrideWith(
+            RecordingTestController.new,
+          ),
+        ],
+      );
+      addTearDown(recording.dispose);
+      final listener = recording.listen(provider, (_, _) {});
+      addTearDown(listener.close);
+      await recording.read(configFlagProvider(enableAiSummaryTtsFlag).future);
+      final actions = recording.read(provider.notifier);
+      await actions.playEvidence(
+        actionId: 'clip',
+        evidence: bench.evidence,
+        generate: true,
+      );
+      await actions.speakAnswer(answerId: 'answer');
+      expect(recording.read(provider).status, QueryAudioStatus.idle);
+      expect(bench.requests, 0);
+      expect(bench.engine.calls, isEmpty);
+      verifyNever(bench.file.openRead);
+    },
+  );
+
+  test('synthesis failure becomes a recoverable query audio error', () async {
+    bench.engine = FakeTtsEngine(throwOnSynthesize: true);
+    await controller.speakAnswer(answerId: 'answer');
+    expect(container.read(provider).status, QueryAudioStatus.failed);
+    expect(bench.speechPlayer.playCount, 0);
+  });
 
   test(
     'a disabled speech flag or unknown answer cannot trigger synthesis',

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:material_ui/material_ui.dart';
@@ -86,24 +85,15 @@ void main() {
       await pump(tester);
       expect(find.textContaining('sends this recording'), findsOneWidget);
       expect(bench.requests, 0);
-      await tester.tap(find.text('Prepare audio excerpt'));
-      // Allow buffered HTTP delivery and provider refreshes to complete on the
-      // fake clock; persistence itself remains the asserted outcome.
-      for (var frame = 0; frame < 20 && bench.writes == 0; frame++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
+      // The buffered transport needs the real event loop. Await the persistence
+      // boundary instead of advancing frames while its request is suspended.
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Prepare audio excerpt'));
+        await bench.timingWritten.future;
+      });
+      await tester.pump();
       expect(bench.requests, 1);
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(QueryEvidenceAudioControls)),
-      );
-      expect(
-        bench.writes,
-        1,
-        reason: container
-            .read(queryAudioControllerProvider(QueryAudioTestBench.key))
-            .status
-            .name,
-      );
+      expect(bench.writes, 1);
       expect(find.text('Stop audio'), findsOneWidget);
       await tester.tap(find.text('Stop audio'));
       await tester.pump();

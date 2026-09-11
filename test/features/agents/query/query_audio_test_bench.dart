@@ -122,6 +122,7 @@ class QueryAudioTestBench extends QueryTestBench {
       final updated = call.positionalArguments.first as JournalAudio;
       audio = updated;
       writes++;
+      if (!timingWritten.isCompleted) timingWritten.complete();
       history.add(snapshot());
       return true;
     });
@@ -156,6 +157,7 @@ class QueryAudioTestBench extends QueryTestBench {
   ResolvedProfile? profile;
   int requests = 0;
   int writes = 0;
+  final timingWritten = Completer<void>();
   int playerCreations = 0;
   Future<void> Function()? beforeResponse;
 

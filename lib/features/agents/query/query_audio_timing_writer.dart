@@ -37,7 +37,8 @@ class QueryAudioTimingWriter {
             meta: metadata,
             data: current.data.copyWith(
               transcriptTimings: {
-                  timing.sourceFingerprint: timing,
+                ...current.data.transcriptTimings,
+                timing.sourceFingerprint: timing,
               },
             ),
           ),

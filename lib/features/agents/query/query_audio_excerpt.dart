@@ -24,7 +24,7 @@ QueryAudioExcerpt? queryAudioExcerpt({
   if (!evidence.hasValidPassage ||
       evidence.kind != QuerySourceKind.recording ||
       evidence.fingerprint != timing.sourceFingerprint ||
-      duration <= Duration.zero ||
+      duration < Duration.zero ||
       timing.segments.isEmpty ||
       timing.segments.length > 30000) {
     return null;

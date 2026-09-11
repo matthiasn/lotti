@@ -233,6 +233,11 @@ class QueryAudioController extends Notifier<QueryAudioState> {
       if (!file.existsSync()) {
         throw const FileSystemException('Recording unavailable');
       }
+      if (generate &&
+          file.lengthSync() > QueryAudioTimingService.maxUploadBytes) {
+        _error(run, actionId, QueryAudioStatus.tooLarge);
+        return;
+      }
       final hash = (await sha256.bind(file.openRead()).first).toString();
       run.check();
       var timing = audio.data.transcriptTimings[evidence.fingerprint];
