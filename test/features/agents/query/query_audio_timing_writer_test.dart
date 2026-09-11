@@ -45,12 +45,44 @@ void main() {
       expect(
         saved,
         original.copyWith(
-          data: original.data.copyWith(transcriptTiming: audioTiming()),
+          data: original.data.copyWith(
+            transcriptTimings: {audioTiming().sourceFingerprint: audioTiming()},
+          ),
         ),
       );
       expect(saved.meta.private, original.meta.private);
       expect(saved.data.transcripts, original.data.transcripts);
       expect(saved.entryText, original.entryText);
+    },
+  );
+  test(
+    'preparing a new text representation retains historical quote timing',
+    () async {
+      final oldTiming = audioTiming().copyWith(sourceFingerprint: 'older-text');
+      final current = original.copyWith(
+        data: original.data.copyWith(
+          transcriptTimings: {oldTiming.sourceFingerprint: oldTiming},
+        ),
+      );
+      when(
+        () => journal.journalEntityById(current.id),
+      ).thenAnswer((_) async => current);
+      final newTiming = audioTiming();
+      expect(
+        await writer.save(
+          expected: current,
+          timing: newTiming,
+          isCancelled: () => false,
+        ),
+        isTrue,
+      );
+      final saved =
+          verify(() => persistence.updateDbEntity(captureAny())).captured.single
+              as JournalAudio;
+      expect(saved.data.transcriptTimings, {
+        oldTiming.sourceFingerprint: oldTiming,
+        newTiming.sourceFingerprint: newTiming,
+      });
     },
   );
   test(

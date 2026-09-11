@@ -36,6 +36,7 @@ enum QueryAudioStatus {
   unavailable,
   stale,
   missingFile,
+  tooLarge,
   failed,
 }
 
@@ -234,7 +235,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
       }
       final hash = (await sha256.bind(file.openRead()).first).toString();
       run.check();
-      var timing = audio.data.transcriptTiming;
+      var timing = audio.data.transcriptTimings[evidence.fingerprint];
       if (timing == null ||
           timing.audioSha256 != hash ||
           timing.sourceFingerprint != evidence.fingerprint) {

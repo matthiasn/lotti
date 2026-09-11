@@ -82,7 +82,7 @@ void main() {
     'explicit enrichment saves timing without changing the original note',
     () async {
       bench.audio = bench.audio.copyWith(
-        data: bench.audio.data.copyWith(transcriptTiming: null),
+        data: bench.audio.data.copyWith(transcriptTimings: {}),
       );
       final before = bench.audio;
       await play(generate: true);
@@ -91,7 +91,11 @@ void main() {
       expect(bench.audio.entryText, before.entryText);
       expect(bench.audio.data.transcripts, before.data.transcripts);
       expect(
-        bench.audio.data.transcriptTiming!.sourceFingerprint,
+        bench
+            .audio
+            .data
+            .transcriptTimings[bench.evidence.fingerprint]!
+            .sourceFingerprint,
         bench.evidence.fingerprint,
       );
       expect(container.read(provider).status, QueryAudioStatus.playing);
@@ -102,7 +106,7 @@ void main() {
     'missing timing never uploads automatically and unsupported profiles stay local',
     () async {
       bench.audio = bench.audio.copyWith(
-        data: bench.audio.data.copyWith(transcriptTiming: null),
+        data: bench.audio.data.copyWith(transcriptTimings: {}),
       );
       await play();
       expect(container.read(provider).status, QueryAudioStatus.stale);
@@ -125,20 +129,40 @@ void main() {
   });
 
   test(
+    'oversized preparation is rejected before reading or uploading bytes',
+    () async {
+      bench.audio = bench.audio.copyWith(
+        data: bench.audio.data.copyWith(transcriptTimings: {}),
+      );
+      when(bench.file.lengthSync).thenReturn(500000000);
+      await play(generate: true);
+      expect(container.read(provider).status, QueryAudioStatus.tooLarge);
+      expect(bench.requests, 0);
+      verifyNever(bench.file.openRead);
+      verifyNever(bench.file.readAsBytes);
+    },
+  );
+
+  test(
     'missing recordings and unmatched quotes produce specific recoverable states',
     () async {
       when(bench.file.existsSync).thenReturn(false);
       await play();
       expect(container.read(provider).status, QueryAudioStatus.missingFile);
       when(bench.file.existsSync).thenReturn(true);
-      final timing = bench.audio.data.transcriptTiming!;
+      final timing =
+          bench.audio.data.transcriptTimings[bench.evidence.fingerprint]!;
       bench.audio = bench.audio.copyWith(
         data: bench.audio.data.copyWith(
-          transcriptTiming: timing.copyWith(
-            segments: [
-              timing.segments.single.copyWith(text: 'A different discussion.'),
-            ],
-          ),
+          transcriptTimings: {
+            timing.sourceFingerprint: timing.copyWith(
+              segments: [
+                timing.segments.single.copyWith(
+                  text: 'A different discussion.',
+                ),
+              ],
+            ),
+          },
         ),
       );
       await play();
@@ -157,7 +181,7 @@ void main() {
       await play();
       expect(container.read(provider).status, QueryAudioStatus.playing);
       bench.audio = bench.audio.copyWith(
-        data: bench.audio.data.copyWith(transcriptTiming: null),
+        data: bench.audio.data.copyWith(transcriptTimings: {}),
       );
       await play(generate: true);
       expect(container.read(provider).status, QueryAudioStatus.unmatched);
@@ -274,7 +298,7 @@ void main() {
         final pending = Completer<void>();
         final started = Completer<void>();
         bench.audio = bench.audio.copyWith(
-          data: bench.audio.data.copyWith(transcriptTiming: null),
+          data: bench.audio.data.copyWith(transcriptTimings: {}),
         );
         bench.beforeResponse = () {
           started.complete();
@@ -308,7 +332,7 @@ void main() {
     'source edits while timing is generated cannot be overwritten',
     () async {
       bench.audio = bench.audio.copyWith(
-        data: bench.audio.data.copyWith(transcriptTiming: null),
+        data: bench.audio.data.copyWith(transcriptTimings: {}),
       );
       bench.beforeResponse = () async {
         bench.audio = bench.audio.copyWith(
@@ -324,7 +348,7 @@ void main() {
 
   test('a refused timing write never proceeds to playback', () async {
     bench.audio = bench.audio.copyWith(
-      data: bench.audio.data.copyWith(transcriptTiming: null),
+      data: bench.audio.data.copyWith(transcriptTimings: {}),
     );
     when(
       () => bench.persistence.updateDbEntity(any()),

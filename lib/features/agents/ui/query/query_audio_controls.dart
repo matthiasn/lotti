@@ -72,7 +72,7 @@ class QueryEvidenceAudioControls extends ConsumerWidget {
     final controller = ref.read(queryAudioControllerProvider(chatKey).notifier);
     final active = state.actionId == actionId;
     final busy = active && state.busy;
-    final timing = audio.data.transcriptTiming;
+    final timing = audio.data.transcriptTimings[evidence.fingerprint];
     final excerpt = timing == null
         ? null
         : queryAudioExcerpt(
@@ -140,6 +140,7 @@ class _AudioStatus extends StatelessWidget {
       QueryAudioStatus.unavailable => messages.queryAudioTimingUnavailable,
       QueryAudioStatus.stale => messages.queryAudioStale,
       QueryAudioStatus.missingFile => messages.queryAudioMissingFile,
+      QueryAudioStatus.tooLarge => messages.queryAudioTooLarge,
       QueryAudioStatus.failed => messages.queryAudioFailed,
       _ => null,
     };

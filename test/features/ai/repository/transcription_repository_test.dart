@@ -7,6 +7,71 @@ import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
 void main() {
+  group('timed segments', () {
+    test('converts fractional provider seconds to milliseconds', () {
+      final segments = parseTimedTranscriptSegments([
+        {'text': 'First', 'start': 0, 'end': 1.125},
+        {'text': 'Second', 'start': 1.25, 'end': 2.5},
+      ]);
+      expect(segments.map((s) => s.text), ['First', 'Second']);
+      expect(segments.map((s) => s.startMilliseconds), [0, 1250]);
+      expect(segments.map((s) => s.endMilliseconds), [1125, 2500]);
+    });
+    test(
+      'rejects incomplete, nonfinite and unordered timing without skipping',
+      () {
+        final good = {'text': 'First', 'start': 1, 'end': 2};
+        for (final value in <Object?>[
+          null,
+          {},
+          [],
+          List.filled(30001, good),
+          [null],
+          [
+            {'text': '', 'start': 0, 'end': 1},
+          ],
+          [
+            {'text': 'x', 'start': null, 'end': 1},
+          ],
+          [
+            {'text': 'x', 'start': 0, 'end': '1'},
+          ],
+          [
+            {'text': 'x', 'start': double.nan, 'end': 1},
+          ],
+          [
+            {'text': 'x', 'start': 0, 'end': double.infinity},
+          ],
+          [
+            {'text': 'x', 'start': -1, 'end': 1},
+          ],
+          [
+            {'text': 'x', 'start': 1, 'end': 1},
+          ],
+          [
+            {'text': 'x', 'start': 0, 'end': 10801},
+          ],
+          [
+            {'text': 'x', 'start': 0, 'end': 0.0001},
+          ],
+          [
+            good,
+            {'text': 'x', 'start': 0, 'end': 3},
+          ],
+          [
+            good,
+            {'text': 'x', 'start': 1.25, 'end': 1.5},
+          ],
+        ]) {
+          expect(
+            () => parseTimedTranscriptSegments(value),
+            throwsFormatException,
+          );
+        }
+      },
+    );
+  });
+
   group('TranscriptionRepository', () {
     late TranscriptionRepository repo;
 

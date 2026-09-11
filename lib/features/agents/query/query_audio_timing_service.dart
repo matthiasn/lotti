@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
@@ -25,17 +27,30 @@ class QueryAudioTimingUnavailable implements Exception {
 class QueryAudioTimingService {
   QueryAudioTimingService({
     MistralTranscriptionRepository Function()? createRepository,
+    MeliousInferenceRepository Function()? createMeliousRepository,
     this.capture,
   }) : createRepository =
-           createRepository ?? MistralTranscriptionRepository.new;
+           createRepository ?? MistralTranscriptionRepository.new,
+       createMeliousRepository =
+           createMeliousRepository ?? MeliousInferenceRepository.new;
+
+  /// Bounds the byte/base64/multipart working set and avoids the existing
+  /// full-recording PCM conversion for oversized Melious uploads.
+  static const int maxUploadBytes =
+      MeliousInferenceRepository.maxTranscriptionUploadBytes;
 
   final MistralTranscriptionRepository Function() createRepository;
+  final MeliousInferenceRepository Function() createMeliousRepository;
   final AiInteractionCapture? capture;
 
-  /// Dedicated Voxtral transcription models have timed output. Instruction
-  /// following and realtime models are not silently rerouted to another model.
+  /// Melious Whisper and direct Mistral transcription models have timed output.
+  /// Chat-audio and realtime models are never rerouted to another endpoint.
   static bool supports(ResolvedProfile? profile) {
     final model = profile?.transcriptionModelId;
+    if (profile?.transcriptionProvider?.inferenceProviderType ==
+        InferenceProviderType.melious) {
+      return model != null && model.toLowerCase().contains('whisper');
+    }
     return profile?.transcriptionProvider?.inferenceProviderType ==
             InferenceProviderType.mistral &&
         model != null &&
@@ -59,19 +74,35 @@ class QueryAudioTimingService {
     cancellation.check();
     final provider = profile.transcriptionProvider!;
     final model = profile.transcriptionModelId!;
-    final repository = createRepository();
+    final isMelious =
+        provider.inferenceProviderType == InferenceProviderType.melious;
+    final repository = isMelious
+        ? createMeliousRepository()
+        : createRepository();
+    final impact = InferenceImpactCollector();
     final detach = cancellation.onCancel(repository.close);
     List<AudioTimedSegment>? segments;
     Stream<CreateChatCompletionStreamResponse> invoke() async* {
       await authorize();
       cancellation.check();
-      yield* repository.transcribeAudio(
-        model: model,
-        audioBase64: base64Encode(audioBytes),
-        baseUrl: provider.baseUrl,
-        apiKey: provider.apiKey,
-        onSegments: (value) => segments = value,
-      );
+      if (repository is MeliousInferenceRepository) {
+        yield* repository.transcribeAudio(
+          model: model,
+          audioBase64: base64Encode(audioBytes),
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          impactCollector: impact,
+          onSegments: (value) => segments = value,
+        );
+      } else if (repository is MistralTranscriptionRepository) {
+        yield* repository.transcribeAudio(
+          model: model,
+          audioBase64: base64Encode(audioBytes),
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          onSegments: (value) => segments = value,
+        );
+      }
     }
 
     try {
@@ -83,6 +114,7 @@ class QueryAudioTimingService {
               responseType: AiConsumptionResponseType.audioTranscription,
               providerType: provider.inferenceProviderType,
               modelId: model,
+              impact: () => impact.impact,
               requestText:
                   'Timestamp alignment|audioBytes:${audioBytes.length}',
               invoke: invoke,

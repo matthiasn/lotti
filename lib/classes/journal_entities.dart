@@ -101,7 +101,8 @@ abstract class AudioData with _$AudioData {
     @Default(false) bool autoTranscribeWasActive,
     String? language,
     List<AudioTranscript>? transcripts,
-    AudioTranscriptTiming? transcriptTiming,
+    @Default(<String, AudioTranscriptTiming>{})
+    Map<String, AudioTranscriptTiming> transcriptTimings,
     DayAudioContext? dayContext,
   }) = _AudioData;
 

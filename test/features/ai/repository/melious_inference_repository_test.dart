@@ -8,6 +8,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
@@ -1016,6 +1017,111 @@ void main() {
             cleaned++;
           }
         }
+      }
+
+      test(
+        'timed uploads restore recording offsets after every part succeeds',
+        () async {
+          var calls = 0;
+          List<AudioTimedSegment>? timing;
+          final repository = MeliousInferenceRepository(
+            audioSegmentEncoder: segments,
+            httpClient: MockClient.streaming((request, _) async {
+              calls++;
+              expect(
+                (request as http.MultipartRequest).fields['response_format'],
+                'verbose_json',
+              );
+              expect(timing, isNull, reason: 'No partial timing is exposed');
+              return http.StreamedResponse(
+                Stream.value(
+                  utf8.encode(
+                    jsonEncode({
+                      'text': 'Part $calls',
+                      'segments': [
+                        {'text': 'Part $calls', 'start': 10.25, 'end': 11.5},
+                      ],
+                    }),
+                  ),
+                ),
+                200,
+              );
+            }),
+          );
+          addTearDown(repository.close);
+          final result = await repository
+              .transcribeAudio(
+                model: 'whisper-large-v3',
+                audioBase64: audio,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                onSegments: (value) => timing = value,
+              )
+              .single;
+          expect(timing!.map((s) => s.startMilliseconds), [
+            10250,
+            1210250,
+            2410250,
+          ]);
+          expect(timing!.map((s) => s.endMilliseconds), [
+            11500,
+            1211500,
+            2411500,
+          ]);
+          expect(
+            result.choices!.single.delta!.content,
+            'Part 1\n\nPart 2\n\nPart 3',
+          );
+          expect(calls, 3);
+          expect(cleaned, 3);
+        },
+      );
+
+      for (final invalid in ['missing', 'outside part']) {
+        test(
+          '$invalid timing discards every part and stops later uploads',
+          () async {
+            var calls = 0;
+            var callbacks = 0;
+            final repository = MeliousInferenceRepository(
+              audioSegmentEncoder: segments,
+              httpClient: MockClient((_) async {
+                calls++;
+                return http.Response(
+                  jsonEncode({
+                    'text': 'Part $calls',
+                    'segments': calls == 2 && invalid == 'missing'
+                        ? null
+                        : [
+                            {
+                              'text': 'Part $calls',
+                              'start': 1,
+                              'end': calls == 2 ? 1201 : 2,
+                            },
+                          ],
+                  }),
+                  200,
+                );
+              }),
+            );
+            addTearDown(repository.close);
+            await expectLater(
+              repository
+                  .transcribeAudio(
+                    model: 'whisper-large-v3',
+                    audioBase64: audio,
+                    baseUrl: baseUrl,
+                    apiKey: apiKey,
+                    onSegments: (_) => callbacks++,
+                  )
+                  .toList(),
+              throwsA(isA<TranscriptionException>()),
+            );
+            expect(calls, 2);
+            expect(callbacks, 0);
+            expect(cleaned, 2);
+          },
+        );
       }
 
       test(

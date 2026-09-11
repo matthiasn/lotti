@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart';
@@ -838,6 +839,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     List<String>? contextBiasTerms,
     Duration? timeout,
     InferenceImpactCollector? impactCollector,
+    void Function(List<AudioTimedSegment>)? onSegments,
   }) {
     audioCalls.add(
       (

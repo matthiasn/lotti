@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/query/query_audio_timing_service.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 
 import '../test_data/ai_config_factories.dart';
@@ -61,7 +62,75 @@ void main() {
       ),
       isFalse,
     );
+    final melious = testInferenceProvider(
+      inferenceProviderType: InferenceProviderType.melious,
+    );
+    for (final model in ['whisper-large-v3', 'whisper-large-v3-turbo']) {
+      expect(
+        QueryAudioTimingService.supports(
+          profile(
+            model: model,
+            transcriptionProvider: melious,
+          ),
+        ),
+        isTrue,
+      );
+    }
+    expect(
+      QueryAudioTimingService.supports(
+        profile(
+          model: 'voxtral-small-24b-2507',
+          transcriptionProvider: melious,
+        ),
+      ),
+      isFalse,
+    );
   });
+
+  test(
+    'Melious Whisper returns timing through its own verbose endpoint',
+    () async {
+      final melious = testInferenceProvider(
+        inferenceProviderType: InferenceProviderType.melious,
+      ).copyWith(baseUrl: 'https://api.melious.ai/v1');
+      final service = QueryAudioTimingService(
+        createRepository: () => throw StateError('Must not call Mistral'),
+        createMeliousRepository: () => MeliousInferenceRepository(
+          httpClient: MockClient.streaming((request, body) async {
+            final multipart = request as http.MultipartRequest;
+            expect(
+              multipart.url.toString(),
+              'https://api.melious.ai/v1/audio/transcriptions',
+            );
+            expect(multipart.fields['model'], 'whisper-large-v3');
+            expect(multipart.fields['response_format'], 'verbose_json');
+            expect(multipart.fields, isNot(contains('diarize')));
+            await body.drain<void>();
+            return http.StreamedResponse(
+              Stream.value(utf8.encode(response)),
+              200,
+            );
+          }),
+        ),
+      );
+      final timing = await service.generate(
+        profile: profile(
+          model: 'whisper-large-v3',
+          transcriptionProvider: melious,
+        ),
+        audioBytes: bytes,
+        evidence: audioEvidence(),
+        cancellation: QueryCancellation(),
+        authorize: () async {},
+        agentId: 'agent',
+        chatId: 'chat',
+      );
+      expect(timing.providerId, melious.id);
+      expect(timing.model, 'whisper-large-v3');
+      expect(timing.audioSha256, sha256.convert(bytes).toString());
+      expect(timing.segments.single.startMilliseconds, 120125);
+    },
+  );
 
   test(
     'binds actual provider timing to submitted audio and saved text',

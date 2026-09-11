@@ -35,7 +35,11 @@ class QueryAudioTimingWriter {
     return await persistence.updateDbEntity(
           current.copyWith(
             meta: metadata,
-            data: current.data.copyWith(transcriptTiming: timing),
+            data: current.data.copyWith(
+              transcriptTimings: {
+                  timing.sourceFingerprint: timing,
+              },
+            ),
           ),
         ) ==
         true;

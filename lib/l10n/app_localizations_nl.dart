@@ -10957,6 +10957,51 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryAskTask => 'Vraag over deze taak';
 
   @override
+  String get queryAudioFailed =>
+      'De audio kon niet worden voorbereid of afgespeeld. Probeer het opnieuw.';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Luisteren · $start–$end';
+  }
+
+  @override
+  String get queryAudioMissingFile =>
+      'De opname is nog niet beschikbaar op dit apparaat.';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Dit citaat kon niet eenduidig aan de opname worden gekoppeld. Je kunt nog steeds het volledige item openen.';
+
+  @override
+  String get queryAudioPrepare => 'Audiofragment voorbereiden';
+
+  @override
+  String get queryAudioPreparing => 'Audio voorbereiden…';
+
+  @override
+  String get queryAudioReadAloud => 'Antwoord voorlezen';
+
+  @override
+  String get queryAudioStale =>
+      'De opname is gewijzigd. Bereid de tijdstempels opnieuw voor.';
+
+  @override
+  String get queryAudioStop => 'Audio stoppen';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Selecteer Melious Whisper of een ondersteund Mistral Voxtral-transcriptiemodel in het inferentieprofiel van deze agent om audiofragmenten voor te bereiden.';
+
+  @override
+  String get queryAudioTooLarge =>
+      'Je kunt tijdstempels voorbereiden voor opnamen tot 25 MB. Kies een kleinere opname.';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Bij het voorbereiden van tijdstempels wordt deze opname naar de transcriptieprovider gestuurd die voor deze agent is ingesteld.';
+
+  @override
   String get queryCategoryAgent => 'Categorie-agent';
 
   @override
@@ -15302,45 +15347,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get queryAudioPrepare => 'Audiofragment voorbereiden';
-
-  @override
-  String queryAudioListen(String start, String end) {
-    return 'Luisteren · $start–$end';
-  }
-
-  @override
-  String get queryAudioReadAloud => 'Antwoord voorlezen';
-
-  @override
-  String get queryAudioStop => 'Audio stoppen';
-
-  @override
-  String get queryAudioUploadNotice =>
-      'Bij het voorbereiden van tijdstempels wordt deze opname naar de transcriptieprovider gestuurd die voor deze agent is ingesteld.';
-
-  @override
-  String get queryAudioPreparing => 'Audio voorbereiden…';
-
-  @override
-  String get queryAudioNoMatch =>
-      'Dit citaat kon niet eenduidig aan de opname worden gekoppeld. Je kunt nog steeds het volledige item openen.';
-
-  @override
-  String get queryAudioTimingUnavailable =>
-      'Kies een Voxtral-transcriptiemodel met tijdstempels in het inferentieprofiel van deze agent om fragmenten voor te bereiden.';
-
-  @override
-  String get queryAudioMissingFile =>
-      'De opname is nog niet beschikbaar op dit apparaat.';
-
-  @override
-  String get queryAudioFailed =>
-      'De audio kon niet worden voorbereid of afgespeeld. Probeer het opnieuw.';
-
-  @override
-  String get queryAudioStale =>
-      'De opname is gewijzigd. Bereid de tijdstempels opnieuw voor.';
 }

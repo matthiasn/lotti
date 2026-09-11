@@ -11077,6 +11077,51 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryAskTask => 'Chiedi di questa attività';
 
   @override
+  String get queryAudioFailed =>
+      'Impossibile preparare o riprodurre l’audio. Riprova.';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Ascolta · $start–$end';
+  }
+
+  @override
+  String get queryAudioMissingFile =>
+      'La registrazione non è ancora disponibile su questo dispositivo.';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Non è stato possibile associare questa citazione in modo univoco alla registrazione. Puoi comunque aprire la voce completa.';
+
+  @override
+  String get queryAudioPrepare => 'Prepara estratto audio';
+
+  @override
+  String get queryAudioPreparing => 'Preparazione dell’audio…';
+
+  @override
+  String get queryAudioReadAloud => 'Leggi la risposta ad alta voce';
+
+  @override
+  String get queryAudioStale =>
+      'La registrazione è cambiata. Prepara di nuovo i riferimenti temporali.';
+
+  @override
+  String get queryAudioStop => 'Ferma audio';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Per preparare gli estratti, seleziona Melious Whisper o un modello di trascrizione Mistral Voxtral supportato nel profilo di inferenza di questo agente.';
+
+  @override
+  String get queryAudioTooLarge =>
+      'Puoi preparare i timestamp per registrazioni fino a 25 MB. Scegli una registrazione più piccola.';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'La preparazione dei riferimenti temporali invia questa registrazione al fornitore di trascrizione configurato per questo agente.';
+
+  @override
   String get queryCategoryAgent => 'Agente di categoria';
 
   @override
@@ -15454,45 +15499,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get queryAudioPrepare => 'Prepara estratto audio';
-
-  @override
-  String queryAudioListen(String start, String end) {
-    return 'Ascolta · $start–$end';
-  }
-
-  @override
-  String get queryAudioReadAloud => 'Leggi la risposta ad alta voce';
-
-  @override
-  String get queryAudioStop => 'Ferma audio';
-
-  @override
-  String get queryAudioUploadNotice =>
-      'La preparazione dei riferimenti temporali invia questa registrazione al fornitore di trascrizione configurato per questo agente.';
-
-  @override
-  String get queryAudioPreparing => 'Preparazione dell’audio…';
-
-  @override
-  String get queryAudioNoMatch =>
-      'Non è stato possibile associare questa citazione in modo univoco alla registrazione. Puoi comunque aprire la voce completa.';
-
-  @override
-  String get queryAudioTimingUnavailable =>
-      'Per preparare gli estratti, scegli un modello di trascrizione Voxtral con riferimenti temporali nel profilo di inferenza di questo agente.';
-
-  @override
-  String get queryAudioMissingFile =>
-      'La registrazione non è ancora disponibile su questo dispositivo.';
-
-  @override
-  String get queryAudioFailed =>
-      'Impossibile preparare o riprodurre l’audio. Riprova.';
-
-  @override
-  String get queryAudioStale =>
-      'La registrazione è cambiata. Prepara di nuovo i riferimenti temporali.';
 }

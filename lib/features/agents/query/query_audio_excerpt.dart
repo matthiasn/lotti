@@ -29,6 +29,11 @@ QueryAudioExcerpt? queryAudioExcerpt({
       timing.segments.length > 30000) {
     return null;
   }
+  // Imported recordings may lack duration metadata. Timed speech provides a
+  // conservative end boundary; never pad beyond it when duration is unknown.
+  final recordingEnd = duration == Duration.zero
+      ? timing.segments.last.endMilliseconds
+      : duration.inMilliseconds;
   final words = <String>[];
   final owners = <int>[];
   var previousStart = -1;
@@ -42,7 +47,7 @@ QueryAudioExcerpt? queryAudioExcerpt({
         end <= start ||
         start < previousStart ||
         end < previousEnd ||
-        end > duration.inMilliseconds ||
+        end > recordingEnd ||
         characters > 2000000) {
       return null;
     }
@@ -82,7 +87,7 @@ QueryAudioExcerpt? queryAudioExcerpt({
       timing.segments[owners[found + quote.length - 1]].endMilliseconds;
   final padding = math.max(5000, (60000 - (last - first)) ~/ 2);
   final start = math.max(0, first - padding);
-  final end = math.min(duration.inMilliseconds, last + padding);
+  final end = math.min(recordingEnd, last + padding);
   return QueryAudioExcerpt(
     start: Duration(milliseconds: start),
     end: Duration(milliseconds: end),

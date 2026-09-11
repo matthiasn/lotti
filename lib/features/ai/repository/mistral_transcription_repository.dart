@@ -217,7 +217,7 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
 
           final text = _extractText(result);
           if (onSegments != null) {
-            onSegments(parseTimedSegments(result['segments']));
+            onSegments(parseTimedTranscriptSegments(result['segments']));
           }
 
           developer.log(
@@ -278,52 +278,6 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
         }
       }(),
     ).asBroadcastStream();
-  }
-
-  /// Decodes the provider's seconds once at the boundary. A malformed or
-  /// unordered list is rejected as a whole; skipping rows could join speech
-  /// across an unknown gap and falsely locate a quote.
-  static List<AudioTimedSegment> parseTimedSegments(Object? value) {
-    if (value is! List || value.isEmpty || value.length > 30000) {
-      throw const FormatException('Missing or excessive transcript segments');
-    }
-    final result = <AudioTimedSegment>[];
-    var previousStart = -1;
-    var previousEnd = -1;
-    for (final item in value) {
-      if (item is! Map<String, dynamic>) {
-        throw const FormatException('Invalid transcript segment');
-      }
-      final text = item['text'];
-      final start = item['start'];
-      final end = item['end'];
-      if (text is! String ||
-          text.trim().isEmpty ||
-          start is! num ||
-          end is! num ||
-          !start.isFinite ||
-          !end.isFinite ||
-          start < 0 ||
-          end <= start ||
-          end > const Duration(hours: 3).inSeconds) {
-        throw const FormatException('Invalid transcript boundaries');
-      }
-      final startMs = (start * 1000).round();
-      final endMs = (end * 1000).round();
-      if (startMs < previousStart || endMs < previousEnd || endMs <= startMs) {
-        throw const FormatException('Unordered transcript boundaries');
-      }
-      result.add(
-        AudioTimedSegment(
-          text: text,
-          startMilliseconds: startMs,
-          endMilliseconds: endMs,
-        ),
-      );
-      previousStart = startMs;
-      previousEnd = endMs;
-    }
-    return result;
   }
 
   /// Extracts text from the response, formatting diarized segments

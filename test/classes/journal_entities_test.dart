@@ -27,16 +27,21 @@ void main() {
     () {
       final original = testAudioEntryWithTranscripts;
       final enriched = original.copyWith(
-        data: original.data.copyWith(transcriptTiming: audioTiming()),
+        data: original.data.copyWith(
+          transcriptTimings: {audioTiming().sourceFingerprint: audioTiming()},
+        ),
       );
       final json = jsonDecode(jsonEncode(enriched)) as Map<String, dynamic>;
       final decoded = JournalEntity.fromJson(json) as JournalAudio;
-      expect(decoded.data.transcriptTiming, audioTiming());
+      expect(
+        decoded.data.transcriptTimings[audioTiming().sourceFingerprint],
+        audioTiming(),
+      );
       expect(decoded.data.transcripts, original.data.transcripts);
       expect(decoded.entryText, original.entryText);
-      (json['data'] as Map<String, dynamic>).remove('transcriptTiming');
+      (json['data'] as Map<String, dynamic>).remove('transcriptTimings');
       final legacy = JournalEntity.fromJson(json) as JournalAudio;
-      expect(legacy.data.transcriptTiming, isNull);
+      expect(legacy.data.transcriptTimings, isEmpty);
       expect(legacy.data.transcripts, original.data.transcripts);
     },
   );

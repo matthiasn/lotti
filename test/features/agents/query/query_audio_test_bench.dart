@@ -70,11 +70,13 @@ class QueryAudioTestBench extends QueryTestBench {
     );
     audio = audio.copyWith(
       data: audio.data.copyWith(
-        transcriptTiming: audioTiming().copyWith(
-          sourceFingerprint: evidence.fingerprint,
-          sourceVersion: evidence.textVersion,
-          audioSha256: sha256.convert(bytes).toString(),
-        ),
+        transcriptTimings: {
+          evidence.fingerprint: audioTiming().copyWith(
+            sourceFingerprint: evidence.fingerprint,
+            sourceVersion: evidence.textVersion,
+            audioSha256: sha256.convert(bytes).toString(),
+          ),
+        },
       ),
     );
     addEvent(
@@ -100,6 +102,7 @@ class QueryAudioTestBench extends QueryTestBench {
     ).thenAnswer((_) async => QueryChatProjection(events));
     when(() => file.path).thenReturn('/tmp/penguin-habitat.m4a');
     when(file.existsSync).thenReturn(true);
+    when(file.lengthSync).thenAnswer((_) => bytes.length);
     when(file.openRead).thenAnswer((_) => Stream.value(bytes));
     when(file.readAsBytes).thenAnswer((_) async => bytes);
     when(() => player.stream).thenReturn(playerStream);

@@ -23,6 +23,12 @@ void main() {
     expect(result.end, const Duration(seconds: 155));
   });
 
+  test('unknown duration uses the last timed speech as a conservative end', () {
+    final result = locate(duration: Duration.zero)!;
+    expect(result.start, const Duration(seconds: 95));
+    expect(result.end, const Duration(seconds: 130));
+  });
+
   test('matches words across segments and tolerates formatting only', () {
     final result = locate(
       evidence: audioEvidence(
@@ -131,7 +137,7 @@ void main() {
       ]) {
         expect(locate(timing: audioTiming(segments: segments)), isNull);
       }
-      expect(locate(duration: Duration.zero), isNull);
+      expect(locate(duration: const Duration(seconds: -1)), isNull);
     },
   );
 

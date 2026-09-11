@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:material_ui/material_ui.dart';
@@ -80,18 +81,29 @@ void main() {
     'preparing is explicit, discloses the upload and updates the timestamp label',
     (tester) async {
       bench.audio = bench.audio.copyWith(
-        data: bench.audio.data.copyWith(transcriptTiming: null),
+        data: bench.audio.data.copyWith(transcriptTimings: {}),
       );
       await pump(tester);
       expect(find.textContaining('sends this recording'), findsOneWidget);
       expect(bench.requests, 0);
       await tester.tap(find.text('Prepare audio excerpt'));
-      // Buffered HTTP streams deliver their result through the event queue.
-      // Advance fake time to drain it before checking the persisted sidecar.
-      await tester.pump(Duration.zero);
-      await tester.pump();
+      // Allow buffered HTTP delivery and provider refreshes to complete on the
+      // fake clock; persistence itself remains the asserted outcome.
+      for (var frame = 0; frame < 20 && bench.writes == 0; frame++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
       expect(bench.requests, 1);
-      expect(bench.writes, 1);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(QueryEvidenceAudioControls)),
+      );
+      expect(
+        bench.writes,
+        1,
+        reason: container
+            .read(queryAudioControllerProvider(QueryAudioTestBench.key))
+            .status
+            .name,
+      );
       expect(find.text('Stop audio'), findsOneWidget);
       await tester.tap(find.text('Stop audio'));
       await tester.pump();
@@ -105,7 +117,7 @@ void main() {
       final pending = Completer<void>();
       bench.beforeResponse = () => pending.future;
       bench.audio = bench.audio.copyWith(
-        data: bench.audio.data.copyWith(transcriptTiming: null),
+        data: bench.audio.data.copyWith(transcriptTimings: {}),
       );
       await pump(tester);
       await tester.tap(find.text('Prepare audio excerpt'));
@@ -129,14 +141,17 @@ void main() {
           when(bench.file.existsSync).thenReturn(false);
           expected = 'The recording isn’t available on this device yet.';
         case 'unmatched':
-          final timing = bench.audio.data.transcriptTiming!;
+          final timing =
+              bench.audio.data.transcriptTimings[bench.evidence.fingerprint]!;
           bench.audio = bench.audio.copyWith(
             data: bench.audio.data.copyWith(
-              transcriptTiming: timing.copyWith(
-                segments: [
-                  timing.segments.single.copyWith(text: 'Other words.'),
-                ],
-              ),
+              transcriptTimings: {
+                timing.sourceFingerprint: timing.copyWith(
+                  segments: [
+                    timing.segments.single.copyWith(text: 'Other words.'),
+                  ],
+                ),
+              },
             ),
           );
           label = 'Prepare audio excerpt';
@@ -145,11 +160,11 @@ void main() {
         case 'unsupported':
           bench.profile = null;
           bench.audio = bench.audio.copyWith(
-            data: bench.audio.data.copyWith(transcriptTiming: null),
+            data: bench.audio.data.copyWith(transcriptTimings: {}),
           );
           label = 'Prepare audio excerpt';
           expected =
-              'To prepare excerpts, select a Voxtral transcription model with timestamp support in this agent’s inference profile.';
+              'To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile.';
         case 'native':
           when(bench.player.play).thenThrow(StateError('failed'));
           expected = 'Audio could not be prepared or played. Try again.';

@@ -239,24 +239,38 @@ recording produces a recoverable state.
 
 Preparation uses the agent/category profile's **transcription slot**, resolved
 through the same `queryProfileProvider` as the question-answering setup. The
-initial timing adapter supports the dedicated Mistral `voxtral-mini-latest` and
-`voxtral-mini-transcribe-*` batch models; realtime and instruction-following
-models are excluded. It never substitutes a provider or model. The preparation
-action discloses the upload; an unsupported profile explains what to configure.
-The provider's [segment timestamp contract](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
-is decoded by `MistralTranscriptionRepository.parseTimedSegments` into integer
-milliseconds. Missing, malformed, unordered or excessive segment lists fail as
-a whole. Ordinary text transcription still accepts a response without timings.
+timing adapters support Melious Whisper models and the dedicated Mistral
+`voxtral-mini-latest` / `voxtral-mini-transcribe-*` batch models. Melious Voxtral,
+realtime and instruction-following audio models are excluded. A request never
+substitutes a provider or model. The preparation action discloses the upload;
+an unsupported profile explains what to configure.
+
+Both the [Mistral segment timestamp contract](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription)
+and [Melious Whisper verbose JSON](https://melious.ai/docs/reference/audio) are
+decoded by `parseTimedTranscriptSegments` in
+`lib/features/ai/repository/transcription_repository.dart` into integer
+milliseconds. Speaker labels are not needed to locate sound bites. Missing,
+malformed, unordered or excessive segment lists fail as a whole. Ordinary
+text transcription still accepts a response without timings. Melious reuses
+the [bounded upload pipeline](../ai/provider-routing.md#melious); each
+twenty-minute part is offset back into the original recording, and timing is
+exposed only after all uploads succeed. The query preparation action currently
+limits new uploads to 25 MB before reading bytes into memory. This bounds the
+base64/multipart working set and avoids the upload pipeline’s whole-recording
+PCM decoding on mobile. Larger recordings show an explicit size message; their
+existing timing can still be played.
 
 `QueryAudioTimingService` owns one cancellable HTTP client per request and uses
-`AiInteractionCapture` for attribution when registered. Returned text stays out
+`AiInteractionCapture` for attribution when registered, including Melious cost
+and environmental impact. Returned text stays out
 of chat history, retrieval context and shared memory. The persisted
-`AudioData.transcriptTiming` sidecar contains the submitted recording's SHA-256,
+`AudioData.transcriptTimings` map retains a sidecar per source fingerprint. Each contains the submitted recording's SHA-256,
 source text fingerprint/version, provider/model and timed text segments. Older
 entries deserialize without it. Enrichment preserves the note and its existing
 transcripts. `QueryAudioTimingWriter` compares the complete expected entry
 inside a journal transaction before writing through normal persistence/sync;
-a concurrent edit or deletion rejects the result.
+a concurrent edit or deletion rejects the result. Preparing a newer source representation
+preserves timing for older saved quotes.
 
 `queryAudioExcerpt` matches the saved quote against those segments using a
 linear word matcher. It tolerates case, punctuation, whitespace and generated
@@ -264,7 +278,8 @@ speaker labels, but does not infer substituted words. A repeated or unmatched
 passage has no playable range. The sidecar must carry the saved source text
 fingerprint, and the local recording's checksum is checked before playback.
 A short quote gets about a minute of listening context, clamped to the recording;
-a long quote retains its full segment span with a little context. Provider
+a long quote retains its full segment span with a little context. When imported
+duration metadata is zero, the last timed speech bounds the excerpt instead. Provider
 segments determine every boundary: character offsets never become seconds.
 
 A retained historical quote can use already-matching timing after a text edit.
@@ -282,6 +297,7 @@ stateDiagram-v2
   preparing --> unavailable: configured model lacks timing
   preparing --> stale: recording needs new timing
   preparing --> missingFile: recording not local
+  preparing --> tooLarge: new upload exceeds 25 MB
   preparing --> failed: provider or playback failure
   playing --> failed: playback call fails
   preparing --> idle: Stop or access lost
@@ -290,6 +306,7 @@ stateDiagram-v2
   unavailable --> preparing: Retry after configuration
   stale --> preparing: Explicit preparation
   missingFile --> preparing: Retry after file arrives
+  tooLarge --> preparing: Retry with smaller recording
   failed --> preparing: Retry
 ```
 
