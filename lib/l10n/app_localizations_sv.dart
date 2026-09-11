@@ -11027,11 +11027,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du kan redigera transkriptionen innan du skickar din fråga. Ljudet kan redan ha skickats till din transkriberingsleverantör.';
 
   @override
-  String get queryEmptyBody =>
-      'Fråga om möten, beslut eller tidigare anteckningar. Svaren innehåller exakta sparade avsnitt som du kan läsa.';
-
-  @override
-  String get queryEmptyTitle => 'Hitta diskussionen bakom ett beslut';
+  String get queryEmptyBody => 'Sök i anteckningar och inspelningar.';
 
   @override
   String get queryExactText => 'Visa exakt text';
@@ -11047,8 +11043,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kontrollerar andra projekt i den här kategorin…';
 
   @override
-  String get queryFailed =>
-      'Sökningen kunde inte slutföras. Din fråga är sparad; försök igen.';
+  String get queryFailed => 'Sökningen kunde inte slutföras. Försök igen.';
 
   @override
   String get queryForgetConclusions => 'Glöm slutsatser';

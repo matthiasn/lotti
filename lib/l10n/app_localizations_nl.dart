@@ -11036,11 +11036,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je kunt de transcriptie bewerken voordat je je vraag verstuurt. De audio kan al naar je transcriptieaanbieder zijn verstuurd.';
 
   @override
-  String get queryEmptyBody =>
-      'Vraag naar vergaderingen, besluiten of eerdere notities. Antwoorden bevatten exacte opgeslagen passages die je kunt bekijken.';
-
-  @override
-  String get queryEmptyTitle => 'Vind het gesprek achter een besluit';
+  String get queryEmptyBody => 'Zoek in notities en opnamen.';
 
   @override
   String get queryExactText => 'Exacte tekst tonen';
@@ -11058,7 +11054,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryFailed =>
-      'De zoekopdracht kon niet worden voltooid. Je vraag is opgeslagen; probeer opnieuw.';
+      'De zoekopdracht kon niet worden voltooid. Probeer opnieuw.';
 
   @override
   String get queryForgetConclusions => 'Conclusies vergeten';

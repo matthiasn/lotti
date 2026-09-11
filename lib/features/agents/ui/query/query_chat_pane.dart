@@ -703,7 +703,11 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              messages.queryEmptyTitle,
+              switch (widget.scope.kind) {
+                QueryScopeKind.task => messages.queryAskTask,
+                QueryScopeKind.project => messages.queryAskProject,
+                QueryScopeKind.category => messages.queryAskCategory,
+              },
               style: tokens.typography.styles.heading.heading3,
             ),
             SizedBox(height: tokens.spacing.step3),

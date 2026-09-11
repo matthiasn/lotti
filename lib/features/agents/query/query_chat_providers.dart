@@ -134,19 +134,29 @@ class QueryInferenceUnavailable implements Exception {
 final FutureProviderFamily<ResolvedProfile?, QueryChatKey>
 queryProfileProvider = FutureProvider.autoDispose
     .family<ResolvedProfile?, QueryChatKey>((ref, key) async {
-      if (key.scope.kind == QueryScopeKind.category) {
-        final current = await ref.read(querySourceAccessProvider).load([
-          key.scope.id,
-        ]);
-        if (!current.allowsCategory(key.scope.id)) return null;
-        final profileId = current.categories[key.scope.id]?.defaultProfileId;
-        return profileId == null
-            ? null
-            : ref.read(profileResolverProvider).resolveByProfileId(profileId);
+      // Imperative query/audio actions read this future without a widget
+      // subscription. Keep the profile and its dependencies alive while
+      // database-backed setup resolution crosses frames, then release them.
+      final loading = ref.keepAlive();
+      try {
+        if (key.scope.kind == QueryScopeKind.category) {
+          final current = await ref.read(querySourceAccessProvider).load([
+            key.scope.id,
+          ]);
+          if (!current.allowsCategory(key.scope.id)) return null;
+          final profileId = current.categories[key.scope.id]?.defaultProfileId;
+          return profileId == null
+              ? null
+              : await ref
+                    .read(profileResolverProvider)
+                    .resolveByProfileId(profileId);
+        }
+        return (await ref.watch(
+          agentResolvedSetupProvider(key.agentId).future,
+        ))?.profile;
+      } finally {
+        loading.close();
       }
-      return (await ref.watch(
-        agentResolvedSetupProvider(key.agentId).future,
-      ))?.profile;
     }, retry: (_, _) => null);
 
 final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {

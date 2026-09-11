@@ -11,9 +11,13 @@ import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -27,12 +31,16 @@ void main() {
   late QueryChatController controller;
   late StreamController<QueryChatData> history;
   late Future<void> Function(String chatId) inspect;
+  late MockDomainLogger logger;
+  Exception? setupError;
   var malformed = false;
   var unavailable = false;
   final now = DateTime(2026, 9, 10, 12);
 
   setUpAll(registerAllFallbackValues);
   setUp(() {
+    logger = MockDomainLogger();
+    setupError = null;
     bench = QueryPersistenceBench()..add('task');
     inspect = (_) async {};
     malformed = false;
@@ -40,6 +48,7 @@ void main() {
     history = StreamController<QueryChatData>.broadcast();
     container = ProviderContainer(
       overrides: [
+        domainLoggerProvider.overrideWithValue(logger),
         queryChatStoreProvider.overrideWithValue(bench.store),
         queryChatDataProvider(key).overrideWith((ref) => history.stream),
         configFlagProvider(
@@ -51,6 +60,7 @@ void main() {
           chatId,
         ) async {
           if (unavailable) throw const QueryInferenceUnavailable();
+          if (setupError case final error?) throw error;
           return QueryAnswerBuilder(
             crawler: bench.crawler,
             access: bench.crawler.access,
@@ -92,6 +102,47 @@ void main() {
     await history.close();
     await bench.close();
   });
+
+  for (final error in [
+    const FormatException('Private source text must not reach logs'),
+    const MeliousInferenceException('Secret response body', statusCode: 401),
+  ]) {
+    test(
+      'setup failure logs safe diagnostics for ${error.runtimeType}',
+      () async {
+        final id = await controller.create('Feeder');
+        controller.updateDraft(id, 'Private question text');
+        setupError = error;
+        await controller.send(id);
+        expect(
+          container.read(provider).local(id).status,
+          QueryTurnStatus.failed,
+        );
+        expect(
+          container.read(provider).local(id).draft,
+          'Private question text',
+        );
+        expect(
+          (await bench.store.load('agent')).chats.single.questions,
+          isEmpty,
+        );
+        final status = error is MeliousInferenceException
+            ? ', httpStatus=401'
+            : '';
+        verify(
+          () => logger.error(
+            LogDomain.chat,
+            error.runtimeType,
+            message:
+                'Query failed during setup (errorType=${error.runtimeType}$status)',
+            subDomain: 'query.send',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNoMoreInteractions(logger);
+      },
+    );
+  }
 
   test(
     'concurrent replies and drafts stay with their originating chat',

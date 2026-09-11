@@ -5,9 +5,17 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T21:30:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: controller
+    resource: ../../../lib/features/agents/query/query_chat_controller.dart
+    title: Request lifecycle and safe failure diagnostics
+    last_modified: 2026-09-11
+  - id: providers
+    resource: ../../../lib/features/agents/query/query_chat_providers.dart
+    title: Query profile resolution and runtime wiring
+    last_modified: 2026-09-11
   - id: models
     resource: ../../../lib/features/agents/model/query_chat_models.dart
     title: Query scope, evidence and chat events
@@ -59,7 +67,8 @@ sources:
 The **Ask** action opens `QueryChatPane` in place of the task, project or saved
 category detail. Desktop retains the surrounding list; mobile uses the detail
 route's full page. Task headers, the task action bar and task/project summary
-cards expose the same action. Opening never runs inference.
+cards expose the same action. Opening never runs inference. The empty view names the task, project or
+category scope and offers example questions that populate the draft.
 
 `queryChatTargetProvider` reuses the task or project summary's identity. If no
 identity exists, the pane explains that an agent must first be assigned. A
@@ -71,6 +80,13 @@ Task/project queries resolve the agent's existing inference setup, including
 an explicit disabled setup. Category queries resolve the live category default
 profile. A missing usable setup retains the draft and presents a recoverable
 error. These calls do not alter automatic-update preferences.
+
+`queryProfileProvider` keeps itself and its watched setup dependencies alive
+until its lookup completes, including a null result or error. Send and audio
+preparation read its future imperatively without a widget subscription; an
+unretained auto-disposed provider can otherwise fail during a database read
+before a question is saved. The temporary keep-alive link closes in `finally`,
+so completed lookups do not retain unused profiles or their dependencies.
 
 # Discovery boundaries
 
@@ -111,6 +127,14 @@ tokens and request status for each chat. Requests in different chats can run
 concurrently. Drafts and running operations survive navigation in the current
 app session; they are not synced or persisted across application restart.
 History is persisted. A restarted unanswered question can be retried.
+
+Unexpected failures are logged under `chat/query.send` with their stage,
+exception type and a numeric Melious HTTP status when available. Exception
+messages and response bodies are not logged: they may contain private source
+text or credentials. The diagnostic stack identifies the failing code path.
+Cancellation and visibility changes do not emit error logs. Failure copy does
+not claim the question was saved, because setup or persistence can fail before
+that write.
 
 ```mermaid
 stateDiagram-v2

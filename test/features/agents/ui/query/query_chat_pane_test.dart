@@ -222,6 +222,64 @@ void main() {
     await tester.pump();
   }
 
+  for (final kind in QueryScopeKind.values) {
+    testWidgets(
+      'empty ${kind.name} chat explains scope and drafts an example',
+      (tester) async {
+        final activeScope = QueryScope(
+          kind: kind,
+          id: switch (kind) {
+            QueryScopeKind.task => 'task',
+            QueryScopeKind.project => 'project',
+            QueryScopeKind.category => categoryMindfulness.id,
+          },
+        );
+        bench.entries['project'] = makeTestProject(
+          id: 'project',
+          categoryId: categoryMindfulness.id,
+        );
+        await pump(tester, activeScope: activeScope);
+        expect(find.text('Ask about this ${kind.name}'), findsOneWidget);
+        expect(find.text('Search notes and recordings.'), findsOneWidget);
+        await tester.tap(find.text('What did we agree on?'));
+        await tester.pump();
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          'What did we agree on?',
+        );
+        expect(inferenceCalls, 0);
+      },
+    );
+  }
+
+  testWidgets(
+    'failure before saving keeps the draft without claiming it is saved',
+    (tester) async {
+      await pump(
+        tester,
+        session: const QueryChatSession(
+          selectedId: 'feeder',
+          chats: {
+            'feeder': QueryChatLocal(
+              status: QueryTurnStatus.failed,
+              draft: 'Which feeder?',
+            ),
+          },
+        ),
+      );
+      expect(
+        find.text('The search could not finish. Try again.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Your question is saved'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Which feeder?',
+      );
+      expect(inferenceCalls, 0);
+    },
+  );
+
   testWidgets('switching conversations preserves independent editable drafts', (
     tester,
   ) async {

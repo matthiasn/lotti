@@ -11163,11 +11163,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přepis můžeš upravit před odesláním otázky. Zvuk už mohl být odeslán tvému poskytovateli přepisu.';
 
   @override
-  String get queryEmptyBody =>
-      'Ptej se na schůzky, rozhodnutí nebo dřívější poznámky. Odpovědi obsahují přesné uložené pasáže k nahlédnutí.';
-
-  @override
-  String get queryEmptyTitle => 'Najdi diskuzi, která vedla k rozhodnutí';
+  String get queryEmptyBody => 'Prohledej poznámky a nahrávky.';
 
   @override
   String get queryExactText => 'Zobrazit přesný text';
@@ -11182,8 +11178,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryExpanding => 'Kontrola dalších projektů v této kategorii…';
 
   @override
-  String get queryFailed =>
-      'Hledání se nepodařilo dokončit. Tvá otázka je uložená; zkus to znovu.';
+  String get queryFailed => 'Hledání se nepodařilo dokončit. Zkus to znovu.';
 
   @override
   String get queryForgetConclusions => 'Zapomenout závěry';

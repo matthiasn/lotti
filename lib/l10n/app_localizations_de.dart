@@ -11086,12 +11086,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du kannst das Transkript bearbeiten, bevor du deine Frage sendest. Das Audio wurde möglicherweise bereits an deinen Transkriptionsanbieter gesendet.';
 
   @override
-  String get queryEmptyBody =>
-      'Frage nach Besprechungen, Entscheidungen oder früheren Notizen. Die Antworten enthalten genaue gespeicherte Textstellen zum Nachlesen.';
-
-  @override
-  String get queryEmptyTitle =>
-      'Finde die Diskussion hinter einer Entscheidung';
+  String get queryEmptyBody => 'Durchsuche Notizen und Aufnahmen.';
 
   @override
   String get queryExactText => 'Genauen Text anzeigen';
@@ -11109,7 +11104,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queryFailed =>
-      'Die Suche konnte nicht beendet werden. Deine Frage ist gespeichert; versuche es erneut.';
+      'Die Suche konnte nicht beendet werden. Versuche es erneut.';
 
   @override
   String get queryForgetConclusions => 'Erkenntnisse vergessen';

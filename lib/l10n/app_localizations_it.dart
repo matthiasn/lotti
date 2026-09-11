@@ -11156,11 +11156,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Puoi modificare la trascrizione prima di inviare la domanda. L’audio potrebbe essere già stato inviato al tuo servizio di trascrizione.';
 
   @override
-  String get queryEmptyBody =>
-      'Chiedi di riunioni, decisioni o note precedenti. Le risposte includono passaggi esatti salvati da consultare.';
-
-  @override
-  String get queryEmptyTitle => 'Ritrova la discussione dietro una decisione';
+  String get queryEmptyBody => 'Cerca nelle note e nelle registrazioni.';
 
   @override
   String get queryExactText => 'Mostra testo esatto';
@@ -11176,8 +11172,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Verifica degli altri progetti in questa categoria…';
 
   @override
-  String get queryFailed =>
-      'La ricerca non è terminata. La tua domanda è salvata; riprova.';
+  String get queryFailed => 'La ricerca non è terminata. Riprova.';
 
   @override
   String get queryForgetConclusions => 'Dimentica le conclusioni';

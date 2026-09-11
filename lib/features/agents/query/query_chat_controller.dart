@@ -8,7 +8,10 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 enum QueryTurnStatus { idle, running, failed, unavailable, hidden, cancelled }
 
@@ -232,7 +235,9 @@ class QueryChatController extends Notifier<QueryChatSession> {
       ),
     );
     final store = ref.read(queryChatStoreProvider);
+    final logger = ref.read(domainLoggerProvider);
     AgentQueryChatEventEntity? question;
+    var stage = 'setup';
     try {
       _watchRunningHistory();
       final builder = await ref.read(queryBuilderFactoryProvider)(
@@ -241,10 +246,12 @@ class QueryChatController extends Notifier<QueryChatSession> {
         id,
       );
       cancellation.check();
+      stage = 'loadChat';
       var projection = await store.load(key.agentId);
       var chat = projection.chats.where((c) => c.id == id).firstOrNull;
       if (chat == null || chat.archived) throw const QueryScopeUnavailable();
       if (retryQuestionId == null) {
+        stage = 'saveQuestion';
         question = await store.ask(
           key.agentId,
           id,
@@ -264,9 +271,11 @@ class QueryChatController extends Notifier<QueryChatSession> {
         }
       }
       cancellation.check();
+      stage = 'readHistory';
       projection = await store.load(key.agentId);
       chat = projection.chats.where((c) => c.id == id).firstOrNull;
       if (chat == null) throw const QueryCancelled();
+      stage = 'search';
       final result = await builder.build(
         chat: chat,
         question: question,
@@ -284,12 +293,29 @@ class QueryChatController extends Notifier<QueryChatSession> {
         },
       );
       cancellation.check();
+      stage = 'publish';
       final published = await store.publish(key.agentId, id, result);
       if (!published) throw const QueryCancelled();
       if (ref.mounted) {
         _set(id, state.local(id).copyWith(status: QueryTurnStatus.idle));
       }
-    } catch (error) {
+    } catch (error, stack) {
+      if (error is! QueryCancelled && error is! QueryScopeUnavailable) {
+        // Provider errors can contain prompts, responses or credentials.
+        // Record only their type, stage and numeric HTTP status, never text.
+        final httpStatus = error is MeliousInferenceException
+            ? error.statusCode
+            : null;
+        logger.error(
+          LogDomain.chat,
+          error.runtimeType,
+          message:
+              'Query failed during $stage (errorType=${error.runtimeType}'
+              '${httpStatus == null ? '' : ', httpStatus=$httpStatus'})',
+          subDomain: 'query.send',
+          stackTrace: stack,
+        );
+      }
       if (question != null) {
         try {
           await store.fail(

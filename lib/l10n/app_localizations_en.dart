@@ -10965,11 +10965,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.';
 
   @override
-  String get queryEmptyBody =>
-      'Ask about meetings, decisions, or earlier notes. Answers include exact stored passages you can inspect.';
-
-  @override
-  String get queryEmptyTitle => 'Find the discussion behind a decision';
+  String get queryEmptyBody => 'Search notes and recordings.';
 
   @override
   String get queryExactText => 'Show exact text';
@@ -10984,8 +10980,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryExpanding => 'Checking other projects in this category…';
 
   @override
-  String get queryFailed =>
-      'The search could not finish. Your question is saved; try again.';
+  String get queryFailed => 'The search could not finish. Try again.';
 
   @override
   String get queryForgetConclusions => 'Forget conclusions';

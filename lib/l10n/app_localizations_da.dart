@@ -11017,11 +11017,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Du kan redigere transskriptionen, før du sender dit spørgsmål. Lyden kan allerede være sendt til din transskriptionsudbyder.';
 
   @override
-  String get queryEmptyBody =>
-      'Spørg om møder, beslutninger eller tidligere noter. Svarene indeholder nøjagtige gemte passager, du kan læse.';
-
-  @override
-  String get queryEmptyTitle => 'Find samtalen bag en beslutning';
+  String get queryEmptyBody => 'Søg i noter og optagelser.';
 
   @override
   String get queryExactText => 'Vis nøjagtig tekst';
@@ -11036,8 +11032,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryExpanding => 'Tjekker andre projekter i denne kategori…';
 
   @override
-  String get queryFailed =>
-      'Søgningen kunne ikke afsluttes. Dit spørgsmål er gemt; prøv igen.';
+  String get queryFailed => 'Søgningen kunne ikke afsluttes. Prøv igen.';
 
   @override
   String get queryForgetConclusions => 'Glem konklusioner';
