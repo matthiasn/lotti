@@ -223,6 +223,14 @@ void main() {
           resolved.complete(profile);
           await completion;
           final builder = await pending;
+          await container.pump();
+          expect(
+            container.exists(
+              queryProfileProvider((agentId: 'agent', scope: scope)),
+            ),
+            isFalse,
+            reason: 'Completed profile reads must not retain unused providers',
+          );
           final corpus = await builder.crawler.discover(scope, ['feeder']);
           expect(corpus.documents.map((d) => d.entry.meta.id), ['task']);
           expect(
@@ -248,6 +256,44 @@ void main() {
       );
     }
   });
+  for (final unavailable in [false, true]) {
+    test(
+      'profile loading releases its lifetime after unavailable=$unavailable',
+      () async {
+        final started = Completer<void>();
+        final resolved = Completer<ResolvedAgentSetup?>();
+        final container = ProviderContainer(
+          overrides: [
+            agentResolvedSetupProvider('agent').overrideWith((ref) {
+              started.complete();
+              return resolved.future;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+        final provider = queryProfileProvider((
+          agentId: 'agent',
+          scope: const QueryScope(kind: QueryScopeKind.project, id: 'project'),
+        ));
+        final error = StateError('Setup lookup failed');
+        final pending = container.read(provider.future);
+        final expectation = expectLater(
+          pending,
+          unavailable ? completion(isNull) : throwsA(same(error)),
+        );
+        await started.future;
+        await container.pump();
+        if (unavailable) {
+          resolved.complete();
+        } else {
+          resolved.completeError(error);
+        }
+        await expectation;
+        await container.pump();
+        expect(container.exists(provider), isFalse);
+      },
+    );
+  }
   test(
     'task query resolves the existing summary agent and live scope',
     () async {
