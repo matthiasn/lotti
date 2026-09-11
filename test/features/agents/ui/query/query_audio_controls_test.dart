@@ -154,7 +154,7 @@ void main() {
           );
           label = 'Prepare audio excerpt';
           expected =
-              'To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile.';
+              'To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile. The provider URL must use HTTPS.';
         case 'native':
           when(bench.player.play).thenThrow(StateError('failed'));
           expected = 'Audio could not be prepared or played. Try again.';

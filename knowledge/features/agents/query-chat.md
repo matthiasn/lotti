@@ -317,7 +317,9 @@ message. It re-reads the chat and all of its privacy dependencies before upload,
 persistence and playback. Evidence must belong to a saved answer. Leaving the
 chat, switching chats, hiding private entries or changing lockdown cancels work
 and releases playback; a delayed provider/native completion cannot start it
-again. Existing journal audio and query playback stop each other from
+again. Disposal releases ownership before awaiting native cleanup and reports
+failures in the speech logging domain without exposing recording paths or
+content. Existing journal audio and query playback stop each other from
 speaking simultaneously.
 
 Read answer aloud uses the existing on-device [TTS engine](../tts.md), including

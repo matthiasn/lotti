@@ -22,6 +22,8 @@ import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:media_kit/media_kit.dart';
@@ -86,9 +88,11 @@ class QueryAudioController extends Notifier<QueryAudioState> {
   TtsPlaybackController? _tts;
   String? _ttsSourceId;
   int _intent = 0;
+  late DomainLogger _logger;
 
   @override
   QueryAudioState build() {
+    _logger = getIt<DomainLogger>();
     _tts = ref.read(ttsPlaybackControllerProvider.notifier);
     ref
       ..listen(configFlagProvider('private'), (previous, next) {
@@ -431,21 +435,32 @@ class QueryAudioController extends Notifier<QueryAudioState> {
   Future<void> _release({bool deferSpeech = false}) async {
     final player = _player;
     _player = null;
-    final cancellation = _completed?.cancel();
-    _completed = null;
     final ttsSource = _ttsSourceId;
     _ttsSourceId = null;
-    final speech = ttsSource == null
-        ? null
-        : deferSpeech
-        ? Future<void>.microtask(() => _tts?.stop(sourceId: ttsSource))
-        : _tts?.stop(sourceId: ttsSource);
-    final disposal = player?.dispose();
-    await Future.wait<void>([
-      ?cancellation,
-      ?speech,
-      ?disposal,
-    ]);
+    try {
+      final cancellation = _completed?.cancel();
+      _completed = null;
+      final speech = ttsSource == null
+          ? null
+          : deferSpeech
+          ? Future<void>.microtask(() => _tts?.stop(sourceId: ttsSource))
+          : _tts?.stop(sourceId: ttsSource);
+      final disposal = player?.dispose();
+      await Future.wait<void>([
+        ?cancellation,
+        ?speech,
+        ?disposal,
+      ]);
+    } catch (error, stackTrace) {
+      // Lifecycle callbacks cannot await cleanup; report native failures
+      // without letting them escape or retaining ownership of old playback.
+      _logger.error(
+        LogDomain.speech,
+        StateError('Audio excerpt cleanup failed (${error.runtimeType})'),
+        subDomain: 'queryAudio.release',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _pauseRecording() async {

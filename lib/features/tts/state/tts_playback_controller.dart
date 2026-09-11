@@ -27,6 +27,9 @@ final ttsPlaybackControllerProvider =
     );
 
 class TtsPlaybackController extends Notifier<TtsPlaybackState> {
+  TtsPlaybackController({DomainLogger? logger})
+    : _logger = logger ?? getIt<DomainLogger>();
+
   StreamSubscription<void>? _completedSub;
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<Duration>? _durationSub;
@@ -34,12 +37,11 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   Future<void> _preparation = Future<void>.value();
   File? _file;
   TtsAudioPlayer? _player;
-  late DomainLogger _logger;
+  // Cleanup can finish after provider disposal, when ref is no longer usable.
+  final DomainLogger _logger;
 
   @override
   TtsPlaybackState build() {
-    // Cleanup can finish after provider disposal, when ref is no longer usable.
-    _logger = getIt<DomainLogger>();
     ref.onDispose(() {
       _generation++;
       _cancelPlayerSubscriptions();
