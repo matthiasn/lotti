@@ -45,6 +45,17 @@ checkboxes show each species.
 Shared traffic control gives them room to finish steps and yield at crossings.
 Reduced-motion settings pause both species.
 
+The top bar is collapsed on arrival: two round buttons sit in the corner — one
+leaves the world, one shows and hides the toolbar — and the street keeps the
+rest of the screen. The toolbar slides out to their right with the project
+title and counts, **Morning walk**, **Overview**, **Home**, the **Night**/**Day**
+and frame-rate controls and the species checkboxes; **T** toggles it and
+**Esc** closes it. The status key and the control legend along the bottom, and
+any flight message, stay on screen either way. With the toolbar open, **Tab**
+moves between its controls instead of stepping to the next beacon, so the whole
+bar can be driven from the keyboard; **Esc** hands the keyboard back to the
+street.
+
 The existing walk, drag-to-look, beacon navigation, search, Home, Overview and
 Morning walk remain available. Flights follow rounded curves with gentle turns
 and climbs. Hold **Shift** while walking or flying for **8× speed** through the
@@ -81,6 +92,8 @@ and widget textures belong to `flutter_scene`.
 - `domain/` holds geometry, attention, routes, collisions and the Morning walk.
 - `scene/` builds geometry, manages facade detail and captures, and animates
   status lights, flames and ambient life.
+- `ui/plaza_hud.dart` is the chrome, and `ui/plaza_top_bar.dart` the collapsible
+  toolbar it hides the controls behind.
 - `ui/project_plaza_page.dart` and `category_plaza_page.dart` connect app data
   and navigation to the reusable `ui/plaza_view.dart` renderer.
 - `ui/` also contains the captured billboard/facade widgets and localized chrome.

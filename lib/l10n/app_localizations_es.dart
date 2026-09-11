@@ -10285,7 +10285,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD caminar · mantén Shift: velocidad ×8 · arrastra para mirar · Tab siguiente baliza · H inicio · M vista general · / buscar · ⌘[ volver';
+      'WASD caminar · mantén Shift: velocidad ×8 · arrastra para mirar · Tab siguiente baliza · H inicio · M vista general · / buscar · T barra de herramientas · Esc cierra · ⌘[ volver';
 
   @override
   String plazaCornerAfter(String week) {
@@ -10401,6 +10401,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get plazaTitle => 'Plaza';
+
+  @override
+  String get plazaToggleToolbar => 'Mostrar / ocultar la barra de herramientas';
 
   @override
   String get plazaToLet => 'SE ALQUILA';

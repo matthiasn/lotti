@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/plaza/domain/attention.dart';
@@ -21,6 +23,13 @@ PlazaTask _task(PlazaTaskState state, {int color = 0xFF5C9DFF}) => PlazaTask(
   linkedTaskIds: const [],
   categoryColor: color,
 );
+
+/// WCAG relative contrast between two opaque colours.
+double _contrast(Color a, Color b) {
+  final lit = math.max(a.computeLuminance(), b.computeLuminance());
+  final dark = math.min(a.computeLuminance(), b.computeLuminance());
+  return (lit + 0.05) / (dark + 0.05);
+}
 
 void main() {
   final now = DateTime.utc(2026, 7, 15);
@@ -149,4 +158,19 @@ void main() {
       );
     },
   );
+
+  test('the brand teal carries the ink a lit control puts on it', () {
+    // A lit toggle is opaque teal, and the glyph on it is the ink the design
+    // system puts on any filled interactive surface. White would vanish.
+    // (The glass itself is a design-system token now; its contrast is held
+    // in `world_chrome_tokens_test.dart`.)
+    final lit = dsTokensDark.colors.text.onInteractiveAlert;
+    for (final teal in [PlazaStyle.teal, PlazaStyle.tealHover]) {
+      expect(
+        _contrast(teal, lit),
+        greaterThanOrEqualTo(4.5),
+        reason: '$teal is the fill a lit control wears',
+      );
+    }
+  });
 }

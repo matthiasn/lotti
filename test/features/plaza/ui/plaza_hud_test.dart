@@ -7,6 +7,7 @@ import 'package:lotti/features/plaza/ui/debug_overlay.dart';
 import 'package:lotti/features/plaza/ui/plaza_hud.dart';
 import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_style.dart';
+import 'package:lotti/features/plaza/ui/plaza_top_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
@@ -21,6 +22,7 @@ void main() {
   late bool showPenguins;
   late bool showMeerkats;
   late bool showConnections;
+  late int toolbarToggles;
   PlazaSkyMode? skyMode;
 
   setUp(() {
@@ -33,6 +35,7 @@ void main() {
     showPenguins = true;
     showMeerkats = true;
     showConnections = true;
+    toolbarToggles = 0;
     skyMode = null;
   });
 
@@ -43,6 +46,7 @@ void main() {
     bool penguinsAvailable = true,
     bool meerkatsAvailable = true,
     bool connectionsAvailable = false,
+    bool toolbarOpen = true,
     PlazaSkyMode sky = PlazaSkyMode.night,
   }) => makeTestableWidget2(
     Scaffold(
@@ -56,6 +60,8 @@ void main() {
         onOverview: () => overviews++,
         onHome: () => homes++,
         onExit: () => exits++,
+        toolbarOpen: toolbarOpen,
+        onToolbarToggle: () => toolbarToggles++,
         frameRate: frameRate,
         onFrameRateChanged: (rate) => frameRate = rate,
         skyMode: sky,
@@ -171,7 +177,7 @@ void main() {
     await tester.tap(find.text('Morning walk'));
     await tester.tap(find.text('Overview'));
     await tester.tap(find.text('Home'));
-    await tester.tap(find.text('Back'));
+    await tester.tap(find.byTooltip('Back'));
     expect((walks, overviews, homes), (1, 1, 1));
     expect(exits, 1);
   });
@@ -335,13 +341,76 @@ void main() {
     await tester.pump();
     expect(
       scrims(),
-      hasLength(2),
-      reason: 'the controls above and the legend below each get one',
+      hasLength(1),
+      reason:
+          'only the legend is drawn bare on the street; the toolbar '
+          'brings its own glass to both skies',
     );
     expect(
       scrims().first!.a,
       closeTo(SurfaceAlphas.linework, 0.001),
       reason: 'the scrim opacity is a design-system step, not a local number',
+    );
+  });
+
+  testWidgets('a collapsed toolbar leaves only the pair over the street', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(host(toolbarOpen: false));
+
+    expect(find.byType(PlazaHudIconButton), findsNWidgets(2));
+    for (final chrome in [
+      'Project Waddle — Plaza',
+      '28 tasks · 6 weeks · 4 need attention',
+      'Morning walk',
+      'Overview',
+      'Penguins',
+      'Debug',
+    ]) {
+      expect(find.text(chrome), findsNothing, reason: '$chrome is a control');
+    }
+    // The key and the keyboard legend are not controls, and stay put.
+    expect(find.text('Blocked'), findsOneWidget);
+    expect(
+      find.textContaining('WASD walk · hold Shift: 8× speed'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the toolbar button reports the press it cannot act on', (
+    tester,
+  ) async {
+    await tester.pumpWidget(host(toolbarOpen: false));
+    await tester.tap(find.byTooltip('Show / hide toolbar'));
+    expect(toolbarToggles, 1);
+    expect(exits, 0, reason: 'the pair are separate targets');
+    await tester.tap(find.byTooltip('Back'));
+    expect((toolbarToggles, exits), (1, 1));
+  });
+
+  testWidgets('a toast still reaches a walker who hid the toolbar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    // Flying somewhere names the destination. Hiding the controls must not
+    // silence that: the toast is feedback, not chrome.
+    await tester.pumpWidget(
+      host(toolbarOpen: false, toast: 'Fuel the shuttle'),
+    );
+    expect(find.text('Fuel the shuttle'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Fuel the shuttle')).dy,
+      greaterThan(
+        tester.getBottomLeft(find.byType(PlazaHudIconButton).first).dy,
+      ),
+      reason: 'it sits under the buttons rather than over them',
     );
   });
 }

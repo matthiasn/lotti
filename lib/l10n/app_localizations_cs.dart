@@ -10264,7 +10264,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD chůze · drž Shift: 8× rychlost · tažením se rozhlížej · Tab další maják · H domů · M přehled · / hledat · ⌘[ zpět';
+      'WASD chůze · drž Shift: 8× rychlost · tažením se rozhlížej · Tab další maják · H domů · M přehled · / hledat · T panel nástrojů · Esc zavře · ⌘[ zpět';
 
   @override
   String plazaCornerAfter(String week) {
@@ -10380,6 +10380,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get plazaTitle => 'Náměstí';
+
+  @override
+  String get plazaToggleToolbar => 'Zobrazit / skrýt panel nástrojů';
 
   @override
   String get plazaToLet => 'K PRONÁJMU';

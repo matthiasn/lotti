@@ -4,6 +4,8 @@ library;
 
 import 'dart:io' show Platform;
 
+import 'package:flutter/services.dart' show SystemNavigator;
+
 import 'package:lotti/features/demo/seed/demo_world.dart' show manualDemoNow;
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/plaza/data/demo_world_projection.dart';
@@ -53,6 +55,15 @@ class PlazaDevApp extends StatelessWidget {
           shotDir: env['PLAZA_SHOT_DIR'],
           initialFrameRate: PlazaFrameRate.fromEnvironment(env),
           initialSkyMode: PlazaSkyMode.fromEnvironment(env),
+          initialToolbarOpen: env['PLAZA_TOOLBAR'] == '1',
+          // The harness is a client of the same chrome the app gets, so it
+          // renders the same Back button. There is no route under this one,
+          // so leaving the world means leaving the harness: the channel's
+          // contract is "close the application, or the closest equivalent"
+          // (`SystemChannels.platform`), which the macOS embedder implements.
+          // Preferred over `dart:io`'s `exit`, which the framework warns can
+          // look to the platform as though the app had crashed.
+          onExit: SystemNavigator.pop,
         ),
       ),
     );
