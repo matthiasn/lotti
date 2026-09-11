@@ -73,11 +73,19 @@ enum PlazaKeyRouting {
   /// `Enter` and `Space` activate. The renderer keeps its hands off.
   chrome,
 
-  /// Shut the toolbar and take the keyboard back, whoever was holding it.
+  /// A binding of the toolbar's own — `T` or `Esc`. These outrank focus.
+  ///
+  /// A shortcut the legend advertises has to keep working while the thing it
+  /// controls holds the keyboard, which is precisely the moment a walker
+  /// wants it gone: open the toolbar, `Tab` into it, and `T` would otherwise
+  /// be handed to a checkbox that does nothing with it. Neither key is one a
+  /// control in this chrome can want — there is no text field anywhere in it,
+  /// and the search sheet takes the keyboard before any of this is reached.
+  ///
   /// The world's own handling still runs afterwards, so one `Esc` dismisses
   /// the toolbar, the task panel and the morning walk together — which is
   /// what it did before focus entered the picture.
-  dismiss;
+  toolbar;
 
   /// Where [event] goes, given the world holds the keyboard
   /// ([worldHasFocus]) and the toolbar is [toolbarOpen].
@@ -86,9 +94,7 @@ enum PlazaKeyRouting {
     required bool worldHasFocus,
     required bool toolbarOpen,
   }) {
-    if (PlazaToolbarKey.pressed(event) == PlazaToolbarKey.close) {
-      return dismiss;
-    }
+    if (PlazaToolbarKey.pressed(event) != null) return toolbar;
     if (!worldHasFocus) return chrome;
     if (toolbarOpen && event.logicalKey == LogicalKeyboardKey.tab) {
       return chrome;
@@ -166,7 +172,14 @@ class PlazaTopBar extends StatelessWidget {
           SizedBox(width: tokens.spacing.step3),
         ],
         PlazaHudIconButton(
-          icon: LottiIcons.sidebar,
+          // Deliberately the mirror of Back rather than [LottiIcons.sidebar],
+          // whose meaning ("show or hide the side panel") fits but whose
+          // panel-left glyph read as a window control over a 3D street. The
+          // two buttons are a pair — one arrow out of the world, one arrow
+          // into the controls — and the pair is what makes them legible at
+          // 18px with no labels. The arrow does not flip when the toolbar
+          // opens: it names the button, and the teal says what state it is in.
+          icon: LottiIcons.forward,
           tooltip: messages.plazaToggleToolbar,
           onPressed: onToggle,
           lit: open,

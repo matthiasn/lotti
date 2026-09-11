@@ -619,6 +619,13 @@ title, the counts, the three navigation buttons, the two segmented controls and
 the four checkboxes) lives inside `PlazaTopBar`'s toolbar, which is closed on
 arrival and slides out to the right of the buttons.
 
+The two buttons read as one mirrored pair — an arrow out of the world, an arrow
+into the controls. That is why the toggle carries `LottiIcons.forward` and not
+`LottiIcons.sidebar`, whose *meaning* ("show or hide the side panel") is the
+better fit but whose panel-left glyph read as window chrome sitting on a 3D
+street. The arrow does not flip when the toolbar opens: it names the button,
+and the teal fill is what carries the state.
+
 The two buttons are the layout's fixed point. They are laid out *before* the
 toolbar in the same row, so revealing it cannot move them, and the toggle can
 be pressed twice without the pointer having to chase it. The toolbar carries
@@ -655,9 +662,14 @@ and the corner buttons were reachable by pointer only. The way in is the
 toolbar itself. While it is shut, which is nearly all of a visit, every key is
 the world's exactly as before. Open it and `Tab` hands the keyboard to the
 chrome instead of stepping to the next beacon; once a control holds it, every
-press is that control's; `Esc` hands it back. Shutting the toolbar by any route
-returns focus to the world, because a control that has left the screen must not
-keep the keyboard.
+press is that control's — **except the toolbar's own two**. `T` and `Esc`
+outrank focus, because a shortcut the legend advertises has to keep working
+while the thing it controls holds the keyboard, which is precisely when a
+walker wants it gone; the routing lifts both above the focus check rather than
+`Esc` alone. Neither is a key a control in this chrome can want — there is no
+text field in it, and the search sheet takes the keyboard before the routing is
+reached. Shutting the toolbar by any route returns focus to the world, because
+a control that has left the screen must not keep the keyboard.
 
 The buttons themselves are `FocusableActionDetector`s, so a focused one takes
 `Enter` and `Space`, wears a ring of the interactive teal, and publishes
