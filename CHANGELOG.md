@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.9]
+
+### Added
+
+- **Listen to the recording behind a quoted answer.** Query chats can prepare
+  timestamps using Melious Whisper or a compatible Mistral Voxtral model in
+  the agent's transcription profile, then play the matching excerpt from the
+  original recording. Saved quotes and notes keep their wording. Answers can
+  also be read aloud using local text-to-speech when enabled; switching chats
+  or hiding private content stops playback.
+
+### Changed
+
+- **The 3D project world now opens with the street in full view.** The control
+  bar used to run across the top of the window the whole time you were in
+  there — project title, counts, three navigation buttons, two segmented
+  controls and four checkboxes — covering the part of the district you were
+  walking towards. It starts collapsed now: two round buttons in the corner,
+  one to leave and one to show the controls, which slide out beside them when
+  you want them. Press **T** to show or hide them, **Esc** to put them away.
+  With them open, **Tab** moves between the controls, so the whole bar works
+  from the keyboard. The status key and the control hints along the bottom
+  stay where they were.
+
+### Fixed
+
+- **Stopping speech preparation now prevents late playback.** Cancelling while
+  a voice model is preparing or opening audio no longer lets that audio start
+  afterward.
+- **Asking an agent could fail immediately while its setup was loading.**
+  Task, project and category queries now wait for the configured model setup
+  to finish loading before starting the search. Audio timestamp preparation
+  uses the same corrected setup lookup.
+- **Agent chat now opens with a direct invitation to ask about the current
+  task, project or category.** Its failure message no longer claims a question
+  was saved when setup failed before saving it.
+- **Large agent searches shortlist sources together before inspecting
+  matches.** This reduces model round trips while keeping exact quotes and
+  live privacy checks. Skipped sources are reported as incomplete coverage.
+- **Query chat shows searching while it retrieves evidence.** It switches to
+  preparing an answer only when the final response is being composed.
+
 ## [1.1.8]
 
 ### Added
