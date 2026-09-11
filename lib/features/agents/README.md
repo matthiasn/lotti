@@ -37,6 +37,13 @@ applied until the user confirms it.
 - **Supports text and voice conversations.** Shared chat components serve goal
   and relationship discussions and agent improvement, including recording,
   transcription feedback, and expandable reasoning in improvement replies.
+- **Answers questions about earlier notes and meetings.** Ask from a task,
+  project or category, inspect saved verbatim quotes, and keep separate chats.
+  Discovery stays within the same category; hidden private sources also hide
+  derived answers and chat metadata. Deleting a chat asks whether to keep its
+  shared conclusions. Sources remain untouched. The [query conversation
+  concept](../../../knowledge/features/agents/query-chat.md) defines the scope,
+  evidence and privacy contract.
 - **Shows its work.** An internals panel exposes the agent's reports,
   conversations, observations, token usage and activity, so its behaviour is
   inspectable rather than opaque.
@@ -61,6 +68,7 @@ lib/features/agents/
 ├── wake/         # orchestrator, queue, runner, scheduling
 ├── workflow/     # one per agent kind, plus evolution and improver
 ├── service/      # creation, change-set confirmation, souls, templates
+├── query/        # scoped conversations, retrieval, evidence and shared conclusions
 ├── memory/       # author-time memory links
 ├── projection/   # the event log's pure fold, capture and checkpoint selection
 ├── database/     # agent.sqlite

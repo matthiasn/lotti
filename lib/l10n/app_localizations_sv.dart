@@ -10926,6 +10926,198 @@ class AppLocalizationsSv extends AppLocalizations {
   String get provisionedSyncTitle => 'Enheter';
 
   @override
+  String get queryArchiveChat => 'Arkivera chatt';
+
+  @override
+  String get queryArchivedChats => 'Arkiverade chattar';
+
+  @override
+  String get queryArchivedReadOnly =>
+      'Den här chatten är arkiverad. Återställ den för att fortsätta samtalet.';
+
+  @override
+  String get queryAsk => 'Fråga';
+
+  @override
+  String get queryAskCategory => 'Fråga om den här kategorin';
+
+  @override
+  String get queryAskProject => 'Fråga om det här projektet';
+
+  @override
+  String get queryAskTask => 'Fråga om den här uppgiften';
+
+  @override
+  String get queryCategoryAgent => 'Kategoriagent';
+
+  @override
+  String get queryChats => 'Chattar';
+
+  @override
+  String queryChecked(int count) {
+    return 'Kontrollerade källor: $count';
+  }
+
+  @override
+  String get queryCopied => 'Kopierat';
+
+  @override
+  String get queryCopyQuote => 'Kopiera citat';
+
+  @override
+  String get queryCoverage => 'Vad genomsöktes?';
+
+  @override
+  String get queryDeleteChat => 'Ta bort chatt';
+
+  @override
+  String get queryDeleteExplanation =>
+      'Ta bort den här konversationen? Välj vad som händer med dess delade slutsatser. Källinläggen påverkas inte.';
+
+  @override
+  String get queryDictated =>
+      'Du kan redigera transkriptionen innan du skickar din fråga. Ljudet kan redan ha skickats till din transkriberingsleverantör.';
+
+  @override
+  String get queryEmptyBody =>
+      'Fråga om möten, beslut eller tidigare anteckningar. Svaren innehåller exakta sparade avsnitt som du kan läsa.';
+
+  @override
+  String get queryEmptyTitle => 'Hitta diskussionen bakom ett beslut';
+
+  @override
+  String get queryExactText => 'Visa exakt text';
+
+  @override
+  String get queryExampleDecision => 'Vad kom vi överens om?';
+
+  @override
+  String get queryExampleMeeting => 'På vilket möte diskuterade vi det här?';
+
+  @override
+  String get queryExpanding =>
+      'Kontrollerar andra projekt i den här kategorin…';
+
+  @override
+  String get queryFailed =>
+      'Sökningen kunde inte slutföras. Din fråga är sparad; försök igen.';
+
+  @override
+  String get queryForgetConclusions => 'Glöm slutsatser';
+
+  @override
+  String get queryHideSurrounding => 'Dölj omgivande text';
+
+  @override
+  String get queryHomeOnly => 'Endast ursprungsområdet';
+
+  @override
+  String get queryIncomplete =>
+      'Sökningen är ofullständig. Avsaknad av belägg betyder inte att diskussionen aldrig ägde rum.';
+
+  @override
+  String get queryInferenceUnavailable =>
+      'Ingen användbar AI-konfiguration. Konfigurera agentens modell eller kategorins standardprofil och försök igen.';
+
+  @override
+  String get queryKeepConclusions => 'Behåll slutsatser';
+
+  @override
+  String get queryMachineTranscript =>
+      'Maskintranskription: exakt sparad ordalydelse, inte kontrollerad mot ljudet.';
+
+  @override
+  String queryMemoryCount(int count) {
+    return 'Tillgängliga slutsatser från tidigare chattar: $count';
+  }
+
+  @override
+  String queryMissingTranscripts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count inspelningar saknar sökbar text. Öppna dem i journalen för att transkribera dem.',
+      one:
+          '1 inspelning saknar sökbar text. Öppna den i journalen för att transkribera den.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queryNewChat => 'Ny chatt';
+
+  @override
+  String get queryNoAgent =>
+      'Det här området behöver sin vanliga agent. Gå tillbaka till detaljerna för att tilldela den.';
+
+  @override
+  String get queryNotes => 'Anteckningar';
+
+  @override
+  String get queryOpenEntry => 'Öppna inlägg';
+
+  @override
+  String get queryOtherProject => 'Utanför ursprungsområdet';
+
+  @override
+  String queryReachCategory(String category) {
+    return 'Söker först inom det här området och sedan i $category.';
+  }
+
+  @override
+  String queryReachCategoryOnly(String category) {
+    return 'Söker inom $category.';
+  }
+
+  @override
+  String get queryReachUncategorized =>
+      'Söker endast i den här uppgiften och dess direkt länkade inlägg utan kategori.';
+
+  @override
+  String get queryRecall =>
+      'Använder relevanta slutsatser från tidigare chattar.';
+
+  @override
+  String get queryRecordings => 'Inspelningar';
+
+  @override
+  String get queryRenameChat => 'Byt namn på chatten';
+
+  @override
+  String get queryRestoreChat => 'Återställ chatt';
+
+  @override
+  String get querySavedQuote =>
+      'Det här sparade citatet återger källan när svaret skrevs.';
+
+  @override
+  String get querySearching => 'Söker i länkade anteckningar och inspelningar…';
+
+  @override
+  String get querySourceChanged => 'Källan har ändrats';
+
+  @override
+  String get querySourceDeleted => 'Källan borttagen';
+
+  @override
+  String get querySourceMoved => 'Källan flyttad till en annan kategori';
+
+  @override
+  String get querySurroundingText => 'Visa omgivande text';
+
+  @override
+  String get queryTranscribing =>
+      'Transkriberar… din fråga skickas först när du trycker på Skicka. Ljudet kan redan ha skickats till din transkriptionsleverantör.';
+
+  @override
+  String get queryUnavailable =>
+      'Det här området är inte längre tillgängligt med dina nuvarande synlighetsinställningar.';
+
+  @override
+  String get queryUnread => 'Nytt svar';
+
+  @override
   String get queueCatchUpNowButton => 'Ta igen nu';
 
   @override

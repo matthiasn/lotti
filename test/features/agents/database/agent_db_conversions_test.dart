@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -97,6 +98,26 @@ extension _AnyGeneratedReportContent on glados.Any {
 }
 
 void main() {
+  test('query events index the chat without joining the agent message log', () {
+    final created = DateTime(2026, 9, 10, 10);
+    final deleted = DateTime(2026, 9, 10, 11);
+    final event = AgentDomainEntity.queryChatEvent(
+      id: 'event',
+      agentId: 'task-agent',
+      chatId: 'feeder-chat',
+      data: const QueryChatEventData.question(text: 'Feeder decision?'),
+      createdAt: created,
+      vectorClock: null,
+      deletedAt: deleted,
+    );
+    final row = AgentDbConversions.toEntityCompanion(event);
+    expect(row.type.value, AgentEntityTypes.queryChatEvent);
+    expect(row.subtype.value, 'feeder-chat');
+    expect(row.threadId.value, 'feeder-chat');
+    expect(row.createdAt.value, created);
+    expect(row.updatedAt.value, deleted);
+    expect(AgentDbConversions.fromSerialized(row.serialized.value), event);
+  });
   const id = 'report-id-1';
   const agentId = 'agent-id-1';
   final createdAt = DateTime(2026, 2, 21);

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
@@ -89,6 +91,10 @@ class TaskCompactAppBar extends ConsumerWidget {
     // uses (`entry_detail_header.dart`), one tier below the back arrow.
     final iconColor = context.designTokens.colors.text.mediumEmphasis;
     return [
+      QueryAskButton(
+        scope: QueryScope(kind: QueryScopeKind.task, id: task.id),
+        compact: true,
+      ),
       if (showGraph)
         IconButton(
           icon: Icon(

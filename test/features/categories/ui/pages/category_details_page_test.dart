@@ -5,6 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
@@ -32,6 +37,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../agents/ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import '../../test_utils.dart';
 
 /// Finds the glass pill in the action bar by its (localized) label.
@@ -122,6 +128,55 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
       }
     }
+
+    testWidgets('Ask preserves an unsaved category name when returning', (
+      tester,
+    ) async {
+      final scope = QueryScope(
+        kind: QueryScopeKind.category,
+        id: testCategoryId,
+      );
+      final category = CategoryTestUtils.createTestCategory(
+        id: testCategoryId,
+        name: 'Penguin habitat',
+      );
+      when(
+        () => mockRepository.watchCategory(testCategoryId),
+      ).thenAnswer((_) => Stream.value(category));
+      await pumpCategoryDetailsPage(
+        tester,
+        settle: true,
+        extraOverrides: [
+          queryChatTargetProvider(scope).overrideWith(
+            (ref) async => QueryChatTarget(
+              scope: scope,
+              label: category.name,
+              agent: null,
+            ),
+          ),
+          configFlagProvider(
+            'private',
+          ).overrideWith((ref) => Stream.value(false)),
+          chatRecorderControllerProvider.overrideWith(
+            TranscriptEmittingController.new,
+          ),
+        ],
+      );
+      await tester.enterText(nameFieldFinder(), 'Unsaved habitat name');
+      await tester.tap(find.text('Ask about this category'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
+        scope,
+      );
+      await tester.tap(find.byIcon(LottiIcons.back).first);
+      await tester.pumpAndSettle();
+      expect(find.byType(QueryChatPane), findsNothing);
+      expect(
+        tester.widget<TextField>(nameFieldFinder()).controller!.text,
+        'Unsaved habitat name',
+      );
+    });
 
     testWidgets(
       'name field does not reseed selection/text on rebuild during edit',

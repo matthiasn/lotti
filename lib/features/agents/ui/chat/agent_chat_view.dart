@@ -32,6 +32,13 @@ class AgentChatView extends ConsumerStatefulWidget {
     required this.onRetry,
     this.hasFailedTurn = false,
     this.attachmentBuilder,
+    this.history,
+    this.emptyState,
+    this.activity,
+    this.footer,
+    this.composerEnabled = true,
+    this.scrollOnReplies = true,
+    this.conversationId,
     super.key,
   });
 
@@ -44,6 +51,16 @@ class AgentChatView extends ConsumerStatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onRetry;
   final AgentChatMessageAttachmentBuilder? attachmentBuilder;
+
+  /// A scoped consumer can supply its own privacy-filtered chat projection.
+  /// When present the agent-wide message log is never subscribed to.
+  final AsyncValue<List<AgentChatMessage>>? history;
+  final Widget? emptyState;
+  final Widget? activity;
+  final Widget? footer;
+  final bool composerEnabled;
+  final bool scrollOnReplies;
+  final String? conversationId;
 
   @override
   ConsumerState<AgentChatView> createState() => _AgentChatViewState();
@@ -74,6 +91,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     super.initState();
     _controller = TextEditingController(text: widget.draft);
     _wasSending = widget.isSending;
+    if (widget.conversationId != null) {
+      _lastMessageId = widget.history?.value?.lastOrNull?.id;
+    }
     _recorderSubscription = ref.listenManual<ChatRecorderState>(
       chatRecorderControllerProvider,
       (previous, next) {
@@ -145,14 +165,18 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final historyAsync = ref.watch(
-      agentChatProjectionProvider(widget.agentId),
-    );
+    final historyAsync =
+        widget.history ??
+        ref.watch<AsyncValue<List<AgentChatMessage>>>(
+          agentChatProjectionProvider(widget.agentId),
+        );
     final messages = historyAsync.value;
     final latestMessageId = messages?.lastOrNull?.id;
     final shouldScroll =
         messages != null &&
-        (_lastMessageId != latestMessageId ||
+        ((_lastMessageId != latestMessageId &&
+                (widget.scrollOnReplies ||
+                    messages.lastOrNull?.role == AgentChatRole.user)) ||
             (!_wasSending && widget.isSending));
     _lastMessageId = latestMessageId;
     _wasSending = widget.isSending;
@@ -176,26 +200,31 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
             null => const Center(child: CircularProgressIndicator()),
             final history =>
               history.isEmpty && !widget.isSending
-                  ? Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(tokens.spacing.step5),
-                        child: Text(
-                          context.messages.goalChatEmpty(widget.agentName),
-                          textAlign: TextAlign.center,
-                          style: tokens.typography.styles.body.bodyMedium
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ),
-                    )
+                  ? widget.emptyState ??
+                        Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(tokens.spacing.step5),
+                            child: Text(
+                              context.messages.goalChatEmpty(widget.agentName),
+                              textAlign: TextAlign.center,
+                              style: tokens.typography.styles.body.bodyMedium
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                            ),
+                          ),
+                        )
                   : ListView.builder(
+                      key: widget.conversationId == null
+                          ? null
+                          : PageStorageKey(widget.conversationId),
                       controller: _scrollController,
                       padding: EdgeInsets.all(tokens.spacing.step5),
                       itemCount: history.length + (widget.isSending ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == history.length) {
-                          return _ThinkingBubble(agentName: widget.agentName);
+                          return widget.activity ??
+                              _ThinkingBubble(agentName: widget.agentName);
                         }
                         final message = history[index];
                         final attachment = widget.attachmentBuilder?.call(
@@ -253,14 +282,16 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
               ],
             ),
           ),
-        _ChatComposer(
-          controller: _controller,
-          agentName: widget.agentName,
-          isSending: widget.isSending,
-          draft: widget.draft,
-          onDraftChanged: widget.onDraftChanged,
-          onSend: widget.onSend,
-        ),
+        ?widget.footer,
+        if (widget.composerEnabled)
+          _ChatComposer(
+            controller: _controller,
+            agentName: widget.agentName,
+            isSending: widget.isSending,
+            draft: widget.draft,
+            onDraftChanged: widget.onDraftChanged,
+            onSend: widget.onSend,
+          ),
       ],
     );
   }

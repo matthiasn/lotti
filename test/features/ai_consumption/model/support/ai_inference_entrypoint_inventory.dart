@@ -34,6 +34,13 @@ class AiInferenceEntrypoint {
 /// repeated: attribution belongs at these logical product-operation funnels.
 const aiInferenceEntrypoints = <AiInferenceEntrypoint>[
   AiInferenceEntrypoint(
+    id: 'task-project-category-query-chat',
+    owner: 'lib/features/agents/query/query_text_inference.dart',
+    workTypes: {AiWorkType.textGeneration},
+    coverage: AiAttributionCoverage.interactionOnly,
+    outputCarrier: null,
+  ),
+  AiInferenceEntrypoint(
     id: 'skill-inference-runner',
     owner: 'lib/features/ai/services/skill_inference_runner.dart',
     workTypes: {

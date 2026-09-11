@@ -10916,6 +10916,197 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncTitle => 'Enheder';
 
   @override
+  String get queryArchiveChat => 'Arkivér chat';
+
+  @override
+  String get queryArchivedChats => 'Arkiverede chats';
+
+  @override
+  String get queryArchivedReadOnly =>
+      'Denne chat er arkiveret. Gendan den for at fortsætte samtalen.';
+
+  @override
+  String get queryAsk => 'Spørg';
+
+  @override
+  String get queryAskCategory => 'Spørg om denne kategori';
+
+  @override
+  String get queryAskProject => 'Spørg om dette projekt';
+
+  @override
+  String get queryAskTask => 'Spørg om denne opgave';
+
+  @override
+  String get queryCategoryAgent => 'Kategoriagent';
+
+  @override
+  String get queryChats => 'Chats';
+
+  @override
+  String queryChecked(int count) {
+    return 'Tjekkede kilder: $count';
+  }
+
+  @override
+  String get queryCopied => 'Kopieret';
+
+  @override
+  String get queryCopyQuote => 'Kopiér citat';
+
+  @override
+  String get queryCoverage => 'Hvad blev søgt igennem?';
+
+  @override
+  String get queryDeleteChat => 'Slet chat';
+
+  @override
+  String get queryDeleteExplanation =>
+      'Slet denne samtale? Vælg, hvad der sker med dens delte konklusioner. Kildeindlæg påvirkes ikke.';
+
+  @override
+  String get queryDictated =>
+      'Du kan redigere transskriptionen, før du sender dit spørgsmål. Lyden kan allerede være sendt til din transskriptionsudbyder.';
+
+  @override
+  String get queryEmptyBody =>
+      'Spørg om møder, beslutninger eller tidligere noter. Svarene indeholder nøjagtige gemte passager, du kan læse.';
+
+  @override
+  String get queryEmptyTitle => 'Find samtalen bag en beslutning';
+
+  @override
+  String get queryExactText => 'Vis nøjagtig tekst';
+
+  @override
+  String get queryExampleDecision => 'Hvad blev vi enige om?';
+
+  @override
+  String get queryExampleMeeting => 'På hvilket møde talte vi om det?';
+
+  @override
+  String get queryExpanding => 'Tjekker andre projekter i denne kategori…';
+
+  @override
+  String get queryFailed =>
+      'Søgningen kunne ikke afsluttes. Dit spørgsmål er gemt; prøv igen.';
+
+  @override
+  String get queryForgetConclusions => 'Glem konklusioner';
+
+  @override
+  String get queryHideSurrounding => 'Skjul omgivende tekst';
+
+  @override
+  String get queryHomeOnly => 'Kun udgangsområdet';
+
+  @override
+  String get queryIncomplete =>
+      'Søgningen er ufuldstændig. Manglende belæg betyder ikke, at samtalen aldrig fandt sted.';
+
+  @override
+  String get queryInferenceUnavailable =>
+      'Ingen brugbar AI-opsætning. Konfigurér agentens model eller kategoriens standardprofil, og prøv igen.';
+
+  @override
+  String get queryKeepConclusions => 'Behold konklusioner';
+
+  @override
+  String get queryMachineTranscript =>
+      'Maskintransskription: nøjagtig gemt ordlyd, ikke kontrolleret mod lyden.';
+
+  @override
+  String queryMemoryCount(int count) {
+    return 'Tilgængelige konklusioner fra tidligere chats: $count';
+  }
+
+  @override
+  String queryMissingTranscripts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count optagelser har ingen søgbar tekst. Åbn dem i journalen for at transskribere dem.',
+      one:
+          '1 optagelse har ingen søgbar tekst. Åbn den i journalen for at transskribere den.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get queryNewChat => 'Ny chat';
+
+  @override
+  String get queryNoAgent =>
+      'Dette område har brug for sin sædvanlige agent. Gå tilbage til detaljerne for at tildele den.';
+
+  @override
+  String get queryNotes => 'Noter';
+
+  @override
+  String get queryOpenEntry => 'Åbn indlæg';
+
+  @override
+  String get queryOtherProject => 'Uden for udgangsområdet';
+
+  @override
+  String queryReachCategory(String category) {
+    return 'Søger først i dette område og derefter i $category.';
+  }
+
+  @override
+  String queryReachCategoryOnly(String category) {
+    return 'Søger inden for $category.';
+  }
+
+  @override
+  String get queryReachUncategorized =>
+      'Søger kun i denne opgave og dens direkte tilknyttede indlæg uden kategori.';
+
+  @override
+  String get queryRecall =>
+      'Bruger relevante konklusioner fra tidligere chats.';
+
+  @override
+  String get queryRecordings => 'Optagelser';
+
+  @override
+  String get queryRenameChat => 'Omdøb chat';
+
+  @override
+  String get queryRestoreChat => 'Gendan chat';
+
+  @override
+  String get querySavedQuote =>
+      'Dette gemte citat afspejler kilden, da svaret blev skrevet.';
+
+  @override
+  String get querySearching => 'Søger i tilknyttede noter og optagelser…';
+
+  @override
+  String get querySourceChanged => 'Kilden er ændret';
+
+  @override
+  String get querySourceDeleted => 'Kilde slettet';
+
+  @override
+  String get querySourceMoved => 'Kilde flyttet til en anden kategori';
+
+  @override
+  String get querySurroundingText => 'Vis omgivende tekst';
+
+  @override
+  String get queryTranscribing =>
+      'Transskriberer… dit spørgsmål sendes først, når du trykker på Send. Lyden kan allerede være sendt til din transskriptionsudbyder.';
+
+  @override
+  String get queryUnavailable =>
+      'Dette område er ikke længere tilgængeligt med dine nuværende synlighedsindstillinger.';
+
+  @override
+  String get queryUnread => 'Nyt svar';
+
+  @override
   String get queueCatchUpNowButton => 'Følg med nu';
 
   @override

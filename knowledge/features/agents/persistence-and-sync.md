@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T19:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: error-logging
@@ -90,6 +90,8 @@ that model.
 
 ## Entities
 
+- `AgentQueryChatEventEntity` — [scoped chat history, saved evidence and query
+  memory](query-chat.md), projected separately from the automatic wake log.
 - `AgentIdentityEntity`, `AgentStateEntity`
 - `AgentMessageEntity`, `AgentMessagePayloadEntity`
 - `AgentReportEntity`, `AgentReportHeadEntity`
@@ -126,10 +128,10 @@ that model.
 
 ## Links
 
-All eighteen kinds live in `agent_constants.dart`:
+The link kinds live in `agent_constants.dart`:
 
 - **Ownership** — `agent_state`, `agent_task`, `agent_project`, `agent_day`,
-  `agent_event`, `template_assignment`, `improver_target`, `soul_assignment`.
+  `agent_event`, `agent_goal`, `agent_relationship`, `template_assignment`, `improver_target`, `soul_assignment`.
 - **The message log** — `message_prev` (the causal chain the fold walks) and
   `message_payload`.
 - **Daily OS capture and plan** — `tool_effect`, `capture_to_parsed_item`,
@@ -147,7 +149,9 @@ projection remain only to read pre-migration data.
 
 The agents feature does **not** mirror full task or project state into
 `agent.sqlite`. The journal database is read on demand during wakes; what
-persists here is the agent's own interpretation and review state.
+persists here is the agent's own interpretation and review state. Query chats
+also save historical source representations for quotes; their live privacy and
+explicit deletion rules are defined in [query conversations](query-chat.md).
 
 ```mermaid
 flowchart LR

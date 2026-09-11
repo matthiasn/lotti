@@ -1,0 +1,242 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
+
+/// A saved, verified passage. Current source metadata controls access and
+/// historical-status labels; the stored text itself is never silently replaced.
+class QueryEvidenceCard extends ConsumerStatefulWidget {
+  const QueryEvidenceCard({
+    required this.evidence,
+    required this.number,
+    required this.access,
+    required this.onOpen,
+    super.key,
+  });
+  final QueryEvidence evidence;
+  final int number;
+  final QueryAccessSnapshot access;
+  final ValueChanged<String> onOpen;
+
+  @override
+  ConsumerState<QueryEvidenceCard> createState() => _QueryEvidenceCardState();
+}
+
+class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
+  bool _expanded = false;
+  bool _surrounding = false;
+  bool _restored = false;
+  bool _copied = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_restored) return;
+    _restored = true;
+    final saved = PageStorage.maybeOf(
+      context,
+    )?.readState(context, identifier: ('query-evidence', widget.key));
+    if (saved is (bool, bool)) {
+      _expanded = saved.$1;
+      _surrounding = saved.$2;
+    }
+  }
+
+  void _toggle({bool surrounding = false}) {
+    setState(() {
+      if (surrounding) {
+        _surrounding = !_surrounding;
+      } else {
+        _expanded = !_expanded;
+      }
+    });
+    PageStorage.maybeOf(context)?.writeState(
+      context,
+      (_expanded, _surrounding),
+      identifier: ('query-evidence', widget.key),
+    );
+  }
+
+  Future<void> _copy() async {
+    final evidence = widget.evidence;
+    final current = await ref.read(querySourceAccessProvider).load([
+      evidence.source.id,
+    ]);
+    if (!mounted || !current.allowsReference(evidence.source)) return;
+    await Clipboard.setData(ClipboardData(text: evidence.quote));
+    if (mounted) setState(() => _copied = true);
+  }
+
+  Future<void> _open() async {
+    final source = widget.evidence.source;
+    final current = await ref.read(querySourceAccessProvider).load([source.id]);
+    final entry = current.entries[source.id];
+    if (!mounted || entry == null || !current.allowsEntry(entry)) return;
+    widget.onOpen(source.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final evidence = widget.evidence;
+    if (!widget.access.allowsReference(evidence.source) ||
+        !evidence.hasValidPassage) {
+      return const SizedBox.shrink();
+    }
+    final current = widget.access.entries[evidence.source.id]!;
+    final deleted = current.meta.deletedAt != null;
+    final moved = current.meta.categoryId != evidence.source.categoryId;
+    final changed =
+        !deleted &&
+        QuerySourceDocument.fromEntry(current)?.fingerprint !=
+            evidence.fingerprint;
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final body = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+    final caption = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+    final transcript = evidence.textVersion.startsWith('transcript:');
+    return DesignSystemSectionCard(
+      margin: EdgeInsets.only(top: tokens.spacing.step3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '[${widget.number}] ${evidence.label}',
+            style: tokens.typography.styles.subtitle.subtitle2,
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            DateFormat.yMMMd(
+              Localizations.localeOf(context).toString(),
+            ).add_Hm().format(evidence.sourceDate),
+            style: caption,
+          ),
+          if (evidence.kind == QuerySourceKind.recording)
+            Text(messages.queryRecordings, style: caption),
+          if (evidence.affiliations.isNotEmpty)
+            Text(evidence.affiliations.join(' · '), style: caption),
+          if (evidence.outsideHome) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              messages.queryOtherProject,
+              style: caption.copyWith(color: tokens.colors.aiCard.accent),
+            ),
+            if (evidence.relevance.isNotEmpty)
+              Text(evidence.relevance, style: body),
+          ],
+          for (final status in [
+            if (deleted) messages.querySourceDeleted,
+            if (changed) messages.querySourceChanged,
+            if (moved) messages.querySourceMoved,
+          ])
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step2),
+              child: Text(
+                status,
+                style: caption.copyWith(color: tokens.colors.alert.warning.ink),
+              ),
+            ),
+          if (deleted || changed || moved)
+            Text(messages.querySavedQuote, style: caption),
+          if (evidence.summary.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step3),
+              child: Text(evidence.summary, style: body),
+            ),
+          SizedBox(height: tokens.spacing.step2),
+          Semantics(
+            expanded: _expanded,
+            child: DesignSystemButton(
+              label: messages.queryExactText,
+              trailingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
+              onPressed: _toggle,
+              variant: DesignSystemButtonVariant.tertiary,
+            ),
+          ),
+          if (_expanded) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              messages.querySavedQuote,
+              style: caption,
+            ),
+            if (transcript)
+              Text(messages.queryMachineTranscript, style: caption),
+            SizedBox(height: tokens.spacing.step3),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(tokens.spacing.step4),
+              decoration: BoxDecoration(
+                color: tokens.colors.aiCard.accentSoft,
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+              ),
+              child: SelectableText.rich(
+                TextSpan(
+                  style: body,
+                  children: [
+                    if (_surrounding)
+                      TextSpan(
+                        text: evidence.sourceText.substring(0, evidence.start),
+                        style: body.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    TextSpan(text: evidence.quote),
+                    if (_surrounding)
+                      TextSpan(
+                        text: evidence.sourceText.substring(evidence.end),
+                        style: body.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: tokens.spacing.step2),
+            Wrap(
+              spacing: tokens.spacing.step2,
+              runSpacing: tokens.spacing.step2,
+              children: [
+                if (evidence.start > 0 ||
+                    evidence.end < evidence.sourceText.length)
+                  DesignSystemButton(
+                    label: _surrounding
+                        ? messages.queryHideSurrounding
+                        : messages.querySurroundingText,
+                    onPressed: () => _toggle(surrounding: true),
+                    variant: DesignSystemButtonVariant.tertiary,
+                  ),
+                if (!deleted)
+                  DesignSystemButton(
+                    label: messages.queryOpenEntry,
+                    leadingIcon: LottiIcons.openExternal,
+                    onPressed: _open,
+                    variant: DesignSystemButtonVariant.tertiary,
+                  ),
+                DesignSystemButton(
+                  label: _copied
+                      ? messages.queryCopied
+                      : messages.queryCopyQuote,
+                  leadingIcon: LottiIcons.copy,
+                  onPressed: _copy,
+                  variant: DesignSystemButtonVariant.tertiary,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

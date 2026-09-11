@@ -6,6 +6,36 @@ part of 'agent_domain_entity.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+AgentQueryChatEventEntity _$AgentQueryChatEventEntityFromJson(
+  Map<String, dynamic> json,
+) => AgentQueryChatEventEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  chatId: json['chatId'] as String,
+  data: QueryChatEventData.fromJson(json['data'] as Map<String, dynamic>),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$AgentQueryChatEventEntityToJson(
+  AgentQueryChatEventEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'chatId': instance.chatId,
+  'data': instance.data,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 AgentIdentityEntity _$AgentIdentityEntityFromJson(Map<String, dynamic> json) =>
     AgentIdentityEntity(
       id: json['id'] as String,

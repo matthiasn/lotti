@@ -14,6 +14,8 @@ void main() {
     testWidgets('renders the desktop project list and detail showcase', (
       tester,
     ) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       final component = buildProjectListDetailWidgetbookComponent();
       final useCase = component.useCases.firstWhere(
         (useCase) => useCase.name == 'Desktop',
@@ -61,6 +63,16 @@ void main() {
       expect(find.text('3 projects'), findsOneWidget);
       expect(find.text('Project health'), findsOneWidget);
       expect(find.text('Health Score'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('Project Tasks'),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ProjectMobileDetailContent),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       expect(find.text('Project Tasks'), findsOneWidget);
       expect(
         find.text(expectedTotalTime),
