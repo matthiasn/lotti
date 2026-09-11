@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -100,6 +101,7 @@ abstract class AudioData with _$AudioData {
     @Default(false) bool autoTranscribeWasActive,
     String? language,
     List<AudioTranscript>? transcripts,
+    AudioTranscriptTiming? transcriptTiming,
     DayAudioContext? dayContext,
   }) = _AudioData;
 

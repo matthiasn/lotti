@@ -662,7 +662,7 @@ $AiWorkAttributionCopyWith<$Res>? get aiAttribution {
 /// @nodoc
 mixin _$AudioData {
 
- DateTime get dateFrom; DateTime get dateTo; String get audioFile; String get audioDirectory; Duration get duration; bool get autoTranscribeWasActive; String? get language; List<AudioTranscript>? get transcripts; DayAudioContext? get dayContext;
+ DateTime get dateFrom; DateTime get dateTo; String get audioFile; String get audioDirectory; Duration get duration; bool get autoTranscribeWasActive; String? get language; List<AudioTranscript>? get transcripts; AudioTranscriptTiming? get transcriptTiming; DayAudioContext? get dayContext;
 /// Create a copy of AudioData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -675,16 +675,16 @@ $AudioDataCopyWith<AudioData> get copyWith => _$AudioDataCopyWithImpl<AudioData>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.autoTranscribeWasActive, autoTranscribeWasActive) || other.autoTranscribeWasActive == autoTranscribeWasActive)&&(identical(other.language, language) || other.language == language)&&const DeepCollectionEquality().equals(other.transcripts, transcripts)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AudioData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.autoTranscribeWasActive, autoTranscribeWasActive) || other.autoTranscribeWasActive == autoTranscribeWasActive)&&(identical(other.language, language) || other.language == language)&&const DeepCollectionEquality().equals(other.transcripts, transcripts)&&(identical(other.transcriptTiming, transcriptTiming) || other.transcriptTiming == transcriptTiming)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,audioFile,audioDirectory,duration,autoTranscribeWasActive,language,const DeepCollectionEquality().hash(transcripts),dayContext);
+int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,audioFile,audioDirectory,duration,autoTranscribeWasActive,language,const DeepCollectionEquality().hash(transcripts),transcriptTiming,dayContext);
 
 @override
 String toString() {
-  return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts, dayContext: $dayContext)';
+  return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts, transcriptTiming: $transcriptTiming, dayContext: $dayContext)';
 }
 
 
@@ -695,11 +695,11 @@ abstract mixin class $AudioDataCopyWith<$Res>  {
   factory $AudioDataCopyWith(AudioData value, $Res Function(AudioData) _then) = _$AudioDataCopyWithImpl;
 @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, String audioFile, String audioDirectory, Duration duration, bool autoTranscribeWasActive, String? language, List<AudioTranscript>? transcripts, DayAudioContext? dayContext
+ DateTime dateFrom, DateTime dateTo, String audioFile, String audioDirectory, Duration duration, bool autoTranscribeWasActive, String? language, List<AudioTranscript>? transcripts, AudioTranscriptTiming? transcriptTiming, DayAudioContext? dayContext
 });
 
 
-$DayAudioContextCopyWith<$Res>? get dayContext;
+$AudioTranscriptTimingCopyWith<$Res>? get transcriptTiming;$DayAudioContextCopyWith<$Res>? get dayContext;
 
 }
 /// @nodoc
@@ -712,7 +712,7 @@ class _$AudioDataCopyWithImpl<$Res>
 
 /// Create a copy of AudioData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? dateFrom = null,Object? dateTo = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,Object? autoTranscribeWasActive = null,Object? language = freezed,Object? transcripts = freezed,Object? dayContext = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? dateFrom = null,Object? dateTo = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,Object? autoTranscribeWasActive = null,Object? language = freezed,Object? transcripts = freezed,Object? transcriptTiming = freezed,Object? dayContext = freezed,}) {
   return _then(_self.copyWith(
 dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
@@ -722,11 +722,24 @@ as String,duration: null == duration ? _self.duration : duration // ignore: cast
 as Duration,autoTranscribeWasActive: null == autoTranscribeWasActive ? _self.autoTranscribeWasActive : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
 as bool,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
 as String?,transcripts: freezed == transcripts ? _self.transcripts : transcripts // ignore: cast_nullable_to_non_nullable
-as List<AudioTranscript>?,dayContext: freezed == dayContext ? _self.dayContext : dayContext // ignore: cast_nullable_to_non_nullable
+as List<AudioTranscript>?,transcriptTiming: freezed == transcriptTiming ? _self.transcriptTiming : transcriptTiming // ignore: cast_nullable_to_non_nullable
+as AudioTranscriptTiming?,dayContext: freezed == dayContext ? _self.dayContext : dayContext // ignore: cast_nullable_to_non_nullable
 as DayAudioContext?,
   ));
 }
 /// Create a copy of AudioData
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AudioTranscriptTimingCopyWith<$Res>? get transcriptTiming {
+    if (_self.transcriptTiming == null) {
+    return null;
+  }
+
+  return $AudioTranscriptTimingCopyWith<$Res>(_self.transcriptTiming!, (value) {
+    return _then(_self.copyWith(transcriptTiming: value));
+  });
+}/// Create a copy of AudioData
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -820,10 +833,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String audioFile,  String audioDirectory,  Duration duration,  bool autoTranscribeWasActive,  String? language,  List<AudioTranscript>? transcripts,  DayAudioContext? dayContext)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String audioFile,  String audioDirectory,  Duration duration,  bool autoTranscribeWasActive,  String? language,  List<AudioTranscript>? transcripts,  AudioTranscriptTiming? transcriptTiming,  DayAudioContext? dayContext)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AudioData() when $default != null:
-return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory,_that.duration,_that.autoTranscribeWasActive,_that.language,_that.transcripts,_that.dayContext);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory,_that.duration,_that.autoTranscribeWasActive,_that.language,_that.transcripts,_that.transcriptTiming,_that.dayContext);case _:
   return orElse();
 
 }
@@ -841,10 +854,10 @@ return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String audioFile,  String audioDirectory,  Duration duration,  bool autoTranscribeWasActive,  String? language,  List<AudioTranscript>? transcripts,  DayAudioContext? dayContext)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime dateFrom,  DateTime dateTo,  String audioFile,  String audioDirectory,  Duration duration,  bool autoTranscribeWasActive,  String? language,  List<AudioTranscript>? transcripts,  AudioTranscriptTiming? transcriptTiming,  DayAudioContext? dayContext)  $default,) {final _that = this;
 switch (_that) {
 case _AudioData():
-return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory,_that.duration,_that.autoTranscribeWasActive,_that.language,_that.transcripts,_that.dayContext);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory,_that.duration,_that.autoTranscribeWasActive,_that.language,_that.transcripts,_that.transcriptTiming,_that.dayContext);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -861,10 +874,10 @@ return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  String audioFile,  String audioDirectory,  Duration duration,  bool autoTranscribeWasActive,  String? language,  List<AudioTranscript>? transcripts,  DayAudioContext? dayContext)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime dateFrom,  DateTime dateTo,  String audioFile,  String audioDirectory,  Duration duration,  bool autoTranscribeWasActive,  String? language,  List<AudioTranscript>? transcripts,  AudioTranscriptTiming? transcriptTiming,  DayAudioContext? dayContext)?  $default,) {final _that = this;
 switch (_that) {
 case _AudioData() when $default != null:
-return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory,_that.duration,_that.autoTranscribeWasActive,_that.language,_that.transcripts,_that.dayContext);case _:
+return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory,_that.duration,_that.autoTranscribeWasActive,_that.language,_that.transcripts,_that.transcriptTiming,_that.dayContext);case _:
   return null;
 
 }
@@ -876,7 +889,7 @@ return $default(_that.dateFrom,_that.dateTo,_that.audioFile,_that.audioDirectory
 @JsonSerializable()
 
 class _AudioData implements AudioData {
-  const _AudioData({required this.dateFrom, required this.dateTo, required this.audioFile, required this.audioDirectory, required this.duration, this.autoTranscribeWasActive = false, this.language, final  List<AudioTranscript>? transcripts, this.dayContext}): _transcripts = transcripts;
+  const _AudioData({required this.dateFrom, required this.dateTo, required this.audioFile, required this.audioDirectory, required this.duration, this.autoTranscribeWasActive = false, this.language, final  List<AudioTranscript>? transcripts, this.transcriptTiming, this.dayContext}): _transcripts = transcripts;
   factory _AudioData.fromJson(Map<String, dynamic> json) => _$AudioDataFromJson(json);
 
 @override final  DateTime dateFrom;
@@ -895,6 +908,7 @@ class _AudioData implements AudioData {
   return EqualUnmodifiableListView(value);
 }
 
+@override final  AudioTranscriptTiming? transcriptTiming;
 @override final  DayAudioContext? dayContext;
 
 /// Create a copy of AudioData
@@ -910,16 +924,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.autoTranscribeWasActive, autoTranscribeWasActive) || other.autoTranscribeWasActive == autoTranscribeWasActive)&&(identical(other.language, language) || other.language == language)&&const DeepCollectionEquality().equals(other._transcripts, _transcripts)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AudioData&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.audioFile, audioFile) || other.audioFile == audioFile)&&(identical(other.audioDirectory, audioDirectory) || other.audioDirectory == audioDirectory)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.autoTranscribeWasActive, autoTranscribeWasActive) || other.autoTranscribeWasActive == autoTranscribeWasActive)&&(identical(other.language, language) || other.language == language)&&const DeepCollectionEquality().equals(other._transcripts, _transcripts)&&(identical(other.transcriptTiming, transcriptTiming) || other.transcriptTiming == transcriptTiming)&&(identical(other.dayContext, dayContext) || other.dayContext == dayContext));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,audioFile,audioDirectory,duration,autoTranscribeWasActive,language,const DeepCollectionEquality().hash(_transcripts),dayContext);
+int get hashCode => Object.hash(runtimeType,dateFrom,dateTo,audioFile,audioDirectory,duration,autoTranscribeWasActive,language,const DeepCollectionEquality().hash(_transcripts),transcriptTiming,dayContext);
 
 @override
 String toString() {
-  return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts, dayContext: $dayContext)';
+  return 'AudioData(dateFrom: $dateFrom, dateTo: $dateTo, audioFile: $audioFile, audioDirectory: $audioDirectory, duration: $duration, autoTranscribeWasActive: $autoTranscribeWasActive, language: $language, transcripts: $transcripts, transcriptTiming: $transcriptTiming, dayContext: $dayContext)';
 }
 
 
@@ -930,11 +944,11 @@ abstract mixin class _$AudioDataCopyWith<$Res> implements $AudioDataCopyWith<$Re
   factory _$AudioDataCopyWith(_AudioData value, $Res Function(_AudioData) _then) = __$AudioDataCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime dateFrom, DateTime dateTo, String audioFile, String audioDirectory, Duration duration, bool autoTranscribeWasActive, String? language, List<AudioTranscript>? transcripts, DayAudioContext? dayContext
+ DateTime dateFrom, DateTime dateTo, String audioFile, String audioDirectory, Duration duration, bool autoTranscribeWasActive, String? language, List<AudioTranscript>? transcripts, AudioTranscriptTiming? transcriptTiming, DayAudioContext? dayContext
 });
 
 
-@override $DayAudioContextCopyWith<$Res>? get dayContext;
+@override $AudioTranscriptTimingCopyWith<$Res>? get transcriptTiming;@override $DayAudioContextCopyWith<$Res>? get dayContext;
 
 }
 /// @nodoc
@@ -947,7 +961,7 @@ class __$AudioDataCopyWithImpl<$Res>
 
 /// Create a copy of AudioData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dateFrom = null,Object? dateTo = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,Object? autoTranscribeWasActive = null,Object? language = freezed,Object? transcripts = freezed,Object? dayContext = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dateFrom = null,Object? dateTo = null,Object? audioFile = null,Object? audioDirectory = null,Object? duration = null,Object? autoTranscribeWasActive = null,Object? language = freezed,Object? transcripts = freezed,Object? transcriptTiming = freezed,Object? dayContext = freezed,}) {
   return _then(_AudioData(
 dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
@@ -957,12 +971,25 @@ as String,duration: null == duration ? _self.duration : duration // ignore: cast
 as Duration,autoTranscribeWasActive: null == autoTranscribeWasActive ? _self.autoTranscribeWasActive : autoTranscribeWasActive // ignore: cast_nullable_to_non_nullable
 as bool,language: freezed == language ? _self.language : language // ignore: cast_nullable_to_non_nullable
 as String?,transcripts: freezed == transcripts ? _self._transcripts : transcripts // ignore: cast_nullable_to_non_nullable
-as List<AudioTranscript>?,dayContext: freezed == dayContext ? _self.dayContext : dayContext // ignore: cast_nullable_to_non_nullable
+as List<AudioTranscript>?,transcriptTiming: freezed == transcriptTiming ? _self.transcriptTiming : transcriptTiming // ignore: cast_nullable_to_non_nullable
+as AudioTranscriptTiming?,dayContext: freezed == dayContext ? _self.dayContext : dayContext // ignore: cast_nullable_to_non_nullable
 as DayAudioContext?,
   ));
 }
 
 /// Create a copy of AudioData
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AudioTranscriptTimingCopyWith<$Res>? get transcriptTiming {
+    if (_self.transcriptTiming == null) {
+    return null;
+  }
+
+  return $AudioTranscriptTimingCopyWith<$Res>(_self.transcriptTiming!, (value) {
+    return _then(_self.copyWith(transcriptTiming: value));
+  });
+}/// Create a copy of AudioData
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

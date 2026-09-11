@@ -17,9 +17,29 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:research_package/model.dart';
 
+import '../features/agents/query/query_audio_test_utils.dart';
 import '../helpers/entity_factories.dart';
+import '../test_data/test_data.dart';
 
 void main() {
+  test(
+    'audio timing sync round trip preserves existing wording and legacy data',
+    () {
+      final original = testAudioEntryWithTranscripts;
+      final enriched = original.copyWith(
+        data: original.data.copyWith(transcriptTiming: audioTiming()),
+      );
+      final json = jsonDecode(jsonEncode(enriched)) as Map<String, dynamic>;
+      final decoded = JournalEntity.fromJson(json) as JournalAudio;
+      expect(decoded.data.transcriptTiming, audioTiming());
+      expect(decoded.data.transcripts, original.data.transcripts);
+      expect(decoded.entryText, original.entryText);
+      (json['data'] as Map<String, dynamic>).remove('transcriptTiming');
+      final legacy = JournalEntity.fromJson(json) as JournalAudio;
+      expect(legacy.data.transcriptTiming, isNull);
+      expect(legacy.data.transcripts, original.data.transcripts);
+    },
+  );
   final fixedDate = DateTime(2024, 3, 15, 10);
   final meta = TestMetadataFactory.create(
     id: 'entity-1',

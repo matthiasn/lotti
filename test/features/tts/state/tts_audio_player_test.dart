@@ -44,6 +44,34 @@ void main() {
 
   MediaKitTtsAudioPlayer build() => MediaKitTtsAudioPlayer(player);
 
+  for (final pauseAt in ['open', 'rate']) {
+    test('stop during $pauseAt prevents late native playback', () async {
+      final pending = Completer<void>();
+      final entered = Completer<void>();
+      if (pauseAt == 'open') {
+        when(() => player.open(any(), play: any(named: 'play'))).thenAnswer((
+          _,
+        ) {
+          entered.complete();
+          return pending.future;
+        });
+      } else {
+        when(() => player.setRate(any())).thenAnswer((_) {
+          entered.complete();
+          return pending.future;
+        });
+      }
+      final audio = build();
+      final play = audio.play(File('/tmp/private-chat.wav'), speed: 1);
+      await entered.future;
+      await audio.stop();
+      pending.complete();
+      await play;
+      verifyNever(() => player.play());
+      verify(() => player.stop()).called(1);
+    });
+  }
+
   test(
     'play opens the file without autoplay, sets the rate, then plays',
     () async {

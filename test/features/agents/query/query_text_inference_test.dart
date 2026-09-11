@@ -16,6 +16,21 @@ import '../test_data/ai_config_factories.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
   test(
+    'owned resources cancel immediately and can detach after completion',
+    () {
+      final token = QueryCancellation();
+      var closed = 0;
+      final detach = token.onCancel(() => closed++);
+      detach();
+      token
+        ..onCancel(() => closed += 10)
+        ..cancel();
+      expect(closed, 10);
+      token.onCancel(() => closed += 100);
+      expect(closed, 110);
+    },
+  );
+  test(
     'each sub-query sends only its supplied context and parses streamed JSON',
     () async {
       final inputs = <Map<String, dynamic>>[];

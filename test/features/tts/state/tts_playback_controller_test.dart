@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -43,6 +46,35 @@ void main() {
 
   TtsPlaybackController controllerOf(ProviderContainer c) =>
       c.read(ttsPlaybackControllerProvider.notifier);
+
+  test('stopping preparation prevents late synthesis from playing', () async {
+    final pending = Completer<File>();
+    final started = Completer<void>();
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(
+      engine: FakeTtsEngine(
+        pendingSynthesis: pending.future,
+        onSynthesize: started.complete,
+      ),
+      player: player,
+    );
+    final controller = controllerOf(h.container);
+    final speak = controller.speak(
+      sourceId: 'private-chat',
+      text: 'private text',
+    );
+    await started.future;
+    await controller.stop();
+    pending.complete(File('/tmp/nonexistent-lotti-cancelled-tts.wav'));
+    await speak;
+    expect(player.playCount, 0);
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).status,
+      TtsPlaybackStatus.stopped,
+    );
+    expect(h.container.read(ttsPlaybackControllerProvider).sourceId, isNull);
+  });
 
   test('reports an error when the engine is unsupported', () async {
     final h = harness(engine: FakeTtsEngine(supported: false));

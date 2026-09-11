@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -47,6 +48,9 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   /// [contextBias] is a list of words/phrases (up to 100) that the model
   /// should pay special attention to. Each term is sent as a repeated
   /// `context_bias` multipart text field, preserving phrase boundaries.
+  /// [onSegments] receives validated recording-relative timings when requested
+  /// by an evidence caller. Ordinary transcription remains text-only and also
+  /// accepts responses without usable timestamps.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
@@ -54,6 +58,7 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
     required String apiKey,
     List<String>? contextBias,
     Duration? timeout,
+    void Function(List<AudioTimedSegment>)? onSegments,
   }) {
     if (model.isEmpty) {
       throw ArgumentError('Model name cannot be empty');
@@ -211,6 +216,9 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
           }
 
           final text = _extractText(result);
+          if (onSegments != null) {
+            onSegments(parseTimedSegments(result['segments']));
+          }
 
           developer.log(
             'Successfully transcribed audio - '
@@ -270,6 +278,52 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
         }
       }(),
     ).asBroadcastStream();
+  }
+
+  /// Decodes the provider's seconds once at the boundary. A malformed or
+  /// unordered list is rejected as a whole; skipping rows could join speech
+  /// across an unknown gap and falsely locate a quote.
+  static List<AudioTimedSegment> parseTimedSegments(Object? value) {
+    if (value is! List || value.isEmpty || value.length > 30000) {
+      throw const FormatException('Missing or excessive transcript segments');
+    }
+    final result = <AudioTimedSegment>[];
+    var previousStart = -1;
+    var previousEnd = -1;
+    for (final item in value) {
+      if (item is! Map<String, dynamic>) {
+        throw const FormatException('Invalid transcript segment');
+      }
+      final text = item['text'];
+      final start = item['start'];
+      final end = item['end'];
+      if (text is! String ||
+          text.trim().isEmpty ||
+          start is! num ||
+          end is! num ||
+          !start.isFinite ||
+          !end.isFinite ||
+          start < 0 ||
+          end <= start ||
+          end > const Duration(hours: 3).inSeconds) {
+        throw const FormatException('Invalid transcript boundaries');
+      }
+      final startMs = (start * 1000).round();
+      final endMs = (end * 1000).round();
+      if (startMs < previousStart || endMs < previousEnd || endMs <= startMs) {
+        throw const FormatException('Unordered transcript boundaries');
+      }
+      result.add(
+        AudioTimedSegment(
+          text: text,
+          startMilliseconds: startMs,
+          endMilliseconds: endMs,
+        ),
+      );
+      previousStart = startMs;
+      previousEnd = endMs;
+    }
+    return result;
   }
 
   /// Extracts text from the response, formatting diarized segments
