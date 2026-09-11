@@ -222,6 +222,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       return _buildCreateMode(context);
     }
 
+    // Keep the editor's auto-disposed controller subscribed while its query
+    // pane is open so returning to the form preserves pending field edits.
+    final state = ref.watch(
+      categoryDetailsControllerProvider(widget.categoryId!),
+    );
     final queryScope = QueryScope(
       kind: QueryScopeKind.category,
       id: widget.categoryId!,
@@ -234,10 +239,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       );
     }
 
-    // For edit mode, watch the category details
-    final state = ref.watch(
-      categoryDetailsControllerProvider(widget.categoryId!),
-    );
     final category = state.category;
 
     if (category == null && !state.isLoading) {

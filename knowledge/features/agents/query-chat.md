@@ -195,6 +195,9 @@ preventing duplicate or late replies from resurrecting a deleted chat.
 - Controllers retain database subscriptions after leaving the pane only while
   requests are active. Keeping an unsent draft does not keep crawling history
   on every journal change.
+- Category details keep their edit controller subscribed while the query pane
+  replaces the form. Returning from chat therefore preserves unsaved category
+  fields; the controller still disposes when the details page is left.
 
 # Voice and future scope
 

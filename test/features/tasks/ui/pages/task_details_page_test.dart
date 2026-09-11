@@ -228,6 +228,7 @@ void main() {
     testWidgets('Ask opens the task scope and Back restores the task details', (
       tester,
     ) async {
+      setTestSurfaceSize(tester, phoneMediaQueryData.size);
       final scope = QueryScope(kind: QueryScopeKind.task, id: testTask.id);
       when(
         () => mockJournalDb.journalEntityById(testTask.id),
