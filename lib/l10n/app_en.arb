@@ -5793,7 +5793,7 @@
   "plazaCategoryEmpty": "This category has no visible projects.",
   "plazaClosedForNight": "CLOSED FOR THE NIGHT",
   "plazaCloseHint": "Esc to close",
-  "plazaControls": "WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back",
+  "plazaControls": "WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · T toolbar · Esc dismiss · ⌘[ back",
   "plazaCornerAfter": "Corner after {week}",
   "@plazaCornerAfter": {
     "placeholders": {
@@ -5926,6 +5926,10 @@
     }
   },
   "plazaTitle": "Plaza",
+  "plazaToggleToolbar": "Show / hide toolbar",
+  "@plazaToggleToolbar": {
+    "description": "Tooltip on the Plaza top bar's toolbar button, which shows and hides the toolbar."
+  },
   "plazaToLet": "TO LET",
   "plazaTourControls": "Space: pause · move to exit",
   "plazaUnavailable": "This device cannot display the 3D world.",

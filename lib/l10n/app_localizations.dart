@@ -17200,7 +17200,7 @@ abstract class AppLocalizations {
   /// No description provided for @plazaControls.
   ///
   /// In en, this message translates to:
-  /// **'WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · ⌘[ back'**
+  /// **'WASD walk · hold Shift: 8× speed · drag to look · Tab next beacon · H home · M overview · / search · T toolbar · Esc dismiss · ⌘[ back'**
   String get plazaControls;
 
   /// No description provided for @plazaCornerAfter.
@@ -17382,6 +17382,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Plaza'**
   String get plazaTitle;
+
+  /// Tooltip on the Plaza top bar's toolbar button, which shows and hides the toolbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Show / hide toolbar'**
+  String get plazaToggleToolbar;
 
   /// No description provided for @plazaToLet.
   ///
