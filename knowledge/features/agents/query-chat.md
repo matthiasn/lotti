@@ -199,7 +199,10 @@ preventing duplicate or late replies from resurrecting a deleted chat.
 # Voice and future scope
 
 The shared [agent recorder](chat-input-and-reasoning.md) provides record, stop,
-transcribe and editable draft. Sending remains explicit. Switching chats or
+transcribe and editable draft. Submitting the question remains explicit;
+transcription may already have sent the audio to the configured transcription
+provider. Both progress and draft feedback disclose this distinction.
+Switching chats or
 leaving the pane cancels pending dictation so a late transcript cannot land in
 the next conversation.
 

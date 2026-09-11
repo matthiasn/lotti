@@ -270,6 +270,34 @@ void main() {
   );
 
   test(
+    'disposing the controller cancels an active request without publishing',
+    () => withClock(Clock.fixed(now), () async {
+      final id = await controller.create('Feeder');
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      inspect = (_) async {
+        entered.complete();
+        await release.future;
+      };
+      controller.updateDraft(id, 'Decision?');
+      final running = controller.send(id);
+      await entered.future;
+      container.invalidate(provider);
+      release.complete();
+      await running;
+      final projection = await bench.store.load('agent');
+      final chat = projection.chats.single;
+      expect(chat.answerFor(chat.questions.single.id), isNull);
+      expect(
+        chat.events.last.data,
+        QueryChatEventData.cancelled(questionId: chat.questions.single.id),
+      );
+      expect(projection.memories, isEmpty);
+      expect(container.read(provider).chats, isEmpty);
+    }),
+  );
+
+  test(
     'private drafts and stale retries cannot append a question or rerun inference',
     () => withClock(Clock.fixed(now), () async {
       final id = await controller.create('Feeder');

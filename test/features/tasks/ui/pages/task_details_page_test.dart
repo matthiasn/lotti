@@ -7,14 +7,19 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -51,6 +56,7 @@ import '../../../../helpers/task_progress_test_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import 'task_details_page_test_helpers.dart';
 
 /// Serves a fixed entry so a link target resolves without a database.
@@ -218,6 +224,48 @@ void main() {
     // This group stubs journalEntityById per test, so leave it unstubbed here.
     setUp(() => registerTaskDetailsServices(stubTaskEntity: false));
     tearDown(getIt.reset);
+
+    testWidgets('Ask opens the task scope and Back restores the task details', (
+      tester,
+    ) async {
+      final scope = QueryScope(kind: QueryScopeKind.task, id: testTask.id);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.id),
+      ).thenAnswer((_) async => testTask);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TaskDetailsPage(taskId: testTask.id),
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            queryChatTargetProvider(scope).overrideWith(
+              (ref) async => QueryChatTarget(
+                scope: scope,
+                label: testTask.data.title,
+                agent: null,
+              ),
+            ),
+            configFlagProvider(
+              'private',
+            ).overrideWith((ref) => Stream.value(false)),
+            chatRecorderControllerProvider.overrideWith(
+              TranscriptEmittingController.new,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ask'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
+        scope,
+      );
+      await tester.tap(find.byIcon(LottiIcons.back).first);
+      await tester.pumpAndSettle();
+      expect(find.byType(QueryChatPane), findsNothing);
+      expect(find.text(testTask.data.title), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
 
     testWidgets(
       'a first-run task fills the remaining viewport and narrows the column, '

@@ -365,6 +365,21 @@ void main() {
       journal.notifyUpdates({TableUpdate(journal.journal.actualTableName)});
       final withPrivate = await privateArrives;
       expect(withPrivate.access.allowsEvent(question.data), isFalse);
+      final failure = Completer<Object>();
+      final errorSubscription = container.listen(provider, (_, next) {
+        if (next.hasError && !failure.isCompleted) {
+          failure.complete(next.error!);
+        }
+      });
+      addTearDown(errorSubscription.close);
+      when(
+        bench.db.getAllCategories,
+      ).thenThrow(StateError('journal unavailable'));
+      journal.notifyUpdates({
+        TableUpdate(journal.categoryDefinitions.actualTableName),
+      });
+      expect(await failure.future, isA<StateError>());
+      when(bench.db.getAllCategories).thenAnswer((_) async => bench.categories);
       final deletionArrives = nextWhere(
         (value) => value.projection.chats.isEmpty,
       );

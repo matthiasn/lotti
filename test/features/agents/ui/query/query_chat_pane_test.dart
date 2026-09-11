@@ -969,10 +969,12 @@ void main() {
       );
       data.add(snapshot());
       await tester.pump();
+      await tester.pump();
       expect(find.byType(EntryDetailsPage), findsNothing);
       expect(find.text('Feeder meeting'), findsNothing);
       bench.entries['note'] = document.entry;
       data.add(snapshot());
+      await tester.pump();
       await tester.pump();
       await tester.tap(find.byIcon(LottiIcons.back).first);
       await tester.pump();
