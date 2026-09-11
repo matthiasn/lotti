@@ -109,7 +109,7 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - sherpa_onnx_ios (1.13.7):
+  - sherpa_onnx_ios (1.13.4):
     - Flutter
   - sqflite_darwin (0.0.4):
     - Flutter
@@ -301,7 +301,7 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  sherpa_onnx_ios: f34753f0c1fa978718e7e9c213f984b5dff43e46
+  sherpa_onnx_ios: 32af18abd5c776d5f425d2abe0903471d26db221
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   super_native_extensions: b763c02dc3a8fd078389f410bf15149179020cb4
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
@@ -309,4 +309,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 42f202ec693eb2d5e19e000bf11590a1ac4ee130
 
-COCOAPODS: 1.17.0
+COCOAPODS: 1.16.2
