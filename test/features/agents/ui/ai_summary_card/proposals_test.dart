@@ -31,6 +31,8 @@ import 'test_bench.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(setUpTestGetIt);
+  tearDown(tearDownTestGetIt);
 
   setUpAll(() {
     registerFallbackValue(makeTestChangeSet());
