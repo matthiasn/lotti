@@ -32,6 +32,7 @@ import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
 import '../test_data/ai_config_factories.dart';
 import '../test_data/entity_factories.dart';
+import '../test_data/template_factories.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -128,9 +129,9 @@ void main() {
       await setUpTestGetIt();
     });
     tearDown(tearDownTestGetIt);
-    for (final kind in [QueryScopeKind.task, QueryScopeKind.category]) {
+    for (final kind in QueryScopeKind.values) {
       test(
-        '$kind uses the existing profile, source access and sync store',
+        '$kind keeps profile loading alive across frames for a query',
         () async {
           final bench = QueryPersistenceBench()
             ..add('task', category: categoryMindfulness.id);
@@ -177,33 +178,83 @@ void main() {
           bench.categories[0] = bench.categories.single.copyWith(
             defaultProfileId: 'category-profile',
           );
+          final started = Completer<void>();
+          final lookup = Completer<void>();
+          final identity = makeTestIdentity();
+          final template = makeTestTemplate();
+          final version = makeTestTemplateVersion(agentId: template.id);
           final resolver = MockProfileResolver();
           when(
             () => resolver.resolveByProfileId('category-profile'),
           ).thenAnswer((_) async => profile);
+          when(
+            () => resolver.resolveDetailed(
+              agentConfig: identity.config,
+              template: template,
+              version: version,
+            ),
+          ).thenAnswer(
+            (_) async => ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.resolved,
+              profile: profile,
+            ),
+          );
+          // The factory checks access once before reading the category profile.
+          // Hold that profile's own database lookup across the disposal frame.
+          var categoryReads = 0;
+          when(bench.db.getAllCategories).thenAnswer((_) async {
+            if (kind == QueryScopeKind.category && ++categoryReads == 2) {
+              started.complete();
+              await lookup.future;
+            }
+            return bench.categories;
+          });
           final container = ProviderContainer(
             overrides: [
               journalDbProvider.overrideWithValue(bench.db),
               agentSyncServiceProvider.overrideWithValue(bench.store.sync),
               cloudInferenceRepositoryProvider.overrideWithValue(cloud),
               profileResolverProvider.overrideWithValue(resolver),
-              agentResolvedSetupProvider('agent').overrideWith(
-                (ref) async => ResolvedAgentSetup(
-                  status: AgentSetupResolutionStatus.resolved,
-                  profile: profile,
-                ),
+              agentIdentityProvider('agent').overrideWith((ref) async {
+                started.complete();
+                await lookup.future;
+                return identity;
+              }),
+              templateForAgentProvider('agent').overrideWith(
+                (ref) async => template,
+              ),
+              activeTemplateVersionProvider(template.id).overrideWith(
+                (ref) async => version,
               ),
             ],
           );
           addTearDown(container.dispose);
           final scope = QueryScope(
             kind: kind,
-            id: kind == QueryScopeKind.task ? 'task' : categoryMindfulness.id,
+            id: kind == QueryScopeKind.category
+                ? categoryMindfulness.id
+                : 'task',
           );
-          final builder = await container.read(queryBuilderFactoryProvider)(
+          final pending = container.read(queryBuilderFactoryProvider)(
             scope,
             'agent',
             'chat',
+          );
+          final completion = expectLater(pending, completes);
+          await started.future;
+          // Database reads take real frames in the app. An immediate mock
+          // resolution conceals disposal of a profile read without a listener.
+          await container.pump();
+          lookup.complete();
+          await completion;
+          final builder = await pending;
+          await container.pump();
+          expect(
+            container.exists(
+              queryProfileProvider((agentId: 'agent', scope: scope)),
+            ),
+            isFalse,
+            reason: 'Completed profile reads must not retain unused providers',
           );
           final corpus = await builder.crawler.discover(scope, ['feeder']);
           expect(corpus.documents.map((d) => d.entry.meta.id), ['task']);
@@ -230,6 +281,44 @@ void main() {
       );
     }
   });
+  for (final unavailable in [false, true]) {
+    test(
+      'profile loading releases its lifetime after unavailable=$unavailable',
+      () async {
+        final started = Completer<void>();
+        final resolved = Completer<ResolvedAgentSetup?>();
+        final container = ProviderContainer(
+          overrides: [
+            agentResolvedSetupProvider('agent').overrideWith((ref) {
+              started.complete();
+              return resolved.future;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+        final provider = queryProfileProvider((
+          agentId: 'agent',
+          scope: const QueryScope(kind: QueryScopeKind.project, id: 'project'),
+        ));
+        final error = StateError('Setup lookup failed');
+        final pending = container.read(provider.future);
+        final expectation = expectLater(
+          pending,
+          unavailable ? completion(isNull) : throwsA(same(error)),
+        );
+        await started.future;
+        await container.pump();
+        if (unavailable) {
+          resolved.complete();
+        } else {
+          resolved.completeError(error);
+        }
+        await expectation;
+        await container.pump();
+        expect(container.exists(provider), isFalse);
+      },
+    );
+  }
   test(
     'task query resolves the existing summary agent and live scope',
     () async {

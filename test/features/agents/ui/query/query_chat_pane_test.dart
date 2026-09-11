@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
@@ -221,6 +222,103 @@ void main() {
     await tester.tap(find.byIcon(LottiIcons.chevronDown).first);
     await tester.pump();
   }
+
+  for (final answering in [false, true]) {
+    testWidgets(
+      'query activity reports the actual answering=$answering phase',
+      (tester) async {
+        await pump(
+          tester,
+          session: QueryChatSession(
+            selectedId: 'feeder',
+            chats: {
+              'feeder': QueryChatLocal(
+                status: QueryTurnStatus.running,
+                answering: answering,
+              ),
+            },
+          ),
+        );
+        final label = answering
+            ? 'Preparing an answer…'
+            : 'Searching linked notes and recordings…';
+        expect(
+          tester
+              .widget<DesignSystemTextInput>(find.byType(DesignSystemTextInput))
+              .helperText,
+          label,
+        );
+        expect(find.text('Habitat Watcher is replying…'), findsNothing);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).enabled,
+          isFalse,
+        );
+        await switcher(tester);
+        expect(find.text(label), findsWidgets);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  for (final kind in QueryScopeKind.values) {
+    testWidgets(
+      'empty ${kind.name} chat explains scope and drafts an example',
+      (tester) async {
+        final activeScope = QueryScope(
+          kind: kind,
+          id: switch (kind) {
+            QueryScopeKind.task => 'task',
+            QueryScopeKind.project => 'project',
+            QueryScopeKind.category => categoryMindfulness.id,
+          },
+        );
+        bench.entries['project'] = makeTestProject(
+          id: 'project',
+          categoryId: categoryMindfulness.id,
+        );
+        await pump(tester, activeScope: activeScope);
+        expect(find.text('Ask about this ${kind.name}'), findsOneWidget);
+        expect(find.text('Search notes and recordings.'), findsOneWidget);
+        await tester.tap(find.text('What did we agree on?'));
+        await tester.pump();
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          'What did we agree on?',
+        );
+        expect(inferenceCalls, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets(
+    'failure before saving keeps the draft without claiming it is saved',
+    (tester) async {
+      await pump(
+        tester,
+        session: const QueryChatSession(
+          selectedId: 'feeder',
+          chats: {
+            'feeder': QueryChatLocal(
+              status: QueryTurnStatus.failed,
+              draft: 'Which feeder?',
+            ),
+          },
+        ),
+      );
+      expect(
+        find.text('The search could not finish. Try again.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Your question is saved'), findsNothing);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Which feeder?',
+      );
+      expect(inferenceCalls, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets('switching conversations preserves independent editable drafts', (
     tester,

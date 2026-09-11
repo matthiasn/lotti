@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../test_data/test_data.dart';
 import 'query_test_utils.dart';
@@ -32,6 +33,212 @@ void main() {
     events: [question],
     unread: false,
   );
+
+  group('batched source shortlisting', () {
+    late QueryTestBench bench;
+    late List<String> calls;
+    late Map<String, dynamic> shortlistInput;
+    Map<String, dynamic>? answerInput;
+    Object? selected;
+    void Function()? duringShortlist;
+    late QueryCancellation cancellation;
+
+    setUp(() {
+      bench = QueryTestBench()..add('task');
+      for (var i = 1; i < 42; i++) {
+        bench
+          ..add('source-$i')
+          ..link('task', 'source-$i');
+      }
+      calls = [];
+      selected = ['source-41'];
+      duringShortlist = null;
+      answerInput = null;
+      cancellation = QueryCancellation();
+    });
+
+    Future<QueryBuiltAnswer> build() =>
+        QueryAnswerBuilder(
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          inference: QueryTextInference(
+            generate: (system, prompt) {
+              final input = jsonDecode(prompt) as Map<String, dynamic>;
+              if (system.contains('Rephrase')) {
+                calls.add('plan');
+                return Stream.value(
+                  jsonEncode({
+                    'question': 'Feeder?',
+                    'terms': ['feeder'],
+                  }),
+                );
+              }
+              if (system.contains('Shortlist sources')) {
+                calls.add('shortlist');
+                shortlistInput = input;
+                duringShortlist?.call();
+                return Stream.value(jsonEncode({'ids': selected}));
+              }
+              if (system.contains('Extract passages')) {
+                calls.add('extract');
+                return Stream.value(
+                  jsonEncode({
+                    'passages': [
+                      {'quote': input['source']},
+                    ],
+                  }),
+                );
+              }
+              calls.add('answer');
+              answerInput = input;
+              return Stream.value(
+                jsonEncode({
+                  'answer': 'Here is what the sources establish.',
+                  'conclusion': '',
+                }),
+              );
+            },
+          ),
+        ).build(
+          chat: chat,
+          question: question,
+          memories: [],
+          cancellation: cancellation,
+          onProgress: (_, {required expanded}) {},
+        );
+
+    test(
+      '42 sources share one shortlist and only matches reach exact inspection',
+      () async {
+        final result = await build();
+        expect(calls, ['plan', 'shortlist', 'extract', 'answer']);
+        final sources = shortlistInput['sources'] as List;
+        expect(sources, hasLength(42));
+        expect(
+          (sources.last as Map)['preview'],
+          'Feeder decision in source-41.',
+        );
+        expect((sources.last as Map)['truncated'], isFalse);
+        expect(result.answer.evidence.single.source.id, 'source-41');
+        expect(
+          result.answer.evidence.single.quote,
+          'Feeder decision in source-41.',
+        );
+        expect(result.answer.coverage.checked, 1);
+        expect(result.answer.coverage.incomplete, isTrue);
+        expect(jsonEncode(answerInput), isNot(contains('source-40')));
+      },
+    );
+
+    test(
+      'long previews retain the opening plus a term hit or ending',
+      () async {
+        bench.entries['source-1'] = bench.entries['source-1']!.copyWith(
+          entryText: EntryText(
+            plainText: '${'a' * 900} feeder decision ${'b' * 900}',
+          ),
+        );
+        bench.entries['source-2'] = bench.entries['source-2']!.copyWith(
+          entryText: EntryText(plainText: '${'x' * 1700} Closing discussion'),
+        );
+        await build();
+        final sources = shortlistInput['sources'] as List;
+        final hit = sources.cast<Map<String, dynamic>>().singleWhere(
+          (s) => s['id'] == 'source-1',
+        );
+        final tail = sources.cast<Map<String, dynamic>>().singleWhere(
+          (s) => s['id'] == 'source-2',
+        );
+        expect(
+          hit['preview'],
+          allOf(startsWith('a' * 400), contains('feeder decision')),
+        );
+        expect(tail['preview'], endsWith('Closing discussion'));
+        expect((hit['preview'] as String).length, lessThan(810));
+        expect(hit['truncated'], isTrue);
+        expect(tail['truncated'], isTrue);
+      },
+    );
+
+    test(
+      'ranking is retained and inspection is bounded to eight sources',
+      () async {
+        selected = [for (var i = 41; i > 0; i--) 'source-$i'];
+        final result = await build();
+        expect(calls.where((c) => c == 'extract'), hasLength(8));
+        expect(result.answer.evidence.map((e) => e.source.id), [
+          for (var i = 41; i > 33; i--) 'source-$i',
+        ]);
+        expect(result.answer.coverage.incomplete, isTrue);
+      },
+    );
+
+    test('no shortlisted matches does not claim exhaustive coverage', () async {
+      selected = <String>[];
+      final result = await build();
+      expect(calls, ['plan', 'shortlist', 'answer']);
+      expect(result.answer.evidence, isEmpty);
+      expect(result.answer.coverage.checked, 0);
+      expect(result.answer.coverage.incomplete, isTrue);
+    });
+
+    for (final invalid in [
+      null,
+      'source-1',
+      [7],
+      ['not-in-scope'],
+    ]) {
+      test('rejects malformed or foreign source selection $invalid', () async {
+        selected = invalid;
+        await expectLater(build(), throwsFormatException);
+        expect(calls, ['plan', 'shortlist']);
+      });
+    }
+
+    for (final change in ['private', 'deleted', 'moved']) {
+      test(
+        'rechecks $change sources before sending the batched preview',
+        () async {
+          when(() => bench.db.getProjectIdMapForTasks(any())).thenAnswer((
+            _,
+          ) async {
+            final entry = bench.entries['source-41']!;
+            bench.entries['source-41'] = entry.copyWith(
+              meta: switch (change) {
+                'private' => entry.meta.copyWith(private: true),
+                'deleted' => entry.meta.copyWith(deletedAt: date),
+                _ => entry.meta.copyWith(categoryId: categoryMindfulness.id),
+              },
+            );
+            return {};
+          });
+          await expectLater(build(), throwsA(isA<QueryScopeUnavailable>()));
+          expect(calls, ['plan']);
+        },
+      );
+    }
+
+    test(
+      'a source hidden during shortlisting cannot be inspected or quoted',
+      () async {
+        duringShortlist = () {
+          final entry = bench.entries['source-41']!;
+          bench.entries['source-41'] = entry.copyWith(
+            meta: entry.meta.copyWith(private: true),
+          );
+        };
+        await expectLater(build(), throwsA(isA<QueryScopeUnavailable>()));
+        expect(calls, ['plan', 'shortlist']);
+        expect(answerInput, isNull);
+      },
+    );
+
+    test('cancelling the overview prevents full-text inspection', () async {
+      duringShortlist = cancellation.cancel;
+      await expectLater(build(), throwsA(isA<QueryCancelled>()));
+      expect(calls, ['plan', 'shortlist']);
+    });
+  });
 
   test(
     'only verified passages enter the answer context and shared learning',

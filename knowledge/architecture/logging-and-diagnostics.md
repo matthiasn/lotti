@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T19:28:47Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T21:35:00Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -19,7 +19,7 @@ sources:
   - id: domain-logging
     resource: ../../lib/services/domain_logging.dart
     title: DomainLogger
-    last_modified: 2026-09-05
+    last_modified: 2026-09-11
   - id: framework-errors
     resource: ../../lib/main.dart
     title: Flutter framework error handler
@@ -89,7 +89,10 @@ either the shared `sync-<date>.log` or its own `<domain>-<date>.log`.
 exception string and the stack trace (whose frames embed absolute paths, and with
 them the user's system username). What it does **not** omit is the caller's
 `message`: `safeErrorDescription` renders `'<message> (errorType=<Type>)'`
-verbatim.
+verbatim. Callers that sanitize an exception before logging it can pass its
+original `Type` through `DomainLogger.error(errorType: ...)`; the canonical
+`errorType=` field then retains that classification rather than recording
+`String` or `Type`. This override does not sanitize the supplied error or message.
 
 So the file is shareable **because callers are required to treat a log message as
 telemetry, never as content** — the contract `DomainLogger` states — not because

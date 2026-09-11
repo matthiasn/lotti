@@ -6339,13 +6339,12 @@
   "queryDeleteChat": "Delete chat",
   "queryDeleteExplanation": "Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.",
   "queryDictated": "You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.",
-  "queryEmptyBody": "Ask about meetings, decisions, or earlier notes. Answers include exact stored passages you can inspect.",
-  "queryEmptyTitle": "Find the discussion behind a decision",
+  "queryEmptyBody": "Search notes and recordings.",
   "queryExactText": "Show exact text",
   "queryExampleDecision": "What did we agree on?",
   "queryExampleMeeting": "In which meeting did we discuss this?",
   "queryExpanding": "Checking other projects in this category…",
-  "queryFailed": "The search could not finish. Your question is saved; try again.",
+  "queryFailed": "The search could not finish. Try again.",
   "queryForgetConclusions": "Forget conclusions",
   "queryHideSurrounding": "Hide surrounding text",
   "queryHomeOnly": "Home scope only",
@@ -6374,6 +6373,7 @@
   "queryNotes": "Notes",
   "queryOpenEntry": "Open entry",
   "queryOtherProject": "Beyond the home scope",
+  "queryPreparingAnswer": "Preparing an answer…",
   "queryReachCategory": "Searches this scope first, then {category}.",
   "@queryReachCategory": {
     "placeholders": {

@@ -5,9 +5,17 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T22:21:45Z }
 stale_after: 2026-10-12
 sources:
+  - id: controller
+    resource: ../../../lib/features/agents/query/query_chat_controller.dart
+    title: Request lifecycle and safe failure diagnostics
+    last_modified: 2026-09-12
+  - id: providers
+    resource: ../../../lib/features/agents/query/query_chat_providers.dart
+    title: Query profile resolution and runtime wiring
+    last_modified: 2026-09-11
   - id: models
     resource: ../../../lib/features/agents/model/query_chat_models.dart
     title: Query scope, evidence and chat events
@@ -18,8 +26,8 @@ sources:
     last_modified: 2026-09-11
   - id: builder
     resource: ../../../lib/features/agents/query/query_answer_builder.dart
-    title: Isolated inference and evidence verification
-    last_modified: 2026-09-11
+    title: Batched source shortlisting and evidence verification
+    last_modified: 2026-09-12
   - id: access
     resource: ../../../lib/features/agents/query/query_source_access.dart
     title: Live visibility gate
@@ -51,7 +59,7 @@ sources:
   - id: pane
     resource: ../../../lib/features/agents/ui/query/query_chat_pane.dart
     title: Conversation, navigation and deletion UI
-    last_modified: 2026-09-11
+    last_modified: 2026-09-12
 ---
 
 # Ownership and entry points
@@ -59,7 +67,8 @@ sources:
 The **Ask** action opens `QueryChatPane` in place of the task, project or saved
 category detail. Desktop retains the surrounding list; mobile uses the detail
 route's full page. Task headers, the task action bar and task/project summary
-cards expose the same action. Opening never runs inference.
+cards expose the same action. Opening never runs inference. The empty view names the task, project or
+category scope and offers example questions that populate the draft.
 
 `queryChatTargetProvider` reuses the task or project summary's identity. If no
 identity exists, the pane explains that an agent must first be assigned. A
@@ -71,6 +80,13 @@ Task/project queries resolve the agent's existing inference setup, including
 an explicit disabled setup. Category queries resolve the live category default
 profile. A missing usable setup retains the draft and presents a recoverable
 error. These calls do not alter automatic-update preferences.
+
+`queryProfileProvider` keeps itself and its watched setup dependencies alive
+until its lookup completes, including a null result or error. Send and audio
+preparation read its future imperatively without a widget subscription; an
+unretained auto-disposed provider can otherwise fail during a database read
+before a question is saved. The temporary keep-alive link closes in `finally`,
+so completed lookups do not retain unused profiles or their dependencies.
 
 # Discovery boundaries
 
@@ -93,7 +109,17 @@ project names also become privacy dependencies of the answer.
 
 The current search is bounded keyword retrieval plus recent-category fallback,
 not an exhaustive semantic index. Up to eight sanitized OR terms feed FTS; ID
-lookups are chunked. Discovery caps the readable corpus at 60 documents. Missing
+lookups are chunked. Discovery caps the readable corpus at 60 documents. Corpora of more than four
+sources share one shortlisting request containing bounded extractive previews
+(up to 800 source characters each, plus labels and dates). Short entries are
+included whole; long entries contribute their opening and a search-term window
+or ending. Entries do not share a standard stored summary field, so this step
+does not claim these previews are generated summaries. The model ranks up to
+eight source IDs for exact-text inspection. IDs outside the supplied corpus or
+malformed output fail the request; previews never become evidence. Skipping any
+candidate marks coverage incomplete. Small corpora avoid the extra call.
+Visibility and category membership are rechecked for the entire overview before
+it is sent, then again before every selected source is inspected. Missing
 transcripts and limits contribute to incomplete coverage; a failed database or
 inference operation is retryable, not a claim that no discussion occurred.
 
@@ -112,9 +138,29 @@ concurrently. Drafts and running operations survive navigation in the current
 app session; they are not synced or persisted across application restart.
 History is persisted. A restarted unanswered question can be retried.
 
+The activity panel, composer helper and conversation switcher describe the
+current phase: searching during planning, shortlisting, source inspection and
+memory selection, then preparing an answer only when final synthesis begins.
+The transient `answering` flag resets on each Send or Retry. `AgentChatView`
+accepts a consumer-owned sending label so its default replying copy is not
+shown while query retrieval is still running.
+
+Unexpected failures are logged under `chat/query.send` with their stage,
+exception type and a numeric Melious HTTP status when available. Exception
+messages and response bodies are not logged: they may contain private source
+text or credentials. The diagnostic stack identifies the failing code path.
+Cancellation, visibility changes and an unavailable inference setup do not
+emit error logs. Failure copy does
+not claim the question was saved, because setup or persistence can fail before
+that write.
+
 ```mermaid
 stateDiagram-v2
   [*] --> idle
+  state running {
+    [*] --> searching
+    searching --> answering: Verified evidence ready for synthesis
+  }
   idle --> running: Send
   running --> idle: answer committed
   running --> failed: inference or persistence error

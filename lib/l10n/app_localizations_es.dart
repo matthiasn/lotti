@@ -11179,12 +11179,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Puedes editar la transcripción antes de enviar tu pregunta. Es posible que el audio ya se haya enviado a tu proveedor de transcripción.';
 
   @override
-  String get queryEmptyBody =>
-      'Pregunta por reuniones, decisiones o notas anteriores. Las respuestas incluyen pasajes exactos guardados que puedes consultar.';
-
-  @override
-  String get queryEmptyTitle =>
-      'Encuentra la conversación detrás de una decisión';
+  String get queryEmptyBody => 'Busca en notas y grabaciones.';
 
   @override
   String get queryExactText => 'Mostrar texto exacto';
@@ -11200,7 +11195,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get queryFailed =>
-      'La búsqueda no pudo finalizar. Tu pregunta está guardada; inténtalo de nuevo.';
+      'La búsqueda no pudo finalizar. Inténtalo de nuevo.';
 
   @override
   String get queryForgetConclusions => 'Olvidar conclusiones';
@@ -11259,6 +11254,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get queryOtherProject => 'Fuera del ámbito inicial';
+
+  @override
+  String get queryPreparingAnswer => 'Preparando una respuesta…';
 
   @override
   String queryReachCategory(String category) {

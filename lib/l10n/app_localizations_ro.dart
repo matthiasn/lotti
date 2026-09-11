@@ -11223,11 +11223,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Puteți edita transcrierea înainte de a trimite întrebarea. Este posibil ca sunetul să fi fost deja trimis furnizorului dvs. de transcriere.';
 
   @override
-  String get queryEmptyBody =>
-      'Întrebați despre ședințe, decizii sau note anterioare. Răspunsurile includ pasaje exacte salvate pe care le puteți consulta.';
-
-  @override
-  String get queryEmptyTitle => 'Găsiți discuția din spatele unei decizii';
+  String get queryEmptyBody => 'Căutați în note și înregistrări.';
 
   @override
   String get queryExactText => 'Afișați textul exact';
@@ -11243,8 +11239,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se verifică alte proiecte din această categorie…';
 
   @override
-  String get queryFailed =>
-      'Căutarea nu s-a putut încheia. Întrebarea dvs. este salvată; reîncercați.';
+  String get queryFailed => 'Căutarea nu s-a putut încheia. Reîncercați.';
 
   @override
   String get queryForgetConclusions => 'Uitați concluziile';
@@ -11305,6 +11300,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryOtherProject => 'În afara domeniului inițial';
+
+  @override
+  String get queryPreparingAnswer => 'Se pregătește un răspuns…';
 
   @override
   String queryReachCategory(String category) {

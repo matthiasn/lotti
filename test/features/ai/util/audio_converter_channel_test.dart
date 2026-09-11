@@ -32,6 +32,7 @@ class _FakeDomainLogger extends Fake implements DomainLogger {
     StackTrace? stackTrace,
     String? subDomain,
     String? message,
+    Type? errorType,
   }) {
     lastError = error;
     lastStackTrace = stackTrace;

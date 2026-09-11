@@ -131,12 +131,17 @@ class DomainLogger {
   ///   the full error string for diagnostics;
   /// - the daily **PII-safe** error log, recording the error's runtime type
   ///   only so it can be shared without leaking user-authored content.
+  ///
+  /// If the caller sanitizes [error] before passing it here, [errorType] retains
+  /// the original exception type in the safe log's classification field. It
+  /// does not sanitize [error] or [message]; those remain the caller's concern.
   void error(
     LogDomain domain,
     Object error, {
     StackTrace? stackTrace,
     String? subDomain,
     String? message,
+    Type? errorType,
   }) {
     _writeError(
       domain,
@@ -144,6 +149,7 @@ class DomainLogger {
       stackTrace: stackTrace,
       subDomain: subDomain,
       message: message,
+      errorType: errorType,
     );
   }
 
@@ -177,6 +183,7 @@ class DomainLogger {
     String? subDomain,
     String? message,
     String? diagnostics,
+    Type? errorType,
   }) {
     // Full, diagnostic description for the general + daily full error log.
     final fullDescription = fullErrorDescription(
@@ -194,7 +201,11 @@ class DomainLogger {
     // PII-safe description: never includes the raw error string. The stack
     // trace is intentionally omitted — frames can contain absolute paths with
     // the user's system username, which would leak into this shareable log.
-    final safeDescription = safeErrorDescription(error, message);
+    final safeDescription = safeErrorDescription(
+      error,
+      message,
+      errorType: errorType,
+    );
     _appendToSharedFile(
       fileStem: errorSafeLogStem,
       domain: domain.wireName,
@@ -231,9 +242,14 @@ class DomainLogger {
   /// PII-safe description of an error: `'<message> (errorType=<Type>)'`, or just
   /// `'errorType=<Type>'` when no message is given. Never includes the raw
   /// error string, so it is safe for the shared `error-safe-*.log`.
-  static String safeErrorDescription(Object error, String? message) {
+  /// [errorType] preserves classification when [error] has been sanitized.
+  static String safeErrorDescription(
+    Object error,
+    String? message, {
+    Type? errorType,
+  }) {
     final hasMessage = message != null && message.isNotEmpty;
-    final type = 'errorType=${error.runtimeType}';
+    final type = 'errorType=${errorType ?? error.runtimeType}';
     return hasMessage ? '$message ($type)' : type;
   }
 

@@ -11213,10 +11213,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Pose des questions sur les réunions, les décisions ou les notes précédentes. Les réponses incluent des passages exacts à consulter.';
-
-  @override
-  String get queryEmptyTitle => 'Retrouve la discussion derrière une décision';
+      'Recherche dans les notes et les enregistrements.';
 
   @override
   String get queryExactText => 'Afficher le texte exact';
@@ -11233,8 +11230,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vérification des autres projets de cette catégorie…';
 
   @override
-  String get queryFailed =>
-      'La recherche n’a pas pu aboutir. Ta question est enregistrée ; réessaie.';
+  String get queryFailed => 'La recherche n’a pas pu aboutir. Réessaie.';
 
   @override
   String get queryForgetConclusions => 'Oublier les conclusions';
@@ -11293,6 +11289,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queryOtherProject => 'Hors du périmètre de départ';
+
+  @override
+  String get queryPreparingAnswer => 'Préparation de la réponse…';
 
   @override
   String queryReachCategory(String category) {

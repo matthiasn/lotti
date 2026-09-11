@@ -490,6 +490,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       history: AsyncData(history),
                       draft: draft,
                       isSending: running,
+                      sendingLabel: _activityLabel(context, local),
                       onDraftChanged: (text) =>
                           controller.updateDraft(id, text),
                       onSend: () => unawaited(
@@ -505,9 +506,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              local.expanded
-                                  ? messages.queryExpanding
-                                  : messages.querySearching,
+                              _activityLabel(context, local),
                               style: tokens.typography.styles.body.bodySmall,
                             ),
                             Text(
@@ -703,7 +702,11 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              messages.queryEmptyTitle,
+              switch (widget.scope.kind) {
+                QueryScopeKind.task => messages.queryAskTask,
+                QueryScopeKind.project => messages.queryAskProject,
+                QueryScopeKind.category => messages.queryAskCategory,
+              },
               style: tokens.typography.styles.heading.heading3,
             ),
             SizedBox(height: tokens.spacing.step3),
@@ -875,6 +878,13 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     );
   }
 
+  String _activityLabel(BuildContext context, QueryChatLocal local) =>
+      local.answering
+      ? context.messages.queryPreparingAnswer
+      : local.expanded
+      ? context.messages.queryExpanding
+      : context.messages.querySearching;
+
   Widget _chatRow(
     BuildContext context,
     QueryChatController controller,
@@ -884,7 +894,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
   ) {
     final messages = context.messages;
     final status = local.status == QueryTurnStatus.running
-        ? messages.querySearching
+        ? _activityLabel(context, local)
         : chat.unread
         ? messages.queryUnread
         : local.status == QueryTurnStatus.failed

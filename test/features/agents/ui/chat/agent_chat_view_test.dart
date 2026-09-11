@@ -185,6 +185,55 @@ void main() {
     expect(retried, isTrue);
   });
 
+  testWidgets(
+    'custom activity label describes composer and thinking semantics',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: '',
+                isSending: true,
+                sendingLabel: 'Searching linked notes and recordings…',
+                history: const AsyncData([]),
+                onDraftChanged: (_) {},
+                onSend: () {},
+                onRetry: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(
+          find.text('Searching linked notes and recordings…'),
+          findsOneWidget,
+        );
+        expect(find.text('Juno is replying…'), findsNothing);
+        expect(
+          find.bySemanticsLabel(
+            RegExp(RegExp.escape('Searching linked notes and recordings…')),
+          ),
+          findsWidgets,
+        );
+        expect(
+          find.bySemanticsLabel(RegExp(RegExp.escape('Juno is replying…'))),
+          findsNothing,
+        );
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).enabled,
+          isFalse,
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
   testWidgets('renders agent markdown and expands a collapsed long reply', (
     tester,
   ) async {

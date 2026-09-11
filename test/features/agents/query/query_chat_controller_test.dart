@@ -11,9 +11,13 @@ import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -27,19 +31,26 @@ void main() {
   late QueryChatController controller;
   late StreamController<QueryChatData> history;
   late Future<void> Function(String chatId) inspect;
+  late Future<void> Function(String chatId) compose;
+  late MockDomainLogger logger;
+  Exception? setupError;
   var malformed = false;
   var unavailable = false;
   final now = DateTime(2026, 9, 10, 12);
 
   setUpAll(registerAllFallbackValues);
   setUp(() {
+    logger = MockDomainLogger();
+    setupError = null;
     bench = QueryPersistenceBench()..add('task');
     inspect = (_) async {};
+    compose = (_) async {};
     malformed = false;
     unavailable = false;
     history = StreamController<QueryChatData>.broadcast();
     container = ProviderContainer(
       overrides: [
+        domainLoggerProvider.overrideWithValue(logger),
         queryChatStoreProvider.overrideWithValue(bench.store),
         queryChatDataProvider(key).overrideWith((ref) => history.stream),
         configFlagProvider(
@@ -51,6 +62,7 @@ void main() {
           chatId,
         ) async {
           if (unavailable) throw const QueryInferenceUnavailable();
+          if (setupError case final error?) throw error;
           return QueryAnswerBuilder(
             crawler: bench.crawler,
             access: bench.crawler.access,
@@ -72,6 +84,7 @@ void main() {
                 } else if (system.contains('Select only')) {
                   yield '{"ids":[]}';
                 } else {
+                  await compose(chatId);
                   yield malformed
                       ? 'invalid'
                       : jsonEncode({
@@ -92,6 +105,97 @@ void main() {
     await history.close();
     await bench.close();
   });
+
+  test(
+    'searching changes to answering only at synthesis and resets on retry',
+    () async {
+      final inspecting = Completer<void>();
+      final inspected = Completer<void>();
+      final composing = Completer<void>();
+      final composed = Completer<void>();
+      inspect = (_) async {
+        inspecting.complete();
+        await inspected.future;
+      };
+      compose = (_) async {
+        composing.complete();
+        await composed.future;
+      };
+      final id = await controller.create('Feeder');
+      controller.updateDraft(id, 'Which decision?');
+      malformed = true;
+      final pending = controller.send(id);
+      await inspecting.future;
+      expect(container.read(provider).local(id).answering, isFalse);
+      expect(
+        container.read(provider).local(id).status,
+        QueryTurnStatus.running,
+      );
+      inspected.complete();
+      await composing.future;
+      expect(container.read(provider).local(id).answering, isTrue);
+      expect(
+        container.read(provider).local(id).status,
+        QueryTurnStatus.running,
+      );
+      composed.complete();
+      await pending;
+      expect(container.read(provider).local(id).status, QueryTurnStatus.failed);
+      final question = (await bench.store.load(
+        'agent',
+      )).chats.single.questions.single;
+      malformed = false;
+      inspect = (_) async {
+        expect(container.read(provider).local(id).answering, isFalse);
+      };
+      compose = (_) async {
+        expect(container.read(provider).local(id).answering, isTrue);
+      };
+      await controller.send(id, retryQuestionId: question.id);
+      expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
+    },
+  );
+
+  for (final error in [
+    const FormatException('Private source text must not reach logs'),
+    const MeliousInferenceException('Secret response body', statusCode: 401),
+  ]) {
+    test(
+      'setup failure logs safe diagnostics for ${error.runtimeType}',
+      () async {
+        final id = await controller.create('Feeder');
+        controller.updateDraft(id, 'Private question text');
+        setupError = error;
+        await controller.send(id);
+        expect(
+          container.read(provider).local(id).status,
+          QueryTurnStatus.failed,
+        );
+        expect(
+          container.read(provider).local(id).draft,
+          'Private question text',
+        );
+        expect(
+          (await bench.store.load('agent')).chats.single.questions,
+          isEmpty,
+        );
+        final status = error is MeliousInferenceException
+            ? ' (httpStatus=401)'
+            : '';
+        verify(
+          () => logger.error(
+            LogDomain.chat,
+            error.runtimeType.toString(),
+            errorType: error.runtimeType,
+            message: 'Query failed during setup$status',
+            subDomain: 'query.send',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNoMoreInteractions(logger);
+      },
+    );
+  }
 
   test(
     'concurrent replies and drafts stay with their originating chat',
@@ -217,6 +321,7 @@ void main() {
         QueryTurnStatus.cancelled,
       );
       inspect = (_) async {};
+      compose = (_) async {};
       await controller.send(id, retryQuestionId: chat.questions.single.id);
       final retried = (await bench.store.load('agent')).chats.single;
       expect(retried.questions.length, 1);
@@ -355,6 +460,7 @@ void main() {
       );
       expect(container.read(provider).local(id).draft, 'Decision?');
       expect((await bench.store.load('agent')).chats.single.questions, isEmpty);
+      verifyNoMoreInteractions(logger);
     }),
   );
 

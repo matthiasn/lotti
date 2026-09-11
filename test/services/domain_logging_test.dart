@@ -495,6 +495,30 @@ void main() {
       expect(content, contains('fake_frame'));
     });
 
+    test('sanitized errors preserve classification in the safe file', () async {
+      final error = StateError('secret source content');
+      logger.error(
+        LogDomain.chat,
+        error.runtimeType.toString(),
+        errorType: error.runtimeType,
+        subDomain: 'query.send',
+        message: 'Query failed during setup',
+      );
+      await loggingService.flush();
+      final safe = findLogFile('error-safe-')!.readAsStringSync();
+      expect(
+        safe,
+        contains('Query failed during setup (errorType=StateError)'),
+      );
+      expect(safe, isNot(contains('errorType=String')));
+      for (final stem in ['error-safe-', 'error-', 'chat-', 'lotti-']) {
+        expect(
+          findLogFile(stem)!.readAsStringSync(),
+          isNot(contains('secret source content')),
+        );
+      }
+    });
+
     test('error keeps diagnostics out of the PII-safe log file', () async {
       final exception = Exception('secret user content');
       logger.errorWithDiagnostics(

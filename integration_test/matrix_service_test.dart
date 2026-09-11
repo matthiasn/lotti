@@ -433,6 +433,7 @@ class _EchoDomainLogger extends DomainLogger {
     StackTrace? stackTrace,
     String? subDomain,
     String? message,
+    Type? errorType,
   }) {
     // Errors always echo. `saveRoom.bootstrap` and `queue.bridge.*` swallow
     // exceptions into this method, so a silenced logger turns a thrown

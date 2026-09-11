@@ -18580,14 +18580,8 @@ abstract class AppLocalizations {
   /// No description provided for @queryEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Ask about meetings, decisions, or earlier notes. Answers include exact stored passages you can inspect.'**
+  /// **'Search notes and recordings.'**
   String get queryEmptyBody;
-
-  /// No description provided for @queryEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Find the discussion behind a decision'**
-  String get queryEmptyTitle;
 
   /// No description provided for @queryExactText.
   ///
@@ -18616,7 +18610,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryFailed.
   ///
   /// In en, this message translates to:
-  /// **'The search could not finish. Your question is saved; try again.'**
+  /// **'The search could not finish. Try again.'**
   String get queryFailed;
 
   /// No description provided for @queryForgetConclusions.
@@ -18702,6 +18696,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Beyond the home scope'**
   String get queryOtherProject;
+
+  /// No description provided for @queryPreparingAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing an answer…'**
+  String get queryPreparingAnswer;
 
   /// No description provided for @queryReachCategory.
   ///
