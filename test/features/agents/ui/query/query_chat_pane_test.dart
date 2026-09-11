@@ -248,6 +248,7 @@ void main() {
           'What did we agree on?',
         );
         expect(inferenceCalls, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
       },
     );
   }
@@ -277,6 +278,7 @@ void main() {
         'Which feeder?',
       );
       expect(inferenceCalls, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
     },
   );
 
