@@ -58,7 +58,11 @@ class PlazaDevApp extends StatelessWidget {
           initialToolbarOpen: env['PLAZA_TOOLBAR'] == '1',
           // The harness is a client of the same chrome the app gets, so it
           // renders the same Back button. There is no route under this one,
-          // so leaving is the platform's business — a no-op on desktop.
+          // so leaving the world means leaving the harness: the channel's
+          // contract is "close the application, or the closest equivalent"
+          // (`SystemChannels.platform`), which the macOS embedder implements.
+          // Preferred over `dart:io`'s `exit`, which the framework warns can
+          // look to the platform as though the app had crashed.
           onExit: SystemNavigator.pop,
         ),
       ),

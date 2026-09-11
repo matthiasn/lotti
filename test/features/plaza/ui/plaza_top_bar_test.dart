@@ -214,20 +214,43 @@ void main() {
       }
     });
 
-    test('Esc takes the keyboard back from wherever it is', () {
-      for (final worldHasFocus in [true, false]) {
-        for (final toolbarOpen in [true, false]) {
-          expect(
-            route(
-              LogicalKeyboardKey.escape,
-              worldHasFocus: worldHasFocus,
-              toolbarOpen: toolbarOpen,
-            ),
-            PlazaKeyRouting.dismiss,
-            reason: 'focus $worldHasFocus / open $toolbarOpen',
-          );
+    test('the toolbar keys outrank focus, wherever the keyboard is', () {
+      // The regression: `T` is advertised in the control legend, and used to
+      // stop working the moment you tabbed into the toolbar — which is
+      // exactly when you want to put it away again.
+      for (final key in [LogicalKeyboardKey.escape, LogicalKeyboardKey.keyT]) {
+        for (final worldHasFocus in [true, false]) {
+          for (final toolbarOpen in [true, false]) {
+            expect(
+              route(
+                key,
+                worldHasFocus: worldHasFocus,
+                toolbarOpen: toolbarOpen,
+              ),
+              PlazaKeyRouting.toolbar,
+              reason: '$key with focus $worldHasFocus / open $toolbarOpen',
+            );
+          }
         }
       }
+    });
+
+    test('a key repeat is not a toolbar binding', () {
+      // Held keys are how walking works, so repeats reach the routing. Only
+      // the first press of `T` may claim the toolbar; otherwise leaning on it
+      // strobes the panel and a focused control never gets its own repeats.
+      expect(
+        PlazaKeyRouting.of(
+          const KeyRepeatEvent(
+            physicalKey: PhysicalKeyboardKey.keyT,
+            logicalKey: LogicalKeyboardKey.keyT,
+            timeStamp: Duration.zero,
+          ),
+          worldHasFocus: false,
+          toolbarOpen: true,
+        ),
+        PlazaKeyRouting.chrome,
+      );
     });
   });
 
@@ -287,6 +310,42 @@ void main() {
     );
   });
 
+  testWidgets('the corner reads as one mirrored pair of arrows', (
+    tester,
+  ) async {
+    IconData glyph(String tooltip) => tester
+        .widget<Icon>(
+          find.descendant(
+            of: find.byTooltip(tooltip),
+            matching: find.byType(Icon),
+          ),
+        )
+        .icon!;
+
+    await tester.pumpWidget(host(open: false));
+    expect(glyph(_backTip), LottiIcons.back);
+    expect(
+      glyph(_toggleTip),
+      LottiIcons.forward,
+      reason: 'the toggle is the mirror of Back, not a window-chrome glyph',
+    );
+    expect(
+      glyph(_backTip).codePoint,
+      isNot(glyph(_toggleTip).codePoint),
+      reason: 'two buttons that look identical at 18px are one button',
+    );
+
+    await tester.pumpWidget(host(open: true));
+    await tester.pumpAndSettle();
+    expect(
+      glyph(_toggleTip),
+      LottiIcons.forward,
+      reason:
+          'the arrow names the button; teal is what says open or shut, '
+          'so a flip would leave the pair pointing at each other',
+    );
+  });
+
   // ───────────────────────────────────────────────────────────── geometry
 
   testWidgets('the buttons are a fixed pair that revealing never moves', (
@@ -294,7 +353,7 @@ void main() {
   ) async {
     await tester.pumpWidget(host(open: false));
     final back = tester.getRect(button(LottiIcons.back));
-    final toggle = tester.getRect(button(LottiIcons.sidebar));
+    final toggle = tester.getRect(button(LottiIcons.forward));
     final tokens = tester.element(find.byType(PlazaTopBar)).designTokens;
 
     // What you see is the glass chip; what you have to hit is the tap
@@ -322,12 +381,12 @@ void main() {
     await tester.pumpWidget(host(open: true));
     await tester.pump(PlazaTopBar.motion ~/ 2);
     expect(tester.getRect(button(LottiIcons.back)), back);
-    expect(tester.getRect(button(LottiIcons.sidebar)), toggle);
+    expect(tester.getRect(button(LottiIcons.forward)), toggle);
 
     await tester.pumpAndSettle();
     expect(tester.getRect(button(LottiIcons.back)), back);
     expect(
-      tester.getRect(button(LottiIcons.sidebar)),
+      tester.getRect(button(LottiIcons.forward)),
       toggle,
       reason: 'the toggle must not walk away from the pointer that pressed it',
     );
@@ -388,14 +447,14 @@ void main() {
   ) async {
     await tester.pumpWidget(host(open: false));
     final tokens = tester.element(find.byType(PlazaTopBar)).designTokens;
-    expect(fillOf(tester, LottiIcons.sidebar), WorldGlass.fill);
-    expect(inkOf(tester, LottiIcons.sidebar), tokens.colors.text.highEmphasis);
+    expect(fillOf(tester, LottiIcons.forward), WorldGlass.fill);
+    expect(inkOf(tester, LottiIcons.forward), tokens.colors.text.highEmphasis);
 
     await tester.pumpWidget(host(open: true));
     await tester.pumpAndSettle();
-    expect(fillOf(tester, LottiIcons.sidebar), PlazaStyle.teal);
+    expect(fillOf(tester, LottiIcons.forward), PlazaStyle.teal);
     expect(
-      inkOf(tester, LottiIcons.sidebar),
+      inkOf(tester, LottiIcons.forward),
       tokens.colors.text.onInteractiveAlert,
       reason: 'white glyph on teal does not read',
     );
@@ -413,9 +472,9 @@ void main() {
     addTearDown(pointer.removePointer);
     await tester.pump();
 
-    await pointer.moveTo(tester.getCenter(button(LottiIcons.sidebar)));
+    await pointer.moveTo(tester.getCenter(button(LottiIcons.forward)));
     await tester.pump();
-    expect(fillOf(tester, LottiIcons.sidebar), WorldGlass.fillHover);
+    expect(fillOf(tester, LottiIcons.forward), WorldGlass.fillHover);
     expect(
       fillOf(tester, LottiIcons.back),
       WorldGlass.fill,
@@ -424,11 +483,11 @@ void main() {
 
     await tester.pumpWidget(host(open: true));
     await tester.pumpAndSettle();
-    expect(fillOf(tester, LottiIcons.sidebar), PlazaStyle.tealHover);
+    expect(fillOf(tester, LottiIcons.forward), PlazaStyle.tealHover);
 
     await pointer.moveTo(Offset.zero);
     await tester.pump();
-    expect(fillOf(tester, LottiIcons.sidebar), PlazaStyle.teal);
+    expect(fillOf(tester, LottiIcons.forward), PlazaStyle.teal);
   });
 
   testWidgets('reduced motion puts the toolbar there in one frame', (
@@ -587,7 +646,7 @@ void main() {
         .color;
 
     expect(
-      ringOf(LottiIcons.sidebar),
+      ringOf(LottiIcons.forward),
       Colors.transparent,
       reason: 'an unfocused button is bare glass',
     );
@@ -601,7 +660,7 @@ void main() {
 
     final tokens = tester.element(find.byType(PlazaTopBar)).designTokens;
     expect(
-      ringOf(LottiIcons.sidebar),
+      ringOf(LottiIcons.forward),
       tokens.colors.interactive.enabled,
       reason: 'a keyboard user has to be able to see where they are',
     );
@@ -609,6 +668,22 @@ void main() {
       tester.getSemantics(find.byTooltip(_toggleTip)).flagsCollection.isFocused,
       Tristate.isTrue,
       reason: 'the ring is for eyes; this is the same news for everyone else',
+    );
+
+    // A lit button is already wearing the interactive teal, so the ring has
+    // to leave it: teal on teal is no ring at all, and focus would vanish at
+    // the exact moment the toolbar it opens is on screen.
+    await tester.pumpWidget(host(open: true));
+    await tester.pumpAndSettle();
+    expect(_focusIsOn(tester, _toggleTip), isTrue, reason: 'focus survives');
+    expect(
+      ringOf(LottiIcons.forward),
+      tokens.colors.text.onInteractiveAlert,
+      reason: 'the ring on a lit button is the ink, not the fill it sits on',
+    );
+    expect(
+      ringOf(LottiIcons.forward),
+      isNot(tokens.colors.interactive.enabled),
     );
     semantics.dispose();
   });
