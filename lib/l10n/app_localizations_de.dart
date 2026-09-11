@@ -11007,6 +11007,51 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queryAskTask => 'Zu dieser Aufgabe fragen';
 
   @override
+  String get queryAudioFailed =>
+      'Das Audio konnte nicht vorbereitet oder abgespielt werden. Versuch es erneut.';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Anhören · $start–$end';
+  }
+
+  @override
+  String get queryAudioMissingFile =>
+      'Die Aufnahme ist auf diesem Gerät noch nicht verfügbar.';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Dieses Zitat ließ sich der Aufnahme nicht eindeutig zuordnen. Du kannst weiterhin den vollständigen Eintrag öffnen.';
+
+  @override
+  String get queryAudioPrepare => 'Audioausschnitt vorbereiten';
+
+  @override
+  String get queryAudioPreparing => 'Audio wird vorbereitet…';
+
+  @override
+  String get queryAudioReadAloud => 'Antwort vorlesen';
+
+  @override
+  String get queryAudioStale =>
+      'Die Aufnahme hat sich geändert. Erstelle die Zeitmarken erneut.';
+
+  @override
+  String get queryAudioStop => 'Audio stoppen';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Wähle Melious Whisper oder ein unterstütztes Mistral-Voxtral-Transkriptionsmodell im Inferenzprofil dieses Agenten, um Audioausschnitte vorzubereiten. Die Anbieter-URL muss HTTPS verwenden.';
+
+  @override
+  String get queryAudioTooLarge =>
+      'Zeitstempel können für Aufnahmen bis 25 MB vorbereitet werden. Wähle eine kleinere Aufnahme.';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Zum Erstellen der Zeitmarken wird diese Aufnahme an den für diesen Agenten konfigurierten Transkriptionsanbieter gesendet.';
+
+  @override
   String get queryCategoryAgent => 'Kategorie-Agent';
 
   @override

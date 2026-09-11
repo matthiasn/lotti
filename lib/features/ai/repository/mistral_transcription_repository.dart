@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -47,6 +48,9 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   /// [contextBias] is a list of words/phrases (up to 100) that the model
   /// should pay special attention to. Each term is sent as a repeated
   /// `context_bias` multipart text field, preserving phrase boundaries.
+  /// [onSegments] receives validated recording-relative timings when requested
+  /// by an evidence caller. Ordinary transcription remains text-only and also
+  /// accepts responses without usable timestamps.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
@@ -54,6 +58,7 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
     required String apiKey,
     List<String>? contextBias,
     Duration? timeout,
+    void Function(List<AudioTimedSegment>)? onSegments,
   }) {
     if (model.isEmpty) {
       throw ArgumentError('Model name cannot be empty');
@@ -96,6 +101,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
           final uri = baseUri.resolve('audio/transcriptions');
 
           final request = http.MultipartRequest('POST', uri)
+            // Timing requests must not redirect private audio off HTTPS.
+            ..followRedirects = onSegments == null
             ..headers['Authorization'] = 'Bearer $apiKey'
             ..files.add(
               http.MultipartFile.fromBytes(
@@ -211,6 +218,9 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
           }
 
           final text = _extractText(result);
+          if (onSegments != null) {
+            onSegments(parseTimedTranscriptSegments(result['segments']));
+          }
 
           developer.log(
             'Successfully transcribed audio - '

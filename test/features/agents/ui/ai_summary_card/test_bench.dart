@@ -18,6 +18,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -221,6 +222,9 @@ class AgentTestBench {
             (ref) => _taskAgentService,
           ),
         ttsEngineProvider.overrideWithValue(_ttsEngine ?? FakeTtsEngine()),
+        ttsPlaybackControllerProvider.overrideWith(
+          () => TtsPlaybackController(logger: MockDomainLogger()),
+        ),
         ttsAudioPlayerProvider.overrideWithValue(FakeTtsAudioPlayer()),
         ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
         ..._extraOverrides,

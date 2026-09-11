@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/repository/completion_usage_parser.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -208,4 +209,50 @@ class TranscriptionRepository {
     }
     return fallback;
   }
+}
+
+/// Decodes the provider's seconds once at the boundary. A malformed or
+/// unordered list is rejected as a whole; skipping rows could join speech
+/// across an unknown gap and falsely locate a quote.
+List<AudioTimedSegment> parseTimedTranscriptSegments(Object? value) {
+  if (value is! List || value.isEmpty || value.length > 30000) {
+    throw const FormatException('Missing or excessive transcript segments');
+  }
+  final result = <AudioTimedSegment>[];
+  var previousStart = -1;
+  var previousEnd = -1;
+  for (final item in value) {
+    if (item is! Map<String, dynamic>) {
+      throw const FormatException('Invalid transcript segment');
+    }
+    final text = item['text'];
+    final start = item['start'];
+    final end = item['end'];
+    if (text is! String ||
+        text.trim().isEmpty ||
+        start is! num ||
+        end is! num ||
+        !start.isFinite ||
+        !end.isFinite ||
+        start < 0 ||
+        end <= start ||
+        end > const Duration(hours: 3).inSeconds) {
+      throw const FormatException('Invalid transcript boundaries');
+    }
+    final startMs = (start * 1000).round();
+    final endMs = (end * 1000).round();
+    if (startMs < previousStart || endMs < previousEnd || endMs <= startMs) {
+      throw const FormatException('Unordered transcript boundaries');
+    }
+    result.add(
+      AudioTimedSegment(
+        text: text,
+        startMilliseconds: startMs,
+        endMilliseconds: endMs,
+      ),
+    );
+    previousStart = startMs;
+    previousEnd = endMs;
+  }
+  return result;
 }

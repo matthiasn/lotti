@@ -10,6 +10,10 @@ import 'package:uuid/uuid.dart';
 /// Converts encoded M4A bytes to PCM WAV bytes without changing the archive.
 typedef M4aBytesToWavConverter = Future<Uint8List> Function(Uint8List bytes);
 
+/// Non-final transcription upload parts span exactly this duration. Consumers
+/// use the same boundary to restore recording-relative transcript timestamps.
+const transcriptionUploadSegmentDuration = Duration(minutes: 20);
+
 /// Creates the sample encoder used to emit MP3 frames.
 typedef Mp3FrameEncoderFactory =
     Mp3FrameEncoder Function({
@@ -125,7 +129,7 @@ Stream<File> encodeAudioBytesToTemporaryMp3Segments(
   M4aBytesToWavConverter? m4aToWavConverter,
   Mp3FrameEncoderFactory? encoderFactory,
   Directory? temporaryDirectory,
-  Duration segmentDuration = const Duration(minutes: 20),
+  Duration segmentDuration = transcriptionUploadSegmentDuration,
 }) async* {
   if (sourceBytes.isEmpty) {
     throw const TemporaryMp3EncodingException('Audio data cannot be empty');

@@ -19,12 +19,14 @@ class QueryEvidenceCard extends ConsumerStatefulWidget {
     required this.number,
     required this.access,
     required this.onOpen,
+    this.audioControls,
     super.key,
   });
   final QueryEvidence evidence;
   final int number;
   final QueryAccessSnapshot access;
   final ValueChanged<String> onOpen;
+  final Widget? audioControls;
 
   @override
   ConsumerState<QueryEvidenceCard> createState() => _QueryEvidenceCardState();
@@ -155,6 +157,7 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
               child: Text(evidence.summary, style: body),
             ),
           SizedBox(height: tokens.spacing.step2),
+          if (widget.audioControls != null) widget.audioControls!,
           Semantics(
             expanded: _expanded,
             child: DesignSystemButton(

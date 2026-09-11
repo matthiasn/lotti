@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -273,6 +275,10 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         visible.where((c) => c.id == session.selectedId).firstOrNull ??
         visible.where((c) => !c.archived).firstOrNull;
     final id = chat?.id ?? 'new';
+    final audioKey = (home: key, chatId: id);
+    if (chat != null && _sourceId == null) {
+      ref.watch(queryAudioControllerProvider(audioKey));
+    }
     ref.listen(chatRecorderControllerProvider.select((s) => s.transcript), (
       _,
       transcript,
@@ -531,6 +537,10 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              QueryAnswerSpeechButton(
+                                chatKey: audioKey,
+                                answerId: message.id,
+                              ),
                               if (answer.recalledMemoryIds.isNotEmpty)
                                 Text(
                                   messages.queryRecall,
@@ -546,6 +556,20 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                   access: access,
                                   onOpen: (sourceId) =>
                                       setState(() => _sourceId = sourceId),
+                                  audioControls:
+                                      access.entries[evidence.source.id]
+                                          is JournalAudio
+                                      ? QueryEvidenceAudioControls(
+                                          chatKey: audioKey,
+                                          actionId: '${message.id}:$index',
+                                          evidence: evidence,
+                                          audio:
+                                              access.entries[evidence
+                                                      .source
+                                                      .id]!
+                                                  as JournalAudio,
+                                        )
+                                      : null,
                                 ),
                               ExpansionTile(
                                 key: PageStorageKey('${message.id}:coverage'),

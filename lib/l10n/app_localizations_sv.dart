@@ -10948,6 +10948,51 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryAskTask => 'Fråga om den här uppgiften';
 
   @override
+  String get queryAudioFailed =>
+      'Ljudet kunde inte förberedas eller spelas upp. Försök igen.';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Lyssna · $start–$end';
+  }
+
+  @override
+  String get queryAudioMissingFile =>
+      'Inspelningen är ännu inte tillgänglig på den här enheten.';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Citatet kunde inte entydigt kopplas till inspelningen. Du kan fortfarande öppna hela posten.';
+
+  @override
+  String get queryAudioPrepare => 'Förbered ljudutdrag';
+
+  @override
+  String get queryAudioPreparing => 'Förbereder ljud…';
+
+  @override
+  String get queryAudioReadAloud => 'Läs upp svaret';
+
+  @override
+  String get queryAudioStale =>
+      'Inspelningen har ändrats. Förbered tidsstämplarna igen.';
+
+  @override
+  String get queryAudioStop => 'Stoppa ljudet';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Välj Melious Whisper eller en Mistral Voxtral-transkriptionsmodell som stöds i agentens inferensprofil för att förbereda ljudklipp. Leverantörens URL måste använda HTTPS.';
+
+  @override
+  String get queryAudioTooLarge =>
+      'Du kan förbereda tidsstämplar för inspelningar på upp till 25 MB. Välj en mindre inspelning.';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'När tidsstämplar förbereds skickas inspelningen till transkriberingsleverantören som är inställd för den här agenten.';
+
+  @override
   String get queryCategoryAgent => 'Kategoriagent';
 
   @override

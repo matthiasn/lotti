@@ -69,7 +69,8 @@ void main() {
       entries: {...bench.entries},
     ),
   );
-  setUp(() {
+  setUp(() async {
+    await setUpTestGetIt();
     bench = QueryTestBench();
     bench.entries['task'] = testTask.copyWith(
       meta: testTask.meta.copyWith(
@@ -136,6 +137,7 @@ void main() {
     await privacy.close();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null);
+    await tearDownTestGetIt();
   });
   Future<void> pump(
     WidgetTester tester, {
@@ -880,15 +882,14 @@ void main() {
   testWidgets(
     'answer evidence exposes coverage and opens its source without losing the draft',
     (tester) async {
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt
-            ..registerSingleton<UserActivityService>(MockUserActivityService())
-            ..registerSingleton<EditorStateService>(MockEditorStateService());
-        },
-      );
-      addTearDown(tearDownTestGetIt);
+      getIt
+        ..registerSingleton<UserActivityService>(MockUserActivityService())
+        ..registerSingleton<EditorStateService>(MockEditorStateService());
       bench.add('note', category: categoryMindfulness.id);
+      bench.entries['note'] = testAudioEntry.copyWith(
+        meta: bench.entries['note']!.meta,
+        entryText: bench.entries['note']!.entryText,
+      );
       final document = QuerySourceDocument.fromEntry(bench.entries['note']!)!;
       final source = QuerySourceRef(
         id: 'note',
@@ -933,6 +934,7 @@ void main() {
         ),
       ]);
       await pump(tester, sourceDetailLoading: true);
+      expect(find.text('Prepare audio excerpt'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Follow-up draft');
       expect(
         find.textContaining('The feeder decision is recorded (1).'),

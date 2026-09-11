@@ -33,6 +33,17 @@ class QueryCancellation {
     }
   }
 
+  /// Attaches owned resources (for example an HTTP client) to this request's
+  /// lifetime. The returned callback detaches a resource after normal cleanup.
+  void Function() onCancel(void Function() callback) {
+    if (_cancelled) {
+      callback();
+    } else {
+      _callbacks.add(callback);
+    }
+    return () => _callbacks.remove(callback);
+  }
+
   Future<String> collect(Stream<String> stream) async {
     check();
     final result = Completer<String>();

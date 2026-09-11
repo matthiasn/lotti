@@ -11144,6 +11144,51 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryAskTask => 'Întrebați despre această sarcină';
 
   @override
+  String get queryAudioFailed =>
+      'Fișierul audio nu a putut fi pregătit sau redat. Încercați din nou.';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Ascultați · $start–$end';
+  }
+
+  @override
+  String get queryAudioMissingFile =>
+      'Înregistrarea nu este încă disponibilă pe acest dispozitiv.';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Acest citat nu a putut fi asociat fără ambiguitate cu înregistrarea. Puteți deschide în continuare însemnarea completă.';
+
+  @override
+  String get queryAudioPrepare => 'Pregătiți fragmentul audio';
+
+  @override
+  String get queryAudioPreparing => 'Se pregătește redarea audio…';
+
+  @override
+  String get queryAudioReadAloud => 'Ascultați răspunsul';
+
+  @override
+  String get queryAudioStale =>
+      'Înregistrarea s-a schimbat. Pregătiți din nou marcajele temporale.';
+
+  @override
+  String get queryAudioStop => 'Opriți redarea audio';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Pentru a pregăti fragmente, selectați Melious Whisper sau un model de transcriere Mistral Voxtral compatibil în profilul de inferență al acestui agent. Adresa URL a furnizorului trebuie să utilizeze HTTPS.';
+
+  @override
+  String get queryAudioTooLarge =>
+      'Puteți pregăti marcaje temporale pentru înregistrări de până la 25 MB. Alegeți o înregistrare mai mică.';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'Pregătirea marcajelor temporale trimite această înregistrare furnizorului de transcriere configurat pentru acest agent.';
+
+  @override
   String get queryCategoryAgent => 'Agent de categorie';
 
   @override

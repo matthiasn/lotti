@@ -11133,6 +11133,51 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queryAskTask => 'Poser une question sur cette tâche';
 
   @override
+  String get queryAudioFailed =>
+      'Impossible de préparer ou de lire l’audio. Réessaie.';
+
+  @override
+  String queryAudioListen(String start, String end) {
+    return 'Écouter · $start–$end';
+  }
+
+  @override
+  String get queryAudioMissingFile =>
+      'L’enregistrement n’est pas encore disponible sur cet appareil.';
+
+  @override
+  String get queryAudioNoMatch =>
+      'Cette citation n’a pas pu être associée sans ambiguïté à l’enregistrement. Tu peux toujours ouvrir l’entrée complète.';
+
+  @override
+  String get queryAudioPrepare => 'Préparer un extrait audio';
+
+  @override
+  String get queryAudioPreparing => 'Préparation de l’audio…';
+
+  @override
+  String get queryAudioReadAloud => 'Lire la réponse à voix haute';
+
+  @override
+  String get queryAudioStale =>
+      'L’enregistrement a changé. Prépare à nouveau les horodatages.';
+
+  @override
+  String get queryAudioStop => 'Arrêter le son';
+
+  @override
+  String get queryAudioTimingUnavailable =>
+      'Pour préparer des extraits, sélectionne Melious Whisper ou un modèle de transcription Mistral Voxtral compatible dans le profil d’inférence de cet agent. L’URL du fournisseur doit utiliser HTTPS.';
+
+  @override
+  String get queryAudioTooLarge =>
+      'Tu peux préparer des horodatages pour des enregistrements de 25 Mo maximum. Choisis un enregistrement plus petit.';
+
+  @override
+  String get queryAudioUploadNotice =>
+      'La préparation des horodatages envoie cet enregistrement au fournisseur de transcription configuré pour cet agent.';
+
+  @override
   String get queryCategoryAgent => 'Agent de catégorie';
 
   @override

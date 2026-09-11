@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
@@ -669,6 +670,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// Recordings above the upload limit use consecutive temporary MP3 parts.
   /// Only the complete combined transcript is emitted; cancellation stops
   /// subsequent parts and aborts the current upload. Source bytes are preserved.
+  /// [onSegments] requests verbose JSON and receives validated timing only
+  /// after every upload succeeds. Split uploads use recording-relative offsets;
+  /// an injected segment encoder must preserve the standard twenty-minute
+  /// non-final part boundaries.
   ///
   /// [contextBiasTerms] are speech-dictionary words/phrases forwarded as the
   /// OpenAI-standard `prompt` form field to bias recognition toward names and
@@ -689,6 +694,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     List<String>? contextBiasTerms,
     Duration? timeout,
     InferenceImpactCollector? impactCollector,
+    void Function(List<AudioTimedSegment>)? onSegments,
   }) {
     final normalizedBaseUrl = baseUrl.trim();
     final normalizedApiKey = apiKey.trim();
@@ -714,6 +720,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       contextBiasTerms: contextBiasTerms,
       timeout: timeout,
       impactCollector: impactCollector,
+      onSegments: onSegments,
     );
   }
 
@@ -726,12 +733,14 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     List<String>? contextBiasTerms,
     Duration? timeout,
     InferenceImpactCollector? impactCollector,
+    void Function(List<AudioTimedSegment>)? onSegments,
   }) {
     var canceled = false;
     final abortTrigger = Completer<void>();
     final incurredImpact = impactCollector ?? InferenceImpactCollector();
     var completedSegments = 0;
     CompletionUsage? usage;
+    final timedSegments = <AudioTimedSegment>[];
     late final StreamController<CreateChatCompletionStreamResponse> controller;
     Future<void> run() async {
       try {
@@ -753,17 +762,49 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             filename: filename,
             normalizedBaseUrl: baseUrl,
             normalizedApiKey: apiKey,
-            responseFormat: responseFormat,
+            responseFormat: onSegments == null
+                ? responseFormat
+                : 'verbose_json',
             contextBiasTerms: contextBiasTerms,
             timeout: timeout,
             impactCollector: incurredImpact,
             abortTrigger: abortTrigger.future,
+            onSegments: onSegments == null
+                ? null
+                : (segments) {
+                    final offset =
+                        completedSegments *
+                        transcriptionUploadSegmentDuration.inMilliseconds;
+                    if (bytes.length > maxTranscriptionUploadBytes &&
+                        segments.last.endMilliseconds >
+                            transcriptionUploadSegmentDuration.inMilliseconds) {
+                      throw const FormatException(
+                        'Timing exceeds its upload part',
+                      );
+                    }
+                    timedSegments.addAll(
+                      segments.map(
+                        (segment) => segment.copyWith(
+                          startMilliseconds: segment.startMilliseconds + offset,
+                          endMilliseconds: segment.endMilliseconds + offset,
+                        ),
+                      ),
+                    );
+                    if (timedSegments.length > 30000) {
+                      throw const FormatException(
+                        'Excessive transcript segments',
+                      );
+                    }
+                  },
           ).first;
         }
 
         if (bytes.length <= maxTranscriptionUploadBytes) {
           final result = await upload(bytes, 'audio.m4a');
-          if (!canceled) controller.add(result);
+          if (!canceled) {
+            onSegments?.call(timedSegments);
+            controller.add(result);
+          }
         } else {
           final texts = <String>[];
           CreateChatCompletionStreamResponse? last;
@@ -784,6 +825,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
                 'Audio preparation produced no segments',
               );
             }
+            onSegments?.call(timedSegments);
             controller.add(
               last.copyWith(
                 choices: [
@@ -849,29 +891,32 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     List<String>? contextBiasTerms,
     Duration? timeout,
     InferenceImpactCollector? impactCollector,
+    void Function(List<AudioTimedSegment>)? onSegments,
   }) {
     return executeTranscription(
       providerName: _providerName,
       responseIdPrefix: 'melious-transcription-',
       audioLengthForLog: audioBytes.length,
       timeout: timeout,
-      onSuccessResponse: impactCollector == null
-          ? null
-          : (decoded, response) {
-              final impact = MeliousCallImpact.fromResponseJson(
-                decoded,
-                costCreditsDecimal:
-                    MeliousCallImpact.costDecimalFromResponseBody(
-                      response.body,
-                    ),
-              );
-              if (impact.hasData) {
-                impactCollector.impact = MeliousCallImpact.combine(
-                  impactCollector.impact,
-                  impact,
-                );
-              }
-            },
+      onSuccessResponse: (decoded, response) {
+        if (impactCollector != null) {
+          final impact = MeliousCallImpact.fromResponseJson(
+            decoded,
+            costCreditsDecimal: MeliousCallImpact.costDecimalFromResponseBody(
+              response.body,
+            ),
+          );
+          if (impact.hasData) {
+            impactCollector.impact = MeliousCallImpact.combine(
+              impactCollector.impact,
+              impact,
+            );
+          }
+        }
+        if (onSegments != null) {
+          onSegments(parseTimedTranscriptSegments(decoded['segments']));
+        }
+      },
       sendRequest: (requestTimeout, timeoutErrorMessage) async {
         final uri = _buildEndpointUri(
           normalizedBaseUrl,
@@ -883,6 +928,8 @@ class MeliousInferenceRepository extends TranscriptionRepository {
                 uri,
                 abortTrigger: abortTrigger,
               )
+              // Timing requests must not redirect private audio off HTTPS.
+              ..followRedirects = onSegments == null
               ..headers['Authorization'] = 'Bearer $normalizedApiKey'
               ..files.add(
                 http.MultipartFile.fromBytes(

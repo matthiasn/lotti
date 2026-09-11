@@ -90,6 +90,14 @@ _AudioData _$AudioDataFromJson(Map<String, dynamic> json) => _AudioData(
   transcripts: (json['transcripts'] as List<dynamic>?)
       ?.map((e) => AudioTranscript.fromJson(e as Map<String, dynamic>))
       .toList(),
+  transcriptTimings:
+      (json['transcriptTimings'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(
+          k,
+          AudioTranscriptTiming.fromJson(e as Map<String, dynamic>),
+        ),
+      ) ??
+      const <String, AudioTranscriptTiming>{},
   dayContext: json['dayContext'] == null
       ? null
       : DayAudioContext.fromJson(json['dayContext'] as Map<String, dynamic>),
@@ -105,6 +113,7 @@ Map<String, dynamic> _$AudioDataToJson(_AudioData instance) =>
       'autoTranscribeWasActive': instance.autoTranscribeWasActive,
       'language': instance.language,
       'transcripts': instance.transcripts,
+      'transcriptTimings': instance.transcriptTimings,
       'dayContext': instance.dayContext,
     };
 

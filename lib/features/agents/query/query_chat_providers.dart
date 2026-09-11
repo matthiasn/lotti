@@ -129,6 +129,26 @@ class QueryInferenceUnavailable implements Exception {
   const QueryInferenceUnavailable();
 }
 
+/// Both question answering and explicit audio enrichment use the same live
+/// agent/category profile, including a deliberately disabled configuration.
+final FutureProviderFamily<ResolvedProfile?, QueryChatKey>
+queryProfileProvider = FutureProvider.autoDispose
+    .family<ResolvedProfile?, QueryChatKey>((ref, key) async {
+      if (key.scope.kind == QueryScopeKind.category) {
+        final current = await ref.read(querySourceAccessProvider).load([
+          key.scope.id,
+        ]);
+        if (!current.allowsCategory(key.scope.id)) return null;
+        final profileId = current.categories[key.scope.id]?.defaultProfileId;
+        return profileId == null
+            ? null
+            : ref.read(profileResolverProvider).resolveByProfileId(profileId);
+      }
+      return (await ref.watch(
+        agentResolvedSetupProvider(key.agentId).future,
+      ))?.profile;
+    }, retry: (_, _) => null);
+
 final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
   final access = ref.watch(querySourceAccessProvider);
   final journal = ref.watch(journalDbProvider);
@@ -138,19 +158,9 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
     final categoryId = scope.kind == QueryScopeKind.category
         ? scope.id
         : current.entries[scope.id]?.meta.categoryId;
-    final ResolvedProfile? profile;
-    if (scope.kind == QueryScopeKind.category) {
-      final profileId = current.categories[scope.id]?.defaultProfileId;
-      profile = profileId == null
-          ? null
-          : await ref
-                .read(profileResolverProvider)
-                .resolveByProfileId(profileId);
-    } else {
-      profile = (await ref.read(
-        agentResolvedSetupProvider(agentId).future,
-      ))?.profile;
-    }
+    final profile = await ref.read(
+      queryProfileProvider((agentId: agentId, scope: scope)).future,
+    );
     if (profile == null) throw const QueryInferenceUnavailable();
     return QueryAnswerBuilder(
       crawler: QueryJournalCrawler(

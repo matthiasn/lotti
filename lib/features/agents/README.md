@@ -41,7 +41,9 @@ applied until the user confirms it.
   project or category, inspect saved verbatim quotes, and keep separate chats.
   Discovery stays within the same category; hidden private sources also hide
   derived answers and chat metadata. Deleting a chat asks whether to keep its
-  shared conclusions. Sources remain untouched. The [query conversation
+  shared conclusions. Recording quotes can play a timed excerpt after explicit
+  preparation; answers can be read aloud using local text-to-speech when enabled.
+  The [query conversation
   concept](../../../knowledge/features/agents/query-chat.md) defines the scope,
   evidence and privacy contract.
 - **Shows its work.** An internals panel exposes the agent's reports,
