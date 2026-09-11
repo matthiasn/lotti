@@ -32,6 +32,7 @@ import '../../../widget_test_utils.dart';
 import '../../projects/test_utils.dart';
 import '../test_data/ai_config_factories.dart';
 import '../test_data/entity_factories.dart';
+import '../test_data/template_factories.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -178,13 +179,35 @@ void main() {
             defaultProfileId: 'category-profile',
           );
           final started = Completer<void>();
-          final resolved = Completer<ResolvedProfile>();
+          final lookup = Completer<void>();
+          final identity = makeTestIdentity();
+          final template = makeTestTemplate();
+          final version = makeTestTemplateVersion(agentId: template.id);
           final resolver = MockProfileResolver();
           when(
             () => resolver.resolveByProfileId('category-profile'),
-          ).thenAnswer((_) {
-            started.complete();
-            return resolved.future;
+          ).thenAnswer((_) async => profile);
+          when(
+            () => resolver.resolveDetailed(
+              agentConfig: identity.config,
+              template: template,
+              version: version,
+            ),
+          ).thenAnswer(
+            (_) async => ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.resolved,
+              profile: profile,
+            ),
+          );
+          // The factory checks access once before reading the category profile.
+          // Hold that profile's own database lookup across the disposal frame.
+          var categoryReads = 0;
+          when(bench.db.getAllCategories).thenAnswer((_) async {
+            if (kind == QueryScopeKind.category && ++categoryReads == 2) {
+              started.complete();
+              await lookup.future;
+            }
+            return bench.categories;
           });
           final container = ProviderContainer(
             overrides: [
@@ -192,14 +215,16 @@ void main() {
               agentSyncServiceProvider.overrideWithValue(bench.store.sync),
               cloudInferenceRepositoryProvider.overrideWithValue(cloud),
               profileResolverProvider.overrideWithValue(resolver),
-              agentResolvedSetupProvider('agent').overrideWith(
-                (ref) async {
-                  started.complete();
-                  return ResolvedAgentSetup(
-                    status: AgentSetupResolutionStatus.resolved,
-                    profile: await resolved.future,
-                  );
-                },
+              agentIdentityProvider('agent').overrideWith((ref) async {
+                started.complete();
+                await lookup.future;
+                return identity;
+              }),
+              templateForAgentProvider('agent').overrideWith(
+                (ref) async => template,
+              ),
+              activeTemplateVersionProvider(template.id).overrideWith(
+                (ref) async => version,
               ),
             ],
           );
@@ -220,7 +245,7 @@ void main() {
           // Database reads take real frames in the app. An immediate mock
           // resolution conceals disposal of a profile read without a listener.
           await container.pump();
-          resolved.complete(profile);
+          lookup.complete();
           await completion;
           final builder = await pending;
           await container.pump();
