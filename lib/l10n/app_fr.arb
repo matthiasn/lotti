@@ -4257,6 +4257,7 @@
   "queryNotes": "Notes",
   "queryOpenEntry": "Ouvrir l’entrée",
   "queryOtherProject": "Hors du périmètre de départ",
+  "queryPreparingAnswer": "Préparation de la réponse…",
   "queryReachCategory": "Recherche d’abord dans ce périmètre, puis dans {category}.",
   "queryReachCategoryOnly": "Recherche dans {category}.",
   "queryReachUncategorized": "Recherche uniquement dans cette tâche et ses entrées sans catégorie directement liées.",

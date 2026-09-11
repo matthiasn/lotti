@@ -4264,6 +4264,7 @@
   "queryNotes": "Poznámky",
   "queryOpenEntry": "Otevřít záznam",
   "queryOtherProject": "Mimo základní rozsah",
+  "queryPreparingAnswer": "Připravuji odpověď…",
   "queryReachCategory": "Hledá nejprve v tomto rozsahu a pak v kategorii {category}.",
   "queryReachCategoryOnly": "Hledá v kategorii {category}.",
   "queryReachUncategorized": "Hledá pouze v tomto úkolu a přímo propojených záznamech bez kategorie.",

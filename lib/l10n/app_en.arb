@@ -6373,6 +6373,7 @@
   "queryNotes": "Notes",
   "queryOpenEntry": "Open entry",
   "queryOtherProject": "Beyond the home scope",
+  "queryPreparingAnswer": "Preparing an answer…",
   "queryReachCategory": "Searches this scope first, then {category}.",
   "@queryReachCategory": {
     "placeholders": {

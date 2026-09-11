@@ -24,6 +24,7 @@ class QueryChatLocal {
     this.expanded = false,
     this.homeOnly = false,
     this.kind,
+    this.answering = false,
   });
   final String draft;
   final bool draftPrivate;
@@ -32,6 +33,7 @@ class QueryChatLocal {
   final bool expanded;
   final bool homeOnly;
   final QuerySourceKind? kind;
+  final bool answering;
 
   QueryChatLocal copyWith({
     String? draft,
@@ -42,6 +44,7 @@ class QueryChatLocal {
     bool? homeOnly,
     QuerySourceKind? kind,
     bool clearKind = false,
+    bool? answering,
   }) => QueryChatLocal(
     draft: draft ?? this.draft,
     draftPrivate: draftPrivate ?? this.draftPrivate,
@@ -50,6 +53,7 @@ class QueryChatLocal {
     expanded: expanded ?? this.expanded,
     homeOnly: homeOnly ?? this.homeOnly,
     kind: clearKind ? null : kind ?? this.kind,
+    answering: answering ?? this.answering,
   );
 }
 
@@ -232,6 +236,7 @@ class QueryChatController extends Notifier<QueryChatSession> {
         status: QueryTurnStatus.running,
         checked: 0,
         expanded: false,
+        answering: false,
       ),
     );
     final store = ref.read(queryChatStoreProvider);
@@ -283,6 +288,12 @@ class QueryChatController extends Notifier<QueryChatSession> {
         cancellation: cancellation,
         homeOnly: local.homeOnly,
         kind: local.kind,
+        onAnswering: () {
+          if (!cancellation.isCancelled) {
+            stage = 'answer';
+            _set(id, state.local(id).copyWith(answering: true));
+          }
+        },
         onProgress: (checked, {required expanded}) {
           if (!cancellation.isCancelled) {
             _set(

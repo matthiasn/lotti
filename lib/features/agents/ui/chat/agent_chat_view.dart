@@ -35,6 +35,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.history,
     this.emptyState,
     this.activity,
+    this.sendingLabel,
     this.footer,
     this.composerEnabled = true,
     this.scrollOnReplies = true,
@@ -57,6 +58,10 @@ class AgentChatView extends ConsumerStatefulWidget {
   final AsyncValue<List<AgentChatMessage>>? history;
   final Widget? emptyState;
   final Widget? activity;
+
+  /// Describes the consumer's current operation in the composer and the
+  /// default activity bubble's accessibility label.
+  final String? sendingLabel;
   final Widget? footer;
   final bool composerEnabled;
   final bool scrollOnReplies;
@@ -224,7 +229,13 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                       itemBuilder: (context, index) {
                         if (index == history.length) {
                           return widget.activity ??
-                              _ThinkingBubble(agentName: widget.agentName);
+                              _ThinkingBubble(
+                                label:
+                                    widget.sendingLabel ??
+                                    context.messages.goalChatResponding(
+                                      widget.agentName,
+                                    ),
+                              );
                         }
                         final message = history[index];
                         final attachment = widget.attachmentBuilder?.call(
@@ -288,6 +299,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
             controller: _controller,
             agentName: widget.agentName,
             isSending: widget.isSending,
+            sendingLabel:
+                widget.sendingLabel ??
+                context.messages.goalChatResponding(widget.agentName),
             draft: widget.draft,
             onDraftChanged: widget.onDraftChanged,
             onSend: widget.onSend,
@@ -311,6 +325,7 @@ class _ChatComposer extends ConsumerWidget {
     required this.controller,
     required this.agentName,
     required this.isSending,
+    required this.sendingLabel,
     required this.draft,
     required this.onDraftChanged,
     required this.onSend,
@@ -319,6 +334,7 @@ class _ChatComposer extends ConsumerWidget {
   final TextEditingController controller;
   final String agentName;
   final bool isSending;
+  final String sendingLabel;
   final String draft;
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
@@ -356,6 +372,7 @@ class _ChatComposer extends ConsumerWidget {
             controller: controller,
             agentName: agentName,
             isSending: isSending,
+            sendingLabel: sendingLabel,
             draft: draft,
             onDraftChanged: onDraftChanged,
             onSend: onSend,
@@ -373,6 +390,7 @@ class _IdleComposer extends StatelessWidget {
     required this.controller,
     required this.agentName,
     required this.isSending,
+    required this.sendingLabel,
     required this.draft,
     required this.onDraftChanged,
     required this.onSend,
@@ -382,6 +400,7 @@ class _IdleComposer extends StatelessWidget {
   final TextEditingController controller;
   final String agentName;
   final bool isSending;
+  final String sendingLabel;
   final String draft;
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
@@ -400,9 +419,7 @@ class _IdleComposer extends StatelessWidget {
           child: DesignSystemTextInput(
             controller: controller,
             hintText: context.messages.goalChatPlaceholder(agentName),
-            helperText: isSending
-                ? context.messages.goalChatResponding(agentName)
-                : null,
+            helperText: isSending ? sendingLabel : null,
             enabled: !isSending,
             textCapitalization: TextCapitalization.sentences,
             trailingIcon: hasText
@@ -840,15 +857,15 @@ class _RenderMeasureHeight extends RenderProxyBox {
 }
 
 class _ThinkingBubble extends StatelessWidget {
-  const _ThinkingBubble({required this.agentName});
+  const _ThinkingBubble({required this.label});
 
-  final String agentName;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Semantics(
-      label: context.messages.goalChatResponding(agentName),
+      label: label,
       child: Align(
         alignment: Alignment.centerLeft,
         child: DecoratedBox(

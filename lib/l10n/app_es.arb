@@ -4257,6 +4257,7 @@
   "queryNotes": "Notas",
   "queryOpenEntry": "Abrir entrada",
   "queryOtherProject": "Fuera del ámbito inicial",
+  "queryPreparingAnswer": "Preparando una respuesta…",
   "queryReachCategory": "Busca primero en este ámbito y después en {category}.",
   "queryReachCategoryOnly": "Busca dentro de {category}.",
   "queryReachUncategorized": "Busca solo en esta tarea y en sus entradas sin categoría vinculadas directamente.",

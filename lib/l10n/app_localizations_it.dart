@@ -11250,6 +11250,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryRecall => 'Usa conclusioni pertinenti di chat precedenti.';
 
   @override
+  String get queryPreparingAnswer => 'Preparazione della risposta…';
+
+  @override
   String get queryRecordings => 'Registrazioni';
 
   @override

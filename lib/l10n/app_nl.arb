@@ -4730,6 +4730,7 @@
   "queryNotes": "Notities",
   "queryOpenEntry": "Item openen",
   "queryOtherProject": "Buiten het eigen bereik",
+  "queryPreparingAnswer": "Antwoord voorbereiden…",
   "queryReachCategory": "Zoekt eerst binnen dit bereik, daarna in {category}.",
   "queryReachCategoryOnly": "Zoekt binnen {category}.",
   "queryReachUncategorized": "Zoekt alleen in deze taak en de rechtstreeks gekoppelde items zonder categorie.",

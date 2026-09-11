@@ -4257,6 +4257,7 @@
   "queryNotes": "Note",
   "queryOpenEntry": "Deschideți înregistrarea",
   "queryOtherProject": "În afara domeniului inițial",
+  "queryPreparingAnswer": "Se pregătește un răspuns…",
   "queryReachCategory": "Se caută mai întâi în acest domeniu, apoi în {category}.",
   "queryReachCategoryOnly": "Se caută în {category}.",
   "queryReachUncategorized": "Se caută doar în această sarcină și în înregistrările fără categorie legate direct de ea.",

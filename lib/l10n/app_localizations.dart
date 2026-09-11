@@ -18721,6 +18721,12 @@ abstract class AppLocalizations {
   /// **'Uses relevant conclusions from earlier chats.'**
   String get queryRecall;
 
+  /// No description provided for @queryPreparingAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing an answer…'**
+  String get queryPreparingAnswer;
+
   /// No description provided for @queryRecordings.
   ///
   /// In en, this message translates to:

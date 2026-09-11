@@ -4731,6 +4731,7 @@
   "queryNotes": "Note",
   "queryOpenEntry": "Apri voce",
   "queryOtherProject": "Oltre l’ambito iniziale",
+  "queryPreparingAnswer": "Preparazione della risposta…",
   "queryReachCategory": "Cerca prima in questo ambito, poi in {category}.",
   "queryReachCategoryOnly": "Cerca in {category}.",
   "queryReachUncategorized": "Cerca solo in questa attività e nelle sue voci senza categoria collegate direttamente.",

@@ -4730,6 +4730,7 @@
   "queryNotes": "Notas",
   "queryOpenEntry": "Abrir entrada",
   "queryOtherProject": "Fora do âmbito de origem",
+  "queryPreparingAnswer": "A preparar uma resposta…",
   "queryReachCategory": "Pesquisa primeiro neste âmbito e depois em {category}.",
   "queryReachCategoryOnly": "Pesquisa em {category}.",
   "queryReachUncategorized": "Pesquisa apenas nesta tarefa e nas suas entradas sem categoria diretamente ligadas.",

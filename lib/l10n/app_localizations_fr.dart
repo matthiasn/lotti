@@ -11309,6 +11309,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Utilise des conclusions pertinentes de chats précédents.';
 
   @override
+  String get queryPreparingAnswer => 'Préparation de la réponse…';
+
+  @override
   String get queryRecordings => 'Enregistrements';
 
   @override

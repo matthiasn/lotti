@@ -4731,6 +4731,7 @@
   "queryNotes": "Anteckningar",
   "queryOpenEntry": "Öppna inlägg",
   "queryOtherProject": "Utanför ursprungsområdet",
+  "queryPreparingAnswer": "Förbereder ett svar…",
   "queryReachCategory": "Söker först inom det här området och sedan i {category}.",
   "queryReachCategoryOnly": "Söker inom {category}.",
   "queryReachUncategorized": "Söker endast i den här uppgiften och dess direkt länkade inlägg utan kategori.",

@@ -11320,6 +11320,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sunt utilizate concluzii relevante din conversații anterioare.';
 
   @override
+  String get queryPreparingAnswer => 'Se pregătește un răspuns…';
+
+  @override
   String get queryRecordings => 'Înregistrări audio';
 
   @override

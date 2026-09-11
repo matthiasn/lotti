@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
@@ -220,6 +221,43 @@ void main() {
   Future<void> switcher(WidgetTester tester) async {
     await tester.tap(find.byIcon(LottiIcons.chevronDown).first);
     await tester.pump();
+  }
+
+  for (final answering in [false, true]) {
+    testWidgets(
+      'query activity reports the actual answering=$answering phase',
+      (tester) async {
+        await pump(
+          tester,
+          session: QueryChatSession(
+            selectedId: 'feeder',
+            chats: {
+              'feeder': QueryChatLocal(
+                status: QueryTurnStatus.running,
+                answering: answering,
+              ),
+            },
+          ),
+        );
+        final label = answering
+            ? 'Preparing an answer…'
+            : 'Searching linked notes and recordings…';
+        expect(
+          tester
+              .widget<DesignSystemTextInput>(find.byType(DesignSystemTextInput))
+              .helperText,
+          label,
+        );
+        expect(find.text('Habitat Watcher is replying…'), findsNothing);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).enabled,
+          isFalse,
+        );
+        await switcher(tester);
+        expect(find.text(label), findsWidgets);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
   }
 
   for (final kind in QueryScopeKind.values) {

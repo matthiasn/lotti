@@ -11258,6 +11258,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryRecall => 'Používá relevantní závěry z dřívějších chatů.';
 
   @override
+  String get queryPreparingAnswer => 'Připravuji odpověď…';
+
+  @override
   String get queryRecordings => 'Nahrávky';
 
   @override

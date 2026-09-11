@@ -11132,6 +11132,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryRecall => 'Gebruikt relevante conclusies uit eerdere chats.';
 
   @override
+  String get queryPreparingAnswer => 'Antwoord voorbereiden…';
+
+  @override
   String get queryRecordings => 'Opnamen';
 
   @override

@@ -11122,6 +11122,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Använder relevanta slutsatser från tidigare chattar.';
 
   @override
+  String get queryPreparingAnswer => 'Förbereder ett svar…';
+
+  @override
   String get queryRecordings => 'Inspelningar';
 
   @override

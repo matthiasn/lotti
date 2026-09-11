@@ -4257,6 +4257,7 @@
   "queryNotes": "Notizen",
   "queryOpenEntry": "Eintrag öffnen",
   "queryOtherProject": "Außerhalb des Ausgangsbereichs",
+  "queryPreparingAnswer": "Antwort wird vorbereitet…",
   "queryReachCategory": "Durchsucht zuerst diesen Bereich, dann {category}.",
   "queryReachCategoryOnly": "Durchsucht {category}.",
   "queryReachUncategorized": "Durchsucht nur diese Aufgabe und ihre direkt verknüpften Einträge ohne Kategorie.",

@@ -4731,6 +4731,7 @@
   "queryNotes": "Noter",
   "queryOpenEntry": "Åbn indlæg",
   "queryOtherProject": "Uden for udgangsområdet",
+  "queryPreparingAnswer": "Forbereder et svar…",
   "queryReachCategory": "Søger først i dette område og derefter i {category}.",
   "queryReachCategoryOnly": "Søger inden for {category}.",
   "queryReachUncategorized": "Søger kun i denne opgave og dens direkte tilknyttede indlæg uden kategori.",

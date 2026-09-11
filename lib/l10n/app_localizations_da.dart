@@ -11111,6 +11111,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Bruger relevante konklusioner fra tidligere chats.';
 
   @override
+  String get queryPreparingAnswer => 'Forbereder et svar…';
+
+  @override
   String get queryRecordings => 'Optagelser';
 
   @override

@@ -145,6 +145,12 @@ tearDown(() {
 
 (Example: `test/features/habits/ui/widgets/habit_completion_card_test.dart`, whose swipe / one-tap-complete paths await a haptic before persisting.)
 
+## Semantics handles in widget tests
+
+Dispose a handle from `tester.ensureSemantics()` in a `try/finally` inside the
+test body. Flutter verifies that handles are released before `addTearDown`
+callbacks run, so registering only `addTearDown(handle.dispose)` is too late.
+
 ## Streams & async teardown
 
 Holding a `StreamController` open across `tester.runAsync(...)` and widget teardown causes a hard-to-debug hang that surfaces as:

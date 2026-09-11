@@ -11273,6 +11273,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryRecall => 'Usa conclusiones relevantes de chats anteriores.';
 
   @override
+  String get queryPreparingAnswer => 'Preparando una respuesta…';
+
+  @override
   String get queryRecordings => 'Grabaciones';
 
   @override

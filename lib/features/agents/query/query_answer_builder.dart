@@ -22,7 +22,7 @@ List<QuerySourceRef> queryEventDependencies(QueryChatEventData data) =>
       _ => const [],
     };
 
-/// Orchestrates small, isolated source checks and a final evidence-only answer.
+/// Shortlists larger corpora in one isolated call before verifying passages.
 /// Negative candidate text never enters the answer prompt or durable memory.
 class QueryAnswerBuilder {
   const QueryAnswerBuilder({
@@ -48,6 +48,7 @@ class QueryAnswerBuilder {
     required List<AgentQueryChatEventEntity> memories,
     required QueryCancellation cancellation,
     required QueryProgress onProgress,
+    void Function()? onAnswering,
     bool homeOnly = false,
     QuerySourceKind? kind,
   }) async {
@@ -114,8 +115,16 @@ class QueryAnswerBuilder {
     };
     var checked = 0;
     var calls = 0;
-    var incomplete = corpus.coverage.incomplete;
-    for (final document in corpus.documents) {
+    final shortlist = await _shortlist(
+      corpus,
+      effectiveQuestion,
+      terms,
+      dependencies.values,
+      initial.showPrivate,
+      cancellation,
+    );
+    var incomplete = corpus.coverage.incomplete || shortlist.incomplete;
+    for (final document in shortlist.documents) {
       cancellation.check();
       if (calls >= maxSourceCalls || evidence.length >= 12) {
         incomplete = true;
@@ -293,6 +302,7 @@ class QueryAnswerBuilder {
       checked: checked,
       incomplete: incomplete,
     );
+    onAnswering?.call();
     final result = await inference.complete(
       system:
           '${_untrusted}Answer from the supplied evidence and relevant memories only. '
@@ -372,5 +382,94 @@ class QueryAnswerBuilder {
             )
           : null,
     );
+  }
+
+  /// Small corpora go straight to exact-text inspection. Larger ones share
+  /// one bounded preview request; its output can select sources, never supply
+  /// evidence. Skipped sources leave coverage explicitly incomplete.
+  Future<({List<QuerySourceDocument> documents, bool incomplete})> _shortlist(
+    QueryCorpus corpus,
+    String question,
+    List<String> terms,
+    Iterable<QuerySourceRef> dependencies,
+    bool private,
+    QueryCancellation cancellation,
+  ) async {
+    if (corpus.documents.length <= 4) {
+      return (documents: corpus.documents, incomplete: false);
+    }
+    final sources = {
+      for (final document in corpus.documents) document.entry.meta.id: document,
+    };
+    final current = await access.load([
+      ...dependencies.map((source) => source.id),
+      ...sources.keys,
+    ]);
+    cancellation.check();
+    if (!current.allowsContent(
+          [
+            ...dependencies,
+            for (final document in sources.values)
+              corpus.access.reference(document.entry),
+          ],
+          private: private,
+        ) ||
+        sources.keys.any(
+          (id) =>
+              !current.allowsEntry(current.entries[id]!) ||
+              current.entries[id]!.meta.categoryId != corpus.categoryId,
+        )) {
+      throw const QueryScopeUnavailable();
+    }
+    final result = await inference.complete(
+      system:
+          '${_untrusted}Shortlist sources for exact-text inspection. '
+          'Review these source previews together. Return '
+          '{"ids":["source id"]} in descending relevance, at most 8 sources. '
+          'Prefer sources likely to contain the requested discussion or decision. '
+          'Previews may be truncated; include plausible sources even when uncertain. '
+          'Use only IDs supplied here. Return no quotes or answer.',
+      input: {
+        'question': question,
+        'sources': [
+          for (final entry in sources.entries)
+            {
+              'id': entry.key,
+              'label': entry.value.label,
+              'date': entry.value.entry.meta.dateFrom.toIso8601String(),
+              'preview': _preview(entry.value.text, terms),
+              'truncated': entry.value.text.length > 800,
+            },
+        ],
+      },
+      cancellation: cancellation,
+    );
+    final ids = result['ids'];
+    if (ids is! List ||
+        ids.any((id) => id is! String || !sources.containsKey(id))) {
+      throw const FormatException('Invalid query shortlist');
+    }
+    final selected = ids.cast<String>().toSet().take(8).toList();
+    return (
+      documents: [for (final id in selected) sources[id]!],
+      incomplete: selected.length < sources.length,
+    );
+  }
+
+  /// Preserve short notes whole; pair a long note's opening with a term hit
+  /// (or its ending). This is an extractive preview, not a generated summary.
+  String _preview(String text, List<String> terms) {
+    if (text.length <= 800) return text;
+    final lower = text.toLowerCase();
+    final matches = terms
+        .where((term) => term.trim().length > 2)
+        .map((term) => lower.indexOf(term.toLowerCase(), 400))
+        .where((index) => index >= 0);
+    final hit = matches.firstOrNull;
+    final start = hit == null
+        ? text.length - 400
+        : (hit - 100).clamp(400, text.length - 400);
+    return '${text.substring(0, 400)}\n[…]\n'
+        '${text.substring(start, start + 400)}';
   }
 }

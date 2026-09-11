@@ -31,6 +31,7 @@ void main() {
   late QueryChatController controller;
   late StreamController<QueryChatData> history;
   late Future<void> Function(String chatId) inspect;
+  late Future<void> Function(String chatId) compose;
   late MockDomainLogger logger;
   Exception? setupError;
   var malformed = false;
@@ -43,6 +44,7 @@ void main() {
     setupError = null;
     bench = QueryPersistenceBench()..add('task');
     inspect = (_) async {};
+    compose = (_) async {};
     malformed = false;
     unavailable = false;
     history = StreamController<QueryChatData>.broadcast();
@@ -82,6 +84,7 @@ void main() {
                 } else if (system.contains('Select only')) {
                   yield '{"ids":[]}';
                 } else {
+                  await compose(chatId);
                   yield malformed
                       ? 'invalid'
                       : jsonEncode({
@@ -102,6 +105,56 @@ void main() {
     await history.close();
     await bench.close();
   });
+
+  test(
+    'searching changes to answering only at synthesis and resets on retry',
+    () async {
+      final inspecting = Completer<void>();
+      final inspected = Completer<void>();
+      final composing = Completer<void>();
+      final composed = Completer<void>();
+      inspect = (_) async {
+        inspecting.complete();
+        await inspected.future;
+      };
+      compose = (_) async {
+        composing.complete();
+        await composed.future;
+      };
+      final id = await controller.create('Feeder');
+      controller.updateDraft(id, 'Which decision?');
+      malformed = true;
+      final pending = controller.send(id);
+      await inspecting.future;
+      expect(container.read(provider).local(id).answering, isFalse);
+      expect(
+        container.read(provider).local(id).status,
+        QueryTurnStatus.running,
+      );
+      inspected.complete();
+      await composing.future;
+      expect(container.read(provider).local(id).answering, isTrue);
+      expect(
+        container.read(provider).local(id).status,
+        QueryTurnStatus.running,
+      );
+      composed.complete();
+      await pending;
+      expect(container.read(provider).local(id).status, QueryTurnStatus.failed);
+      final question = (await bench.store.load(
+        'agent',
+      )).chats.single.questions.single;
+      malformed = false;
+      inspect = (_) async {
+        expect(container.read(provider).local(id).answering, isFalse);
+      };
+      compose = (_) async {
+        expect(container.read(provider).local(id).answering, isTrue);
+      };
+      await controller.send(id, retryQuestionId: question.id);
+      expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
+    },
+  );
 
   for (final error in [
     const FormatException('Private source text must not reach logs'),
@@ -268,6 +321,7 @@ void main() {
         QueryTurnStatus.cancelled,
       );
       inspect = (_) async {};
+      compose = (_) async {};
       await controller.send(id, retryQuestionId: chat.questions.single.id);
       final retried = (await bench.store.load('agent')).chats.single;
       expect(retried.questions.length, 1);
