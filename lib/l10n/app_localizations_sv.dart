@@ -10145,7 +10145,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get plazaControls =>
-      'WASD gå · håll Shift: 8× hastighet · dra för att se dig omkring · Tab nästa fyr · H hem · M översikt · / sök · ⌘[ tillbaka';
+      'WASD gå · håll Shift: 8× hastighet · dra för att se dig omkring · Tab nästa fyr · H hem · M översikt · / sök · T verktygsfält · Esc stäng · ⌘[ tillbaka';
 
   @override
   String plazaCornerAfter(String week) {
@@ -10261,6 +10261,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get plazaTitle => 'Torg';
+
+  @override
+  String get plazaToggleToolbar => 'Visa / dölj verktygsfältet';
 
   @override
   String get plazaToLet => 'UTHYRES';

@@ -40,6 +40,7 @@ import 'package:lotti/features/plaza/ui/plaza_palette.dart';
 import 'package:lotti/features/plaza/ui/plaza_pointer_controller.dart';
 import 'package:lotti/features/plaza/ui/plaza_repaint.dart';
 import 'package:lotti/features/plaza/ui/plaza_search_sheet.dart';
+import 'package:lotti/features/plaza/ui/plaza_top_bar.dart';
 import 'package:lotti/features/plaza/ui/plaza_tour.dart';
 import 'package:lotti/features/plaza/ui/plaza_wall_swap.dart';
 import 'package:lotti/features/plaza/ui/task_side_panel.dart';
@@ -62,6 +63,7 @@ class PlazaView extends StatefulWidget {
     this.shotDir,
     this.initialFrameRate = PlazaFrameRate.auto,
     this.initialSkyMode = PlazaSkyMode.night,
+    this.initialToolbarOpen = false,
     this.onSkyModeChanged,
     super.key,
   });
@@ -86,6 +88,11 @@ class PlazaView extends StatefulWidget {
 
   /// The sky the world boots under.
   final PlazaSkyMode initialSkyMode;
+
+  /// Whether the toolbar is showing on arrival. Closed everywhere the app
+  /// opens the world — the street is what was asked for. The harness opens
+  /// it so a screenshot run can frame the toolbar without pressing a key.
+  final bool initialToolbarOpen;
 
   /// Told when the walker changes the sky, so a host can remember it.
   final ValueChanged<PlazaSkyMode>? onSkyModeChanged;
@@ -182,6 +189,13 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   String? _connectionFocusTaskId;
   bool _searchOpen = false;
   bool _showDebug = false;
+  bool _toolbarOpen = false;
+
+  /// The world's own keyboard. Named rather than implicit because the toolbar
+  /// hands focus to the chrome and has to be able to hand it back: a control
+  /// that has left the screen must not keep the keyboard, or walking stops
+  /// working until something else takes it.
+  final _worldFocus = FocusNode(debugLabel: 'plaza world');
   final List<CameraPose> _back = [];
   int _beaconCursor = -1;
 
@@ -218,6 +232,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _toolbarOpen = widget.initialToolbarOpen;
     _knobs
       ..roadWidth = widget.world.layout.roadWidth
       ..pxPerMeter = widget.world.layout.pxPerMeter
@@ -334,6 +349,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     if (widget.ticks == null) _ticks.dispose();
     _stats.dispose();
     _frame.dispose();
+    _worldFocus.dispose();
     super.dispose();
   }
 
@@ -779,6 +795,30 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     }
     _wakeForInput();
     final key = event.logicalKey;
+    // Who the press belongs to. Once the toolbar is open the chrome can hold
+    // the keyboard, and everything it holds — Tab, Enter, Space — has to
+    // reach it rather than the world; [PlazaKeyRouting] states that rule
+    // where a test can get at it.
+    switch (PlazaKeyRouting.of(
+      event,
+      worldHasFocus: node.hasPrimaryFocus,
+      toolbarOpen: _toolbarOpen,
+    )) {
+      case PlazaKeyRouting.chrome:
+        return KeyEventResult.ignored;
+      case PlazaKeyRouting.dismiss:
+      case PlazaKeyRouting.world:
+        break;
+    }
+    // The toolbar binding is read off [PlazaToolbarKey] rather than spelled
+    // out here, so the one place it can be tested is the one place it is
+    // stated. Esc keeps falling through: it dismisses the panel and the walk
+    // in the same press.
+    final toolbarKey = PlazaToolbarKey.pressed(event);
+    if (toolbarKey != null) {
+      _setToolbarOpen(toolbarKey.applyTo(open: _toolbarOpen));
+      if (toolbarKey == PlazaToolbarKey.toggle) return KeyEventResult.handled;
+    }
     if (key == LogicalKeyboardKey.slash) {
       setState(() => _searchOpen = true);
     } else if (key == LogicalKeyboardKey.tab) {
@@ -843,6 +883,17 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
       case null:
         break;
     }
+  }
+
+  /// Shows or hides the toolbar, and keeps the keyboard where it can be used.
+  ///
+  /// Shutting the toolbar can strand focus on a control that is no longer in
+  /// the tree, which leaves the world deaf to `WASD` until something else
+  /// takes focus. The world takes it back instead.
+  void _setToolbarOpen(bool open) {
+    setState(() => _toolbarOpen = open);
+    if (!open) _worldFocus.requestFocus();
+    _wakeForInput();
   }
 
   void _showToast(String label) {
@@ -1040,6 +1091,7 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: context.designTokens.colors.background.level01,
       body: Focus(
+        focusNode: _worldFocus,
         autofocus: true,
         onKeyEvent: _onKey,
         child: capturable(
@@ -1085,6 +1137,8 @@ class _PlazaViewState extends State<PlazaView> with WidgetsBindingObserver {
                 onOverview: _flyOverview,
                 onHome: _flyHome,
                 onExit: widget.onExit,
+                toolbarOpen: _toolbarOpen,
+                onToolbarToggle: () => _setToolbarOpen(!_toolbarOpen),
                 skyMode: _skyMode,
                 onSkyModeChanged: _setSkyMode,
                 palette: _palette,

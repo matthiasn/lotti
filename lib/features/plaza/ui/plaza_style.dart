@@ -14,6 +14,10 @@ import 'package:material_ui/material_ui.dart';
 /// prototype and map onto Lotti's dark semantics (`info`, `error`,
 /// `warning`, `interactive` and the teal brand light); if the prototype
 /// graduates, this gets rebased onto the token pipeline.
+///
+/// Scene content only. The HUD that floats *over* the scene is chrome, and
+/// its glass is a design-system token — `WorldGlass` in
+/// `design_system/theme/world_chrome_tokens.dart`.
 abstract final class PlazaStyle {
   /// Facade and billboard panel background.
   static const panel = Color(0xFF0A0E16);
