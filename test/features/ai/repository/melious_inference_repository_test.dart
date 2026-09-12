@@ -96,6 +96,156 @@ File _temporaryMp3File([List<int> bytes = const [0x49, 0x44, 0x33]]) {
 }
 
 void main() {
+  group('DeepSeek V4.1 forced tool compatibility', () {
+    const model = 'deepseek-v4.1-flash';
+    const tools = [entrySummaryTool];
+    const otherTool = ChatCompletionTool(
+      type: ChatCompletionToolType.function,
+      function: FunctionObject(name: 'other_tool'),
+    );
+
+    for (final buffered in [false, true]) {
+      for (final path in ['text', 'messages', 'images']) {
+        test(
+          '$path buffered=$buffered sends auto with the sole tool',
+          () async {
+            final probe = _ChatStreamProbe(content: 'Analysis');
+            Map<String, dynamic>? body;
+            final repository = MeliousInferenceRepository(
+              chatCompletionStreamFactory: probe.call,
+              httpClient: MockClient((request) async {
+                body = jsonDecode(request.body) as Map<String, dynamic>;
+                return http.Response(
+                  jsonEncode({
+                    'choices': [
+                      {
+                        'finish_reason': 'tool_calls',
+                        'message': {
+                          'tool_calls': [
+                            {
+                              'id': 'summary-call',
+                              'type': 'function',
+                              'function': {
+                                'name': entrySummaryToolName,
+                                'arguments': jsonEncode({
+                                  'oneLiner': 'A penguin on ice.',
+                                  'tldr': 'A penguin stands on an ice floe.',
+                                  'summary': '## Image\nA penguin on ice.',
+                                }),
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  }),
+                  200,
+                );
+              }),
+            );
+            addTearDown(repository.close);
+            final collector = buffered ? InferenceImpactCollector() : null;
+            final stream = switch (path) {
+              'text' => repository.generateText(
+                prompt: 'Summarize the penguin.',
+                model: model,
+                baseUrl: 'https://api.melious.ai/v1',
+                apiKey: 'test-key',
+                tools: tools,
+                toolChoice: entrySummaryToolChoice,
+                impactCollector: collector,
+              ),
+              'messages' => repository.generateTextWithMessages(
+                messages: const [
+                  ChatCompletionMessage.user(
+                    content: ChatCompletionUserMessageContent.string(
+                      'Summarize the penguin.',
+                    ),
+                  ),
+                ],
+                model: model,
+                baseUrl: 'https://api.melious.ai/v1',
+                apiKey: 'test-key',
+                tools: tools,
+                toolChoice: entrySummaryToolChoice,
+                impactCollector: collector,
+              ),
+              _ => repository.generateWithImages(
+                prompt: 'Summarize the penguin.',
+                images: const ['cGVuZ3Vpbg=='],
+                model: model,
+                baseUrl: 'https://api.melious.ai/v1',
+                apiKey: 'test-key',
+                tools: tools,
+                toolChoice: entrySummaryToolChoice,
+                impactCollector: collector,
+              ),
+            };
+            final chunks = await stream.toList();
+            final request = body ?? probe.requests.single.toJson();
+            expect(request['tool_choice'], 'auto');
+            expect(request['tools'], [entrySummaryTool.toJson()]);
+            expect(request['stream'], !buffered);
+            expect(request['model'], model);
+            if (buffered) {
+              final call =
+                  chunks.single.choices!.single.delta!.toolCalls!.single;
+              expect(call.function!.name, entrySummaryToolName);
+              expect(jsonDecode(call.function!.arguments!), {
+                'oneLiner': 'A penguin on ice.',
+                'tldr': 'A penguin stands on an ice floe.',
+                'summary': '## Image\nA penguin on ice.',
+              });
+            }
+          },
+        );
+      }
+    }
+
+    test('does not relax other models, modes, or ambiguous tool lists', () {
+      const auto = ChatCompletionToolChoiceOption.mode(
+        ChatCompletionToolChoiceMode.auto,
+      );
+      const required = ChatCompletionToolChoiceOption.mode(
+        ChatCompletionToolChoiceMode.required,
+      );
+      const none = ChatCompletionToolChoiceOption.mode(
+        ChatCompletionToolChoiceMode.none,
+      );
+      for (final candidate in ['deepseek-v4-flash-0731', 'gemma-4-26b-a4b']) {
+        expect(
+          MeliousInferenceRepository.resolveToolChoice(
+            candidate,
+            tools,
+            entrySummaryToolChoice,
+          ),
+          entrySummaryToolChoice,
+        );
+      }
+      for (final choice in [null, auto, required, none]) {
+        expect(
+          MeliousInferenceRepository.resolveToolChoice(model, tools, choice),
+          choice,
+        );
+      }
+      for (final offered in <List<ChatCompletionTool>?>[
+        null,
+        [],
+        [otherTool],
+        [entrySummaryTool, otherTool],
+      ]) {
+        expect(
+          MeliousInferenceRepository.resolveToolChoice(
+            model,
+            offered,
+            entrySummaryToolChoice,
+          ),
+          entrySummaryToolChoice,
+        );
+      }
+    });
+  });
+
   group('MeliousInferenceRepository', () {
     const baseUrl = 'https://api.melious.ai/v1';
     const apiKey = 'sk-mel-test';

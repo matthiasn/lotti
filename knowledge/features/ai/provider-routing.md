@@ -5,9 +5,13 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T13:00:00Z }
 stale_after: 2026-10-19
 sources:
+  - id: melious
+    resource: ../../../lib/features/ai/repository/melious_inference_repository.dart
+    title: Melious request shaping and response parsing
+    last_modified: 2026-09-12
   - id: router
     resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
     title: CloudInferenceRepository facade
@@ -158,9 +162,21 @@ A subscriber that explicitly cancels cannot receive the terminal accounting
 exception. The runner currently has no cancellation-accounting hook, so charges
 incurred before such a cancellation are not persisted through this path.
 
-Buffered vision requests preserve the caller's forced tool choice as well as
-its tool schema. Collecting Melious impact data must not turn a required
-structured image summary into an automatic, optional tool call.
+Buffered and streaming requests use the same tool-choice policy, independent
+of impact collection. Tool schemas are preserved. **DeepSeek V4.1 Flash has a
+narrow exception:** `resolveToolChoice` changes a named choice to `auto` only
+when exactly one tool is advertised and its name matches the requested tool.
+This avoids Melious returning malformed DSML instead of summary arguments.
+The caller still validates structured output, since automatic choice permits
+prose. Other models, mode choices, missing/mismatched schemas, and multiple-tool
+requests keep the caller's choice; the workaround never makes another tool
+callable. Explicit `required` mode also failed in the diagnostic but is not
+rewritten by this named-choice workaround.
+
+Lotti sends OpenAI-compatible JSON to the provider; it does not install chat
+templates, decode DSML, or configure model-specific stop tokens. The controlled
+live comparison and reproduction commands are in the
+[DeepSeek image probe](../../../tool/deepseek_image_probe.md).
 
 **Reference-image generation is rejected explicitly** rather than silently
 ignored, because Melious currently documents only text-to-image generation.
