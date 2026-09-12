@@ -29,6 +29,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/entity_factories.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
@@ -2719,6 +2720,77 @@ void main() {
           () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
         ).thenReturn(null);
       });
+
+      final prerequisiteDate = DateTime(2026, 9, 12);
+      final prerequisites = <String, SyncMessage>{
+        'relationship link': SyncMessage.agentLink(
+          agentLink: AgentLink.agentRelationship(
+            id: 'relationship-link',
+            fromId: 'relationship-agent',
+            toId: 'person-1',
+            createdAt: prerequisiteDate,
+            updatedAt: prerequisiteDate,
+            vectorClock: null,
+          ),
+          status: SyncEntryStatus.update,
+        ),
+        'scheduled retry': SyncMessage.agentEntity(
+          agentEntity: AgentDomainEntity.scheduledWake(
+            id: 'relationship-retry',
+            agentId: 'relationship-agent',
+            scheduledAt: prerequisiteDate,
+            status: ScheduledWakeStatus.pending,
+            reason: 'scheduled',
+            updatedAt: prerequisiteDate,
+            vectorClock: null,
+          ),
+          status: SyncEntryStatus.update,
+        ),
+        'failure state': SyncMessage.agentEntity(
+          agentEntity: makeTestState(
+            agentId: 'relationship-agent',
+            consecutiveFailureCount: 1,
+          ),
+          status: SyncEntryStatus.update,
+        ),
+      };
+      for (final prerequisite in prerequisites.entries) {
+        for (final kind in [
+          AgentKinds.relationshipAgent,
+          AgentKinds.taskAgent,
+          null,
+        ]) {
+          test('a late ${prerequisite.key} re-offers only its relationship '
+              'identity ($kind)', () async {
+            final seen = <String>[];
+            processor.runtimeMaintenance = [_RecordingMaintenance(seen)];
+            addTearDown(() => processor.runtimeMaintenance = const []);
+            when(
+              () => mockAgentRepo.getEntity('relationship-agent'),
+            ).thenAnswer(
+              (_) async => kind == null
+                  ? null
+                  : makeTestIdentity(
+                      id: 'relationship-agent',
+                      agentId: 'relationship-agent',
+                      kind: kind,
+                    ),
+            );
+            when(
+              () => event.text,
+            ).thenReturn(encodeMessage(prerequisite.value));
+
+            await processor.process(event: event, journalDb: journalDb);
+
+            expect(
+              seen,
+              kind == AgentKinds.relationshipAgent
+                  ? ['relationship-agent']
+                  : isEmpty,
+            );
+          });
+        }
+      }
 
       test('offers a synced-in identity to every runtime-maintenance '
           'contributor, containing a throwing one', () async {

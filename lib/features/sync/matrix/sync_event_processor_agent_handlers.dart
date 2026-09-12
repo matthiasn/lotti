@@ -358,17 +358,28 @@ extension _AgentHandlers on SyncEventProcessor {
         if (identity is AgentIdentityEntity &&
             identity.kind == AgentKinds.projectAgent) {
           await _reconcileProjectAgentRuntime(identity);
+        } else if (identity is AgentIdentityEntity &&
+            identity.kind == AgentKinds.relationshipAgent &&
+            entityToApply.consecutiveFailureCount > 0) {
+          // A retry can arrive before the state that marks it as backed off.
+          await _offerIdentityToRuntimeMaintenance(identity);
         }
       }
       // Ordering: creation bundles emit the identity BEFORE its spec rows,
       // so the identity-time mirror can find no criteria yet. When the
       // spec head lands, offer the (already persisted) identity again —
       // this is what makes a goal synced in mid-session actually live.
-      if (wakeOrchestrator != null && entityToApply is GoalSpecHeadEntity) {
+      // Relationship retry/cadence rows can likewise follow their identity
+      // and link, so let maintenance see the now-persisted prerequisite.
+      if (wakeOrchestrator != null &&
+          (entityToApply is GoalSpecHeadEntity ||
+              entityToApply is ScheduledWakeEntity)) {
         final identity = await agentRepository!.getEntity(
           entityToApply.agentId,
         );
-        if (identity is AgentIdentityEntity) {
+        if (identity is AgentIdentityEntity &&
+            (entityToApply is GoalSpecHeadEntity ||
+                identity.kind == AgentKinds.relationshipAgent)) {
           await _offerIdentityToRuntimeMaintenance(identity);
         }
       }
@@ -520,6 +531,13 @@ extension _AgentHandlers on SyncEventProcessor {
               agent.kind == AgentKinds.projectAgent) {
             await _reconcileProjectAgentRuntime(agent);
           }
+        }
+      } else if (wakeOrchestrator != null &&
+          resolvedLink is AgentRelationshipLink) {
+        final identity = await agentRepository!.getEntity(resolvedLink.fromId);
+        if (identity is AgentIdentityEntity &&
+            identity.kind == AgentKinds.relationshipAgent) {
+          await _offerIdentityToRuntimeMaintenance(identity);
         }
       }
       _updateNotifications.notify(

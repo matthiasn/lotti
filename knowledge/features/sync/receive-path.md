@@ -27,7 +27,7 @@ sources:
   - id: agent-resolution
     resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
     title: Exact file-backed payload resolution
-    last_modified: 2026-08-06
+    last_modified: 2026-09-12
   - id: journal-resolution
     resource: ../../../lib/features/sync/matrix/smart_journal_entity_loader.dart
     title: Exact journal payload resolution
@@ -66,6 +66,11 @@ flowchart TD
 ```
 
 # Components
+
+Agent runtime restoration also runs when required rows arrive after their
+identity, so an early restoration pass does not strand work until a restart or
+periodic scan. The relationship retry contract is documented in
+[Relationships](../relationships.md).
 
 All under `lib/features/sync/queue/`:
 
