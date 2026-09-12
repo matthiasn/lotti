@@ -439,7 +439,10 @@ dismissal cannot pop the task screen underneath.
 
 `taskAgentSetupOptionsProvider` retains the loaded profile/model/provider catalog
 across independently mounted Wolt pages, and consumers unwrap the last successful
-async value during refreshes, so navigation never flashes an empty page.
+async value during refreshes, so navigation never flashes an empty page. The
+catalog is derived from `aiConfigsByTypeProvider`, the repository's per-type
+config streams, so a model, provider or profile added or deleted — locally or
+through sync — recomputes it in place; no picker shows the list from app start.
 
 Daily OS reuses the same resolution and picker primitives without depending on
 the task-agent service: the planner's Stats tab detects `AgentKinds.dayAgent` and
