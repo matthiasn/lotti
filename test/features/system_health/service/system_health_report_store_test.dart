@@ -93,9 +93,12 @@ void main() {
 
   test('loadLatest is null when the newest file cannot be read', () async {
     await store.directory.create(recursive: true);
-    await Directory(
+    final unreadable = File(
       p.join(store.directory.path, 'system-health-2026-09-12-090000.md'),
-    ).create();
+    );
+    await unreadable.writeAsString('# secret');
+    await Process.run('chmod', ['000', unreadable.path]);
+    addTearDown(() => Process.run('chmod', ['644', unreadable.path]));
     expect(await store.loadLatest(), isNull);
   });
 }

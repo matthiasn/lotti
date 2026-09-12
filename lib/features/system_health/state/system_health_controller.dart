@@ -159,7 +159,8 @@ class SystemHealthState {
       return SystemHealthRange.forPreset(preset, now: now);
     }
     final last = customLastDay ?? now;
-    final first = customFirstDay ?? last.subtract(const Duration(days: 6));
+    final first =
+        customFirstDay ?? SystemHealthRange.calendarDaysBefore(last, 6);
     return SystemHealthRange.days(firstDay: first, lastDay: last);
   }
 }
@@ -193,11 +194,10 @@ class SystemHealthController extends Notifier<SystemHealthState> {
         state.customLastDay == null &&
         state.customFirstDay == null) {
       final now = clock.now();
-      final today = DateTime(now.year, now.month, now.day);
       state = state.copyWith(
         preset: preset,
-        customFirstDay: today.subtract(const Duration(days: 6)),
-        customLastDay: today,
+        customFirstDay: SystemHealthRange.calendarDaysBefore(now, 6),
+        customLastDay: DateTime(now.year, now.month, now.day),
       );
       return;
     }

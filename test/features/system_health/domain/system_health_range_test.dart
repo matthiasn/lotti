@@ -91,6 +91,39 @@ void main() {
     });
   });
 
+  group('calendar arithmetic', () {
+    test('nextCalendarDay rolls over months and years', () {
+      expect(
+        SystemHealthRange.nextCalendarDay(DateTime(2026, 9, 30, 13)),
+        DateTime(2026, 10),
+      );
+      expect(
+        SystemHealthRange.nextCalendarDay(DateTime(2026, 12, 31)),
+        DateTime(2027),
+      );
+    });
+
+    test('calendarDaysBefore counts whole days back across a month', () {
+      expect(
+        SystemHealthRange.calendarDaysBefore(DateTime(2026, 9, 3, 8), 6),
+        DateTime(2026, 8, 28),
+      );
+    });
+
+    test('days is built from calendar days, never a fixed 24 h step', () {
+      final range = SystemHealthRange.days(
+        firstDay: DateTime(2026, 10, 24),
+        lastDay: DateTime(2026, 10, 26),
+      );
+      expect(range.days, [
+        DateTime(2026, 10, 24),
+        DateTime(2026, 10, 25),
+        DateTime(2026, 10, 26),
+      ]);
+      expect(range.end, DateTime(2026, 10, 26, 23, 59, 59, 999, 999));
+    });
+  });
+
   test('constructor rejects a start after the end', () {
     expect(
       () => SystemHealthRange(

@@ -30,8 +30,9 @@ class SystemHealthReportBuilder {
       'PII redaction was applied before analysis: emails, UUIDs, Matrix '
       'ids, tokens and credentials, home-directory paths, IP addresses, '
       'phone numbers and URL query strings were replaced with bracketed '
-      'placeholders. Log messages are telemetry by contract and carry no '
-      'user content.';
+      'placeholders. Error text is taken from the PII-safe error log '
+      '(message and error type, never the raw exception); log messages are '
+      'telemetry by contract and carry no user content.';
 
   RenderedSystemHealthReport renderReport({
     required SystemHealthRequest request,

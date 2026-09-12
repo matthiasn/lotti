@@ -42,6 +42,17 @@ const String agentRuntimeFixture = '''
 2026-09-12T00:07:00.000000 [WARN] drain: drain skipped, queue.length=3
 ''';
 
+/// The PII-safe error mirror: shared shape, message plus error type only.
+/// Timestamps sit a few hundred microseconds from the per-domain entries,
+/// the way `DomainLogger._writeError` really writes them.
+const String errorSafeFixture = '''
+2026-09-12T00:05:03.833900 [ERROR] sync vc.reserved.audit: vc.reserved.audit host=19d6f0b3-7d45-4ca1-aeb2-8829cac4b42e count=12 (errorType=String)
+2026-09-12T00:05:23.083100 [ERROR] agentRuntime: wake failed in 18136ms for [id:95a30c] (errorType=StateError)
+2026-09-12T00:06:23.000300 [ERROR] agentRuntime: wake failed in 2000ms for [id:77aa00] (errorType=StateError)
+2026-09-12T00:07:30.000000 [ERROR] speech audio_waveform_service: waveform extraction failed (errorType=MissingPluginException)
+2026-09-12T00:08:00.000000 [WARN] agentRuntime: not an error line
+''';
+
 /// Lines in the shared file shape, as the sync log is written.
 const String syncFixture = '''
 2026-09-12T00:05:03.833698 [ERROR] sync vc.reserved.audit: vc.reserved.audit host=19d6f0b3-7d45-4ca1-aeb2-8829cac4b42e count=12

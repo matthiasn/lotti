@@ -51,6 +51,18 @@ class LogRedactor {
     r'(/Users/|/home/|[A-Za-z]:\\Users\\)[^/\\\s]+',
   );
 
+  /// Candidate IPv6 runs; [_looksLikeIpv6] filters clock times such as
+  /// `01:32:41`, which share the colon-separated shape.
+  static final RegExp _ipv6Candidate = RegExp(
+    r'(?<![\w:.])(?:[0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}(?![\w:])',
+  );
+
+  static bool _looksLikeIpv6(String candidate) {
+    if (candidate.contains('::')) return true;
+    if (!RegExp('[a-fA-F]').hasMatch(candidate)) return false;
+    return candidate.split(':').length >= 3;
+  }
+
   static final RegExp _ipv4 = RegExp(
     r'\b(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}\b',
   );
@@ -83,6 +95,10 @@ class LogRedactor {
     result = result.replaceAll(_opaqueToken, '[token]');
     result = result.replaceAllMapped(_homePath, (m) => '${m.group(1)}[user]');
     result = result.replaceAll(_ipv4, '[ip]');
+    result = result.replaceAllMapped(
+      _ipv6Candidate,
+      (m) => _looksLikeIpv6(m.group(0)!) ? '[ip]' : m.group(0)!,
+    );
     result = result.replaceAll(_phone, '[phone]');
     return result;
   }

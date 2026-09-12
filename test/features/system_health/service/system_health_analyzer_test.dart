@@ -21,6 +21,7 @@ void main() {
     calls = [];
     await writeLogFile(logs, 'agentRuntime', fixtureDay, agentRuntimeFixture);
     await writeLogFile(logs, 'sync', fixtureDay, syncFixture);
+    await writeLogFile(logs, 'error-safe', fixtureDay, errorSafeFixture);
     await writeLogFile(logs, 'slow_queries', fixtureDay, slowQueriesFixture);
     await writeLogFile(
       logs,
@@ -78,6 +79,9 @@ void main() {
       expect(calls.single.prompt, isNot(contains('19d6f0b3-7d45')));
       expect(calls.single.prompt, isNot(contains('user@example.com')));
       expect(calls.single.prompt, contains('[email]'));
+      // Raw exception text never reaches the prompt; the safe line does.
+      expect(calls.single.prompt, isNot(contains('Bad state')));
+      expect(calls.single.prompt, contains('(errorType=StateError)'));
       expect(report.markdown, contains('### Goal wakes fail'));
       expect(report.markdown, contains('<details>'));
       expect(report.summaryMarkdown, isNot(contains('<details>')));
@@ -96,7 +100,7 @@ void main() {
       expect(report.digest.superSlowQueryCount, 2);
       expect(report.digest.issues.first.count, 2);
       expect(report.digest.slowQueries.first.planShapes, isNotEmpty);
-      expect(report.digest.filesRead, 4);
+      expect(report.digest.filesRead, 5);
     },
   );
 

@@ -274,6 +274,30 @@ void main() {
     expect(find.text(messages.doneButton), findsNothing);
   });
 
+  testWidgets('the To picker opens the date sheet and Done keeps the day', (
+    tester,
+  ) async {
+    await pumpBody(tester);
+    final messages = tester.element(find.byType(SystemHealthBody)).messages;
+    await tester.tap(find.text(messages.systemHealthPresetCustom).first);
+    await tester.pump();
+    final before = ProviderScope.containerOf(
+      tester.element(find.byType(SystemHealthBody)),
+    ).read(systemHealthControllerProvider).customLastDay;
+
+    await tapVisible(tester, find.byKey(const Key('system_health_custom_to')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(messages.doneButton));
+    await tester.pumpAndSettle();
+
+    expect(
+      ProviderScope.containerOf(
+        tester.element(find.byType(SystemHealthBody)),
+      ).read(systemHealthControllerProvider).customLastDay,
+      before,
+    );
+  });
+
   testWidgets('the model row opens the picker and applies the choice', (
     tester,
   ) async {

@@ -65,6 +65,19 @@ void main() {
     );
   });
 
+  test('replaces IPv6 addresses but not clock times', () {
+    expect(
+      redactor.redact('peer 2001:db8::1 and [fe80::1%lo0] and ::1 replied'),
+      'peer [ip] and [[ip]%lo0] and [ip] replied',
+    );
+    expect(
+      redactor.redact('full 2001:0db8:85a3:0000:0000:8a2e:0370:7334 ok'),
+      'full [ip] ok',
+    );
+    const times = 'at 01:32:41 elapsed 00:05:03.833 since 2026-09-12T01:32:41';
+    expect(redactor.redact(times), times);
+  });
+
   test('leaves counters, durations and timestamps alone', () {
     const line =
         'wake completed in 20900ms started=2026-09-12T01:32:41.334188 '

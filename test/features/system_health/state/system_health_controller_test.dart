@@ -13,6 +13,7 @@ import 'package:lotti/features/system_health/service/log_file_reader.dart';
 import 'package:lotti/features/system_health/service/system_health_analyzer.dart';
 import 'package:lotti/features/system_health/service/system_health_report_store.dart';
 import 'package:lotti/features/system_health/state/system_health_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -45,6 +46,7 @@ void main() {
     logs = await Directory.systemTemp.createTemp('system_health_controller');
     await writeLogFile(logs, 'agentRuntime', fixtureDay, agentRuntimeFixture);
     await writeLogFile(logs, 'sync', fixtureDay, syncFixture);
+    await writeLogFile(logs, 'error-safe', fixtureDay, errorSafeFixture);
     await writeLogFile(logs, 'slow_queries', fixtureDay, slowQueriesFixture);
     configs = MockAiConfigRepository();
     when(configs.getDefaultProfileId).thenAnswer((_) async => profile.id);
@@ -191,6 +193,27 @@ void main() {
         expect(state.selectedModelId, modelB.id);
       },
     );
+  });
+
+  group('device wiring', () {
+    test('the analyzer reads logs beside the documents directory and the '
+        'store keeps reports in a system_health folder', () {
+      getIt.registerSingleton<Directory>(logs);
+      final container = ProviderContainer(
+        overrides: [aiConfigRepositoryProvider.overrideWithValue(configs)],
+      );
+      addTearDown(container.dispose);
+
+      final analyzer = container.read(systemHealthAnalyzerProvider);
+      expect(analyzer.reader.logsDirectory.path, p.join(logs.path, 'logs'));
+      expect(analyzer.findingsWriter, isNotNull);
+
+      final reportStore = container.read(systemHealthReportStoreProvider);
+      expect(
+        reportStore.directory.path,
+        p.join(logs.path, 'logs', 'system_health'),
+      );
+    });
   });
 
   group('systemHealthDefaultModelProvider', () {

@@ -81,18 +81,34 @@ The writers decide the naming, and the reader follows it — see
 [logging and diagnostics](../architecture/logging-and-diagnostics.md) for why
 each file exists:
 
-| Selected | File per day | Line shape |
-|----------|--------------|------------|
-| a domain other than `sync` | `<wireName>-<yyyy-MM-dd>.log` | `<iso> [LEVEL] <subDomain>?: <message>` |
-| the `sync` domain | `sync-<yyyy-MM-dd>.log` | `<iso> [LEVEL] sync <subDomain>?: <message>` |
-| slow queries (the `log_slow_queries` flag) | `slow_queries-<date>.log` and `super_slow_queries-<date>.log` | `<iso> [<db>] <op> <ms>ms args=<n> <sql>` |
+| Selected | File per day | Line shape | Contributes |
+|----------|--------------|------------|-------------|
+| a domain other than `sync` | `<wireName>-<yyyy-MM-dd>.log` | `<iso> [LEVEL] <subDomain>?: <message>` | info counts, warnings, and the app-code frames of errors |
+| the `sync` domain | `sync-<yyyy-MM-dd>.log` | `<iso> [LEVEL] sync <subDomain>?: <message>` | the same |
+| any domain | `error-safe-<yyyy-MM-dd>.log` | `<iso> [ERROR] <domain> <subDomain>?: <message> (errorType=<Type>)` | **the text of every error record** |
+| slow queries (the `log_slow_queries` flag) | `slow_queries-<date>.log` and `super_slow_queries-<date>.log` | `<iso> [<db>] <op> <ms>ms args=<n> <sql>` | slow-query records |
 
-Days come from `SystemHealthRange.days`; every line is then checked against the
-exact window, because a daily file holds the whole day. A line that does not
-open with a timestamp — a stack frame, a diagnostics dump, `PLAN:` / `STACK:` /
-`TIMING:` rows — belongs to the entry above it. `INFO` lines are counted per
-domain and dropped; only errors and warnings become records. Missing files are
-simply absent from the count; a malformed line is skipped, never fatal.
+**Error text is never taken from a per-domain file.** Those files hold the
+full exception string of every error, which the logging contract allows to be
+anything — a task title inside a `FormatException`, model output inside a
+parse failure — and no finite redactor can promise to strip arbitrary prose.
+`error-safe-*.log` exists for exactly this reason: message plus error *type*,
+never the raw error. So an error record's text is the safe line, and the
+per-domain entry written by the same `DomainLogger._writeError` call only
+lends it its `package:lotti/` stack frames, matched by domain, sub-domain and
+a timestamp within one second (`LogFileReader.frameMatchWindow`). Errors
+logged straight through `LoggingService.captureException`, which never
+reaches the safe log, are therefore not in the report — a deterministic
+boundary rather than a best-effort scrub.
+
+Days come from `SystemHealthRange.days`, which steps by calendar day rather
+than by 24 hours so a daylight-saving switch neither loses an hour nor reads a
+file twice; every line is then checked against the exact window, because a
+daily file holds the whole day. A line that does not open with a timestamp —
+a stack frame, a diagnostics dump, `PLAN:` / `STACK:` / `TIMING:` rows —
+belongs to the entry above it. `INFO` lines are counted per domain and
+dropped. Missing files are simply absent from the count; a malformed line is
+skipped, never fatal.
 
 **Domains are the logging flags.** The page embeds `LoggingSettingsBody`
 unchanged, and `run()` reads the same `log_<domain>` config flags, so the set
@@ -114,7 +130,7 @@ line — and therefore neither the page, the model prompt nor the clipboard does
 | `api_key=`, `token:`, `password=`, `Authorization: Bearer …` and similar | key kept, value `[redacted]` |
 | opaque run of 40+ mixed letters and digits | `[token]` |
 | `/Users/<name>`, `/home/<name>`, `C:\Users\<name>` | user segment `[user]` |
-| IPv4 address | `[ip]` |
+| IPv4 and IPv6 address (colon runs that carry a hex letter or `::`, so clock times survive) | `[ip]` |
 | international phone number (`+` prefixed only) | `[phone]` |
 | URL user-info and query string | `[credentials]@`, `?[query]` |
 
@@ -122,7 +138,10 @@ Phone matching requires the `+` prefix on purpose: a bare digit run is
 indistinguishable from the counters, durations and timestamps that make a log
 line useful. Log messages are telemetry by contract (the
 `DomainLogger` rule), so free text is not scrubbed — the report states exactly
-what was, so a reader knows what to expect.
+what was, so a reader knows what to expect. The report body itself is
+deliberately English: it is an export for developers and coding assistants,
+like the log lines it summarises, while everything on the page around it comes
+from the ARB catalogs.
 
 # What the digest keeps
 

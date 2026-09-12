@@ -59,9 +59,7 @@ class SystemHealthRange {
     return SystemHealthRange(
       preset: SystemHealthPreset.custom,
       start: first,
-      end: last
-          .add(const Duration(days: 1))
-          .subtract(const Duration(microseconds: 1)),
+      end: nextCalendarDay(last).subtract(const Duration(microseconds: 1)),
     );
   }
 
@@ -77,10 +75,22 @@ class SystemHealthRange {
     final result = <DateTime>[];
     while (!day.isAfter(last)) {
       result.add(day);
-      day = day.add(const Duration(days: 1));
+      day = nextCalendarDay(day);
     }
     return result;
   }
+
+  /// Local midnight of the calendar day after [day].
+  ///
+  /// Built from components rather than by adding 24 hours: on a
+  /// daylight-saving switch a day is 23 or 25 hours long, and a fixed step
+  /// would land on the wrong date.
+  static DateTime nextCalendarDay(DateTime day) =>
+      DateTime(day.year, day.month, day.day + 1);
+
+  /// Local midnight [days] calendar days before [day].
+  static DateTime calendarDaysBefore(DateTime day, int days) =>
+      DateTime(day.year, day.month, day.day - days);
 
   /// Whether [instant] lies inside the window.
   bool contains(DateTime instant) {
