@@ -10932,6 +10932,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryArchiveChat => 'Arkivera chatt';
 
   @override
+  String get queryArchiveConfirmation =>
+      'Chatten har arkiverats. Slutsatserna är fortfarande tillgängliga.';
+
+  @override
   String get queryArchivedChats => 'Arkiverade chattar';
 
   @override
@@ -10968,6 +10972,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Citatet kunde inte entydigt kopplas till inspelningen. Du kan fortfarande öppna hela posten.';
 
   @override
+  String get queryAudioOpenRecording => 'Öppna inspelning';
+
+  @override
   String get queryAudioPrepare => 'Förbered ljudutdrag';
 
   @override
@@ -10975,6 +10982,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Läs upp svaret';
+
+  @override
+  String get queryAudioRetry => 'Försök med ljud igen';
 
   @override
   String get queryAudioStale =>
@@ -11016,11 +11026,30 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryCoverage => 'Vad genomsöktes?';
 
   @override
+  String get queryCoverageCategory => 'Den här kategorin';
+
+  @override
+  String get queryCoverageExcluded => 'Andra kategorier genomsöktes inte.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Ingen sökbar text när detta svar skrevs. Öppna inspelningen för att granska den.';
+
+  @override
+  String get queryCoverageWider => 'Andra poster i den här kategorin';
+
+  @override
   String get queryDeleteChat => 'Ta bort chatt';
 
   @override
   String get queryDeleteExplanation =>
       'Ta bort den här konversationen? Välj vad som händer med dess delade slutsatser. Källinläggen påverkas inte.';
+
+  @override
+  String get queryDeleteForget => 'Radera och glöm slutsatser';
+
+  @override
+  String get queryDeleteKeep => 'Radera och behåll slutsatser';
 
   @override
   String get queryDictated =>
@@ -11049,8 +11078,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryExampleSuggestion => 'Var det ett beslut eller ett förslag?';
 
   @override
-  String get queryExpanding =>
-      'Kontrollerar andra projekt i den här kategorin…';
+  String get queryExpanding => 'Kontrollerar andra poster i den här kategorin…';
 
   @override
   String get queryFailed => 'Sökningen kunde inte slutföras. Försök igen.';
@@ -11068,8 +11096,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryHomeOnly => 'Endast ursprungsområdet';
 
   @override
+  String get queryHomeScope => 'Ursprungsområde';
+
+  @override
   String get queryIncomplete =>
       'Sökningen är ofullständig. Avsaknad av belägg betyder inte att diskussionen aldrig ägde rum.';
+
+  @override
+  String get queryIncompleteShort => 'Vissa källor kunde inte kontrolleras.';
 
   @override
   String get queryInferenceUnavailable =>
@@ -11095,10 +11129,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other:
-          '$count inspelningar saknar sökbar text. Öppna dem i journalen för att transkribera dem.',
-      one:
-          '1 inspelning saknar sökbar text. Öppna den i journalen för att transkribera den.',
+      other: '$count inspelningar saknade sökbar text när detta svar skrevs.',
+      one: '1 inspelning saknade sökbar text när detta svar skrevs.',
     );
     return '$_temp0';
   }
@@ -11114,6 +11146,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryNotes => 'Anteckningar';
 
   @override
+  String get queryOpenCurrentEntry => 'Öppna aktuell post';
+
+  @override
   String get queryOpenEntry => 'Öppna inlägg';
 
   @override
@@ -11124,13 +11159,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Söker först inom det här området och sedan i $category.';
+    return 'Söker i detta område och i $category.';
   }
 
   @override
   String queryReachCategoryOnly(String category) {
     return 'Söker inom $category.';
   }
+
+  @override
+  String get queryReachHome =>
+      'Söker bara i detta område och dess länkade poster.';
 
   @override
   String get queryReachUncategorized =>
@@ -11154,6 +11193,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det här sparade citatet återger källan när svaret skrevs.';
 
   @override
+  String querySavedVersion(String version) {
+    return 'Sparad version: $version';
+  }
+
+  @override
   String get querySearching => 'Söker i länkade anteckningar och inspelningar…';
 
   @override
@@ -11164,6 +11208,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Källan flyttad till en annan kategori';
+
+  @override
+  String get querySurroundingLimit =>
+      'Den omgivande texten är ett sparat utdrag. Öppna posten för hela diskussionen.';
 
   @override
   String get querySurroundingText => 'Visa omgivande text';

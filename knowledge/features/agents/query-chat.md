@@ -19,11 +19,11 @@ sources:
   - id: models
     resource: ../../../lib/features/agents/model/query_chat_models.dart
     title: Query scope, evidence and chat events
-    last_modified: 2026-09-11
+    last_modified: 2026-09-12
   - id: crawler
     resource: ../../../lib/features/agents/query/query_journal_crawler.dart
     title: Bounded journal discovery and project attribution
-    last_modified: 2026-09-11
+    last_modified: 2026-09-12
   - id: builder
     resource: ../../../lib/features/agents/query/query_answer_builder.dart
     title: Batched source shortlisting and evidence verification
@@ -40,6 +40,10 @@ sources:
     resource: ../../../lib/features/agents/query/query_audio_controller.dart
     title: Chat-owned audio and live authorization
     last_modified: 2026-09-11
+  - id: audio-controls
+    resource: ../../../lib/features/agents/ui/query/query_audio_controls.dart
+    title: Playback, preparation and adjacent recovery actions
+    last_modified: 2026-09-12
   - id: timing
     resource: ../../../lib/classes/audio_transcript_timing.dart
     title: Recording-bound transcript timing sidecar
@@ -84,15 +88,21 @@ Each answer keeps its numbered evidence inside the reply surface. Evidence
 starts with source metadata and a short summary; expanding reveals selectable
 exact text, with explicit omission markers outside the quotation. Surrounding
 text can be shown, while Copy quote always copies only the stored passage.
-The pill composer emphasizes Send when a draft is present.
+The pill composer emphasizes Send when a draft is present. A running search
+keeps the next draft editable while Send remains disabled. Scope filters keep
+caption typography and a compact painted pill centered in the design-system
+touch-height target.
+Saved-text inspection shows the representation's edit/transcript date when
+available; legacy records fall back to their stored version date or content
+fingerprint. Surrounding text explicitly identifies itself as a bounded saved
+excerpt, and changed sources open through an “Open current entry” action.
 
 Query dictation resolves the current category's `defaultProfileId` and that
 profile's transcription slot at submission time. It does not inherit the task
 agent's model override or use automatic model discovery. Missing or unusable
 category transcription setup (including undownloaded Sherpa models) fails
-with the existing audio-setup error; it
-never silently chooses an installed Sherpa model. Scope visibility, category
-membership and default setup are rechecked before handing audio to the service.
+with the existing audio-setup error; it never silently chooses an installed
+Sherpa model. Scope visibility, category membership and default setup are rechecked before handing audio to the service.
 
 `queryChatTargetProvider` reuses the task or project summary's identity. If no
 identity exists, the pane explains that an agent must first be assigned. A
@@ -131,6 +141,11 @@ notes/recordings chips narrow discovery. There is no cross-category control.
 Task/project affiliations come from visible links and the task-to-project map;
 project names also become privacy dependencies of the answer.
 
+Discovery still gathers home and permitted category candidates before
+inspecting source text. The reach label describes that combined scope without
+promising sufficiency-driven home-first expansion. Home-only narrowing has its
+own reach label. Home-first batching remains separate work.
+
 The current search is bounded keyword retrieval plus recent-category fallback,
 not an exhaustive semantic index. Up to eight sanitized OR terms feed FTS; ID
 lookups are chunked. Discovery caps the readable corpus at 60 documents. Corpora of more than four
@@ -162,15 +177,48 @@ concurrently. Drafts and running operations survive navigation in the current
 app session; they are not synced or persisted across application restart.
 History is persisted. A restarted unanswered question can be retried.
 
-The activity panel, composer helper and conversation switcher describe the
-current phase: searching during planning, shortlisting, source inspection and
-memory selection, then preparing an answer only when final synthesis begins.
-The transient `answering` flag resets on each Send or Retry. `AgentChatView`
-accepts a consumer-owned sending label so its default replying copy is not
-shown while query retrieval is still running. A single activity bubble groups
-the phase and Cancel action; the checked-source count is available in its
-tooltip. The switcher exposes running and unread indicators, direct archive
-and delete actions, and an expandable archived-chat list.
+The activity panel and conversation switcher describe the current phase:
+searching during planning, shortlisting and memory selection, checking other
+category entries only while inspecting an outside-home source, then preparing
+an answer when final synthesis begins. Progress changes before each source
+inspection and resets after inspection. Saved `coverage.expanded` records
+whether any outside-home source was checked; it is separate from current
+activity. The transient `answering` flag resets on each Send or Retry.
+
+A single activity bubble groups phase, visible checked-source count and Cancel,
+with a live-region announcement. The query composer omits the duplicate helper
+status. The switcher exposes running/unread indicators, last-message previews,
+one labelled overflow menu per chat and the archived count. The selected chat
+uses the design-system activated row fill as well as selected semantics.
+Archive confirms that conclusions
+remain available; Delete names the selected keep/forget consequence.
+
+Recovery belongs to each unanswered question, including earlier failed turns.
+Retry assembles conversation history only through the selected question and
+excludes conclusions created later in the same chat.
+`requestQuestionId` identifies the current/last attempt's saved question and
+resets before a new send, so failures before question persistence retain footer
+feedback and the draft rather than disappearing behind an older answer.
+Unavailable inference setup links directly to AI settings beside its saved
+question, alongside Retry so the saved request can resume after setup changes;
+failures before persistence keep that recovery in the composer footer.
+A short caption flags incomplete coverage above evidence cards; the expanded
+coverage panel explains what missing evidence does and does not establish.
+Its counts and recovery rows share a leading alignment.
+
+Coverage stores nullable home/category inspection counts (null for older
+answers), plus references to unreadable recordings. These references also enter
+answer dependencies and are rechecked for live visibility/category membership
+before synthesis and publication. The UI describes their unreadable state as
+historical, marks later category moves, and reauthorizes immediately before
+opening a recording. Incomplete coverage is visible beside the answer; the
+expanded disclosure lists scope counts and the excluded-category boundary.
+
+Recalled conclusions expand into their visible saved text and links to visible
+origin chats. Retained conclusions from deleted chats have no origin link. If
+no recalled conclusion is still available, the historical recall line remains
+plain text without an empty disclosure. Each expansion and selectable text has
+its own PageStorage key so saved booleans and scroll offsets cannot collide.
 
 Unexpected failures are logged under `chat/query.send` with their stage,
 exception type and a numeric Melious HTTP status when available. Exception
@@ -356,6 +404,15 @@ A short quote gets about a minute of listening context, clamped to the recording
 a long quote retains its full segment span with a little context. When imported
 duration metadata is zero, the last timed speech bounds the excerpt instead. Provider
 segments determine every boundary: character offsets never become seconds.
+
+Audio recovery stays beside the affected quote or answer. Preparation offers
+Cancel; playback offers Stop audio. A missing recording offers Open recording
+and Retry audio; an unmatched quote or oversized upload offers Open recording
+without implying another identical request will help. Unsupported timing setup
+offers AI Settings and Retry audio together. Transient playback and speech
+failures offer Retry audio. Opening a recording uses the pane's fresh source
+access check. The upload notice remains visible before timing preparation,
+including retries that can upload audio; opening an entry does not upload it.
 
 A retained historical quote can use already-matching timing after a text edit.
 Generating new timing requires the source text and category still to match the

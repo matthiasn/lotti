@@ -61,7 +61,10 @@ stateDiagram-v2
 ```
 
 Start checks microphone permission, records to an app-scoped temporary `.m4a`
-file, samples amplitude, and arms a maximum-duration stop. Stop moves to
+file, samples amplitude, and arms a maximum-duration stop. The injected clock
+also supplies elapsed capture time on amplitude updates; a new recording resets
+it to zero. Query hosts opt into a stable tabular clock and visible Stop/Cancel
+controls, including Cancel during transcription. Stop moves to
 `processing`, streams transcription chunks into `partialTranscript`, then
 publishes the finished `transcript` or a typed error and returns to `idle`.
 The UI consumes the finished transcript into its editable composer.
@@ -72,14 +75,27 @@ cancellation or disposal during resolution prevents submission. Scoped queries
 supply their [category-default policy](query-chat.md); callers that omit the
 callback retain the transcription service's automatic discovery behavior.
 
-Every recording captures a monotonically increasing operation ID. Amplitude
+Every recording captures a monotonically increasing operation ID before the
+first startup await. Cancellation also recognizes pending startup while its
+visible status is still idle. Permission, temporary-directory creation and
+native start recheck the operation before proceeding. An abandoned startup
+releases its local recorder/files before cancellation or disposal finishes; a
+new start cannot overtake that cleanup. Amplitude
 and transcription callbacks must match that ID and `ref.mounted` before writing
 state. Cancel increments the ID before cleanup, so stale callbacks cannot
-replace a newer recording's state. Disposal and completion perform best-effort
-cleanup of recorder resources and temporary files; cleanup failures are caught.
+replace a newer recording's state. Stop captures that operation's recorder,
+file and transcription route before awaiting native work, and rechecks its ID
+after stop. A stale completion never cleans up shared resources. Cleanup
+captures and detaches the owned resources synchronously, and concurrent cancel
+calls join one cleanup. Completion and cancellation publish `idle` only after
+cleanup finishes, so a new capture cannot overlap deletion of the previous
+recording. Disposal invalidates the operation and joins an existing cleanup;
+cleanup failures remain best-effort and are caught. If amplitude setup fails
+after native recording starts, startup releases the transferred resources before
+publishing an idle `startFailed` result, so the composer can record again.
 
 `ChatRecorderState.copyWith` clears transcript, partial transcript, and error
-fields when omitted. Status and amplitude history retain their previous values.
+fields when omitted. Status, amplitude history and elapsed time retain their previous values.
 Callers preserving a partial result must explicitly pass it again.
 
 # Reasoning rendering

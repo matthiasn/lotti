@@ -16,10 +16,14 @@ import '../../query/query_audio_test_bench.dart';
 
 void main() {
   late QueryAudioTestBench bench;
+  var openedEntries = 0;
+  var openedSettings = 0;
   setUpAll(registerAllFallbackValues);
   setUp(() async {
     await setUpTestGetIt();
     bench = QueryAudioTestBench();
+    openedEntries = 0;
+    openedSettings = 0;
   });
   tearDown(() async {
     await bench.close();
@@ -42,6 +46,8 @@ void main() {
                 : QueryEvidenceAudioControls(
                     chatKey: QueryAudioTestBench.key,
                     actionId: 'answer:0',
+                    onOpenEntry: () => openedEntries++,
+                    onOpenSettings: () => openedSettings++,
                     evidence: bench.evidence,
                     audio:
                         (data?.access.entries['meeting'] as JournalAudio?) ??
@@ -94,8 +100,8 @@ void main() {
       await tester.pump();
       expect(bench.requests, 1);
       expect(bench.writes, 1);
-      expect(find.text('Stop audio'), findsOneWidget);
-      await tester.tap(find.text('Stop audio'));
+      expect(find.text('Cancel'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
       await tester.pump();
       expect(find.text('Listen · 01:35–02:35'), findsOneWidget);
     },
@@ -113,7 +119,7 @@ void main() {
       await tester.tap(find.text('Prepare audio excerpt'));
       await tester.pump();
       expect(find.text('Preparing audio…'), findsOneWidget);
-      await tester.tap(find.text('Stop audio'));
+      await tester.tap(find.text('Cancel'));
       pending.complete();
       await tester.pump();
       expect(bench.writes, 0);
@@ -122,7 +128,13 @@ void main() {
     },
   );
 
-  for (final failure in ['missing', 'unmatched', 'unsupported', 'native']) {
+  for (final failure in [
+    'missing',
+    'unmatched',
+    'unsupported',
+    'native',
+    'too large',
+  ]) {
     testWidgets('$failure has a specific recovery message', (tester) async {
       var label = 'Listen · 01:35–02:35';
       late String expected;
@@ -155,6 +167,14 @@ void main() {
           label = 'Prepare audio excerpt';
           expected =
               'To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile. The provider URL must use HTTPS.';
+        case 'too large':
+          when(bench.file.lengthSync).thenReturn(500000000);
+          bench.audio = bench.audio.copyWith(
+            data: bench.audio.data.copyWith(transcriptTimings: {}),
+          );
+          label = 'Prepare audio excerpt';
+          expected =
+              'Preparing timestamps supports recordings up to 25 MB. Choose a smaller recording.';
         case 'native':
           when(bench.player.play).thenThrow(StateError('failed'));
           expected = 'Audio could not be prepared or played. Try again.';
@@ -164,6 +184,27 @@ void main() {
       await tester.pump();
       expect(find.text(expected), findsOneWidget);
       expect(find.text('Stop audio'), findsNothing);
+      if (failure == 'unsupported') {
+        await tester.tap(find.text('AI Settings'));
+        expect(openedSettings, 1);
+        expect(find.text('Retry audio'), findsOneWidget);
+        expect(find.textContaining('sends this recording'), findsOneWidget);
+      } else {
+        await tester.tap(find.text('Open recording'));
+        expect(openedEntries, 1);
+        if (failure == 'unmatched' || failure == 'too large') {
+          expect(find.text('Retry audio'), findsNothing);
+          expect(find.text('Prepare audio excerpt'), findsNothing);
+          expect(find.textContaining('sends this recording'), findsNothing);
+        } else {
+          when(bench.file.existsSync).thenReturn(true);
+          when(bench.player.play).thenAnswer((_) async {});
+          await tester.tap(find.text('Retry audio'));
+          await tester.pump();
+          expect(find.text('Stop audio'), findsOneWidget);
+          expect(find.text(expected), findsNothing);
+        }
+      }
     });
   }
 
@@ -182,6 +223,27 @@ void main() {
     bench.ttsEnabled.add(false);
     await tester.pump();
     expect(find.text('Read answer aloud'), findsNothing);
+  });
+
+  testWidgets('failed speech offers an explicit retry of the saved answer', (
+    tester,
+  ) async {
+    var attempts = 0;
+    bench.engine = FakeTtsEngine(
+      onSynthesize: () {
+        if (attempts++ == 0) throw StateError('temporary failure');
+      },
+    );
+    await pump(tester, speech: true);
+    await tester.tap(find.text('Read answer aloud'));
+    await tester.pump();
+    expect(find.text('Retry audio'), findsOneWidget);
+    expect(find.text('Read answer aloud'), findsNothing);
+    await tester.tap(find.text('Retry audio'));
+    await tester.pump();
+    expect(attempts, 2);
+    expect(bench.engine.calls.last.text, 'Keep the feeder latch.');
+    expect(find.text('Stop audio'), findsOneWidget);
   });
 
   testWidgets('leaving during speech preparation prevents late playback', (

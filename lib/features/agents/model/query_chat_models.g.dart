@@ -51,6 +51,9 @@ _QueryEvidence _$QueryEvidenceFromJson(Map<String, dynamic> json) =>
       start: (json['start'] as num).toInt(),
       end: (json['end'] as num).toInt(),
       summary: json['summary'] as String,
+      textVersionDate: json['textVersionDate'] == null
+          ? null
+          : DateTime.parse(json['textVersionDate'] as String),
       affiliations:
           (json['affiliations'] as List<dynamic>?)
               ?.map((e) => e as String)
@@ -72,6 +75,7 @@ Map<String, dynamic> _$QueryEvidenceToJson(_QueryEvidence instance) =>
       'start': instance.start,
       'end': instance.end,
       'summary': instance.summary,
+      'textVersionDate': instance.textVersionDate?.toIso8601String(),
       'affiliations': instance.affiliations,
       'outsideHome': instance.outsideHome,
       'relevance': instance.relevance,
@@ -91,6 +95,13 @@ _QueryCoverage _$QueryCoverageFromJson(Map<String, dynamic> json) =>
       missingTranscripts: (json['missingTranscripts'] as num?)?.toInt() ?? 0,
       incomplete: json['incomplete'] as bool? ?? false,
       expanded: json['expanded'] as bool? ?? false,
+      homeChecked: (json['homeChecked'] as num?)?.toInt(),
+      categoryChecked: (json['categoryChecked'] as num?)?.toInt(),
+      unreadableSources:
+          (json['unreadableSources'] as List<dynamic>?)
+              ?.map((e) => QuerySourceRef.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$QueryCoverageToJson(_QueryCoverage instance) =>
@@ -99,6 +110,9 @@ Map<String, dynamic> _$QueryCoverageToJson(_QueryCoverage instance) =>
       'missingTranscripts': instance.missingTranscripts,
       'incomplete': instance.incomplete,
       'expanded': instance.expanded,
+      'homeChecked': instance.homeChecked,
+      'categoryChecked': instance.categoryChecked,
+      'unreadableSources': instance.unreadableSources,
     };
 
 QueryChatCreated _$QueryChatCreatedFromJson(Map<String, dynamic> json) =>

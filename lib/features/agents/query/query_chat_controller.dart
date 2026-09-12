@@ -25,6 +25,7 @@ class QueryChatLocal {
     this.homeOnly = false,
     this.kind,
     this.answering = false,
+    this.requestQuestionId,
   });
   final String draft;
   final bool draftPrivate;
@@ -34,6 +35,9 @@ class QueryChatLocal {
   final bool homeOnly;
   final QuerySourceKind? kind;
   final bool answering;
+
+  /// The saved question for the current/last attempt; null before persistence.
+  final String? requestQuestionId;
 
   QueryChatLocal copyWith({
     String? draft,
@@ -45,6 +49,8 @@ class QueryChatLocal {
     QuerySourceKind? kind,
     bool clearKind = false,
     bool? answering,
+    String? requestQuestionId,
+    bool clearRequestQuestion = false,
   }) => QueryChatLocal(
     draft: draft ?? this.draft,
     draftPrivate: draftPrivate ?? this.draftPrivate,
@@ -54,6 +60,9 @@ class QueryChatLocal {
     homeOnly: homeOnly ?? this.homeOnly,
     kind: clearKind ? null : kind ?? this.kind,
     answering: answering ?? this.answering,
+    requestQuestionId: clearRequestQuestion
+        ? null
+        : requestQuestionId ?? this.requestQuestionId,
   );
 }
 
@@ -237,6 +246,8 @@ class QueryChatController extends Notifier<QueryChatSession> {
         checked: 0,
         expanded: false,
         answering: false,
+        requestQuestionId: retryQuestionId,
+        clearRequestQuestion: retryQuestionId == null,
       ),
     );
     final store = ref.read(queryChatStoreProvider);
@@ -276,6 +287,7 @@ class QueryChatController extends Notifier<QueryChatSession> {
         }
       }
       cancellation.check();
+      _set(id, state.local(id).copyWith(requestQuestionId: question.id));
       stage = 'readHistory';
       projection = await store.load(key.agentId);
       chat = projection.chats.where((c) => c.id == id).firstOrNull;

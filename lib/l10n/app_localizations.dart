@@ -18415,6 +18415,12 @@ abstract class AppLocalizations {
   /// **'Archive chat'**
   String get queryArchiveChat;
 
+  /// No description provided for @queryArchiveConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat archived. Its conclusions remain available.'**
+  String get queryArchiveConfirmation;
+
   /// No description provided for @queryArchivedChats.
   ///
   /// In en, this message translates to:
@@ -18475,6 +18481,12 @@ abstract class AppLocalizations {
   /// **'This quote could not be matched unambiguously to the recording. You can still open the full entry.'**
   String get queryAudioNoMatch;
 
+  /// No description provided for @queryAudioOpenRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Open recording'**
+  String get queryAudioOpenRecording;
+
   /// No description provided for @queryAudioPrepare.
   ///
   /// In en, this message translates to:
@@ -18492,6 +18504,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read answer aloud'**
   String get queryAudioReadAloud;
+
+  /// No description provided for @queryAudioRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry audio'**
+  String get queryAudioRetry;
 
   /// No description provided for @queryAudioStale.
   ///
@@ -18559,6 +18577,30 @@ abstract class AppLocalizations {
   /// **'What was searched'**
   String get queryCoverage;
 
+  /// No description provided for @queryCoverageCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'This category'**
+  String get queryCoverageCategory;
+
+  /// No description provided for @queryCoverageExcluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Other categories were not searched.'**
+  String get queryCoverageExcluded;
+
+  /// No description provided for @queryCoverageUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'No searchable text when this answer was written. Open the recording to inspect it.'**
+  String get queryCoverageUnreadable;
+
+  /// No description provided for @queryCoverageWider.
+  ///
+  /// In en, this message translates to:
+  /// **'Other entries in this category'**
+  String get queryCoverageWider;
+
   /// No description provided for @queryDeleteChat.
   ///
   /// In en, this message translates to:
@@ -18570,6 +18612,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.'**
   String get queryDeleteExplanation;
+
+  /// No description provided for @queryDeleteForget.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete and forget conclusions'**
+  String get queryDeleteForget;
+
+  /// No description provided for @queryDeleteKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete and keep conclusions'**
+  String get queryDeleteKeep;
 
   /// No description provided for @queryDictated.
   ///
@@ -18622,7 +18676,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryExpanding.
   ///
   /// In en, this message translates to:
-  /// **'Checking other projects in this category…'**
+  /// **'Checking other entries in this category…'**
   String get queryExpanding;
 
   /// No description provided for @queryFailed.
@@ -18655,11 +18709,23 @@ abstract class AppLocalizations {
   /// **'Home scope only'**
   String get queryHomeOnly;
 
+  /// No description provided for @queryHomeScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Home scope'**
+  String get queryHomeScope;
+
   /// No description provided for @queryIncomplete.
   ///
   /// In en, this message translates to:
   /// **'Coverage is incomplete. Missing evidence does not mean the discussion never happened.'**
   String get queryIncomplete;
+
+  /// No description provided for @queryIncompleteShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Some sources could not be checked.'**
+  String get queryIncompleteShort;
 
   /// No description provided for @queryInferenceUnavailable.
   ///
@@ -18694,7 +18760,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryMissingTranscripts.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 recording has no searchable text. Open it in the journal to transcribe it.} other{{count} recordings have no searchable text. Open them in the journal to transcribe them.}}'**
+  /// **'{count, plural, one{1 recording had no searchable text when this answer was written.} other{{count} recordings had no searchable text when this answer was written.}}'**
   String queryMissingTranscripts(int count);
 
   /// No description provided for @queryNewChat.
@@ -18714,6 +18780,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes'**
   String get queryNotes;
+
+  /// No description provided for @queryOpenCurrentEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Open current entry'**
+  String get queryOpenCurrentEntry;
 
   /// No description provided for @queryOpenEntry.
   ///
@@ -18736,7 +18808,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryReachCategory.
   ///
   /// In en, this message translates to:
-  /// **'Searches this scope first, then {category}.'**
+  /// **'Searches this scope and {category}.'**
   String queryReachCategory(String category);
 
   /// No description provided for @queryReachCategoryOnly.
@@ -18744,6 +18816,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Searches within {category}.'**
   String queryReachCategoryOnly(String category);
+
+  /// No description provided for @queryReachHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Searches only this scope and its linked entries.'**
+  String get queryReachHome;
 
   /// No description provided for @queryReachUncategorized.
   ///
@@ -18781,6 +18859,12 @@ abstract class AppLocalizations {
   /// **'This saved quote reflects the source when the answer was written.'**
   String get querySavedQuote;
 
+  /// Identifies the historical text version by edit date or short content fingerprint.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved version: {version}'**
+  String querySavedVersion(String version);
+
   /// No description provided for @querySearching.
   ///
   /// In en, this message translates to:
@@ -18804,6 +18888,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Source moved to another category'**
   String get querySourceMoved;
+
+  /// No description provided for @querySurroundingLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Surrounding text is a saved excerpt. Open the entry for the full discussion.'**
+  String get querySurroundingLimit;
 
   /// No description provided for @querySurroundingText.
   ///

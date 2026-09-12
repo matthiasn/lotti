@@ -18,11 +18,13 @@ class QuerySourceDocument {
     required this.text,
     required this.version,
     required this.kind,
+    this.versionDate,
   });
 
   final JournalEntity entry;
   final String text;
   final String version;
+  final DateTime? versionDate;
   final QuerySourceKind kind;
 
   String get fingerprint => sha256.convert(utf8.encode(text)).toString();
@@ -48,6 +50,7 @@ class QuerySourceDocument {
     };
     var text = entry.entryText?.plainText;
     var version = 'entryText';
+    var versionDate = entry.meta.updatedAt;
     if (text == null ||
         (text.trim().isEmpty &&
             (entry is Task ||
@@ -61,6 +64,7 @@ class QuerySourceDocument {
           final transcript = transcripts.firstOrNull;
           text = transcript?.transcript;
           if (transcript != null) {
+            versionDate = transcript.created;
             version =
                 'transcript:${transcript.library}:${transcript.model}:'
                 '${transcript.id ?? transcript.created.toIso8601String()}';
@@ -89,6 +93,7 @@ class QuerySourceDocument {
           ? version
           : '$version:${entry.meta.updatedAt.toIso8601String()}',
       kind: kind,
+      versionDate: versionDate,
     );
   }
 }
@@ -224,6 +229,7 @@ class QueryJournalCrawler {
     final current = await access.load(candidates);
     final documents = <QuerySourceDocument>[];
     var missingTranscripts = 0;
+    final unreadableSources = <QuerySourceRef>[];
     for (final id in candidates) {
       final entry = current.entries[id];
       if (entry == null ||
@@ -236,6 +242,7 @@ class QueryJournalCrawler {
         if (entry is JournalAudio &&
             (kind == null || kind == QuerySourceKind.recording)) {
           missingTranscripts++;
+          unreadableSources.add(current.reference(entry));
         }
         continue;
       }
@@ -256,6 +263,7 @@ class QueryJournalCrawler {
         incomplete: incomplete || missingTranscripts > 0,
         missingTranscripts: missingTranscripts,
         expanded: expand,
+        unreadableSources: unreadableSources,
       ),
       affiliations: await _affiliations(documents),
     );

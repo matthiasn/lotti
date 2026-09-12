@@ -33,9 +33,14 @@ class QueryAnswerSpeechButton extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (active) _AudioStatus(status: audio.status),
         DesignSystemButton(
           label: busy
-              ? context.messages.queryAudioStop
+              ? audio.status == QueryAudioStatus.preparing
+                    ? context.messages.cancelButton
+                    : context.messages.queryAudioStop
+              : active && audio.status == QueryAudioStatus.failed
+              ? context.messages.queryAudioRetry
               : context.messages.queryAudioReadAloud,
           leadingIcon: busy ? LottiIcons.stop : LottiIcons.volume,
           variant: DesignSystemButtonVariant.tertiary,
@@ -43,7 +48,6 @@ class QueryAnswerSpeechButton extends ConsumerWidget {
               ? controller.stop
               : () => controller.speakAnswer(answerId: answerId),
         ),
-        if (active) _AudioStatus(status: audio.status),
       ],
     );
   }
@@ -57,12 +61,16 @@ class QueryEvidenceAudioControls extends ConsumerWidget {
     required this.actionId,
     required this.evidence,
     required this.audio,
+    required this.onOpenEntry,
+    required this.onOpenSettings,
     super.key,
   });
   final QueryAudioChatKey chatKey;
   final String actionId;
   final QueryEvidence evidence;
   final JournalAudio audio;
+  final VoidCallback onOpenEntry;
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -92,36 +100,77 @@ class QueryEvidenceAudioControls extends ConsumerWidget {
         : active
         ? state.excerpt ?? excerpt
         : excerpt;
+    final status = active ? state.status : QueryAudioStatus.idle;
+    final openRecording = switch (status) {
+      QueryAudioStatus.missingFile ||
+      QueryAudioStatus.unmatched ||
+      QueryAudioStatus.tooLarge ||
+      QueryAudioStatus.failed => true,
+      _ => false,
+    };
+    final canRetry = switch (status) {
+      QueryAudioStatus.missingFile ||
+      QueryAudioStatus.unavailable ||
+      QueryAudioStatus.failed => true,
+      _ => false,
+    };
+    final fallbackOnly =
+        status == QueryAudioStatus.unmatched ||
+        status == QueryAudioStatus.tooLarge;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DesignSystemButton(
-          label: busy
-              ? messages.queryAudioStop
-              : range == null
-              ? messages.queryAudioPrepare
-              : messages.queryAudioListen(
-                  _timestamp(range.start),
-                  _timestamp(range.end),
-                ),
-          leadingIcon: busy ? LottiIcons.stop : LottiIcons.play,
-          variant: DesignSystemButtonVariant.tertiary,
-          onPressed: busy
-              ? controller.stop
-              : () => controller.playEvidence(
-                  actionId: actionId,
-                  evidence: evidence,
-                  generate: range == null,
-                ),
+        if (active) _AudioStatus(status: status),
+        Wrap(
+          spacing: tokens.spacing.step2,
+          children: [
+            if (status == QueryAudioStatus.unavailable)
+              DesignSystemButton(
+                label: messages.settingsAiTitle,
+                leadingIcon: LottiIcons.settings,
+                variant: DesignSystemButtonVariant.tertiary,
+                onPressed: onOpenSettings,
+              ),
+            if (openRecording)
+              DesignSystemButton(
+                label: messages.queryAudioOpenRecording,
+                leadingIcon: LottiIcons.forward,
+                variant: DesignSystemButtonVariant.tertiary,
+                onPressed: onOpenEntry,
+              ),
+            if (!fallbackOnly)
+              DesignSystemButton(
+                label: busy
+                    ? status == QueryAudioStatus.preparing
+                          ? messages.cancelButton
+                          : messages.queryAudioStop
+                    : canRetry
+                    ? messages.queryAudioRetry
+                    : range == null
+                    ? messages.queryAudioPrepare
+                    : messages.queryAudioListen(
+                        _timestamp(range.start),
+                        _timestamp(range.end),
+                      ),
+                leadingIcon: busy ? LottiIcons.stop : LottiIcons.play,
+                variant: DesignSystemButtonVariant.tertiary,
+                onPressed: busy
+                    ? controller.stop
+                    : () => controller.playEvidence(
+                        actionId: actionId,
+                        evidence: evidence,
+                        generate: range == null,
+                      ),
+              ),
+          ],
         ),
-        if (range == null && !busy)
+        if (range == null && !busy && !fallbackOnly)
           Text(
             messages.queryAudioUploadNotice,
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),
-        if (active) _AudioStatus(status: state.status),
         SizedBox(height: tokens.spacing.step2),
       ],
     );
@@ -146,12 +195,15 @@ class _AudioStatus extends StatelessWidget {
     };
     return label == null
         ? const SizedBox.shrink()
-        : Text(
-            label,
-            style: context.designTokens.typography.styles.others.caption
-                .copyWith(
-                  color: context.designTokens.colors.text.mediumEmphasis,
-                ),
+        : Semantics(
+            liveRegion: true,
+            child: Text(
+              label,
+              style: context.designTokens.typography.styles.others.caption
+                  .copyWith(
+                    color: context.designTokens.colors.text.mediumEmphasis,
+                  ),
+            ),
           );
   }
 }

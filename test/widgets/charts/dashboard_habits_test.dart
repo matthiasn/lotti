@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,18 +12,22 @@ import '../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  var mockJournalDb = MockJournalDb();
+  late MockJournalDb mockJournalDb;
 
   group('DashboardHabitsChart Widget Tests - ', () {
-    setUp(() {
-      mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
+    setUp(() async {
+      final mocks = await setUpTestGetIt();
+      mockJournalDb = mocks.journalDb;
+      when(
+        mockJournalDb.getAllHabitDefinitions,
+      ).thenAnswer((_) async => [habitFlossing]);
+      when(
+        () => mockJournalDb.getHabitById(habitFlossing.id),
+      ).thenAnswer((_) async => habitFlossing);
       final mockEntitiesCacheService = MockEntitiesCacheService();
-      final mockUpdateNotifications = MockUpdateNotifications();
+      final mockUpdateNotifications = mocks.updateNotifications;
 
-      getIt
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<JournalDb>(mockJournalDb);
+      getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
 
       when(
         () => mockJournalDb.getHabitCompletionsByHabitId(
@@ -43,7 +45,7 @@ void main() {
         () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
       ).thenAnswer((_) => habitFlossing);
     });
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('renders habit chart with title and completion card', (
       tester,

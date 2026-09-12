@@ -25,7 +25,7 @@ typedef ChatTranscriptionTargetResolver =
 /// then batch-transcribe — exposing a single [ChatRecorderState] to the UI.
 ///
 /// Race model: every recording session captures a monotonically increasing
-/// `_operationId` (see [start]). Async callbacks (amplitude
+/// `_operationId` before its first startup await (see [start]). Async callbacks (amplitude
 /// ticks, transcription deltas, the safety timer) only mutate state while their
 /// captured id still equals `_operationId`. [cancel] bumps the id to orphan any
 /// in-flight work, so a stale callback from an aborted session can never write
@@ -77,9 +77,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   Directory? _tempDir;
   String? _filePath;
   bool _isStarting = false;
+  Future<void>? _startFuture;
   ChatTranscriptionTargetResolver? _resolveTranscriptionTarget;
   int _operationId = 0; // Incremented for each new operation to prevent races
   Future<void>? _disposeFuture;
+  Future<void>? _cleanupFuture;
+  Future<void>? _cancelFuture;
 
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
@@ -88,11 +91,22 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   Future<void> dispose() => _disposeFuture ??= _disposeResources();
 
   Future<void> _disposeResources() async {
+    _operationId++;
+    await _startFuture;
+    if (_cleanupFuture case final cleanup?) {
+      await cleanup;
+      return;
+    }
     _maxTimer?.cancel();
     final ampSub = _ampSub;
     final recorder = _recorder;
     final filePath = _filePath;
     final tempDir = _tempDir;
+    _ampSub = null;
+    _recorder = null;
+    _filePath = null;
+    _tempDir = null;
+    _maxTimer = null;
 
     try {
       await ampSub?.cancel();
@@ -121,10 +135,17 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   /// start is already in flight. On any failure the partial recording is
   /// cleaned up. An optional [resolveTranscriptionTarget] belongs to this
   /// recording and resolves the caller's current route when recording stops.
+  /// Startup retains local resources until all awaits pass the operation gate;
+  /// cancellation/disposal wait for an abandoned startup to release them.
   Future<void> start({
     ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
   }) async {
-    if (!ref.mounted) return;
+    if (!ref.mounted ||
+        _disposeFuture != null ||
+        _cleanupFuture != null ||
+        _cancelFuture != null) {
+      return;
+    }
     if (_isStarting) {
       state = state.copyWith(
         error: 'Another operation is in progress',
@@ -135,62 +156,57 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     if (state.status != ChatRecorderStatus.idle) return;
 
     _isStarting = true;
-    _resolveTranscriptionTarget = resolveTranscriptionTarget;
+    final started = Completer<void>();
+    _startFuture = started.future;
+    final currentOpId = ++_operationId;
     final recorder = _recorderFactory();
+    Directory? tempDir;
+    var nativeStartAttempted = false;
+    var transferred = false;
+    Object? startError;
     try {
       final hasPerm = await recorder.hasPermission();
-      if (!ref.mounted) {
-        await recorder.dispose();
-        return;
-      }
+      if (!ref.mounted || currentOpId != _operationId) return;
       if (!hasPerm) {
         state = state.copyWith(
           error: 'Microphone permission denied. Please enable it in Settings.',
           errorKind: ChatRecorderErrorKind.permissionDenied,
         );
-        await recorder.dispose();
         return;
       }
 
       // Use app-scoped temporary directory for better privacy
       final baseTemp = await _tempDirectoryProvider();
-      if (!ref.mounted) {
-        await recorder.dispose();
-        return;
-      }
-      final tempDir = await Directory(
+      if (!ref.mounted || currentOpId != _operationId) return;
+      tempDir = await Directory(
         '${baseTemp.path}/lotti_chat_rec',
       ).create(recursive: true);
-      if (!ref.mounted) {
-        await recorder.dispose();
-        await _deleteDirectoryQuietly(tempDir);
-        return;
-      }
-      _tempDir = tempDir;
+      if (!ref.mounted || currentOpId != _operationId) return;
       final fileName = 'chat_${_nowMillisProvider()}.m4a';
-      _filePath = '${_tempDir!.path}/$fileName';
+      final filePath = '${tempDir.path}/$fileName';
 
+      nativeStartAttempted = true;
       await recorder.start(
         record.RecordConfig(
           sampleRate: _config.sampleRate,
           autoGain: true,
         ),
-        path: _filePath!,
+        path: filePath,
       );
-      if (!ref.mounted) {
-        await recorder.stop();
-        await recorder.dispose();
-        return;
-      }
+      if (!ref.mounted || currentOpId != _operationId) return;
 
       _recorder = recorder;
+      _tempDir = tempDir;
+      _filePath = filePath;
+      _resolveTranscriptionTarget = resolveTranscriptionTarget;
+      transferred = true;
 
-      // Increment operation ID for this recording session
-      final currentOpId = ++_operationId;
+      final startedAt = _nowMillisProvider();
 
       // Set recording status immediately after successful start
       state = state.copyWith(
         status: ChatRecorderStatus.recording,
+        elapsed: Duration.zero,
         amplitudeHistory: [], // Clear old history
       );
 
@@ -207,6 +223,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
             final dBFS = event.current;
             state = state.copyWith(
               status: ChatRecorderStatus.recording,
+              elapsed: Duration(
+                milliseconds: (_nowMillisProvider() - startedAt).clamp(
+                  0,
+                  _config.maxSeconds * 1000,
+                ),
+              ),
               amplitudeHistory: appendAmplitudeSample(
                 state.amplitudeHistory,
                 dBFS,
@@ -230,70 +252,85 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'start',
       );
     } catch (e) {
-      if (ref.mounted) {
+      startError = e;
+      if (transferred && currentOpId == _operationId) {
+        await _cleanupInternal();
+      }
+    } finally {
+      if (!transferred) {
+        if (nativeStartAttempted) {
+          try {
+            await recorder.stop();
+          } catch (_) {}
+        }
+        try {
+          await recorder.dispose();
+        } catch (_) {}
+        await _deleteDirectoryQuietly(tempDir);
+      }
+      if (startError != null && ref.mounted && currentOpId == _operationId) {
         state = state.copyWith(
-          error: 'Failed to start recording: $e',
+          status: ChatRecorderStatus.idle,
+          error: 'Failed to start recording: $startError',
           errorKind: ChatRecorderErrorKind.startFailed,
         );
       }
-      await _cleanupInternal();
-    } finally {
       _isStarting = false;
+      _startFuture = null;
+      started.complete();
     }
   }
 
-  /// Stops the batch recording and transcribes the captured file, streaming
-  /// progress into [ChatRecorderState.partialTranscript] and landing the final
-  /// text in [ChatRecorderState.transcript]. Always cleans up the recorder and
-  /// temp file via `_cleanupInternal`, even on failure. No-op if no recording
-  /// is active.
+  /// Stops and transcribes this recording, keeping its recorder, path and
+  /// route bound to the captured operation. Cleanup finishes before publishing
+  /// idle; a cancelled operation never cleans up a later recording's resources.
   Future<void> stopAndTranscribe() async {
-    if (!ref.mounted) return;
-    if (_recorder == null) return;
-
-    // Capture current operation ID
+    if (!ref.mounted || state.status != ChatRecorderStatus.recording) return;
+    final recorder = _recorder;
+    if (recorder == null) return;
     final currentOpId = _operationId;
+    final filePath = _filePath;
+    final resolveTarget = _resolveTranscriptionTarget;
+    final ampSub = _ampSub;
+    ChatRecorderState? completed;
 
     state = state.copyWith(status: ChatRecorderStatus.processing);
     _maxTimer?.cancel();
-
     try {
-      await _ampSub?.cancel();
-      await _recorder!.stop();
-    } catch (e, s) {
-      getIt<DomainLogger>().error(
-        LogDomain.chat,
-        e,
-        stackTrace: s,
-        subDomain: 'stopAndTranscribe.stop',
-      );
-    }
-
-    final filePath = _filePath;
-    if (filePath == null) {
-      await _cleanupInternal();
-      // Only update state if this operation is still current and ref is valid
-      if (currentOpId == _operationId && ref.mounted) {
-        state = state.copyWith(
+      try {
+        await ampSub?.cancel();
+        if (!ref.mounted || currentOpId != _operationId) return;
+        await recorder.stop();
+      } catch (e, s) {
+        getIt<DomainLogger>().error(
+          LogDomain.chat,
+          e,
+          stackTrace: s,
+          subDomain: 'stopAndTranscribe.stop',
+        );
+      }
+      if (!ref.mounted || currentOpId != _operationId) return;
+      if (filePath == null) {
+        completed = state.copyWith(
           status: ChatRecorderStatus.idle,
           error: 'No audio file available',
           errorKind: ChatRecorderErrorKind.noAudioFile,
         );
+        return;
       }
-      return;
-    }
-
-    try {
-      final transcript = await _transcribe(filePath, currentOpId);
-      // Only update state if this operation is still current and ref is valid
+      final transcript = await _transcribe(
+        filePath,
+        currentOpId,
+        resolveTarget,
+      );
       if (currentOpId == _operationId && ref.mounted) {
-        // partialTranscript cleared automatically (defaults to null)
-        state = state.copyWith(
+        completed = state.copyWith(
           status: ChatRecorderStatus.idle,
           transcript: transcript,
         );
       }
     } catch (e, stackTrace) {
+      if (currentOpId != _operationId || !ref.mounted) return;
       getIt<DomainLogger>().error(
         LogDomain.chat,
         e,
@@ -301,38 +338,44 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'stopAndTranscribe.transcription',
         message: 'Voice transcription failed',
       );
-      // Only update state if this operation is still current and ref is valid
-      if (currentOpId == _operationId && ref.mounted) {
-        // partialTranscript cleared automatically (defaults to null)
-        state = state.copyWith(
-          status: ChatRecorderStatus.idle,
-          error: switch (e) {
-            TranscriptionException(:final message) => message,
-            _ => e.toString(),
-          },
-          // A missing audio model is a setup problem the user can fix, not a
-          // failed request — it earns its own message rather than the
-          // generic transcription failure.
-          errorKind: e.toString().contains('No audio-capable models')
-              ? ChatRecorderErrorKind.noAudioModel
-              : ChatRecorderErrorKind.transcriptionFailed,
-        );
-      }
+      completed = state.copyWith(
+        status: ChatRecorderStatus.idle,
+        error: switch (e) {
+          TranscriptionException(:final message) => message,
+          _ => e.toString(),
+        },
+        errorKind: e.toString().contains('No audio-capable models')
+            ? ChatRecorderErrorKind.noAudioModel
+            : ChatRecorderErrorKind.transcriptionFailed,
+      );
     } finally {
-      await _cleanupInternal();
+      if (currentOpId == _operationId) {
+        await _cleanupInternal();
+        if (currentOpId == _operationId && ref.mounted && completed != null) {
+          state = completed;
+        }
+      }
     }
   }
 
-  /// Cancel current recording and discard audio without transcription.
-  Future<void> cancel() async {
+  /// Cancels the current operation and joins any cancellation already running.
+  /// Idle is published only after its resources have been released.
+  Future<void> cancel() => _cancelFuture ??= _cancelCurrent().whenComplete(() {
+    _cancelFuture = null;
+  });
+
+  Future<void> _cancelCurrent() async {
     if (!ref.mounted) return;
-    if (state.status != ChatRecorderStatus.recording &&
+    if (!_isStarting &&
+        state.status != ChatRecorderStatus.recording &&
         state.status != ChatRecorderStatus.processing) {
       return;
     }
 
     // Invalidate current operation to prevent any in-flight async work from updating state
-    _operationId++;
+    final cancelledOpId = ++_operationId;
+    await _startFuture;
+    final recorder = _recorder;
 
     _maxTimer?.cancel();
     try {
@@ -347,7 +390,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
 
     try {
-      await _recorder?.stop();
+      await recorder?.stop();
     } catch (e, s) {
       getIt<DomainLogger>().error(
         LogDomain.chat,
@@ -358,17 +401,20 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
 
     await _cleanupInternal();
-    if (ref.mounted) {
+    if (ref.mounted && cancelledOpId == _operationId) {
       state = state.copyWith(status: ChatRecorderStatus.idle);
     }
   }
 
   // Transcribes audio with streaming updates to partialTranscript
-  Future<String> _transcribe(String filePath, int operationId) async {
+  Future<String> _transcribe(
+    String filePath,
+    int operationId,
+    ChatTranscriptionTargetResolver? resolveTarget,
+  ) async {
     final buffer = StringBuffer();
     var chunkCount = 0;
 
-    final resolveTarget = _resolveTranscriptionTarget;
     final target = resolveTarget == null ? null : await resolveTarget();
     if (!ref.mounted || operationId != _operationId) return '';
     final stream = target == null
@@ -409,10 +455,24 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   List<double> getNormalizedAmplitudeHistory() =>
       normalizeAmplitudeHistory(state.amplitudeHistory);
 
-  Future<void> _cleanupInternal() async {
+  Future<void> _cleanupInternal() =>
+      _cleanupFuture ??= _cleanupResources().whenComplete(() {
+        _cleanupFuture = null;
+      });
+
+  Future<void> _cleanupResources() async {
+    final ampSub = _ampSub;
+    final recorder = _recorder;
+    final filePath = _filePath;
+    final tempDir = _tempDir;
+    _ampSub = null;
+    _recorder = null;
+    _filePath = null;
+    _tempDir = null;
+    _maxTimer?.cancel();
+    _maxTimer = null;
     try {
-      await _ampSub?.cancel();
-      _ampSub = null;
+      await ampSub?.cancel();
     } catch (e, s) {
       getIt<DomainLogger>().error(
         LogDomain.chat,
@@ -422,7 +482,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       );
     }
     try {
-      await _recorder?.dispose();
+      await recorder?.dispose();
     } catch (e, s) {
       getIt<DomainLogger>().error(
         LogDomain.chat,
@@ -431,12 +491,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'cleanup.recorder',
       );
     }
-    _recorder = null;
-    _maxTimer?.cancel();
-    _maxTimer = null;
     try {
-      if (_filePath != null) {
-        final f = File(_filePath!);
+      if (filePath != null) {
+        final f = File(filePath);
         try {
           await f.delete().timeout(
             const Duration(seconds: _fileDeleteTimeoutSeconds),
@@ -460,9 +517,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       );
     }
     try {
-      if (_tempDir != null) {
+      if (tempDir != null) {
         try {
-          await _tempDir!
+          await tempDir
               .delete(recursive: true)
               .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
         } on PathNotFoundException catch (e, s) {
@@ -483,8 +540,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'cleanup.tempDir',
       );
     }
-    _tempDir = null;
-    _filePath = null;
     // Keep amplitude history so UI shows a bit of trailing bars until next start
   }
 

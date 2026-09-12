@@ -160,6 +160,7 @@ void main() {
     );
     expect(notes.documents.map((d) => d.entry.meta.id), ['task']);
     expect(notes.coverage.missingTranscripts, 0);
+    expect(notes.coverage.unreadableSources, isEmpty);
     expect(notes.coverage.incomplete, isFalse);
     final recordings = await bench.crawler.discover(
       scope,
@@ -168,6 +169,8 @@ void main() {
     );
     expect(recordings.documents, isEmpty);
     expect(recordings.coverage.missingTranscripts, 1);
+    expect(recordings.coverage.unreadableSources.single.id, 'recording');
+    expect(recordings.coverage.unreadableSources.single.private, isFalse);
     expect(recordings.coverage.incomplete, isTrue);
   });
 

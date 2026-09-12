@@ -10922,6 +10922,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryArchiveChat => 'Arkivér chat';
 
   @override
+  String get queryArchiveConfirmation =>
+      'Chat arkiveret. Konklusionerne er stadig tilgængelige.';
+
+  @override
   String get queryArchivedChats => 'Arkiverede chats';
 
   @override
@@ -10958,6 +10962,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Citatet kunne ikke knyttes entydigt til optagelsen. Du kan stadig åbne hele posten.';
 
   @override
+  String get queryAudioOpenRecording => 'Åbn optagelse';
+
+  @override
   String get queryAudioPrepare => 'Forbered lyduddrag';
 
   @override
@@ -10965,6 +10972,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Læs svaret højt';
+
+  @override
+  String get queryAudioRetry => 'Prøv lyd igen';
 
   @override
   String get queryAudioStale =>
@@ -11006,11 +11016,30 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryCoverage => 'Hvad blev søgt igennem?';
 
   @override
+  String get queryCoverageCategory => 'Denne kategori';
+
+  @override
+  String get queryCoverageExcluded => 'Andre kategorier blev ikke gennemsøgt.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Ingen søgbar tekst, da dette svar blev skrevet. Åbn optagelsen for at lytte til den.';
+
+  @override
+  String get queryCoverageWider => 'Andre poster i denne kategori';
+
+  @override
   String get queryDeleteChat => 'Slet chat';
 
   @override
   String get queryDeleteExplanation =>
       'Slet denne samtale? Vælg, hvad der sker med dens delte konklusioner. Kildeindlæg påvirkes ikke.';
+
+  @override
+  String get queryDeleteForget => 'Slet og glem konklusioner';
+
+  @override
+  String get queryDeleteKeep => 'Slet og behold konklusioner';
 
   @override
   String get queryDictated =>
@@ -11040,7 +11069,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Var det en beslutning eller et forslag?';
 
   @override
-  String get queryExpanding => 'Tjekker andre projekter i denne kategori…';
+  String get queryExpanding => 'Kontrollerer andre poster i denne kategori…';
 
   @override
   String get queryFailed => 'Søgningen kunne ikke afsluttes. Prøv igen.';
@@ -11058,8 +11087,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryHomeOnly => 'Kun udgangsområdet';
 
   @override
+  String get queryHomeScope => 'Udgangsområde';
+
+  @override
   String get queryIncomplete =>
       'Søgningen er ufuldstændig. Manglende belæg betyder ikke, at samtalen aldrig fandt sted.';
+
+  @override
+  String get queryIncompleteShort => 'Nogle kilder kunne ikke kontrolleres.';
 
   @override
   String get queryInferenceUnavailable =>
@@ -11086,9 +11121,8 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count optagelser har ingen søgbar tekst. Åbn dem i journalen for at transskribere dem.',
-      one:
-          '1 optagelse har ingen søgbar tekst. Åbn den i journalen for at transskribere den.',
+          '$count optagelser havde ingen søgbar tekst, da dette svar blev skrevet.',
+      one: '1 optagelse havde ingen søgbar tekst, da dette svar blev skrevet.',
     );
     return '$_temp0';
   }
@@ -11104,6 +11138,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryNotes => 'Noter';
 
   @override
+  String get queryOpenCurrentEntry => 'Åbn den aktuelle post';
+
+  @override
   String get queryOpenEntry => 'Åbn indlæg';
 
   @override
@@ -11114,13 +11151,17 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Søger først i dette område og derefter i $category.';
+    return 'Søger i dette område og i $category.';
   }
 
   @override
   String queryReachCategoryOnly(String category) {
     return 'Søger inden for $category.';
   }
+
+  @override
+  String get queryReachHome =>
+      'Søger kun i dette område og dets tilknyttede poster.';
 
   @override
   String get queryReachUncategorized =>
@@ -11144,6 +11185,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Dette gemte citat afspejler kilden, da svaret blev skrevet.';
 
   @override
+  String querySavedVersion(String version) {
+    return 'Gemt version: $version';
+  }
+
+  @override
   String get querySearching => 'Søger i tilknyttede noter og optagelser…';
 
   @override
@@ -11154,6 +11200,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Kilde flyttet til en anden kategori';
+
+  @override
+  String get querySurroundingLimit =>
+      'Den omgivende tekst er et gemt uddrag. Åbn posten for at se hele diskussionen.';
 
   @override
   String get querySurroundingText => 'Vis omgivende tekst';

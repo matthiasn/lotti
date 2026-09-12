@@ -10991,6 +10991,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queryArchiveChat => 'Chat archivieren';
 
   @override
+  String get queryArchiveConfirmation =>
+      'Chat archiviert. Seine Erkenntnisse bleiben verfügbar.';
+
+  @override
   String get queryArchivedChats => 'Archivierte Chats';
 
   @override
@@ -11027,6 +11031,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Zitat ließ sich der Aufnahme nicht eindeutig zuordnen. Du kannst weiterhin den vollständigen Eintrag öffnen.';
 
   @override
+  String get queryAudioOpenRecording => 'Aufnahme öffnen';
+
+  @override
   String get queryAudioPrepare => 'Audioausschnitt vorbereiten';
 
   @override
@@ -11034,6 +11041,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Antwort vorlesen';
+
+  @override
+  String get queryAudioRetry => 'Audio erneut versuchen';
 
   @override
   String get queryAudioStale =>
@@ -11075,11 +11085,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queryCoverage => 'Was wurde durchsucht?';
 
   @override
+  String get queryCoverageCategory => 'Diese Kategorie';
+
+  @override
+  String get queryCoverageExcluded =>
+      'Andere Kategorien wurden nicht durchsucht.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Als diese Antwort entstand, gab es keinen durchsuchbaren Text. Öffne die Aufnahme, um sie anzuhören.';
+
+  @override
+  String get queryCoverageWider => 'Weitere Einträge in dieser Kategorie';
+
+  @override
   String get queryDeleteChat => 'Chat löschen';
 
   @override
   String get queryDeleteExplanation =>
       'Diesen Chat löschen? Wähle, was mit seinen geteilten Erkenntnissen geschieht. Quelleneinträge bleiben erhalten.';
+
+  @override
+  String get queryDeleteForget => 'Löschen und Erkenntnisse vergessen';
+
+  @override
+  String get queryDeleteKeep => 'Löschen und Erkenntnisse behalten';
 
   @override
   String get queryDictated =>
@@ -11111,7 +11141,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queryExpanding =>
-      'Andere Projekte in dieser Kategorie werden geprüft…';
+      'Weitere Einträge in dieser Kategorie werden geprüft…';
 
   @override
   String get queryFailed =>
@@ -11130,8 +11160,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queryHomeOnly => 'Nur Ausgangsbereich';
 
   @override
+  String get queryHomeScope => 'Ausgangsbereich';
+
+  @override
   String get queryIncomplete =>
       'Die Suche ist unvollständig. Fehlende Belege bedeuten nicht, dass die Diskussion nie stattgefunden hat.';
+
+  @override
+  String get queryIncompleteShort =>
+      'Einige Quellen konnten nicht geprüft werden.';
 
   @override
   String get queryInferenceUnavailable =>
@@ -11158,9 +11195,9 @@ class AppLocalizationsDe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count Aufnahmen haben keinen durchsuchbaren Text. Öffne sie im Journal, um sie zu transkribieren.',
+          '$count Aufnahmen hatten keinen durchsuchbaren Text, als diese Antwort entstand.',
       one:
-          '1 Aufnahme hat keinen durchsuchbaren Text. Öffne sie im Journal, um sie zu transkribieren.',
+          '1 Aufnahme hatte keinen durchsuchbaren Text, als diese Antwort entstand.',
     );
     return '$_temp0';
   }
@@ -11176,6 +11213,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queryNotes => 'Notizen';
 
   @override
+  String get queryOpenCurrentEntry => 'Aktuellen Eintrag öffnen';
+
+  @override
   String get queryOpenEntry => 'Eintrag öffnen';
 
   @override
@@ -11186,13 +11226,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Durchsucht zuerst diesen Bereich, dann $category.';
+    return 'Durchsucht diesen Bereich und $category.';
   }
 
   @override
   String queryReachCategoryOnly(String category) {
     return 'Durchsucht $category.';
   }
+
+  @override
+  String get queryReachHome =>
+      'Durchsucht nur diesen Bereich und seine verknüpften Einträge.';
 
   @override
   String get queryReachUncategorized =>
@@ -11215,6 +11259,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses gespeicherte Zitat entspricht der Quelle zum Zeitpunkt der Antwort.';
 
   @override
+  String querySavedVersion(String version) {
+    return 'Gespeicherte Version: $version';
+  }
+
+  @override
   String get querySearching =>
       'Verknüpfte Notizen und Aufnahmen werden durchsucht…';
 
@@ -11226,6 +11275,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Quelle in eine andere Kategorie verschoben';
+
+  @override
+  String get querySurroundingLimit =>
+      'Der umgebende Text ist ein gespeicherter Auszug. Öffne den Eintrag für die vollständige Diskussion.';
 
   @override
   String get querySurroundingText => 'Umgebenden Text anzeigen';
