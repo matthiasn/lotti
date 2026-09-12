@@ -5,7 +5,7 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T13:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T12:48:35Z }
 stale_after: 2026-10-19
 sources:
   - id: melious
@@ -180,6 +180,11 @@ live comparison and reproduction commands are in the
 
 **Reference-image generation is rejected explicitly** rather than silently
 ignored, because Melious currently documents only text-to-image generation.
+
+Buffered chat requests use an owned `AbortableRequest`. Cancelling the synthetic
+stream aborts that request without closing the shared client or cancelling a
+sibling chat. This lets a shorter query deadline stop waiting for the longer
+HTTP timeout; it does not change request payloads or enable incremental text.
 
 ## Melious reports cost and impact only off the streaming path
 

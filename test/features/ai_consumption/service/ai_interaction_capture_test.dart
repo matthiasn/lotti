@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -48,6 +50,102 @@ void main() {
       ),
     ).thenAnswer((_) async => makeAiWorkAttribution());
     when(() => service.finalize(any())).thenAnswer((_) async {});
+  });
+
+  group('stream lifecycle', () {
+    late AiInteractionCaptureTestBench bench;
+    setUp(() => bench = AiInteractionCaptureTestBench.create());
+
+    Stream<String> captureSource(Stream<String> Function() invoke) =>
+        bench.capture.captureStream(
+          workType: AiWorkType.textGeneration,
+          interactionKind: AiInteractionKind.chatCompletion,
+          responseType: AiConsumptionResponseType.textGeneration,
+          providerType: InferenceProviderType.melious,
+          modelId: 'synthetic-model',
+          requestText: 'synthetic request',
+          invoke: invoke,
+          responseText: (chunk) => chunk,
+          usageForChunk: (chunk) => chunk == 'two'
+              ? const AiCapturedUsage(inputTokens: 12, outputTokens: 2)
+              : null,
+        );
+
+    test('cancellation reaches a provider that has not emitted', () async {
+      final listening = Completer<void>();
+      var providerCancelled = false;
+      final source = StreamController<String>(
+        onListen: listening.complete,
+        onCancel: () => providerCancelled = true,
+      );
+      final received = <String>[];
+      final subscription = captureSource(
+        () => source.stream,
+      ).listen(received.add);
+      await listening.future;
+      final stopped = subscription.cancel();
+      try {
+        await Future<void>.value();
+        expect(providerCancelled, isTrue);
+      } finally {
+        await source.close();
+        await stopped;
+      }
+      expect(received, isEmpty);
+      final event = bench.recordedInteractions.single;
+      expect(event.interactionStatus, AiInteractionStatus.cancelled);
+      expect(event.errorCode, 'cancelled');
+      expect(event.inputTokens, isNull);
+    });
+
+    test('cancelling during attribution prevents the provider call', () async {
+      final identityPending = Completer<AiActorSnapshot>();
+      final resolving = Completer<void>();
+      when(bench.identity.humanInitiator).thenAnswer((_) {
+        resolving.complete();
+        return identityPending.future;
+      });
+      var invoked = false;
+      final subscription = captureSource(() {
+        invoked = true;
+        return Stream.value('unexpected');
+      }).listen((_) => fail('Cancelled capture must not emit'));
+      await resolving.future;
+      final stopped = subscription.cancel();
+      identityPending.complete(makeAiActor());
+      await stopped;
+      expect(invoked, isFalse);
+      expect(
+        bench.recordedInteractions.single.interactionStatus,
+        AiInteractionStatus.cancelled,
+      );
+    });
+
+    test(
+      'normal completion retains streamed content and provider usage',
+      () async {
+        expect(
+          await captureSource(() => Stream.fromIterable(['one', 'two'])).join(),
+          'onetwo',
+        );
+        final event = bench.recordedInteractions.single;
+        expect(event.interactionStatus, AiInteractionStatus.succeeded);
+        expect(event.inputTokens, 12);
+        expect(event.outputTokens, 2);
+        expect(event.responseDigest, isNot('onetwo'));
+      },
+    );
+
+    test('provider failure is recorded once and reaches the caller', () async {
+      await expectLater(
+        captureSource(() => Stream.error(StateError('synthetic'))).toList(),
+        throwsStateError,
+      );
+      final event = bench.recordedInteractions.single;
+      expect(event.interactionStatus, AiInteractionStatus.failed);
+      expect(event.errorCode, 'StateError');
+      expect(event.errorSummary, isNull);
+    });
   });
 
   test('starts attribution before invoking the provider', () async {

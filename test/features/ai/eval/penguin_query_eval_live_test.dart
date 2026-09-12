@@ -1,0 +1,333 @@
+@Tags(['eval-live'])
+library;
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:crypto/crypto.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/query/query_answer_builder.dart';
+import 'package:lotti/features/agents/query/query_chat_projection.dart';
+import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:lotti/features/agents/query/query_text_inference.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
+import 'support/eval_text_matchers.dart';
+import 'support/penguin_query_eval.dart';
+
+/// Opt-in live baseline of the production query builder and production Melious
+/// transport. Artifacts contain only the canonical synthetic penguin corpus.
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(registerAllFallbackValues);
+  test(
+    'measures scoped query latency and evidence against the shipped penguins',
+    () async {
+      HttpOverrides.global = null;
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      final env = Platform.environment;
+      final apiKey = env['QUERY_EVAL_API_KEY'] ?? env['MELIOUS_API_KEY'] ?? '';
+      final baseUrl = env['QUERY_EVAL_BASE_URL'] ?? env['MELIOUS_BASE_URL'];
+      final model = env['QUERY_EVAL_MODEL'];
+      final output = env['QUERY_EVAL_OUTPUT'];
+      expect(
+        apiKey,
+        isNotEmpty,
+        reason: 'Set QUERY_EVAL_API_KEY or MELIOUS_API_KEY',
+      );
+      expect(
+        baseUrl,
+        isNotNull,
+        reason: 'Set QUERY_EVAL_BASE_URL or MELIOUS_BASE_URL',
+      );
+      expect(model, isNotNull, reason: 'Explicit QUERY_EVAL_MODEL is required');
+      expect(
+        output,
+        isNotNull,
+        reason: 'Set QUERY_EVAL_OUTPUT outside the repository',
+      );
+      final artifactFile = File(output!).absolute;
+      final root = Directory.current.absolute.path;
+      expect(
+        artifactFile.path.startsWith('$root${Platform.pathSeparator}'),
+        isFalse,
+        reason: 'Generated model output must stay outside the repository',
+      );
+      final corpus = PenguinQueryCorpus();
+      final database = PenguinQueryDatabase(corpus);
+      addTearDown(database.close);
+      await database.seed();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        cloudInferenceRepositoryProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      final provider = AiConfigInferenceProvider(
+        id: 'penguin-query-eval-provider',
+        name: 'Penguin query eval',
+        baseUrl: baseUrl!,
+        apiKey: apiKey,
+        inferenceProviderType: InferenceProviderType.melious,
+        createdAt: manualDemoNow,
+      );
+      final profile = ResolvedProfile(
+        thinkingModelId: model!,
+        thinkingProvider: provider,
+      );
+      final accounting = AiInteractionCaptureTestBench.create();
+      final original = QueryTextInference.forProfile(
+        cloud: container.read(cloudInferenceRepositoryProvider),
+        profile: profile,
+        agentId: 'penguin-query-eval-agent',
+        chatId: 'penguin-query-eval',
+        categoryId: corpus.task.meta.categoryId,
+        taskId: corpus.task.meta.id,
+        capture: accounting.capture,
+      );
+      final selected = env['QUERY_EVAL_CASES']?.split(',').toSet();
+      final questions = penguinQueryQuestions
+          .where((q) => selected == null || selected.contains(q.id))
+          .toList();
+      expect(questions, isNotEmpty);
+      if (selected != null) {
+        expect(
+          questions.map((q) => q.id).toSet(),
+          selected,
+          reason: 'Unknown case ID',
+        );
+      }
+      final artifacts = <Map<String, Object?>>[];
+      final answers = <String, QueryBuiltAnswer>{};
+      final questionEvents = <String, AgentQueryChatEventEntity>{};
+      final homeOnly = env['QUERY_EVAL_HOME_ONLY'] == '1';
+      final legacyFlow = env['QUERY_EVAL_LEGACY_FLOW'] == '1';
+      final batchInputBytes = legacyFlow
+          ? 1
+          : QueryAnswerBuilder.defaultBatchInputBytes;
+      final report = <String, Object?>{
+        'schemaVersion': 1,
+        'sourceHashes': {
+          for (final file in [
+            'lib/features/agents/query/query_answer_builder.dart',
+            'lib/features/agents/query/query_journal_crawler.dart',
+            'lib/features/agents/query/query_text_inference.dart',
+            'lib/features/ai/repository/cloud_inference_generate.dart',
+            'lib/features/ai/repository/melious_inference_repository.dart',
+            'lib/features/ai_consumption/service/ai_interaction_capture.dart',
+            'lib/features/demo/seed/demo_world.dart',
+            'test/features/ai/eval/penguin_query_eval_live_test.dart',
+            'test/features/ai/eval/support/penguin_query_eval.dart',
+          ])
+            file: sha256.convert(File(file).readAsBytesSync()).toString(),
+        },
+        'variant': env['QUERY_EVAL_VARIANT'] ?? 'production-baseline',
+        'sampling': {
+          'temperature': 0.2,
+          'maxCompletionTokens': null,
+          'reasoningEffort': null,
+          'modelSettings': 'No app model row; provider defaults apply',
+        },
+        'model': model,
+        'provider': provider.inferenceProviderType.name,
+        'endpointOrigin': Uri.parse(baseUrl).origin,
+        'homeOnly': homeOnly,
+        'legacyFlow': legacyFlow,
+        'turnOrdering':
+            'question, answer/memory, follow-up at distinct instants',
+        'corpus': corpus.inventory,
+        'limits': {
+          'sourceCallsPerQuestion': 8,
+          'batchInputBytes': batchInputBytes,
+          'totalCallsPerQuestion': 12,
+          'questions': questions.length,
+        },
+        'measurement':
+            'Question-to-built-answer wall time; excludes fixture seeding and UI. '
+            'Per-call time includes HTTP, inference and JSON parsing. No token/TTFT claims. '
+            'Provider cache is uncontrolled; repeat sequentially before comparing medians.',
+        'qualityLimit':
+            'Deterministic fact, quote and citation gates; manual semantic review still required.',
+        'results': artifacts,
+      };
+      void save() {
+        artifactFile.parent.createSync(recursive: true);
+        artifactFile.writeAsStringSync(
+          const JsonEncoder.withIndent('  ').convert(report),
+        );
+      }
+
+      save();
+      for (final scenario in questions) {
+        accounting.clearRecordedInteractions();
+        final prior = scenario.followUpTo;
+        if (prior != null && !answers.containsKey(prior)) {
+          artifacts.add({
+            'case': scenario.id,
+            'status': 'blocked',
+            'reason': 'Preceding live answer unavailable',
+          });
+          save();
+          continue;
+        }
+        final turn = makePenguinQueryTurn(
+          scenario,
+          previousQuestion: prior == null ? null : questionEvents[prior],
+          previousAnswer: prior == null ? null : answers[prior],
+        );
+        final question = turn.question;
+        questionEvents[scenario.id] = question;
+        final measured = MeasuredQueryInference(original, onCallRecorded: save);
+        final cancellation = QueryCancellation();
+        final clock = Stopwatch()..start();
+        final artifact = <String, Object?>{
+          'case': scenario.id,
+          'question': scenario.question,
+          'memoryCandidateCount': turn.memories.length,
+          'calls': measured.calls,
+        };
+        artifacts.add(artifact);
+        var checked = 0;
+        var authorizationFailed = false;
+        try {
+          final built =
+              await QueryAnswerBuilder(
+                crawler: database.crawler,
+                access: database.access,
+                inference: measured,
+                maxSourceCalls: 8,
+                maxBatchBytes: batchInputBytes,
+              ).build(
+                chat: QueryChatHistory(
+                  id: 'chat',
+                  scope: corpus.scope,
+                  title: corpus.task.data.title,
+                  private: false,
+                  archived: false,
+                  lastActivity: question.createdAt,
+                  events: turn.events,
+                  unread: false,
+                ),
+                question: question,
+                memories: turn.memories,
+                cancellation: cancellation,
+                homeOnly: homeOnly,
+                onProgress: (count, {required expanded}) {
+                  checked = count;
+                },
+                onAnswering: () {
+                  artifact['answeringStartsMs'] =
+                      clock.elapsedMicroseconds / 1000;
+                },
+              );
+          answers[scenario.id] = built;
+          final answer = built.answer;
+          final quotes = answer.evidence.map((e) => e.quote).join('\n');
+          final byId = {
+            for (final e in corpus.world.journalEntities) e.meta.id: e,
+          };
+          final citations = RegExp(
+            r'\[(\d+)\]',
+          ).allMatches(answer.text).map((m) => int.parse(m.group(1)!)).toList();
+          final checks = <String, bool>{
+            'answerFacts': scenario.answerTerms.every(
+              (terms) => containsAnyEvalTerm(answer.text, terms),
+            ),
+            'expectedQuotedFacts': scenario.quoteTerms.every(quotes.contains),
+            'exactStoredQuotes': answer.evidence.every((e) {
+              final entry = byId[e.source.id];
+              final document = entry == null
+                  ? null
+                  : QuerySourceDocument.fromEntry(entry);
+              return document != null &&
+                  document.text.contains(e.quote) &&
+                  document.fingerprint == e.fingerprint;
+            }),
+            'sameCategory': answer.evidence.every(
+              (e) =>
+                  byId[e.source.id]?.meta.categoryId ==
+                  corpus.task.meta.categoryId,
+            ),
+            'validCitations': citations.every(
+              (n) => n > 0 && n <= answer.evidence.length,
+            ),
+            'citesEvidence': scenario.absent || citations.isNotEmpty,
+            'widerAttribution':
+                !scenario.outsideHome ||
+                answer.evidence.any(
+                  (e) => e.outsideHome && e.quote.contains('nine minutes'),
+                ),
+            'noInventedAnswer': !scenario.absent || answer.evidence.isEmpty,
+          };
+          artifact.addAll({
+            'status': 'complete',
+            'answer': answer.toJson(),
+            'checks': checks,
+            'passed': checks.values.every((v) => v),
+          });
+        } catch (error) {
+          authorizationFailed =
+              error is MeliousInferenceException &&
+              (error.statusCode == 401 || error.statusCode == 403);
+          artifact.addAll({
+            'status': 'error',
+            'errorType': error.runtimeType.toString(),
+            if (error is MeliousInferenceException) ...{
+              'httpStatus': error.statusCode,
+              'causeType': error.originalError?.runtimeType.toString(),
+            },
+            'passed': false,
+          });
+        } finally {
+          clock.stop();
+          cancellation.cancel();
+          artifact.addAll({
+            'totalMs': clock.elapsedMicroseconds / 1000,
+            'checkedSources': checked,
+            'callCount': measured.calls.length,
+            'providerUsage': [
+              for (final event in accounting.recordedInteractions)
+                {
+                  'status': event.interactionStatus.name,
+                  'inputTokens': event.inputTokens,
+                  'outputTokens': event.outputTokens,
+                  'cachedInputTokens': event.cachedInputTokens,
+                  'reasoningTokens': event.thoughtsTokens,
+                  'totalTokens': event.totalTokens,
+                  'credits': event.credits,
+                  'costCreditsDecimal': event.costCreditsDecimal,
+                  'energyKwh': event.energyKwh,
+                  'upstreamProviderId': event.upstreamProviderId,
+                },
+            ],
+          });
+          save();
+        }
+        // Only synthetic case ID and aggregate timing; no raw provider errors.
+        // ignore: avoid_print
+        print(
+          '${scenario.id}: ${artifact['status']}, ${artifact['totalMs']} ms, ${measured.calls.length} calls, quality=${artifact['passed']}',
+        );
+        if (authorizationFailed) break;
+      }
+      expect(
+        artifacts.every((a) => a['passed'] == true),
+        isTrue,
+        reason: 'Inspect the saved synthetic artifact for failed gates',
+      );
+    },
+    skip: Platform.environment['LOTTI_QUERY_EVAL_LIVE'] != '1',
+    timeout: const Timeout(Duration(minutes: 15)),
+  );
+}

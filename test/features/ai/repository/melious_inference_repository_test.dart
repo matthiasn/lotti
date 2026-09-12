@@ -9,13 +9,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/classes/audio_transcript_timing.dart';
+import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../ai_consumption/test_utils.dart';
 
 class _ChatStreamProbe {
   _ChatStreamProbe({required this.content});
@@ -96,6 +102,7 @@ File _temporaryMp3File([List<int> bytes = const [0x49, 0x44, 0x33]]) {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
   group('DeepSeek V4.1 forced tool compatibility', () {
     const model = 'deepseek-v4.1-flash';
     const tools = [entrySummaryTool];
@@ -2874,6 +2881,129 @@ void main() {
   group('non-streaming impact path', () {
     const baseUrl = 'https://api.melious.ai/v1';
     const apiKey = 'key';
+
+    for (final deadline in [false, true]) {
+      test(
+        'query cancellation deadline=$deadline aborts only its HTTP call',
+        () async {
+          late FakeAsync fakeClock;
+          late Future<Object?> outcome;
+          late Future<String> sibling;
+          fakeAsync((async) {
+            fakeClock = async;
+            final pending = <Completer<http.StreamedResponse>>[];
+            final aborted = <bool>[];
+            final repository = MeliousInferenceRepository(
+              httpClient: MockClient.streaming((request, _) {
+                final index = pending.length;
+                final response = Completer<http.StreamedResponse>();
+                pending.add(response);
+                aborted.add(false);
+                if (request is http.AbortableRequest) {
+                  unawaited(
+                    request.abortTrigger!.then((_) {
+                      aborted[index] = true;
+                      if (!response.isCompleted) {
+                        response.completeError(
+                          http.RequestAbortedException(request.url),
+                        );
+                      }
+                    }),
+                  );
+                }
+                return response.future;
+              }),
+            );
+            addTearDown(repository.close);
+            final accounting = AiInteractionCaptureTestBench.create();
+            Stream<CreateChatCompletionStreamResponse> raw() =>
+                repository.generateText(
+                  prompt: 'synthetic question',
+                  model: 'deepseek-v4.1-flash',
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                  impactCollector: InferenceImpactCollector(),
+                );
+            Stream<String> generate() => accounting.capture
+                .captureStream(
+                  workType: AiWorkType.textGeneration,
+                  interactionKind: AiInteractionKind.chatCompletion,
+                  responseType: AiConsumptionResponseType.textGeneration,
+                  providerType: InferenceProviderType.melious,
+                  modelId: 'deepseek-v4.1-flash',
+                  requestText: 'synthetic question',
+                  invoke: raw,
+                  responseText: (chunk) =>
+                      chunk.choices?.firstOrNull?.delta?.content ?? '',
+                )
+                .map(
+                  (chunk) => chunk.choices?.firstOrNull?.delta?.content ?? '',
+                );
+            final cancellation = QueryCancellation();
+            outcome = cancellation
+                .collect(generate())
+                .then<Object?>(
+                  (_) => fail('Cancelled query must not return an answer'),
+                  onError: (Object error) => error,
+                );
+            sibling = generate().join();
+            async.flushMicrotasks();
+            try {
+              expect(pending, hasLength(2));
+              if (deadline) {
+                async.elapse(const Duration(minutes: 2));
+              } else {
+                cancellation.cancel();
+              }
+              async.flushMicrotasks();
+              expect(aborted, [true, false]);
+              pending[1].complete(
+                http.StreamedResponse(
+                  Stream.value(
+                    utf8.encode(
+                      '{"choices":[{"message":{"content":"sibling answer"}}]}',
+                    ),
+                  ),
+                  200,
+                ),
+              );
+              async.flushMicrotasks();
+            } finally {
+              for (final response in pending) {
+                if (!response.isCompleted) {
+                  response.complete(
+                    http.StreamedResponse(
+                      Stream.value(utf8.encode('{"choices":[]}')),
+                      200,
+                    ),
+                  );
+                }
+              }
+              async.flushMicrotasks();
+            }
+          });
+          // Cancellation may return Dart's shared root-zone null future.
+          // Drain both microtask queues without advancing real or fake time.
+          Object? failure;
+          String? siblingAnswer;
+          unawaited(outcome.then<void>((value) => failure = value));
+          unawaited(sibling.then<void>((value) => siblingAnswer = value));
+          for (
+            var turn = 0;
+            turn < 20 && (failure == null || siblingAnswer == null);
+            turn++
+          ) {
+            await Future<void>.value();
+            fakeClock.flushMicrotasks();
+          }
+          expect(
+            failure,
+            deadline ? isA<TimeoutException>() : isA<QueryCancelled>(),
+          );
+          expect(siblingAnswer, 'sibling answer');
+        },
+      );
+    }
 
     MeliousInferenceRepository repositoryWith(MockClientHandler handler) {
       final repository = MeliousInferenceRepository(
