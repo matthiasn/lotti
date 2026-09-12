@@ -10,8 +10,11 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../agents/test_utils.dart';
 
 // The rest of day_agent_workflow_models.dart (tool exceptions, observation
@@ -742,7 +745,7 @@ void main() {
       expect(policy.forKind(DayAgentWakeKind.capture), 4096);
       expect(policy.forKind(DayAgentWakeKind.draft), 8192);
       expect(policy.forKind(DayAgentWakeKind.refine), 4096);
-      expect(policy.forKind(DayAgentWakeKind.digest), 4096);
+      expect(policy.forKind(DayAgentWakeKind.digest), 16384);
       expect(policy.forKind(DayAgentWakeKind.general), 4096);
     });
 
@@ -938,15 +941,20 @@ void main() {
       },
     );
 
-    test('a natural response below the ceiling completes normally', () async {
+    test('a digest above the former ceiling completes normally', () async {
       final chunks = [
         _textChunk(finishReason: ChatCompletionFinishReason.stop),
-        _usageChunk(outputTokens: 1200),
+        _usageChunk(outputTokens: 12000),
       ];
+      final delegate = _RecordingInferenceRepository([
+        Stream.fromIterable(chunks),
+      ]);
       final repository = DayAgentOutputBudgetInferenceRepository(
-        delegate: _StreamInferenceRepository(Stream.fromIterable(chunks)),
+        delegate: delegate,
         wakeKind: DayAgentWakeKind.digest,
-        maxCompletionTokens: 4096,
+        maxCompletionTokens: const DayAgentOutputTokenBudgetPolicy().forKind(
+          DayAgentWakeKind.digest,
+        ),
       );
 
       expect(
@@ -960,6 +968,117 @@ void main() {
             .toList(),
         chunks,
       );
+      expect(delegate.maxCompletionTokens, [16384]);
+    });
+
+    for (final scenario in [
+      (
+        provider: InferenceProviderType.melious,
+        completion: 4096,
+        reasoning: 0,
+        effective: 4096,
+      ),
+      (
+        provider: InferenceProviderType.melious,
+        completion: 4097,
+        reasoning: 0,
+        effective: 4097,
+      ),
+      (
+        provider: InferenceProviderType.gemini,
+        completion: 3000,
+        reasoning: 1097,
+        effective: 4097,
+      ),
+      (
+        provider: InferenceProviderType.melious,
+        completion: 3000,
+        reasoning: 1097,
+        effective: 3000,
+      ),
+    ]) {
+      test('logs usage above 4K for ${scenario.provider.name} '
+          '${scenario.completion}/${scenario.reasoning}', () async {
+        final logger = MockDomainLogger();
+        final usage = _usageChunk(
+          outputTokens: scenario.completion,
+          reasoningTokens: scenario.reasoning,
+        );
+        final repository = DayAgentOutputBudgetInferenceRepository(
+          delegate: _StreamInferenceRepository(
+            Stream.fromIterable([usage, usage]),
+          ),
+          wakeKind: DayAgentWakeKind.digest,
+          maxCompletionTokens: const DayAgentOutputTokenBudgetPolicy().digest,
+          domainLogger: logger,
+        );
+
+        await repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'test-model',
+              temperature: 0.3,
+              provider: testInferenceProvider(
+                inferenceProviderType: scenario.provider,
+              ),
+            )
+            .drain<void>();
+
+        if (scenario.effective > 4096) {
+          verify(
+            () => logger.log(
+              LogDomain.agentWorkflow,
+              'high output usage: wakeKind=digest '
+              'completionTokens=${scenario.completion} '
+              'reasoningTokens=${scenario.reasoning} '
+              'effectiveCompletionTokens=${scenario.effective} '
+              'threshold=4096 maxCompletionTokens=16384',
+              subDomain: 'outputBudget',
+            ),
+          ).called(1);
+        }
+        verifyNoMoreInteractions(logger);
+      });
+    }
+
+    test('logs peak usage even when the provider subsequently fails', () async {
+      final logger = MockDomainLogger();
+      final failure = StateError('provider disconnected');
+      Stream<CreateChatCompletionStreamResponse> source() async* {
+        yield _usageChunk(outputTokens: 7000);
+        yield _usageChunk(outputTokens: 5000);
+        throw failure;
+      }
+
+      final repository = DayAgentOutputBudgetInferenceRepository(
+        delegate: _StreamInferenceRepository(source()),
+        wakeKind: DayAgentWakeKind.digest,
+        maxCompletionTokens: const DayAgentOutputTokenBudgetPolicy().digest,
+        domainLogger: logger,
+      );
+
+      await expectLater(
+        repository
+            .generateTextWithMessages(
+              messages: const [],
+              model: 'test-model',
+              temperature: 0.3,
+              provider: testInferenceProvider(),
+            )
+            .drain<void>(),
+        throwsA(same(failure)),
+      );
+      verify(
+        () => logger.log(
+          LogDomain.agentWorkflow,
+          'high output usage: wakeKind=digest '
+          'completionTokens=7000 reasoningTokens=0 '
+          'effectiveCompletionTokens=7000 '
+          'threshold=4096 maxCompletionTokens=16384',
+          subDomain: 'outputBudget',
+        ),
+      ).called(1);
+      verifyNoMoreInteractions(logger);
     });
   });
 

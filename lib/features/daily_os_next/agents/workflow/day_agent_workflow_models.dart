@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -48,8 +49,9 @@ class DayAgentInferenceTimeoutPolicy {
 
 /// Per-provider-turn output ceilings selected from measured Daily OS wakes.
 ///
-/// Drafts receive more headroom because they serialize a complete block list.
-/// Capture, refine, and digest turns produce smaller bounded artifacts. The
+/// Drafts receive more headroom because they serialize a complete block list;
+/// digests receive additional headroom after repeated output-limit failures.
+/// Capture, refine, and general turns produce smaller bounded artifacts. The
 /// policy is injected into the day-agent workflow, so tests and future provider
 /// profiles can tune it without bypassing the truncation safety boundary.
 class DayAgentOutputTokenBudgetPolicy {
@@ -57,7 +59,7 @@ class DayAgentOutputTokenBudgetPolicy {
     this.capture = 4096,
     this.draft = 8192,
     this.refine = 4096,
-    this.digest = 4096,
+    this.digest = 16384,
     this.general = 4096,
   });
 
@@ -99,12 +101,15 @@ class DayAgentOutputLimitExceededException implements Exception {
 /// adapters can omit that signal, so reported completion usage at the ceiling
 /// is treated equivalently. The error is emitted only after the provider stream
 /// ends, before the conversation repository can execute a collected tool call.
+/// Reported usage above 4,096 tokens is logged once per provider turn, including
+/// when the stream fails after reporting usage, without recording its content.
 class DayAgentOutputBudgetInferenceRepository
     implements InferenceRepositoryInterface {
   DayAgentOutputBudgetInferenceRepository({
     required this.delegate,
     required this.wakeKind,
     required this.maxCompletionTokens,
+    this.domainLogger,
   }) {
     if (maxCompletionTokens <= 0) {
       throw ArgumentError.value(
@@ -118,6 +123,9 @@ class DayAgentOutputBudgetInferenceRepository
   final InferenceRepositoryInterface delegate;
   final DayAgentWakeKind wakeKind;
   final int maxCompletionTokens;
+  final DomainLogger? domainLogger;
+
+  static const _outputLoggingThreshold = 4096;
 
   int _effectiveLimit(int? requested) =>
       requested == null || requested > maxCompletionTokens
@@ -130,28 +138,54 @@ class DayAgentOutputBudgetInferenceRepository
     InferenceProviderType providerType,
   ) async* {
     var reachedLimit = false;
-    await for (final response in source) {
-      final choices = response.choices;
-      if (choices != null &&
-          choices.any(
-            (choice) =>
-                choice.finishReason == ChatCompletionFinishReason.length,
-          )) {
-        reachedLimit = true;
+    var peakCompletionTokens = 0;
+    var peakReasoningTokens = 0;
+    var peakEffectiveTokens = 0;
+    try {
+      await for (final response in source) {
+        final choices = response.choices;
+        if (choices != null &&
+            choices.any(
+              (choice) =>
+                  choice.finishReason == ChatCompletionFinishReason.length,
+            )) {
+          reachedLimit = true;
+        }
+        final usage = response.usage;
+        final completionTokens = usage?.completionTokens;
+        final reasoningTokens =
+            usage?.completionTokensDetails?.reasoningTokens ?? 0;
+        final effectiveCompletionTokens = completionTokens == null
+            ? null
+            : completionTokens +
+                  (providerType == InferenceProviderType.gemini
+                      ? reasoningTokens
+                      : 0);
+        if (effectiveCompletionTokens != null &&
+            effectiveCompletionTokens >= effectiveLimit) {
+          reachedLimit = true;
+        }
+        if (effectiveCompletionTokens != null &&
+            effectiveCompletionTokens > peakEffectiveTokens) {
+          peakCompletionTokens = completionTokens!;
+          peakReasoningTokens = reasoningTokens;
+          peakEffectiveTokens = effectiveCompletionTokens;
+        }
+        yield response;
       }
-      final usage = response.usage;
-      final completionTokens = usage?.completionTokens;
-      final effectiveCompletionTokens = completionTokens == null
-          ? null
-          : completionTokens +
-                (providerType == InferenceProviderType.gemini
-                    ? usage?.completionTokensDetails?.reasoningTokens ?? 0
-                    : 0);
-      if (effectiveCompletionTokens != null &&
-          effectiveCompletionTokens >= effectiveLimit) {
-        reachedLimit = true;
+    } finally {
+      if (peakEffectiveTokens > _outputLoggingThreshold) {
+        domainLogger?.log(
+          LogDomain.agentWorkflow,
+          'high output usage: wakeKind=${wakeKind.name} '
+          'completionTokens=$peakCompletionTokens '
+          'reasoningTokens=$peakReasoningTokens '
+          'effectiveCompletionTokens=$peakEffectiveTokens '
+          'threshold=$_outputLoggingThreshold '
+          'maxCompletionTokens=$effectiveLimit',
+          subDomain: 'outputBudget',
+        );
       }
-      yield response;
     }
     if (reachedLimit) {
       throw DayAgentOutputLimitExceededException(

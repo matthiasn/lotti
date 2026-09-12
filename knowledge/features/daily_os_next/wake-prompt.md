@@ -15,7 +15,7 @@ sources:
   - id: inference-boundaries
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart
     title: Per-mode inference deadlines and output ceilings
-    last_modified: 2026-07-29
+    last_modified: 2026-09-12
   - id: sections
     resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart
     title: Prompt section tags
@@ -79,13 +79,22 @@ Every provider turn also receives a mode-specific output ceiling:
 | Capture parse | 4,096 |
 | Day draft | 8,192 |
 | Refine | 4,096 |
-| Coordinator digest | 4,096 |
+| Coordinator digest | 16,384 |
 | Other day-agent wake | 4,096 |
 
 The draft ceiling is larger because its terminal tool serializes the complete
-block list. The others produce smaller artifacts. These are injected through
+block list. Digests receive extra headroom after repeated truncation at the
+previous ceiling. The others produce smaller artifacts. These are injected through
 `DayAgentOutputTokenBudgetPolicy`, then clamped around the resolved provider
 repository, so a caller may request less but cannot bypass the Daily OS maximum.
+
+When reported effective completion usage exceeds 4,096 tokens, the wrapper logs
+one `outputBudget` entry in `agentWorkflow` per provider turn. It records the
+wake kind, peak completion and reasoning counts, effective total, threshold, and
+applied ceiling, without response content. Gemini reasoning is added to its
+completion count; OpenAI-compatible totals already include it. Duplicate usage
+chunks are not summed, and a later stream failure still logs any reported peak.
+The usual domain logging flag controls these diagnostic entries.
 
 A response ending with `finish_reason: length` is truncated. Providers that omit
 that reason are treated the same when reported completion usage reaches the

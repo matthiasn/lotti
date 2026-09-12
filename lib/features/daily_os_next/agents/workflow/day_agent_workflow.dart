@@ -558,6 +558,7 @@ class DayAgentWorkflow {
         delegate: cloudInferenceRepo,
         wakeKind: wakeKind,
         maxCompletionTokens: outputTokenBudgets.forKind(wakeKind),
+        domainLogger: domainLogger,
       );
       inferenceRepo = DayAgentTimeoutInferenceRepository(
         delegate: outputBudgetRepo,

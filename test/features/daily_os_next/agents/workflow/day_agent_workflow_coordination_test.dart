@@ -978,6 +978,7 @@ void main() {
             timeoutRepo.delegate as DayAgentOutputBudgetInferenceRepository;
         expect(outputBudget.wakeKind, DayAgentWakeKind.digest);
         expect(outputBudget.maxCompletionTokens, 2304);
+        expect(outputBudget.domainLogger, same(domainLogger));
       });
 
       test('re-arms the next digest when provider execution fails', () async {
