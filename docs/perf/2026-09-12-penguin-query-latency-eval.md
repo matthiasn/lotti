@@ -264,4 +264,65 @@ for the corrected memory comparison above.
 The first corrected DeepSeek rounds returned HTTP 503 in both legacy and
 batched paths. They remain failed transport observations, with no speedup
 claim. Retries are spaced between other model rounds. GLM-5.3 Flash uses the
-same comparison settings and unchanged gates; its measurements are pending.
+same comparison settings and unchanged gates; its results follow below.
+
+## Measured GLM-5.3 Flash comparison (2026-09-12)
+
+Same fixture, transport and parameters. Four original/batched attempts were
+retained; the third original follow-up failed with `FormatException` in memory
+selection after 7.808 seconds and seven completions. An additional pair was
+run instead of counting that failed response as successful latency.
+
+| Variant | Case | Matched sample IDs | Raw seconds for those IDs | Median [range], seconds | Calls | Median credits | Median kWh |
+|---|---|---|---|---|---|---|---|
+| `clocked-legacy` | `local` | 1, 2, 3, 4 | 14.228, 12.610, 13.592, 17.514 | 13.910 [12.610–17.514] | 10, 10, 11, 11 | 0.00091081 | 0.0046474 |
+| `clocked-legacy` | `follow_up` | 1, 2, 4 | 8.770, 8.916, 7.651 | 8.770 [7.651–8.916] | 8, 9, 7 | 0.00081108 | 0.0030360 |
+| `clocked-legacy-home-only` | `local` | 1, 2, 3 | 10.620, 11.019, 11.349 | 11.019 [10.620–11.349] | 9, 9, 9 | 0.00051732 | 0.0036255 |
+| `clocked-legacy-home-only` | `follow_up` | 1, 2, 3 | 7.316, 6.116, 7.775 | 7.316 [6.116–7.775] | 8, 8, 7 | 0.00040660 | 0.0023182 |
+| `clocked-batched` | `local` | 1, 2, 3, 4 | 6.432, 5.579, 5.360, 3.921 | 5.469 [3.921–6.432] | 2, 2, 2, 2 | 0.00028310 | 0.0019579 |
+| `clocked-batched` | `follow_up` | 1, 2, 4 | 4.975, 5.162, 3.277 | 4.975 [3.277–5.162] | 2, 2, 2 | 0.00029084 | 0.0018388 |
+
+The third batched follow-up also succeeded (4.625 seconds, two completions);
+it is excluded only from the paired follow-up median because its original-flow
+counterpart failed. Original follow-up completion success was 3/4 versus 4/4
+batched. All other local/follow-up attempts completed and passed the unchanged
+gates. These small samples do not establish a long-run reliability rate.
+
+The full first sweep passed automated gates in both variants. Wider retrieval
+was 9.364 → 4.181 seconds, absent 9.904 → 2.942, and category boundary
+9.449 → 3.152; each dropped from eleven completions to three. These are
+single-sample observations. Negative answers had no evidence cards.
+
+Manual review found a pre-existing synthesis weakness in **both** variants:
+Flash describes `categoryChecked` as “6 of 8 sources checked” in the original
+wider answer and “48 of 60” in the batched answer, although the totals actually
+checked are 8 and 60. It also refers to “some categories” despite one-category
+retrieval. The stored coverage metadata is correct; the prose is misleading.
+This is not a privacy disclosure, but the automated keyword/citation gates do
+not detect it. A synthesis-quality follow-up should correct and evaluate this
+wording. The Flash follow-up also adds an explicitly labelled, unnecessary
+identity inference about the sleeping penguin. Do not treat these automated
+passes as a complete endorsement of its answer quality.
+
+In these hosted samples GLM-5.3 Flash was slower than GLM-5.3 but had lower
+provider credits. Provider load and cache state differ across model rounds,
+so this is an observed tradeoff, not a universal model ranking. Routing is
+unchanged. Artifacts are `glm-5.3-flash-clocked-*-{1,2,3,4}.json` outside the
+repository, with only three home-only samples.
+
+## DeepSeek Flash v4.1 availability and incomplete matched set
+
+Corrected retry sample 3 completed both paths: local 21.027 seconds / eleven
+completions → 8.457 / two; follow-up 20.579 / six → 4.186 / two. Both passed
+the unchanged gates and manual review retained exact pressure, roll-call and
+cargo-netting evidence. These are one pair, not a three-sample median or a
+reliable latency claim. The next original-flow local attempt failed with
+HTTP 503 after 41.556 seconds and seven completions; its dependent follow-up
+was blocked, and wider/negative requests also returned 503. Earlier corrected
+rounds and two spaced probes likewise returned 503. All failed samples remain
+in external artifacts and are excluded from successful latency statistics.
+
+DeepSeek is therefore included but the corrected matched comparison remains
+incomplete because of intermittent provider availability. Retry with distinct
+artifact names; do not pool the earlier equal-timestamp follow-up artifacts
+into this set or replace failures with their short HTTP rejection times.

@@ -69,7 +69,26 @@ void main() {
             inference: QueryTextInference(
               generate: (system, prompt) async* {
                 final input = jsonDecode(prompt) as Map<String, dynamic>;
-                if (system.contains('Rephrase')) {
+                if (system.contains('Inspect sources together')) {
+                  await inspect(chatId);
+                  final sources = (input['sources'] as List)
+                      .cast<Map<String, dynamic>>();
+                  yield jsonEncode({
+                    'question': input['question'],
+                    'terms': ['feeder'],
+                    'sufficient': sources.isNotEmpty,
+                    'searchCategory': false,
+                    'memoryIds': <String>[],
+                    'passages': [
+                      for (final source in sources)
+                        {
+                          'sourceId': source['id'],
+                          'quote': source['text'],
+                          'summary': 'Feeder decision',
+                        },
+                    ],
+                  });
+                } else if (system.contains('Rephrase')) {
                   yield jsonEncode({
                     'question': input['question'],
                     'terms': ['feeder'],
