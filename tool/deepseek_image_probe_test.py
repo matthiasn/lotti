@@ -147,6 +147,33 @@ class DeepseekImageProbeTest(unittest.TestCase):
             )
         )
 
+    def test_case_without_separator_reports_usage_error_before_inference(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            image_file = root / "sample.png"
+            image_file.write_bytes(b"synthetic-image-bytes")
+            argv = [
+                "probe",
+                "--image",
+                str(image_file),
+                "--output",
+                str(root / "results"),
+                "--cases",
+                "invalid",
+            ]
+            stderr = io.StringIO()
+            with (
+                patch("sys.argv", argv),
+                patch.dict(os.environ, {"MELIOUS_API_KEY": "test-key"}, clear=True),
+                patch.object(probe.urllib.request, "build_opener") as build_opener,
+                contextlib.redirect_stderr(stderr),
+                self.assertRaises(SystemExit) as raised,
+            ):
+                probe.main()
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn("Unsupported case: invalid", stderr.getvalue())
+            build_opener.return_value.open.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

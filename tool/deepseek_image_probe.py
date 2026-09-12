@@ -197,7 +197,7 @@ def main() -> int:
     opener = urllib.request.build_opener(NoRedirect)
     failed = False
     for case in args.cases:
-        source, choice = case.split("-", 1)
+        source, _, choice = case.partition("-")
         if source not in {"text", "image"} or choice not in {
             "absent",
             "forced",
