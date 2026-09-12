@@ -124,19 +124,22 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
         )
         .toList();
     if (retries.isEmpty || !await configured(identity)) return;
-    for (final record in retries) {
-      // Routing can await storage while a peer consumes or replaces a retry.
-      final current = await _repository.getEntity(record.id);
-      if (current != record) continue;
-      await _syncService.upsertEntity(
-        record.copyWith(
-          scheduledAt: now.toUtc(),
-          updatedAt: now,
-          leaseHostId: null,
-          leaseUntil: null,
-        ),
-      );
-    }
+    await _syncService.runInTransaction(() async {
+      for (final record in retries) {
+        // Check and update atomically: sync may consume or replace a retry
+        // while route resolution awaits storage.
+        final current = await _repository.getEntity(record.id);
+        if (current != record) continue;
+        await _syncService.upsertEntity(
+          record.copyWith(
+            scheduledAt: now.toUtc(),
+            updatedAt: now,
+            leaseHostId: null,
+            leaseUntil: null,
+          ),
+        );
+      }
+    });
   }
 
   /// Tears down an agent whose person is gone, and reports whether it did.

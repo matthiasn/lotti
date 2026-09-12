@@ -141,7 +141,23 @@ void main() {
       when(
         () => repository.getEntitiesByAgentId(agentId, type: 'scheduledWake'),
       ).thenAnswer((_) async => [retry]);
-      when(() => repository.getEntity(retry.id)).thenAnswer((_) async => retry);
+      var inTransaction = false;
+      syncService.transactionDelegate = <T>(action) async {
+        inTransaction = true;
+        try {
+          return await action();
+        } finally {
+          inTransaction = false;
+        }
+      };
+      when(() => repository.getEntity(retry.id)).thenAnswer((_) async {
+        expect(
+          inTransaction,
+          isTrue,
+          reason: 'The consume check and reschedule must be atomic',
+        );
+        return retry;
+      });
       final subject = RelationshipRuntimeMaintenance(
         agentService: agentService,
         repository: repository,

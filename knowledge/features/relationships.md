@@ -691,7 +691,8 @@ removed:
   maintenance checks future retries belonging to failed agents; if their route
   now resolves, it advances the pending deadline and clears the old lease.
   The normal scheduled manager still elects a device before inference. A
-  concurrent consume/replacement observed during resolution is left alone.
+  concurrent consume/replacement observed during resolution is left alone;
+  the final check and reschedule share a transaction.
   Saving the Settings default or changing profile/model/provider catalogs
   requests a scan, so a repaired route need not wait out the backoff. Cadence
   repair runs independently before the configuration check. Configuration read
