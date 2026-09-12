@@ -7907,7 +7907,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get inferenceProfileChatUsesThinking =>
-      'Folosește modelul de gândire dacă nu este selectat';
+      'Fără model de chat selectat, se folosește modelul de gândire';
 
   @override
   String get inferenceProfileChooseModelTitle => 'Alegeți un model';

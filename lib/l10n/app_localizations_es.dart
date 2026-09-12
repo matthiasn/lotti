@@ -7878,7 +7878,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inferenceProfileChatUsesThinking =>
-      'Si no se configura, usa el modelo de razonamiento';
+      'Si no se configura, usa el modelo de pensamiento';
 
   @override
   String get inferenceProfileChooseModelTitle => 'Elige un modelo';

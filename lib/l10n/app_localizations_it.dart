@@ -7849,7 +7849,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get inferenceProfileChatUsesThinking =>
-      'Se non impostato, usa il modello di ragionamento';
+      'Se non impostato, usa il modello di pensiero';
 
   @override
   String get inferenceProfileChooseModelTitle => 'Scegli un modello';

@@ -3004,7 +3004,7 @@
   "inactiveLabel": "Inactiv",
   "inactiveSwitchDescription": "Poate fi ales pentru intrări noi când este activ",
   "inferenceProfileChat": "Model de chat",
-  "inferenceProfileChatUsesThinking": "Folosește modelul de gândire dacă nu este selectat",
+  "inferenceProfileChatUsesThinking": "Fără model de chat selectat, se folosește modelul de gândire",
   "inferenceProfileChooseModelTitle": "Alegeți un model",
   "inferenceProfileChooseTitle": "Alegeți un profil de inferență",
   "inferenceProfileCreateTitle": "Creați un profil",
