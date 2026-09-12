@@ -79,6 +79,7 @@ class _FakeCloudInferenceRepository extends CloudInferenceRepository {
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
+    bool preferStreaming = false,
   }) {
     return Stream<CreateChatCompletionStreamResponse>.fromFuture(
       Future<CreateChatCompletionStreamResponse>.delayed(

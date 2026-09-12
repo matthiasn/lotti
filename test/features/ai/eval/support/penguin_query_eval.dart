@@ -171,6 +171,8 @@ class MeasuredQueryInference implements QueryTextInference {
     required String system,
     required Map<String, Object?> input,
     required QueryCancellation cancellation,
+    void Function(String)? onAnswerText,
+    void Function()? onFirstToken,
   }) async {
     if (calls.length >= 12) {
       throw StateError('Query eval completion cap reached');
@@ -200,6 +202,11 @@ class MeasuredQueryInference implements QueryTextInference {
         system: system,
         input: input,
         cancellation: cancellation,
+        onAnswerText: onAnswerText,
+        onFirstToken: () {
+          record['firstTokenMs'] = clock.elapsedMicroseconds / 1000;
+          onFirstToken?.call();
+        },
       );
       record['outputCharacters'] = jsonEncode(result).length;
       record['status'] = 'complete';

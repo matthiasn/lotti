@@ -431,6 +431,13 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     final tokens = context.designTokens;
     final lastQuestion = chat?.questions.lastOrNull;
     final running = local.status == QueryTurnStatus.running;
+    final provisional = local.provisional;
+    final showProvisional =
+        provisional != null &&
+        provisional.text.isNotEmpty &&
+        (!provisional.private || showPrivate) &&
+        chat != null &&
+        chat.answerFor(provisional.questionId) == null;
     final lastAnswer = chat?.events
         .where((e) => e.data is QueryChatAnswer)
         .lastOrNull;
@@ -637,7 +644,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       conversationId: id,
                       history: AsyncData(history),
                       draft: draft,
-                      isSending: running,
+                      isSending: running || showProvisional,
                       sendingLabel: _activityLabel(context, local),
                       onDraftChanged: (text) =>
                           controller.updateDraft(id, text),
@@ -676,50 +683,79 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                             color: tokens.colors.background.level02,
                             borderRadius: BorderRadius.circular(tokens.radii.l),
                           ),
-                          child: Row(
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox.square(
-                                dimension: IconSizes.s,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: BorderWidths.emphasis,
-                                  color: tokens.colors.interactive.enabled,
+                              if (showProvisional) ...[
+                                Text(
+                                  messages.queryDraftProvisional,
+                                  style: tokens.typography.styles.others.caption
+                                      .copyWith(
+                                        color:
+                                            tokens.colors.text.mediumEmphasis,
+                                      ),
                                 ),
-                              ),
-                              SizedBox(width: tokens.spacing.step3),
-                              Flexible(
-                                child: Semantics(
-                                  liveRegion: true,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _activityLabel(context, local),
-                                        style: tokens
-                                            .typography
-                                            .styles
-                                            .body
-                                            .bodySmall,
-                                      ),
-                                      Text(
-                                        messages.queryChecked(local.checked),
-                                        style: tokens
-                                            .typography
-                                            .styles
-                                            .others
-                                            .caption,
-                                      ),
-                                    ],
+                                SizedBox(height: tokens.spacing.step2),
+                                // Plain text keeps every draft citation and URL inert.
+                                SelectableText(
+                                  provisional.text,
+                                  key: ValueKey(
+                                    'query-provisional-${provisional.questionId}',
                                   ),
+                                  style:
+                                      tokens.typography.styles.body.bodySmall,
                                 ),
-                              ),
-                              SizedBox(width: tokens.spacing.step3),
-                              DesignSystemButton(
-                                label: messages.cancelButton,
-                                onPressed: () => controller.cancel(id),
-                                variant: DesignSystemButtonVariant.tertiary,
-                                size: DesignSystemButtonSize.dense,
+                                SizedBox(height: tokens.spacing.step3),
+                              ],
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox.square(
+                                    dimension: IconSizes.s,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: BorderWidths.emphasis,
+                                      color: tokens.colors.interactive.enabled,
+                                    ),
+                                  ),
+                                  SizedBox(width: tokens.spacing.step3),
+                                  Flexible(
+                                    child: Semantics(
+                                      liveRegion: true,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _activityLabel(context, local),
+                                            style: tokens
+                                                .typography
+                                                .styles
+                                                .body
+                                                .bodySmall,
+                                          ),
+                                          Text(
+                                            messages.queryChecked(
+                                              local.checked,
+                                            ),
+                                            style: tokens
+                                                .typography
+                                                .styles
+                                                .others
+                                                .caption,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: tokens.spacing.step3),
+                                  DesignSystemButton(
+                                    label: messages.cancelButton,
+                                    onPressed: () => controller.cancel(id),
+                                    variant: DesignSystemButtonVariant.tertiary,
+                                    size: DesignSystemButtonSize.dense,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -1113,6 +1149,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         Text(
           needsSetup
               ? messages.queryInferenceUnavailable
+              : local.draftRetracted && local.requestQuestionId == questionId
+              ? messages.queryDraftRetracted
               : terminal?.data is QueryChatCancelled
               ? messages.aiAttributionStatusCancelled
               : messages.queryFailed,

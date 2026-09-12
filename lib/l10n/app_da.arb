@@ -4724,6 +4724,8 @@
   "queryDeleteForget": "Slet og glem konklusioner",
   "queryDeleteKeep": "Slet og behold konklusioner",
   "queryDictated": "Du kan redigere transskriptionen, før du sender dit spørgsmål. Lyden kan allerede være sendt til din transskriptionsudbyder.",
+  "queryDraftProvisional": "Udkast · endnu ikke verificeret",
+  "queryDraftRetracted": "Udkastet til svaret kunne ikke verificeres. Prøv igen.",
   "queryEarlierTextOmitted": "[Tidligere tekst vises ikke]",
   "queryEmptyBody": "Spørg til tidligere noter og møder. Svarene indeholder de præcise passager, du kan læse.",
   "queryExactStoredText": "Præcis gemt tekst",

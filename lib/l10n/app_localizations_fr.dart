@@ -15679,4 +15679,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get queryDraftProvisional => 'Brouillon · pas encore vérifié';
+
+  @override
+  String get queryDraftRetracted =>
+      'Le brouillon de la réponse n’a pas pu être vérifié. Réessaie.';
 }

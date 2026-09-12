@@ -128,6 +128,26 @@ void main() {
   });
 
   group('filterAnthropicPings', () {
+    test('listens lazily and cancels the owned idle source', () async {
+      var listened = false;
+      var cancelled = false;
+      var closed = 0;
+      final source = StreamController<CreateChatCompletionStreamResponse>(
+        onListen: () => listened = true,
+        onCancel: () => cancelled = true,
+      );
+      final stream = helpers.filterAnthropicPings(
+        source.stream,
+        onClose: () => closed++,
+      );
+      expect(listened, isFalse);
+      final subscription = stream.listen((_) {});
+      expect(listened, isTrue);
+      await subscription.cancel();
+      expect(cancelled, isTrue);
+      expect(closed, 1);
+      await source.close();
+    });
     test('swallows Anthropic ping errors and keeps valid chunks', () async {
       final source = Stream<CreateChatCompletionStreamResponse>.multi((c) {
         c

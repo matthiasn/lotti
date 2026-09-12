@@ -15437,4 +15437,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get queryDraftProvisional => 'Utkast · ännu inte verifierat';
+
+  @override
+  String get queryDraftRetracted =>
+      'Svarsutkastet kunde inte verifieras. Försök igen.';
 }

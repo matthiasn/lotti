@@ -4724,6 +4724,8 @@
   "queryDeleteForget": "Radera och glöm slutsatser",
   "queryDeleteKeep": "Radera och behåll slutsatser",
   "queryDictated": "Du kan redigera transkriptionen innan du skickar din fråga. Ljudet kan redan ha skickats till din transkriberingsleverantör.",
+  "queryDraftProvisional": "Utkast · ännu inte verifierat",
+  "queryDraftRetracted": "Svarsutkastet kunde inte verifieras. Försök igen.",
   "queryEarlierTextOmitted": "[Tidigare text visas inte]",
   "queryEmptyBody": "Fråga om tidigare anteckningar och möten. Svaren innehåller de exakta avsnitten som du kan läsa.",
   "queryExactStoredText": "Exakt sparad text",

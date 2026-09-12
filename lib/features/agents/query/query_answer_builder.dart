@@ -66,6 +66,9 @@ class QueryAnswerBuilder {
     required QueryCancellation cancellation,
     required QueryProgress onProgress,
     void Function()? onAnswering,
+    void Function(QueryChatAnswer)? onSynthesisReady,
+    void Function(String)? onAnswerText,
+    void Function()? onFirstSynthesisToken,
     bool homeOnly = false,
     QuerySourceKind? kind,
   }) async {
@@ -503,6 +506,17 @@ class QueryAnswerBuilder {
       incomplete: incomplete,
     );
     onAnswering?.call();
+    onSynthesisReady?.call(
+      QueryChatAnswer(
+        questionId: question.id,
+        text: '',
+        coverage: coverage,
+        evidence: evidence,
+        dependencies: dependencies.values.toList(),
+        recalledMemoryIds: recalled.map((event) => event.id).toList(),
+        private: initial.showPrivate,
+      ),
+    );
     final result = await inference.complete(
       system:
           '${_untrusted}Answer from the supplied evidence and relevant memories only. '
@@ -531,6 +545,8 @@ class QueryAnswerBuilder {
         'coverage': coverage.toJson(),
       },
       cancellation: cancellation,
+      onAnswerText: onAnswerText,
+      onFirstToken: onFirstSynthesisToken,
     );
     final text = result['answer'];
     if (text is! String ||

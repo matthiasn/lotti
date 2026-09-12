@@ -15619,4 +15619,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get queryDraftProvisional => 'Návrh · zatím neověřený';
+
+  @override
+  String get queryDraftRetracted =>
+      'Návrh odpovědi se nepodařilo ověřit. Zkus to znovu.';
 }

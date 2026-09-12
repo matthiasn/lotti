@@ -113,6 +113,7 @@ void main() {
       final answers = <String, QueryBuiltAnswer>{};
       final questionEvents = <String, AgentQueryChatEventEntity>{};
       final homeOnly = env['QUERY_EVAL_HOME_ONLY'] == '1';
+      final streamSynthesis = env['QUERY_EVAL_STREAM_SYNTHESIS'] == '1';
       final legacyFlow = env['QUERY_EVAL_LEGACY_FLOW'] == '1';
       final batchInputBytes = legacyFlow
           ? 1
@@ -213,9 +214,11 @@ void main() {
           'case': scenario.id,
           'question': scenario.question,
           'memoryCandidateCount': turn.memories.length,
+          'streamSynthesis': streamSynthesis,
           'calls': measured.calls,
         };
         artifacts.add(artifact);
+        var streamedText = '';
         var checked = 0;
         var authorizationFailed = false;
         try {
@@ -244,6 +247,21 @@ void main() {
                 onProgress: (count, {required expanded}) {
                   checked = count;
                 },
+                onFirstSynthesisToken: () {
+                  artifact['firstSynthesisTokenMs'] =
+                      clock.elapsedMicroseconds / 1000;
+                },
+                onAnswerText: !streamSynthesis
+                    ? null
+                    : (text) {
+                        if (text.isNotEmpty) {
+                          artifact.putIfAbsent(
+                            'firstVisibleAnswerMs',
+                            () => clock.elapsedMicroseconds / 1000,
+                          );
+                        }
+                        streamedText = text;
+                      },
                 onAnswering: () {
                   artifact['answeringStartsMs'] =
                       clock.elapsedMicroseconds / 1000;
@@ -260,6 +278,8 @@ void main() {
             r'\[(\d+)\]',
           ).allMatches(answer.text).map((m) => int.parse(m.group(1)!)).toList();
           final checks = <String, bool>{
+            if (streamSynthesis)
+              'streamedAnswerUnchanged': streamedText == answer.text,
             'answerFacts': scenario.answerTerms.every(
               (terms) => containsAnyEvalTerm(answer.text, terms),
             ),

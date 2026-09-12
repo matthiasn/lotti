@@ -55,6 +55,14 @@ class PenguinQueryEvalTest(unittest.TestCase):
         self.assertEqual(kwargs["env"]["QUERY_EVAL_OUTPUT"], str(self.output))
         process.wait.assert_called_once_with(timeout=900)
 
+    def test_streaming_control_is_explicit(self):
+        self.args.append("--stream-synthesis")
+        process = Mock(pid=12345)
+        process.wait.return_value = 0
+        result, start = self.run_main(process)
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["env"]["QUERY_EVAL_STREAM_SYNTHESIS"], "1")
+
     def test_legacy_control_is_explicit(self):
         self.args.append("--legacy-flow")
         process = Mock(pid=12345)

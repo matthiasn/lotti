@@ -34,6 +34,7 @@ void main() {
   late Future<void> Function(String chatId) compose;
   late MockDomainLogger logger;
   Exception? setupError;
+  Stream<String>? synthesis;
   var malformed = false;
   var unavailable = false;
   final now = DateTime(2026, 9, 10, 12);
@@ -46,6 +47,7 @@ void main() {
     inspect = (_) async {};
     compose = (_) async {};
     malformed = false;
+    synthesis = null;
     unavailable = false;
     history = StreamController<QueryChatData>.broadcast();
     container = ProviderContainer(
@@ -104,6 +106,10 @@ void main() {
                   yield '{"ids":[]}';
                 } else {
                   await compose(chatId);
+                  if (synthesis case final stream?) {
+                    yield* stream;
+                    return;
+                  }
                   yield malformed
                       ? 'invalid'
                       : jsonEncode({
@@ -124,6 +130,87 @@ void main() {
     await history.close();
     await bench.close();
   });
+
+  for (final outcome in ['publish', 'invalid citation', 'cancel', 'privacy']) {
+    test(
+      'provisional synthesis $outcome preserves the publication boundary',
+      () async {
+        await withClock(Clock.fixed(now), () async {
+          var stopped = false;
+          final stream = StreamController<String>(
+            onCancel: () => stopped = true,
+          );
+          synthesis = stream.stream;
+          addTearDown(() {
+            container.read(provider).chats.keys.forEach(controller.cancel);
+            unawaited(stream.close());
+          });
+          final started = Completer<void>();
+          compose = (_) async => started.complete();
+          final chatId = await controller.create('Synthetic habitat');
+          controller.updateDraft(chatId, 'What was recorded?');
+          final seen = Completer<void>();
+          final subscription = container.listen(provider, (_, next) {
+            if (next.local(chatId).provisional?.text.isNotEmpty == true &&
+                !seen.isCompleted) {
+              seen.complete();
+            }
+          });
+          final request = controller.send(chatId);
+          await started.future;
+          final text = outcome == 'invalid citation'
+              ? 'Unsupported [999]'
+              : 'Recorded [1]';
+          stream.add('{"answer":"$text');
+          await seen.future;
+          final draft = container.read(provider).local(chatId).provisional!;
+          expect(draft.text, text);
+          final before = await bench.store.load('agent');
+          expect(before.chats.single.answerFor(draft.questionId), isNull);
+          if (outcome == 'privacy') {
+            final task = bench.entries['task']!;
+            bench.entries['task'] = task.copyWith(
+              meta: task.meta.copyWith(private: true),
+            );
+            history.add(
+              QueryChatData(
+                projection: before,
+                access: await bench.crawler.access.load(['task']),
+              ),
+            );
+            await container.pump();
+            expect(container.read(provider).local(chatId).provisional, isNull);
+          } else if (outcome == 'cancel') {
+            controller.cancel(chatId);
+            expect(container.read(provider).local(chatId).provisional, isNull);
+          } else {
+            stream.add('","conclusion":""}');
+            await stream.close();
+          }
+          await request;
+          final after = await bench.store.load('agent');
+          final local = container.read(provider).local(chatId);
+          if (outcome == 'publish') {
+            expect(
+              (after.chats.single.answerFor(draft.questionId)!.data
+                      as QueryChatAnswer)
+                  .text,
+              draft.text,
+            );
+            expect(local.draftRetracted, isFalse);
+          } else {
+            expect(local.provisional, isNull);
+            expect(after.chats.single.answerFor(draft.questionId), isNull);
+            expect(local.draftRetracted, outcome == 'invalid citation');
+            expect(local.requestQuestionId, draft.questionId);
+            expect(stopped, isTrue);
+          }
+          subscription.close();
+          await stream.close();
+        });
+      },
+    );
+  }
 
   test(
     'searching changes to answering only at synthesis and resets on retry',

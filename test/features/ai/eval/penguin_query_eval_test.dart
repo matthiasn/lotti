@@ -14,6 +14,30 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  test('measurement forwards synthesis text and first-token events', () async {
+    final measured = MeasuredQueryInference(
+      QueryTextInference(
+        generate: (_, _) =>
+            Stream.fromIterable(['{"answer":"recorded', ' [1]"}']),
+      ),
+    );
+    final shown = <String>[];
+    var tokens = 0;
+    final result = await measured.complete(
+      system: 'Answer from the supplied evidence',
+      input: {},
+      cancellation: QueryCancellation(),
+      onAnswerText: shown.add,
+      onFirstToken: () => tokens++,
+    );
+    expect(shown, ['recorded', 'recorded [1]']);
+    expect(tokens, 1);
+    expect(result['answer'], shown.last);
+    expect(measured.calls.single['firstTokenMs'], isA<num>());
+    expect(measured.calls.single['milliseconds'], isA<num>());
+    expect(measured.calls.single['stage'], 'answer');
+  });
+
   test('eval credentials require HTTPS except on explicit loopback hosts', () {
     for (final endpoint in [
       'https://inference.example/v1',

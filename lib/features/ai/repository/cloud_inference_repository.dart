@@ -110,6 +110,7 @@ class CloudInferenceRepository {
     GeminiThinkingMode? geminiThinkingMode,
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
+    bool preferStreaming = false,
   }) => _generate.generate(
     prompt,
     model: model,
@@ -125,6 +126,7 @@ class CloudInferenceRepository {
     geminiThinkingMode: geminiThinkingMode,
     reasoningEffort: reasoningEffort,
     impactCollector: impactCollector,
+    preferStreaming: preferStreaming,
   );
 
   Stream<CreateChatCompletionStreamResponse> generateWithImages(

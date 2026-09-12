@@ -54,38 +54,48 @@ class CloudInferenceRequestHelpers {
 
   /// Filters out Anthropic ping messages from the stream
   Stream<CreateChatCompletionStreamResponse> filterAnthropicPings(
-    Stream<CreateChatCompletionStreamResponse> stream,
-  ) {
-    // Use where to filter out errors instead of handleError
-    final controller = StreamController<CreateChatCompletionStreamResponse>();
+    Stream<CreateChatCompletionStreamResponse> stream, {
+    void Function()? onClose,
+  }) {
+    late StreamController<CreateChatCompletionStreamResponse> controller;
+    StreamSubscription<CreateChatCompletionStreamResponse>? subscription;
+    var closed = false;
+    void closeResource() {
+      if (closed) return;
+      closed = true;
+      onClose?.call();
+    }
 
-    stream.listen(
-      controller.add,
-      onError: (Object error, StackTrace stackTrace) {
-        // Check if this is specifically an Anthropic ping message error
-        final errorString = error.toString();
-
-        // Anthropic ping messages cause a specific null subtype error when parsing choices
-        final isAnthropicPingError =
-            errorString.contains(
-              "type 'Null' is not a subtype of type 'List<dynamic>'",
-            ) &&
-            errorString.contains('choices');
-
-        if (isAnthropicPingError) {
-          // Log but don't propagate the error
-          developer.log(
-            'Skipping Anthropic ping message',
-            name: 'CloudInferenceRepository',
-            error: error,
-            stackTrace: stackTrace,
-          );
-          return;
-        }
-        // Propagate other errors
-        controller.addError(error, stackTrace);
+    controller = StreamController<CreateChatCompletionStreamResponse>(
+      onListen: () {
+        subscription = stream.listen(
+          controller.add,
+          onError: (Object error, StackTrace stackTrace) {
+            final message = error.toString();
+            if (message.contains(
+                  "type 'Null' is not a subtype of type 'List<dynamic>'",
+                ) &&
+                message.contains('choices')) {
+              developer.log(
+                'Skipping Anthropic ping message',
+                name: 'CloudInferenceRepository',
+              );
+            } else {
+              controller.addError(error, stackTrace);
+            }
+          },
+          onDone: () {
+            closeResource();
+            unawaited(controller.close());
+          },
+        );
       },
-      onDone: controller.close,
+      onCancel: () {
+        closeResource();
+        return subscription?.cancel();
+      },
+      onPause: () => subscription?.pause(),
+      onResume: () => subscription?.resume(),
     );
 
     return controller.stream;

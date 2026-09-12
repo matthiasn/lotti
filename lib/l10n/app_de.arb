@@ -4250,6 +4250,8 @@
   "queryDeleteForget": "Löschen und Erkenntnisse vergessen",
   "queryDeleteKeep": "Löschen und Erkenntnisse behalten",
   "queryDictated": "Du kannst das Transkript bearbeiten, bevor du deine Frage sendest. Das Audio wurde möglicherweise bereits an deinen Transkriptionsanbieter gesendet.",
+  "queryDraftProvisional": "Entwurf · noch nicht geprüft",
+  "queryDraftRetracted": "Der Antwortentwurf konnte nicht geprüft werden. Versuch es erneut.",
   "queryEarlierTextOmitted": "[Vorheriger Text nicht angezeigt]",
   "queryEmptyBody": "Frag nach früheren Notizen und Besprechungen. Die Antworten enthalten die genauen Textstellen zum Nachlesen.",
   "queryExactStoredText": "Exakter gespeicherter Text",

@@ -585,6 +585,71 @@ void main() {
     await tester.pump();
   }
 
+  for (final retracted in [false, true]) {
+    testWidgets('query synthesis provisional retracted=$retracted is honest', (
+      tester,
+    ) async {
+      events.add(
+        event(
+          'question',
+          'feeder',
+          const QueryChatEventData.question(text: 'What was recorded?'),
+        ),
+      );
+      if (retracted) {
+        events.add(
+          event(
+            'failure',
+            'feeder',
+            const QueryChatEventData.failed(questionId: 'question'),
+          ),
+        );
+      }
+      await pump(
+        tester,
+        session: QueryChatSession(
+          selectedId: 'feeder',
+          chats: {
+            'feeder': QueryChatLocal(
+              status: retracted
+                  ? QueryTurnStatus.failed
+                  : QueryTurnStatus.running,
+              answering: true,
+              requestQuestionId: 'question',
+              draftRetracted: retracted,
+              provisional: retracted
+                  ? null
+                  : const QueryChatAnswer(
+                      questionId: 'question',
+                      text: 'Recorded 37 penguins [1]',
+                      coverage: QueryCoverage(checked: 1),
+                    ),
+            ),
+          },
+        ),
+      );
+      if (retracted) {
+        expect(
+          find.text('The draft answer could not be verified. Try again.'),
+          findsOneWidget,
+        );
+        expect(find.text('Recorded 37 penguins [1]'), findsNothing);
+        expect(find.text('Try Again'), findsOneWidget);
+      } else {
+        expect(find.text('Draft · not yet verified'), findsOneWidget);
+        expect(
+          tester
+              .widget<SelectableText>(
+                find.byKey(const ValueKey('query-provisional-question')),
+              )
+              .data,
+          'Recorded 37 penguins [1]',
+        );
+        expect(find.byType(AgentMarkdownView), findsNothing);
+      }
+    });
+  }
+
   for (final answering in [false, true]) {
     testWidgets(
       'query activity reports the actual answering=$answering phase',

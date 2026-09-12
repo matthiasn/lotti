@@ -15419,4 +15419,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get queryDraftProvisional => 'Udkast · endnu ikke verificeret';
+
+  @override
+  String get queryDraftRetracted =>
+      'Udkastet til svaret kunne ikke verificeres. Prøv igen.';
 }

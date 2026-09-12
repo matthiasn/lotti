@@ -15328,6 +15328,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get queryDraftProvisional => 'Draft · not yet verified';
+
+  @override
+  String get queryDraftRetracted =>
+      'The draft answer could not be verified. Try again.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

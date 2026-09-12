@@ -15462,4 +15462,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get queryDraftProvisional => 'Concept · nog niet geverifieerd';
+
+  @override
+  String get queryDraftRetracted =>
+      'Het conceptantwoord kon niet worden geverifieerd. Probeer het opnieuw.';
 }

@@ -15627,4 +15627,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String get queryDraftProvisional => 'Borrador · aún sin verificar';
+
+  @override
+  String get queryDraftRetracted =>
+      'No se pudo verificar el borrador de la respuesta. Inténtalo de nuevo.';
 }

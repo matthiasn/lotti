@@ -4250,6 +4250,8 @@
   "queryDeleteForget": "Supprimer et oublier les conclusions",
   "queryDeleteKeep": "Supprimer et garder les conclusions",
   "queryDictated": "Tu peux modifier la transcription avant d’envoyer ta question. L’audio a peut-être déjà été envoyé à ton fournisseur de transcription.",
+  "queryDraftProvisional": "Brouillon · pas encore vérifié",
+  "queryDraftRetracted": "Le brouillon de la réponse n’a pas pu être vérifié. Réessaie.",
   "queryEarlierTextOmitted": "[Texte précédent non affiché]",
   "queryEmptyBody": "Pose des questions sur tes notes et réunions passées. Les réponses incluent les passages exacts que tu peux consulter.",
   "queryExactStoredText": "Texte exact enregistré",

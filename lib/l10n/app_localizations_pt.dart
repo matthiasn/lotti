@@ -15557,4 +15557,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get queryDraftProvisional => 'Rascunho · ainda não verificado';
+
+  @override
+  String get queryDraftRetracted =>
+      'Não foi possível verificar o rascunho da resposta. Tenta novamente.';
 }

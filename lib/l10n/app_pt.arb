@@ -4723,6 +4723,8 @@
   "queryDeleteForget": "Eliminar e esquecer as conclusões",
   "queryDeleteKeep": "Eliminar e manter as conclusões",
   "queryDictated": "Podes editar a transcrição antes de enviares a pergunta. O áudio pode já ter sido enviado ao teu fornecedor de transcrição.",
+  "queryDraftProvisional": "Rascunho · ainda não verificado",
+  "queryDraftRetracted": "Não foi possível verificar o rascunho da resposta. Tenta novamente.",
   "queryEarlierTextOmitted": "[Texto anterior não apresentado]",
   "queryEmptyBody": "Pergunta sobre notas e reuniões anteriores. As respostas incluem as passagens exatas que podes consultar.",
   "queryExactStoredText": "Texto exato guardado",

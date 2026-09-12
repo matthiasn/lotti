@@ -44,7 +44,10 @@ class QueryCancellation {
     return () => _callbacks.remove(callback);
   }
 
-  Future<String> collect(Stream<String> stream) async {
+  Future<String> collect(
+    Stream<String> stream, {
+    void Function(String)? onText,
+  }) async {
     check();
     final result = Completer<String>();
     final buffer = StringBuffer();
@@ -56,11 +59,19 @@ class QueryCancellation {
 
     subscription = stream.listen(
       (text) {
+        if (result.isCompleted || _cancelled) return;
         buffer.write(text);
         if (buffer.length > 64000 && !result.isCompleted) {
           result.completeError(
             const FormatException('Query response too large'),
           );
+          unawaited(subscription.cancel());
+          return;
+        }
+        try {
+          onText?.call(buffer.toString());
+        } catch (error, stack) {
+          if (!result.isCompleted) result.completeError(error, stack);
           unawaited(subscription.cancel());
         }
       },
@@ -88,7 +99,10 @@ typedef QueryTextStream = Stream<String> Function(String system, String prompt);
 /// Each completion has a fresh context. Inference accounting records hashes
 /// and usage through the existing capture boundary, never a second chat log.
 class QueryTextInference {
-  const QueryTextInference({required this._generate});
+  const QueryTextInference({
+    required this._generate,
+    this._generateSynthesis,
+  });
 
   factory QueryTextInference.forProfile({
     required CloudInferenceRepository cloud,
@@ -98,8 +112,12 @@ class QueryTextInference {
     String? categoryId,
     String? taskId,
     AiInteractionCapture? capture,
-  }) => QueryTextInference(
-    generate: (system, prompt) {
+  }) {
+    Stream<String> generate(
+      String system,
+      String prompt, {
+      bool synthesis = false,
+    }) {
       final provider = profile.thinkingProvider;
       final model = profile.thinkingModel;
       final impact = InferenceImpactCollector();
@@ -114,6 +132,7 @@ class QueryTextInference {
         maxCompletionTokens: model?.maxCompletionTokens,
         geminiThinkingMode: model?.geminiThinkingMode,
         impactCollector: impact,
+        preferStreaming: synthesis,
       );
       final stream = capture == null
           ? raw()
@@ -154,19 +173,47 @@ class QueryTextInference {
       return stream.map(
         (chunk) => chunk.choices?.firstOrNull?.delta?.content ?? '',
       );
-    },
-  );
+    }
+
+    return QueryTextInference(
+      generate: generate,
+      generateSynthesis: (system, prompt) =>
+          generate(system, prompt, synthesis: true),
+    );
+  }
 
   final QueryTextStream _generate;
+  final QueryTextStream? _generateSynthesis;
 
   Future<Map<String, dynamic>> complete({
     required String system,
     required Map<String, Object?> input,
     required QueryCancellation cancellation,
+    void Function(String)? onAnswerText,
+    void Function()? onFirstToken,
   }) async {
     cancellation.check();
+    var shown = '';
+    var received = false;
     final response = await cancellation.collect(
-      _generate(system, jsonEncode(input)),
+      (onAnswerText == null ? _generate : _generateSynthesis ?? _generate)(
+        system,
+        jsonEncode(input),
+      ),
+      onText: (raw) {
+        if (!received && raw.isNotEmpty) {
+          received = true;
+          onFirstToken?.call();
+        }
+        if (onAnswerText == null) return;
+        final prefix = _answerPrefix(raw);
+        if (prefix == null || prefix == shown) return;
+        if (!prefix.startsWith(shown)) {
+          throw const FormatException('Query draft changed');
+        }
+        shown = prefix;
+        onAnswerText(prefix);
+      },
     );
     var text = splitThinkingSegments(response)
         .where((segment) => !segment.isThinking)
@@ -182,6 +229,50 @@ class QueryTextInference {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Expected query object');
     }
+    if (decoded['answer'] case final String answer when onAnswerText != null) {
+      if (!answer.startsWith(shown)) {
+        throw const FormatException('Query draft changed');
+      }
+      if (answer != shown) onAnswerText(answer);
+    }
     return decoded;
   }
+}
+
+/// Only the first top-level answer string is rendered incrementally. Other
+/// field orders remain buffered. Incomplete escapes and surrogate pairs stay
+/// buffered too, so visible text never needs an in-place correction.
+String? _answerPrefix(String response) {
+  var text = splitThinkingSegments(response)
+      .where((part) => !part.isThinking)
+      .map((part) => part.text)
+      .join()
+      .trimLeft();
+  text = text.replaceFirst(RegExp(r'^```(?:json)?\s*'), '');
+  final start = RegExp(r'^\{\s*"answer"\s*:\s*"').firstMatch(text);
+  if (start == null) return null;
+  var end = start.end;
+  while (end < text.length) {
+    final unit = text.codeUnitAt(end);
+    if (unit == 34) break;
+    if (unit == 92) {
+      if (end + 1 >= text.length) break;
+      if (text.codeUnitAt(end + 1) == 117) {
+        if (end + 6 > text.length) break;
+        end += 6;
+      } else {
+        end += 2;
+      }
+    } else {
+      end++;
+    }
+  }
+  var answer = jsonDecode('"${text.substring(start.end, end)}"') as String;
+  if (answer.isNotEmpty) {
+    final last = answer.codeUnitAt(answer.length - 1);
+    if (last >= 0xd800 && last <= 0xdbff) {
+      answer = answer.substring(0, answer.length - 1);
+    }
+  }
+  return answer;
 }
