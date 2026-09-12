@@ -201,11 +201,18 @@ class QueryChatController extends Notifier<QueryChatSession> {
       final scoped = [
         ...draft.evidence.map((e) => e.source),
         ...draft.coverage.unreadableSources,
-        ...draft.dependencies.where((s) => s.id == key.scope.id),
+        ...draft.dependencies.where(
+          // Summary answers have owner dependencies rather than quote cards.
+          // Their owners must remain in scope throughout provisional rendering.
+          (s) => draft.summaryBased || s.id == key.scope.id,
+        ),
       ];
       if (!access.allowsContent(draft.dependencies, private: draft.private) ||
           scoped.any(
-            (s) => access.entries[s.id]?.meta.categoryId != s.categoryId,
+            (s) =>
+                access.entries[s.id]?.meta.categoryId != s.categoryId ||
+                (draft.summaryBased &&
+                    access.entries[s.id]?.meta.deletedAt != null),
           ) ||
           (key.scope.kind == QueryScopeKind.category &&
               !access.allowsCategory(key.scope.id))) {

@@ -7,10 +7,13 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../test_data/entity_factories.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -32,6 +35,78 @@ void main() {
     lastActivity: date,
     events: [question],
     unread: false,
+  );
+
+  test(
+    'wired summary reader bypasses raw retrieval and durable conclusions',
+    () async {
+      final bench = QueryTestBench();
+      bench.entries['task'] = testTask.copyWith(
+        meta: testTask.meta.copyWith(
+          id: 'task',
+          categoryId: categoryMindfulness.id,
+          private: false,
+        ),
+        data: testTask.data.copyWith(title: 'Penguin feeder'),
+      );
+      final reports = MockAgentRepository();
+      when(() => reports.getLatestTaskReportsForTaskIds(any())).thenAnswer(
+        (_) async => {
+          'task': makeTestReport(
+            tldr: 'Calibration is complete.',
+            content: 'Calibration established the lower-pressure setting.',
+          ),
+        },
+      );
+      final calls = <Map<String, dynamic>>[];
+      final result =
+          await QueryAnswerBuilder(
+            crawler: bench.crawler,
+            access: bench.crawler.access,
+            summaryReader: QuerySummaryReader(
+              journal: bench.db,
+              access: bench.crawler.access,
+              repository: reports,
+            ),
+            inference: QueryTextInference(
+              generate: (system, prompt) {
+                calls.add(jsonDecode(prompt) as Map<String, dynamic>);
+                return Stream.value(
+                  jsonEncode(
+                    system.startsWith('Task-summary orientation.')
+                        ? {
+                            'taskIds': ['task'],
+                            'useProject': false,
+                            'needsHomeEvidence': false,
+                          }
+                        : {
+                            'answer':
+                                'The Penguin feeder summary records the lower-pressure setting.',
+                            'ownerIds': ['task'],
+                            'unresolved': false,
+                            'conclusion': 'This must not enter shared memory.',
+                          },
+                  ),
+                );
+              },
+            ),
+          ).build(
+            chat: chat,
+            question: question,
+            memories: const [],
+            cancellation: QueryCancellation(),
+            onProgress: (_, {required expanded}) {},
+          );
+      expect(calls, hasLength(2));
+      expect(calls.first.containsKey('tasks'), isTrue);
+      expect(calls.last.containsKey('summaries'), isTrue);
+      expect(result.answer.text, contains('Penguin feeder summary'));
+      expect(result.answer.evidence, isEmpty);
+      expect(result.answer.coverage.checked, 0);
+      expect(result.memory, isNull);
+      expect(bench.searches, isEmpty);
+      expect(bench.categoryReads, 1);
+    },
   );
 
   for (final questionPresent in [true, false]) {

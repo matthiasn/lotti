@@ -12,6 +12,50 @@ import 'query_test_utils.dart';
 
 void main() {
   test(
+    'summary fallback inspects own entries but not linked task bodies',
+    () async {
+      final bench = QueryTestBench();
+      final category = categoryMindfulness.id;
+      for (final id in ['home', 'other']) {
+        bench.entries[id] = testTask.copyWith(
+          meta: testTask.meta.copyWith(
+            id: id,
+            categoryId: category,
+            private: false,
+          ),
+        );
+      }
+      bench
+        ..add('note', category: category)
+        ..link('home', 'note')
+        ..link('home', 'other');
+      final corpus = await bench.crawler.discover(
+        const QueryScope(kind: QueryScopeKind.task, id: 'home'),
+        const [],
+        homeOnly: true,
+        ownTaskOnly: true,
+      );
+      expect(
+        corpus.documents.map((d) => d.entry.meta.id),
+        containsAll(['home', 'note']),
+      );
+      expect(
+        corpus.documents.map((d) => d.entry.meta.id),
+        isNot(contains('other')),
+      );
+      expect(bench.searches, isEmpty);
+      await expectLater(
+        bench.crawler.discover(
+          QueryScope(kind: QueryScopeKind.category, id: category),
+          const [],
+          ownTaskOnly: true,
+        ),
+        throwsArgumentError,
+      );
+    },
+  );
+
+  test(
     'meeting attribution includes a visible linked task and its project',
     () async {
       final bench = QueryTestBench();

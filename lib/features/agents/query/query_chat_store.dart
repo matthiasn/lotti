@@ -202,6 +202,12 @@ class QueryChatStore {
         !current.allowsEvent(question.data)) {
       throw const QueryScopeUnavailable();
     }
+    if (result.answer.summaryBased &&
+        (result.memory != null || result.answer.evidence.isNotEmpty)) {
+      throw const FormatException(
+        'Summary answer cannot publish exact evidence or memory',
+      );
+    }
     // Recall may have been forgotten on another device while inference ran.
     final liveMemoryIds = projection.memories.map((e) => e.id).toSet();
     if (!liveMemoryIds.containsAll(result.answer.recalledMemoryIds)) {

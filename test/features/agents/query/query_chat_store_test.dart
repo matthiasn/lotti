@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -46,6 +47,72 @@ void main() {
           dependencies: (question.data as QueryChatQuestion).dependencies,
         ),
       );
+
+  for (final change in ['moved', 'deleted', 'memory', 'unchanged']) {
+    test(
+      'summary publication validates owners and persists its basis: $change',
+      () async {
+        await withClock(Clock.fixed(now), () async {
+          final owner = testTask.copyWith(
+            meta: testTask.meta.copyWith(
+              id: 'other',
+              categoryId: null,
+              private: false,
+            ),
+          );
+          bench.entries['other'] = owner;
+          final chat = await store.create('agent', scope, 'Feeder');
+          final question = await store.ask(
+            'agent',
+            chat,
+            'What did calibration find?',
+          );
+          final current = await bench.crawler.access.load(['other']);
+          final built = result(question);
+          final summary = QueryBuiltAnswer(
+            answer: built.answer.copyWith(
+              summaryBased: true,
+              dependencies: [
+                ...built.answer.dependencies,
+                current.reference(owner),
+              ],
+            ),
+            memory: change == 'memory' ? built.memory : null,
+          );
+          if (change == 'moved' || change == 'deleted') {
+            bench.entries['other'] = owner.copyWith(
+              meta: change == 'moved'
+                  ? owner.meta.copyWith(categoryId: bench.categories.first.id)
+                  : owner.meta.copyWith(deletedAt: now),
+            );
+          }
+          if (change == 'unchanged') {
+            expect(await store.publish('agent', chat, summary), isTrue);
+            final reloaded = (await store.load('agent')).chats.single;
+            final saved = reloaded.answerFor(question.id)!;
+            expect((saved.data as QueryChatAnswer).summaryBased, isTrue);
+            expect((saved.data as QueryChatAnswer).text, summary.answer.text);
+            bench.entries['other'] = owner.copyWith(
+              meta: owner.meta.copyWith(deletedAt: now),
+            );
+            final live = await bench.crawler.access.load(['task', 'other']);
+            expect(live.allowsEvent(saved.data), isFalse);
+            return;
+          }
+          await expectLater(
+            store.publish('agent', chat, summary),
+            change == 'memory'
+                ? throwsFormatException
+                : throwsA(isA<QueryScopeUnavailable>()),
+          );
+          expect(
+            (await store.load('agent')).chats.single.answerFor(question.id),
+            isNull,
+          );
+        });
+      },
+    );
+  }
 
   test(
     'separate synced conversations survive rename, archive and reopening',

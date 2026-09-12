@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
@@ -18,6 +19,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
+import '../test_data/entity_factories.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -36,6 +39,7 @@ void main() {
   late MockDomainLogger logger;
   Exception? setupError;
   Stream<String>? synthesis;
+  QuerySummaryReader? summaryReader;
   var recall = false;
   var malformed = false;
   var unavailable = false;
@@ -51,6 +55,7 @@ void main() {
     recall = false;
     malformed = false;
     synthesis = null;
+    summaryReader = null;
     unavailable = false;
     history = StreamController<QueryChatData>.broadcast();
     privacy = StreamController<bool>.broadcast();
@@ -73,11 +78,20 @@ void main() {
           if (unavailable) throw const QueryInferenceUnavailable();
           if (setupError case final error?) throw error;
           return QueryAnswerBuilder(
+            summaryReader: summaryReader,
             crawler: bench.crawler,
             access: bench.crawler.access,
             inference: QueryTextInference(
               generate: (system, prompt) async* {
                 final input = jsonDecode(prompt) as Map<String, dynamic>;
+                if (system.startsWith('Task-summary orientation.')) {
+                  yield jsonEncode({
+                    'taskIds': ['other'],
+                    'useProject': false,
+                    'needsHomeEvidence': false,
+                  });
+                  return;
+                }
                 if (system.contains('Inspect sources together')) {
                   await inspect(chatId);
                   final sources = (input['sources'] as List)
@@ -185,11 +199,43 @@ void main() {
     'deleted',
     'forgotten',
     'history error',
+    'summary moved',
+    'summary deleted',
   ]) {
     test(
       'provisional synthesis $outcome preserves the publication boundary',
       () async {
         await withClock(Clock.fixed(now), () async {
+          final summaryOutcome = outcome.startsWith('summary ');
+          if (summaryOutcome) {
+            for (final id in ['task', 'other']) {
+              bench.entries[id] = testTask.copyWith(
+                meta: testTask.meta.copyWith(
+                  id: id,
+                  categoryId: categoryMindfulness.id,
+                  private: false,
+                ),
+                data: testTask.data.copyWith(title: 'Penguin $id'),
+              );
+            }
+            final reports = MockAgentRepository();
+            when(
+              () => reports.getLatestTaskReportsForTaskIds(any()),
+            ).thenAnswer(
+              (_) async => {
+                for (final id in ['task', 'other'])
+                  id: makeTestReport(
+                    id: 'report-$id',
+                    tldr: 'Calibration complete.',
+                  ),
+              },
+            );
+            summaryReader = QuerySummaryReader(
+              journal: bench.db,
+              access: bench.crawler.access,
+              repository: reports,
+            );
+          }
           String? memoryChat;
           if (outcome == 'forgotten') {
             memoryChat = await controller.create('Earlier feeder discussion');
@@ -219,7 +265,9 @@ void main() {
           });
           final request = controller.send(chatId);
           await started.future;
-          final text = outcome == 'invalid citation'
+          final text = summaryOutcome
+              ? 'The Penguin other summary records calibration.'
+              : outcome == 'invalid citation'
               ? 'Unsupported [999]'
               : 'Recorded [1]';
           stream.add('{"answer":"$text');
@@ -234,6 +282,15 @@ void main() {
             isNull,
           );
           final initialAccess = await bench.crawler.access.load(['task']);
+          if (summaryOutcome) {
+            expect(draft.evidence, isEmpty);
+            final owner = bench.entries['other']!;
+            bench.entries['other'] = owner.copyWith(
+              meta: outcome == 'summary moved'
+                  ? owner.meta.copyWith(categoryId: null)
+                  : owner.meta.copyWith(deletedAt: now),
+            );
+          }
           if (outcome == 'privacy' || outcome == 'moved') {
             final task = bench.entries['task']!;
             bench.entries['task'] = task.copyWith(
@@ -264,6 +321,8 @@ void main() {
             'deleted',
             'forgotten',
             'refresh',
+            'summary moved',
+            'summary deleted',
           ].contains(outcome)) {
             history.add(
               QueryChatData(

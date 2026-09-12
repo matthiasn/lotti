@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -84,6 +86,48 @@ void main() {
         source: moved,
         sourceCategory: movedCategory.copyWith(private: true),
       ).allowsReference(ref),
+      isFalse,
+    );
+  });
+
+  test('saved summary answers require live owners in their saved category', () {
+    final summary = QueryChatAnswer(
+      questionId: 'question',
+      text: 'Summary-derived calibration result.',
+      coverage: const QueryCoverage(),
+      summaryBased: true,
+      dependencies: [ref],
+    );
+    final saved = QueryChatEventData.fromJson(
+      jsonDecode(jsonEncode(summary)) as Map<String, dynamic>,
+    );
+    expect(snapshot().allowsEvent(saved), isTrue);
+    final movedCategory = category.copyWith(id: 'another-category');
+    final moved = note.copyWith(
+      meta: note.meta.copyWith(categoryId: movedCategory.id),
+    );
+    final movedAccess = snapshot(source: moved, sourceCategory: movedCategory);
+    expect(movedAccess.allowsEvent(saved), isFalse);
+    expect(
+      movedAccess.allowsEvent(summary.copyWith(summaryBased: false)),
+      isTrue,
+    );
+    final deletedAccess = snapshot(
+      source: note.copyWith(
+        meta: note.meta.copyWith(deletedAt: DateTime(2026, 9, 12)),
+      ),
+    );
+    expect(deletedAccess.allowsEvent(saved), isFalse);
+    expect(
+      deletedAccess.allowsEvent(summary.copyWith(summaryBased: false)),
+      isTrue,
+    );
+    expect(
+      const QueryAccessSnapshot(
+        showPrivate: false,
+        categories: {},
+        entries: {},
+      ).allowsEvent(saved),
       isFalse,
     );
   });
