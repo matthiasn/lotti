@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
@@ -557,7 +558,12 @@ class DayAgentWorkflow {
       final outputBudgetRepo = DayAgentOutputBudgetInferenceRepository(
         delegate: cloudInferenceRepo,
         wakeKind: wakeKind,
-        maxCompletionTokens: outputTokenBudgets.forKind(wakeKind),
+        maxCompletionTokens: math.min(
+          outputTokenBudgets.forKind(wakeKind),
+          resolvedProfile.thinkingModel?.maxCompletionTokens ??
+              outputTokenBudgets.forKind(wakeKind),
+        ),
+        domainLogger: domainLogger,
       );
       inferenceRepo = DayAgentTimeoutInferenceRepository(
         delegate: outputBudgetRepo,

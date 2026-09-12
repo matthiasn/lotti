@@ -953,32 +953,52 @@ void main() {
         });
       });
 
-      test('uses the configured digest output ceiling', () async {
-        final result = await executeDigest(
-          workflow(
-            directiveService: directiveService,
-            outputTokenBudgets: const DayAgentOutputTokenBudgetPolicy(
-              digest: 2304,
+      for (final (modelLimit, wakeLimit, expectedLimit) in [
+        (null, 2304, 2304),
+        (8192, 16384, 8192),
+        (32768, 16384, 16384),
+      ]) {
+        test('uses the configured digest output ceiling '
+            '(model $modelLimit, wake $wakeLimit)', () async {
+          when(
+            () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer(
+            (_) async => [
+              testAiModel(
+                id: 'model-day',
+                providerModelId: 'models/day',
+                inferenceProviderId: 'provider-day',
+              ).copyWith(maxCompletionTokens: modelLimit),
+            ],
+          );
+          final result = await executeDigest(
+            workflow(
+              directiveService: directiveService,
+              outputTokenBudgets: DayAgentOutputTokenBudgetPolicy(
+                digest: wakeLimit,
+              ),
             ),
-          ),
-        );
+          );
 
-        expect(result.success, isTrue, reason: result.error);
-        final inferenceRepo =
-            conversationRepository.sendMessageCalls.single.inferenceRepo;
-        expect(inferenceRepo, isA<DayAgentTimeoutInferenceRepository>());
-        final timeoutRepo = inferenceRepo as DayAgentTimeoutInferenceRepository;
-        expect(timeoutRepo.wakeKind, DayAgentWakeKind.digest);
-        expect(timeoutRepo.timeout, const Duration(seconds: 60));
-        expect(
-          timeoutRepo.delegate,
-          isA<DayAgentOutputBudgetInferenceRepository>(),
-        );
-        final outputBudget =
-            timeoutRepo.delegate as DayAgentOutputBudgetInferenceRepository;
-        expect(outputBudget.wakeKind, DayAgentWakeKind.digest);
-        expect(outputBudget.maxCompletionTokens, 2304);
-      });
+          expect(result.success, isTrue, reason: result.error);
+          final inferenceRepo =
+              conversationRepository.sendMessageCalls.single.inferenceRepo;
+          expect(inferenceRepo, isA<DayAgentTimeoutInferenceRepository>());
+          final timeoutRepo =
+              inferenceRepo as DayAgentTimeoutInferenceRepository;
+          expect(timeoutRepo.wakeKind, DayAgentWakeKind.digest);
+          expect(timeoutRepo.timeout, const Duration(seconds: 60));
+          expect(
+            timeoutRepo.delegate,
+            isA<DayAgentOutputBudgetInferenceRepository>(),
+          );
+          final outputBudget =
+              timeoutRepo.delegate as DayAgentOutputBudgetInferenceRepository;
+          expect(outputBudget.wakeKind, DayAgentWakeKind.digest);
+          expect(outputBudget.maxCompletionTokens, expectedLimit);
+          expect(outputBudget.domainLogger, same(domainLogger));
+        });
+      }
 
       test('re-arms the next digest when provider execution fails', () async {
         conversationRepository.errorToThrow = Exception('model failed');

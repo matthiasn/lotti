@@ -864,17 +864,17 @@ Historical pre-ceiling Melious full journeys established the positive-path
 output distribution before choosing caps. The capped GLM/Qwen run on 2026-07-29
 then observed successful provider turns at:
 
-| Wake | Observed successful output tokens | Ceiling |
+| Wake | Observed successful output tokens | Ceiling on 2026-07-29 |
 |---|---:|---:|
 | Parse | 511–1,640 | 4,096 |
 | Draft | 571–2,173 | 8,192 |
 | Digest | 122–1,553 | 4,096 |
 | Refine | 73 in the deterministic full-workflow fixture | 4,096 |
 
-The draft ceiling deliberately leaves the most headroom because a complete plan
-is the largest artifact. Ceiling enforcement is per provider turn; a multi-turn
-digest may legitimately use more than 4,096 tokens in total while no individual
-response can run away.
+These are historical limits; current ceilings are documented in
+[wake context and prompt](wake-prompt.md#the-system-prompt-matches-the-wake-mode).
+Ceiling enforcement is per provider turn, so a multi-turn digest may legitimately
+use more tokens in total while each individual response remains bounded.
 
 Using nearest-rank percentiles over the available realistic full-journey
 reports, pre-limit versus current capped-stack total wake p50/p95 was
