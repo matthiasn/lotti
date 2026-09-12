@@ -11179,7 +11179,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Puedes editar la transcripción antes de enviar tu pregunta. Es posible que el audio ya se haya enviado a tu proveedor de transcripción.';
 
   @override
-  String get queryEmptyBody => 'Busca en notas y grabaciones.';
+  String get queryEarlierTextOmitted => '[Texto anterior no mostrado]';
+
+  @override
+  String get queryEmptyBody =>
+      'Pregunta sobre notas y reuniones anteriores. Las respuestas incluyen los pasajes exactos que puedes consultar.';
+
+  @override
+  String get queryExactStoredText => 'Texto exacto guardado';
 
   @override
   String get queryExactText => 'Mostrar texto exacto';
@@ -11191,6 +11198,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryExampleMeeting => '¿En qué reunión hablamos de esto?';
 
   @override
+  String get queryExampleSuggestion => '¿Fue una decisión o una sugerencia?';
+
+  @override
   String get queryExpanding => 'Comprobando otros proyectos de esta categoría…';
 
   @override
@@ -11199,6 +11209,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Olvidar conclusiones';
+
+  @override
+  String get queryHideExactText => 'Ocultar texto exacto';
 
   @override
   String get queryHideSurrounding => 'Ocultar contexto';
@@ -11216,6 +11229,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Conservar conclusiones';
+
+  @override
+  String get queryLaterTextOmitted => '[Texto posterior no mostrado]';
 
   @override
   String get queryMachineTranscript =>
@@ -11313,6 +11329,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get queryUnread => 'Nueva respuesta';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Pregunta a $agentName sobre esta categoría';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Pregunta a $agentName sobre este proyecto';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Pregunta a $agentName sobre esta tarea';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Sincronizar ahora';

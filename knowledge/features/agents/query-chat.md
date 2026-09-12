@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T22:21:45Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T23:43:06Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -60,15 +60,38 @@ sources:
     resource: ../../../lib/features/agents/ui/query/query_chat_pane.dart
     title: Conversation, navigation and deletion UI
     last_modified: 2026-09-12
+  - id: transcription-routing
+    resource: ../../../lib/features/agents/query/query_transcription_provider.dart
+    title: Category-default dictation routing
+    last_modified: 2026-09-12
+  - id: evidence-card
+    resource: ../../../lib/features/agents/ui/query/query_evidence_card.dart
+    title: Source attribution and verbatim passage disclosure
+    last_modified: 2026-09-12
 ---
 
 # Ownership and entry points
 
 The **Ask** action opens `QueryChatPane` in place of the task, project or saved
 category detail. Desktop retains the surrounding list; mobile uses the detail
-route's full page. Task headers, the task action bar and task/project summary
-cards expose the same action. Opening never runs inference. The empty view names the task, project or
-category scope and offers example questions that populate the draft.
+route's full page. Task headers and task/project summary cards expose the same action. The task
+action bar is reserved for time tracking and capture. Opening never runs inference.
+The compact header identifies the agent and links back to its scope; outlined
+filters sit below it. The empty view centers three question cards beneath a
+scope-specific welcome. Choosing a question populates an editable draft.
+
+Each answer keeps its numbered evidence inside the reply surface. Evidence
+starts with source metadata and a short summary; expanding reveals selectable
+exact text, with explicit omission markers outside the quotation. Surrounding
+text can be shown, while Copy quote always copies only the stored passage.
+The pill composer emphasizes Send when a draft is present.
+
+Query dictation resolves the current category's `defaultProfileId` and that
+profile's transcription slot at submission time. It does not inherit the task
+agent's model override or use automatic model discovery. Missing or unusable
+category transcription setup fails with the existing audio-setup error; it
+never silently chooses an installed Sherpa model. Scope visibility, category
+membership and default setup are rechecked before handing audio to the service.
 
 `queryChatTargetProvider` reuses the task or project summary's identity. If no
 identity exists, the pane explains that an agent must first be assigned. A
@@ -143,7 +166,10 @@ current phase: searching during planning, shortlisting, source inspection and
 memory selection, then preparing an answer only when final synthesis begins.
 The transient `answering` flag resets on each Send or Retry. `AgentChatView`
 accepts a consumer-owned sending label so its default replying copy is not
-shown while query retrieval is still running.
+shown while query retrieval is still running. A single activity bubble groups
+the phase and Cancel action; the checked-source count is available in its
+tooltip. The switcher exposes running and unread indicators, direct archive
+and delete actions, and an expandable archived-chat list.
 
 Unexpected failures are logged under `chat/query.send` with their stage,
 exception type and a numeric Melious HTTP status when available. Exception

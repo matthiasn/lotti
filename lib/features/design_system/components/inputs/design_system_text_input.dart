@@ -9,6 +9,9 @@ enum DesignSystemTextInputSize {
   medium,
 }
 
+/// Rounded fields for forms; pill fields for conversation composition.
+enum DesignSystemTextInputShape { rounded, pill }
+
 /// The design-system's single-line text field — a token-styled input with
 /// label, helper/error text, and optional leading/trailing icons.
 ///
@@ -23,12 +26,14 @@ class DesignSystemTextInput extends StatefulWidget {
   const DesignSystemTextInput({
     this.controller,
     this.size = DesignSystemTextInputSize.medium,
+    this.shape = DesignSystemTextInputShape.rounded,
     this.label,
     this.hintText,
     this.helperText,
     this.errorText,
     this.leadingIcon,
     this.trailingIcon,
+    this.emphasizeTrailingIcon = false,
     this.onTrailingIconTap,
     this.trailingIconTooltip,
     this.trailingIconKey,
@@ -53,12 +58,16 @@ class DesignSystemTextInput extends StatefulWidget {
 
   final TextEditingController? controller;
   final DesignSystemTextInputSize size;
+  final DesignSystemTextInputShape shape;
   final String? label;
   final String? hintText;
   final String? helperText;
   final String? errorText;
   final IconData? leadingIcon;
   final IconData? trailingIcon;
+
+  /// Filled action treatment for a composer ready to send.
+  final bool emphasizeTrailingIcon;
   final VoidCallback? onTrailingIconTap;
 
   /// Accessible name and tooltip for the actionable [trailingIcon].
@@ -187,10 +196,16 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
               : null,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              // Every input sits on the level01 fill so "where do I type"
-              // survives the dark canvas.
-              color: tokens.colors.background.level01,
-              borderRadius: BorderRadius.circular(spec.borderRadius),
+              // Rounded fields use level01; pill composers use the quieter
+              // conversation surface. Both keep the typing area visible.
+              color: widget.shape == DesignSystemTextInputShape.pill
+                  ? tokens.colors.surface.enabled
+                  : tokens.colors.background.level01,
+              borderRadius: BorderRadius.circular(
+                widget.shape == DesignSystemTextInputShape.pill
+                    ? tokens.radii.badgesPills
+                    : spec.borderRadius,
+              ),
               border: Border.all(
                 color: borderColor,
                 width: _focused && !widget.readOnly ? 2 : 1,
@@ -292,7 +307,9 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
     final icon = Icon(
       iconData,
       size: spec.iconSize,
-      color: tokens.colors.text.mediumEmphasis,
+      color: widget.emphasizeTrailingIcon
+          ? tokens.colors.text.onInteractiveAlert
+          : tokens.colors.text.mediumEmphasis,
     );
     final onTap = widget.onTrailingIconTap;
     if (onTap == null) {
@@ -313,6 +330,12 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
           message: label,
           excludeFromSemantics: true,
           child: IconButton(
+            style: widget.emphasizeTrailingIcon
+                ? IconButton.styleFrom(
+                    backgroundColor: tokens.colors.interactive.enabled,
+                    foregroundColor: tokens.colors.text.onInteractiveAlert,
+                  )
+                : null,
             padding: EdgeInsets.zero,
             icon: icon,
             onPressed: widget.enabled ? onTap : null,

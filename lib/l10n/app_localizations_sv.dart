@@ -11027,7 +11027,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du kan redigera transkriptionen innan du skickar din fråga. Ljudet kan redan ha skickats till din transkriberingsleverantör.';
 
   @override
-  String get queryEmptyBody => 'Sök i anteckningar och inspelningar.';
+  String get queryEarlierTextOmitted => '[Tidigare text visas inte]';
+
+  @override
+  String get queryEmptyBody =>
+      'Fråga om tidigare anteckningar och möten. Svaren innehåller de exakta avsnitten som du kan läsa.';
+
+  @override
+  String get queryExactStoredText => 'Exakt sparad text';
 
   @override
   String get queryExactText => 'Visa exakt text';
@@ -11039,6 +11046,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryExampleMeeting => 'På vilket möte diskuterade vi det här?';
 
   @override
+  String get queryExampleSuggestion => 'Var det ett beslut eller ett förslag?';
+
+  @override
   String get queryExpanding =>
       'Kontrollerar andra projekt i den här kategorin…';
 
@@ -11047,6 +11057,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Glöm slutsatser';
+
+  @override
+  String get queryHideExactText => 'Dölj exakt text';
 
   @override
   String get queryHideSurrounding => 'Dölj omgivande text';
@@ -11064,6 +11077,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Behåll slutsatser';
+
+  @override
+  String get queryLaterTextOmitted => '[Senare text visas inte]';
 
   @override
   String get queryMachineTranscript =>
@@ -11162,6 +11178,21 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryUnread => 'Nytt svar';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Fråga $agentName om den här kategorin';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Fråga $agentName om det här projektet';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Fråga $agentName om den här uppgiften';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Ta igen nu';

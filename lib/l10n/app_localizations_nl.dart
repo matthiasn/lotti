@@ -11036,7 +11036,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je kunt de transcriptie bewerken voordat je je vraag verstuurt. De audio kan al naar je transcriptieaanbieder zijn verstuurd.';
 
   @override
-  String get queryEmptyBody => 'Zoek in notities en opnamen.';
+  String get queryEarlierTextOmitted => '[Eerdere tekst niet getoond]';
+
+  @override
+  String get queryEmptyBody =>
+      'Stel vragen over eerdere notities en vergaderingen. Antwoorden bevatten de exacte passages die je kunt nalezen.';
+
+  @override
+  String get queryExactStoredText => 'Exact opgeslagen tekst';
 
   @override
   String get queryExactText => 'Exacte tekst tonen';
@@ -11049,6 +11056,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'In welke vergadering hebben we dit besproken?';
 
   @override
+  String get queryExampleSuggestion => 'Was dat een besluit of een voorstel?';
+
+  @override
   String get queryExpanding =>
       'Andere projecten in deze categorie controleren…';
 
@@ -11058,6 +11068,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Conclusies vergeten';
+
+  @override
+  String get queryHideExactText => 'Exacte tekst verbergen';
 
   @override
   String get queryHideSurrounding => 'Omringende tekst verbergen';
@@ -11075,6 +11088,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Conclusies bewaren';
+
+  @override
+  String get queryLaterTextOmitted => '[Latere tekst niet getoond]';
 
   @override
   String get queryMachineTranscript =>
@@ -11172,6 +11188,21 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryUnread => 'Nieuw antwoord';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Vraag $agentName naar deze categorie';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Vraag $agentName naar dit project';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Vraag $agentName naar deze taak';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Inhalen nu';

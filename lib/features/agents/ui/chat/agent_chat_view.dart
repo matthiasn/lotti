@@ -40,6 +40,10 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.composerEnabled = true,
     this.scrollOnReplies = true,
     this.conversationId,
+    this.groupAttachmentsWithReply = false,
+    this.composerShape = DesignSystemTextInputShape.rounded,
+    this.replyTextStyle,
+    this.resolveTranscriptionTarget,
     super.key,
   });
 
@@ -66,6 +70,17 @@ class AgentChatView extends ConsumerStatefulWidget {
   final bool composerEnabled;
   final bool scrollOnReplies;
   final String? conversationId;
+
+  /// Keeps supporting evidence inside the reply's surface and reading width.
+  final bool groupAttachmentsWithReply;
+  final DesignSystemTextInputShape composerShape;
+
+  /// Consumer typography for assistant replies; other conversations use the
+  /// standard body style when omitted.
+  final TextStyle? replyTextStyle;
+
+  /// Resolves the host's explicit transcription setup before uploading audio.
+  final ChatTranscriptionTargetResolver? resolveTranscriptionTarget;
 
   @override
   ConsumerState<AgentChatView> createState() => _AgentChatViewState();
@@ -256,8 +271,13 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                 message: message,
                                 agentName: widget.agentName,
                                 measuredHeights: _measuredHeights,
+                                replyTextStyle: widget.replyTextStyle,
+                                attachment: widget.groupAttachmentsWithReply
+                                    ? attachment
+                                    : null,
                               ),
-                              if (attachment != null) ...[
+                              if (attachment != null &&
+                                  !widget.groupAttachmentsWithReply) ...[
                                 SizedBox(height: tokens.spacing.step2),
                                 attachment,
                               ],
@@ -305,6 +325,8 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
             draft: widget.draft,
             onDraftChanged: widget.onDraftChanged,
             onSend: widget.onSend,
+            shape: widget.composerShape,
+            resolveTranscriptionTarget: widget.resolveTranscriptionTarget,
           ),
       ],
     );
@@ -329,6 +351,8 @@ class _ChatComposer extends ConsumerWidget {
     required this.draft,
     required this.onDraftChanged,
     required this.onSend,
+    required this.shape,
+    this.resolveTranscriptionTarget,
   });
 
   final TextEditingController controller;
@@ -338,6 +362,8 @@ class _ChatComposer extends ConsumerWidget {
   final String draft;
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
+  final DesignSystemTextInputShape shape;
+  final ChatTranscriptionTargetResolver? resolveTranscriptionTarget;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -376,8 +402,12 @@ class _ChatComposer extends ConsumerWidget {
             draft: draft,
             onDraftChanged: onDraftChanged,
             onSend: onSend,
-            onStartRecording: () =>
-                ref.read(chatRecorderControllerProvider.notifier).start(),
+            shape: shape,
+            onStartRecording: () => ref
+                .read(chatRecorderControllerProvider.notifier)
+                .start(
+                  resolveTranscriptionTarget: resolveTranscriptionTarget,
+                ),
           ),
         },
       ),
@@ -395,6 +425,7 @@ class _IdleComposer extends StatelessWidget {
     required this.onDraftChanged,
     required this.onSend,
     required this.onStartRecording,
+    required this.shape,
   });
 
   final TextEditingController controller;
@@ -405,6 +436,7 @@ class _IdleComposer extends StatelessWidget {
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
   final VoidCallback onStartRecording;
+  final DesignSystemTextInputShape shape;
 
   @override
   Widget build(BuildContext context) {
@@ -418,12 +450,17 @@ class _IdleComposer extends StatelessWidget {
         Expanded(
           child: DesignSystemTextInput(
             controller: controller,
+            shape: shape,
             hintText: context.messages.goalChatPlaceholder(agentName),
             helperText: isSending ? sendingLabel : null,
             enabled: !isSending,
             textCapitalization: TextCapitalization.sentences,
+            emphasizeTrailingIcon:
+                hasText && shape == DesignSystemTextInputShape.pill,
             trailingIcon: hasText
-                ? LottiIcons.send
+                ? (shape == DesignSystemTextInputShape.pill
+                      ? LottiIcons.arrowUp
+                      : LottiIcons.send)
                 : (canRecord ? LottiIcons.mic : null),
             onTrailingIconTap: hasText
                 ? (canSend ? onSend : null)
@@ -595,11 +632,15 @@ class _MessageBubble extends StatelessWidget {
     required this.message,
     required this.agentName,
     required this.measuredHeights,
+    this.attachment,
+    this.replyTextStyle,
     super.key,
   });
 
   final AgentChatMessage message;
   final String agentName;
+  final Widget? attachment;
+  final TextStyle? replyTextStyle;
 
   /// List-owned reply heights; see [_AgentChatViewState._measuredHeights].
   final Map<String, double> measuredHeights;
@@ -657,13 +698,22 @@ class _MessageBubble extends StatelessWidget {
                         cacheKey: message.id,
                         measuredHeights: measuredHeights,
                         text: message.text,
-                        style: tokens.typography.styles.body.bodyMedium
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
-                            ),
+                        style:
+                            (replyTextStyle ??
+                                    tokens.typography.styles.body.bodyMedium)
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
                         fadeColor: tokens.colors.background.level02,
                       ),
                     ),
+                  if (attachment != null) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    Material(
+                      type: MaterialType.transparency,
+                      child: attachment,
+                    ),
+                  ],
                   SizedBox(height: tokens.spacing.step1),
                   ExcludeSemantics(
                     child: Text(

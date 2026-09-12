@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/model/query_chat_models.dart';
-import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -39,8 +37,8 @@ import 'package:material_ui/material_ui.dart';
 /// narrow viewports the lower-priority trailing icons (image, then
 /// checklist) are hidden once the inner width falls below
 /// [minWidthForImageButton] / [minWidthForChecklistButton] instead of
-/// overflowing the right edge. Ask opens the task agent's conversations and
-/// wraps beneath that group when the viewport cannot fit both on one line.
+/// overflowing the right edge. Agent conversations are accessed from the
+/// task header and agent summary card.
 class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({
     required this.task,
@@ -423,20 +421,9 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       onPressed: _onMorePressed,
                     ),
                 ];
-                return Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: spacing.step4,
-                  runSpacing: spacing.step3,
-                  children: [
-                    Row(mainAxisSize: MainAxisSize.min, children: rowChildren),
-                    QueryAskButton(
-                      scope: QueryScope(
-                        kind: QueryScopeKind.task,
-                        id: widget.task.meta.id,
-                      ),
-                    ),
-                  ],
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: rowChildren,
                 );
               },
             ),

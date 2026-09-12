@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/chat/chat_amplitude_history.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
+import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/get_it.dart';
@@ -14,6 +15,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
 export 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
+
+/// Resolves an explicit transcription route immediately before submission.
+/// A failing resolver never falls back to automatic model discovery.
+typedef ChatTranscriptionTargetResolver =
+    Future<ResolvedInferenceProvider> Function();
 
 /// Drives the shared AI voice-input recorder — record to a temp `.m4a` file,
 /// then batch-transcribe — exposing a single [ChatRecorderState] to the UI.
@@ -71,6 +77,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   Directory? _tempDir;
   String? _filePath;
   bool _isStarting = false;
+  ChatTranscriptionTargetResolver? _resolveTranscriptionTarget;
   int _operationId = 0; // Incremented for each new operation to prevent races
   Future<void>? _disposeFuture;
 
@@ -112,8 +119,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   /// and arms a [ChatRecorderConfig.maxSeconds] safety timer that auto-calls
   /// [stopAndTranscribe]. No-op unless idle; records an error message if a
   /// start is already in flight. On any failure the partial recording is
-  /// cleaned up.
-  Future<void> start() async {
+  /// cleaned up. An optional [resolveTranscriptionTarget] belongs to this
+  /// recording and resolves the caller's current route when recording stops.
+  Future<void> start({
+    ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
+  }) async {
     if (!ref.mounted) return;
     if (_isStarting) {
       state = state.copyWith(
@@ -125,6 +135,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     if (state.status != ChatRecorderStatus.idle) return;
 
     _isStarting = true;
+    _resolveTranscriptionTarget = resolveTranscriptionTarget;
     final recorder = _recorderFactory();
     try {
       final hasPerm = await recorder.hasPermission();
@@ -357,9 +368,13 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     final buffer = StringBuffer();
     var chunkCount = 0;
 
-    await for (final chunk in _transcriptionService.transcribeStream(
-      filePath,
-    )) {
+    final resolveTarget = _resolveTranscriptionTarget;
+    final target = resolveTarget == null ? null : await resolveTarget();
+    if (!ref.mounted || operationId != _operationId) return '';
+    final stream = target == null
+        ? _transcriptionService.transcribeStream(filePath)
+        : _transcriptionService.transcribeStream(filePath, target: target);
+    await for (final chunk in stream) {
       chunkCount++;
       buffer.write(chunk);
 

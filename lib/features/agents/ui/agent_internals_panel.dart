@@ -121,11 +121,11 @@ class AgentInternalsPanel extends ConsumerWidget {
     final panelBody = SizedBox(
       width: width,
       height: double.infinity,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: ai.background,
-          border: isMobile ? null : Border(left: BorderSide(color: ai.border)),
-        ),
+      // The panel itself owns the ink surface for the tab bodies' ListTiles.
+      // A colored DecoratedBox between those tiles and Material hides their ink.
+      child: Material(
+        color: ai.background,
+        shape: isMobile ? null : Border(left: BorderSide(color: ai.border)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

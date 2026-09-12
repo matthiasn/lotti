@@ -11163,7 +11163,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přepis můžeš upravit před odesláním otázky. Zvuk už mohl být odeslán tvému poskytovateli přepisu.';
 
   @override
-  String get queryEmptyBody => 'Prohledej poznámky a nahrávky.';
+  String get queryEarlierTextOmitted => '[Dřívější text není zobrazen]';
+
+  @override
+  String get queryEmptyBody =>
+      'Zeptej se na dřívější poznámky a schůzky. Odpovědi obsahují přesné pasáže, které si můžeš prohlédnout.';
+
+  @override
+  String get queryExactStoredText => 'Přesný uložený text';
 
   @override
   String get queryExactText => 'Zobrazit přesný text';
@@ -11175,6 +11182,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryExampleMeeting => 'Na které schůzce jsme to probírali?';
 
   @override
+  String get queryExampleSuggestion => 'Bylo to rozhodnutí, nebo návrh?';
+
+  @override
   String get queryExpanding => 'Kontrola dalších projektů v této kategorii…';
 
   @override
@@ -11182,6 +11192,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Zapomenout závěry';
+
+  @override
+  String get queryHideExactText => 'Skrýt přesný text';
 
   @override
   String get queryHideSurrounding => 'Skrýt okolní text';
@@ -11199,6 +11212,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Ponechat závěry';
+
+  @override
+  String get queryLaterTextOmitted => '[Pozdější text není zobrazen]';
 
   @override
   String get queryMachineTranscript =>
@@ -11298,6 +11314,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryUnread => 'Nová odpověď';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Zeptej se agenta $agentName na tuto kategorii';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Zeptej se agenta $agentName na tento projekt';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Zeptej se agenta $agentName na tento úkol';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Dohnat nyní';

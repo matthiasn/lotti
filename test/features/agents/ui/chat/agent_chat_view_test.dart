@@ -14,6 +14,56 @@ import '../evolution/widgets/evolution_recorder_test_utils.dart';
 
 void main() {
   testWidgets(
+    'supporting evidence belongs to its reply surface and reading width',
+    (tester) async {
+      final message = AgentChatMessage(
+        id: 'reply',
+        role: AgentChatRole.agent,
+        text: 'The feeder was approved.',
+        createdAt: DateTime(2026, 9, 10),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Habitat Watcher',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              history: AsyncData([message]),
+              conversationId: 'query',
+              composerEnabled: false,
+              groupAttachmentsWithReply: true,
+              replyTextStyle: dsTokensLight.typography.styles.body.bodySmall,
+              attachmentBuilder: (_, _) => const SizedBox(
+                width: double.infinity,
+                child: Text('Exact approved passage'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final reply = find.byKey(const ValueKey('goal-chat-message-reply'));
+      final evidence = find.text('Exact approved passage');
+      expect(find.descendant(of: reply, matching: evidence), findsOneWidget);
+      expect(
+        tester.getRect(reply).contains(tester.getTopLeft(evidence)),
+        isTrue,
+      );
+      expect(tester.getSize(evidence).width, lessThanOrEqualTo(520));
+      expect(
+        tester.widget<GptMarkdown>(find.byType(GptMarkdown)).style!.fontSize,
+        dsTokensLight.typography.styles.body.bodySmall.fontSize,
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
     'a scoped history bypasses the agent log and can disable composition',
     (tester) async {
       var logReads = 0;

@@ -8,10 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -23,6 +25,7 @@ import 'package:record/record.dart' as record;
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../test_data/ai_config_factories.dart';
 
 class _InMemoryAiConfigRepo extends AiConfigRepository {
   _InMemoryAiConfigRepo() : super(AiConfigDb(inMemoryDatabase: true));
@@ -154,6 +157,135 @@ void main() {
   });
 
   tearDown(tearDownTestGetIt);
+
+  group('explicit transcription target', () {
+    late ProviderContainer container;
+    late ChatRecorderController controller;
+    late MockAudioTranscriptionService service;
+    late ResolvedInferenceProvider target;
+
+    setUp(() async {
+      final directory = await Directory.systemTemp.createTemp('query_route_');
+      addTearDown(() async {
+        if (await directory.exists()) await directory.delete(recursive: true);
+      });
+      final recorder = MockAudioRecorder();
+      when(recorder.hasPermission).thenAnswer((_) async => true);
+      when(recorder.dispose).thenAnswer((_) async {});
+      when(recorder.stop).thenAnswer((_) async => null);
+      when(() => recorder.onAmplitudeChanged(any())).thenAnswer(
+        (_) => const Stream.empty(),
+      );
+      when(() => recorder.start(any(), path: any(named: 'path'))).thenAnswer(
+        (call) async {
+          await File(call.namedArguments[#path] as String).create();
+        },
+      );
+      target = (model: testAiModel(), provider: testInferenceProvider());
+      service = MockAudioTranscriptionService();
+      when(() => service.transcribeStream(any())).thenAnswer(
+        (_) => Stream.value('Automatic model result'),
+      );
+      when(() => service.transcribeStream(any(), target: target)).thenAnswer(
+        (_) => Stream.value('Category model result'),
+      );
+      container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => recorder,
+              tempDirectoryProvider: () async => directory,
+              transcriptionService: service,
+              nowMillisProvider: () => 1234,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        chatRecorderControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      controller = container.read(chatRecorderControllerProvider.notifier);
+      addTearDown(controller.dispose);
+    });
+
+    test('resolves on submission and never uses automatic discovery', () async {
+      var calls = 0;
+      await controller.start(
+        resolveTranscriptionTarget: () async {
+          calls++;
+          return target;
+        },
+      );
+      expect(calls, 0);
+      await controller.stopAndTranscribe();
+      expect(calls, 1);
+      expect(
+        container.read(chatRecorderControllerProvider).transcript,
+        'Category model result',
+      );
+      verify(() => service.transcribeStream(any(), target: target)).called(1);
+      verifyNever(() => service.transcribeStream(any()));
+    });
+
+    test('missing explicit setup fails without automatic fallback', () async {
+      await controller.start(
+        resolveTranscriptionTarget: () async {
+          throw TranscriptionException(
+            'No audio-capable models configured for category transcription',
+          );
+        },
+      );
+      await controller.stopAndTranscribe();
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.errorKind, ChatRecorderErrorKind.noAudioModel);
+      expect(state.transcript, isNull);
+      verifyNever(() => service.transcribeStream(any()));
+      verifyNever(() => service.transcribeStream(any(), target: target));
+    });
+
+    test('cancelling target resolution prevents audio submission', () async {
+      final entered = Completer<void>();
+      final resolved = Completer<ResolvedInferenceProvider>();
+      await controller.start(
+        resolveTranscriptionTarget: () {
+          entered.complete();
+          return resolved.future;
+        },
+      );
+      final operation = controller.stopAndTranscribe();
+      await entered.future;
+      await controller.cancel();
+      resolved.complete(target);
+      await operation;
+      expect(container.read(chatRecorderControllerProvider).transcript, isNull);
+      verifyNever(() => service.transcribeStream(any()));
+      verifyNever(() => service.transcribeStream(any(), target: target));
+    });
+
+    test(
+      'later unscoped recording does not retain the previous target',
+      () async {
+        await controller.start(resolveTranscriptionTarget: () async => target);
+        await controller.stopAndTranscribe();
+        expect(
+          container.read(chatRecorderControllerProvider).transcript,
+          'Category model result',
+        );
+        controller.clearResult();
+        await controller.start();
+        await controller.stopAndTranscribe();
+        expect(
+          container.read(chatRecorderControllerProvider).transcript,
+          'Automatic model result',
+        );
+        verify(() => service.transcribeStream(any(), target: target)).called(1);
+        verify(() => service.transcribeStream(any())).called(1);
+      },
+    );
+  });
 
   test('start() without permission sets an actionable message', () async {
     final mockRecorder = MockAudioRecorder();

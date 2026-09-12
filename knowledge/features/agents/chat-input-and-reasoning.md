@@ -5,7 +5,7 @@ description: Shared voice-recorder state, waveform feedback, and reasoning discl
 resource: ../../../lib/features/agents/ui/chat
 tags: [agents, chat, recording, reasoning]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T23:43:06Z }
 stale_after: 2026-10-12
 sources:
   - id: chat
@@ -24,6 +24,13 @@ sources:
 relationship agents and [scoped queries](query-chat.md). Query hosts supply
 their own projected history and conversation ID, activity and footer slots,
 and disable reply-driven scrolling while older evidence is being inspected.
+`groupAttachmentsWithReply` places a consumer's supporting widgets inside the
+reply surface and its reading width, under a transparent Material ancestor for
+interactive disclosures. `composerShape` selects the input shell; pill composers
+use an emphasized upward-arrow Send action. Both options default to the existing
+separate attachment and rounded-field treatment for other hosts.
+`replyTextStyle` lets the host select its answer typography from design tokens;
+scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Its composer and the agent improvement input widgets use
 the same voice-input primitives under `agents/ui/chat/`:
 
@@ -58,6 +65,12 @@ file, samples amplitude, and arms a maximum-duration stop. Stop moves to
 `processing`, streams transcription chunks into `partialTranscript`, then
 publishes the finished `transcript` or a typed error and returns to `idle`.
 The UI consumes the finished transcript into its editable composer.
+
+Hosts can pass a lazy `resolveTranscriptionTarget` callback into `start`. It is
+captured for that recording and awaited immediately before transcription;
+cancellation or disposal during resolution prevents submission. Scoped queries
+supply their [category-default policy](query-chat.md); callers that omit the
+callback retain the transcription service's automatic discovery behavior.
 
 Every recording captures a monotonically increasing operation ID. Amplitude
 and transcription callbacks must match that ID and `ref.mounted` before writing

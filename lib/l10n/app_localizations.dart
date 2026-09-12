@@ -18577,11 +18577,23 @@ abstract class AppLocalizations {
   /// **'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.'**
   String get queryDictated;
 
+  /// No description provided for @queryEarlierTextOmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'[Earlier text not shown]'**
+  String get queryEarlierTextOmitted;
+
   /// No description provided for @queryEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Search notes and recordings.'**
+  /// **'Ask about earlier notes and meetings. Answers include the exact passages you can inspect.'**
   String get queryEmptyBody;
+
+  /// No description provided for @queryExactStoredText.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact stored text'**
+  String get queryExactStoredText;
 
   /// No description provided for @queryExactText.
   ///
@@ -18601,6 +18613,12 @@ abstract class AppLocalizations {
   /// **'In which meeting did we discuss this?'**
   String get queryExampleMeeting;
 
+  /// No description provided for @queryExampleSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Was that a decision or a suggestion?'**
+  String get queryExampleSuggestion;
+
   /// No description provided for @queryExpanding.
   ///
   /// In en, this message translates to:
@@ -18618,6 +18636,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Forget conclusions'**
   String get queryForgetConclusions;
+
+  /// No description provided for @queryHideExactText.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide exact text'**
+  String get queryHideExactText;
 
   /// No description provided for @queryHideSurrounding.
   ///
@@ -18648,6 +18672,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep conclusions'**
   String get queryKeepConclusions;
+
+  /// No description provided for @queryLaterTextOmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'[Later text not shown]'**
+  String get queryLaterTextOmitted;
 
   /// No description provided for @queryMachineTranscript.
   ///
@@ -18798,6 +18828,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New answer'**
   String get queryUnread;
+
+  /// No description provided for @queryWelcomeCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {agentName} about this category'**
+  String queryWelcomeCategory(String agentName);
+
+  /// No description provided for @queryWelcomeProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {agentName} about this project'**
+  String queryWelcomeProject(String agentName);
+
+  /// No description provided for @queryWelcomeTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {agentName} about this task'**
+  String queryWelcomeTask(String agentName);
 
   /// No description provided for @queueCatchUpNowButton.
   ///

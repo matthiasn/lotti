@@ -10965,7 +10965,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.';
 
   @override
-  String get queryEmptyBody => 'Search notes and recordings.';
+  String get queryEarlierTextOmitted => '[Earlier text not shown]';
+
+  @override
+  String get queryEmptyBody =>
+      'Ask about earlier notes and meetings. Answers include the exact passages you can inspect.';
+
+  @override
+  String get queryExactStoredText => 'Exact stored text';
 
   @override
   String get queryExactText => 'Show exact text';
@@ -10977,6 +10984,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryExampleMeeting => 'In which meeting did we discuss this?';
 
   @override
+  String get queryExampleSuggestion => 'Was that a decision or a suggestion?';
+
+  @override
   String get queryExpanding => 'Checking other projects in this category…';
 
   @override
@@ -10984,6 +10994,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Forget conclusions';
+
+  @override
+  String get queryHideExactText => 'Hide exact text';
 
   @override
   String get queryHideSurrounding => 'Hide surrounding text';
@@ -11001,6 +11014,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Keep conclusions';
+
+  @override
+  String get queryLaterTextOmitted => '[Later text not shown]';
 
   @override
   String get queryMachineTranscript =>
@@ -11098,6 +11114,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryUnread => 'New answer';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Ask $agentName about this category';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Ask $agentName about this project';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Ask $agentName about this task';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Catch up now';

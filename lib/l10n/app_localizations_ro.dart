@@ -11223,7 +11223,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Puteți edita transcrierea înainte de a trimite întrebarea. Este posibil ca sunetul să fi fost deja trimis furnizorului dvs. de transcriere.';
 
   @override
-  String get queryEmptyBody => 'Căutați în note și înregistrări.';
+  String get queryEarlierTextOmitted => '[Textul anterior nu este afișat]';
+
+  @override
+  String get queryEmptyBody =>
+      'Întrebați despre notițe și întâlniri anterioare. Răspunsurile includ pasajele exacte pe care le puteți consulta.';
+
+  @override
+  String get queryExactStoredText => 'Textul exact salvat';
 
   @override
   String get queryExactText => 'Afișați textul exact';
@@ -11235,6 +11242,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryExampleMeeting => 'În ce ședință am discutat acest lucru?';
 
   @override
+  String get queryExampleSuggestion => 'A fost o decizie sau o sugestie?';
+
+  @override
   String get queryExpanding =>
       'Se verifică alte proiecte din această categorie…';
 
@@ -11243,6 +11253,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Uitați concluziile';
+
+  @override
+  String get queryHideExactText => 'Ascundeți textul exact';
 
   @override
   String get queryHideSurrounding => 'Ascundeți textul din jur';
@@ -11260,6 +11273,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Păstrați concluziile';
+
+  @override
+  String get queryLaterTextOmitted => '[Textul ulterior nu este afișat]';
 
   @override
   String get queryMachineTranscript =>
@@ -11361,6 +11377,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryUnread => 'Răspuns nou';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Întrebați agentul $agentName despre această categorie';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Întrebați agentul $agentName despre acest proiect';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Întrebați agentul $agentName despre această sarcină';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Recuperați acum';

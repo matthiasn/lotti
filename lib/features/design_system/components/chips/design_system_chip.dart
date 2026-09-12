@@ -41,6 +41,7 @@ class DesignSystemChip extends StatefulWidget {
     this.trailing,
     this.showRemove = false,
     this.selected = false,
+    this.outlined = false,
     this.size = DesignSystemChipSize.compact,
     this.semanticsLabel,
     this.forcedState,
@@ -71,6 +72,9 @@ class DesignSystemChip extends StatefulWidget {
   /// as selected; a tap still shows the pressed feedback. [forcedState] still
   /// wins for widgetbook/tests.
   final bool selected;
+
+  /// Quiet filter treatment: an outline at rest, with the same selected fill.
+  final bool outlined;
 
   /// Visual/tap-target size. Defaults to the compact chip used in dense filter
   /// rows; `touch` is for primary picker choices inside modal sheets.
@@ -113,13 +117,23 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
     );
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
+      side: widget.outlined
+          ? BorderSide(
+              color: widget.selected
+                  ? tokens.colors.interactive.enabled
+                  : tokens.colors.decorative.level01,
+            )
+          : BorderSide.none,
     );
 
     final chip = Material(
       color: Colors.transparent,
       child: Ink(
         decoration: ShapeDecoration(
-          color: variantSpec.backgroundColor,
+          color:
+              widget.outlined && visualState == DesignSystemChipVisualState.idle
+              ? Colors.transparent
+              : variantSpec.backgroundColor,
           shape: shape,
         ),
         child: InkWell(
@@ -138,7 +152,9 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: sizeSpec.horizontalPadding,
-                vertical: sizeSpec.verticalPadding,
+                vertical: widget.outlined
+                    ? tokens.spacing.step2
+                    : sizeSpec.verticalPadding,
               ),
               child: DefaultTextStyle.merge(
                 style: sizeSpec.labelStyle.copyWith(

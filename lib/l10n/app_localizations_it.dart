@@ -11156,7 +11156,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Puoi modificare la trascrizione prima di inviare la domanda. L’audio potrebbe essere già stato inviato al tuo servizio di trascrizione.';
 
   @override
-  String get queryEmptyBody => 'Cerca nelle note e nelle registrazioni.';
+  String get queryEarlierTextOmitted => '[Testo precedente non mostrato]';
+
+  @override
+  String get queryEmptyBody =>
+      'Chiedi informazioni su note e riunioni precedenti. Le risposte includono i passaggi esatti che puoi consultare.';
+
+  @override
+  String get queryExactStoredText => 'Testo esatto salvato';
 
   @override
   String get queryExactText => 'Mostra testo esatto';
@@ -11168,6 +11175,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryExampleMeeting => 'In quale riunione ne abbiamo discusso?';
 
   @override
+  String get queryExampleSuggestion => 'Era una decisione o un suggerimento?';
+
+  @override
   String get queryExpanding =>
       'Verifica degli altri progetti in questa categoria…';
 
@@ -11176,6 +11186,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Dimentica le conclusioni';
+
+  @override
+  String get queryHideExactText => 'Nascondi testo esatto';
 
   @override
   String get queryHideSurrounding => 'Nascondi contesto';
@@ -11193,6 +11206,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Conserva le conclusioni';
+
+  @override
+  String get queryLaterTextOmitted => '[Testo successivo non mostrato]';
 
   @override
   String get queryMachineTranscript =>
@@ -11290,6 +11306,21 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queryUnread => 'Nuova risposta';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Chiedi a $agentName di questa categoria';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Chiedi a $agentName di questo progetto';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Chiedi a $agentName di questa attività';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Prenditi ora';
