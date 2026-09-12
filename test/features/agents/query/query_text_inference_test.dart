@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -15,6 +17,106 @@ import '../test_data/ai_config_factories.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
+  for (final (minutes, offset) in [
+    (120, '+02:00'),
+    (345, '+05:45'),
+    (-210, '-03:30'),
+  ]) {
+    test(
+      'current clock preserves device wall date and offset $offset',
+      () async {
+        final location = tz.Location('test', [], [], [
+          tz.TimeZone(
+            Duration(minutes: minutes),
+            isDst: false,
+            abbreviation: 'test',
+          ),
+        ]);
+        final now = tz.TZDateTime(location, 2026, 9, 13, 0, 5, 6);
+        await withClock(Clock.fixed(now), () async {
+          final input = <String, Object?>{
+            'sources': [
+              {'date': '2025-01-01', 'text': 'Old 🐧 report'},
+            ],
+            'currentTime': {'localDate': '2024-01-01'},
+          };
+          final original = jsonEncode(input);
+          final measured = QueryTextInference.requestBytes('Inspect', input);
+          final inference = QueryTextInference(
+            generate: (system, prompt) {
+              final supplied = jsonDecode(prompt) as Map<String, dynamic>;
+              expect(supplied['currentTime'], {
+                'localDate': '2026-09-13',
+                'localTimestamp': '2026-09-13T00:05:06$offset',
+              });
+              expect(supplied['sources'], input['sources']);
+              expect(supplied.keys.last, 'currentTime');
+              expect(system, contains('never use them as the current date'));
+              expect(
+                measured,
+                utf8.encode(system).length + utf8.encode(prompt).length,
+              );
+              return Stream.value('{}');
+            },
+          );
+          await inference.complete(
+            system: 'Inspect',
+            input: input,
+            cancellation: QueryCancellation(),
+          );
+          expect(
+            jsonEncode(input),
+            original,
+            reason: 'Clock injection must not mutate caller context',
+          );
+        });
+      },
+    );
+  }
+
+  test(
+    'reused inference refreshes today across midnight for both routes',
+    () async {
+      var now = DateTime.utc(2026, 9, 12, 23, 59, 59);
+      final calls = <Map<String, dynamic>>[];
+      final systems = <String>[];
+      Stream<String> generate(String system, String prompt) {
+        calls.add(jsonDecode(prompt) as Map<String, dynamic>);
+        systems.add(system);
+        return Stream.value('{"answer":"done"}');
+      }
+
+      final inference = QueryTextInference(
+        generate: generate,
+        generateSynthesis: generate,
+      );
+      await withClock(Clock(() => now), () async {
+        for (final synthesis in [false, true]) {
+          await inference.complete(
+            system: 'Answer',
+            input: const {},
+            cancellation: QueryCancellation(),
+            onAnswerText: synthesis ? (_) {} : null,
+          );
+          now = now.add(const Duration(seconds: 2));
+        }
+      });
+      expect(calls.map((c) => (c['currentTime'] as Map)['localDate']), [
+        '2026-09-12',
+        '2026-09-13',
+      ]);
+      expect(
+        (calls.last['currentTime'] as Map)['localTimestamp'],
+        '2026-09-13T00:00:01+00:00',
+      );
+      expect(
+        systems.first,
+        systems.last,
+        reason: 'Clock must not churn the system prefix',
+      );
+    },
+  );
+
   for (final fenced in [false, true]) {
     test('synthesis decodes character-sized escapes fenced=$fenced', () async {
       const answer = 'Line\n"quoted" 🐧 [1]';
@@ -188,10 +290,10 @@ void main() {
         cancellation: QueryCancellation(),
       );
       expect(first['quote'], 'Keep the feeder.');
-      expect(inputs, [
-        {'source': 'first'},
-        {'source': 'second'},
-      ]);
+      expect(inputs.map((input) => input['source']), ['first', 'second']);
+      for (final input in inputs) {
+        expect(input.keys, unorderedEquals(['source', 'currentTime']));
+      }
     },
   );
 
@@ -296,7 +398,7 @@ void main() {
             baseUrl: provider.baseUrl,
             apiKey: provider.apiKey,
             provider: provider,
-            systemMessage: 'inspect',
+            systemMessage: any(named: 'systemMessage'),
             maxCompletionTokens: 321,
             geminiThinkingMode: any(named: 'geminiThinkingMode'),
             impactCollector: any(named: 'impactCollector'),
@@ -366,9 +468,10 @@ void main() {
           ),
           {'passages': <Object>[]},
         );
-        expect(prompts, [
-          jsonEncode({'source': 'Only this meeting'}),
-        ]);
+        expect(prompts, hasLength(1));
+        final supplied = jsonDecode(prompts.single) as Map<String, dynamic>;
+        expect(supplied['source'], 'Only this meeting');
+        expect(supplied['currentTime'], isA<Map<String, dynamic>>());
         final event = attribution.recordedInteractions.single;
         expect(event.providerModelId, 'query-model');
         expect(event.configId, provider.id);

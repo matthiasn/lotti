@@ -202,6 +202,7 @@ void main() {
     late List<String> stages;
     late List<Map<String, dynamic>> batchInputs;
     late List<String> batchPrompts;
+    late List<int> batchSizes;
     late List<(int, bool)> progress;
     late QueryCancellation cancellation;
     var wanted = 'source-1';
@@ -223,6 +224,7 @@ void main() {
       stages = [];
       batchInputs = [];
       batchPrompts = [];
+      batchSizes = [];
       progress = [];
       cancellation = QueryCancellation();
       wanted = 'source-1';
@@ -237,12 +239,14 @@ void main() {
     Future<QueryBuiltAnswer> build({
       bool homeOnly = false,
       int sourceCalls = 90,
+      int maxBytes = QueryAnswerBuilder.defaultBatchInputBytes,
       AgentQueryChatEventEntity? askedQuestion,
     }) =>
         QueryAnswerBuilder(
           crawler: bench.crawler,
           access: bench.crawler.access,
           maxSourceCalls: sourceCalls,
+          maxBatchBytes: maxBytes,
           inference: QueryTextInference(
             generate: (system, prompt) {
               final input = jsonDecode(prompt) as Map<String, dynamic>;
@@ -251,6 +255,9 @@ void main() {
                 stages.add('batch');
                 batchInputs.add(input);
                 batchPrompts.add(prompt);
+                batchSizes.add(
+                  utf8.encode(system).length + utf8.encode(prompt).length,
+                );
                 duringBatch?.call();
                 final sources = (input['sources'] as List)
                     .cast<Map<String, dynamic>>();
@@ -369,6 +376,16 @@ void main() {
         expect(batchPrompts.last, isNot(first));
       },
     );
+
+    test('home batch budget includes the clock sent to the provider', () async {
+      await build(homeOnly: true);
+      final budget = batchSizes.single - 1;
+      stages.clear();
+      await build(homeOnly: true, maxBytes: budget);
+      expect(stages, isNot(contains('batch')));
+      expect(stages, contains('extract'));
+      expect(batchSizes, hasLength(1));
+    });
 
     test('one inspection budget still counts every batched source', () async {
       final result = await build(sourceCalls: 1);

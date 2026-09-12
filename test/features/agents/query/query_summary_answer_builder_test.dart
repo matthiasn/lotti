@@ -384,6 +384,34 @@ void main() {
     },
   );
 
+  test('full-summary budget includes the clock sent to the provider', () async {
+    reports['other'] = reports['other']!.copyWith(content: 'x' * 10000);
+    await build();
+    final fullBytes =
+        utf8.encode(systems.last).length +
+        utf8.encode(jsonEncode(prompts.last)).length;
+    final budget = fullBytes - 1;
+    prompts.clear();
+    systems.clear();
+
+    final answer = await build(maxBytes: budget);
+
+    expect(answer!.coverage.incomplete, isTrue);
+    expect(
+      ((prompts.last['summaries'] as List).single as Map).containsKey(
+        'content',
+      ),
+      isFalse,
+    );
+    for (var i = 0; i < prompts.length; i++) {
+      expect(
+        utf8.encode(systems[i]).length +
+            utf8.encode(jsonEncode(prompts[i])).length,
+        lessThanOrEqualTo(budget),
+      );
+    }
+  });
+
   test('selection cannot request a TLDR omitted by the input budget', () async {
     reports['other'] = reports['other']!.copyWith(
       tldr: List.filled(30000, 'x').join(),

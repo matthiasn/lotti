@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
@@ -677,7 +675,10 @@ class QueryAnswerBuilder {
       'Choose relevant memories in this same inspection; a memory is not fresh evidence. '
       'Do not write the final answer. Never invent a missing fact.';
 
-  static final int _batchSystemBytes = utf8.encode(_batchSystem).length;
+  static final int _batchSystemBytes = QueryTextInference.requestBytes(
+    _batchSystem,
+    const {},
+  );
 
   _QueryBatchResult? _matchingBatch(
     QuerySourceDocument document,
@@ -734,14 +735,10 @@ class QueryAnswerBuilder {
             (length, source) => length + source.text.length,
           ) <=
           12000 &&
-      _batchSystemBytes +
-              utf8
-                  .encode(
-                    jsonEncode(
-                      _batchInput(corpus, question, context, memories),
-                    ),
-                  )
-                  .length <=
+      QueryTextInference.requestBytes(
+            _batchSystem,
+            _batchInput(corpus, question, context, memories),
+          ) <=
           maxBatchBytes;
 
   /// Verifies the whole supplied batch at both model boundaries. Only exact

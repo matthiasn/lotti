@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNull;
@@ -182,27 +183,39 @@ void main() {
               baseUrl: provider.baseUrl,
               apiKey: provider.apiKey,
               provider: provider,
-              systemMessage: 'inspect',
+              systemMessage: any(named: 'systemMessage'),
               maxCompletionTokens: any(named: 'maxCompletionTokens'),
               geminiThinkingMode: any(named: 'geminiThinkingMode'),
               impactCollector: any(named: 'impactCollector'),
             ),
           ).thenAnswer(
-            (_) => Stream.value(
-              const CreateChatCompletionStreamResponse(
-                id: 'response',
-                object: 'chat.completion.chunk',
-                created: 0,
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: '{"passages":[]}',
+            (invocation) {
+              expect(
+                invocation.namedArguments[#systemMessage],
+                allOf(startsWith('inspect'), contains('device clock')),
+              );
+              final input =
+                  jsonDecode(invocation.positionalArguments.single as String)
+                      as Map<String, dynamic>;
+              expect(input['source'], 'Only the feeder note');
+              expect(input['currentTime'], isA<Map<String, dynamic>>());
+              expect(input.keys, unorderedEquals(['source', 'currentTime']));
+              return Stream.value(
+                const CreateChatCompletionStreamResponse(
+                  id: 'response',
+                  object: 'chat.completion.chunk',
+                  created: 0,
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      index: 0,
+                      delta: ChatCompletionStreamResponseDelta(
+                        content: '{"passages":[]}',
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            },
           );
           bench.categories[0] = bench.categories.single.copyWith(
             defaultProfileId: 'category-profile',

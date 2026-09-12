@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T00:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -27,7 +27,7 @@ sources:
   - id: builder
     resource: ../../../lib/features/agents/query/query_answer_builder.dart
     title: Summary-first routing and home-entry evidence verification
-    last_modified: 2026-09-12
+    last_modified: 2026-09-13
   - id: summary-reader
     resource: ../../../lib/features/agents/query/query_summary_reader.dart
     title: Maintained task and project report layers
@@ -35,7 +35,11 @@ sources:
   - id: summary-answer
     resource: ../../../lib/features/agents/query/query_summary_answer_builder.dart
     title: TLDR selection and attributed summary answers
-    last_modified: 2026-09-12
+    last_modified: 2026-09-13
+  - id: inference
+    resource: ../../../lib/features/agents/query/query_text_inference.dart
+    title: Profile routing and fresh device clock context
+    last_modified: 2026-09-13
   - id: access
     resource: ../../../lib/features/agents/query/query_source_access.dart
     title: Live visibility gate
@@ -314,6 +318,20 @@ count excluded recordings as missing transcripts. Binary audio and
 images are not inspected by this crawler.
 
 # Request lifecycle and context
+
+Every `QueryTextInference.complete` request appends a fresh `currentTime` object
+with the device's `localDate` and a seconds-resolution `localTimestamp` including
+its explicit UTC offset. Shared system guidance anchors relative dates to that
+clock, not to dates in reports or prior messages. The clock refreshes for every
+completion, including retries and chats left open across midnight. It is request
+metadata, not evidence or a durable task conclusion. Injection preserves caller
+input and replaces any stale top-level clock value.
+
+The changing clock follows the existing source/context payload, preserving the
+stable source prefix. `QueryTextInference.requestBytes` counts both the guidance
+and clock metadata in summary-selection, full-summary and home-batch budgets.
+No extra inference call is needed. This remains a read-only query pipeline:
+owning-agent mutation tools, including time recording, are not exposed here.
 
 `QueryChatController` maintains separate drafts, narrowing choices, cancellation
 tokens and request status for each chat. Requests in different chats can run

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
@@ -117,8 +115,7 @@ class QuerySummaryAnswerBuilder {
     };
     var incomplete = catalog.incomplete || kind != null;
     bool fits(String system, Map<String, Object?> input) =>
-        utf8.encode(system).length + utf8.encode(jsonEncode(input)).length <=
-        maxInputBytes;
+        QueryTextInference.requestBytes(system, input) <= maxInputBytes;
     if (!fits(_selectionSystem, orientation) ||
         !fits(_answerSystem, {...context, 'summaries': const []})) {
       throw const FormatException('Summary question exceeds input budget');
