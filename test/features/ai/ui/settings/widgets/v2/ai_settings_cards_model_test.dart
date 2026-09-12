@@ -168,16 +168,21 @@ void main() {
                 thinking: 'reasoning-id',
                 imageRecognition: 'vision-id',
                 // transcription + imageGeneration left null.
-              ),
+              ).copyWith(chatModelId: 'chat-id'),
               isInUse: false,
               providerTypeFor: () => InferenceProviderType.anthropic,
-              modelLookup: (id) =>
-                  id == 'reasoning-id' ? 'Reasoning Model' : 'Vision Model',
+              modelLookup: (id) => switch (id) {
+                'reasoning-id' => 'Reasoning Model',
+                'chat-id' => 'Chat Model',
+                _ => 'Vision Model',
+              },
               onTap: () {},
             ),
           ),
         );
         await tester.pump();
+        expect(find.text('Chat model'), findsOneWidget);
+        expect(find.text('Chat Model'), findsOneWidget);
         expect(find.text('Thinking'), findsOneWidget);
         expect(find.text('Reasoning Model'), findsOneWidget);
         expect(find.text('Image recognition'), findsOneWidget);
@@ -208,6 +213,7 @@ void main() {
         );
         await tester.pump();
         expect(find.text('missing'), findsOneWidget);
+        expect(find.text('Chat model'), findsNothing);
       },
     );
   });

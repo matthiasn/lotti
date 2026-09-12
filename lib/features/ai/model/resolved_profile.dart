@@ -15,6 +15,10 @@ class ResolvedProfile {
     required this.thinkingModelId,
     required this.thinkingProvider,
     this.thinkingModel,
+    this.chatModelId,
+    this.chatProvider,
+    this.chatModel,
+    this.chatModelUnavailable = false,
     this.thinkingHighEndModelId,
     this.thinkingHighEndProvider,
     this.thinkingHighEndModel,
@@ -38,6 +42,21 @@ class ResolvedProfile {
 
   /// The configured model row used for thinking, when resolved from a profile.
   final AiConfigModel? thinkingModel;
+
+  /// Provider-native model id and configured route for interactive query chat.
+  /// Unset slots use the resolved thinking route, including agent overrides.
+  final String? chatModelId;
+  final AiConfigInferenceProvider? chatProvider;
+  final AiConfigModel? chatModel;
+
+  /// An explicitly configured chat slot could not resolve. Agent work can
+  /// continue, but chat must surface the unavailable setup rather than switch.
+  final bool chatModelUnavailable;
+
+  String get effectiveChatModelId => chatModelId ?? thinkingModelId;
+  AiConfigInferenceProvider get effectiveChatProvider =>
+      chatProvider ?? thinkingProvider;
+  AiConfigModel? get effectiveChatModel => chatModel ?? thinkingModel;
 
   /// The provider-native model id for high-end thinking (nullable).
   /// Falls back to [thinkingModelId] when not set.
@@ -104,6 +123,10 @@ class ResolvedProfile {
       thinkingModelId: model.providerModelId,
       thinkingProvider: provider,
       thinkingModel: model,
+      chatModelId: chatModelId,
+      chatProvider: chatProvider,
+      chatModel: chatModel,
+      chatModelUnavailable: chatModelUnavailable,
       thinkingHighEndModelId: thinkingHighEndModelId,
       thinkingHighEndProvider: thinkingHighEndProvider,
       thinkingHighEndModel: thinkingHighEndModel,
@@ -130,6 +153,10 @@ class ResolvedProfile {
           thinkingModelId == other.thinkingModelId &&
           thinkingProvider == other.thinkingProvider &&
           thinkingModel == other.thinkingModel &&
+          chatModelId == other.chatModelId &&
+          chatProvider == other.chatProvider &&
+          chatModel == other.chatModel &&
+          chatModelUnavailable == other.chatModelUnavailable &&
           thinkingHighEndModelId == other.thinkingHighEndModelId &&
           thinkingHighEndProvider == other.thinkingHighEndProvider &&
           thinkingHighEndModel == other.thinkingHighEndModel &&
@@ -149,6 +176,10 @@ class ResolvedProfile {
     thinkingModelId,
     thinkingProvider,
     thinkingModel,
+    chatModelId,
+    chatProvider,
+    chatModel,
+    chatModelUnavailable,
     thinkingHighEndModelId,
     thinkingHighEndProvider,
     thinkingHighEndModel,

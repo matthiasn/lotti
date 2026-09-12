@@ -106,6 +106,7 @@ List<AiConfigInferenceProfile> profilesUsingProviderModels({
       .where(
         (profile) =>
             slotIds.contains(profile.thinkingModelId) ||
+            slotIds.contains(profile.chatModelId) ||
             slotIds.contains(profile.thinkingHighEndModelId) ||
             slotIds.contains(profile.imageRecognitionModelId) ||
             slotIds.contains(profile.transcriptionModelId) ||

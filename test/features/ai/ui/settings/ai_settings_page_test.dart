@@ -577,6 +577,34 @@ void main() {
     );
 
     testWidgets(
+      'profile provider lookup includes a chat-only provider reference',
+      (tester) async {
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(
+              id: 'chat-provider',
+              type: InferenceProviderType.melious,
+            ),
+          ],
+          models: [buildModel(id: 'chat-row', providerId: 'chat-provider')],
+          profiles: [
+            buildProfile(
+              id: 'chat-profile',
+              thinking: 'missing-thinking',
+            ).copyWith(chatModelId: 'chat-row'),
+          ],
+        );
+        await tester.tap(find.text('Profiles'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        final card = tester.widget<AiProfileCard>(find.byType(AiProfileCard));
+        expect(card.providerTypeFor(), InferenceProviderType.melious);
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
       'switching to the Profiles tab renders one AiProfileCard per profile '
       'and the in-use badge only for profiles something routes through',
       (tester) async {

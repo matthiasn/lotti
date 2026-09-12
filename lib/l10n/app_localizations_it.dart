@@ -7845,6 +7845,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Può essere scelto per le nuove voci quando in su';
 
   @override
+  String get inferenceProfileChat => 'Modello di chat';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Se non impostato, usa il modello di pensiero';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Scegli un modello';
 
   @override

@@ -7763,6 +7763,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kan väljas för nya poster när du är på';
 
   @override
+  String get inferenceProfileChat => 'Chattmodell';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Använder resonemangsmodellen om inget väljs';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Välj en modell';
 
   @override

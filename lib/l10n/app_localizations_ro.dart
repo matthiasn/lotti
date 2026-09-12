@@ -7903,6 +7903,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Poate fi ales pentru intrări noi când este activ';
 
   @override
+  String get inferenceProfileChat => 'Model de chat';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Fără model de chat selectat, se folosește modelul de gândire';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Alegeți un model';
 
   @override

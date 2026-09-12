@@ -91,7 +91,29 @@ because provider availability and credentials vary by device. Choosing or
 clearing it is explicit; profile deletion never substitutes another provider.
 The setting does not change authoritative setups or enable automation policies.
 
-**Only the thinking slot is fatal.** Optional slots resolve best-effort.
+**Only the thinking slot is fatal to profile resolution.** Optional slots
+resolve best-effort. An explicitly selected but unavailable Chat model sets
+`ResolvedProfile.chatModelUnavailable`: agent wakes still resolve, while query
+chat presents its existing recoverable setup error.
+
+# Choosing a chat model
+
+The inference profile editor has an optional **Chat model** slot. It accepts
+text-input/text-output models without requiring function calling. Set this to,
+for example, GLM-5.3 Flash while keeping DeepSeek Flash as Thinking for agent
+work. Existing profiles have no Chat selection and retain their current route.
+
+`chatModelId` stores a model row id and syncs with the profile. Its resolved
+model, provider and configuration remain independent of an agent's direct
+Thinking override. When unset, the effective Chat route inherits the resolved
+Thinking route, including that override. When selected but unavailable, query
+chat fails closed instead of switching models. Both retrieval and synthesis use
+the effective Chat route; transcription continues using its own slot.
+
+Chat participates in provider usage, pinning capabilities, locality checks and
+demo-copy reference pruning. A selected Chat model counts as a user edit during
+seed-profile migration and orphan cleanup; seeding does not introduce a Chat
+default or clear an unavailable selection.
 
 # Model slots and sync hygiene
 

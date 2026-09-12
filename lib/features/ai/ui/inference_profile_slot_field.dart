@@ -24,6 +24,7 @@ class ModelSlotField extends ConsumerWidget {
     required this.onModelSelected,
     required this.filter,
     this.required = false,
+    this.hintText,
     super.key,
   });
 
@@ -32,6 +33,7 @@ class ModelSlotField extends ConsumerWidget {
   final ValueChanged<String?> onModelSelected;
   final bool Function(AiConfigModel) filter;
   final bool required;
+  final String? hintText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,7 +73,7 @@ class ModelSlotField extends ConsumerWidget {
           (modelId != null
               ? context.messages.inferenceProfileModelUnavailable
               : null),
-      hintText: context.messages.inferenceProfileSelectModel,
+      hintText: hintText ?? context.messages.inferenceProfileSelectModel,
       enabled: filteredModels.isNotEmpty || modelId != null,
       onClear: modelId != null ? () => onModelSelected(null) : null,
       onTap: () => unawaited(

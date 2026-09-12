@@ -113,17 +113,20 @@ class QueryTextInference {
     String? taskId,
     AiInteractionCapture? capture,
   }) {
+    if (profile.chatModelUnavailable) {
+      throw StateError('Query chat model unavailable');
+    }
     Stream<String> generate(
       String system,
       String prompt, {
       bool synthesis = false,
     }) {
-      final provider = profile.thinkingProvider;
-      final model = profile.thinkingModel;
+      final provider = profile.effectiveChatProvider;
+      final model = profile.effectiveChatModel;
       final impact = InferenceImpactCollector();
       Stream<CreateChatCompletionStreamResponse> raw() => cloud.generate(
         prompt,
-        model: profile.thinkingModelId,
+        model: profile.effectiveChatModelId,
         temperature: 0.2,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
@@ -141,7 +144,7 @@ class QueryTextInference {
               interactionKind: AiInteractionKind.chatCompletion,
               responseType: AiConsumptionResponseType.textGeneration,
               providerType: provider.inferenceProviderType,
-              modelId: profile.thinkingModelId,
+              modelId: profile.effectiveChatModelId,
               requestText: '$system\n$prompt',
               invoke: raw,
               responseText: (chunk) =>

@@ -3003,6 +3003,8 @@
   "imageViewerPreviousTooltip": "Imagen anterior",
   "inactiveLabel": "Inactivo",
   "inactiveSwitchDescription": "Se puede elegir para nuevas entradas cuando está activo",
+  "inferenceProfileChat": "Modelo de chat",
+  "inferenceProfileChatUsesThinking": "Si no se configura, usa el modelo de pensamiento",
   "inferenceProfileChooseModelTitle": "Elige un modelo",
   "inferenceProfileChooseTitle": "Elige un perfil de inferencia",
   "inferenceProfileCreateTitle": "Crear perfil",

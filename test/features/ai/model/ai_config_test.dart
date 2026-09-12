@@ -4,6 +4,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 
 void main() {
+  test('chat model survives sync JSON and can be cleared independently', () {
+    final profile =
+        AiConfig.inferenceProfile(
+              id: 'profile-chat',
+              name: 'Separate chat',
+              createdAt: DateTime.utc(2026),
+              thinkingModelId: 'agent-row',
+              chatModelId: 'chat-row',
+            )
+            as AiConfigInferenceProfile;
+    AiConfigInferenceProfile roundTrip(AiConfigInferenceProfile value) =>
+        AiConfig.fromJson(
+              jsonDecode(jsonEncode(value.toJson())) as Map<String, dynamic>,
+            )
+            as AiConfigInferenceProfile;
+    final restored = roundTrip(profile);
+    expect(restored.chatModelId, 'chat-row');
+    expect(restored.thinkingModelId, 'agent-row');
+    final cleared = roundTrip(restored.copyWith(chatModelId: null));
+    expect(cleared.chatModelId, isNull);
+    expect(cleared.thinkingModelId, 'agent-row');
+    final legacy = profile.toJson()..remove('chatModelId');
+    expect(
+      (AiConfig.fromJson(legacy) as AiConfigInferenceProfile).chatModelId,
+      isNull,
+    );
+  });
+
   group('AiConfigInferenceProfile.pinnedHostId', () {
     final createdAt = DateTime.utc(2026, 3, 15, 12);
 

@@ -396,6 +396,10 @@ bool hasForbiddenPenguinAnswerValue(
       RegExp(pattern, caseSensitive: false).hasMatch(text);
 }
 
+/// Checks the guidance's visible attribution format independently of citations.
+bool hasBoldPenguinOwner(String answer, Iterable<String> eligibleTitles) =>
+    eligibleTitles.any((title) => answer.contains('**$title**'));
+
 enum PenguinForbiddenValue { price, humidity }
 
 class PenguinQueryQuestion {
@@ -408,6 +412,7 @@ class PenguinQueryQuestion {
     this.outsideHome = false,
     this.forbiddenValue,
     this.requiresOriginalEvidence = false,
+    this.verbatimAnswer,
   });
   final String id;
   final String question;
@@ -418,6 +423,11 @@ class PenguinQueryQuestion {
   final PenguinForbiddenValue? forbiddenValue;
   bool get absent => forbiddenValue != null;
   final bool requiresOriginalEvidence;
+  final String? verbatimAnswer;
+
+  /// Original evidence alone does not satisfy a request to quote it in prose.
+  bool hasRequestedVerbatimAnswer(String answer) =>
+      verbatimAnswer == null || answer.contains(verbatimAnswer!);
 }
 
 /// Uses actual preceding outputs with realistic deterministic event ordering.
@@ -591,5 +601,8 @@ final List<PenguinQueryQuestion> penguinQueryHoldoutQuestions = [
     ],
     quoteTerms: ['101.3', '37'],
     requiresOriginalEvidence: true,
+    verbatimAnswer:
+        'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed '
+        'all 37 penguins, including the one asleep in the cargo netting.',
   ),
 ];

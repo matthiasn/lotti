@@ -4636,6 +4636,8 @@
   "imageViewerPreviousTooltip": "Previous image",
   "inactiveLabel": "Inactive",
   "inactiveSwitchDescription": "Can be chosen for new entries when on",
+  "inferenceProfileChat": "Chat model",
+  "inferenceProfileChatUsesThinking": "Uses thinking model when unset",
   "inferenceProfileChooseModelTitle": "Choose a model",
   "inferenceProfileChooseTitle": "Choose an inference profile",
   "inferenceProfileCreateTitle": "Create Profile",

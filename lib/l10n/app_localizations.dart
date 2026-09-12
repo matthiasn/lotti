@@ -13110,6 +13110,18 @@ abstract class AppLocalizations {
   /// **'Can be chosen for new entries when on'**
   String get inactiveSwitchDescription;
 
+  /// No description provided for @inferenceProfileChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat model'**
+  String get inferenceProfileChat;
+
+  /// No description provided for @inferenceProfileChatUsesThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses thinking model when unset'**
+  String get inferenceProfileChatUsesThinking;
+
   /// No description provided for @inferenceProfileChooseModelTitle.
   ///
   /// In en, this message translates to:

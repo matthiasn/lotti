@@ -7843,6 +7843,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Lze vybrat pro nové záznamy, když je zapnuto';
 
   @override
+  String get inferenceProfileChat => 'Model pro chat';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Pokud není nastaven, použije se model pro uvažování';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Vyber model';
 
   @override

@@ -14,6 +14,37 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  test('owner attribution requires the exact eligible title in bold', () {
+    const title = 'Inspect orbital penguin habitat';
+    for (final answer in [title, '**$title appendix**', '**Foreign task**']) {
+      expect(hasBoldPenguinOwner(answer, [title]), isFalse);
+    }
+    expect(
+      hasBoldPenguinOwner('According to **$title**, 37 penguins.', [
+        title,
+      ]),
+      isTrue,
+    );
+  });
+
+  test('verbatim question rejects factual paraphrase in the answer', () {
+    final scenario = penguinQueryHoldoutQuestions.singleWhere(
+      (question) => question.id == 'holdout_exact_quote',
+    );
+    expect(
+      scenario.hasRequestedVerbatimAnswer('101.3 kPa; 37 penguins [1].'),
+      isFalse,
+    );
+    expect(
+      scenario.hasRequestedVerbatimAnswer('> ${scenario.verbatimAnswer} [1]'),
+      isTrue,
+    );
+    expect(
+      penguinQueryQuestions.first.hasRequestedVerbatimAnswer('37'),
+      isTrue,
+    );
+  });
+
   test(
     'frozen reports reach the real summary reader with category isolation',
     () async {

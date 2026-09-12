@@ -25,15 +25,15 @@ class PenguinQueryEvalTest(unittest.TestCase):
             "--variant", "synthetic-test", "--output", str(self.output),
         ]
 
-    def run_main(self, process, dotenv=None):
+    def run_main(self, process, dotenv=None, process_env=None, dotenv_exists=True):
         with (
             patch.object(sys, "argv", self.args),
-            patch.dict(os.environ, {}, clear=True),
+            patch.dict(os.environ, process_env or {}, clear=True),
             patch.object(Path, "read_text", return_value=dotenv or (
                 'MELIOUS_API_KEY="synthetic key"\n'
                 'MELIOUS_BASE_URL="https://synthetic.invalid/v1"\n'
             )),
-            patch.object(Path, "exists", lambda path: path.name == ".env"),
+            patch.object(Path, "exists", lambda path: dotenv_exists and path.name == ".env"),
             patch.object(runner.subprocess, "Popen", return_value=process) as start,
             contextlib.redirect_stdout(io.StringIO()),
         ):
@@ -86,6 +86,37 @@ class PenguinQueryEvalTest(unittest.TestCase):
         self.assertEqual(env["MELIOUS_BASE_URL"], "https://synthetic.invalid/v1")
         self.assertNotIn("UNRELATED_SECRET", env)
         self.assertNotIn("synthetic alias", repr(start.call_args.args))
+
+    def test_exported_aliases_override_dotenv_and_work_without_a_file(self):
+        for dotenv_exists in (False, True):
+            with self.subTest(dotenv_exists=dotenv_exists):
+                self.output = self.output.with_name(f"sample-{dotenv_exists}.json")
+                self.args[-1] = str(self.output)
+                process = Mock(pid=12345)
+                process.wait.return_value = 0
+                result, start = self.run_main(process, process_env={
+                    "UP_UPSTREAM_API_KEY": "synthetic exported alias",
+                    "UP_UPSTREAM_BASE_URL": "https://exported.invalid/v1",
+                }, dotenv_exists=dotenv_exists)
+                self.assertEqual(result, 0)
+                env = start.call_args.kwargs["env"]
+                self.assertEqual(env["MELIOUS_API_KEY"], "synthetic exported alias")
+                self.assertEqual(env["MELIOUS_BASE_URL"], "https://exported.invalid/v1")
+                self.assertNotIn("synthetic exported alias", repr(start.call_args.args))
+
+    def test_exported_canonical_keys_take_precedence_over_exported_aliases(self):
+        process = Mock(pid=12345)
+        process.wait.return_value = 0
+        result, start = self.run_main(process, process_env={
+            "MELIOUS_API_KEY": "synthetic canonical",
+            "MELIOUS_BASE_URL": "https://canonical.invalid/v1",
+            "UP_UPSTREAM_API_KEY": "synthetic alias",
+            "UP_UPSTREAM_BASE_URL": "https://alias.invalid/v1",
+        })
+        self.assertEqual(result, 0)
+        env = start.call_args.kwargs["env"]
+        self.assertEqual(env["MELIOUS_API_KEY"], "synthetic canonical")
+        self.assertEqual(env["MELIOUS_BASE_URL"], "https://canonical.invalid/v1")
 
     def test_legacy_control_is_explicit(self):
         self.args.append("--legacy-flow")

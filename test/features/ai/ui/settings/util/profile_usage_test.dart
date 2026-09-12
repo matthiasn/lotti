@@ -198,6 +198,17 @@ void main() {
       );
     }
 
+    test('counts a provider used only by the chat slot', () {
+      final chatOnly = profile(
+        id: 'chat-only',
+      ).copyWith(chatModelId: 'model-1');
+      final matches = profilesUsingProviderModels(
+        profiles: [chatOnly],
+        providerModels: [providerModel],
+      );
+      expect(matches.map((p) => p.id), ['chat-only']);
+    });
+
     test('returns every profile touching the provider, not just one', () {
       final first = profile(id: 'profile-1', thinking: 'model-1');
       final second = profile(id: 'profile-2', transcription: 'model-1');

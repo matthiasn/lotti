@@ -180,7 +180,9 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
     final profile = await ref.read(
       queryProfileProvider((agentId: agentId, scope: scope)).future,
     );
-    if (profile == null) throw const QueryInferenceUnavailable();
+    if (profile == null || profile.chatModelUnavailable) {
+      throw const QueryInferenceUnavailable();
+    }
     return QueryAnswerBuilder(
       summaryReader: QuerySummaryReader(
         journal: journal,

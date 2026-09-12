@@ -212,8 +212,8 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
 
   /// Best-guess provider type for a profile card. The profile schema
   /// doesn't carry a provider id — it just references model rows. Walk
-  /// the five skill slots in priority order
-  /// (thinking → thinking-high-end → image recognition → transcription
+  /// the model slots in priority order
+  /// (thinking → chat → thinking-high-end → image recognition → transcription
   /// → image generation) and pick the first model whose owning provider
   /// we can resolve. Returns null when none of the slots resolve — the
   /// card paints neutral chrome in that case rather than impersonating
@@ -225,6 +225,7 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
   ) {
     final candidates = <String?>[
       profile.thinkingModelId,
+      profile.chatModelId,
       profile.thinkingHighEndModelId,
       profile.imageRecognitionModelId,
       profile.transcriptionModelId,

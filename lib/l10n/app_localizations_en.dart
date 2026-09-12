@@ -7730,6 +7730,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Can be chosen for new entries when on';
 
   @override
+  String get inferenceProfileChat => 'Chat model';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Uses thinking model when unset';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Choose a model';
 
   @override

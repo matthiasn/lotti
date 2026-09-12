@@ -252,12 +252,40 @@ void main() {
     },
   );
 
-  for (final synthesis in [false, true]) {
+  test('an unavailable selected chat model never invokes thinking', () {
+    final cloud = MockCloudInferenceRepository();
+    expect(
+      () => QueryTextInference.forProfile(
+        cloud: cloud,
+        profile: ResolvedProfile(
+          thinkingModelId: 'agent-model',
+          thinkingProvider: testInferenceProvider(),
+          chatModelUnavailable: true,
+        ),
+        agentId: 'agent',
+        chatId: 'chat',
+      ),
+      throwsStateError,
+    );
+    verifyZeroInteractions(cloud);
+  });
+
+  for (final (synthesis, chat) in [
+    (false, false),
+    (true, false),
+    (false, true),
+    (true, true),
+  ]) {
     test(
-      'profile routing records usage with synthesis=$synthesis',
+      'profile routing records usage with synthesis=$synthesis chat=$chat',
       () async {
         final cloud = MockCloudInferenceRepository();
-        final provider = testInferenceProvider();
+        final provider = testInferenceProvider(
+          id: chat ? 'chat-provider' : 'thinking-provider',
+        );
+        final model = testAiModel(
+          id: 'query-config',
+        ).copyWith(maxCompletionTokens: 321);
         final attribution = AiInteractionCaptureTestBench.create();
         final prompts = <String>[];
         when(
@@ -269,7 +297,7 @@ void main() {
             apiKey: provider.apiKey,
             provider: provider,
             systemMessage: 'inspect',
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            maxCompletionTokens: 321,
             geminiThinkingMode: any(named: 'geminiThinkingMode'),
             impactCollector: any(named: 'impactCollector'),
             preferStreaming: synthesis,
@@ -310,9 +338,18 @@ void main() {
         final inference = QueryTextInference.forProfile(
           cloud: cloud,
           profile: ResolvedProfile(
-            thinkingModelId: 'query-model',
-            thinkingProvider: provider,
-            thinkingModel: testAiModel(id: 'query-config'),
+            thinkingModelId: chat ? 'agent-model' : 'query-model',
+            thinkingProvider: chat
+                ? testInferenceProvider(id: 'agent-provider')
+                : provider,
+            thinkingModel: chat
+                ? testAiModel(
+                    id: 'agent-config',
+                  ).copyWith(maxCompletionTokens: 64)
+                : model,
+            chatModelId: chat ? 'query-model' : null,
+            chatProvider: chat ? provider : null,
+            chatModel: chat ? model : null,
           ),
           agentId: 'agent',
           chatId: 'chat',

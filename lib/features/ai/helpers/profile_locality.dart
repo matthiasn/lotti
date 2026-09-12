@@ -31,6 +31,7 @@ Future<bool> profileIsLocal(
   // high-end slot) doesn't hit the lookup maps twice.
   final referencedModelIds = <String>{
     profile.thinkingModelId,
+    ?profile.chatModelId,
     if (profile.thinkingHighEndModelId != null) profile.thinkingHighEndModelId!,
     if (profile.imageRecognitionModelId != null)
       profile.imageRecognitionModelId!,

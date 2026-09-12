@@ -870,12 +870,14 @@ void main() {
       String thinkingModelId,
       List<String> skillIds, {
       String? imageRecognitionModelId,
+      String? chatModelId,
     }) => AiConfig.inferenceProfile(
       id: id,
       name: 'Profile $id',
       createdAt: created,
       thinkingModelId: thinkingModelId,
       imageRecognitionModelId: imageRecognitionModelId,
+      chatModelId: chatModelId,
       skillAssignments: [
         for (final skillId in skillIds)
           SkillAssignment(skillId: skillId, automate: true),
@@ -911,6 +913,7 @@ void main() {
           'user-model',
           const ['user-skill', 'seeded-skill'],
           imageRecognitionModelId: 'fixture-model',
+          chatModelId: 'fixture-model',
         ),
         // User profile whose REQUIRED thinking slot is a fictional model:
         // it would arrive fundamentally broken, so it must stay behind
@@ -970,6 +973,7 @@ void main() {
       final carriedProfile = plan.aiConfigs
           .whereType<AiConfigInferenceProfile>()
           .single;
+      expect(carriedProfile.chatModelId, isNull);
       expect(
         carriedProfile.imageRecognitionModelId,
         isNull,

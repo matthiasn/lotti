@@ -7753,6 +7753,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Kan vælges til nye indførsler, når den er på';
 
   @override
+  String get inferenceProfileChat => 'Chatmodel';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Bruger tænkemodellen, når der ikke er valgt en';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Vælg en model';
 
   @override

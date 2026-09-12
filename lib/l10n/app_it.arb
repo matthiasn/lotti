@@ -3356,6 +3356,8 @@
   "imageViewerPreviousTooltip": "Immagine precedente",
   "inactiveLabel": "Inattivo",
   "inactiveSwitchDescription": "Può essere scelto per le nuove voci quando in su",
+  "inferenceProfileChat": "Modello di chat",
+  "inferenceProfileChatUsesThinking": "Se non impostato, usa il modello di pensiero",
   "inferenceProfileChooseModelTitle": "Scegli un modello",
   "inferenceProfileChooseTitle": "Scegli un profilo di inferenza",
   "inferenceProfileCreateTitle": "Crea il profilo",
