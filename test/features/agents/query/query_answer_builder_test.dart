@@ -405,7 +405,13 @@ void main() {
       expect(result.answer.evidence, isEmpty);
     });
 
-    for (final invalid in ['foreign source', 'nonverbatim quote']) {
+    for (final invalid in [
+      'foreign source',
+      'nonverbatim quote',
+      'missing sufficiency',
+      'unknown memory',
+      'malformed passage',
+    ]) {
       test('rejects a batch with $invalid before synthesis', () async {
         invalidBatch = {
           'question': 'What was decided?',
@@ -424,8 +430,17 @@ void main() {
             },
           ],
         };
+        switch (invalid) {
+          case 'missing sufficiency':
+            invalidBatch!.remove('sufficient');
+          case 'unknown memory':
+            invalidBatch!['memoryIds'] = ['not-supplied'];
+          case 'malformed passage':
+            invalidBatch!['passages'] = ['not a passage object'];
+        }
         await expectLater(build(), throwsFormatException);
         expect(stages, ['batch']);
+        expect(answerInput, isNull);
       });
     }
 
