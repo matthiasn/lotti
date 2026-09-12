@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
@@ -44,6 +47,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/test_finders.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
 
@@ -1397,6 +1401,94 @@ void main() {
   });
 
   group('desktop split-view layout', () {
+    for (final useSearch in [false, true]) {
+      testWidgets('project companion restores its list (search=$useSearch)', (
+        tester,
+      ) async {
+        const scope = QueryScope(kind: QueryScopeKind.project, id: 'p1');
+        const size = Size(1200, 900);
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final nav = getIt<NavService>() as MockNavService;
+        final selected = ValueNotifier<String?>('p1');
+        addTearDown(selected.dispose);
+        when(() => nav.desktopSelectedProjectId).thenReturn(selected);
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: size),
+          extraOverrides: [
+            queryChatEnabledProvider.overrideWithValue(true),
+            queryChatTargetProvider(scope).overrideWith(
+              (ref) async => const QueryChatTarget(
+                scope: scope,
+                label: 'Penguin habitat',
+                agent: null,
+              ),
+            ),
+            chatRecorderControllerProvider.overrideWith(
+              TranscriptEmittingController.new,
+            ),
+            projectDetailControllerProvider(
+              'p1',
+            ).overrideWith(_StubProjectDetailController.new),
+            projectDetailRecordProvider('p1').overrideWith((ref) async => null),
+          ],
+        );
+        final context = tester.element(find.byType(ProjectsTabPage));
+        final container = ProviderScope.containerOf(context);
+        final list = tester.element(find.byType(ProjectsOverviewContent));
+        final detail = tester.element(find.byType(ProjectDetailsPage));
+        container.read(queryPaneOpenProvider(scope).notifier).open = true;
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Device Sync'), findsNothing);
+        expect(
+          tester.element(
+            find.byType(ProjectsOverviewContent, skipOffstage: false),
+          ),
+          same(list),
+        );
+        expect(
+          container.read(paneWidthControllerProvider).listPaneCollapsed,
+          isFalse,
+        );
+        if (useSearch) {
+          final commands = AppCommandControllerProvider.of(
+            tester.element(find.byType(ProjectDetailsPage)),
+          );
+          expect(
+            await commands.invoke(context, AppCommandId.focusSearch),
+            isTrue,
+          );
+        } else {
+          await tester.tap(
+            find.byKey(const ValueKey('projects-show-list-pane')),
+          );
+        }
+        await tester.pump();
+        await tester.pump();
+        expect(container.read(queryPaneOpenProvider(scope)), isFalse);
+        expect(find.text('Device Sync'), findsOneWidget);
+        expect(tester.element(find.byType(ProjectDetailsPage)), same(detail));
+        expect(
+          tester.element(find.byType(ProjectsOverviewContent)),
+          same(list),
+        );
+        if (useSearch) {
+          expect(
+            tester
+                .widget<TextField>(find.byType(TextField))
+                .focusNode!
+                .hasFocus,
+            isTrue,
+          );
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+      });
+    }
+
     testWidgets(
       'wide viewport renders list pane + divider + empty detail state',
       (tester) async {

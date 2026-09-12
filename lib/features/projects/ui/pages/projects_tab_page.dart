@@ -1,6 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
@@ -42,7 +45,9 @@ import 'package:material_ui/material_ui.dart';
 /// and, on the right, [ProjectDetailsPage] for the project currently selected
 /// in `NavService.desktopSelectedProjectId`, falling back to an empty-state.
 /// With a selection, the list can move offstage into persisted focus mode while
-/// retaining its state. On mobile it shows only the list scaffold; tapping a
+/// retaining its state. Opening chat temporarily releases the list width when
+/// needed; closing chat restores the saved preference, and Show list/search
+/// closes a space-constrained chat before returning to browsing. On mobile it shows only the list scaffold; tapping a
 /// project beams to `/projects/<id>`.
 ///
 /// The list scaffold watches [visibleProjectGroupsProvider] (the raw
@@ -104,47 +109,84 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
         ),
-        child: ValueListenableBuilder<String?>(
-          valueListenable: getIt<NavService>().desktopSelectedProjectId,
-          builder: (context, selectedProjectId, _) {
-            final canHideListPane = selectedProjectId != null;
-            final listPaneVisible =
-                !paneWidths.listPaneCollapsed || !canHideListPane;
+        child: LayoutBuilder(
+          builder: (context, constraints) => ValueListenableBuilder<String?>(
+            valueListenable: getIt<NavService>().desktopSelectedProjectId,
+            builder: (context, selectedProjectId, _) {
+              final canHideListPane = selectedProjectId != null;
+              final queryScope = selectedProjectId == null
+                  ? null
+                  : QueryScope(
+                      kind: QueryScopeKind.project,
+                      id: selectedProjectId,
+                    );
+              final queryOpen =
+                  queryScope != null &&
+                  ref.watch(queryPaneOpenProvider(queryScope));
+              // Fit-driven suppression keeps the saved list preference intact.
+              final queryNeedsListSpace =
+                  queryOpen &&
+                  constraints.maxWidth <
+                      listPaneWidth +
+                          QueryCompanion.minimumDockedWidth(context);
+              final listPaneVisible =
+                  !canHideListPane ||
+                  (!paneWidths.listPaneCollapsed && !queryNeedsListSpace);
 
-            return ListDetailFocusTraversal(
-              debugLabel: 'projects-split',
-              listPaneVisible: listPaneVisible,
-              canHideListPane: canHideListPane,
-              onListPaneVisibilityChanged: (visible) {
-                if (visible) {
-                  paneController.expandListPane();
-                } else {
-                  paneController.collapseListPane();
+              void showList() {
+                if (queryNeedsListSpace) {
+                  ref.read(queryPaneOpenProvider(queryScope).notifier).open =
+                      false;
                 }
-              },
-              listPane: SizedBox(
-                width: listPaneWidth,
-                child: _ProjectsListScaffold(
-                  scrollController: _scrollController,
-                  searchFocusNode: _searchFocusNode,
-                ),
-              ),
-              divider: ResizableDivider(
-                currentValue: listPaneWidth,
-                minValue: minListPaneWidth,
-                maxValue: maxListPaneWidth,
-                onDrag: resolvedListPane.onDrag,
-              ),
-              detailPane: selectedProjectId != null
-                  ? _ProjectsDetailPane(
-                      key: ValueKey(selectedProjectId),
-                      projectId: selectedProjectId,
-                    )
-                  : DesktopDetailEmptyState(
-                      message: context.messages.desktopEmptyStateSelectProject,
+                paneController.expandListPane();
+              }
+
+              return AppCommandScope(
+                handlers: {
+                  AppCommandId.focusSearch: AppCommandHandler(
+                    invoke: (_) {
+                      showList();
+                      _focusSearch(isDesktop: true);
+                    },
+                  ),
+                },
+                child: ListDetailFocusTraversal(
+                  debugLabel: 'projects-split',
+                  listPaneVisible: listPaneVisible,
+                  canHideListPane: canHideListPane,
+                  onListPaneVisibilityChanged: (visible) {
+                    if (visible) {
+                      showList();
+                    } else {
+                      paneController.collapseListPane();
+                    }
+                  },
+                  listPane: SizedBox(
+                    width: listPaneWidth,
+                    child: _ProjectsListScaffold(
+                      scrollController: _scrollController,
+                      searchFocusNode: _searchFocusNode,
                     ),
-            );
-          },
+                  ),
+                  divider: ResizableDivider(
+                    currentValue: listPaneWidth,
+                    minValue: minListPaneWidth,
+                    maxValue: maxListPaneWidth,
+                    onDrag: resolvedListPane.onDrag,
+                  ),
+                  detailPane: selectedProjectId != null
+                      ? _ProjectsDetailPane(
+                          key: ValueKey(selectedProjectId),
+                          projectId: selectedProjectId,
+                        )
+                      : DesktopDetailEmptyState(
+                          message:
+                              context.messages.desktopEmptyStateSelectProject,
+                        ),
+                ),
+              );
+            },
+          ),
         ),
       );
     } else {

@@ -97,15 +97,16 @@ not reopen a pane. Existing task-agent improvement chats are unaffected.
 
 The **Ask** action opens a discussion without running inference. Task headers
 and task/project summary cards expose the action; the task action bar remains
-reserved for time tracking and capture. Project and saved-category details still
-open `QueryChatPane` in place of their detail page.
+reserved for time tracking and capture. Projects and saved categories use the same companion as tasks, preserving their
+detail content and pending form edits while chat is open.
 
-Tasks use `QueryCompanion`, keeping the detail subtree mounted and usable.
+Task, project and saved-category pages use `QueryCompanion`, keeping the detail
+subtree mounted and usable.
 The companion wraps data-dependent loading/missing-task branches as well, so
 a sync deletion cannot remove the chat Close control or strand its open flag. With
 enough width, chat docks on the right with a keyboard- and pointer-resizable
 divider. Fit uses the existing chat/detail reading measures at the current text
-scale. `TasksRootPage` temporarily hides the mounted task list when both reading
+scale. `TasksRootPage` and `ProjectsTabPage` temporarily hide their mounted lists when both reading
 columns would otherwise be squeezed, and suppresses the metadata column.
 `AppScreen` hides its mounted day-view column while the selected task's chat is
 open. Neither suppression writes the saved pane preferences. Close restores the

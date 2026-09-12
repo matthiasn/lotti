@@ -7,12 +7,11 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
-import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
-import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -72,6 +71,9 @@ final projectByIdResolverProvider = Provider<ProjectByIdResolver>(
 /// data instead of flashing a spinner. The initial spinner only shows while the
 /// [ProjectDetailController] is loading with no project yet.
 ///
+/// Query chat uses [QueryCompanion] so reports, task-list state and initial
+/// loading/error states remain mounted alongside the discussion.
+///
 /// Edits here are immediate-save inline pickers — category, target date, and
 /// status each open a sheet/picker, mutate [ProjectDetailController], and call
 /// `saveChanges()` right away (no explicit Save button). When the project has a
@@ -88,15 +90,13 @@ class ProjectDetailsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final queryScope = QueryScope(kind: QueryScopeKind.project, id: projectId);
-    if (ref.watch(queryPaneOpenProvider(queryScope))) {
-      return QueryChatPane(
-        scope: queryScope,
-        onClose: () =>
-            ref.read(queryPaneOpenProvider(queryScope).notifier).open = false,
-      );
-    }
+    return QueryCompanion(
+      scope: QueryScope(kind: QueryScopeKind.project, id: projectId),
+      child: _buildDetail(context, ref),
+    );
+  }
 
+  Widget _buildDetail(BuildContext context, WidgetRef ref) {
     final detailState = ref.watch(projectDetailControllerProvider(projectId));
     final recordAsync = ref.watch(projectDetailRecordProvider(projectId));
     final currentTime = ref.watch(projectDetailNowProvider)();
