@@ -11098,6 +11098,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get queryCloseChat => 'Chat schließen';
+
+  @override
+  String get queryCollapseChat => 'Chat verkleinern';
+
+  @override
   String get queryCopied => 'Kopiert';
 
   @override
@@ -11167,6 +11173,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get queryExampleSuggestion =>
       'War das eine Entscheidung oder ein Vorschlag?';
+
+  @override
+  String get queryExpandChat => 'Chat vergrößern';
 
   @override
   String get queryExpanding =>
@@ -11307,6 +11316,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get querySearching =>
       'Verknüpfte Notizen und Aufnahmen werden durchsucht…';
+
+  @override
+  String get querySearchScope => 'Suchbereich und Filter';
 
   @override
   String querySourceAction(String action, String source) {

@@ -246,6 +246,8 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                           : ExcludeSemantics(
                               child: Text(
                                 widget.hintText!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: spec.hintStyle,
                               ),
                             ),

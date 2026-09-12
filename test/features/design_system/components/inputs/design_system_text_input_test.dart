@@ -9,6 +9,33 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  testWidgets(
+    'large-text composer hint stays inside the input without vertical clipping',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemTextInput(
+            shape: DesignSystemTextInputShape.pill,
+            hintText: 'Talk to Habitat Watcher about the penguin habitat',
+            trailingIcon: LottiIcons.mic,
+          ),
+          mediaQueryData: const MediaQueryData(
+            size: Size(320, 844),
+            textScaler: TextScaler.linear(1.5),
+          ),
+        ),
+      );
+      final hint = tester.getRect(
+        find.text('Talk to Habitat Watcher about the penguin habitat'),
+      );
+      final field = tester.getRect(find.byType(TextField));
+      expect(hint.top, greaterThanOrEqualTo(field.top));
+      expect(hint.bottom, lessThanOrEqualTo(field.bottom));
+    },
+  );
+
   group('DesignSystemTextInput', () {
     testWidgets(
       'pill composition keeps editing and uses the conversation surface',

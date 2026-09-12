@@ -15,6 +15,8 @@ import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
@@ -1097,24 +1099,54 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             ),
           ),
           if (showDayViewColumn)
-            if (dayViewPanelHidden)
-              DayViewSidePanelRail(onToggleHidden: toggleDayViewPanel)
-            else ...[
-              ResizableDivider(
-                currentValue: dayViewWidth,
-                minValue: minDayViewPanelWidth,
-                maxValue: dayViewAllowance.maxWidth,
-                // The divider sits on the panel's LEADING edge, so a
-                // rightward drag (positive delta) shrinks the panel —
-                // [dayViewDrag] inverts the delta before handing it to the
-                // width controller.
-                onDrag: dayViewDrag,
+            ValueListenableBuilder<List<String>>(
+              valueListenable: navService.desktopTaskDetailStack,
+              builder: (context, stack, child) => Consumer(
+                builder: (context, ref, _) {
+                  final queryOpen =
+                      stack.isNotEmpty &&
+                      ref.watch(
+                        queryPaneOpenProvider(
+                          QueryScope(kind: QueryScopeKind.task, id: stack.last),
+                        ),
+                      );
+                  // Chat temporarily owns the companion space. Keep the day
+                  // view mounted and its persisted visibility untouched.
+                  return Offstage(
+                    offstage: queryOpen,
+                    child: TickerMode(
+                      enabled: !queryOpen,
+                      child: ExcludeFocus(excluding: queryOpen, child: child!),
+                    ),
+                  );
+                },
               ),
-              SizedBox(
-                width: dayViewWidth,
-                child: DayViewSidePanel(onToggleHidden: toggleDayViewPanel),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (dayViewPanelHidden)
+                    DayViewSidePanelRail(onToggleHidden: toggleDayViewPanel)
+                  else ...[
+                    ResizableDivider(
+                      currentValue: dayViewWidth,
+                      minValue: minDayViewPanelWidth,
+                      maxValue: dayViewAllowance.maxWidth,
+                      // The divider sits on the panel's LEADING edge, so a
+                      // rightward drag (positive delta) shrinks the panel —
+                      // [dayViewDrag] inverts the delta before handing it to the
+                      // width controller.
+                      onDrag: dayViewDrag,
+                    ),
+                    SizedBox(
+                      width: dayViewWidth,
+                      child: DayViewSidePanel(
+                        onToggleHidden: toggleDayViewPanel,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
+            ),
         ],
       ),
     );

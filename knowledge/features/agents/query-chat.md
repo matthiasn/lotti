@@ -64,6 +64,10 @@ sources:
     resource: ../../../lib/features/agents/ui/query/query_chat_pane.dart
     title: Conversation, navigation and deletion UI
     last_modified: 2026-09-12
+  - id: companion
+    resource: ../../../lib/features/agents/ui/query/query_companion.dart
+    title: Retained task detail and adaptive chat companion
+    last_modified: 2026-09-12
   - id: transcription-routing
     resource: ../../../lib/features/agents/query/query_transcription_provider.dart
     title: Category-default dictation routing
@@ -76,12 +80,53 @@ sources:
 
 # Ownership and entry points
 
-The **Ask** action opens `QueryChatPane` in place of the task, project or saved
-category detail. Desktop retains the surrounding list; mobile uses the detail
-route's full page. Task headers and task/project summary cards expose the same action. The task
-action bar is reserved for time tracking and capture. Opening never runs inference.
-The compact header identifies the agent and links back to its scope; outlined
-filters sit below it. The empty view centers three question cards beneath a
+The **Ask** action opens a discussion without running inference. Task headers
+and task/project summary cards expose the action; the task action bar remains
+reserved for time tracking and capture. Project and saved-category details still
+open `QueryChatPane` in place of their detail page.
+
+Tasks use `QueryCompanion`, keeping the detail subtree mounted and usable. With
+enough width, chat docks on the right with a keyboard- and pointer-resizable
+divider. Fit uses the existing chat/detail reading measures at the current text
+scale. `TasksRootPage` temporarily hides the mounted task list when both reading
+columns would otherwise be squeezed, and suppresses the metadata column.
+`AppScreen` hides its mounted day-view column while the selected task's chat is
+open. Neither suppression writes the saved pane preferences. Close restores the
+previous arrangement; explicitly showing the task list closes chat when space
+cannot accommodate both.
+
+Smaller hosts use an attached draggable sheet, initially half height, with an
+explicit Expand/Collapse control. While a keyboard is visible, the sheet uses the full
+available height and hides its collapse control; dismissing the keyboard restores
+the expansion controls. Dragging cannot shrink below the half-height detent. The task remains beneath the sheet. Changing window size
+reparents the same keyed chat state between sheet and dock; the detail retains
+its parent. Close unmounts chat so its recorder subscription cannot consume a
+later unrelated recording. The host retains the chat's `PageStorageBucket` for
+scroll restoration; selected chat, draft and running request remain owned by the
+query controller. Close cancels recording and returns focus to the opener when
+it is still mounted. Navigation away also cancels recording. The scope belongs
+to the owning task page: selecting another task never reuses the old task's chat
+with a new scope.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Closed
+  Closed --> Docked: Ask with room for two reading columns
+  Closed --> Sheet: Ask in a smaller host
+  Docked --> Sheet: available width shrinks
+  Sheet --> Docked: available width grows
+  Sheet --> ExpandedSheet: Expand
+  ExpandedSheet --> Sheet: Collapse
+  Docked --> Closed: Close
+  Sheet --> Closed: Close
+  ExpandedSheet --> Closed: Close
+```
+
+The header leads with the current scope title and provides a dedicated Close
+control in companion mode. Narrow or enlarged-text headers place the chat picker
+on its own row; search reach stays visible and optional filters open through a
+labelled disclosure. Wide standalone headers show the agent attribution and
+filters inline. The empty view centers three question cards beneath a
 scope-specific welcome. Choosing a question populates an editable draft.
 
 Each answer keeps its numbered evidence inside the reply surface. Evidence

@@ -20,6 +20,8 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
@@ -318,6 +320,10 @@ Future<void> _stubNavService(
   BeamerDelegate? habitsDelegate,
   BeamerDelegate? relationshipsDelegate,
 }) async {
+  final taskStack = ValueNotifier<List<String>>([]);
+  when(() => navService.desktopTaskDetailStack).thenReturn(taskStack);
+  addTearDown(taskStack.dispose);
+
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   projectsDelegate ??= await _createEmptyDelegate('/projects');
   relationshipsDelegate ??= await _createEmptyDelegate('/people');
@@ -4353,6 +4359,43 @@ void main() {
         expect(find.byType(DayViewSidePanel), findsNothing);
         expect(find.byType(DayViewSidePanelRail), findsOneWidget);
 
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'task chat temporarily hides the mounted day panel and restores it on close',
+      (tester) async {
+        final nav = await stubbedNavService();
+        final stack = ValueNotifier<List<String>>(['task-42']);
+        addTearDown(stack.dispose);
+        when(() => nav.desktopTaskDetailStack).thenReturn(stack);
+        await _pumpAppScreen(
+          tester,
+          navService: nav,
+          viewportSize: _desktopViewportSize,
+        );
+        await tester.tap(find.byKey(const Key('day_view_panel_show_button')));
+        await tester.pump();
+        final panel = tester.element(find.byType(DayViewSidePanel));
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(AppScreen)),
+        );
+        final widths = container.read(paneWidthControllerProvider);
+        const scope = QueryScope(kind: QueryScopeKind.task, id: 'task-42');
+        container.read(queryPaneOpenProvider(scope).notifier).open = true;
+        await tester.pump();
+        expect(find.byType(DayViewSidePanel), findsNothing);
+        expect(
+          tester.element(find.byType(DayViewSidePanel, skipOffstage: false)),
+          same(panel),
+        );
+        expect(container.read(paneWidthControllerProvider), widths);
+        container.read(queryPaneOpenProvider(scope).notifier).open = false;
+        await tester.pump();
+        expect(tester.element(find.byType(DayViewSidePanel)), same(panel));
+        expect(container.read(paneWidthControllerProvider), widths);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
       },

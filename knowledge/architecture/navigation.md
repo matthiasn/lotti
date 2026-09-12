@@ -162,6 +162,11 @@ selected detail always forces the list visible even if the saved preference is
 collapsed; there must be somewhere meaningful for focus mode to land. Because
 that forced-visible divider is actionable, its drag may update the stored width
 without clearing the latent collapse preference.
+Task discussions also coordinate temporary pane visibility through the
+[query companion](../features/agents/query-chat.md#ownership-and-entry-points):
+the selected task's open chat can yield list/day-view space without changing the
+saved pane preferences.
+
 `ListDetailFocusTraversal` observes the effective visibility input itself, so a
 persisted collapsed preference taking effect when a new selection appears moves
 focus into the detail just as reliably as pressing Hide list; every transition

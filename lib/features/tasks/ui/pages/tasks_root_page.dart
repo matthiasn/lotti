@@ -1,5 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -73,70 +76,102 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
     final listPaneWidth = resolvedListPane.width;
     final paneController = ref.read(paneWidthControllerProvider.notifier);
 
-    return AppCommandScope(
-      handlers: {
-        AppCommandId.focusSearch: AppCommandHandler(
-          invoke: (_) {
-            paneController.expandListPane();
-            _tasksTabController.focusSearch();
-          },
-        ),
-      },
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: TaskShowcasePalette.page(context),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // The docked day-view column (see `dayViewColumnAllowance` in
-            // the app shell) is clamped, never removed, beside an open task
-            // — so on a window that cannot host sidebar, column and a
-            // desktop-wide split at once, this split is what gives way.
-            // While the column is up and the region has dropped below
-            // `kDesktopBreakpoint`, an open task takes the whole region
-            // instead of squeezing the task's action bar and controls into
-            // whatever the list pane leaves over. This forced hide does not
-            // touch the persisted collapse flag, so the list comes straight
-            // back once the column hides or the window widens.
-            final splitStarved =
-                !paneWidths.dayViewPanelHidden &&
-                constraints.maxWidth < kDesktopBreakpoint;
-            return ValueListenableBuilder<List<String>>(
-              valueListenable: getIt<NavService>().desktopTaskDetailStack,
-              builder: (context, stack, _) {
-                final selectedTaskId = stack.isEmpty ? null : stack.last;
-                final canHideListPane = selectedTaskId != null;
-                final listPaneVisible =
-                    !canHideListPane ||
-                    (!paneWidths.listPaneCollapsed && !splitStarved);
-                final detailChild = selectedTaskId != null
-                    ? TaskDetailsPage(
-                        key: ValueKey(selectedTaskId),
-                        taskId: selectedTaskId,
-                      )
-                    : DesktopDetailEmptyState(
-                        key: const ValueKey<String>(
-                          'tasks-root-empty-detail',
-                        ),
-                        message: context.messages.desktopEmptyStateSelectTask,
-                      );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: TaskShowcasePalette.page(context),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The docked day-view column (see `dayViewColumnAllowance` in
+          // the app shell) is clamped, never removed, beside an open task
+          // — so on a window that cannot host sidebar, column and a
+          // desktop-wide split at once, this split is what gives way.
+          // While the column is up and the region has dropped below
+          // `kDesktopBreakpoint`, an open task takes the whole region
+          // instead of squeezing the task's action bar and controls into
+          // whatever the list pane leaves over. This forced hide does not
+          // touch the persisted collapse flag, so the list comes straight
+          // back once the column hides or the window widens.
+          final splitStarved =
+              !paneWidths.dayViewPanelHidden &&
+              constraints.maxWidth < kDesktopBreakpoint;
+          return ValueListenableBuilder<List<String>>(
+            valueListenable: getIt<NavService>().desktopTaskDetailStack,
+            builder: (context, stack, _) {
+              final selectedTaskId = stack.isEmpty ? null : stack.last;
+              final queryScope = selectedTaskId == null
+                  ? null
+                  : QueryScope(kind: QueryScopeKind.task, id: selectedTaskId);
+              final queryOpen =
+                  queryScope != null &&
+                  ref.watch(queryPaneOpenProvider(queryScope));
+              // Temporary fit-driven suppression preserves the user's
+              // stored list preference and the mounted browse state.
+              final queryNeedsListSpace =
+                  queryOpen &&
+                  constraints.maxWidth <
+                      listPaneWidth +
+                          QueryCompanion.minimumDockedWidth(context);
+              final canHideListPane = selectedTaskId != null;
+              final listPaneVisible =
+                  !canHideListPane ||
+                  (!paneWidths.listPaneCollapsed &&
+                      !(splitStarved && !queryOpen) &&
+                      !queryNeedsListSpace);
+              final detailChild = selectedTaskId != null
+                  ? TaskDetailsPage(
+                      key: ValueKey(selectedTaskId),
+                      taskId: selectedTaskId,
+                    )
+                  : DesktopDetailEmptyState(
+                      key: const ValueKey<String>(
+                        'tasks-root-empty-detail',
+                      ),
+                      message: context.messages.desktopEmptyStateSelectTask,
+                    );
 
-                return ListDetailFocusTraversal(
+              void setListVisible({required bool visible}) {
+                if (visible) {
+                  if (queryNeedsListSpace) {
+                    ref
+                            .read(
+                              queryPaneOpenProvider(queryScope).notifier,
+                            )
+                            .open =
+                        false;
+                  }
+                  // Asking for the list while the day-view column is what
+                  // starved the split yields the column: the list is the
+                  // surface the reader asked for, and merely clearing the
+                  // collapse flag would change nothing on screen.
+                  if (splitStarved ||
+                      (queryNeedsListSpace &&
+                          !paneWidths.dayViewPanelHidden &&
+                          constraints.maxWidth - paneWidths.dayViewPanelWidth <
+                              kDesktopBreakpoint)) {
+                    paneController.hideDayViewPanel();
+                  }
+                  paneController.expandListPane();
+                } else {
+                  paneController.collapseListPane();
+                }
+              }
+
+              return AppCommandScope(
+                handlers: {
+                  AppCommandId.focusSearch: AppCommandHandler(
+                    invoke: (_) {
+                      setListVisible(visible: true);
+                      _tasksTabController.focusSearch();
+                    },
+                  ),
+                },
+                child: ListDetailFocusTraversal(
                   debugLabel: 'tasks-split',
                   listPaneVisible: listPaneVisible,
                   canHideListPane: canHideListPane,
-                  onListPaneVisibilityChanged: (visible) {
-                    if (visible) {
-                      // Asking for the list while the day-view column is what
-                      // starved the split yields the column: the list is the
-                      // surface the reader asked for, and merely clearing the
-                      // collapse flag would change nothing on screen.
-                      if (splitStarved) paneController.hideDayViewPanel();
-                      paneController.expandListPane();
-                    } else {
-                      paneController.collapseListPane();
-                    }
-                  },
+                  onListPaneVisibilityChanged: (visible) =>
+                      setListVisible(visible: visible),
                   listPane: SizedBox(
                     width: listPaneWidth,
                     child: TasksTabPage(controller: _tasksTabController),
@@ -154,7 +189,9 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
                     // reader has hidden the list to focus one task, the pane is
                     // wide enough to carry the task's metadata beside it instead
                     // of over it. Null keeps the fly-out as the only host.
-                    metaColumnTaskId: listPaneVisible ? null : selectedTaskId,
+                    metaColumnTaskId: listPaneVisible || queryOpen
+                        ? null
+                        : selectedTaskId,
                     detail: AnimatedSwitcher(
                       // Fast cross-fade (200ms): stepping row-by-row through tasks
                       // is the split view's core interaction, and matches the
@@ -176,11 +213,11 @@ class _TasksRootPageState extends ConsumerState<TasksRootPage> {
                       child: detailChild,
                     ),
                   ),
-                );
-              },
-            );
-          },
-        ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

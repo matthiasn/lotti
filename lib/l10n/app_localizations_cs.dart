@@ -11175,6 +11175,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get queryCloseChat => 'Zavřít chat';
+
+  @override
+  String get queryCollapseChat => 'Sbalit chat';
+
+  @override
   String get queryCopied => 'Zkopírováno';
 
   @override
@@ -11241,6 +11247,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryExampleSuggestion => 'Bylo to rozhodnutí, nebo návrh?';
+
+  @override
+  String get queryExpandChat => 'Rozbalit chat';
 
   @override
   String get queryExpanding => 'Kontrola dalších záznamů v této kategorii…';
@@ -11379,6 +11388,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get querySearching => 'Hledání v propojených poznámkách a nahrávkách…';
+
+  @override
+  String get querySearchScope => 'Rozsah hledání a filtry';
 
   @override
   String querySourceAction(String action, String source) {

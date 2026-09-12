@@ -15,6 +15,7 @@ void main() {
     required ValueChanged<double> onDrag,
     double hitTargetWidth = 8,
     bool enabled = true,
+    bool reverse = false,
     double? currentValue,
     double? minValue,
     double? maxValue,
@@ -27,6 +28,7 @@ void main() {
             onDrag: onDrag,
             hitTargetWidth: hitTargetWidth,
             enabled: enabled,
+            reverse: reverse,
             currentValue: currentValue,
             minValue: minValue,
             maxValue: maxValue,
@@ -37,6 +39,59 @@ void main() {
       mediaQueryData: const MediaQueryData(size: Size(800, 600)),
     );
   }
+
+  testWidgets(
+    'right-side pane grows leftward but semantic increase still grows it',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      final deltas = <double>[];
+      await tester.pumpWidget(
+        buildTestWidget(
+          onDrag: deltas.add,
+          reverse: true,
+          currentValue: 400,
+          minValue: 300,
+          maxValue: 760,
+        ),
+      );
+      await tester.timedDragFrom(
+        tester.getCenter(find.byType(ResizableDivider)),
+        const Offset(-60, 0),
+        const Duration(milliseconds: 200),
+      );
+      expect(deltas.reduce((a, b) => a + b), greaterThan(0));
+      deltas.clear();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      expect(deltas, hasLength(2));
+      expect(deltas.first, greaterThan(0));
+      expect(deltas.last, -deltas.first);
+      final node = tester.getSemantics(
+        find
+            .descendant(
+              of: find.byType(ResizableDivider),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      deltas.clear();
+      tester.binding.performSemanticsAction(
+        SemanticsActionEvent(
+          type: SemanticsAction.increase,
+          nodeId: node.id,
+          viewId: tester.view.viewId,
+        ),
+      );
+      await tester.pump();
+      expect(deltas.single, greaterThan(0));
+      expect(
+        double.parse(node.getSemanticsData().increasedValue),
+        greaterThan(400),
+      );
+      handle.dispose();
+    },
+  );
 
   group('ResizableDivider rendering', () {
     testWidgets('renders a 3px line with the default hit target width', (

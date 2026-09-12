@@ -226,7 +226,7 @@ void main() {
     setUp(() => registerTaskDetailsServices(stubTaskEntity: false));
     tearDown(getIt.reset);
 
-    testWidgets('Ask opens the task scope and Back restores the task details', (
+    testWidgets('Ask keeps the task details mounted while its chat is open', (
       tester,
     ) async {
       setTestSurfaceSize(tester, phoneMediaQueryData.size);
@@ -263,13 +263,16 @@ void main() {
         ),
         findsNothing,
       );
+      final taskActions = tester.element(find.byType(TaskActionBar));
       await tester.tap(find.byType(QueryAskButton).first);
       await tester.pumpAndSettle();
       expect(
         tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
         scope,
       );
-      await tester.tap(find.byIcon(LottiIcons.back).first);
+      expect(find.byType(TaskActionBar), findsOneWidget);
+      expect(tester.element(find.byType(TaskActionBar)), same(taskActions));
+      await tester.tap(find.byIcon(LottiIcons.close).first);
       await tester.pumpAndSettle();
       expect(find.byType(QueryChatPane), findsNothing);
       expect(find.text(testTask.data.title), findsOneWidget);

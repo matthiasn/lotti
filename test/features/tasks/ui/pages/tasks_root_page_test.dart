@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -294,6 +296,70 @@ void main() {
     });
   });
 
+  testWidgets(
+    'chat temporarily yields list space and restores the mounted list on close',
+    (tester) async {
+      fakeController = FakeJournalPageController(state());
+      final stack = ValueNotifier<List<String>>(['task-42']);
+      addTearDown(stack.dispose);
+      when(
+        () => (getIt<NavService>() as MockNavService).desktopTaskDetailStack,
+      ).thenReturn(stack);
+      await tester.binding.setSurfaceSize(const Size(1100, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1600, 900)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+      final list = tester.element(find.byType(TasksTabPage));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TasksRootPage)),
+      );
+      const scope = QueryScope(kind: QueryScopeKind.task, id: 'task-42');
+      final widths = container.read(paneWidthControllerProvider);
+      container.read(queryPaneOpenProvider(scope).notifier).open = true;
+      await tester.pump();
+      expect(find.byType(TasksTabPage), findsNothing);
+      expect(
+        tester.element(find.byType(TasksTabPage, skipOffstage: false)),
+        same(list),
+      );
+      expect(find.byType(TaskMetaColumn), findsNothing);
+      expect(container.read(paneWidthControllerProvider), widths);
+      container.read(queryPaneOpenProvider(scope).notifier).open = false;
+      await tester.pump();
+      expect(tester.element(find.byType(TasksTabPage)), same(list));
+      expect(container.read(paneWidthControllerProvider), widths);
+      // Explicit Show list must also win over a day panel that would return
+      // on close and immediately starve the list again.
+      container.read(paneWidthControllerProvider.notifier).showDayViewPanel();
+      container.read(queryPaneOpenProvider(scope).notifier).open = true;
+      await tester.pump();
+      ListDetailFocusTraversal.maybeOf(
+        tester.element(find.byType(TaskDetailsPage)),
+      )!.showListPane();
+      await tester.pump();
+      expect(container.read(queryPaneOpenProvider(scope)), isFalse);
+      expect(
+        container.read(paneWidthControllerProvider).dayViewPanelHidden,
+        isTrue,
+      );
+      expect(tester.element(find.byType(TasksTabPage)), same(list));
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+
   group('day-view column starving the split', () {
     /// Pumps the split with a task open in a content region [regionWidth]
     /// wide, on a desktop-layout window (MediaQuery stays at 1600), and
@@ -572,6 +638,19 @@ void main() {
       container.read(paneWidthControllerProvider).listPaneCollapsed,
       isFalse,
     );
+    expect(tester.widget<TextField>(taskSearch).focusNode?.hasFocus, isTrue);
+    const scope = QueryScope(kind: QueryScopeKind.task, id: 'task-42');
+    container.read(queryPaneOpenProvider(scope).notifier).open = true;
+    await tester.pump();
+    expect(find.byType(TasksTabPage), findsNothing);
+    expect(
+      await commandController.invoke(detailContext, AppCommandId.focusSearch),
+      isTrue,
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(container.read(queryPaneOpenProvider(scope)), isFalse);
+    expect(find.byType(TasksTabPage), findsOneWidget);
     expect(tester.widget<TextField>(taskSearch).focusNode?.hasFocus, isTrue);
   });
 

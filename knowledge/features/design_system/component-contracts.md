@@ -117,6 +117,10 @@ contiguous selected band per option. Checkbox-first lists can set
 `showSelectedBackground: false` when the checkmark is the deliberate sole state
 indicator; checked semantics and the full-row action remain unchanged.
 
+`ResizableDivider.reverse` controls a pane on the divider's right: dragging or
+pressing Left grows that pane, while the semantic Increase action always grows
+the announced width. Pointer direction and value direction are separate.
+
 The same rule applies to structural and operational surfaces:
 `DesignSystemProgressBar` owns determinate progress and its visible value,
 `DesignSystemSectionCard` owns grouped page content, and
@@ -124,7 +128,9 @@ The same rule applies to structural and operational surfaces:
 shell uses `background.level01`; `shape: pill` uses `surface.enabled` and
 `radii.badgesPills` for conversation composers. `emphasizeTrailingIcon` gives
 the actionable suffix the interactive fill, preserving its tooltip, enabled
-state, and button semantics. The sync maintenance
+state, and button semantics. Placeholder hints remain a single ellipsized line
+inside the field, including at enlarged text scales; their full accessible label
+remains on the editable node. The sync maintenance
 progress views, statistics page, and this-device profile are canonical
 adopters: feature code supplies state and copy, while these components supply
 the visual and semantic grammar. A progress header gives its label and trailing

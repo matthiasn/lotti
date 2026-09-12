@@ -50,6 +50,9 @@ project, and relationships to other tasks.
 - **Saves the filters that matter.** Frequently used queries become named views
   with live counts, pinned in the desktop sidebar or reachable from the mobile
   rail's Views button.
+- **Discusses a task beside its details.** Ask opens a resizable chat companion
+  on wide layouts and an expandable sheet on phones. Closing it restores the
+  task workspace while keeping the chat draft.
 - **Shows AI work in context.** The agent's summary, its proposed changes, and
   what the AI has cost for this task all live on the task itself. The cost is a
   compact leaf-and-amount indicator that stays on screen the whole time the task

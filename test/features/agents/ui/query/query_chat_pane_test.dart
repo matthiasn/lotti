@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:ui' show Tristate;
 
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
@@ -152,6 +154,7 @@ void main() {
     MediaQueryData? mediaQueryData,
     QueryChatSession? session,
     bool noAgent = false,
+    bool companion = false,
     bool sourceDetailLoading = false,
     String sourceDetailId = 'note',
     ChatRecorderController? activeRecorder,
@@ -169,7 +172,11 @@ void main() {
     }
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        QueryChatPane(scope: activeScope, onClose: () => closeCalls++),
+        QueryChatPane(
+          scope: activeScope,
+          onClose: () => closeCalls++,
+          companion: companion,
+        ),
         mediaQueryData: mediaQueryData,
         overrides: [
           if (sourceDetailLoading)
@@ -283,6 +290,42 @@ void main() {
       matching: find.byType(AgentMarkdownView),
     ),
     matching: find.text(number, findRichText: true),
+  );
+
+  testWidgets(
+    'compact companion shows its task title and discloses scope controls at large text',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      bench.entries['task'] = (bench.entries['task']! as Task).copyWith(
+        data: testTask.data.copyWith(title: 'Inspect orbital penguin habitat'),
+      );
+      await pump(
+        tester,
+        companion: true,
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 844),
+          textScaler: TextScaler.linear(1.5),
+        ),
+      );
+      final title = find.text('Inspect orbital penguin habitat');
+      expect(
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+        isFalse,
+      );
+      expect(find.text('Notes'), findsNothing);
+      await tester.tap(find.byIcon(LottiIcons.filter));
+      await tester.pump();
+      expect(find.text('Notes'), findsOneWidget);
+      expect(find.text('Recordings'), findsOneWidget);
+      await tester.tap(find.byIcon(LottiIcons.filter));
+      await tester.pump();
+      expect(find.text('Notes'), findsNothing);
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pump();
+      expect(closeCalls, 1);
+      expect(tester.takeException(), isNull);
+    },
   );
 
   testWidgets(
@@ -573,7 +616,7 @@ void main() {
         'Was that a decision or a suggestion?',
       );
       expect(inferenceCalls, 0);
-      await tester.tap(find.text('Task · Add tests for journal page'));
+      await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pump();
       expect(closeCalls, 1);
       await tester.pumpWidget(const SizedBox());
@@ -1469,7 +1512,14 @@ void main() {
         QueryScopeKind.project => 'Project',
         QueryScopeKind.category => 'Category',
       };
-      expect(find.text('$scopeLabel · $label'), findsOneWidget);
+      expect(find.text(label), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Tooltip && widget.message == '$scopeLabel · $label',
+        ),
+        findsOneWidget,
+      );
       await tester.enterText(find.byType(TextField), 'Saved draft');
       await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pump();
