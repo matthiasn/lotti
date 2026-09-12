@@ -163,6 +163,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     Directory? tempDir;
     var nativeStartAttempted = false;
     var transferred = false;
+    Object? startError;
     try {
       final hasPerm = await recorder.hasPermission();
       if (!ref.mounted || currentOpId != _operationId) return;
@@ -251,12 +252,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         subDomain: 'start',
       );
     } catch (e) {
-      if (ref.mounted && currentOpId == _operationId) {
-        state = state.copyWith(
-          error: 'Failed to start recording: $e',
-          errorKind: ChatRecorderErrorKind.startFailed,
-        );
-      }
+      startError = e;
       if (transferred && currentOpId == _operationId) {
         await _cleanupInternal();
       }
@@ -271,6 +267,13 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
           await recorder.dispose();
         } catch (_) {}
         await _deleteDirectoryQuietly(tempDir);
+      }
+      if (startError != null && ref.mounted && currentOpId == _operationId) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.idle,
+          error: 'Failed to start recording: $startError',
+          errorKind: ChatRecorderErrorKind.startFailed,
+        );
       }
       _isStarting = false;
       _startFuture = null;

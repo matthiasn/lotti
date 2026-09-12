@@ -444,6 +444,61 @@ void main() {
       );
     }
 
+    test(
+      'amplitude setup failure cleans up before idle and permits restart',
+      () async {
+        final disposing = Completer<void>();
+        final released = Completer<void>();
+        when(() => recorders.first.onAmplitudeChanged(any())).thenThrow(
+          StateError('amplitude setup failed'),
+        );
+        when(recorders.first.dispose).thenAnswer((_) {
+          disposing.complete();
+          return released.future;
+        });
+        final startup = controller.start();
+        addTearDown(() async {
+          if (!released.isCompleted) released.complete();
+          await startup;
+        });
+        await disposing.future;
+        final failedPath = paths.single;
+        verify(() => recorders.first.start(any(), path: failedPath)).called(1);
+        expect(await File(failedPath).exists(), isTrue);
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.recording,
+        );
+        await controller.start();
+        expect(creations, 1);
+
+        released.complete();
+        await startup;
+        final failed = container.read(chatRecorderControllerProvider);
+        expect(failed.status, ChatRecorderStatus.idle);
+        expect(failed.errorKind, ChatRecorderErrorKind.startFailed);
+        expect(failed.error, contains('amplitude setup failed'));
+        expect(failed.transcript, isNull);
+        verify(recorders.first.dispose).called(1);
+        expect(await File(failedPath).exists(), isFalse);
+        expect(await File(failedPath).parent.exists(), isFalse);
+        verifyNever(() => service.transcribeStream(any()));
+
+        await controller.start();
+        expect(creations, 2);
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.recording,
+        );
+        await controller.stopAndTranscribe();
+        expect(
+          container.read(chatRecorderControllerProvider).transcript,
+          'New question',
+        );
+        verify(() => service.transcribeStream(paths.last)).called(1);
+      },
+    );
+
     test('completion stays processing until its cleanup finishes', () async {
       final disposing = Completer<void>();
       final released = Completer<void>();

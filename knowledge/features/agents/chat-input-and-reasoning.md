@@ -90,7 +90,9 @@ captures and detaches the owned resources synchronously, and concurrent cancel
 calls join one cleanup. Completion and cancellation publish `idle` only after
 cleanup finishes, so a new capture cannot overlap deletion of the previous
 recording. Disposal invalidates the operation and joins an existing cleanup;
-cleanup failures remain best-effort and are caught.
+cleanup failures remain best-effort and are caught. If amplitude setup fails
+after native recording starts, startup releases the transferred resources before
+publishing an idle `startFailed` result, so the composer can record again.
 
 `ChatRecorderState.copyWith` clears transcript, partial transcript, and error
 fields when omitted. Status, amplitude history and elapsed time retain their previous values.
