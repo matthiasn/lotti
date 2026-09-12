@@ -3470,6 +3470,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar funciones de gestión de proyectos para organizar tareas en proyectos.';
 
   @override
+  String get configFlagEnableQueryChat => 'Chat de tareas experimental';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Muestra chats para tareas, proyectos y categorías. Desactivado por defecto.';
+
+  @override
   String get configFlagEnableRelationships => 'Activar la página Personas';
 
   @override
@@ -11088,6 +11095,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get provisionedSyncTitle => 'Dispositivos';
 
   @override
+  String get queryAllSources => 'Todos';
+
+  @override
   String get queryArchiveChat => 'Archivar chat';
 
   @override
@@ -11345,6 +11355,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryOpenEntry => 'Abrir entrada';
 
   @override
+  String get queryOriginalsHome =>
+      'Consulta solo esta tarea y sus entradas vinculadas directamente.';
+
+  @override
   String get queryOtherProject => 'Fuera del ámbito inicial';
 
   @override
@@ -11419,6 +11433,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Fuente movida a otra categoría';
+
+  @override
+  String get querySummaryBased => 'Basado en resúmenes';
+
+  @override
+  String get querySummaryCoverage =>
+      'Esta respuesta usa resúmenes de tareas o proyectos. No se consultaron las entradas originales.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Abre una tarea o un proyecto para consultar su resumen actual. Puede haber cambiado desde esta respuesta.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Falta información en los resúmenes disponibles.';
+
+  @override
+  String get querySummaryOwners => 'Acerca de esta respuesta';
 
   @override
   String get querySurroundingLimit =>
@@ -15736,36 +15768,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
-
-  @override
-  String get configFlagEnableQueryChat => 'Chat de tareas experimental';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Muestra chats para tareas, proyectos y categorías. Desactivado por defecto.';
-
-  @override
-  String get querySummaryBased => 'Basado en resúmenes';
-
-  @override
-  String get querySummaryCoverage =>
-      'Esta respuesta usa resúmenes de tareas o proyectos. No se consultaron las entradas originales.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Abre una tarea o un proyecto para consultar su resumen actual. Puede haber cambiado desde esta respuesta.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'Falta información en los resúmenes disponibles.';
-
-  @override
-  String get querySummaryOwners => 'Acerca de esta respuesta';
-
-  @override
-  String get queryOriginalsHome =>
-      'Consulta solo esta tarea y sus entradas vinculadas directamente.';
-
-  @override
-  String get querySummaries => 'Resúmenes';
 }

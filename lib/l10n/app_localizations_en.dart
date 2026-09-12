@@ -3410,6 +3410,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show project management features for organizing tasks into projects.';
 
   @override
+  String get configFlagEnableQueryChat => 'Experimental task chat';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Show chat for tasks, projects and categories. Disabled by default.';
+
+  @override
   String get configFlagEnableRelationships => 'Enable People page';
 
   @override
@@ -10874,6 +10881,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provisionedSyncTitle => 'Devices';
 
   @override
+  String get queryAllSources => 'All';
+
+  @override
   String get queryArchiveChat => 'Archive chat';
 
   @override
@@ -11129,6 +11139,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryOpenEntry => 'Open entry';
 
   @override
+  String get queryOriginalsHome =>
+      'Checks this task and its directly linked entries only.';
+
+  @override
   String get queryOtherProject => 'Beyond the home scope';
 
   @override
@@ -11203,6 +11217,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Source moved to another category';
+
+  @override
+  String get querySummaryBased => 'Based on summaries';
+
+  @override
+  String get querySummaryCoverage =>
+      'This answer uses task or project summaries. Original entries were not inspected.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Open a task or project to inspect its current summary. It may have changed since this answer.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Some information is missing from the available summaries.';
+
+  @override
+  String get querySummaryOwners => 'About this answer';
 
   @override
   String get querySurroundingLimit =>
@@ -15437,38 +15469,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get configFlagEnableQueryChat => 'Experimental task chat';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Show chat for tasks, projects and categories. Disabled by default.';
-
-  @override
-  String get querySummaryBased => 'Based on summaries';
-
-  @override
-  String get querySummaryCoverage =>
-      'This answer uses task or project summaries. Original entries were not inspected.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Open a task or project to inspect its current summary. It may have changed since this answer.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'Some information is missing from the available summaries.';
-
-  @override
-  String get querySummaryOwners => 'About this answer';
-
-  @override
-  String get queryOriginalsHome =>
-      'Checks this task and its directly linked entries only.';
-
-  @override
-  String get querySummaries => 'Summaries';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

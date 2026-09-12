@@ -162,8 +162,13 @@ quote fills its entire stored text window. Copy excludes that disclosure.
 Changed sources open through an “Open current entry” action. Inline numbered
 citations expand, focus and scroll to the matching card in that answer after a
 fresh visibility check. Returning from an entry restores focus to its evidence
-card or summary-owner action when still mounted. Citation text scales once with
-its surrounding paragraph; duplicate citation numbers in other answers are unrelated.
+card or summary-owner action when still mounted. Summary-owner actions load the
+current task or project report into a read-only `QuerySummaryPreview` within
+chat. Owner visibility is checked before and after the asynchronous report
+lookup; missing reports show the existing no-report state. This is the current
+report, not a historical snapshot of the answer's input. Citation text scales
+once with its surrounding paragraph; duplicate citation numbers in other
+answers are unrelated.
 Evidence action labels include the source name and disclosure semantics expose
 expanded state. The chat switcher exposes its selected title and expanded state;
 archived-chat disclosure exposes its expanded state as well.
@@ -260,9 +265,10 @@ substitute a crawl of that other task's original entries.
 A question specifically requiring the home task's original wording/details can
 request the original-entry route. An explicit notes/recordings filter in a task
 chat also selects that route. The UI then selects and disables the home-only
-chip and explains the direct-link boundary. Selecting Summaries clears the
-source-kind filter. Project/category chats omit unsupported original-entry
-filters and cannot authorize other tasks' raw entries.
+chip and explains the direct-link boundary. Selecting All clears the source-kind
+filter; it starts with summaries and can inspect home-task originals when needed.
+Project/category chats omit unsupported original-entry filters and cannot
+authorize other tasks' raw entries.
 
 `QueryJournalCrawler` then inspects only the home task and directly linked
 visible entries in its category, excluding linked task/project bodies. The

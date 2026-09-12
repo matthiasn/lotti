@@ -3475,6 +3475,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher les fonctions de gestion de projets pour organiser les tâches en projets.';
 
   @override
+  String get configFlagEnableQueryChat => 'Chat de tâche expérimental';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Affiche les chats des tâches, projets et catégories. Désactivé par défaut.';
+
+  @override
   String get configFlagEnableRelationships => 'Activer la page Proches';
 
   @override
@@ -11121,6 +11128,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get provisionedSyncTitle => 'Appareils';
 
   @override
+  String get queryAllSources => 'Tous';
+
+  @override
   String get queryArchiveChat => 'Archiver le chat';
 
   @override
@@ -11382,6 +11392,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queryOpenEntry => 'Ouvrir l’entrée';
 
   @override
+  String get queryOriginalsHome =>
+      'Consulte uniquement cette tâche et ses entrées directement liées.';
+
+  @override
   String get queryOtherProject => 'Hors du périmètre de départ';
 
   @override
@@ -11457,6 +11471,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Source déplacée vers une autre catégorie';
+
+  @override
+  String get querySummaryBased => 'Basée sur des résumés';
+
+  @override
+  String get querySummaryCoverage =>
+      'Cette réponse utilise des résumés de tâches ou de projets. Les entrées originales n’ont pas été consultées.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Ouvre une tâche ou un projet pour consulter son résumé actuel. Il peut avoir changé depuis cette réponse.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Certaines informations manquent dans les résumés disponibles.';
+
+  @override
+  String get querySummaryOwners => 'À propos de cette réponse';
 
   @override
   String get querySurroundingLimit =>
@@ -15787,36 +15819,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get configFlagEnableQueryChat => 'Chat de tâche expérimental';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Affiche les chats des tâches, projets et catégories. Désactivé par défaut.';
-
-  @override
-  String get querySummaryBased => 'Basé sur des résumés';
-
-  @override
-  String get querySummaryCoverage =>
-      'Cette réponse utilise des résumés de tâches ou de projets. Les entrées originales n’ont pas été consultées.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Ouvre une tâche ou un projet pour consulter son résumé actuel. Il peut avoir changé depuis cette réponse.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'Certaines informations manquent dans les résumés disponibles.';
-
-  @override
-  String get querySummaryOwners => 'À propos de cette réponse';
-
-  @override
-  String get queryOriginalsHome =>
-      'Consulte uniquement cette tâche et ses entrées directement liées.';
-
-  @override
-  String get querySummaries => 'Résumés';
 }

@@ -3433,6 +3433,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visa projektledningsfunktioner för att organisera uppgifter i projekt.';
 
   @override
+  String get configFlagEnableQueryChat => 'Experimentell uppgiftschatt';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Visar chattar för uppgifter, projekt och kategorier. Avstängd som standard.';
+
+  @override
   String get configFlagEnableRelationships => 'Aktivera sidan Personer';
 
   @override
@@ -10936,6 +10943,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get provisionedSyncTitle => 'Enheter';
 
   @override
+  String get queryAllSources => 'Alla';
+
+  @override
   String get queryArchiveChat => 'Arkivera chatt';
 
   @override
@@ -11190,6 +11200,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryOpenEntry => 'Öppna inlägg';
 
   @override
+  String get queryOriginalsHome =>
+      'Granskar bara den här uppgiften och dess direkt länkade poster.';
+
+  @override
   String get queryOtherProject => 'Utanför ursprungsområdet';
 
   @override
@@ -11264,6 +11278,24 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Källan flyttad till en annan kategori';
+
+  @override
+  String get querySummaryBased => 'Baserat på sammanfattningar';
+
+  @override
+  String get querySummaryCoverage =>
+      'Det här svaret använder sammanfattningar av uppgifter eller projekt. De ursprungliga posterna granskades inte.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Öppna en uppgift eller ett projekt för att läsa den aktuella sammanfattningen. Den kan ha ändrats sedan det här svaret.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Viss information saknas i de tillgängliga sammanfattningarna.';
+
+  @override
+  String get querySummaryOwners => 'Om det här svaret';
 
   @override
   String get querySurroundingLimit =>
@@ -15546,36 +15578,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get configFlagEnableQueryChat => 'Experimentell uppgiftschatt';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Visar chattar för uppgifter, projekt och kategorier. Avstängd som standard.';
-
-  @override
-  String get querySummaryBased => 'Baserat på sammanfattningar';
-
-  @override
-  String get querySummaryCoverage =>
-      'Det här svaret använder sammanfattningar av uppgifter eller projekt. De ursprungliga posterna granskades inte.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Öppna en uppgift eller ett projekt för att läsa den aktuella sammanfattningen. Den kan ha ändrats sedan det här svaret.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'Viss information saknas i de tillgängliga sammanfattningarna.';
-
-  @override
-  String get querySummaryOwners => 'Om det här svaret';
-
-  @override
-  String get queryOriginalsHome =>
-      'Granskar bara den här uppgiften och dess direkt länkade poster.';
-
-  @override
-  String get querySummaries => 'Sammanfattningar';
 }

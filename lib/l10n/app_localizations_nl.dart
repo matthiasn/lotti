@@ -3438,6 +3438,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Functies voor projectbeheer tonen voor het organiseren van taken in projecten.';
 
   @override
+  String get configFlagEnableQueryChat => 'Experimentele taakchat';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Toont chats voor taken, projecten en categorieën. Standaard uitgeschakeld.';
+
+  @override
   String get configFlagEnableRelationships => 'Mensen-pagina inschakelen';
 
   @override
@@ -10945,6 +10952,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get provisionedSyncTitle => 'Apparaten';
 
   @override
+  String get queryAllSources => 'Alles';
+
+  @override
   String get queryArchiveChat => 'Chat archiveren';
 
   @override
@@ -11204,6 +11214,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryOpenEntry => 'Item openen';
 
   @override
+  String get queryOriginalsHome =>
+      'Raadpleegt alleen deze taak en de direct gekoppelde items.';
+
+  @override
   String get queryOtherProject => 'Buiten het eigen bereik';
 
   @override
@@ -11278,6 +11292,24 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Bron verplaatst naar een andere categorie';
+
+  @override
+  String get querySummaryBased => 'Gebaseerd op samenvattingen';
+
+  @override
+  String get querySummaryCoverage =>
+      'Dit antwoord gebruikt taak- of projectsamenvattingen. De oorspronkelijke items zijn niet geraadpleegd.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Open een taak of project om de huidige samenvatting te bekijken. Die kan sinds dit antwoord zijn gewijzigd.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Er ontbreekt informatie in de beschikbare samenvattingen.';
+
+  @override
+  String get querySummaryOwners => 'Over dit antwoord';
 
   @override
   String get querySurroundingLimit =>
@@ -15571,36 +15603,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get configFlagEnableQueryChat => 'Experimentele taakchat';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Toont chats voor taken, projecten en categorieën. Standaard uitgeschakeld.';
-
-  @override
-  String get querySummaryBased => 'Gebaseerd op samenvattingen';
-
-  @override
-  String get querySummaryCoverage =>
-      'Dit antwoord gebruikt taak- of projectsamenvattingen. De oorspronkelijke items zijn niet geraadpleegd.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Open een taak of project om de huidige samenvatting te bekijken. Die kan sinds dit antwoord zijn gewijzigd.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'Er ontbreekt informatie in de beschikbare samenvattingen.';
-
-  @override
-  String get querySummaryOwners => 'Over dit antwoord';
-
-  @override
-  String get queryOriginalsHome =>
-      'Raadpleegt alleen deze taak en de direct gekoppelde items.';
-
-  @override
-  String get querySummaries => 'Samenvattingen';
 }

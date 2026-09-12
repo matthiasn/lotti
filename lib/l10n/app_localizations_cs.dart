@@ -3468,6 +3468,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit funkce správy projektů pro organizaci úkolů do projektů.';
 
   @override
+  String get configFlagEnableQueryChat => 'Experimentální chat k úkolům';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Zobrazí chaty pro úkoly, projekty a kategorie. Ve výchozím stavu je vypnutý.';
+
+  @override
   String get configFlagEnableRelationships => 'Zapnout stránku Lidé';
 
   @override
@@ -11072,6 +11079,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncTitle => 'Zařízení';
 
   @override
+  String get queryAllSources => 'Vše';
+
+  @override
   String get queryArchiveChat => 'Archivovat chat';
 
   @override
@@ -11331,6 +11341,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryOpenEntry => 'Otevřít záznam';
 
   @override
+  String get queryOriginalsHome =>
+      'Prohlíží pouze tento úkol a jeho přímo propojené záznamy.';
+
+  @override
   String get queryOtherProject => 'Mimo základní rozsah';
 
   @override
@@ -11405,6 +11419,24 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Zdroj přesunut do jiné kategorie';
+
+  @override
+  String get querySummaryBased => 'Na základě souhrnů';
+
+  @override
+  String get querySummaryCoverage =>
+      'Tato odpověď využívá souhrny úkolů nebo projektů. Původní záznamy nebyly prohlédnuty.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Otevři úkol nebo projekt a prohlédni si jeho aktuální souhrn. Od této odpovědi se mohl změnit.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'V dostupných souhrnech chybí některé informace.';
+
+  @override
+  String get querySummaryOwners => 'O této odpovědi';
 
   @override
   String get querySurroundingLimit =>
@@ -15728,36 +15760,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get configFlagEnableQueryChat => 'Experimentální chat k úkolům';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Zobrazí chaty pro úkoly, projekty a kategorie. Ve výchozím stavu je vypnutý.';
-
-  @override
-  String get querySummaryBased => 'Na základě souhrnů';
-
-  @override
-  String get querySummaryCoverage =>
-      'Tato odpověď využívá souhrny úkolů nebo projektů. Původní záznamy nebyly prohlédnuty.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Otevři úkol nebo projekt a prohlédni si jeho aktuální souhrn. Od této odpovědi se mohl změnit.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'V dostupných souhrnech chybí některé informace.';
-
-  @override
-  String get querySummaryOwners => 'O této odpovědi';
-
-  @override
-  String get queryOriginalsHome =>
-      'Prohlíží pouze tento úkol a jeho přímo propojené záznamy.';
-
-  @override
-  String get querySummaries => 'Souhrny';
 }

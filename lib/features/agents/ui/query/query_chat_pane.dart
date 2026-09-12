@@ -13,10 +13,12 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
+import 'package:lotti/features/agents/ui/query/query_summary_preview.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -165,6 +167,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
   }
 
   String? _sourceId;
+  bool _inspectSummary = false;
+  AgentReportEntity? _sourceSummary;
   String? _readThrough;
   String? _dictatedChat;
   bool _creating = false;
@@ -190,9 +194,9 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     }
   }
 
-  Future<void> _openSource(String id, {FocusNode? returnFocus}) async {
+  Future<JournalEntity?> _visibleSource(String id) async {
     final fresh = await ref.read(querySourceAccessProvider).load([id]);
-    if (!mounted) return;
+    if (!mounted || !ref.read(queryChatEnabledProvider)) return null;
     final current = QueryAccessSnapshot(
       showPrivate: ref.read(configFlagProvider('private')).value == true,
       categories: fresh.categories,
@@ -200,10 +204,36 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
       lockdown: ref.read(lockdownControllerProvider),
     );
     final entry = current.entries[id];
-    if (entry == null || !current.allowsEntry(entry)) return;
+    return entry != null && current.allowsEntry(entry) ? entry : null;
+  }
+
+  Future<void> _openSource(
+    String id, {
+    FocusNode? returnFocus,
+    bool inspectSummary = false,
+  }) async {
+    final entry = await _visibleSource(id);
+    if (entry == null) return;
+    AgentReportEntity? report;
+    if (inspectSummary) {
+      final repository = ref.read(agentRepositoryProvider);
+      if (entry is Task) {
+        report = (await repository.getLatestTaskReportsForTaskIds([id]))[id];
+      } else if (entry is ProjectEntry) {
+        report = await repository.getLatestProjectReportForProjectId(id);
+      } else {
+        return;
+      }
+      final latest = await _visibleSource(id);
+      if (latest == null || latest.runtimeType != entry.runtimeType) return;
+    }
     _sourceReturnEvidence = null;
     _sourceReturnFocus = returnFocus ?? FocusManager.instance.primaryFocus;
-    setState(() => _sourceId = id);
+    setState(() {
+      _sourceId = id;
+      _inspectSummary = inspectSummary;
+      _sourceSummary = report;
+    });
   }
 
   Future<void> _leave() async {
@@ -218,7 +248,11 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
           evidence.reveal();
         } else if (_sourceReturnFocus?.context != null &&
             _sourceReturnFocus!.canRequestFocus) {
-          _sourceReturnFocus!.requestFocus();
+          final opener = _sourceReturnFocus!;
+          final action = opener.descendants
+              .where((node) => node.canRequestFocus && !node.skipTraversal)
+              .firstOrNull;
+          (action ?? opener).requestFocus();
         }
       });
     } else {
@@ -535,9 +569,14 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         .where((e) => access.allowsEvent(e.data))
         .length;
     final source = access.entries[_sourceId];
-    if (_sourceId != null && (source == null || !access.allowsEntry(source))) {
+    if (_sourceId != null &&
+        (source == null ||
+            !access.allowsEntry(source) ||
+            (_inspectSummary && source is! Task && source is! ProjectEntry))) {
       // A source hidden while open must not leave a visibility placeholder.
       _sourceId = null;
+      _sourceSummary = null;
+      _inspectSummary = false;
       _sourceReturnEvidence = null;
       _sourceReturnFocus = null;
     }
@@ -579,7 +618,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                     ),
                   if (widget.scope.kind == QueryScopeKind.task)
                     DesignSystemChip(
-                      label: messages.querySummaries,
+                      label: messages.queryAllSources,
                       size: DesignSystemChipSize.compactPillTouch,
                       outlined: true,
                       selected: local.kind == null,
@@ -741,6 +780,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                   onOpen: (sourceId) => setState(() {
                                     _sourceReturnEvidence = (message.id, index);
                                     _sourceId = sourceId;
+                                    _inspectSummary = false;
+                                    _sourceSummary = null;
                                   }),
                                   audioControls:
                                       access.entries[evidence.source.id]
@@ -878,10 +919,17 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                 ),
               ] else
                 Expanded(
-                  child: EntryDetailsPage(
-                    itemId: source!.meta.id,
-                    showBackButton: false,
-                  ),
+                  child: _inspectSummary
+                      ? QuerySummaryPreview(
+                          title: source is Task
+                              ? source.data.title
+                              : (source! as ProjectEntry).data.title,
+                          report: _sourceSummary,
+                        )
+                      : EntryDetailsPage(
+                          itemId: source!.meta.id,
+                          showBackButton: false,
+                        ),
                 ),
             ],
           ),
@@ -1519,6 +1567,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         ),
         for (final owner in owners)
           Focus(
+            skipTraversal: true,
             focusNode: _ownerFocus.putIfAbsent((
               answer.questionId,
               owner.id,
@@ -1538,6 +1587,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   () => _openSource(
                     owner.id,
                     returnFocus: _ownerFocus[(answer.questionId, owner.id)],
+                    inspectSummary: true,
                   ),
                 ),
               ),

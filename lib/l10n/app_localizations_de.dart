@@ -3453,6 +3453,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Projektverwaltung zum Organisieren von Aufgaben in Projekten anzeigen.';
 
   @override
+  String get configFlagEnableQueryChat => 'Experimenteller Aufgabenchat';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Zeigt Chats für Aufgaben, Projekte und Kategorien. Standardmäßig deaktiviert.';
+
+  @override
   String get configFlagEnableRelationships => 'Menschen-Seite aktivieren';
 
   @override
@@ -10995,6 +11002,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get provisionedSyncTitle => 'Geräte';
 
   @override
+  String get queryAllSources => 'Alle';
+
+  @override
   String get queryArchiveChat => 'Chat archivieren';
 
   @override
@@ -11257,6 +11267,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get queryOpenEntry => 'Eintrag öffnen';
 
   @override
+  String get queryOriginalsHome =>
+      'Prüft nur diese Aufgabe und ihre direkt verknüpften Einträge.';
+
+  @override
   String get queryOtherProject => 'Außerhalb des Ausgangsbereichs';
 
   @override
@@ -11332,6 +11346,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Quelle in eine andere Kategorie verschoben';
+
+  @override
+  String get querySummaryBased => 'Basiert auf Zusammenfassungen';
+
+  @override
+  String get querySummaryCoverage =>
+      'Diese Antwort nutzt Aufgaben- oder Projektzusammenfassungen. Originaleinträge wurden nicht geprüft.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Öffne eine Aufgabe oder ein Projekt, um die aktuelle Zusammenfassung zu prüfen. Sie kann sich seit dieser Antwort geändert haben.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'In den verfügbaren Zusammenfassungen fehlen einige Informationen.';
+
+  @override
+  String get querySummaryOwners => 'Über diese Antwort';
 
   @override
   String get querySurroundingLimit =>
@@ -15643,36 +15675,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get configFlagEnableQueryChat => 'Experimenteller Aufgabenchat';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Zeigt Chats für Aufgaben, Projekte und Kategorien. Standardmäßig deaktiviert.';
-
-  @override
-  String get querySummaryBased => 'Basiert auf Zusammenfassungen';
-
-  @override
-  String get querySummaryCoverage =>
-      'Diese Antwort nutzt Aufgaben- oder Projektzusammenfassungen. Originaleinträge wurden nicht geprüft.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Öffne eine Aufgabe oder ein Projekt, um die aktuelle Zusammenfassung zu prüfen. Sie kann sich seit dieser Antwort geändert haben.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'In den verfügbaren Zusammenfassungen fehlen einige Informationen.';
-
-  @override
-  String get querySummaryOwners => 'Über diese Antwort';
-
-  @override
-  String get queryOriginalsHome =>
-      'Prüft nur diese Aufgabe und ihre direkt verknüpften Einträge.';
-
-  @override
-  String get querySummaries => 'Zusammenfassungen';
 }

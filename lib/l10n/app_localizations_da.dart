@@ -3425,6 +3425,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vis projektstyringsfunktioner til at organisere opgaver i projekter.';
 
   @override
+  String get configFlagEnableQueryChat => 'Eksperimentel opgavechat';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Viser chats for opgaver, projekter og kategorier. Slået fra som standard.';
+
+  @override
   String get configFlagEnableRelationships => 'Aktivér Personer-siden';
 
   @override
@@ -10926,6 +10933,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncTitle => 'Enheder';
 
   @override
+  String get queryAllSources => 'Alle';
+
+  @override
   String get queryArchiveChat => 'Arkivér chat';
 
   @override
@@ -11182,6 +11192,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryOpenEntry => 'Åbn indlæg';
 
   @override
+  String get queryOriginalsHome =>
+      'Gennemgår kun denne opgave og dens direkte tilknyttede poster.';
+
+  @override
   String get queryOtherProject => 'Uden for udgangsområdet';
 
   @override
@@ -11256,6 +11270,24 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Kilde flyttet til en anden kategori';
+
+  @override
+  String get querySummaryBased => 'Baseret på opsummeringer';
+
+  @override
+  String get querySummaryCoverage =>
+      'Dette svar bruger opsummeringer af opgaver eller projekter. De oprindelige poster blev ikke gennemgået.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Åbn en opgave eller et projekt for at læse den aktuelle opsummering. Den kan være ændret siden dette svar.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Der mangler oplysninger i de tilgængelige opsummeringer.';
+
+  @override
+  String get querySummaryOwners => 'Om dette svar';
 
   @override
   String get querySurroundingLimit =>
@@ -15528,36 +15560,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get configFlagEnableQueryChat => 'Eksperimentel opgavechat';
-
-  @override
-  String get configFlagEnableQueryChatDescription =>
-      'Viser chats for opgaver, projekter og kategorier. Slået fra som standard.';
-
-  @override
-  String get querySummaryBased => 'Baseret på opsummeringer';
-
-  @override
-  String get querySummaryCoverage =>
-      'Dette svar bruger opsummeringer af opgaver eller projekter. De oprindelige poster blev ikke gennemgået.';
-
-  @override
-  String get querySummaryCurrent =>
-      'Åbn en opgave eller et projekt for at læse den aktuelle opsummering. Den kan være ændret siden dette svar.';
-
-  @override
-  String get querySummaryIncomplete =>
-      'Der mangler oplysninger i de tilgængelige opsummeringer.';
-
-  @override
-  String get querySummaryOwners => 'Om dette svar';
-
-  @override
-  String get queryOriginalsHome =>
-      'Gennemgår kun denne opgave og dens direkte tilknyttede poster.';
-
-  @override
-  String get querySummaries => 'Opsummeringer';
 }

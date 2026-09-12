@@ -5826,6 +5826,18 @@ abstract class AppLocalizations {
   /// **'Show project management features for organizing tasks into projects.'**
   String get configFlagEnableProjectsDescription;
 
+  /// No description provided for @configFlagEnableQueryChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental task chat'**
+  String get configFlagEnableQueryChat;
+
+  /// No description provided for @configFlagEnableQueryChatDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show chat for tasks, projects and categories. Disabled by default.'**
+  String get configFlagEnableQueryChatDescription;
+
   /// No description provided for @configFlagEnableRelationships.
   ///
   /// In en, this message translates to:
@@ -18421,6 +18433,12 @@ abstract class AppLocalizations {
   /// **'Devices'**
   String get provisionedSyncTitle;
 
+  /// No description provided for @queryAllSources.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get queryAllSources;
+
   /// No description provided for @queryArchiveChat.
   ///
   /// In en, this message translates to:
@@ -18859,6 +18877,12 @@ abstract class AppLocalizations {
   /// **'Open entry'**
   String get queryOpenEntry;
 
+  /// No description provided for @queryOriginalsHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Checks this task and its directly linked entries only.'**
+  String get queryOriginalsHome;
+
   /// No description provided for @queryOtherProject.
   ///
   /// In en, this message translates to:
@@ -18984,6 +19008,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Source moved to another category'**
   String get querySourceMoved;
+
+  /// No description provided for @querySummaryBased.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on summaries'**
+  String get querySummaryBased;
+
+  /// No description provided for @querySummaryCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'This answer uses task or project summaries. Original entries were not inspected.'**
+  String get querySummaryCoverage;
+
+  /// No description provided for @querySummaryCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a task or project to inspect its current summary. It may have changed since this answer.'**
+  String get querySummaryCurrent;
+
+  /// No description provided for @querySummaryIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Some information is missing from the available summaries.'**
+  String get querySummaryIncomplete;
+
+  /// No description provided for @querySummaryOwners.
+  ///
+  /// In en, this message translates to:
+  /// **'About this answer'**
+  String get querySummaryOwners;
 
   /// No description provided for @querySurroundingLimit.
   ///
@@ -25906,60 +25960,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @configFlagEnableQueryChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Experimental task chat'**
-  String get configFlagEnableQueryChat;
-
-  /// No description provided for @configFlagEnableQueryChatDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show chat for tasks, projects and categories. Disabled by default.'**
-  String get configFlagEnableQueryChatDescription;
-
-  /// No description provided for @querySummaryBased.
-  ///
-  /// In en, this message translates to:
-  /// **'Based on summaries'**
-  String get querySummaryBased;
-
-  /// No description provided for @querySummaryCoverage.
-  ///
-  /// In en, this message translates to:
-  /// **'This answer uses task or project summaries. Original entries were not inspected.'**
-  String get querySummaryCoverage;
-
-  /// No description provided for @querySummaryCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'Open a task or project to inspect its current summary. It may have changed since this answer.'**
-  String get querySummaryCurrent;
-
-  /// No description provided for @querySummaryIncomplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Some information is missing from the available summaries.'**
-  String get querySummaryIncomplete;
-
-  /// No description provided for @querySummaryOwners.
-  ///
-  /// In en, this message translates to:
-  /// **'About this answer'**
-  String get querySummaryOwners;
-
-  /// No description provided for @queryOriginalsHome.
-  ///
-  /// In en, this message translates to:
-  /// **'Checks this task and its directly linked entries only.'**
-  String get queryOriginalsHome;
-
-  /// No description provided for @querySummaries.
-  ///
-  /// In en, this message translates to:
-  /// **'Summaries'**
-  String get querySummaries;
 }
 
 class _AppLocalizationsDelegate

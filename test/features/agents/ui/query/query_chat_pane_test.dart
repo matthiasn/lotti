@@ -15,10 +15,12 @@ import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_transcription_provider.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
+import 'package:lotti/features/agents/ui/query/query_summary_preview.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -155,6 +157,7 @@ void main() {
     MediaQueryData? mediaQueryData,
     QueryChatSession? session,
     Stream<bool>? featureFlag,
+    MockAgentRepository? reportRepository,
     bool noAgent = false,
     bool companion = false,
     bool sourceDetailLoading = false,
@@ -206,6 +209,8 @@ void main() {
               categoryLabel: categoryMindfulness.name,
             ),
           ),
+          if (reportRepository != null)
+            agentRepositoryProvider.overrideWithValue(reportRepository),
           queryChatStoreProvider.overrideWithValue(store),
           querySourceAccessProvider.overrideWithValue(bench.crawler.access),
           queryTranscriptionTargetResolverProvider(
@@ -358,6 +363,17 @@ void main() {
           );
         }
         final ownerTitle = projectOwner ? 'Feeder project' : 'Feeder approval';
+        final repository = MockAgentRepository();
+        final report = makeTestReport(
+          tldr: 'Current feeder summary.',
+          content: 'The latest report calls for another test.',
+        );
+        when(
+          () => repository.getLatestTaskReportsForTaskIds([ownerId]),
+        ).thenAnswer((_) async => {ownerId: report});
+        when(
+          () => repository.getLatestProjectReportForProjectId(ownerId),
+        ).thenAnswer((_) async => report);
         events.addAll([
           event(
             'question',
@@ -384,7 +400,10 @@ void main() {
             ),
           ),
         ]);
-        await pump(tester, sourceDetailLoading: true, sourceDetailId: ownerId);
+        await pump(
+          tester,
+          reportRepository: repository,
+        );
         expect(find.textContaining('Sources checked: 0'), findsNothing);
         expect(
           find.text(
@@ -412,16 +431,85 @@ void main() {
         await tester.tap(find.text(ownerTitle).last);
         await tester.pump();
         expect(
-          tester.widget<EntryDetailsPage>(find.byType(EntryDetailsPage)).itemId,
-          ownerId,
+          tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).text,
+          contains('The latest report calls for another test.'),
         );
         await tester.tap(find.byIcon(LottiIcons.back));
         await tester.pump();
         expect(find.text('About this answer'), findsOneWidget);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(
+          tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).text,
+          contains('The latest report calls for another test.'),
+        );
         await tester.pumpWidget(const SizedBox.shrink());
       },
     );
   }
+
+  testWidgets('summary inspection rechecks privacy after the report loads', (
+    tester,
+  ) async {
+    final pending = Completer<Map<String, AgentReportEntity>>();
+    final repository = MockAgentRepository();
+    when(
+      () => repository.getLatestTaskReportsForTaskIds(['task']),
+    ).thenAnswer((_) => pending.future);
+    final task = bench.entries['task']! as Task;
+    bench.entries['task'] = task.copyWith(
+      data: task.data.copyWith(title: 'Feeder approval'),
+    );
+    events.addAll([
+      event(
+        'question',
+        'feeder',
+        const QueryChatEventData.question(text: 'What was approved?'),
+      ),
+      event(
+        'reply',
+        'feeder',
+        QueryChatEventData.answer(
+          questionId: 'question',
+          text: 'The summary records approval.',
+          summaryBased: true,
+          coverage: const QueryCoverage(),
+          summaryOwnerIds: ['task'],
+          dependencies: [
+            QuerySourceRef(
+              id: 'task',
+              private: false,
+              categoryPrivate: false,
+              categoryId: categoryMindfulness.id,
+            ),
+          ],
+        ),
+      ),
+    ]);
+    await pump(tester, reportRepository: repository);
+    await tester.tap(find.text('About this answer'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Feeder approval').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Feeder approval').last);
+    await tester.pump();
+    verify(() => repository.getLatestTaskReportsForTaskIds(['task'])).called(1);
+    // Deliberately keep the rendered snapshot stale: opening must reauthorize
+    // against live storage even before the next database notification arrives.
+    bench.entries['task'] = task.copyWith(
+      meta: task.meta.copyWith(private: true),
+    );
+    pending.complete({
+      'task': makeTestReport(content: 'Private feeder report.'),
+    });
+    await tester.pump();
+    expect(find.byType(QuerySummaryPreview), findsNothing);
+    expect(
+      tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).text,
+      isNot(contains('Private feeder report.')),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets('original-entry filters explain their actual task-only reach', (
     tester,
@@ -439,7 +527,7 @@ void main() {
     final home = chips.singleWhere((chip) => chip.label == 'Home scope only');
     expect(home.selected, isTrue);
     expect(home.onPressed, isNull);
-    await tester.tap(find.text('Summaries'));
+    await tester.tap(find.text('All'));
     await tester.pump();
     expect(
       find.text('Checks this task and its directly linked entries only.'),
@@ -463,7 +551,7 @@ void main() {
       );
       expect(find.text('Notes'), findsNothing);
       expect(find.text('Recordings'), findsNothing);
-      expect(find.text('Summaries'), findsNothing);
+      expect(find.text('All'), findsNothing);
       expect(find.text('Feeder calibration'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
