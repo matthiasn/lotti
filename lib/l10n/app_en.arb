@@ -6339,18 +6339,23 @@
   "queryDeleteChat": "Delete chat",
   "queryDeleteExplanation": "Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.",
   "queryDictated": "You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.",
-  "queryEmptyBody": "Search notes and recordings.",
+  "queryEarlierTextOmitted": "[Earlier text not shown]",
+  "queryEmptyBody": "Ask about earlier notes and meetings. Answers include the exact passages you can inspect.",
+  "queryExactStoredText": "Exact stored text",
   "queryExactText": "Show exact text",
   "queryExampleDecision": "What did we agree on?",
   "queryExampleMeeting": "In which meeting did we discuss this?",
+  "queryExampleSuggestion": "Was that a decision or a suggestion?",
   "queryExpanding": "Checking other projects in this category…",
   "queryFailed": "The search could not finish. Try again.",
   "queryForgetConclusions": "Forget conclusions",
+  "queryHideExactText": "Hide exact text",
   "queryHideSurrounding": "Hide surrounding text",
   "queryHomeOnly": "Home scope only",
   "queryIncomplete": "Coverage is incomplete. Missing evidence does not mean the discussion never happened.",
   "queryInferenceUnavailable": "No usable inference setup. Configure the agent’s model or the category’s default profile, then retry.",
   "queryKeepConclusions": "Keep conclusions",
+  "queryLaterTextOmitted": "[Later text not shown]",
   "queryMachineTranscript": "Machine transcript: exact stored wording, not checked against the audio.",
   "queryMemoryCount": "Conclusions available from earlier chats: {count}",
   "@queryMemoryCount": {
@@ -6404,6 +6409,30 @@
   "queryTranscribing": "Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.",
   "queryUnavailable": "This scope is no longer available with your current visibility settings.",
   "queryUnread": "New answer",
+  "queryWelcomeCategory": "Ask {agentName} about this category",
+  "@queryWelcomeCategory": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "queryWelcomeProject": "Ask {agentName} about this project",
+  "@queryWelcomeProject": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "queryWelcomeTask": "Ask {agentName} about this task",
+  "@queryWelcomeTask": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
   "queueCatchUpNowButton": "Catch up now",
   "queueCatchUpNowDone": "Catch-up kicked — queue is draining.",
   "queueCatchUpNowError": "Catch-up failed: {reason}",

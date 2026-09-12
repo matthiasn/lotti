@@ -86,6 +86,34 @@ void main() {
       );
 
   testWidgets(
+    'quote disclosure marks omitted context and keeps copy verbatim',
+    (tester) async {
+      await pump(tester);
+      expect(find.textContaining('mistral / voxtral'), findsOneWidget);
+      await tester.tap(find.text('Show exact text'));
+      await tester.pump();
+      expect(find.text('Hide exact text'), findsOneWidget);
+      expect(find.text('Exact stored text'), findsOneWidget);
+      final passage = tester
+          .widget<SelectableText>(find.byType(SelectableText))
+          .textSpan!;
+      expect(
+        passage.toPlainText(),
+        '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
+      );
+      await tester.ensureVisible(find.text('Copy quote'));
+      await tester.pump();
+      await tester.tap(find.text('Copy quote'));
+      await tester.pump();
+      expect(copied, [evidence.quote]);
+      await tester.tap(find.text('Hide exact text'));
+      await tester.pump();
+      expect(find.byType(SelectableText), findsNothing);
+      expect(find.text('Show exact text'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'expands an exact saved passage, then its full contiguous context',
     (tester) async {
       await pump(tester);
@@ -97,7 +125,7 @@ void main() {
             .widget<SelectableText>(find.byType(SelectableText))
             .textSpan!
             .toPlainText(),
-        evidence.quote,
+        '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
       );
       await tester.tap(find.text('Show surrounding text'));
       await tester.pump();
@@ -134,7 +162,7 @@ void main() {
             .widget<SelectableText>(find.byType(SelectableText))
             .textSpan!
             .toPlainText(),
-        evidence.quote,
+        '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
       );
       final current = bench.entries['meeting']!;
       bench.entries['meeting'] = current.copyWith(
@@ -148,7 +176,7 @@ void main() {
             .widget<SelectableText>(find.byType(SelectableText))
             .textSpan!
             .toPlainText(),
-        evidence.quote,
+        '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
       );
     },
   );
@@ -182,7 +210,7 @@ void main() {
             .widget<SelectableText>(find.byType(SelectableText))
             .textSpan!
             .toPlainText(),
-        evidence.quote,
+        '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
       );
     },
   );

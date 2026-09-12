@@ -11,11 +11,13 @@ import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
@@ -28,6 +30,7 @@ import 'package:lotti/features/design_system/components/popovers/design_system_p
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
@@ -362,66 +365,82 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
             children: [
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step3,
-                  vertical: tokens.spacing.step2,
+                  horizontal: tokens.spacing.step4,
+                  vertical: tokens.spacing.step3,
                 ),
-                child: Row(
-                  children: [
-                    DesignSystemIconAction(
-                      icon: LottiIcons.back,
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).backButtonTooltip,
-                      onPressed: _leave,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Icon(
-                      LottiIcons.aiSpark,
-                      color: tokens.colors.aiCard.accent,
-                      size: IconSizes.m,
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            agent.displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.subtitle.subtitle2,
-                          ),
-                          Text(
-                            switch (widget.scope.kind) {
-                              QueryScopeKind.task =>
-                                messages.agentTemplateKindTaskAgent,
-                              QueryScopeKind.project =>
-                                messages.agentTemplateKindProjectAgent,
-                              QueryScopeKind.category =>
-                                messages.queryCategoryAgent,
-                            },
-                            style: tokens.typography.styles.others.caption,
-                          ),
-                          Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(color: tokens.colors.aiCard.accent),
-                          ),
-                        ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Row(
+                    children: [
+                      DesignSystemIconAction(
+                        icon: LottiIcons.back,
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).backButtonTooltip,
+                        onPressed: _leave,
                       ),
-                    ),
-                    Flexible(
-                      child: _switcher(
-                        context,
-                        controller,
-                        visible,
-                        session,
-                        chat,
+                      Container(
+                        width: ControlSizes.iconChip,
+                        height: ControlSizes.iconChip,
+                        decoration: BoxDecoration(
+                          color: tokens.colors.surface.selected,
+                          borderRadius: BorderRadius.circular(tokens.radii.m),
+                        ),
+                        child: Icon(
+                          LottiIcons.aiSpark,
+                          color: tokens.colors.interactive.enabled,
+                          size: IconSizes.l,
+                        ),
                       ),
-                    ),
-                  ],
+                      SizedBox(width: tokens.spacing.step4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Tooltip(
+                              message:
+                                  '${agent.displayName} · ${_agentKind(context)}',
+                              child: Text(
+                                '${agent.displayName} · ${_agentKind(context)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style:
+                                    tokens.typography.styles.subtitle.subtitle1,
+                              ),
+                            ),
+                            Semantics(
+                              link: true,
+                              child: InkWell(
+                                onTap: _leave,
+                                child: Text(
+                                  '${_scopeKind(context)} · $label',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tokens.typography.styles.body.bodySmall
+                                      .copyWith(
+                                        color:
+                                            tokens.colors.interactive.enabled,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth / 3,
+                        ),
+                        child: _switcher(
+                          context,
+                          controller,
+                          visible,
+                          session,
+                          chat,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               if (_sourceId == null) ...[
@@ -430,52 +449,60 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                     horizontal: tokens.spacing.step5,
                     vertical: tokens.spacing.step2,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        reach,
-                        style: tokens.typography.styles.others.caption.copyWith(
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: tokens.spacing.step3,
+                      runSpacing: tokens.spacing.step3,
+                      children: [
+                        Icon(
+                          LottiIcons.search,
+                          size: IconSizes.s,
                           color: tokens.colors.text.mediumEmphasis,
                         ),
-                      ),
-                      SizedBox(height: tokens.spacing.step2),
-                      Wrap(
-                        spacing: tokens.spacing.step2,
-                        runSpacing: tokens.spacing.step2,
-                        children: [
-                          if (categoryId != null &&
-                              widget.scope.kind != QueryScopeKind.category)
-                            DesignSystemChip(
-                              label: messages.queryHomeOnly,
-                              selected: local.homeOnly,
-                              onPressed: running
-                                  ? null
-                                  : () => controller.narrow(
-                                      id,
-                                      homeOnly: !local.homeOnly,
-                                    ),
-                            ),
-                          for (final kind in [
-                            QuerySourceKind.text,
-                            QuerySourceKind.recording,
-                          ])
-                            DesignSystemChip(
-                              label: kind == QuerySourceKind.text
-                                  ? messages.queryNotes
-                                  : messages.queryRecordings,
-                              selected: local.kind == kind,
-                              onPressed: running
-                                  ? null
-                                  : () => controller.narrow(
-                                      id,
-                                      kind: kind,
-                                      clearKind: local.kind == kind,
-                                    ),
-                            ),
-                        ],
-                      ),
-                    ],
+                        Text(
+                          reach,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                        if (categoryId != null &&
+                            widget.scope.kind != QueryScopeKind.category)
+                          DesignSystemChip(
+                            label: messages.queryHomeOnly,
+                            size: DesignSystemChipSize.compactPill,
+                            outlined: true,
+                            selected: local.homeOnly,
+                            onPressed: running
+                                ? null
+                                : () => controller.narrow(
+                                    id,
+                                    homeOnly: !local.homeOnly,
+                                  ),
+                          ),
+                        for (final kind in [
+                          QuerySourceKind.text,
+                          QuerySourceKind.recording,
+                        ])
+                          DesignSystemChip(
+                            label: kind == QuerySourceKind.text
+                                ? messages.queryNotes
+                                : messages.queryRecordings,
+                            size: DesignSystemChipSize.compactPill,
+                            outlined: true,
+                            selected: local.kind == kind,
+                            onPressed: running
+                                ? null
+                                : () => controller.narrow(
+                                    id,
+                                    kind: kind,
+                                    clearKind: local.kind == kind,
+                                  ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
                 const Divider(height: 0),
@@ -498,27 +525,61 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       ),
                       onRetry: () {},
                       scrollOnReplies: false,
+                      groupAttachmentsWithReply: true,
+                      replyTextStyle: tokens.typography.styles.body.bodySmall,
+                      resolveTranscriptionTarget: ref.watch(
+                        queryTranscriptionTargetResolverProvider(widget.scope),
+                      ),
+                      composerShape: DesignSystemTextInputShape.pill,
                       composerEnabled: chat?.archived != true && !_creating,
-                      emptyState: _empty(context, controller, id, memories),
-                      activity: Padding(
-                        padding: EdgeInsets.all(tokens.spacing.step3),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _activityLabel(context, local),
-                              style: tokens.typography.styles.body.bodySmall,
-                            ),
-                            Text(
-                              messages.queryChecked(local.checked),
-                              style: tokens.typography.styles.others.caption,
-                            ),
-                            DesignSystemButton(
-                              label: messages.cancelButton,
-                              onPressed: () => controller.cancel(id),
-                              variant: DesignSystemButtonVariant.tertiary,
-                            ),
-                          ],
+                      emptyState: _empty(
+                        context,
+                        controller,
+                        id,
+                        memories,
+                        agent.displayName,
+                      ),
+                      activity: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.spacing.step5,
+                            vertical: tokens.spacing.step3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tokens.colors.background.level02,
+                            borderRadius: BorderRadius.circular(tokens.radii.l),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox.square(
+                                dimension: IconSizes.s,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: BorderWidths.emphasis,
+                                  color: tokens.colors.interactive.enabled,
+                                ),
+                              ),
+                              SizedBox(width: tokens.spacing.step3),
+                              Flexible(
+                                child: Tooltip(
+                                  message: messages.queryChecked(local.checked),
+                                  child: Text(
+                                    _activityLabel(context, local),
+                                    style:
+                                        tokens.typography.styles.body.bodySmall,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: tokens.spacing.step3),
+                              DesignSystemButton(
+                                label: messages.cancelButton,
+                                onPressed: () => controller.cancel(id),
+                                variant: DesignSystemButtonVariant.tertiary,
+                                size: DesignSystemButtonSize.dense,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       footer: _footer(
@@ -686,54 +747,110 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     ),
   );
 
+  String _scopeKind(BuildContext context) => switch (widget.scope.kind) {
+    QueryScopeKind.task => context.messages.entryTypeLabelTask,
+    QueryScopeKind.project => context.messages.projectFilterLabel,
+    QueryScopeKind.category => context.messages.dashboardCategoryLabel,
+  };
+
+  String _agentKind(BuildContext context) => switch (widget.scope.kind) {
+    QueryScopeKind.task => context.messages.agentTemplateKindTaskAgent,
+    QueryScopeKind.project => context.messages.agentTemplateKindProjectAgent,
+    QueryScopeKind.category => context.messages.queryCategoryAgent,
+  };
+
   Widget _empty(
     BuildContext context,
     QueryChatController controller,
     String id,
     int memories,
+    String agentName,
   ) {
     final messages = context.messages;
     final tokens = context.designTokens;
-    return SingleChildScrollView(
-      primary: false,
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              switch (widget.scope.kind) {
-                QueryScopeKind.task => messages.queryAskTask,
-                QueryScopeKind.project => messages.queryAskProject,
-                QueryScopeKind.category => messages.queryAskCategory,
-              },
-              style: tokens.typography.styles.heading.heading3,
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              messages.queryEmptyBody,
-              style: tokens.typography.styles.body.bodyMedium,
-            ),
-            if (memories > 0)
-              Padding(
-                padding: EdgeInsets.only(top: tokens.spacing.step3),
-                child: Text(
-                  messages.queryMemoryCount(memories),
-                  style: tokens.typography.styles.others.caption,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        primary: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step6),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: kActionListContentMaxWidth,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      switch (widget.scope.kind) {
+                        QueryScopeKind.task => messages.queryWelcomeTask(
+                          agentName,
+                        ),
+                        QueryScopeKind.project => messages.queryWelcomeProject(
+                          agentName,
+                        ),
+                        QueryScopeKind.category =>
+                          messages.queryWelcomeCategory(agentName),
+                      },
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.heading.heading3,
+                    ),
+                    SizedBox(height: tokens.spacing.step3),
+                    Text(
+                      messages.queryEmptyBody,
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step5),
+                    for (final example in [
+                      messages.queryExampleDecision,
+                      messages.queryExampleMeeting,
+                      messages.queryExampleSuggestion,
+                    ])
+                      Padding(
+                        padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+                        child: Material(
+                          color: tokens.colors.background.level02,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(tokens.radii.m),
+                            side: BorderSide(
+                              color: tokens.colors.decorative.level01,
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () => controller.updateDraft(id, example),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: tokens.spacing.step5,
+                                vertical: tokens.spacing.step4,
+                              ),
+                              child: Text(
+                                example,
+                                style: tokens.typography.styles.body.bodySmall,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (memories > 0)
+                      Padding(
+                        padding: EdgeInsets.only(top: tokens.spacing.step3),
+                        child: Text(
+                          messages.queryMemoryCount(memories),
+                          style: tokens.typography.styles.others.caption,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            SizedBox(height: tokens.spacing.step5),
-            for (final example in [
-              messages.queryExampleMeeting,
-              messages.queryExampleDecision,
-            ])
-              DesignSystemListItem(
-                title: example,
-                titleMaxLines: null,
-                leading: const Icon(LottiIcons.search, size: IconSizes.s),
-                onTap: () => controller.updateDraft(id, example),
-              ),
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -812,24 +929,43 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     );
     final anyUnread = chats.any((c) => c.id != selected?.id && c.unread);
     return DesignSystemPopoverAnchor(
+      width:
+          (MediaQuery.sizeOf(context).width -
+                  context.designTokens.spacing.step7)
+              .clamp(0, kGoalChatDrawerWidth),
       semanticsLabel: messages.queryChats,
       builder: (context, {required toggle, required isOpen}) {
         _toggleMenu = toggle;
         _menuOpen = isOpen;
-        return DesignSystemButton(
-          label: selected?.title ?? messages.queryChats,
-          semanticsLabel: messages.queryChats,
-          leadingIcon: anyRunning
-              ? LottiIcons.sync
-              : anyUnread
-              ? LottiIcons.chat
-              : null,
-          trailingIcon: LottiIcons.chevronDown,
-          onPressed: toggle,
-          variant: DesignSystemButtonVariant.outlined,
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (anyRunning || anyUnread) ...[
+              DesignSystemBadge.dot(
+                tone: anyRunning
+                    ? DesignSystemBadgeTone.primary
+                    : DesignSystemBadgeTone.warning,
+                semanticLabel: anyRunning
+                    ? messages.querySearching
+                    : messages.queryUnread,
+              ),
+              SizedBox(width: context.designTokens.spacing.step2),
+            ],
+            Flexible(
+              child: DesignSystemButton(
+                label: selected?.title ?? messages.queryNewChat,
+                semanticsLabel: messages.queryChats,
+                trailingIcon: LottiIcons.chevronDown,
+                onPressed: toggle,
+                variant: DesignSystemButtonVariant.outlined,
+              ),
+            ),
+          ],
         );
       },
-      child: ConstrainedBox(
+      child: Container(
+        color: context.designTokens.colors.background.level02,
+        padding: EdgeInsets.all(context.designTokens.spacing.step3),
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height / 2,
         ),
@@ -907,19 +1043,23 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
       subtitle: status,
       selected: chat.id == selectedId,
       onTap: () => unawaited(_select(controller, chat.id)),
-      trailing: DesignSystemContextMenuButton(
-        items: [
-          DesignSystemContextMenuItem(
-            label: messages.queryRenameChat,
-            icon: LottiIcons.edit,
-            onTap: () => unawaited(_guard(() => _rename(controller, chat))),
-          ),
-          DesignSystemContextMenuItem(
-            label: chat.archived
+      leading: local.status == QueryTurnStatus.running || chat.unread
+          ? DesignSystemBadge.dot(
+              tone: local.status == QueryTurnStatus.running
+                  ? DesignSystemBadgeTone.primary
+                  : DesignSystemBadgeTone.warning,
+              excludeFromSemantics: true,
+            )
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DesignSystemIconAction(
+            icon: chat.archived ? LottiIcons.unarchive : LottiIcons.archive,
+            tooltip: chat.archived
                 ? messages.queryRestoreChat
                 : messages.queryArchiveChat,
-            icon: chat.archived ? LottiIcons.unarchive : LottiIcons.archive,
-            onTap: () {
+            onPressed: () {
               _closeMenu();
               unawaited(
                 _guard(
@@ -928,11 +1068,40 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
               );
             },
           ),
-          DesignSystemContextMenuItem(
-            label: messages.queryDeleteChat,
+          DesignSystemIconAction(
             icon: LottiIcons.delete,
-            isDestructive: true,
-            onTap: () => unawaited(_guard(() => _delete(controller, chat))),
+            tooltip: messages.queryDeleteChat,
+            onPressed: () => unawaited(_guard(() => _delete(controller, chat))),
+          ),
+          DesignSystemContextMenuButton(
+            items: [
+              DesignSystemContextMenuItem(
+                label: messages.queryRenameChat,
+                icon: LottiIcons.edit,
+                onTap: () => unawaited(_guard(() => _rename(controller, chat))),
+              ),
+              DesignSystemContextMenuItem(
+                label: chat.archived
+                    ? messages.queryRestoreChat
+                    : messages.queryArchiveChat,
+                icon: chat.archived ? LottiIcons.unarchive : LottiIcons.archive,
+                onTap: () {
+                  _closeMenu();
+                  unawaited(
+                    _guard(
+                      () =>
+                          controller.archive(chat.id, archived: !chat.archived),
+                    ),
+                  );
+                },
+              ),
+              DesignSystemContextMenuItem(
+                label: messages.queryDeleteChat,
+                icon: LottiIcons.delete,
+                isDestructive: true,
+                onTap: () => unawaited(_guard(() => _delete(controller, chat))),
+              ),
+            ],
           ),
         ],
       ),

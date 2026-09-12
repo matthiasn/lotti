@@ -11017,7 +11017,14 @@ class AppLocalizationsDa extends AppLocalizations {
       'Du kan redigere transskriptionen, før du sender dit spørgsmål. Lyden kan allerede være sendt til din transskriptionsudbyder.';
 
   @override
-  String get queryEmptyBody => 'Søg i noter og optagelser.';
+  String get queryEarlierTextOmitted => '[Tidligere tekst vises ikke]';
+
+  @override
+  String get queryEmptyBody =>
+      'Spørg til tidligere noter og møder. Svarene indeholder de præcise passager, du kan læse.';
+
+  @override
+  String get queryExactStoredText => 'Præcis gemt tekst';
 
   @override
   String get queryExactText => 'Vis nøjagtig tekst';
@@ -11029,6 +11036,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryExampleMeeting => 'På hvilket møde talte vi om det?';
 
   @override
+  String get queryExampleSuggestion =>
+      'Var det en beslutning eller et forslag?';
+
+  @override
   String get queryExpanding => 'Tjekker andre projekter i denne kategori…';
 
   @override
@@ -11036,6 +11047,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryForgetConclusions => 'Glem konklusioner';
+
+  @override
+  String get queryHideExactText => 'Skjul præcis tekst';
 
   @override
   String get queryHideSurrounding => 'Skjul omgivende tekst';
@@ -11053,6 +11067,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryKeepConclusions => 'Behold konklusioner';
+
+  @override
+  String get queryLaterTextOmitted => '[Senere tekst vises ikke]';
 
   @override
   String get queryMachineTranscript =>
@@ -11151,6 +11168,21 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryUnread => 'Nyt svar';
+
+  @override
+  String queryWelcomeCategory(String agentName) {
+    return 'Spørg $agentName om denne kategori';
+  }
+
+  @override
+  String queryWelcomeProject(String agentName) {
+    return 'Spørg $agentName om dette projekt';
+  }
+
+  @override
+  String queryWelcomeTask(String agentName) {
+    return 'Spørg $agentName om denne opgave';
+  }
 
   @override
   String get queueCatchUpNowButton => 'Følg med nu';

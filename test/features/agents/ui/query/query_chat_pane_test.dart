@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
@@ -26,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../projects/test_utils.dart';
 import '../../query/query_test_utils.dart';
@@ -147,6 +149,7 @@ void main() {
     bool noAgent = false,
     bool sourceDetailLoading = false,
     ChatRecorderController? activeRecorder,
+    ChatTranscriptionTargetResolver? transcriptionResolver,
   }) async {
     final activeKey = (agentId: 'agent', scope: activeScope);
     if (activeScope != scope) {
@@ -183,6 +186,12 @@ void main() {
           ),
           queryChatStoreProvider.overrideWithValue(store),
           querySourceAccessProvider.overrideWithValue(bench.crawler.access),
+          queryTranscriptionTargetResolverProvider(
+            activeScope,
+          ).overrideWithValue(
+            transcriptionResolver ??
+                () async => throw StateError('Not submitted'),
+          ),
           queryChatDataProvider(activeKey).overrideWith((ref) async* {
             if (failHistory) throw StateError('history unavailable');
             yield snapshot();
@@ -217,6 +226,45 @@ void main() {
     await tester.pump();
     await tester.pump();
   }
+
+  testWidgets(
+    'question cards keep a readable measure and prepare an editable draft',
+    (tester) async {
+      tester.view
+        ..physicalSize = const Size(1200, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      events.clear();
+      await pump(tester);
+      final suggestion = find.text('Was that a decision or a suggestion?');
+      final card = find
+          .ancestor(of: suggestion, matching: find.byType(InkWell))
+          .first;
+      final rect = tester.getRect(card);
+      expect(rect.width, lessThanOrEqualTo(520));
+      expect(rect.center.dx, closeTo(600, 1));
+      expect(
+        rect.top,
+        greaterThan(
+          tester
+              .getBottomLeft(find.text('Ask Habitat Watcher about this task'))
+              .dy,
+        ),
+      );
+      await tester.tap(suggestion);
+      await tester.pump();
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Was that a decision or a suggestion?',
+      );
+      expect(inferenceCalls, 0);
+      await tester.tap(find.text('Task · Add tests for journal page'));
+      await tester.pump();
+      expect(closeCalls, 1);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   Future<void> switcher(WidgetTester tester) async {
     await tester.tap(find.byIcon(LottiIcons.chevronDown).first);
@@ -277,8 +325,16 @@ void main() {
           categoryId: categoryMindfulness.id,
         );
         await pump(tester, activeScope: activeScope);
-        expect(find.text('Ask about this ${kind.name}'), findsOneWidget);
-        expect(find.text('Search notes and recordings.'), findsOneWidget);
+        expect(
+          find.text('Ask Habitat Watcher about this ${kind.name}'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'Ask about earlier notes and meetings. Answers include the exact passages you can inspect.',
+          ),
+          findsOneWidget,
+        );
         await tester.tap(find.text('What did we agree on?'));
         await tester.pump();
         expect(
@@ -343,6 +399,32 @@ void main() {
     expect(inferenceCalls, 0);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets(
+    'dictation passes the category resolver without resolving on record',
+    (
+      tester,
+    ) async {
+      var resolutions = 0;
+      Future<Never> resolver() async {
+        resolutions++;
+        throw StateError('Resolution belongs to Stop');
+      }
+
+      final capturingRecorder = IdleCallbackController();
+      await pump(
+        tester,
+        activeRecorder: capturingRecorder,
+        transcriptionResolver: resolver,
+      );
+      await tester.tap(find.byIcon(LottiIcons.mic));
+      await tester.pump();
+      expect(capturingRecorder.lastTranscriptionTargetResolver, same(resolver));
+      expect(resolutions, 0);
+      expect(inferenceCalls, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets(
     'transcription discloses audio delivery without sending a question',
@@ -456,7 +538,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      await tester.tap(find.byIcon(LottiIcons.send));
+      await tester.tap(find.byIcon(LottiIcons.arrowUp));
       await tester.pump();
       expect(inferenceCalls, 1);
       expect(
@@ -475,9 +557,13 @@ void main() {
         await pump(tester);
         Future<void> openDelete() async {
           await switcher(tester);
-          await tester.tap(find.byIcon(LottiIcons.more).first);
-          await tester.pump();
-          await tester.tap(find.text('Delete chat'));
+          if (forget) {
+            await tester.tap(find.byIcon(LottiIcons.more).first);
+            await tester.pump();
+            await tester.tap(find.text('Delete chat'));
+          } else {
+            await tester.tap(findMaterialTooltip('Delete chat').first);
+          }
           await tester.pumpAndSettle();
         }
 
@@ -614,7 +700,7 @@ void main() {
       await tester.tap(find.text('Recordings'));
       await tester.enterText(find.byType(TextField), 'Which feeder recording?');
       await tester.pump();
-      await tester.tap(find.byIcon(LottiIcons.send));
+      await tester.tap(find.byIcon(LottiIcons.arrowUp));
       await tester.pump();
       await tester.pump();
       expect(inferenceCalls, 1);
@@ -755,40 +841,55 @@ void main() {
     },
   );
 
-  testWidgets(
-    'archive disables composition and restoring preserves the draft',
-    (tester) async {
-      await pump(tester);
-      await tester.enterText(find.byType(TextField), 'Feeder follow-up');
-      await switcher(tester);
-      await tester.tap(find.byIcon(LottiIcons.more).first);
-      await tester.pump();
-      await tester.tap(find.text('Archive chat'));
-      await tester.pump();
-      await tester.pump();
-      verify(() => store.archive('agent', 'feeder', archived: true)).called(1);
-      await switcher(tester);
-      await tester.tap(find.text('Archived chats'));
-      await tester.pump();
-      await tester.tap(find.text('Feeder calibration').last);
-      await tester.pump();
-      expect(find.textContaining('This chat is archived.'), findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
-      await tester.tap(find.text('Restore chat'));
-      await tester.pump();
-      await tester.pump();
-      verify(() => store.archive('agent', 'feeder', archived: false)).called(1);
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'Feeder follow-up',
-      );
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).enabled,
-        isNot(false),
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+  for (final directActions in [false, true]) {
+    testWidgets(
+      'archive disables composition and restoring preserves the draft (direct=$directActions)',
+      (tester) async {
+        await pump(tester);
+        await tester.enterText(find.byType(TextField), 'Feeder follow-up');
+        await switcher(tester);
+        if (directActions) {
+          await tester.tap(findMaterialTooltip('Archive chat').first);
+        } else {
+          await tester.tap(find.byIcon(LottiIcons.more).first);
+          await tester.pump();
+          await tester.tap(find.text('Archive chat'));
+        }
+        await tester.pump();
+        await tester.pump();
+        verify(
+          () => store.archive('agent', 'feeder', archived: true),
+        ).called(1);
+        await switcher(tester);
+        await tester.tap(find.text('Archived chats'));
+        await tester.pump();
+        await tester.tap(find.text('Feeder calibration').last);
+        await tester.pump();
+        expect(find.textContaining('This chat is archived.'), findsOneWidget);
+        expect(find.byType(TextField), findsNothing);
+        if (directActions) {
+          await switcher(tester);
+          await tester.tap(findMaterialTooltip('Restore chat').first);
+        } else {
+          await tester.tap(find.text('Restore chat'));
+        }
+        await tester.pump();
+        await tester.pump();
+        verify(
+          () => store.archive('agent', 'feeder', archived: false),
+        ).called(1);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          'Feeder follow-up',
+        );
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).enabled,
+          isNot(false),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
 
   testWidgets('New chat starts isolated and examples only populate its draft', (
     tester,
@@ -859,7 +960,12 @@ void main() {
           : kind == QueryScopeKind.category
           ? categoryMindfulness.name
           : testTask.data.title;
-      expect(find.text(label), findsOneWidget);
+      final scopeLabel = switch (kind) {
+        QueryScopeKind.task => 'Task',
+        QueryScopeKind.project => 'Project',
+        QueryScopeKind.category => 'Category',
+      };
+      expect(find.text('$scopeLabel · $label'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Saved draft');
       await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pump();
@@ -929,8 +1035,11 @@ void main() {
           },
         ),
       );
-      expect(find.text('Sources checked: 7'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.sync), findsOneWidget);
+      expect(find.byTooltip('Sources checked: 7'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Searching linked notes and recordings…'),
+        findsWidgets,
+      );
       await switcher(tester);
       expect(find.textContaining('Searching'), findsWidgets);
       await switcher(tester);

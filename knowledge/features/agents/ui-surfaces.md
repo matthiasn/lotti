@@ -459,7 +459,10 @@ card — the task agent section, the goal agent's read, and the relationship
 briefing — reaches the panel the same two ways. It is a thin shell —
 header, close button, scrim — hosting `AgentInternalsBody` once
 `agentIdentityProvider` resolves. A `barrierDismissible: true` route plus an
-explicit full-screen `GestureDetector` cover both pop paths.
+explicit full-screen `GestureDetector` cover both pop paths. The panel's colored
+background and side border are painted by its own `Material`, so conversation
+and report expansion tiles paint their ink on that surface. An opaque decorated
+box between those tiles and Material would trigger a framework assertion.
 
 `AgentInternalsBody` is the shared tabbed body — **Stats / Reports /
 Conversations / Observations / Activity** — used both inside the panel and as the

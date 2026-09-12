@@ -46,7 +46,9 @@ sequenceDiagram
   Service-->>Caller: transcript chunks or typed failure
 ```
 
-An explicit model/provider target bypasses discovery. Otherwise discovery
+An explicit model/provider target bypasses discovery. Scoped query dictation
+supplies one using its [category-default routing contract](../agents/query-chat.md);
+other callers retain their existing target or discovery behavior. Otherwise discovery
 loads models and providers, keeps audio-capable models, excludes Mistral
 realtime-only models, and excludes unavailable embedded speech models. The
 selection order is available embedded models, Mistral chat/transcription/batch

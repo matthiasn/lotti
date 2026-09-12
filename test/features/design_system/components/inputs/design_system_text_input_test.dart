@@ -10,6 +10,52 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemTextInput', () {
+    testWidgets(
+      'pill composition keeps editing and uses the conversation surface',
+      (tester) async {
+        var draft = '';
+        var sends = 0;
+        await _pumpInput(
+          tester,
+          DesignSystemTextInput(
+            shape: DesignSystemTextInputShape.pill,
+            emphasizeTrailingIcon: true,
+            hintText: 'Ask the agent',
+            trailingIcon: LottiIcons.send,
+            trailingIconTooltip: 'Send',
+            onTrailingIconTap: () => sends++,
+            onChanged: (value) => draft = value,
+          ),
+        );
+        final field = find.byType(DesignSystemTextInput);
+        final tokens = tester.element(field).designTokens;
+        final decoration = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(of: field, matching: find.byType(DecoratedBox)),
+            )
+            .map((box) => box.decoration)
+            .whereType<BoxDecoration>()
+            .first;
+        expect(
+          decoration.borderRadius,
+          BorderRadius.circular(tokens.radii.badgesPills),
+        );
+        expect(decoration.color, tokens.colors.surface.enabled);
+        expect(
+          tester
+              .widget<IconButton>(find.byType(IconButton))
+              .style!
+              .backgroundColor!
+              .resolve({}),
+          tokens.colors.interactive.enabled,
+        );
+        await tester.enterText(find.byType(TextField), 'What was agreed?');
+        expect(draft, 'What was agreed?');
+        await tester.tap(find.byIcon(LottiIcons.send));
+        expect(sends, 1);
+      },
+    );
+
     testWidgets('renders with label and hint text', (tester) async {
       const key = Key('basic-input');
 

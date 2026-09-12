@@ -57,6 +57,51 @@ void main() {
   }
 
   group('AgentInternalsPanel', () {
+    testWidgets('conversation threads expand on the panel material surface', (
+      tester,
+    ) async {
+      await pumpPanel(
+        tester,
+        overrides: [
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          agentMessagesByThreadProvider.overrideWith(
+            (ref, agentId) async => {
+              'habitat-thread': [
+                makeTestMessage(
+                  threadId: 'habitat-thread',
+                  contentEntryId: 'habitat-thought',
+                ),
+              ],
+            },
+          ),
+          agentReportHistoryProvider.overrideWith((ref, agentId) async => []),
+          agentMessagePayloadTextProvider.overrideWith(
+            (ref, id) async => 'The habitat pressure remains stable.',
+          ),
+        ],
+      );
+      await tester.tap(find.text('Conversations'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      final thread = find.textContaining('1 messages');
+      final content = find.textContaining(
+        'The habitat pressure remains stable.',
+      );
+      await tester.tap(find.text('Thought'));
+      await tester.pumpAndSettle();
+      expect(content, findsOneWidget);
+      await tester.tap(thread);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(content, findsNothing);
+      await tester.tap(thread);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Thought'));
+      await tester.pumpAndSettle();
+      expect(content, findsOneWidget);
+    });
+
     testWidgets('renders the localized title and the agent display name', (
       tester,
     ) async {

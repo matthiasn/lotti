@@ -5,7 +5,7 @@ description: The repeating patterns that are contract rather than coincidence â€
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-05T20:23:15Z }
+generated: { by: codex/gpt-6, at: 2026-09-11T23:43:06Z }
 stale_after: 2027-02-08
 sources:
   - id: components
@@ -73,7 +73,10 @@ flag owns both the activated surface and selected semantics; feature code does
 not repaint selected chips with local status colours. A count or status that
 travels with the filter uses the chip's trailing slot with a `DsPill`. When the
 chip's semantic label already includes that value, the pill is excluded from
-semantics so a screen reader announces the count once.
+semantics so a screen reader announces the count once. The opt-in `outlined`
+treatment keeps idle filters transparent with a decorative border; selection
+uses the same activated surface and an interactive border. Hover and press
+retain the shared state palette.
 
 Visible control size and interaction size are separate contracts.
 `MaterialTapTargetSize.padded` gives `DesignSystemButton` a 48dp interaction
@@ -117,7 +120,11 @@ indicator; checked semantics and the full-row action remain unchanged.
 The same rule applies to structural and operational surfaces:
 `DesignSystemProgressBar` owns determinate progress and its visible value,
 `DesignSystemSectionCard` owns grouped page content, and
-`DesignSystemTextInput` owns editable settings fields. The sync maintenance
+`DesignSystemTextInput` owns editable settings fields. Its default rounded
+shell uses `background.level01`; `shape: pill` uses `surface.enabled` and
+`radii.badgesPills` for conversation composers. `emphasizeTrailingIcon` gives
+the actionable suffix the interactive fill, preserving its tooltip, enabled
+state, and button semantics. The sync maintenance
 progress views, statistics page, and this-device profile are canonical
 adopters: feature code supplies state and copy, while these components supply
 the visual and semantic grammar. A progress header gives its label and trailing

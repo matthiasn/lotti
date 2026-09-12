@@ -5,8 +5,9 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -108,35 +109,76 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
       color: tokens.colors.text.mediumEmphasis,
     );
     final transcript = evidence.textVersion.startsWith('transcript:');
-    return DesignSystemSectionCard(
+    return Container(
       margin: EdgeInsets.only(top: tokens.spacing.step3),
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '[${widget.number}] ${evidence.label}',
-            style: tokens.typography.styles.subtitle.subtitle2,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                label: '[${widget.number}]',
+                child: DsPill(
+                  variant: DsPillVariant.tinted,
+                  color: tokens.colors.interactive.enabled,
+                  label: '${widget.number}',
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text.rich(
+                      TextSpan(
+                        text: evidence.label,
+                        children: [
+                          TextSpan(
+                            text:
+                                ' · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(evidence.sourceDate)}',
+                            style: caption,
+                          ),
+                        ],
+                      ),
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    if (evidence.kind == QuerySourceKind.recording)
+                      Text(
+                        transcript
+                            ? '${messages.queryRecordings} · ${evidence.textVersion.split(':').skip(1).take(2).join(' / ')}'
+                            : messages.queryRecordings,
+                        style: caption,
+                      ),
+                    if (evidence.affiliations.isNotEmpty)
+                      Text(evidence.affiliations.join(' · '), style: caption),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: tokens.spacing.step2),
-          Text(
-            DateFormat.yMMMd(
-              Localizations.localeOf(context).toString(),
-            ).add_Hm().format(evidence.sourceDate),
-            style: caption,
-          ),
-          if (evidence.kind == QuerySourceKind.recording)
-            Text(messages.queryRecordings, style: caption),
-          if (evidence.affiliations.isNotEmpty)
-            Text(evidence.affiliations.join(' · '), style: caption),
-          if (evidence.outsideHome) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              messages.queryOtherProject,
-              style: caption.copyWith(color: tokens.colors.aiCard.accent),
+          if (evidence.outsideHome)
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step3),
+              child: Wrap(
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step2,
+                children: [
+                  DesignSystemBadge.outlined(
+                    label: messages.queryOtherProject,
+                    tone: DesignSystemBadgeTone.neutral,
+                  ),
+                  if (evidence.relevance.isNotEmpty)
+                    Text(evidence.relevance, style: caption),
+                ],
+              ),
             ),
-            if (evidence.relevance.isNotEmpty)
-              Text(evidence.relevance, style: body),
-          ],
           for (final status in [
             if (deleted) messages.querySourceDeleted,
             if (changed) messages.querySourceChanged,
@@ -161,18 +203,18 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
           Semantics(
             expanded: _expanded,
             child: DesignSystemButton(
-              label: messages.queryExactText,
-              trailingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
+              label: _expanded
+                  ? messages.queryHideExactText
+                  : messages.queryExactText,
+              leadingIcon: _expanded ? LottiIcons.collapse : LottiIcons.expand,
               onPressed: _toggle,
               variant: DesignSystemButtonVariant.tertiary,
+              alignsLabelToLeadingEdge: true,
             ),
           ),
           if (_expanded) ...[
             SizedBox(height: tokens.spacing.step3),
-            Text(
-              messages.querySavedQuote,
-              style: caption,
-            ),
+            Text(messages.queryExactStoredText, style: caption),
             if (transcript)
               Text(messages.queryMachineTranscript, style: caption),
             SizedBox(height: tokens.spacing.step3),
@@ -180,7 +222,13 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
               width: double.infinity,
               padding: EdgeInsets.all(tokens.spacing.step4),
               decoration: BoxDecoration(
-                color: tokens.colors.aiCard.accentSoft,
+                color: tokens.colors.background.level02,
+                border: BorderDirectional(
+                  start: BorderSide(
+                    color: tokens.colors.interactive.enabled,
+                    width: BorderWidths.emphasis,
+                  ),
+                ),
                 borderRadius: BorderRadius.circular(tokens.radii.m),
               ),
               child: SelectableText.rich(
@@ -194,7 +242,23 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                           color: tokens.colors.text.mediumEmphasis,
                         ),
                       ),
-                    TextSpan(text: evidence.quote),
+                    if (!_surrounding && evidence.start > 0)
+                      TextSpan(
+                        text: '${messages.queryEarlierTextOmitted}\n',
+                        style: caption,
+                      ),
+                    TextSpan(
+                      text: evidence.quote,
+                      style: body.copyWith(
+                        backgroundColor: tokens.colors.surface.selected,
+                      ),
+                    ),
+                    if (!_surrounding &&
+                        evidence.end < evidence.sourceText.length)
+                      TextSpan(
+                        text: '\n${messages.queryLaterTextOmitted}',
+                        style: caption,
+                      ),
                     if (_surrounding)
                       TextSpan(
                         text: evidence.sourceText.substring(evidence.end),
@@ -219,6 +283,7 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                         : messages.querySurroundingText,
                     onPressed: () => _toggle(surrounding: true),
                     variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.dense,
                   ),
                 if (!deleted)
                   DesignSystemButton(
@@ -226,6 +291,7 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                     leadingIcon: LottiIcons.openExternal,
                     onPressed: _open,
                     variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.dense,
                   ),
                 DesignSystemButton(
                   label: _copied
@@ -234,6 +300,7 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                   leadingIcon: LottiIcons.copy,
                   onPressed: _copy,
                   variant: DesignSystemButtonVariant.tertiary,
+                  size: DesignSystemButtonSize.dense,
                 ),
               ],
             ),

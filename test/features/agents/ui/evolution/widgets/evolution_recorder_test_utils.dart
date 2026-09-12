@@ -111,6 +111,7 @@ class IdleCallbackController extends ChatRecorderController {
   IdleCallbackController({this.onStartCalled});
 
   final VoidCallback? onStartCalled;
+  ChatTranscriptionTargetResolver? lastTranscriptionTargetResolver;
 
   @override
   ChatRecorderState build() {
@@ -121,7 +122,10 @@ class IdleCallbackController extends ChatRecorderController {
   }
 
   @override
-  Future<void> start() async {
+  Future<void> start({
+    ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
+  }) async {
+    lastTranscriptionTargetResolver = resolveTranscriptionTarget;
     onStartCalled?.call();
   }
 }

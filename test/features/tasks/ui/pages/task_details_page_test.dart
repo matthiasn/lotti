@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -255,7 +256,14 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Ask'));
+      expect(
+        find.descendant(
+          of: find.byType(TaskActionBar),
+          matching: find.byType(QueryAskButton),
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.byType(QueryAskButton).first);
       await tester.pumpAndSettle();
       expect(
         tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
