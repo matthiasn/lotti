@@ -59,7 +59,8 @@ choice. It lists all profiles independently of the active tab/search. A saved
 selection follows profile renames; a deleted profile displays the missing-profile
 label until the user chooses another or clears it. Failed saves show an error
 and retain the last persisted selection. Writes are serialized so rapid choices
-cannot persist out of order.
+cannot persist out of order. If the initial preference read fails, the selector
+starts without a selection and remains usable for saving a new default.
 
 The device-local routing contract is in
 [profile resolution](profile-resolution.md). `DefaultInferenceProfileController`

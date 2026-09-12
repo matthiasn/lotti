@@ -3846,6 +3846,12 @@ abstract class AppLocalizations {
   /// **'Providers'**
   String get aiSettingsCounterProviders;
 
+  /// No description provided for @aiSettingsDefaultProfileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback for agents without a configured inference route on this device.'**
+  String get aiSettingsDefaultProfileDescription;
+
   /// No description provided for @aiSettingsEmptyDescription.
   ///
   /// In en, this message translates to:
@@ -3911,6 +3917,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vision'**
   String get aiSettingsModalityVision;
+
+  /// No description provided for @aiSettingsNoDefaultProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'No default profile'**
+  String get aiSettingsNoDefaultProfile;
 
   /// No description provided for @aiSettingsNoModelsConfigured.
   ///
@@ -25720,18 +25732,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @aiSettingsNoDefaultProfile.
-  ///
-  /// In en, this message translates to:
-  /// **'No default profile'**
-  String get aiSettingsNoDefaultProfile;
-
-  /// No description provided for @aiSettingsDefaultProfileDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Fallback for agents without a configured inference route on this device.'**
-  String get aiSettingsDefaultProfileDescription;
 }
 
 class _AppLocalizationsDelegate

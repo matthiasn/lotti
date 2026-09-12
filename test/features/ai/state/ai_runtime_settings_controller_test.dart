@@ -18,8 +18,13 @@ void main() {
   });
   tearDown(tearDownTestGetIt);
 
-  ProviderContainer makeContainer() {
-    final container = ProviderContainer();
+  ProviderContainer makeContainer({AiConfigRepository? repository}) {
+    final container = ProviderContainer(
+      overrides: [
+        if (repository != null)
+          aiConfigRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
     addTearDown(container.dispose);
     return container;
   }
@@ -40,12 +45,7 @@ void main() {
     when(
       () => repository.setDefaultProfileId('chosen'),
     ).thenAnswer((_) => saved.future);
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWithValue(repository),
-      ],
-    );
-    addTearDown(container.dispose);
+    final container = makeContainer(repository: repository);
     expect(
       await container.read(defaultInferenceProfileControllerProvider.future),
       'original',
@@ -89,10 +89,7 @@ void main() {
     when(() => repository.setDefaultProfileId('second')).thenAnswer((_) async {
       calls.add('second');
     });
-    final container = ProviderContainer(
-      overrides: [aiConfigRepositoryProvider.overrideWithValue(repository)],
-    );
-    addTearDown(container.dispose);
+    final container = makeContainer(repository: repository);
     await container.read(defaultInferenceProfileControllerProvider.future);
     final controller = container.read(
       defaultInferenceProfileControllerProvider.notifier,
@@ -109,6 +106,32 @@ void main() {
       'second',
     );
   });
+
+  test(
+    'default profile can be selected after its initial read fails',
+    () async {
+      final repository = MockAiConfigRepository();
+      when(repository.getDefaultProfileId).thenThrow(StateError('read failed'));
+      when(
+        () => repository.setDefaultProfileId('chosen'),
+      ).thenAnswer((_) async {});
+      final container = makeContainer(repository: repository);
+
+      expect(
+        await container.read(defaultInferenceProfileControllerProvider.future),
+        isNull,
+      );
+      await container
+          .read(defaultInferenceProfileControllerProvider.notifier)
+          .selectProfile('chosen');
+
+      verify(() => repository.setDefaultProfileId('chosen')).called(1);
+      expect(
+        container.read(defaultInferenceProfileControllerProvider).value,
+        'chosen',
+      );
+    },
+  );
 
   test('loads persisted wake concurrency', () async {
     when(

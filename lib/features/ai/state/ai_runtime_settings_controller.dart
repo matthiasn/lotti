@@ -15,8 +15,14 @@ final defaultInferenceProfileControllerProvider =
 
 class DefaultInferenceProfileController extends AsyncNotifier<String?> {
   @override
-  Future<String?> build() =>
-      ref.watch(aiConfigRepositoryProvider).getDefaultProfileId();
+  Future<String?> build() async {
+    try {
+      return await ref.watch(aiConfigRepositoryProvider).getDefaultProfileId();
+    } on Object {
+      // A failed preference read must not prevent choosing a new default.
+      return null;
+    }
+  }
 
   Future<void> _pendingSave = Future<void>.value();
 

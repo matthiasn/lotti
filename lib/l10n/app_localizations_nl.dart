@@ -2245,6 +2245,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Aanbieders';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Terugvalprofiel voor agents zonder ingesteld model op dit apparaat.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Voeg er een toe om transcriptie, beeldherkenning, beeldgeneratie en semantische zoekopdrachten te ontgrendelen.';
 
@@ -2283,6 +2287,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Gezicht';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Geen standaardprofiel';
 
   @override
   String get aiSettingsNoModelsConfigured => 'Geen AI-modellen geconfigureerd';
@@ -15469,11 +15476,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get aiSettingsNoDefaultProfile => 'Geen standaardprofiel';
-
-  @override
-  String get aiSettingsDefaultProfileDescription =>
-      'Terugvalprofiel voor agents zonder ingesteld model op dit apparaat.';
 }

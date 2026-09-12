@@ -2225,6 +2225,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Providers';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Fallback for agents without a configured inference route on this device.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Add one to unlock transcription, image recognition, image generation, and semantic search.';
 
@@ -2263,6 +2267,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Vision';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'No default profile';
 
   @override
   String get aiSettingsNoModelsConfigured => 'No AI models configured';
@@ -15335,13 +15342,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get aiSettingsNoDefaultProfile => 'No default profile';
-
-  @override
-  String get aiSettingsDefaultProfileDescription =>
-      'Fallback for agents without a configured inference route on this device.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

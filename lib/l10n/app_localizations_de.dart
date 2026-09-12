@@ -2253,6 +2253,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Anbieter';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Ersatzprofil für Agenten ohne konfigurierte Inferenz auf diesem Gerät.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Füge einen hinzu, um Transkription, Bilderkennung, Bildgenerierung und semantische Suche freizuschalten.';
 
@@ -2292,6 +2296,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Bild';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Kein Standardprofil';
 
   @override
   String get aiSettingsNoModelsConfigured => 'Keine AI-Modelle konfiguriert';
@@ -15542,11 +15549,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get aiSettingsNoDefaultProfile => 'Kein Standardprofil';
-
-  @override
-  String get aiSettingsDefaultProfileDescription =>
-      'Ersatzprofil für Agenten ohne konfigurierte Inferenz auf diesem Gerät.';
 }

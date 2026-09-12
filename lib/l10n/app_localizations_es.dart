@@ -2257,6 +2257,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Proveedores';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Perfil alternativo para agentes sin un modelo configurado en este dispositivo.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Añade uno para habilitar la transcripción, el reconocimiento de imágenes, la generación de imágenes y la búsqueda semántica.';
 
@@ -2295,6 +2299,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Visión';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Sin perfil predeterminado';
 
   @override
   String get aiSettingsNoModelsConfigured =>
@@ -15634,11 +15641,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
-
-  @override
-  String get aiSettingsNoDefaultProfile => 'Sin perfil predeterminado';
-
-  @override
-  String get aiSettingsDefaultProfileDescription =>
-      'Perfil alternativo para agentes sin un modelo configurado en este dispositivo.';
 }

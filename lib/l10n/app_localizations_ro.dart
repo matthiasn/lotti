@@ -2270,6 +2270,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Furnizori';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Profil de rezervă pentru agenții fără un model configurat pe acest dispozitiv.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Adăugați unul pentru a debloca transcrierea, recunoașterea de imagini, generarea de imagini și căutarea semantică.';
 
@@ -2308,6 +2312,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Viziune';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Niciun profil implicit';
 
   @override
   String get aiSettingsNoModelsConfigured => 'Niciun model AI configurat';
@@ -15736,11 +15743,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get aiSettingsNoDefaultProfile => 'Niciun profil implicit';
-
-  @override
-  String get aiSettingsDefaultProfileDescription =>
-      'Profil de rezervă pentru agenții fără un model configurat pe acest dispozitiv.';
 }

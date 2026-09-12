@@ -2242,6 +2242,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Leverantörer';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Reservprofil för agenter utan en konfigurerad modell på den här enheten.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Lägg till en för att låsa upp transkription, bildigenkänning, bildgenerering och semantisk sökning.';
 
@@ -2280,6 +2284,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Vision';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Ingen standardprofil';
 
   @override
   String get aiSettingsNoModelsConfigured => 'Inga AI-modeller konfigurerade';
@@ -15444,11 +15451,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get aiSettingsNoDefaultProfile => 'Ingen standardprofil';
-
-  @override
-  String get aiSettingsDefaultProfileDescription =>
-      'Reservprofil för agenter utan en konfigurerad modell på den här enheten.';
 }
