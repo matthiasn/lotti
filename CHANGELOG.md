@@ -45,6 +45,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   live privacy checks. Skipped sources are reported as incomplete coverage.
 - **Query chat shows searching while it retrieves evidence.** It switches to
   preparing an answer only when the final response is being composed.
+- **DeepSeek V4.1 Flash image analysis could return tool markup instead of a
+  summary.** Melious requests with a single named tool now use the model's
+  working automatic tool mode, allowing image analyses and entry summaries
+  to return their content correctly.
+- **Agent conversations are easier to read and navigate.** A compact header,
+  centered starter questions, smaller answer text, and expandable source passages
+  keep the discussion together. The extra Ask action is removed from the task
+  details action bar.
+- **Chat dictation uses the category's default transcription setup.** It no
+  longer silently selects an installed local Sherpa model instead.
+- **Agent internals expand without a rendering assertion.** Conversation
+  disclosures now share the panel's Material surface.
 
 ## [1.1.8]
 
