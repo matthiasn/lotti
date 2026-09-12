@@ -207,15 +207,24 @@ Saving is best effort — a write failure costs the path, not the report.
 
 The page therefore renders a `SystemHealthReportDocument`, never the report
 itself: a fresh run's document comes from `SystemHealthReport.toDocument`, and
-the one restored on the controller's first build comes from disk with no
-request or digest objects behind it. `SystemHealthState.report` is set only by
-a run in this session.
+the ones restored from disk have no request or digest objects behind them.
+`SystemHealthState.report` is set only by a run in this session.
+
+The document also carries the analysed window. A fresh one takes it from the
+request; a restored one reads it back from the `- Window: a → b` header line
+the builder wrote, minute precision, which is what the "Analyzed a → b ·
+Generated t" caption under the report and the subtitle of each row in
+*Previous reports* show. `SystemHealthReportStore.list` returns every saved
+report newest first (an unreadable file is skipped, not fatal);
+`SystemHealthState.savedReports` holds that list, refreshed after every run,
+and `showSaved` swaps the shown document without touching the last run's
+report.
 
 # The controller
 
 `SystemHealthController` is a kept-alive `Notifier` so a report survives
-leaving the page; its `build` also kicks off restoring the newest saved
-document, which a run finishing first overrides. It holds the preset (custom seeds the last seven whole days
+leaving the page; its `build` also kicks off listing the saved reports and
+showing the newest, which a run finishing first overrides. It holds the preset (custom seeds the last seven whole days
 once), the explicit model choice or the "follow the default" flag, and the last
 report or failure. `run()` ignores re-entry, holds a subscription on the
 auto-disposed `systemHealthAnalyzerProvider` for the duration (the cloud

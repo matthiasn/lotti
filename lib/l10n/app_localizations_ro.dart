@@ -14648,6 +14648,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String systemHealthAnalyzedWindow(String start, String end) {
+    return 'Analizat $start → $end';
+  }
+
+  @override
   String get systemHealthChooseModelTitle => 'Alegeți modelul';
 
   @override
@@ -14678,6 +14683,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get systemHealthFailedTitle => 'Analiza a eșuat';
 
   @override
+  String systemHealthGeneratedAt(String time) {
+    return 'Generat $time';
+  }
+
+  @override
   String get systemHealthHideDigest => 'Ascundeți rezumatul';
 
   @override
@@ -14705,6 +14715,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get systemHealthPresetLast7Days => '7 zile';
+
+  @override
+  String get systemHealthPreviousReportsDescription =>
+      'Fiecare raport este păstrat pe acest dispozitiv. Atingeți unul pentru a-l afișa din nou.';
+
+  @override
+  String get systemHealthPreviousReportsTitle => 'Rapoarte anterioare';
 
   @override
   String get systemHealthRangeTitle => 'Interval de timp';

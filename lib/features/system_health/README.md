@@ -32,8 +32,10 @@ assistant or a bug report.
 - **Copies in one tap.** The whole report, digest included, lands on the
   clipboard as Markdown.
 - **Keeps what it wrote.** Every report is saved as a Markdown file in a
-  `system_health` folder beside the log files, and the newest one is shown
-  again the next time the page opens, even after a restart.
+  `system_health` folder beside the log files. The newest one is shown again
+  the next time the page opens, even after a restart, and the others are
+  listed under *Previous reports*, one tap away. The shown report always says
+  which window it analysed and when it was generated.
 - **Degrades honestly.** No model, or a failed model call, still yields the
   digest with a note saying why the findings are missing.
 

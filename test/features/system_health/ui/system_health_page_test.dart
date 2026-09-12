@@ -78,7 +78,10 @@ class _InMemoryReportStore extends SystemHealthReportStore {
   }
 
   @override
-  Future<SystemHealthReportDocument?> loadLatest() async => latest;
+  Future<List<SystemHealthReportDocument>> list() async => [
+    ...saved.map((r) => r.toDocument(path: '/reports/system-health.md')),
+    ?latest,
+  ];
 }
 
 void main() {
@@ -373,10 +376,17 @@ void main() {
     expect(summary.text, isNot(contains('<details>')));
     expect(find.byKey(const Key('system_health_digest')), findsNothing);
     expect(reportStore.saved, hasLength(1));
+    final meta = tester
+        .widget<Text>(find.byKey(const Key('system_health_document_meta')))
+        .data!;
     expect(
-      find.text(messages.systemHealthSavedTo('/reports/system-health.md')),
-      findsOneWidget,
+      meta,
+      contains(messages.systemHealthSavedTo('/reports/system-health.md')),
     );
+    expect(meta, contains('Analyzed'));
+    expect(meta, contains('Generated'));
+    // The fresh run is now listed as a previous report.
+    expect(find.byKey(const Key('system_health_saved_0')), findsOneWidget);
 
     await tapVisible(tester, find.byKey(const Key('system_health_copy')));
     await tester.pump();
@@ -422,7 +432,19 @@ void main() {
       find.byKey(const Key('system_health_summary')),
     );
     expect(summary.text, contains('### Restored'));
-    expect(find.byKey(const Key('system_health_saved_path')), findsOneWidget);
+    final meta = tester
+        .widget<Text>(find.byKey(const Key('system_health_document_meta')))
+        .data!;
+    expect(meta, contains('2026'));
+    expect(meta, contains('/reports/system-health-2026-09-11-080000.md'));
+    expect(
+      tester
+          .widget<DesignSystemListItem>(
+            find.byKey(const Key('system_health_saved_0')),
+          )
+          .activated,
+      isTrue,
+    );
     await tapVisible(
       tester,
       find.byKey(const Key('system_health_toggle_digest')),
@@ -436,6 +458,86 @@ void main() {
           .text,
       contains('### Counts by domain'),
     );
+  });
+
+  testWidgets('tapping a previous report shows it and marks it selected', (
+    tester,
+  ) async {
+    reportStore.latest = SystemHealthReportDocument.fromMarkdown(
+      '# Lotti system health report\n\n'
+      '- Window: 2026-09-04 08:00 → 2026-09-11 08:00 (last 7 days)\n\n'
+      '## Top findings\n\n### Older\n',
+      generatedAt: DateTime(2026, 9, 11, 8),
+      path: '/reports/system-health-2026-09-11-080000.md',
+    );
+    await pumpBody(tester);
+    await tester.pump();
+    await tapVisible(tester, find.byKey(const Key('system_health_run')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<AgentMarkdownView>(
+            find.byKey(const Key('system_health_summary')),
+          )
+          .text,
+      contains('### Finding one'),
+    );
+    final olderRow = find.byKey(const Key('system_health_saved_1'));
+    final messages = tester.element(find.byType(SystemHealthBody)).messages;
+    expect(
+      tester.widget<DesignSystemListItem>(olderRow).subtitle,
+      messages.systemHealthAnalyzedWindow(
+        'Sep 4, 2026 08:00',
+        'Sep 11, 2026 08:00',
+      ),
+    );
+
+    await tapVisible(tester, olderRow);
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<AgentMarkdownView>(
+            find.byKey(const Key('system_health_summary')),
+          )
+          .text,
+      contains('### Older'),
+    );
+    expect(tester.widget<DesignSystemListItem>(olderRow).activated, isTrue);
+    expect(tester.widget<DesignSystemListItem>(olderRow).selected, isTrue);
+    expect(
+      tester
+          .widget<DesignSystemListItem>(
+            find.byKey(const Key('system_health_saved_0')),
+          )
+          .activated,
+      isFalse,
+    );
+  });
+
+  testWidgets('dates follow the in-app locale', (tester) async {
+    reportStore.latest = SystemHealthReportDocument.fromMarkdown(
+      '# Lotti system health report\n\n'
+      '- Window: 2026-09-04 08:00 → 2026-09-11 08:00 (last 7 days)\n\n'
+      '## Top findings\n\n### Older\n',
+      generatedAt: DateTime(2026, 9, 11, 8),
+      path: '/reports/system-health-2026-09-11-080000.md',
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const SingleChildScrollView(child: SystemHealthBody()),
+        overrides: overrides(),
+        locale: const Locale('de'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final row = tester.widget<DesignSystemListItem>(
+      find.byKey(const Key('system_health_saved_0')),
+    );
+    expect(row.title, '11. Sept. 2026 08:00');
+    expect(row.subtitle, contains('4. Sept. 2026 08:00'));
   });
 
   testWidgets('a run that cannot start shows a failure toast', (tester) async {

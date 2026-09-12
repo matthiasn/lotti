@@ -82,6 +82,8 @@ class SystemHealthReport {
         summaryMarkdown: summaryMarkdown,
         digestMarkdown: digestMarkdown,
         generatedAt: generatedAt,
+        windowStart: request.range.start,
+        windowEnd: request.range.end,
         path: path,
       );
 }
@@ -98,6 +100,8 @@ class SystemHealthReportDocument {
     required this.summaryMarkdown,
     required this.digestMarkdown,
     required this.generatedAt,
+    this.windowStart,
+    this.windowEnd,
     this.path,
   });
 
@@ -107,6 +111,9 @@ class SystemHealthReportDocument {
     required DateTime generatedAt,
     String? path,
   }) {
+    final window = _windowLine.firstMatch(markdown);
+    final windowStart = window == null ? null : _parseInstant(window.group(1)!);
+    final windowEnd = window == null ? null : _parseInstant(window.group(2)!);
     final index = markdown.indexOf(detailsMarker);
     if (index < 0) {
       return SystemHealthReportDocument(
@@ -114,6 +121,8 @@ class SystemHealthReportDocument {
         summaryMarkdown: markdown,
         digestMarkdown: '',
         generatedAt: generatedAt,
+        windowStart: windowStart,
+        windowEnd: windowEnd,
         path: path,
       );
     }
@@ -129,12 +138,27 @@ class SystemHealthReportDocument {
       summaryMarkdown: summary,
       digestMarkdown: digest,
       generatedAt: generatedAt,
+      windowStart: windowStart,
+      windowEnd: windowEnd,
       path: path,
     );
   }
 
   /// Marker between the summary and the collapsed digest in [markdown].
   static const String detailsMarker = '\n<details>\n';
+
+  /// The header line the report builder writes, read back for saved files.
+  static final RegExp _windowLine = RegExp(
+    r'^- Window: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}) → (\d{4}-\d{2}-\d{2} \d{2}:\d{2})',
+    multiLine: true,
+  );
+
+  static DateTime? _parseInstant(String text) =>
+      DateTime.tryParse(text.replaceFirst(' ', 'T'));
+
+  /// The window the report covered, when the header could be read back.
+  final DateTime? windowStart;
+  final DateTime? windowEnd;
 
   final String markdown;
   final String summaryMarkdown;

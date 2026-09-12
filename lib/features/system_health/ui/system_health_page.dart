@@ -20,7 +20,9 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/system_health/domain/system_health_range.dart';
+import 'package:lotti/features/system_health/domain/system_health_report.dart';
 import 'package:lotti/features/system_health/state/system_health_controller.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
@@ -55,7 +57,18 @@ class SystemHealthBody extends ConsumerStatefulWidget {
 class _SystemHealthBodyState extends ConsumerState<SystemHealthBody> {
   bool _showDigest = false;
 
-  static final DateFormat _day = DateFormat.yMMMd();
+  /// Formatters follow the in-app locale, which can differ from the process
+  /// default `Intl` locale when the user picked another language.
+  late DateFormat _day;
+  late DateFormat _instant;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context).toString();
+    _day = DateFormat.yMMMd(locale);
+    _instant = DateFormat.yMMMd(locale).add_Hm();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -247,17 +260,14 @@ class _SystemHealthBodyState extends ConsumerState<SystemHealthBody> {
                         document.summaryMarkdown,
                         key: const Key('system_health_summary'),
                       ),
-                      if (document.path case final path?) ...[
-                        SizedBox(height: tokens.spacing.step2),
-                        Text(
-                          messages.systemHealthSavedTo(path),
-                          key: const Key('system_health_saved_path'),
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.lowEmphasis,
-                              ),
+                      SizedBox(height: tokens.spacing.step2),
+                      Text(
+                        _describeDocument(messages, document),
+                        key: const Key('system_health_document_meta'),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
                         ),
-                      ],
+                      ),
                       SizedBox(height: tokens.spacing.step3),
                       Align(
                         alignment: AlignmentDirectional.centerStart,
@@ -284,8 +294,64 @@ class _SystemHealthBodyState extends ConsumerState<SystemHealthBody> {
               ),
             ),
           ],
+          if (state.savedReports.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.sectionGap),
+            Padding(
+              padding: inset,
+              child: _SectionTitle(
+                icon: LottiIcons.archive,
+                title: messages.systemHealthPreviousReportsTitle,
+                subtitle: messages.systemHealthPreviousReportsDescription,
+              ),
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            DesignSystemGroupedList(
+              children: [
+                for (final (index, saved) in state.savedReports.indexed)
+                  DesignSystemListItem(
+                    key: Key('system_health_saved_$index'),
+                    title: _instant.format(saved.generatedAt),
+                    subtitle: _describeWindow(messages, saved),
+                    leading: const SettingsIcon(icon: LottiIcons.description),
+                    activated:
+                        saved.path != null && saved.path == document?.path,
+                    selected:
+                        saved.path != null && saved.path == document?.path,
+                    showDivider: index < state.savedReports.length - 1,
+                    dividerIndent: SettingsIcon.dividerIndent(tokens),
+                    onTap: () => controller.showSaved(saved),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  /// "Analyzed a → b · Generated t · Saved to p" for the shown report.
+  String _describeDocument(
+    AppLocalizations messages,
+    SystemHealthReportDocument document,
+  ) {
+    final parts = <String>[
+      ?_describeWindow(messages, document),
+      messages.systemHealthGeneratedAt(_instant.format(document.generatedAt)),
+      if (document.path case final path?) messages.systemHealthSavedTo(path),
+    ];
+    return parts.join(' · ');
+  }
+
+  String? _describeWindow(
+    AppLocalizations messages,
+    SystemHealthReportDocument document,
+  ) {
+    final start = document.windowStart;
+    final end = document.windowEnd;
+    if (start == null || end == null) return null;
+    return messages.systemHealthAnalyzedWindow(
+      _instant.format(start),
+      _instant.format(end),
     );
   }
 

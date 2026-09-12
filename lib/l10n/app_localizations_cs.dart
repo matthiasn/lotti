@@ -14545,6 +14545,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String systemHealthAnalyzedWindow(String start, String end) {
+    return 'Analyzováno $start → $end';
+  }
+
+  @override
   String get systemHealthChooseModelTitle => 'Vybrat model';
 
   @override
@@ -14575,6 +14580,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get systemHealthFailedTitle => 'Analýza selhala';
 
   @override
+  String systemHealthGeneratedAt(String time) {
+    return 'Vytvořeno $time';
+  }
+
+  @override
   String get systemHealthHideDigest => 'Skrýt přehled';
 
   @override
@@ -14602,6 +14612,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get systemHealthPresetLast7Days => '7 dní';
+
+  @override
+  String get systemHealthPreviousReportsDescription =>
+      'Každá zpráva zůstává v tomto zařízení. Klepni na některou a zobrazí se znovu.';
+
+  @override
+  String get systemHealthPreviousReportsTitle => 'Předchozí zprávy';
 
   @override
   String get systemHealthRangeTitle => 'Časové období';
