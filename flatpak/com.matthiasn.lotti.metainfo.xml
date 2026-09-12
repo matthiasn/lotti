@@ -51,9 +51,9 @@
         <p>Changed: inspect query answers with clearer evidence and accessible controls. Citations open their saved passages, excerpt boundaries and transcript dates are clearer, and shared conclusions show when they were saved. Empty memory disclosures disappear. Long voice transcripts expand without hiding Cancel, and audio setup details stay behind a short explanation.</p>
         <p>Fixed: larger text stays inside task controls and chat inputs. Task actions wrap when needed, and long input hints stay on one line without vertical clipping.</p>
         <p>Fixed: relationship agents now honor the model chosen in their settings. Missing configuration retries less often and resumes when a usable profile becomes available.</p>
-        <p>Fixed: reduce background agent work. Wakes reuse prepared memory when no compaction is needed, deferred jobs avoid unnecessary queue checks, and project recommendations are retired once per replacement.</p>
+        <p>Fixed: reduced background activity from agents. Agents avoid repeating preparation and checks when no new work is needed.</p>
         <p>Fixed: image analysis no longer fails when its short summary is invalid. The full analysis is preserved when an AI response has an overlong one-line summary or an invalid TLDR, instead of reporting an empty response.</p>
-        <p>Fixed: startup does less database work when many agents are present. Clearing old wake countdowns now shares a bulk read and transaction instead of opening a separate transaction for every agent, including idle ones.</p>
+        <p>Fixed: less startup overhead with many agents. Lotti clears old agent countdowns together, reducing the work needed to open your journal.</p>
         <p>Fixed: daily digests have more room to finish. Raised the response limit from 4,096 to 16,384 tokens to reduce failures caused by truncated responses.</p>
       </description>
     </release>
