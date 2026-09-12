@@ -18487,12 +18487,6 @@ abstract class AppLocalizations {
   /// **'Open recording'**
   String get queryAudioOpenRecording;
 
-  /// No description provided for @queryAudioRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry audio'**
-  String get queryAudioRetry;
-
   /// No description provided for @queryAudioPrepare.
   ///
   /// In en, this message translates to:
@@ -18510,6 +18504,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read answer aloud'**
   String get queryAudioReadAloud;
+
+  /// No description provided for @queryAudioRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry audio'**
+  String get queryAudioRetry;
 
   /// No description provided for @queryAudioStale.
   ///

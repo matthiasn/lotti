@@ -11171,9 +11171,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryAudioOpenRecording => 'Deschideți înregistrarea';
 
   @override
-  String get queryAudioRetry => 'Reîncercați redarea audio';
-
-  @override
   String get queryAudioPrepare => 'Pregătiți fragmentul audio';
 
   @override
@@ -11181,6 +11178,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Ascultați răspunsul';
+
+  @override
+  String get queryAudioRetry => 'Reîncercați redarea audio';
 
   @override
   String get queryAudioStale =>

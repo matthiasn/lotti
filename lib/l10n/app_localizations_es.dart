@@ -11127,9 +11127,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryAudioOpenRecording => 'Abrir grabación';
 
   @override
-  String get queryAudioRetry => 'Reintentar audio';
-
-  @override
   String get queryAudioPrepare => 'Preparar fragmento de audio';
 
   @override
@@ -11137,6 +11134,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Leer respuesta en voz alta';
+
+  @override
+  String get queryAudioRetry => 'Reintentar audio';
 
   @override
   String get queryAudioStale =>

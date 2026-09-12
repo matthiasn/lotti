@@ -4259,7 +4259,7 @@
   "queryHideExactText": "Masquer le texte exact",
   "queryHideSurrounding": "Masquer le contexte",
   "queryHomeOnly": "Périmètre de départ uniquement",
-  "queryHomeScope": "Périmètre initial",
+  "queryHomeScope": "Périmètre de départ",
   "queryIncomplete": "La recherche est incomplète. L’absence de preuve ne signifie pas que la discussion n’a jamais eu lieu.",
   "queryIncompleteShort": "Certaines sources n’ont pas pu être vérifiées.",
   "queryInferenceUnavailable": "Aucune configuration IA utilisable. Configure le modèle de l’agent ou le profil par défaut de la catégorie, puis réessaie.",

@@ -11111,9 +11111,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryAudioOpenRecording => 'Otevřít nahrávku';
 
   @override
-  String get queryAudioRetry => 'Zkusit zvuk znovu';
-
-  @override
   String get queryAudioPrepare => 'Připravit zvukový úryvek';
 
   @override
@@ -11121,6 +11118,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Přečíst odpověď nahlas';
+
+  @override
+  String get queryAudioRetry => 'Zkusit zvuk znovu';
 
   @override
   String get queryAudioStale =>
@@ -11232,7 +11232,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryHomeOnly => 'Jen základní rozsah';
 
   @override
-  String get queryHomeScope => 'Výchozí oblast';
+  String get queryHomeScope => 'Základní rozsah';
 
   @override
   String get queryIncomplete =>

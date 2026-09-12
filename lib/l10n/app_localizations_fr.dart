@@ -11160,9 +11160,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queryAudioOpenRecording => 'Ouvrir l’enregistrement';
 
   @override
-  String get queryAudioRetry => 'Réessayer l’audio';
-
-  @override
   String get queryAudioPrepare => 'Préparer un extrait audio';
 
   @override
@@ -11170,6 +11167,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Lire la réponse à voix haute';
+
+  @override
+  String get queryAudioRetry => 'Réessayer l’audio';
 
   @override
   String get queryAudioStale =>
@@ -11285,7 +11285,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get queryHomeOnly => 'Périmètre de départ uniquement';
 
   @override
-  String get queryHomeScope => 'Périmètre initial';
+  String get queryHomeScope => 'Périmètre de départ';
 
   @override
   String get queryIncomplete =>

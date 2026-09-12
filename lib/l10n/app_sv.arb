@@ -4733,7 +4733,7 @@
   "queryHideExactText": "Dölj exakt text",
   "queryHideSurrounding": "Dölj omgivande text",
   "queryHomeOnly": "Endast ursprungsområdet",
-  "queryHomeScope": "Ursprungligt område",
+  "queryHomeScope": "Ursprungsområde",
   "queryIncomplete": "Sökningen är ofullständig. Avsaknad av belägg betyder inte att diskussionen aldrig ägde rum.",
   "queryIncompleteShort": "Vissa källor kunde inte kontrolleras.",
   "queryInferenceUnavailable": "Ingen användbar AI-konfiguration. Konfigurera agentens modell eller kategorins standardprofil och försök igen.",

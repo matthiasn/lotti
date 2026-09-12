@@ -10975,9 +10975,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryAudioOpenRecording => 'Öppna inspelning';
 
   @override
-  String get queryAudioRetry => 'Försök med ljud igen';
-
-  @override
   String get queryAudioPrepare => 'Förbered ljudutdrag';
 
   @override
@@ -10985,6 +10982,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Läs upp svaret';
+
+  @override
+  String get queryAudioRetry => 'Försök med ljud igen';
 
   @override
   String get queryAudioStale =>
@@ -11096,7 +11096,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryHomeOnly => 'Endast ursprungsområdet';
 
   @override
-  String get queryHomeScope => 'Ursprungligt område';
+  String get queryHomeScope => 'Ursprungsområde';
 
   @override
   String get queryIncomplete =>

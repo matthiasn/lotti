@@ -4266,7 +4266,7 @@
   "queryHideExactText": "Skrýt přesný text",
   "queryHideSurrounding": "Skrýt okolní text",
   "queryHomeOnly": "Jen základní rozsah",
-  "queryHomeScope": "Výchozí oblast",
+  "queryHomeScope": "Základní rozsah",
   "queryIncomplete": "Hledání není úplné. Chybějící důkazy neznamenají, že diskuze nikdy neproběhla.",
   "queryIncompleteShort": "Některé zdroje se nepodařilo zkontrolovat.",
   "queryInferenceUnavailable": "Chybí použitelná konfigurace AI. Nastav model agenta nebo výchozí profil kategorie a zkus to znovu.",

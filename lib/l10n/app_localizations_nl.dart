@@ -10984,9 +10984,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryAudioOpenRecording => 'Opname openen';
 
   @override
-  String get queryAudioRetry => 'Audio opnieuw proberen';
-
-  @override
   String get queryAudioPrepare => 'Audiofragment voorbereiden';
 
   @override
@@ -10994,6 +10991,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryAudioReadAloud => 'Antwoord voorlezen';
+
+  @override
+  String get queryAudioRetry => 'Audio opnieuw proberen';
 
   @override
   String get queryAudioStale =>
