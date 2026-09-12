@@ -14,6 +14,88 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  test(
+    'frozen reports reach the real summary reader with category isolation',
+    () async {
+      final corpus = PenguinQueryCorpus();
+      final database = PenguinQueryDatabase(corpus);
+      addTearDown(database.close);
+      await database.seed();
+      final rows = [
+        for (final input in database.reportInputs)
+          {
+            'ownerId': input['ownerId'],
+            'oneLiner': 'No open action.',
+            'tldr': 'Calibration findings for ${input['title']}.',
+            'content': 'Full calibration details for ${input['title']}.',
+          },
+      ];
+      final bundle = <String, dynamic>{
+        'sourceHash': database.reportInputsHash,
+        'reports': rows,
+      };
+      await expectLater(
+        database.seedReports({...bundle, 'sourceHash': 'stale'}),
+        throwsFormatException,
+      );
+      await expectLater(
+        database.seedReports({...bundle, 'reports': rows.skip(1).toList()}),
+        throwsFormatException,
+      );
+      await database.seedReports(bundle);
+      final catalog = await database.summaryReader.discover(corpus.scope);
+      final expected = corpus.world.tasks
+          .where((task) => task.meta.categoryId == corpus.task.meta.categoryId)
+          .map((task) => task.meta.id)
+          .toSet();
+      expect(catalog.tasks.map((s) => s.owner.id).toSet(), expected);
+      final home = catalog.tasks.singleWhere(
+        (s) => s.owner.id == corpus.task.meta.id,
+      );
+      expect(
+        home.orientation['tldr'],
+        'Calibration findings for ${corpus.task.data.title}.',
+      );
+      expect(home.orientation.values, isNot(contains('No open action.')));
+      final full = await database.summaryReader.fullSummaries(catalog, [
+        home.owner.id,
+      ]);
+      expect(
+        full.single.fullSummary['content'],
+        'Full calibration details for ${corpus.task.data.title}.',
+      );
+      expect(database.searches, isEmpty);
+    },
+  );
+
+  test(
+    'summary completions are classified and selection is recorded',
+    () async {
+      final measured = MeasuredQueryInference(
+        QueryTextInference(
+          generate: (_, _) =>
+              Stream.value('{"taskIds":["task"],"needsHomeEvidence":false}'),
+        ),
+      );
+      for (final system in [
+        'Task-summary orientation.',
+        'Answer using the supplied task/project summaries only.',
+      ]) {
+        await measured.complete(
+          system: system,
+          input: {},
+          cancellation: QueryCancellation(),
+        );
+      }
+      expect(measured.calls.map((c) => c['stage']), [
+        'summary-selection',
+        'summary-answer',
+      ]);
+      expect(measured.calls.first['selectedTaskIds'], ['task']);
+      expect(measured.calls.first['needsHomeEvidence'], isFalse);
+    },
+  );
+
   test('measurement forwards synthesis text and first-token events', () async {
     final measured = MeasuredQueryInference(
       QueryTextInference(
@@ -33,6 +115,7 @@ void main() {
     expect(shown, ['recorded', 'recorded [1]']);
     expect(tokens, 1);
     expect(result['answer'], shown.last);
+    expect(measured.calls.single['response'], result);
     expect(measured.calls.single['firstTokenMs'], isA<num>());
     expect(measured.calls.single['milliseconds'], isA<num>());
     expect(measured.calls.single['stage'], 'answer');
@@ -59,6 +142,40 @@ void main() {
         throwsFormatException,
       );
     }
+  });
+
+  test('held-out negative questions retain value exclusion guards', () {
+    final price = penguinQueryHoldoutQuestions.singleWhere(
+      (q) => q.id == 'holdout_absent',
+    );
+    final humidity = penguinQueryHoldoutQuestions.singleWhere(
+      (q) => q.id == 'holdout_category_boundary',
+    );
+    expect(
+      hasForbiddenPenguinAnswerValue(
+        price,
+        'No record, but the price was €500.',
+      ),
+      isTrue,
+    );
+    expect(
+      hasForbiddenPenguinAnswerValue(
+        humidity,
+        'Unknown, but it rose by nine points.',
+      ),
+      isTrue,
+    );
+    expect(
+      hasForbiddenPenguinAnswerValue(price, 'No agreed price is recorded.'),
+      isFalse,
+    );
+    expect(
+      hasForbiddenPenguinAnswerValue(
+        humidity,
+        'The change cannot be established.',
+      ),
+      isFalse,
+    );
   });
 
   test(
@@ -277,13 +394,14 @@ void main() {
   );
 
   test(
-    'failed completion remains observable without logging response contents',
+    'provider failure remains observable without logging error contents',
     () async {
       final snapshots = <Map<String, Object?>>[];
       late MeasuredQueryInference inference;
       inference = MeasuredQueryInference(
         QueryTextInference(
-          generate: (_, _) => Stream.value('sensitive bad response'),
+          generate: (_, _) =>
+              Stream.error(StateError('sensitive provider error')),
         ),
         onCallRecorded: () => snapshots.add({...inference.calls.last}),
       );
@@ -293,16 +411,48 @@ void main() {
           input: {'question': 'penguin'},
           cancellation: QueryCancellation(),
         ),
-        throwsFormatException,
+        throwsStateError,
       );
-      expect(inference.calls.single['status'], 'FormatException');
+      expect(inference.calls.single['status'], 'StateError');
       expect(inference.calls.single['stage'], 'plan');
       expect(inference.calls.single.keys, isNot(contains('outputCharacters')));
       expect(inference.calls.single.toString(), isNot(contains('sensitive')));
       expect(snapshots, hasLength(2));
       expect(snapshots.first, isNot(contains('status')));
-      expect(snapshots.last['status'], 'FormatException');
+      expect(snapshots.last['status'], 'StateError');
       expect(snapshots.last, contains('milliseconds'));
+    },
+  );
+
+  test(
+    'synthetic JSON failures retain the malformed output and shown draft',
+    () async {
+      const malformed = '{"answer":"Penguin "title""}';
+      final inference = MeasuredQueryInference(
+        QueryTextInference(
+          generate: (_, _) => Stream.fromIterable([
+            '{"answer":"Penguin ',
+            '"title""}',
+          ]),
+        ),
+      );
+      final shown = <String>[];
+      await expectLater(
+        inference.complete(
+          system: 'Answer from the supplied evidence',
+          input: {},
+          cancellation: QueryCancellation(),
+          onAnswerText: shown.add,
+        ),
+        throwsFormatException,
+      );
+      expect(shown, ['Penguin ']);
+      final failure = inference.calls.single['formatFailure']! as Map;
+      expect(failure['source'], malformed);
+      expect(failure['offset'], malformed.indexOf('title'));
+      expect(failure['lastAnswerPrefix'], shown.single);
+      expect(inference.calls.single['status'], 'FormatException');
+      expect(inference.calls.single, isNot(contains('response')));
     },
   );
 }

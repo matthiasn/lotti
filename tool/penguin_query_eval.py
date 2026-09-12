@@ -81,7 +81,14 @@ def main():
     parser.add_argument("--stream-synthesis", action="store_true")
     parser.add_argument("--legacy-flow", action="store_true", help="Force the original preview/window path for a matched control")
     parser.add_argument("--variant", required=True, help="Explicit code/comparison variant")
+    parser.add_argument("--summary-reports", type=Path, help="Frozen generated report bundle; enables production summary-first retrieval")
+    parser.add_argument("--prepare-summary-reports", action="store_true", help="Generate a query-neutral report fixture instead of measuring chat")
+    parser.add_argument("--env-file", type=Path, help="Read only Melious connection keys from this local file (default: repository .env)")
     args = parser.parse_args()
+    if args.prepare_summary_reports and args.summary_reports:
+        parser.error("Prepare reports first, then use the frozen bundle in a separate run")
+    if args.summary_reports and args.legacy_flow:
+        parser.error("--legacy-flow is an entry control, not a summary-first option")
     root = Path(__file__).resolve().parent.parent
     output = args.output.expanduser().resolve()
     log = output.with_suffix(".log")
@@ -90,16 +97,22 @@ def main():
     if output.is_relative_to(root):
         parser.error("Generated artifacts must be outside the repository")
     env = os.environ.copy()
-    dotenv = root / ".env"
+    dotenv = args.env_file.expanduser().resolve() if args.env_file else root / ".env"
+    connection = {}
     if dotenv.exists():
         for line in dotenv.read_text().splitlines():
             key, sep, value = line.partition("=")
             key = key.removeprefix("export ").strip()
-            if sep and key in {"MELIOUS_API_KEY", "MELIOUS_BASE_URL"} and key not in env:
+            if sep and key in {"MELIOUS_API_KEY", "MELIOUS_BASE_URL", "UP_UPSTREAM_API_KEY", "UP_UPSTREAM_BASE_URL"}:
                 tokens = shlex.split(value, comments=True)
                 if len(tokens) != 1:
                     parser.error(f"Cannot parse {key} from .env")
-                env[key] = tokens[0]
+                connection[key] = tokens[0]
+    for canonical, alias in (("MELIOUS_API_KEY", "UP_UPSTREAM_API_KEY"), ("MELIOUS_BASE_URL", "UP_UPSTREAM_BASE_URL")):
+        if canonical not in env:
+            value = connection.get(canonical) or connection.get(alias)
+            if value:
+                env[canonical] = value
     if not (env.get("QUERY_EVAL_API_KEY") or env.get("MELIOUS_API_KEY")):
         parser.error("Set QUERY_EVAL_API_KEY or MELIOUS_API_KEY")
     if not (env.get("QUERY_EVAL_BASE_URL") or env.get("MELIOUS_BASE_URL")):
@@ -114,6 +127,8 @@ def main():
         "QUERY_EVAL_LEGACY_FLOW": "1" if args.legacy_flow else "0",
         "QUERY_EVAL_PYTHON": sys.executable,
         "QUERY_EVAL_STREAM_SYNTHESIS": "1" if args.stream_synthesis else "0",
+        "QUERY_EVAL_PREPARE_REPORTS": "1" if args.prepare_summary_reports else "0",
+        "QUERY_EVAL_SUMMARY_REPORTS": str(args.summary_reports.expanduser().resolve()) if args.summary_reports else "",
     })
     output.parent.mkdir(parents=True, exist_ok=True)
     # Keep compiler/provider output beside the synthetic artifact; credentials
