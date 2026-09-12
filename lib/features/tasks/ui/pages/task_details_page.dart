@@ -450,9 +450,14 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   }
 
   @override
-  Widget build(BuildContext context) {
-    final queryScope = QueryScope(kind: QueryScopeKind.task, id: widget.taskId);
+  Widget build(BuildContext context) => QueryCompanion(
+    scope: QueryScope(kind: QueryScopeKind.task, id: widget.taskId),
+    child: _buildDetail(context),
+  );
 
+  /// Data-dependent content stays inside the companion so a missing task
+  /// cannot strand an open discussion without its Close control.
+  Widget _buildDetail(BuildContext context) {
     final focusProvider = taskFocusControllerProvider(widget.taskId);
 
     void handleFocus(TaskFocusIntent? intent, {bool isInitialLoad = false}) {
@@ -697,17 +702,14 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       child: CorrectionCaptureToastListener(child: scaffold),
     );
 
-    return QueryCompanion(
-      scope: queryScope,
-      child: MediaDropTarget(
-        onFiles: (files) => handleDroppedMediaFiles(
-          files,
-          linkedId: task.meta.id,
-          categoryId: task.meta.categoryId,
-          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
-        ),
-        child: body,
+    return MediaDropTarget(
+      onFiles: (files) => handleDroppedMediaFiles(
+        files,
+        linkedId: task.meta.id,
+        categoryId: task.meta.categoryId,
+        analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
       ),
+      child: body,
     );
   }
 

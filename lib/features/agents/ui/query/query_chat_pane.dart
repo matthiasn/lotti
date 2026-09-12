@@ -920,7 +920,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
             children: [
               Row(
                 children: [
-                  if (_sourceId != null)
+                  if (widget.companion && _sourceId != null)
                     DesignSystemIconAction(
                       icon: LottiIcons.back,
                       tooltip: MaterialLocalizations.of(

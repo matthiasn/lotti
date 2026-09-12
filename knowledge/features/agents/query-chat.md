@@ -85,7 +85,9 @@ and task/project summary cards expose the action; the task action bar remains
 reserved for time tracking and capture. Project and saved-category details still
 open `QueryChatPane` in place of their detail page.
 
-Tasks use `QueryCompanion`, keeping the detail subtree mounted and usable. With
+Tasks use `QueryCompanion`, keeping the detail subtree mounted and usable.
+The companion wraps data-dependent loading/missing-task branches as well, so
+a sync deletion cannot remove the chat Close control or strand its open flag. With
 enough width, chat docks on the right with a keyboard- and pointer-resizable
 divider. Fit uses the existing chat/detail reading measures at the current text
 scale. `TasksRootPage` temporarily hides the mounted task list when both reading

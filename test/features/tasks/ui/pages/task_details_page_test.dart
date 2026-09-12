@@ -276,6 +276,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(QueryChatPane), findsNothing);
       expect(find.text(testTask.data.title), findsOneWidget);
+      await tester.tap(find.byType(QueryAskButton).first);
+      await tester.pumpAndSettle();
+      final chatState = tester.state(find.byType(QueryChatPane));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TaskDetailsPage)),
+      );
+      when(
+        () => mockJournalDb.journalEntityById(testTask.id),
+      ).thenAnswer((_) async => null);
+      container.invalidate(entryControllerProvider(testTask.id));
+      await tester.pumpAndSettle();
+      expect(find.byType(TaskActionBar), findsNothing);
+      expect(tester.state(find.byType(QueryChatPane)), same(chatState));
+      await tester.tap(find.byIcon(LottiIcons.close).first);
+      await tester.pumpAndSettle();
+      expect(container.read(queryPaneOpenProvider(scope)), isFalse);
+      expect(find.byType(QueryChatPane), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
