@@ -86,7 +86,9 @@ The draft ceiling is larger because its terminal tool serializes the complete
 block list. Digests receive extra headroom after repeated truncation at the
 previous ceiling. The others produce smaller artifacts. These are injected through
 `DayAgentOutputTokenBudgetPolicy`, then clamped around the resolved provider
-repository, so a caller may request less but cannot bypass the Daily OS maximum.
+repository. A lower `AiConfigModel.maxCompletionTokens` on the selected thinking
+model further reduces the ceiling; callers can request less but cannot bypass
+either maximum.
 
 When reported effective completion usage exceeds 4,096 tokens, the wrapper logs
 one `outputBudget` entry in `agentWorkflow` per provider turn. It records the
