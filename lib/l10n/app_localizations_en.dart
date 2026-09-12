@@ -13371,6 +13371,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSyncSubtitle => 'Configure sync and view stats';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Analyze recent logs and copy a shareable report';
+
+  @override
+  String get settingsSystemHealthTitle => 'System health';
+
+  @override
   String get settingsThemingAutomatic => 'Automatic';
 
   @override
@@ -14262,6 +14269,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Step $step of 3: $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Choose model';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Report copied. It contains no personal data.';
+
+  @override
+  String get systemHealthCopyButton => 'Copy report';
+
+  @override
+  String get systemHealthCustomFromLabel => 'From';
+
+  @override
+  String get systemHealthCustomToLabel => 'To';
+
+  @override
+  String get systemHealthDescription =>
+      'Scans the log files on this device for errors, warnings and slow queries, strips personal data, and writes a short report you can paste into a coding assistant.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'The domains switched on here are the ones analyzed, the same setting that decides what gets logged. Slow queries are included when slow-query logging is on.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Log domains';
+
+  @override
+  String get systemHealthFailedTitle => 'Analysis failed';
+
+  @override
+  String get systemHealthHideDigest => 'Hide digest';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Writes the findings from the redacted digest. Proposes the thinking model of your default profile.';
+
+  @override
+  String get systemHealthModelNone => 'Digest only, no model';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Set a default inference profile or add an agentic text model to get findings.';
+
+  @override
+  String get systemHealthModelTitle => 'Model';
+
+  @override
+  String get systemHealthPresetCustom => 'Custom';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 days';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 h';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 days';
+
+  @override
+  String get systemHealthRangeTitle => 'Time range';
+
+  @override
+  String get systemHealthReportTitle => 'Report';
+
+  @override
+  String get systemHealthRunButton => 'Run analysis';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Show digest';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audio recording in progress';
@@ -15898,4 +15981,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get settingsSyncConflictsSubtitle =>
       'Resolve synchronisation conflicts to ensure data consistency';
+
+  @override
+  String get settingsSystemHealthSubtitle =>
+      'Analyse recent logs and copy a shareable report';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'The domains switched on here are the ones analysed, the same setting that decides what gets logged. Slow queries are included when slow-query logging is on.';
 }

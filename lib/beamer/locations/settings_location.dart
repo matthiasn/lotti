@@ -51,6 +51,7 @@ import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
+import 'package:lotti/features/system_health/ui/system_health_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -137,6 +138,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/advanced/animations',
     '/settings/advanced/manual-language',
     '/settings/advanced/logging_domains',
+    '/settings/advanced/system_health',
     '/settings/advanced/conflicts/:conflictId',
     '/settings/advanced/conflicts',
     '/settings/advanced/maintenance',
@@ -700,6 +702,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-logging-domains'),
           child: LoggingSettingsPage(),
+        ),
+
+      if (pathContains('advanced/system_health'))
+        const BeamPage(
+          key: ValueKey('settings-system-health'),
+          child: SystemHealthPage(),
         ),
 
       if (pathContains('advanced/about'))

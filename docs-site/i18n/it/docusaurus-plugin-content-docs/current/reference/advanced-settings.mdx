@@ -82,6 +82,27 @@ interruttori governano la diagnostica aggiuntiva, non il registro minimo degli
 errori. Disattiva i domini rumorosi a indagine conclusa, così i log restano
 mirati e l'uso dello spazio resta prevedibile.
 
+## Leggere un report sullo stato del sistema
+
+**Stato del sistema** trasforma i file di log che Lotti conserva su questo
+dispositivo in un breve report che puoi condividere. Scegli un periodo (le
+ultime 24 ore, 7 o 14 giorni, oppure giorni personalizzati), conferma quali
+domini di log analizzare – sono gli stessi interruttori della sezione sui log
+qui sopra, quindi un dominio attivo viene registrato *e* analizzato – e scegli
+il modello che scrive i risultati. Lotti propone il modello di ragionamento del
+tuo profilo di inferenza predefinito.
+
+Prima di qualsiasi analisi, i dati personali vengono rimossi dalle righe di
+log: indirizzi e-mail, identificatori, token di accesso, percorsi di file con il
+tuo nome utente, indirizzi IP e numeri di telefono vengono sostituiti da
+segnaposto. Il report elenca i tre risultati che meritano più attenzione, con
+le evidenze, la causa probabile e un passo successivo, e mantiene sotto il
+riepilogo condensato. **Copia report** mette tutto negli appunti come Markdown,
+pronto per una segnalazione di bug o un assistente di programmazione. Ogni
+report viene inoltre salvato accanto ai file di log, e il più recente viene
+mostrato di nuovo alla prossima apertura della pagina. Senza modello, o se la
+chiamata al modello fallisce, ottieni comunque il riepilogo.
+
 ## Esegui le azioni di manutenzione in modo deliberato
 
 <ManualScreenshot

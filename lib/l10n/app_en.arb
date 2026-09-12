@@ -7713,6 +7713,8 @@
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsSyncStatsSubtitle": "Inspect sync pipeline metrics",
   "settingsSyncSubtitle": "Configure sync and view stats",
+  "settingsSystemHealthSubtitle": "Analyze recent logs and copy a shareable report",
+  "settingsSystemHealthTitle": "System health",
   "settingsThemingAutomatic": "Automatic",
   "settingsThemingDark": "Dark Appearance",
   "settingsThemingLight": "Light Appearance",
@@ -8146,6 +8148,36 @@
       }
     }
   },
+  "systemHealthChooseModelTitle": "Choose model",
+  "systemHealthCopiedToast": "Report copied. It contains no personal data.",
+  "systemHealthCopyButton": "Copy report",
+  "systemHealthCustomFromLabel": "From",
+  "systemHealthCustomToLabel": "To",
+  "systemHealthDescription": "Scans the log files on this device for errors, warnings and slow queries, strips personal data, and writes a short report you can paste into a coding assistant.",
+  "systemHealthDomainsDescription": "The domains switched on here are the ones analyzed, the same setting that decides what gets logged. Slow queries are included when slow-query logging is on.",
+  "systemHealthDomainsTitle": "Log domains",
+  "systemHealthFailedTitle": "Analysis failed",
+  "systemHealthHideDigest": "Hide digest",
+  "systemHealthModelDescription": "Writes the findings from the redacted digest. Proposes the thinking model of your default profile.",
+  "systemHealthModelNone": "Digest only, no model",
+  "systemHealthModelNoneDescription": "Set a default inference profile or add an agentic text model to get findings.",
+  "systemHealthModelTitle": "Model",
+  "systemHealthPresetCustom": "Custom",
+  "systemHealthPresetLast14Days": "14 days",
+  "systemHealthPresetLast24Hours": "24 h",
+  "systemHealthPresetLast7Days": "7 days",
+  "systemHealthRangeTitle": "Time range",
+  "systemHealthReportTitle": "Report",
+  "systemHealthRunButton": "Run analysis",
+  "systemHealthSavedTo": "Saved to {path}",
+  "@systemHealthSavedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "systemHealthShowDigest": "Show digest",
   "taskActionBarAudioRecordingActive": "Audio recording in progress",
   "taskActionBarMoreActions": "More actions",
   "taskActionBarOpenRunningTimer": "Open running timer",

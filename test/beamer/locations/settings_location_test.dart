@@ -52,6 +52,7 @@ import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
+import 'package:lotti/features/system_health/ui/system_health_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -182,6 +183,7 @@ void main() {
         '/settings/advanced/animations',
         '/settings/advanced/manual-language',
         '/settings/advanced/logging_domains',
+        '/settings/advanced/system_health',
         '/settings/advanced/conflicts/:conflictId',
         '/settings/advanced/conflicts',
         '/settings/advanced/maintenance',
@@ -1904,6 +1906,26 @@ void main() {
       expect(pages[2].child, isA<LoggingSettingsPage>());
     });
 
+    test('buildPages builds SystemHealthPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/advanced/system_health'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
+      expect(pages[2].child, isA<SystemHealthPage>());
+    });
+
     test('buildPages builds ManualLanguageSettingsPage', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/advanced/manual-language'),
@@ -2279,6 +2301,7 @@ void main() {
           '/settings/theming',
           '/settings/advanced',
           '/settings/advanced/logging_domains',
+          '/settings/advanced/system_health',
         ]) {
           final routeInfo = RouteInformation(uri: Uri.parse(path));
           final location = SettingsLocation(routeInfo);

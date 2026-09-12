@@ -78,6 +78,25 @@ diagnostisk loggning, inte den minsta felposten. Inaktivera brusiga domäner
 efter en undersökning så att loggarna hålls fokuserade och
 lagringsanvändningen förblir förutsägbar.
 
+## Läs en systemstatusrapport
+
+**Systemstatus** gör om loggfilerna som Lotti sparar på den här enheten till en
+kort rapport som du kan dela. Välj ett tidsintervall (de senaste 24 timmarna, 7
+eller 14 dagarna eller egna dagar), bekräfta vilka loggdomäner som analyseras –
+det är samma reglage som i loggavsnittet ovan, så en påslagen domän loggas *och*
+analyseras – och välj modellen som skriver slutsatserna. Lotti föreslår
+tankemodellen i din standardprofil för inferens.
+
+Innan något analyseras tas personuppgifter bort ur loggraderna: e-postadresser,
+identifierare, åtkomsttoken, filsökvägar med ditt användarnamn, IP-adresser och
+telefonnummer ersätts med platshållare. Rapporten tar upp de tre slutsatser som
+förtjänar mest uppmärksamhet, var och en med belägg, trolig orsak och ett nästa
+steg, och behåller den komprimerade sammanfattningen under. **Kopiera rapport**
+lägger allt i urklipp som Markdown, redo för en buggrapport eller en
+kodassistent. Varje rapport sparas också bredvid loggfilerna, och den senaste
+visas igen nästa gång du öppnar sidan. Utan modell, eller om modellanropet
+misslyckas, får du ändå sammanfattningen.
+
 ## Utför underhållsåtgärder medvetet
 
 <ManualScreenshot

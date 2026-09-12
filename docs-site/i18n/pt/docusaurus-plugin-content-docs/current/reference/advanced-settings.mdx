@@ -79,6 +79,27 @@ diagnóstico adicional, não o registro mínimo de erros. Desative domínios
 ruidosos após uma investigação para que os logs permaneçam focados e o uso de
 armazenamento continue previsível.
 
+## Ler um relatório do estado do sistema
+
+**Estado do sistema** transforma os arquivos de registro que o Lotti mantém
+neste dispositivo em um relatório curto que você pode compartilhar. Escolha um
+período (as últimas 24 horas, 7 ou 14 dias, ou dias personalizados), confirme
+quais domínios de registro serão analisados (são os mesmos interruptores da
+seção de registro acima, então um domínio ativado é registrado *e* analisado) e
+escolha o modelo que escreve as conclusões. O Lotti propõe o modelo de
+raciocínio do seu perfil de inferência padrão.
+
+Antes de qualquer análise, os dados pessoais são removidos das linhas de
+registro: endereços de e-mail, identificadores, tokens de acesso, caminhos de
+arquivo com seu nome de usuário, endereços IP e números de telefone são
+substituídos por marcadores. O relatório apresenta as três conclusões que mais
+merecem atenção, com as evidências, a causa provável e um próximo passo, e
+mantém abaixo o resumo condensado. **Copiar relatório** coloca tudo na área de
+transferência como Markdown, pronto para um relatório de bug ou um assistente de
+programação. Cada relatório também é salvo ao lado dos arquivos de registro, e o
+mais recente é mostrado de novo na próxima vez que você abrir a página. Sem
+modelo, ou se a chamada ao modelo falhar, você ainda recebe o resumo.
+
 ## Execute ações de manutenção deliberadamente
 
 <ManualScreenshot

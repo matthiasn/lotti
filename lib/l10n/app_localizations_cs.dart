@@ -13629,6 +13629,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nastavte synchronizaci a zobrazte statistiky';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Analyzovat nedávné logy a zkopírovat sdílitelnou zprávu';
+
+  @override
+  String get settingsSystemHealthTitle => 'Stav systému';
+
+  @override
   String get settingsThemingAutomatic => 'Automaticky';
 
   @override
@@ -14536,6 +14543,82 @@ class AppLocalizationsCs extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Krok $step ze 3: $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Vybrat model';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Zpráva zkopírována. Neobsahuje žádné osobní údaje.';
+
+  @override
+  String get systemHealthCopyButton => 'Kopírovat zprávu';
+
+  @override
+  String get systemHealthCustomFromLabel => 'Od';
+
+  @override
+  String get systemHealthCustomToLabel => 'Do';
+
+  @override
+  String get systemHealthDescription =>
+      'Prohledá soubory logů v tomto zařízení a najde chyby, varování a pomalé dotazy, odstraní osobní údaje a napíše krátkou zprávu, kterou můžeš vložit do programovacího asistenta.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'Analyzují se domény, které jsou zde zapnuté – stejné nastavení určuje, co se loguje. Pomalé dotazy jsou zahrnuty, když je zapnuté jejich logování.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Domény logování';
+
+  @override
+  String get systemHealthFailedTitle => 'Analýza selhala';
+
+  @override
+  String get systemHealthHideDigest => 'Skrýt přehled';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Napíše zjištění z anonymizovaného přehledu. Navrhuje myslicí model tvého výchozího profilu.';
+
+  @override
+  String get systemHealthModelNone => 'Jen přehled, bez modelu';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Nastav výchozí inferenční profil nebo přidej agentní textový model, abys získal zjištění.';
+
+  @override
+  String get systemHealthModelTitle => 'Model';
+
+  @override
+  String get systemHealthPresetCustom => 'Vlastní';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 dní';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 h';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 dní';
+
+  @override
+  String get systemHealthRangeTitle => 'Časové období';
+
+  @override
+  String get systemHealthReportTitle => 'Zpráva';
+
+  @override
+  String get systemHealthRunButton => 'Spustit analýzu';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Uloženo do $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Zobrazit přehled';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Probíhá nahrávání zvuku';

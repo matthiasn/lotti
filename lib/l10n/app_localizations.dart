@@ -22439,6 +22439,18 @@ abstract class AppLocalizations {
   /// **'Configure sync and view stats'**
   String get settingsSyncSubtitle;
 
+  /// No description provided for @settingsSystemHealthSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze recent logs and copy a shareable report'**
+  String get settingsSystemHealthSubtitle;
+
+  /// No description provided for @settingsSystemHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'System health'**
+  String get settingsSystemHealthTitle;
+
   /// No description provided for @settingsThemingAutomatic.
   ///
   /// In en, this message translates to:
@@ -23932,6 +23944,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Step {step} of 3: {label}'**
   String syncWizardStepStatus(int step, String label);
+
+  /// No description provided for @systemHealthChooseModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose model'**
+  String get systemHealthChooseModelTitle;
+
+  /// No description provided for @systemHealthCopiedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Report copied. It contains no personal data.'**
+  String get systemHealthCopiedToast;
+
+  /// No description provided for @systemHealthCopyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy report'**
+  String get systemHealthCopyButton;
+
+  /// No description provided for @systemHealthCustomFromLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get systemHealthCustomFromLabel;
+
+  /// No description provided for @systemHealthCustomToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get systemHealthCustomToLabel;
+
+  /// No description provided for @systemHealthDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scans the log files on this device for errors, warnings and slow queries, strips personal data, and writes a short report you can paste into a coding assistant.'**
+  String get systemHealthDescription;
+
+  /// No description provided for @systemHealthDomainsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The domains switched on here are the ones analyzed, the same setting that decides what gets logged. Slow queries are included when slow-query logging is on.'**
+  String get systemHealthDomainsDescription;
+
+  /// No description provided for @systemHealthDomainsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log domains'**
+  String get systemHealthDomainsTitle;
+
+  /// No description provided for @systemHealthFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis failed'**
+  String get systemHealthFailedTitle;
+
+  /// No description provided for @systemHealthHideDigest.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide digest'**
+  String get systemHealthHideDigest;
+
+  /// No description provided for @systemHealthModelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Writes the findings from the redacted digest. Proposes the thinking model of your default profile.'**
+  String get systemHealthModelDescription;
+
+  /// No description provided for @systemHealthModelNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Digest only, no model'**
+  String get systemHealthModelNone;
+
+  /// No description provided for @systemHealthModelNoneDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a default inference profile or add an agentic text model to get findings.'**
+  String get systemHealthModelNoneDescription;
+
+  /// No description provided for @systemHealthModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get systemHealthModelTitle;
+
+  /// No description provided for @systemHealthPresetCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get systemHealthPresetCustom;
+
+  /// No description provided for @systemHealthPresetLast14Days.
+  ///
+  /// In en, this message translates to:
+  /// **'14 days'**
+  String get systemHealthPresetLast14Days;
+
+  /// No description provided for @systemHealthPresetLast24Hours.
+  ///
+  /// In en, this message translates to:
+  /// **'24 h'**
+  String get systemHealthPresetLast24Hours;
+
+  /// No description provided for @systemHealthPresetLast7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get systemHealthPresetLast7Days;
+
+  /// No description provided for @systemHealthRangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time range'**
+  String get systemHealthRangeTitle;
+
+  /// No description provided for @systemHealthReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get systemHealthReportTitle;
+
+  /// No description provided for @systemHealthRunButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Run analysis'**
+  String get systemHealthRunButton;
+
+  /// No description provided for @systemHealthSavedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String systemHealthSavedTo(String path);
+
+  /// No description provided for @systemHealthShowDigest.
+  ///
+  /// In en, this message translates to:
+  /// **'Show digest'**
+  String get systemHealthShowDigest;
 
   /// No description provided for @taskActionBarAudioRecordingActive.
   ///

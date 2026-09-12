@@ -3153,6 +3153,7 @@ void main() {
           '/settings/advanced/animations',
           '/settings/advanced/manual-language',
           '/settings/advanced/logging_domains',
+          '/settings/advanced/system_health',
           '/settings/advanced/maintenance',
           '/settings/advanced/onboarding_metrics',
           '/settings/advanced/about',

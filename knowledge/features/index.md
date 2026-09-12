@@ -42,6 +42,7 @@ what it does for a user; these describe how it runs.
 
 * [Settings](settings.md) - the settings shell: how a route becomes a page, desktop master/detail against mobile drill-down, and the shared editor kit.
 * [Settings v2](settings_v2.md) - where that tree is *defined*, and how feature pages are embedded into it as headerless bodies.
+* [System health](system_health.md) - the on-demand log report: daily files in, redaction, a bucketed digest, and a model's top three findings out.
 * [Design system](design_system/) - tokens, theming, and the component contracts.
 * [Theming](theming.md) - theme selection and construction.
 * [Keyboard](keyboard.md) - the desktop command layer.

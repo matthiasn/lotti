@@ -74,6 +74,25 @@ written to the daily `error-*.log`; these switches govern additional diagnostic
 logging, not the minimum error record. Disable noisy domains after an
 investigation so logs stay focused and storage use remains predictable.
 
+## Read a system health report
+
+**System health** turns the log files Lotti keeps on this device into a short
+report you can share. Choose a time range (the last 24 hours, 7 or 14 days, or
+custom days), confirm which logging domains to analyze — the switches are the
+same ones as in the logging section above, so a domain that is switched on is
+both logged *and* analyzed — and pick the model that writes the findings. Lotti
+proposes the thinking model of your default inference profile.
+
+Before anything is analyzed, personal data is stripped from the log lines:
+email addresses, identifiers, access tokens, file paths that include your user
+name, IP addresses and phone numbers are replaced with placeholders. The report
+lists the three findings that most deserve attention, each with the evidence,
+the likely cause and a next step, and keeps the condensed digest underneath.
+**Copy report** puts the whole thing on the clipboard as Markdown, ready for a
+bug report or a coding assistant. Every report is also saved beside the log
+files, and the newest one is shown again the next time you open the page.
+Without a model, or if the model call fails, you still get the digest.
+
 ## Run maintenance actions deliberately
 
 <ManualScreenshot

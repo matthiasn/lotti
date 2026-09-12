@@ -5,7 +5,7 @@ description: Twenty-four opt-in logging domains, where their lines land, and why
 resource: ../../lib/services/logging_domains.dart
 tags: [architecture, logging, diagnostics, observability]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T21:35:00Z }
+generated: { by: claude-code/fable-5-1, at: 2026-09-12T16:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: log-domains
@@ -104,7 +104,10 @@ There are therefore more files on disk than routing suggests — and two more th
 `LoggingService` does not own at all: `slow_queries` and `super_slow_queries`, both
 written by the database interceptor.
 
-**Files are the only sink.** There is no database table and no in-app log viewer.
+**Files are the only sink.** There is no database table and no in-app log
+viewer; the closest thing is the [system health](../features/system_health.md)
+tool, which reads these files back, redacts them and condenses them into a
+report rather than displaying them.
 The `InsightType` parameter on the capture methods is vestigial — no reader in the
 app ever consults it — so diagnosing a report means reading the log files off the
 device, not opening a screen.
@@ -197,3 +200,4 @@ are documented under [transaction overlap](persistence.md#transaction-overlap).
 | Buffering, files, flag subscription | [`lib/services/logging_service.dart`](../../lib/services/logging_service.dart) |
 | Developer-only console helper | [`lib/services/dev_logger.dart`](../../lib/services/dev_logger.dart) |
 | Slow-query interceptor | [`lib/database/slow_query_logging.dart`](../../lib/database/slow_query_logging.dart) |
+| Reading the files back for a report | [`lib/features/system_health/service/log_file_reader.dart`](../../lib/features/system_health/service/log_file_reader.dart) |

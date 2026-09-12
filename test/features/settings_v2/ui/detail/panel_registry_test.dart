@@ -50,6 +50,7 @@ import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/system_health/ui/system_health_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -87,6 +88,7 @@ void main() {
       'advanced-about',
       'advanced-maintenance',
       'advanced-logging',
+      'advanced-system-health',
       'preferences-animations',
       'advanced-manual-language',
       'advanced-onboarding-metrics',
@@ -265,6 +267,7 @@ void main() {
           isA<OnboardingMetricsBody>(),
         );
         expect(build('advanced-logging'), isA<LoggingSettingsBody>());
+        expect(build('advanced-system-health'), isA<SystemHealthBody>());
         expect(
           build('advanced-manual-language'),
           isA<ManualLanguageSettingsBody>(),

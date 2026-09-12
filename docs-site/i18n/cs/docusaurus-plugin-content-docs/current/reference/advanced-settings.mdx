@@ -74,6 +74,25 @@ zapisují do denního `error-*.log`; tyto přepínače řídí další diagnosti
 minimální záznam chyb. Hlučné oblasti po skončení šetření zase vypni, aby
 protokoly zůstaly přehledné a využití úložiště předvídatelné.
 
+## Přečíst zprávu o stavu systému
+
+**Stav systému** promění soubory logů, které Lotti uchovává v tomto zařízení,
+v krátkou zprávu, kterou můžeš sdílet. Zvol časové období (posledních 24 hodin,
+7 nebo 14 dní, nebo vlastní dny), potvrď, které domény logování se analyzují –
+jsou to stejné přepínače jako v části o logování výše, takže zapnutá doména se
+loguje *i* analyzuje – a vyber model, který napíše zjištění. Lotti navrhne
+myslicí model tvého výchozího inferenčního profilu.
+
+Než se cokoli analyzuje, odstraní se z řádků logu osobní údaje: e-mailové
+adresy, identifikátory, přístupové tokeny, cesty k souborům s tvým uživatelským
+jménem, IP adresy a telefonní čísla se nahradí zástupnými symboly. Zpráva uvádí
+tři zjištění, která si zaslouží nejvíc pozornosti, každé s důkazy,
+pravděpodobnou příčinou a dalším krokem, a pod nimi ponechá zhuštěný přehled.
+**Kopírovat zprávu** vloží vše do schránky jako Markdown, připravené pro hlášení
+chyby nebo programovacího asistenta. Každá zpráva se navíc uloží vedle souborů
+logů a nejnovější se zobrazí znovu při příštím otevření stránky. Bez modelu,
+nebo když volání modelu selže, dostaneš i tak přehled.
+
 ## Spouštěj údržbu záměrně
 
 <ManualScreenshot

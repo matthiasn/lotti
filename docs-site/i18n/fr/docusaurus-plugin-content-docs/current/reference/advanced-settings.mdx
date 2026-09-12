@@ -81,6 +81,28 @@ interrupteurs gouvernent la journalisation diagnostique supplémentaire, pas le
 minimum d’enregistrement des erreurs. Désactive les domaines bruyants après
 l’enquête pour garder des journaux ciblés et un usage de stockage prévisible.
 
+## Lire un rapport d'état du système
+
+**État du système** transforme les fichiers journaux que Lotti conserve sur cet
+appareil en un court rapport que tu peux partager. Choisis une période (les
+dernières 24 heures, 7 ou 14 jours, ou des jours personnalisés), confirme les
+domaines de journalisation à analyser – ce sont les mêmes interrupteurs que dans
+la section sur la journalisation ci-dessus, un domaine activé est donc
+journalisé *et* analysé – puis choisis le modèle qui rédige les constats. Lotti
+propose le modèle de réflexion de ton profil d'inférence par défaut.
+
+Avant toute analyse, les données personnelles sont retirées des lignes de
+journal : adresses e-mail, identifiants, jetons d'accès, chemins de fichiers
+contenant ton nom d'utilisateur, adresses IP et numéros de téléphone sont
+remplacés par des espaces réservés. Le rapport présente les trois constats qui
+méritent le plus d'attention, avec les indices, la cause probable et une
+prochaine étape, et garde le résumé condensé en dessous. **Copier le rapport**
+place l'ensemble dans le presse-papiers au format Markdown, prêt pour un rapport
+de bug ou un assistant de codage. Chaque rapport est aussi enregistré à côté des
+fichiers journaux, et le plus récent s'affiche de nouveau à la prochaine
+ouverture de la page. Sans modèle, ou si l'appel au modèle échoue, tu obtiens
+tout de même le résumé.
+
 ## Exécuter les actions de maintenance délibérément
 
 <ManualScreenshot

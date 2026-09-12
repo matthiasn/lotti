@@ -78,6 +78,26 @@ regelen de aanvullende diagnostische logging, niet het minimale foutrecord. Scha
 luidruchtige domeinen na een onderzoek weer uit, zodat logboeken gefocust blijven en
 het opslaggebruik voorspelbaar blijft.
 
+## Een systeemstatusrapport lezen
+
+**Systeemstatus** maakt van de logbestanden die Lotti op dit apparaat bijhoudt
+een kort rapport dat je kunt delen. Kies een periode (de laatste 24 uur, 7 of
+14 dagen, of eigen dagen), bevestig welke logdomeinen worden geanalyseerd – dat
+zijn dezelfde schakelaars als in het loggedeelte hierboven, dus een ingeschakeld
+domein wordt gelogd *én* geanalyseerd – en kies het model dat de bevindingen
+schrijft. Lotti stelt het denkmodel van je standaard inferentieprofiel voor.
+
+Voordat er iets wordt geanalyseerd, worden persoonlijke gegevens uit de
+logregels verwijderd: e-mailadressen, identifiers, toegangstokens, bestandspaden
+met je gebruikersnaam, IP-adressen en telefoonnummers worden vervangen door
+plaatshouders. Het rapport noemt de drie bevindingen die de meeste aandacht
+verdienen, elk met het bewijs, de waarschijnlijke oorzaak en een volgende stap,
+en houdt daaronder de verdichte samenvatting. **Rapport kopiëren** zet alles als
+Markdown op het klembord, klaar voor een bugmelding of een codeerassistent. Elk
+rapport wordt ook naast de logbestanden opgeslagen, en het nieuwste wordt
+opnieuw getoond als je de pagina de volgende keer opent. Zonder model, of als de
+modelaanroep mislukt, krijg je toch de samenvatting.
+
 ## Voer bewust onderhoudsacties uit
 
 <ManualScreenshot
