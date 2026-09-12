@@ -147,32 +147,46 @@ class DeepseekImageProbeTest(unittest.TestCase):
             )
         )
 
-    def test_case_without_separator_reports_usage_error_before_inference(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            image_file = root / "sample.png"
-            image_file.write_bytes(b"synthetic-image-bytes")
-            argv = [
-                "probe",
-                "--image",
-                str(image_file),
-                "--output",
-                str(root / "results"),
-                "--cases",
-                "invalid",
-            ]
-            stderr = io.StringIO()
-            with (
-                patch("sys.argv", argv),
-                patch.dict(os.environ, {"MELIOUS_API_KEY": "test-key"}, clear=True),
-                patch.object(probe.urllib.request, "build_opener") as build_opener,
-                contextlib.redirect_stderr(stderr),
-                self.assertRaises(SystemExit) as raised,
-            ):
-                probe.main()
-            self.assertEqual(raised.exception.code, 2)
-            self.assertIn("Unsupported case: invalid", stderr.getvalue())
-            build_opener.return_value.open.assert_not_called()
+    def test_invalid_cases_report_usage_error_before_any_setup(self):
+        for cases in [
+            ["invalid"],
+            ["text-auto", "invalid"],
+            ["other-auto"],
+            ["image-unknown"],
+        ]:
+            with self.subTest(cases=cases):
+                argv = [
+                    "probe",
+                    "--image",
+                    "/missing/image.png",
+                    "--output",
+                    "/unused/results",
+                    "--cases",
+                    *cases,
+                ]
+                stderr = io.StringIO()
+                with (
+                    patch("sys.argv", argv),
+                    patch.object(
+                        probe,
+                        "credentials",
+                        return_value=("test-key", "https://api.melious.ai/v1"),
+                    ) as credentials,
+                    patch.object(
+                        Path,
+                        "read_bytes",
+                        side_effect=AssertionError("Image read before case validation"),
+                    ) as read_image,
+                    patch.object(probe.urllib.request, "build_opener") as build_opener,
+                    contextlib.redirect_stderr(stderr),
+                    self.assertRaises(SystemExit) as raised,
+                ):
+                    probe.main()
+                self.assertEqual(raised.exception.code, 2)
+                self.assertIn(f"Unsupported case: {cases[-1]}", stderr.getvalue())
+                credentials.assert_not_called()
+                read_image.assert_not_called()
+                build_opener.assert_not_called()
 
 
 if __name__ == "__main__":
