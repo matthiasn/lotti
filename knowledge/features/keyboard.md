@@ -46,3 +46,19 @@ The original command-system rationale is recorded in
 [ADR 0030](../../docs/adr/0030-desktop-keyboard-command-system.md). The catalog's
 deliberately lean metadata contract is recorded in
 [ADR 0047](../../docs/adr/0047-lean-keyboard-command-catalog-metadata.md).
+
+# List and detail focus
+
+`ListDetailFocusTraversal` keeps hidden list content mounted and moves focus
+into details when hiding the list. Hosts can disable `focusListOnExternalReveal`
+when a layout-driven reveal must preserve a companion's return focus. The
+controller's explicit Show list action still transfers focus into the list.
+
+```mermaid
+flowchart LR
+  Hide[Hide list] --> Detail[Focus detail region]
+  Show[Explicit Show list] --> List[Focus list region]
+  Reveal[Host reveals list] --> Policy{focusListOnExternalReveal}
+  Policy -->|true| List
+  Policy -->|false| Keep[Preserve focus]
+```

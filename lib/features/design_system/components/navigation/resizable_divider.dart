@@ -26,6 +26,9 @@ class ResizableDivider extends StatefulWidget {
          'Provide all resize semantic values or none of them.',
        );
 
+  /// Reserved row width, independent of the overflowing pointer hit target.
+  static const layoutWidth = 3.0;
+
   /// Called with the change in pane width. Pointer and arrow-key deltas are
   /// reversed when [reverse] is true; semantic increase always grows the pane.
   /// Ignored while [enabled] is false.
@@ -90,13 +93,13 @@ class _ResizableDividerState extends State<ResizableDivider> {
     // 3 px width (hover/drag), while a wider invisible [OverflowBox] on top
     // preserves the full hitTargetWidth drag/hover area.
     final visual = SizedBox(
-      width: 3,
+      width: ResizableDivider.layoutWidth,
       child: OverflowBox(
         maxWidth: widget.hitTargetWidth,
         child: Center(
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: isActive ? 3 : 1,
+            width: isActive ? ResizableDivider.layoutWidth : 1,
             color: lineColor,
           ),
         ),

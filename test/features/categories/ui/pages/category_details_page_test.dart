@@ -129,55 +129,71 @@ void main() {
       }
     }
 
-    testWidgets('Ask preserves an unsaved category name when returning', (
-      tester,
-    ) async {
-      final scope = QueryScope(
-        kind: QueryScopeKind.category,
-        id: testCategoryId,
-      );
-      final category = CategoryTestUtils.createTestCategory(
-        id: testCategoryId,
-        name: 'Penguin habitat',
-      );
-      when(
-        () => mockRepository.watchCategory(testCategoryId),
-      ).thenAnswer((_) => Stream.value(category));
-      await pumpCategoryDetailsPage(
+    testWidgets(
+      'Ask keeps the category form mounted with unsaved text and selection',
+      (
         tester,
-        settle: true,
-        extraOverrides: [
-          queryChatEnabledProvider.overrideWithValue(true),
-          queryChatTargetProvider(scope).overrideWith(
-            (ref) async => QueryChatTarget(
-              scope: scope,
-              label: category.name,
-              agent: null,
+      ) async {
+        final scope = QueryScope(
+          kind: QueryScopeKind.category,
+          id: testCategoryId,
+        );
+        final category = CategoryTestUtils.createTestCategory(
+          id: testCategoryId,
+          name: 'Penguin habitat',
+        );
+        when(
+          () => mockRepository.watchCategory(testCategoryId),
+        ).thenAnswer((_) => Stream.value(category));
+        await pumpCategoryDetailsPage(
+          tester,
+          settle: true,
+          extraOverrides: [
+            queryChatEnabledProvider.overrideWithValue(true),
+            queryChatTargetProvider(scope).overrideWith(
+              (ref) async => QueryChatTarget(
+                scope: scope,
+                label: category.name,
+                agent: null,
+              ),
             ),
-          ),
-          configFlagProvider(
-            'private',
-          ).overrideWith((ref) => Stream.value(false)),
-          chatRecorderControllerProvider.overrideWith(
-            TranscriptEmittingController.new,
-          ),
-        ],
-      );
-      await tester.enterText(nameFieldFinder(), 'Unsaved habitat name');
-      await tester.tap(find.text('Ask about this category'));
-      await tester.pumpAndSettle();
-      expect(
-        tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
-        scope,
-      );
-      await tester.tap(find.byIcon(LottiIcons.back).first);
-      await tester.pumpAndSettle();
-      expect(find.byType(QueryChatPane), findsNothing);
-      expect(
-        tester.widget<TextField>(nameFieldFinder()).controller!.text,
-        'Unsaved habitat name',
-      );
-    });
+            configFlagProvider(
+              'private',
+            ).overrideWith((ref) => Stream.value(false)),
+            chatRecorderControllerProvider.overrideWith(
+              TranscriptEmittingController.new,
+            ),
+          ],
+        );
+        await tester.enterText(nameFieldFinder(), 'Unsaved habitat name');
+        final field = tester.element(nameFieldFinder());
+        final input = tester.widget<TextField>(nameFieldFinder()).controller!
+          ..selection = const TextSelection(baseOffset: 2, extentOffset: 7);
+        await tester.tap(find.text('Ask about this category'));
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
+          scope,
+        );
+        expect(tester.element(nameFieldFinder()), same(field));
+        expect(
+          tester.widget<QueryChatPane>(find.byType(QueryChatPane)).companion,
+          isTrue,
+        );
+        expect(
+          input.selection,
+          const TextSelection(baseOffset: 2, extentOffset: 7),
+        );
+        await tester.tap(find.byIcon(LottiIcons.close).last);
+        await tester.pumpAndSettle();
+        expect(find.byType(QueryChatPane), findsNothing);
+        expect(tester.element(nameFieldFinder()), same(field));
+        expect(
+          tester.widget<TextField>(nameFieldFinder()).controller!.text,
+          'Unsaved habitat name',
+        );
+      },
+    );
 
     testWidgets(
       'name field does not reseed selection/text on rebuild during edit',

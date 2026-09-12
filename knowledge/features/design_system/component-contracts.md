@@ -117,6 +117,8 @@ contiguous selected band per option. Checkbox-first lists can set
 `showSelectedBackground: false` when the checkmark is the deliberate sole state
 indicator; checked semantics and the full-row action remain unchanged.
 
+`ResizableDivider.layoutWidth` exposes its reserved row width for fit
+calculations; its wider pointer hit target overflows without consuming space.
 `ResizableDivider.reverse` controls a pane on the divider's right: dragging or
 pressing Left grows that pane, while the semantic Increase action always grows
 the announced width. Pointer direction and value direction are separate.

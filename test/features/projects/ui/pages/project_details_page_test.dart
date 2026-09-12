@@ -275,7 +275,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('Ask opens the project scope and Back restores project details', (
+  testWidgets('Ask keeps project details mounted in a companion until Close', (
     tester,
   ) async {
     const scope = QueryScope(kind: QueryScopeKind.project, id: _projectId);
@@ -303,15 +303,28 @@ void main() {
         ),
       ],
     );
+    final detail = tester.element(find.byType(ProjectMobileDetailContent));
     await tester.tap(find.text('Ask'));
     await tester.pumpAndSettle();
     expect(
       tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
       scope,
     );
-    await tester.tap(find.byIcon(LottiIcons.back).first);
+    expect(
+      tester.element(find.byType(ProjectMobileDetailContent)),
+      same(detail),
+    );
+    expect(
+      tester.widget<QueryChatPane>(find.byType(QueryChatPane)).companion,
+      isTrue,
+    );
+    await tester.tap(find.byIcon(LottiIcons.close).last);
     await tester.pumpAndSettle();
     expect(find.byType(QueryChatPane), findsNothing);
+    expect(
+      tester.element(find.byType(ProjectMobileDetailContent)),
+      same(detail),
+    );
     expect(find.text(testProject.data.title), findsWidgets);
   });
 
