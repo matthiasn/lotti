@@ -514,12 +514,11 @@ class SkillInferenceRunner {
         final collected = await _collectStream(responseStream);
 
         // Decode the tiers when we asked for them. Unlike the audio summary,
-        // a rejected tool call does NOT fail the run and buys no retry: the
-        // analysis is the artifact users have always got, the tiers only make
-        // it easier to scan, and losing an analysis to reclaim a one-liner
-        // would be a bad trade. A model that answered in prose instead simply
-        // lands on the untiered path below.
+        // invalid shorter tiers must not discard the full analysis. Recover
+        // the tool's summary on its own before falling back to streamed prose.
+        // Audio summaries still require all three tiers and retry on failure.
         EntrySummary? tiers;
+        String? recoveredSummary;
         if (useTieredSummary) {
           try {
             tiers = parseEntrySummaryToolCall(collected.toolCalls);
@@ -527,19 +526,26 @@ class SkillInferenceRunner {
             _loggingService.log(
               LogDomain.ai,
               'Image analysis tiers unavailable for $imageEntryId '
-              '(${e.reason}) — falling back to the prose analysis',
+              '(${e.reason}) — trying analysis without tiers',
               subDomain: 'runImageAnalysis',
             );
+            try {
+              recoveredSummary = parseEntrySummaryToolBody(collected.toolCalls);
+            } on EntrySummaryToolException {
+              // Malformed/missing tool content cannot supply an analysis;
+              // streamed prose remains usable, if the model supplied any.
+            }
           }
         }
 
-        // The tool's `summary` argument IS the analysis when tiers came back;
-        // otherwise the streamed prose is, exactly as before. Resolved BEFORE
+        // Prefer the tool's valid summary, with or without shorter tiers, then
+        // streamed prose. Resolve the body BEFORE
         // the consumption record, because that record hashes the response for
         // provenance: a tool call leaves `collected.content` empty, so hashing
         // it would stamp every tiered analysis with the digest of an empty
         // string and break the link to the `AiResponseEntry` it describes.
-        final response = tiers?.summary ?? collected.content.trim();
+        final response =
+            tiers?.summary ?? recoveredSummary ?? collected.content.trim();
         if (response.isEmpty) {
           throw StateError(
             'Empty image analysis response for $imageEntryId',

@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T14:24:03Z }
 stale_after: 2026-10-19
 sources:
   - id: runner
@@ -336,20 +336,24 @@ Image analysis publishes the same three tiers through the same
 from analysis being the older, load-bearing artifact:
 
 - **Tiers are conditional on the model.** They are requested only when the
-  resolved vision model's `supportsFunctionCalling` is true. Many capable
+  resolved vision model's `supportsFunctionCalling` is true and the provider's
+  image route supports tools. Many capable
   vision models cannot call tools, and this skill shipped on a free-text
   contract long before the tiers existed — so tool support *upgrades* the
   output rather than gating it. Without it, no tool is attached, no tier
   instruction is appended (`SkillPromptBuilder`'s `requestTieredSummary`), and
   the result is byte-for-byte what it is today.
-- **A rejected tool call is not a failure and buys no retry.** A model that
-  answers in prose despite the pin simply lands on the untiered path with its
-  analysis intact. Losing an analysis to reclaim a one-liner would be a bad
-  trade — the inverse of the audio summary, where the tiers *are* the artifact
-  and a failed run costs nothing already persisted.
+- **Invalid shorter tiers do not discard a valid analysis or trigger a retry.**
+  If full tier validation fails, `parseEntrySummaryToolBody` recovers the
+  non-empty string `summary` from the first matching tool call's JSON object.
+  It saves that body without `oneLiner` or `tldr`. If the tool body is also
+  invalid or absent, streamed prose is the fallback. With neither a valid tool
+  body nor non-empty prose, the run fails as an empty analysis. Audio summaries
+  continue to require all three tiers and retry failed validation.
 
-When tiers do come back, the tool's `summary` argument becomes the analysis
-body; `response` is never the raw streamed prose in that case.
+The tool's valid `summary` argument takes precedence over streamed prose,
+whether all tiers validated or only the body was recovered. The consumption
+record hashes that same body before it is persisted, preserving provenance.
 
 The collapsed image card leads with a **thumbnail**, not a text line: an
 image's payload is the picture, so collapsing it to text alone would be harder

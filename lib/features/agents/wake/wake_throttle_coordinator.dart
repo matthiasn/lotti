@@ -32,6 +32,8 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   final _throttleDeadlines = <String, DateTime>{};
   final _deferredDrainTimers = <String, Timer>{};
   final _pendingClears = <String, Future<void>>{};
+  final _queuedClears = <({String agentId, Completer<void> completion})>[];
+  bool _clearWorkerScheduled = false;
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(LogDomain.agentRuntime, message, subDomain: subDomain);
@@ -121,8 +123,9 @@ class WakeThrottleCoordinator with AgentErrorLogging {
   /// Cancels [agentId]'s cooldown: drops the in-memory deadline, cancels the
   /// deferred drain timer, and clears the persisted `nextWakeAt`. Used when a
   /// wake is forced (e.g. manual re-analysis) and the countdown is moot.
-  /// Concurrent clears share the persisted read until it completes. Even when
-  /// no deadline was hydrated, the first clear retires stale persisted state.
+  /// Concurrent clears share a bulk read and transaction. Repeated clears for
+  /// one agent share their completion until that deadline generation changes.
+  /// Even unhydrated persisted deadlines are retired.
   void clearThrottle(String agentId) {
     _throttleDeadlines.remove(agentId);
     _deferredDrainTimers[agentId]?.cancel();
@@ -145,52 +148,80 @@ class WakeThrottleCoordinator with AgentErrorLogging {
     _deferredDrainTimers.clear();
   }
 
-  /// Clears the persisted `nextWakeAt` on the agent's state entity.
-  ///
-  /// Writes directly to repository (bypassing AgentSyncService) because
-  /// throttle state is per-device and should NOT be synced to other devices.
+  /// Queues device-local clears for one bulk read per burst. The worker keeps
+  /// at most one clear transaction in flight; new requests join the next batch.
   Future<void> _clearPersistedThrottle(String agentId) {
     final pending = _pendingClears[agentId];
     if (pending != null) return pending;
-    final clear = _persistThrottleClear(agentId);
-    _pendingClears[agentId] = clear;
-    unawaited(
-      clear.whenComplete(() {
-        if (identical(_pendingClears[agentId], clear)) {
-          _pendingClears.remove(agentId);
-        }
-      }),
-    );
-    return clear;
+    final completion = Completer<void>();
+    _pendingClears[agentId] = completion.future;
+    _queuedClears.add((agentId: agentId, completion: completion));
+    if (!_clearWorkerScheduled) {
+      _clearWorkerScheduled = true;
+      scheduleMicrotask(() => unawaited(_flushPersistedClears()));
+    }
+    return completion.future;
   }
 
-  Future<void> _persistThrottleClear(String agentId) async {
-    try {
-      if (_throttleDeadlines.containsKey(agentId)) return;
-
-      var changed = false;
-      await repository.runInTransaction(() async {
-        if (_throttleDeadlines.containsKey(agentId)) return;
-        final state = await repository.getAgentState(agentId);
-        if (_throttleDeadlines.containsKey(agentId) ||
-            state == null ||
-            state.nextWakeAt == null) {
-          return;
+  Future<void> _flushPersistedClears() async {
+    while (_queuedClears.isNotEmpty) {
+      final batch = List.of(_queuedClears);
+      _queuedClears.clear();
+      final agentIds = batch
+          .map((request) => request.agentId)
+          .toSet()
+          .where((id) => !_throttleDeadlines.containsKey(id))
+          .toList();
+      try {
+        final changed = <String>[];
+        if (agentIds.isNotEmpty) {
+          // Read and write inside the same transaction as other partial state
+          // writers. Only pending rows are decoded; idle agents cost no writes.
+          await repository.runInTransaction(() async {
+            final states = agentIds.length == 1
+                ? {
+                    agentIds.single: await repository.getAgentState(
+                      agentIds.single,
+                    ),
+                  }
+                : await repository.getAgentStatesWithPendingWakes(agentIds);
+            for (final agentId in agentIds) {
+              final state = states[agentId];
+              if (_throttleDeadlines.containsKey(agentId) ||
+                  state == null ||
+                  state.nextWakeAt == null) {
+                continue;
+              }
+              await repository.upsertEntity(
+                state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
+              );
+              changed.add(agentId);
+            }
+          });
         }
-        await repository.upsertEntity(
-          state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
+        final onChanged = onPersistedStateChanged;
+        if (onChanged != null) changed.forEach(onChanged);
+      } catch (e, s) {
+        logError(
+          'failed to clear persisted throttle batch (${agentIds.length} agents)',
+          error: e,
+          stackTrace: s,
         );
-        changed = true;
-      });
-      if (changed) onPersistedStateChanged?.call(agentId);
-    } catch (e, s) {
-      logError(
-        'failed to clear persisted throttle '
-        'for ${DomainLogger.sanitizeId(agentId)}',
-        error: e,
-        stackTrace: s,
-      );
+      } finally {
+        for (final request in batch) {
+          // A newly armed deadline can queue another clear while this batch
+          // awaits storage. Completing the older batch must not evict it.
+          if (identical(
+            _pendingClears[request.agentId],
+            request.completion.future,
+          )) {
+            unawaited(_pendingClears.remove(request.agentId));
+          }
+          request.completion.complete();
+        }
+      }
     }
+    _clearWorkerScheduled = false;
   }
 
   void _scheduleDeferredDrain(String agentId, DateTime deadline) {

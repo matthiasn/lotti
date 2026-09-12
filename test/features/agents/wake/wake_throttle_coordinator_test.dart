@@ -332,8 +332,28 @@ void main() {
 
   late MockAgentRepository repository;
 
+  // Existing state-machine scenarios drive individual persisted rows. Adapt
+  // those fixtures to the bulk query while dedicated cost tests count calls.
+  void stubPendingWakeStates(MockAgentRepository repo) {
+    when(() => repo.getAgentStatesWithPendingWakes(any())).thenAnswer((
+      invocation,
+    ) async {
+      final ids = invocation.positionalArguments.single as List<String>;
+      final states = <String, AgentStateEntity>{};
+      for (final id in ids) {
+        final state = await repo.getAgentState(id);
+        if (state != null &&
+            (state.nextWakeAt != null || state.scheduledWakeAt != null)) {
+          states[id] = state;
+        }
+      }
+      return states;
+    });
+  }
+
   setUp(() {
     repository = MockAgentRepository();
+    stubPendingWakeStates(repository);
     when(() => repository.getAgentState(any())).thenAnswer((invocation) async {
       final agentId = invocation.positionalArguments.first as String;
       return makeTestState(agentId: agentId);
@@ -436,6 +456,172 @@ void main() {
       });
     });
 
+    test('clears a startup burst with one transaction and one bulk read', () {
+      fakeAsync((async) {
+        final transactionRepository = _TransactionCheckingAgentRepository();
+        final activityAt = DateTime(2026, 9, 12, 10);
+        final stale = makeTestState(
+          agentId: 'agent-7',
+          nextWakeAt: activityAt,
+          slots: AgentSlots(pendingProjectActivityAt: activityAt),
+        );
+        final scheduled = makeTestState(
+          agentId: 'agent-8',
+          scheduledWakeAt: activityAt,
+        );
+        when(
+          () => transactionRepository.getAgentStatesWithPendingWakes(any()),
+        ).thenAnswer((_) async {
+          expect(transactionRepository.insideTransaction, isTrue);
+          return {'agent-7': stale, 'agent-8': scheduled};
+        });
+        when(
+          () => transactionRepository.getAgentState(any()),
+        ).thenAnswer((invocation) async {
+          final id = invocation.positionalArguments.single as String;
+          return id == 'agent-7' ? stale : makeTestState(agentId: id);
+        });
+        when(
+          () => transactionRepository.upsertEntity(any()),
+        ).thenAnswer((_) async {
+          expect(transactionRepository.insideTransaction, isTrue);
+        });
+        final changed = <String>[];
+        final coordinator = WakeThrottleCoordinator(
+          repository: transactionRepository,
+          onDrainRequested: () async {},
+          onPersistedStateChanged: changed.add,
+          throttleWindow: _generatedThrottleWindow,
+        );
+        addTearDown(coordinator.dispose);
+
+        for (var i = 0; i < 1600; i++) {
+          coordinator.clearThrottle('agent-$i');
+        }
+        async.flushMicrotasks();
+
+        expect(transactionRepository.transactionCount, 1);
+        final ids =
+            verify(
+                  () => transactionRepository.getAgentStatesWithPendingWakes(
+                    captureAny(),
+                  ),
+                ).captured.single
+                as List<String>;
+        expect(ids.toSet(), {for (var i = 0; i < 1600; i++) 'agent-$i'});
+        verifyNever(() => transactionRepository.getAgentState(any()));
+        final saved =
+            verify(
+                  () => transactionRepository.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(saved.agentId, 'agent-7');
+        expect(saved.nextWakeAt, isNull);
+        expect(saved.slots.pendingProjectActivityAt, activityAt);
+        expect(changed, ['agent-7']);
+      });
+    });
+
+    test('serializes clear batches and preserves a re-armed bulk-read row', () {
+      fakeAsync((async) {
+        final read = Completer<Map<String, AgentStateEntity>>();
+        final now = DateTime(2026, 9, 12, 10);
+        var bulkReads = 0;
+        when(
+          () => repository.getAgentStatesWithPendingWakes(any()),
+        ).thenAnswer((invocation) {
+          bulkReads++;
+          if (bulkReads == 1) return read.future;
+          final ids = invocation.positionalArguments.single as List<String>;
+          return Future.value({
+            for (final id in ids)
+              id: makeTestState(agentId: id, nextWakeAt: now),
+          });
+        });
+        final changed = <String>[];
+        final coordinator = createCoordinator(
+          onDrainRequested: () async {},
+          onPersistedStateChanged: changed.add,
+        );
+        addTearDown(coordinator.dispose);
+        withClock(Clock.fixed(now), () {
+          coordinator
+            ..clearThrottle('agent-1')
+            ..clearThrottle('agent-2');
+          async.flushMicrotasks();
+          coordinator
+            ..setDeadlineFromHydration(
+              'agent-1',
+              now.add(const Duration(hours: 1)),
+            )
+            ..clearThrottle('agent-3')
+            ..clearThrottle('agent-4');
+          async.flushMicrotasks();
+          expect(bulkReads, 1, reason: 'no overlapping clear batch');
+          read.complete({
+            for (final id in ['agent-1', 'agent-2'])
+              id: makeTestState(agentId: id, nextWakeAt: now),
+          });
+          async.flushMicrotasks();
+          expect(bulkReads, 2);
+          final saved = verify(
+            () => repository.upsertEntity(captureAny()),
+          ).captured.cast<AgentStateEntity>();
+          expect(saved.map((s) => s.agentId), [
+            'agent-2',
+            'agent-3',
+            'agent-4',
+          ]);
+          expect(saved.every((s) => s.nextWakeAt == null), isTrue);
+          expect(changed, ['agent-2', 'agent-3', 'agent-4']);
+          expect(
+            coordinator.deadlineFor('agent-1'),
+            now.add(const Duration(hours: 1)),
+          );
+        });
+      });
+    });
+
+    test('a failed bulk read releases its clears for a later retry', () {
+      fakeAsync((async) {
+        var fail = true;
+        final now = DateTime(2026, 9, 12, 10);
+        when(
+          () => repository.getAgentStatesWithPendingWakes(any()),
+        ).thenAnswer((_) async {
+          if (fail) throw StateError('read failed');
+          return {
+            'agent-1': makeTestState(agentId: 'agent-1', nextWakeAt: now),
+          };
+        });
+        final changed = <String>[];
+        final coordinator = createCoordinator(
+          onDrainRequested: () async {},
+          onPersistedStateChanged: changed.add,
+        );
+        addTearDown(coordinator.dispose);
+        coordinator
+          ..clearThrottle('agent-1')
+          ..clearThrottle('agent-2');
+        async.flushMicrotasks();
+        verifyNever(() => repository.upsertEntity(any()));
+        expect(changed, isEmpty);
+        fail = false;
+        coordinator
+          ..clearThrottle('agent-1')
+          ..clearThrottle('agent-2');
+        async.flushMicrotasks();
+        final saved =
+            verify(
+                  () => repository.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(saved.agentId, 'agent-1');
+        expect(saved.nextWakeAt, isNull);
+        expect(changed, ['agent-1']);
+      });
+    });
+
     test('coalesces repeated clears while the same state read is pending', () {
       fakeAsync((async) {
         final read = Completer<AgentStateEntity?>();
@@ -490,7 +676,7 @@ void main() {
         async.flushMicrotasks();
         coordinator.clearThrottle('agent-1');
         async.flushMicrotasks();
-        expect(reads, hasLength(3));
+        expect(reads, hasLength(2), reason: 'the next clear batch waits');
 
         reads[0].complete(makeTestState(agentId: 'agent-1'));
         async.flushMicrotasks();
@@ -545,6 +731,7 @@ void main() {
     test('serializes persisted throttle set and clear mutations', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final transactionRepository = _TransactionCheckingAgentRepository();
+      stubPendingWakeStates(transactionRepository);
       var state = makeTestState(
         agentId: 'agent-1',
         slots: AgentSlots(
