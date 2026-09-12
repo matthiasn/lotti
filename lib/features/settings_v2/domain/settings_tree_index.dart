@@ -83,6 +83,7 @@ const Map<String, String> settingsNodeUrls = {
   'advanced': '/settings/advanced',
   'advanced/manual-language': '/settings/advanced/manual-language',
   'advanced/logging': '/settings/advanced/logging_domains',
+  'advanced/system-health': '/settings/advanced/system_health',
   // Mobile-only Health import leaf; the flat route is unchanged.
   'advanced/health-import': '/settings/health_import',
   'advanced/maintenance': '/settings/advanced/maintenance',

@@ -13715,6 +13715,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Configurați sincronizarea și vizualizați statisticile';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Analizați jurnalele recente și copiați un raport care poate fi partajat';
+
+  @override
+  String get settingsSystemHealthTitle => 'Starea sistemului';
+
+  @override
   String get settingsThemingAutomatic => 'Automat';
 
   @override
@@ -14639,6 +14646,82 @@ class AppLocalizationsRo extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Pasul $step din 3: $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Alegeți modelul';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Raport copiat. Tiparele cunoscute de date personale au fost eliminate.';
+
+  @override
+  String get systemHealthCopyButton => 'Copiați raportul';
+
+  @override
+  String get systemHealthCustomFromLabel => 'De la';
+
+  @override
+  String get systemHealthCustomToLabel => 'Până la';
+
+  @override
+  String get systemHealthDescription =>
+      'Parcurge fișierele jurnal de pe acest dispozitiv în căutarea erorilor, avertismentelor și interogărilor lente, elimină tiparele cunoscute de date personale și scrie un raport scurt pe care îl puteți lipi într-un asistent de programare.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'Domeniile activate aici sunt cele analizate, aceeași setare care decide ce se jurnalizează. Interogările lente sunt incluse când jurnalizarea lor este activă.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Domenii de jurnalizare';
+
+  @override
+  String get systemHealthFailedTitle => 'Analiza a eșuat';
+
+  @override
+  String get systemHealthHideDigest => 'Ascundeți rezumatul';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Scrie constatările pe baza rezumatului anonimizat. Propune modelul de raționament al profilului dvs. implicit.';
+
+  @override
+  String get systemHealthModelNone => 'Doar rezumat, fără model';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Setați un profil de inferență implicit sau adăugați un model text agentic pentru a obține constatări.';
+
+  @override
+  String get systemHealthModelTitle => 'Model';
+
+  @override
+  String get systemHealthPresetCustom => 'Personalizat';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 zile';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 h';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 zile';
+
+  @override
+  String get systemHealthRangeTitle => 'Interval de timp';
+
+  @override
+  String get systemHealthReportTitle => 'Raport';
+
+  @override
+  String get systemHealthRunButton => 'Rulați analiza';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Salvat în $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Afișați rezumatul';
 
   @override
   String get taskActionBarAudioRecordingActive =>

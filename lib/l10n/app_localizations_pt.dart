@@ -13566,6 +13566,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Configurar sincronização e visualizar estatísticas';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Analise os registros recentes e copie um relatório compartilhável';
+
+  @override
+  String get settingsSystemHealthTitle => 'Estado do sistema';
+
+  @override
   String get settingsThemingAutomatic => 'Automático';
 
   @override
@@ -14482,6 +14489,82 @@ class AppLocalizationsPt extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Passo $step de 3: $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Escolher modelo';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Relatório copiado. Padrões conhecidos de dados pessoais foram removidos.';
+
+  @override
+  String get systemHealthCopyButton => 'Copiar relatório';
+
+  @override
+  String get systemHealthCustomFromLabel => 'De';
+
+  @override
+  String get systemHealthCustomToLabel => 'Até';
+
+  @override
+  String get systemHealthDescription =>
+      'Examina os arquivos de registro deste dispositivo em busca de erros, avisos e consultas lentas, remove padrões conhecidos de dados pessoais e escreve um relatório curto que você pode colar em um assistente de programação.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'Os domínios ativados aqui são os analisados, a mesma configuração que decide o que é registrado. As consultas lentas são incluídas quando o registro delas está ativado.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Domínios de registro';
+
+  @override
+  String get systemHealthFailedTitle => 'A análise falhou';
+
+  @override
+  String get systemHealthHideDigest => 'Ocultar resumo';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Escreve as conclusões a partir do resumo anonimizado. Propõe o modelo de raciocínio do seu perfil padrão.';
+
+  @override
+  String get systemHealthModelNone => 'Apenas resumo, sem modelo';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Defina um perfil de inferência padrão ou adicione um modelo de texto agêntico para obter conclusões.';
+
+  @override
+  String get systemHealthModelTitle => 'Modelo';
+
+  @override
+  String get systemHealthPresetCustom => 'Personalizado';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 dias';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 h';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 dias';
+
+  @override
+  String get systemHealthRangeTitle => 'Período';
+
+  @override
+  String get systemHealthReportTitle => 'Relatório';
+
+  @override
+  String get systemHealthRunButton => 'Executar análise';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Salvo em $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Mostrar resumo';
 
   @override
   String get taskActionBarAudioRecordingActive =>

@@ -968,6 +968,19 @@
       "status": "verified"
     },
     {
+      "id": "settings-system-health",
+      "title": "System health",
+      "kind": "settings-page",
+      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "sourcePattern": "'advanced/system-health'",
+      "locator": "/settings/advanced/system_health",
+      "routes": [
+        "/settings/advanced/system_health"
+      ],
+      "page": "reference/advanced-settings",
+      "status": "documented"
+    },
+    {
       "id": "settings-health-import",
       "title": "Health import",
       "kind": "settings-page",

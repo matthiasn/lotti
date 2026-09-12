@@ -187,6 +187,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsLoggingDomainsTitle,
           desc: m.settingsLoggingDomainsSubtitle,
         );
+      case 'advanced/system-health':
+        return (
+          title: m.settingsSystemHealthTitle,
+          desc: m.settingsSystemHealthSubtitle,
+        );
       case 'advanced/health-import':
         return (
           title: m.settingsHealthImportTitle,

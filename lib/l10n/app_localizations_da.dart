@@ -13448,6 +13448,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Konfigurer synkronisering og vis statistikker';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Analysér de seneste logfiler og kopiér en rapport, du kan dele';
+
+  @override
+  String get settingsSystemHealthTitle => 'Systemtilstand';
+
+  @override
   String get settingsThemingAutomatic => 'Automatisk';
 
   @override
@@ -14346,6 +14353,82 @@ class AppLocalizationsDa extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Trin $step af 3: $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Vælg model';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Rapporten er kopieret. Kendte mønstre af personlige data er fjernet.';
+
+  @override
+  String get systemHealthCopyButton => 'Kopiér rapport';
+
+  @override
+  String get systemHealthCustomFromLabel => 'Fra';
+
+  @override
+  String get systemHealthCustomToLabel => 'Til';
+
+  @override
+  String get systemHealthDescription =>
+      'Gennemgår logfilerne på denne enhed for fejl, advarsler og langsomme forespørgsler, fjerner kendte mønstre af personlige data og skriver en kort rapport, som du kan indsætte i en kodeassistent.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'De domæner, der er slået til her, er dem, der analyseres – samme indstilling som afgør, hvad der logges. Langsomme forespørgsler tages med, når logning af dem er slået til.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Logdomæner';
+
+  @override
+  String get systemHealthFailedTitle => 'Analysen mislykkedes';
+
+  @override
+  String get systemHealthHideDigest => 'Skjul sammendrag';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Skriver fundene ud fra det anonymiserede sammendrag. Foreslår tænkemodellen fra din standardprofil.';
+
+  @override
+  String get systemHealthModelNone => 'Kun sammendrag, ingen model';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Vælg en standardprofil til inferens, eller tilføj en agentisk tekstmodel for at få fund.';
+
+  @override
+  String get systemHealthModelTitle => 'Model';
+
+  @override
+  String get systemHealthPresetCustom => 'Brugerdefineret';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 dage';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 t';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 dage';
+
+  @override
+  String get systemHealthRangeTitle => 'Tidsrum';
+
+  @override
+  String get systemHealthReportTitle => 'Rapport';
+
+  @override
+  String get systemHealthRunButton => 'Kør analyse';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Gemt i $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Vis sammendrag';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Lydoptagelse i gang';

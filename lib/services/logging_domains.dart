@@ -36,7 +36,7 @@ enum LogDomain {
   /// Journal entities, entries, editor, entity caches.
   persistence(flagName: 'log_persistence', label: 'Persistence'),
 
-  /// App database, migrations, maintenance, purge, logging DB.
+  /// App database, migrations, maintenance, purge.
   database(flagName: 'log_database', label: 'Database'),
 
   /// Agent wake orchestrator and runtime.

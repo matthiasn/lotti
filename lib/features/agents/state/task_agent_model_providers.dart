@@ -101,12 +101,23 @@ class TaskAgentSetupOptions {
   final List<AiConfigInferenceProvider> providers;
 }
 
+/// Live AI configs of one type, the stream every catalog below derives from.
+///
+/// Kept alive alongside [taskAgentSetupOptionsProvider]; a new emission —
+/// a model added, a provider deleted, a profile edited, on this device or
+/// arriving through sync — recomputes the catalog without a restart.
+final StreamProviderFamily<List<AiConfig>, AiConfigType>
+aiConfigsByTypeProvider = StreamProvider.family<List<AiConfig>, AiConfigType>(
+  (ref, type) => ref.watch(aiConfigRepositoryProvider).watchConfigsByType(type),
+  name: 'aiConfigsByTypeProvider',
+);
+
 /// Cached setup catalog shared by every page of the adaptive agent sheet.
 ///
 /// This deliberately is not auto-disposed: Wolt pages mount independently,
 /// and rebuilding the same repository query between pages causes a visible
-/// empty-state flash. Repository dependency changes still recompute the value,
-/// while consumers use the previous snapshot during that refresh.
+/// empty-state flash. A change to any of the three config streams recomputes
+/// the value, while consumers use the previous snapshot during that refresh.
 final FutureProvider<TaskAgentSetupOptions> taskAgentSetupOptionsProvider =
     FutureProvider<TaskAgentSetupOptions>(
       taskAgentSetupOptions,
@@ -118,11 +129,10 @@ final FutureProvider<TaskAgentSetupOptions> agentSetupOptionsProvider =
     taskAgentSetupOptionsProvider;
 
 Future<TaskAgentSetupOptions> taskAgentSetupOptions(Ref ref) async {
-  final repository = ref.watch(aiConfigRepositoryProvider);
   final values = await Future.wait([
-    repository.getConfigsByType(AiConfigType.inferenceProfile),
-    repository.getConfigsByType(AiConfigType.model),
-    repository.getConfigsByType(AiConfigType.inferenceProvider),
+    ref.watch(aiConfigsByTypeProvider(AiConfigType.inferenceProfile).future),
+    ref.watch(aiConfigsByTypeProvider(AiConfigType.model).future),
+    ref.watch(aiConfigsByTypeProvider(AiConfigType.inferenceProvider).future),
   ]);
   return TaskAgentSetupOptions(
     profiles: values[0].whereType<AiConfigInferenceProfile>().toList(),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -116,20 +118,29 @@ void main() {
         createdAt: DateTime(2024),
         inferenceProviderType: InferenceProviderType.gemini,
       );
+      final models = StreamController<List<AiConfig>>.broadcast();
+      addTearDown(models.close);
       when(
-        () => repository.getConfigsByType(AiConfigType.inferenceProfile),
-      ).thenAnswer((_) async => const []);
+        () => repository.watchConfigsByType(AiConfigType.inferenceProfile),
+      ).thenAnswer((_) => Stream.value(const []));
       when(
-        () => repository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => [capable, incapable]);
+        () => repository.watchConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) => models.stream);
       when(
-        () => repository.getConfigsByType(AiConfigType.inferenceProvider),
-      ).thenAnswer((_) async => [google]);
+        () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value([google]));
       final container = ProviderContainer(
         overrides: [aiConfigRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
+      // Hold the catalog alive so stream emissions keep recomputing it.
+      final subscription = container.listen(
+        taskAgentSetupOptionsProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
 
+      models.add([capable, incapable]);
       final options = await container.read(
         taskAgentSetupOptionsProvider.future,
       );
@@ -141,14 +152,22 @@ void main() {
       final cached = await container.read(taskAgentSetupOptionsProvider.future);
       expect(cached, same(options));
       verify(
-        () => repository.getConfigsByType(AiConfigType.inferenceProfile),
+        () => repository.watchConfigsByType(AiConfigType.model),
       ).called(1);
-      verify(
-        () => repository.getConfigsByType(AiConfigType.model),
-      ).called(1);
-      verify(
-        () => repository.getConfigsByType(AiConfigType.inferenceProvider),
-      ).called(1);
+
+      // A model added later reaches the catalog without a restart.
+      final added = capable.copyWith(id: 'model-later');
+      models.add([capable, incapable, added]);
+      await Future<void>.delayed(Duration.zero);
+      final refreshed = await container.read(
+        taskAgentSetupOptionsProvider.future,
+      );
+      expect(refreshed.models, [capable, added]);
+      // The previous snapshot stays available while the refresh runs.
+      expect(
+        container.read(taskAgentSetupOptionsProvider).value?.models,
+        [capable, added],
+      );
     },
   );
 

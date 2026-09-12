@@ -33,6 +33,30 @@ Indicatorii pot expune comportament experimental sau de diagnostic. Schimbați u
 
 Dezactivarea comutatorului principal dezactivează controalele pe domenii. Erorile sunt totuși scrise în fișierul zilnic `error-*.log`; aceste comutatoare guvernează jurnalizarea suplimentară de diagnostic, nu evidența minimă a erorilor. Dezactivați domeniile zgomotoase după o investigație, pentru ca jurnalele să rămână concentrate și utilizarea stocării previzibilă.
 
+## Citiți un raport privind starea sistemului
+
+**Starea sistemului** transformă fișierele jurnal pe care Lotti le păstrează pe
+acest dispozitiv într-un raport scurt pe care îl puteți partaja. Alegeți un
+interval (ultimele 24 de ore, 7 sau 14 zile ori zile personalizate), confirmați
+ce domenii de jurnalizare se analizează – sunt aceleași comutatoare ca în
+secțiunea despre jurnalizare de mai sus, deci un domeniu activat este jurnalizat
+*și* analizat – și alegeți modelul care scrie constatările. Lotti propune
+modelul de raționament al profilului dvs. de inferență implicit.
+
+Înainte de orice analiză, tiparele cunoscute de date personale din liniile
+jurnalului sunt înlocuite cu substituenți: adresele de e-mail,
+identificatorii, tokenurile de acces, căile de fișiere care conțin numele
+dvs. de utilizator, adresele IP și numerele de telefon. Textul erorilor
+provine din jurnalul de erori sigur, care nu conține niciodată excepția
+brută. Textul liber dintr-un mesaj de jurnal nu este curățat, așa că raportul
+este doar atât de curat cât liniile de jurnal din care a fost construit. Raportul prezintă cele trei constatări
+care merită cea mai multă atenție, fiecare cu dovezile, cauza probabilă și un
+pas următor, și păstrează dedesubt rezumatul condensat. **Copiați raportul**
+pune totul în clipboard ca Markdown, gata pentru un raport de eroare sau un
+asistent de programare. Fiecare raport este salvat și lângă fișierele jurnal,
+iar cel mai recent este afișat din nou la următoarea deschidere a paginii. Fără
+model, sau dacă apelul către model eșuează, primiți oricum rezumatul.
+
 ## Rulați acțiunile de întreținere în mod deliberat
 
 <ManualScreenshot caseId="advanced-settings/maintenance" alt="Pagina Întreținere Lotti, cu previzualizări pentru configurare inițială, resetări, ștergerea bazelor de date, curățare, index de căutare, embeddings și diagnosticare a redesenării" caption="Întreținerea combină previzualizări sigure cu acțiuni distructive și de diagnostic. Citiți confirmarea și domeniul de aplicare înainte de a continua." />

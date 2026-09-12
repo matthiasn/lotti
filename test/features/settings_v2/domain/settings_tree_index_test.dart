@@ -201,6 +201,13 @@ void main() {
       );
     });
 
+    test('advanced/system-health maps to /settings/advanced/system_health', () {
+      expect(
+        pathToBeamUrl(['advanced', 'advanced/system-health']),
+        '/settings/advanced/system_health',
+      );
+    });
+
     test('sync/matrix-maintenance maps to the slash-split matrix url', () {
       expect(
         pathToBeamUrl(['sync', 'sync/matrix-maintenance']),

@@ -13539,6 +13539,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Synchronisierung konfigurieren und Statistiken anzeigen';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Aktuelle Logs analysieren und einen teilbaren Bericht kopieren';
+
+  @override
+  String get settingsSystemHealthTitle => 'Systemzustand';
+
+  @override
   String get settingsThemingAutomatic => 'Automatisch';
 
   @override
@@ -14453,6 +14460,82 @@ class AppLocalizationsDe extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Schritt $step von 3: $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Modell wählen';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Bericht kopiert. Bekannte Muster persönlicher Daten wurden entfernt.';
+
+  @override
+  String get systemHealthCopyButton => 'Bericht kopieren';
+
+  @override
+  String get systemHealthCustomFromLabel => 'Von';
+
+  @override
+  String get systemHealthCustomToLabel => 'Bis';
+
+  @override
+  String get systemHealthDescription =>
+      'Durchsucht die Logdateien auf diesem Gerät nach Fehlern, Warnungen und langsamen Abfragen, entfernt bekannte Muster persönlicher Daten und schreibt einen kurzen Bericht, den du in einen Coding-Assistenten einfügen kannst.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'Die hier eingeschalteten Domänen werden analysiert – dieselbe Einstellung, die bestimmt, was protokolliert wird. Langsame Abfragen sind enthalten, wenn deren Protokollierung aktiv ist.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Log-Domänen';
+
+  @override
+  String get systemHealthFailedTitle => 'Analyse fehlgeschlagen';
+
+  @override
+  String get systemHealthHideDigest => 'Zusammenfassung ausblenden';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Schreibt die Erkenntnisse aus der anonymisierten Zusammenfassung. Vorgeschlagen wird das Denkmodell deines Standardprofils.';
+
+  @override
+  String get systemHealthModelNone => 'Nur Zusammenfassung, kein Modell';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Lege ein Standard-Inferenzprofil fest oder füge ein agentisches Textmodell hinzu, um Erkenntnisse zu erhalten.';
+
+  @override
+  String get systemHealthModelTitle => 'Modell';
+
+  @override
+  String get systemHealthPresetCustom => 'Eigener';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 Tage';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 h';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 Tage';
+
+  @override
+  String get systemHealthRangeTitle => 'Zeitraum';
+
+  @override
+  String get systemHealthReportTitle => 'Bericht';
+
+  @override
+  String get systemHealthRunButton => 'Analyse starten';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Gespeichert unter $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Zusammenfassung anzeigen';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audioaufnahme läuft';

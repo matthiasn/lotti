@@ -312,6 +312,11 @@ List<SettingsNode> buildSettingsTree({
           LottiIcons.bug,
           panel: 'advanced-logging',
         ),
+        leaf(
+          'advanced/system-health',
+          LottiIcons.healthShield,
+          panel: 'advanced-system-health',
+        ),
         // Health import is iOS/Android only — the underlying HealthKit /
         // Health Connect import has no desktop path — so the leaf is
         // gated on the mobile platform (see `enableHealthImport`, fed

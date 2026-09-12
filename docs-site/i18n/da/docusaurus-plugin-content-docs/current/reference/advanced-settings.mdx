@@ -78,6 +78,28 @@ diagnostisk logning, ikke minimumsregistreringen af fejl. Deaktivér støjende
 domæner efter en undersøgelse, så logfilerne forbliver fokuserede, og
 lagerforbruget forbliver forudsigeligt.
 
+## Læs en systemtilstandsrapport
+
+**Systemtilstand** laver de logfiler, Lotti gemmer på denne enhed, om til en
+kort rapport, du kan dele. Vælg et tidsrum (de seneste 24 timer, 7 eller 14 dage
+eller egne dage), bekræft hvilke logdomæner der analyseres – det er de samme
+kontakter som i logafsnittet ovenfor, så et domæne, der er slået til, bliver
+både logget *og* analyseret – og vælg den model, der skriver fundene. Lotti
+foreslår tænkemodellen fra din standardprofil til inferens.
+
+Før noget analyseres, erstattes kendte mønstre af personlige data i
+loglinjerne med pladsholdere: e-mailadresser, id'er, adgangstokens, filstier
+med dit brugernavn, IP-adresser og telefonnumre. Fejlteksten kommer fra den
+sikre fejllog, som aldrig indeholder den rå undtagelse. Fri tekst i en
+logbesked renses ikke, så rapporten er kun så ren som de loglinjer, den er
+bygget af. Rapporten nævner de tre fund, der fortjener mest
+opmærksomhed, hver med belæg, sandsynlig årsag og et næste skridt, og beholder
+det komprimerede sammendrag nedenunder. **Kopiér rapport** lægger det hele i
+udklipsholderen som Markdown, klar til en fejlrapport eller en kodeassistent.
+Hver rapport gemmes også ved siden af logfilerne, og den nyeste vises igen,
+næste gang du åbner siden. Uden model, eller hvis modelkaldet mislykkes, får du
+stadig sammendraget.
+
 ## Udfør vedligeholdelseshandlinger bevidst
 
 <ManualScreenshot

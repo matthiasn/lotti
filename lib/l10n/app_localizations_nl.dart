@@ -13476,6 +13476,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Synchronisatie- en weergavestatistieken instellen';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Recente logs analyseren en een deelbaar rapport kopiëren';
+
+  @override
+  String get settingsSystemHealthTitle => 'Systeemstatus';
+
+  @override
   String get settingsThemingAutomatic => 'Automatisch';
 
   @override
@@ -14386,6 +14393,82 @@ class AppLocalizationsNl extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Stap $step van 3: $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Model kiezen';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Rapport gekopieerd. Bekende patronen van persoonlijke gegevens zijn weggelaten.';
+
+  @override
+  String get systemHealthCopyButton => 'Rapport kopiëren';
+
+  @override
+  String get systemHealthCustomFromLabel => 'Van';
+
+  @override
+  String get systemHealthCustomToLabel => 'Tot';
+
+  @override
+  String get systemHealthDescription =>
+      'Doorzoekt de logbestanden op dit apparaat op fouten, waarschuwingen en trage query\'s, laat bekende patronen van persoonlijke gegevens weg en schrijft een kort rapport dat je in een codeerassistent kunt plakken.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'De domeinen die hier aanstaan worden geanalyseerd, dezelfde instelling die bepaalt wat er wordt gelogd. Trage query\'s worden meegenomen als het loggen daarvan aanstaat.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Logdomeinen';
+
+  @override
+  String get systemHealthFailedTitle => 'Analyse mislukt';
+
+  @override
+  String get systemHealthHideDigest => 'Samenvatting verbergen';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Schrijft de bevindingen op basis van de geanonimiseerde samenvatting. Stelt het denkmodel van je standaardprofiel voor.';
+
+  @override
+  String get systemHealthModelNone => 'Alleen samenvatting, geen model';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Stel een standaard inferentieprofiel in of voeg een agentisch tekstmodel toe om bevindingen te krijgen.';
+
+  @override
+  String get systemHealthModelTitle => 'Model';
+
+  @override
+  String get systemHealthPresetCustom => 'Aangepast';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 dagen';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 u';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 dagen';
+
+  @override
+  String get systemHealthRangeTitle => 'Periode';
+
+  @override
+  String get systemHealthReportTitle => 'Rapport';
+
+  @override
+  String get systemHealthRunButton => 'Analyse starten';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Opgeslagen in $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Samenvatting tonen';
 
   @override
   String get taskActionBarAudioRecordingActive => 'Audio-opname in uitvoering';

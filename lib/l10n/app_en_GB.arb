@@ -188,5 +188,7 @@
   "settingsCelebrationsKnobClearCenter": "Centre gap",
   "settingsLabelsColorHeading": "Colour",
   "settingsLabelsSubtitle": "Organise tasks with coloured labels",
-  "settingsSyncConflictsSubtitle": "Resolve synchronisation conflicts to ensure data consistency"
+  "settingsSyncConflictsSubtitle": "Resolve synchronisation conflicts to ensure data consistency",
+  "settingsSystemHealthSubtitle": "Analyse recent logs and copy a shareable report",
+  "systemHealthDomainsDescription": "The domains switched on here are the ones analysed, the same setting that decides what gets logged. Slow queries are included when slow-query logging is on."
 }

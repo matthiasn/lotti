@@ -108,6 +108,13 @@ void main() {
       expect(resolve('advanced/logging').title, 'Logging Domains');
     });
 
+    testWidgets('advanced/system-health uses settingsSystemHealthTitle', (
+      tester,
+    ) async {
+      final resolve = await _buildResolver(tester);
+      expect(resolve('advanced/system-health').title, 'System health');
+    });
+
     testWidgets('advanced/maintenance uses settingsMaintenanceTitle', (
       tester,
     ) async {

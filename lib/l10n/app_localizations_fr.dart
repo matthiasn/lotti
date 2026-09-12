@@ -13675,6 +13675,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Configurer la synchronisation et voir les statistiques';
 
   @override
+  String get settingsSystemHealthSubtitle =>
+      'Analyser les journaux récents et copier un rapport partageable';
+
+  @override
+  String get settingsSystemHealthTitle => 'État du système';
+
+  @override
   String get settingsThemingAutomatic => 'Automatique';
 
   @override
@@ -14589,6 +14596,82 @@ class AppLocalizationsFr extends AppLocalizations {
   String syncWizardStepStatus(int step, String label) {
     return 'Étape $step sur 3 : $label';
   }
+
+  @override
+  String get systemHealthChooseModelTitle => 'Choisir un modèle';
+
+  @override
+  String get systemHealthCopiedToast =>
+      'Rapport copié. Les données personnelles reconnues ont été masquées.';
+
+  @override
+  String get systemHealthCopyButton => 'Copier le rapport';
+
+  @override
+  String get systemHealthCustomFromLabel => 'Du';
+
+  @override
+  String get systemHealthCustomToLabel => 'Au';
+
+  @override
+  String get systemHealthDescription =>
+      'Parcourt les fichiers journaux de cet appareil à la recherche d\'erreurs, d\'avertissements et de requêtes lentes, masque les motifs connus de données personnelles et rédige un court rapport que tu peux coller dans un assistant de codage.';
+
+  @override
+  String get systemHealthDomainsDescription =>
+      'Les domaines activés ici sont ceux analysés, le même réglage qui décide de ce qui est journalisé. Les requêtes lentes sont incluses quand leur journalisation est active.';
+
+  @override
+  String get systemHealthDomainsTitle => 'Domaines de journalisation';
+
+  @override
+  String get systemHealthFailedTitle => 'Échec de l\'analyse';
+
+  @override
+  String get systemHealthHideDigest => 'Masquer le résumé';
+
+  @override
+  String get systemHealthModelDescription =>
+      'Rédige les constats à partir du résumé anonymisé. Propose le modèle de réflexion de ton profil par défaut.';
+
+  @override
+  String get systemHealthModelNone => 'Résumé seul, sans modèle';
+
+  @override
+  String get systemHealthModelNoneDescription =>
+      'Définis un profil d\'inférence par défaut ou ajoute un modèle texte agentique pour obtenir des constats.';
+
+  @override
+  String get systemHealthModelTitle => 'Modèle';
+
+  @override
+  String get systemHealthPresetCustom => 'Personnalisée';
+
+  @override
+  String get systemHealthPresetLast14Days => '14 jours';
+
+  @override
+  String get systemHealthPresetLast24Hours => '24 h';
+
+  @override
+  String get systemHealthPresetLast7Days => '7 jours';
+
+  @override
+  String get systemHealthRangeTitle => 'Période';
+
+  @override
+  String get systemHealthReportTitle => 'Rapport';
+
+  @override
+  String get systemHealthRunButton => 'Lancer l\'analyse';
+
+  @override
+  String systemHealthSavedTo(String path) {
+    return 'Enregistré dans $path';
+  }
+
+  @override
+  String get systemHealthShowDigest => 'Afficher le résumé';
 
   @override
   String get taskActionBarAudioRecordingActive =>

@@ -48,6 +48,7 @@ import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/system_health/ui/system_health_page.dart';
 import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -159,6 +160,10 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         build: _advancedLoggingPanel,
         scrollable: true,
       ),
+      'advanced-system-health': SettingsPanelSpec(
+        build: _advancedSystemHealthPanel,
+        scrollable: true,
+      ),
       'preferences-animations': SettingsPanelSpec(
         build: _preferencesAnimationsPanel,
         scrollable: true,
@@ -252,6 +257,8 @@ Widget _advancedOnboardingMetricsPanel(BuildContext context) =>
     const OnboardingMetricsBody();
 Widget _advancedLoggingPanel(BuildContext context) =>
     const LoggingSettingsBody();
+Widget _advancedSystemHealthPanel(BuildContext context) =>
+    const SystemHealthBody();
 Widget _preferencesAnimationsPanel(BuildContext context) =>
     const CelebrationSettingsBody();
 Widget _advancedManualLanguagePanel(BuildContext context) =>

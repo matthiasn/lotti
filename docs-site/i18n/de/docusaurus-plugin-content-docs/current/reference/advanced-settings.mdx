@@ -73,6 +73,31 @@ Ohne Hauptschalter sind Bereichsregler deaktiviert. Fehler landen weiterhin in
 der täglichen `error-*.log`; diese Optionen steuern zusätzliche Diagnose, nicht
 den Mindestfehlerdatensatz. Deaktiviere Rauschen nach der Untersuchung.
 
+## Einen Systemzustandsbericht lesen
+
+**Systemzustand** macht aus den Logdateien, die Lotti auf diesem Gerät führt,
+einen kurzen Bericht, den du weitergeben kannst. Wähle einen Zeitraum (die
+letzten 24 Stunden, 7 oder 14 Tage oder eigene Tage), bestätige, welche
+Log-Domänen analysiert werden – die Schalter sind dieselben wie im Abschnitt zur
+Protokollierung oben, eine eingeschaltete Domäne wird also protokolliert *und*
+analysiert – und wähle das Modell, das die Erkenntnisse schreibt. Lotti schlägt
+das Denkmodell deines Standard-Inferenzprofils vor.
+
+Bevor etwas analysiert wird, werden bekannte Muster persönlicher Daten in den
+Logzeilen durch Platzhalter ersetzt: E-Mail-Adressen, Kennungen,
+Zugriffstoken, Dateipfade mit deinem Benutzernamen, IP-Adressen und
+Telefonnummern. Fehlertexte stammen aus dem sicheren Fehlerlog, das nie die
+rohe Ausnahme enthält. Freier Text in einer Logmeldung wird nicht bereinigt –
+der Bericht ist also nur so sauber wie die Logzeilen, aus denen er entstand.
+Der Bericht nennt die drei Erkenntnisse, die am meisten Aufmerksamkeit
+verdienen, jeweils mit Belegen, wahrscheinlicher Ursache und einem nächsten
+Schritt, und behält darunter die verdichtete Zusammenfassung. **Bericht
+kopieren** legt alles als Markdown in die Zwischenablage, bereit für einen
+Fehlerbericht oder einen Coding-Assistenten. Jeder Bericht wird außerdem neben
+den Logdateien gespeichert, und der neueste wird beim nächsten Öffnen der Seite
+wieder angezeigt. Ohne Modell – oder wenn der Modellaufruf fehlschlägt –
+bekommst du trotzdem die Zusammenfassung.
+
 ## Wartungsaktionen bewusst ausführen
 
 <ManualScreenshot

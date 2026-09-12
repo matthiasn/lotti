@@ -81,6 +81,30 @@ mínimo de errores. Desactiva los dominios ruidosos tras una investigación para
 que los registros se mantengan centrados y el uso de almacenamiento sea
 predecible.
 
+## Leer un informe del estado del sistema
+
+**Estado del sistema** convierte los archivos de registro que Lotti guarda en
+este dispositivo en un informe breve que puedes compartir. Elige un periodo (las
+últimas 24 horas, 7 o 14 días, o días personalizados), confirma qué dominios de
+registro se analizan (son los mismos interruptores que en la sección de registro
+de arriba, así que un dominio activado se registra *y* se analiza) y elige el
+modelo que redacta los hallazgos. Lotti propone el modelo de razonamiento de tu
+perfil de inferencia predeterminado.
+
+Antes de analizar nada, los patrones conocidos de datos personales de las
+líneas de registro se sustituyen por marcadores: direcciones de correo,
+identificadores, tokens de acceso, rutas de archivo con tu nombre de usuario,
+direcciones IP y números de teléfono. El texto de los errores procede del
+registro de errores seguro, que nunca incluye la excepción en bruto. El texto
+libre de un mensaje de registro no se limpia, así que el informe solo es tan
+limpio como las líneas de registro de las que procede. El informe recoge los tres hallazgos que más atención
+merecen, con la evidencia, la causa probable y un siguiente paso, y conserva
+debajo el resumen condensado. **Copiar informe** deja todo en el portapapeles
+como Markdown, listo para un informe de error o un asistente de programación.
+Cada informe se guarda además junto a los archivos de registro, y el más
+reciente vuelve a mostrarse la próxima vez que abres la página. Sin modelo, o si
+la llamada al modelo falla, obtienes igualmente el resumen.
+
 ## Ejecuta las acciones de mantenimiento deliberadamente
 
 <ManualScreenshot
