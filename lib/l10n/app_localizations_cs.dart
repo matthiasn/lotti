@@ -11111,6 +11111,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryAudioOpenRecording => 'Otevřít nahrávku';
 
   @override
+  String queryAudioPlaying(String start, String end) {
+    return 'Přehrávání $start–$end';
+  }
+
+  @override
   String get queryAudioPrepare => 'Připravit zvukový úryvek';
 
   @override
@@ -11120,7 +11125,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryAudioReadAloud => 'Přečíst odpověď nahlas';
 
   @override
+  String get queryAudioReading => 'Odpověď se čte nahlas';
+
+  @override
   String get queryAudioRetry => 'Zkusit zvuk znovu';
+
+  @override
+  String get queryAudioSetupDetails => 'Podrobnosti nastavení';
+
+  @override
+  String get queryAudioSetupRequired =>
+      'Zvukové úryvky vyžadují kompatibilní model přepisu.';
 
   @override
   String get queryAudioStale =>
@@ -11317,16 +11332,24 @@ class AppLocalizationsCs extends AppLocalizations {
       'Hledá pouze v tomto úkolu a přímo propojených záznamech bez kategorie.';
 
   @override
-  String get queryRecall => 'Používá relevantní závěry z dřívějších chatů.';
+  String get queryRecall => 'Tato odpověď využila uložené závěry.';
 
   @override
   String get queryRecordings => 'Nahrávky';
+
+  @override
+  String get queryRecordingTranscript => 'Přepis nahrávky';
 
   @override
   String get queryRenameChat => 'Přejmenovat chat';
 
   @override
   String get queryRestoreChat => 'Obnovit chat';
+
+  @override
+  String querySavedConclusion(String date) {
+    return 'Závěr uložen $date';
+  }
 
   @override
   String get querySavedQuote =>
@@ -11338,7 +11361,15 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get querySavedVersionUnavailable => 'Datum verze není k dispozici';
+
+  @override
   String get querySearching => 'Hledání v propojených poznámkách a nahrávkách…';
+
+  @override
+  String querySourceAction(String action, String source) {
+    return '$action: $source';
+  }
 
   @override
   String get querySourceChanged => 'Zdroj byl změněn';
@@ -11351,14 +11382,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get querySurroundingLimit =>
-      'Okolní text je uložený výňatek. Otevři záznam pro celou diskuzi.';
+      'Toto je uložený úryvek, který nemusí obsahovat celou diskusi.';
 
   @override
   String get querySurroundingText => 'Zobrazit okolní text';
 
   @override
   String get queryTranscribing =>
-      'Přepisování… otázka se odešle až po stisknutí Odeslat. Zvuk už mohl být odeslán tvému poskytovateli přepisu.';
+      'Text odešleš tlačítkem Odeslat. Zvuk už může být u tvého poskytovatele.';
 
   @override
   String get queryUnavailable =>

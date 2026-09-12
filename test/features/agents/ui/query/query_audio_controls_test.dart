@@ -76,6 +76,7 @@ void main() {
     await tester.pump();
     verify(bench.player.play).called(1);
     expect(find.text('Stop audio'), findsOneWidget);
+    expect(find.text('Playing 01:35–02:35'), findsOneWidget);
     await tester.tap(find.text('Stop audio'));
     await tester.pump();
     verify(bench.player.dispose).called(1);
@@ -165,8 +166,7 @@ void main() {
             data: bench.audio.data.copyWith(transcriptTimings: {}),
           );
           label = 'Prepare audio excerpt';
-          expected =
-              'To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile. The provider URL must use HTTPS.';
+          expected = 'Audio excerpts need a compatible transcription model.';
         case 'too large':
           when(bench.file.lengthSync).thenReturn(500000000);
           bench.audio = bench.audio.copyWith(
@@ -183,6 +183,24 @@ void main() {
       await tester.tap(find.text(label));
       await tester.pump();
       expect(find.text(expected), findsOneWidget);
+      if (failure == 'unsupported') {
+        expect(
+          find.textContaining('The provider URL must use HTTPS.'),
+          findsNothing,
+        );
+        await tester.tap(find.text('Setup details'));
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('The provider URL must use HTTPS.'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Setup details'));
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('The provider URL must use HTTPS.'),
+          findsNothing,
+        );
+      }
       expect(find.text('Stop audio'), findsNothing);
       if (failure == 'unsupported') {
         await tester.tap(find.text('AI Settings'));
@@ -215,6 +233,7 @@ void main() {
     await tester.tap(find.text('Read answer aloud'));
     await tester.pump();
     expect(bench.engine.calls.single.text, 'Keep the feeder latch.');
+    expect(find.text('Reading answer aloud'), findsOneWidget);
     expect(find.text('Stop audio'), findsOneWidget);
     await tester.tap(find.text('Stop audio'));
     await tester.pump();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -231,6 +233,313 @@ void main() {
     await tester.pump();
     await tester.pump();
   }
+
+  QueryEvidence addCitationAnswer(String suffix, {String? answerText}) {
+    final sourceId = 'note-$suffix';
+    bench.add(sourceId, category: categoryMindfulness.id);
+    final document = QuerySourceDocument.fromEntry(bench.entries[sourceId]!)!;
+    final source = QuerySourceRef(
+      id: sourceId,
+      categoryId: categoryMindfulness.id,
+      private: false,
+      categoryPrivate: false,
+    );
+    final evidence = QueryEvidence(
+      source: source,
+      kind: document.kind,
+      label: 'Habitat meeting $suffix',
+      summary: 'Recorded habitat decision $suffix',
+      sourceDate: document.entry.meta.dateFrom,
+      textVersion: document.version,
+      fingerprint: document.fingerprint,
+      sourceText: document.text,
+      start: 0,
+      end: document.text.length,
+    );
+    events.addAll([
+      event(
+        'question-$suffix',
+        'feeder',
+        QueryChatEventData.question(text: 'Decision $suffix?'),
+      ),
+      event(
+        'reply-$suffix',
+        'feeder',
+        QueryChatEventData.answer(
+          questionId: 'question-$suffix',
+          text: answerText ?? 'Decision $suffix is recorded [1].',
+          coverage: const QueryCoverage(),
+          dependencies: [source],
+          evidence: [evidence],
+        ),
+      ),
+    ]);
+    return evidence;
+  }
+
+  Finder citationIn(String suffix, {String number = '1'}) => find.descendant(
+    of: find.descendant(
+      of: find.byKey(ValueKey('goal-chat-message-reply-$suffix')),
+      matching: find.byType(AgentMarkdownView),
+    ),
+    matching: find.text(number, findRichText: true),
+  );
+
+  testWidgets(
+    'inline citations expand only their own answer evidence',
+    (tester) async {
+      tester.view
+        ..physicalSize = const Size(1200, 2200)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final first = addCitationAnswer('a');
+      final second = addCitationAnswer('b');
+      await pump(tester);
+      expect(find.byType(SelectableText), findsNothing);
+      await tester.tap(citationIn('b'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(second.quote, findRichText: true), findsOneWidget);
+      expect(find.text(first.quote, findRichText: true), findsNothing);
+      await tester.ensureVisible(citationIn('a'));
+      await tester.tap(citationIn('a'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(first.quote, findRichText: true), findsOneWidget);
+      expect(find.text(second.quote, findRichText: true), findsOneWidget);
+      expect(find.byType(EntryDetailsPage), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  for (final separator in [' ', '']) {
+    testWidgets(
+      'adjacent citations each open their own evidence (spaced=${separator.isNotEmpty})',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1200, 2200)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final first = addCitationAnswer(
+          'adjacent',
+          answerText: 'The habitat decision has two sources [1]$separator[2].',
+        );
+        final second = addCitationAnswer('second');
+        events.removeWhere(
+          (event) =>
+              event.id == 'question-second' || event.id == 'reply-second',
+        );
+        final index = events.indexWhere(
+          (event) => event.id == 'reply-adjacent',
+        );
+        final answer = events[index].data as QueryChatAnswer;
+        events[index] = events[index].copyWith(
+          data: answer.copyWith(
+            evidence: [first, second],
+            dependencies: [first.source, second.source],
+          ),
+        );
+        await pump(tester);
+        expect(find.byType(SelectableText), findsNothing);
+        await tester.tap(citationIn('adjacent'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(first.quote, findRichText: true), findsOneWidget);
+        expect(find.text(second.quote, findRichText: true), findsNothing);
+        final secondLink = citationIn('adjacent', number: '2');
+        await tester.ensureVisible(secondLink);
+        await tester.tap(secondLink);
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(first.quote, findRichText: true), findsOneWidget);
+        expect(find.text(second.quote, findRichText: true), findsOneWidget);
+        expect(find.byType(EntryDetailsPage), findsNothing);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('defined numeric reference remains an external link', (
+    tester,
+  ) async {
+    const answer =
+        'Reference [1][2] stays external.\n\n'
+        '[2]: https://example.com/habitat';
+    addCitationAnswer('numeric-reference', answerText: answer);
+    await pump(tester);
+    expect(
+      tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).text,
+      answer,
+    );
+    expect(find.byType(SelectableText), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'citation routing preserves literal code and reference links',
+    (tester) async {
+      const answer =
+          'Inline `[1]` stays literal.\n\n'
+          '```text\n[1]\n```\n\n'
+          'Reference [1][source] stays external.\n\n'
+          '[source]: https://example.com/habitat\n\n'
+          'Bare [1].';
+      final evidence = addCitationAnswer('syntax', answerText: answer);
+      await pump(tester);
+      final markdown = tester.widget<AgentMarkdownView>(
+        find.byType(AgentMarkdownView),
+      );
+      expect(
+        markdown.text,
+        'Inline `[1]` stays literal.\n\n'
+        '```text\n[1]\n```\n\n'
+        'Reference [1][source] stays external.\n\n'
+        '[source]: https://example.com/habitat\n\n'
+        'Bare [1](#query-evidence-1).',
+      );
+      markdown.onLinkTap!('#query-evidence-1', '');
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(evidence.quote, findRichText: true), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'inline citation reloads source privacy before revealing stored text',
+    (tester) async {
+      final evidence = addCitationAnswer('private');
+      await pump(tester);
+      expect(
+        find.textContaining(evidence.label, findRichText: true),
+        findsOneWidget,
+      );
+      // Keep the rendered snapshot unchanged; only the fresh journal lookup
+      // observes that the source was made private after the link appeared.
+      final source = bench.entries[evidence.source.id]!;
+      bench.entries[evidence.source.id] = source.copyWith(
+        meta: source.meta.copyWith(private: true),
+      );
+      await tester.tap(citationIn('private'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(evidence.quote, findRichText: true), findsNothing);
+      expect(find.byType(SelectableText), findsNothing);
+      expect(find.byType(EntryDetailsPage), findsNothing);
+      // A denied attempt must not poison the legitimate restored action.
+      bench.entries[evidence.source.id] = source;
+      await tester.tap(citationIn('private'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text(evidence.quote, findRichText: true), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  for (final forgotten in [false, true]) {
+    testWidgets(
+      'unavailable recalled memory leaves no existence hint (forgotten=$forgotten)',
+      (tester) async {
+        events.addAll([
+          event(
+            'memory',
+            'roll-call',
+            QueryChatEventData.memory(
+              questionId: 'origin',
+              text: 'A private feeder conclusion',
+              private: !forgotten,
+            ),
+          ),
+          if (forgotten)
+            event(
+              'forgotten',
+              'roll-call',
+              const QueryChatEventData.deleted(forget: true),
+            ),
+          event(
+            'question',
+            'feeder',
+            const QueryChatEventData.question(text: 'Public feeder question'),
+          ),
+          event(
+            'reply',
+            'feeder',
+            const QueryChatEventData.answer(
+              questionId: 'question',
+              text: 'Public feeder answer',
+              coverage: QueryCoverage(),
+              recalledMemoryIds: ['memory'],
+            ),
+          ),
+        ]);
+        await pump(tester);
+        expect(find.text('Public feeder answer'), findsOneWidget);
+        expect(find.text('This answer used saved conclusions.'), findsNothing);
+        expect(find.text('A private feeder conclusion'), findsNothing);
+        expect(
+          find.byKey(const PageStorageKey('recall:question')),
+          findsNothing,
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets(
+    'chat picker announces selection and archive disclosure state',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        events.add(
+          event(
+            'archived',
+            'roll-call',
+            const QueryChatEventData.archived(archived: true),
+          ),
+        );
+        await pump(tester);
+        final picker = find.bySemanticsLabel('Chats: Feeder calibration');
+        expect(
+          tester.getSemantics(picker).flagsCollection.isExpanded,
+          Tristate.isFalse,
+        );
+        await tester.tap(picker);
+        await tester.pump();
+        expect(
+          tester.getSemantics(picker).flagsCollection.isExpanded,
+          Tristate.isTrue,
+        );
+        final archive = find.bySemanticsLabel('Archived chats · 1');
+        expect(
+          tester.getSemantics(archive).flagsCollection.isExpanded,
+          Tristate.isFalse,
+        );
+        expect(find.text('Roll call'), findsNothing);
+        await tester.tap(archive);
+        await tester.pump();
+        expect(
+          tester.getSemantics(archive).flagsCollection.isExpanded,
+          Tristate.isTrue,
+        );
+        await tester.tap(find.text('Roll call'));
+        await tester.pump();
+        final selected = find.bySemanticsLabel('Chats: Roll call');
+        expect(
+          tester.getSemantics(selected).flagsCollection.isExpanded,
+          Tristate.isFalse,
+        );
+        expect(
+          find.bySemanticsLabel('Chats: Feeder calibration'),
+          findsNothing,
+        );
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        semantics.dispose();
+      }
+    },
+  );
 
   testWidgets(
     'question cards keep a readable measure and prepare an editable draft',
@@ -523,7 +832,7 @@ void main() {
       );
       expect(
         find.text(
-          'Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.',
+          'Press Send to submit text. Audio may already be with your provider.',
         ),
         findsOneWidget,
       );
@@ -1274,12 +1583,15 @@ void main() {
       expect(find.text('Prepare audio excerpt'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'Follow-up draft');
       expect(
-        find.textContaining('The feeder decision is recorded (1).'),
+        find.textContaining(
+          'The feeder decision is recorded',
+          findRichText: true,
+        ),
         findsOneWidget,
       );
       expect(
-        find.text('Uses relevant conclusions from earlier chats.'),
-        findsOneWidget,
+        find.text('This answer used saved conclusions.'),
+        findsNothing,
       );
       const explanation =
           'Coverage is incomplete. Missing evidence does not mean the discussion never happened.';
@@ -1510,10 +1822,11 @@ void main() {
       await pump(tester);
       expect(find.text('The spare feeder is a suggestion.'), findsNothing);
       await tester.tap(
-        find.text('Uses relevant conclusions from earlier chats.'),
+        find.text('This answer used saved conclusions.'),
       );
       await tester.pumpAndSettle();
       expect(find.text('The spare feeder is a suggestion.'), findsOneWidget);
+      expect(find.text('Conclusion saved Jul 17, 2026 10:00'), findsOneWidget);
       await tester.tap(find.text('Roll call'));
       await tester.pump();
       expect(
@@ -1525,6 +1838,53 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+  testWidgets(
+    'retained conclusion shows its saved date without naming the deleted origin',
+    (tester) async {
+      events.addAll([
+        event(
+          'memory',
+          'roll-call',
+          const QueryChatEventData.memory(
+            questionId: 'origin',
+            text: 'The spare feeder remained a suggestion.',
+          ),
+        ),
+        event(
+          'deleted-origin',
+          'roll-call',
+          const QueryChatEventData.deleted(forget: false),
+        ),
+        event(
+          'question',
+          'feeder',
+          const QueryChatEventData.question(text: 'Was the spare agreed?'),
+        ),
+        event(
+          'reply',
+          'feeder',
+          const QueryChatEventData.answer(
+            questionId: 'question',
+            text: 'The spare was suggested.',
+            coverage: QueryCoverage(),
+            recalledMemoryIds: ['memory'],
+          ),
+        ),
+      ]);
+      await pump(tester);
+      await tester.tap(find.text('This answer used saved conclusions.'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('The spare feeder remained a suggestion.'),
+        findsOneWidget,
+      );
+      expect(find.text('Conclusion saved Jul 17, 2026 10:00'), findsOneWidget);
+      expect(find.text('Roll call'), findsNothing);
+      expect(find.textContaining('origin unavailable'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets(
     'a failed unsaved follow-up remains visible after an answered question',
     (tester) async {

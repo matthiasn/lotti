@@ -11127,6 +11127,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryAudioOpenRecording => 'Abrir grabación';
 
   @override
+  String queryAudioPlaying(String start, String end) {
+    return 'Reproduciendo $start–$end';
+  }
+
+  @override
   String get queryAudioPrepare => 'Preparar fragmento de audio';
 
   @override
@@ -11136,7 +11141,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryAudioReadAloud => 'Leer respuesta en voz alta';
 
   @override
+  String get queryAudioReading => 'Leyendo la respuesta en voz alta';
+
+  @override
   String get queryAudioRetry => 'Reintentar audio';
+
+  @override
+  String get queryAudioSetupDetails => 'Detalles de configuración';
+
+  @override
+  String get queryAudioSetupRequired =>
+      'Los fragmentos de audio necesitan un modelo de transcripción compatible.';
 
   @override
   String get queryAudioStale =>
@@ -11331,16 +11346,24 @@ class AppLocalizationsEs extends AppLocalizations {
       'Busca solo en esta tarea y en sus entradas sin categoría vinculadas directamente.';
 
   @override
-  String get queryRecall => 'Usa conclusiones relevantes de chats anteriores.';
+  String get queryRecall => 'Esta respuesta utilizó conclusiones guardadas.';
 
   @override
   String get queryRecordings => 'Grabaciones';
+
+  @override
+  String get queryRecordingTranscript => 'Transcripción de la grabación';
 
   @override
   String get queryRenameChat => 'Renombrar chat';
 
   @override
   String get queryRestoreChat => 'Restaurar chat';
+
+  @override
+  String querySavedConclusion(String date) {
+    return 'Conclusión guardada el $date';
+  }
 
   @override
   String get querySavedQuote =>
@@ -11352,7 +11375,15 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get querySavedVersionUnavailable => 'Fecha de versión no disponible';
+
+  @override
   String get querySearching => 'Buscando notas y grabaciones vinculadas…';
+
+  @override
+  String querySourceAction(String action, String source) {
+    return '$action: $source';
+  }
 
   @override
   String get querySourceChanged => 'La fuente ha cambiado';
@@ -11365,14 +11396,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get querySurroundingLimit =>
-      'El texto circundante es un fragmento guardado. Abre la entrada para ver toda la conversación.';
+      'Este es el fragmento guardado, que puede no incluir toda la conversación.';
 
   @override
   String get querySurroundingText => 'Mostrar contexto';
 
   @override
   String get queryTranscribing =>
-      'Transcribiendo… tu pregunta solo se envía cuando pulsas Enviar. Es posible que el audio ya se haya enviado a tu proveedor de transcripción.';
+      'Pulsa Enviar para enviar el texto. Tu proveedor puede tener ya el audio.';
 
   @override
   String get queryUnavailable =>

@@ -6317,10 +6317,25 @@
   "queryAudioMissingFile": "The recording isn’t available on this device yet.",
   "queryAudioNoMatch": "This quote could not be matched unambiguously to the recording. You can still open the full entry.",
   "queryAudioOpenRecording": "Open recording",
+  "queryAudioPlaying": "Playing {start}–{end}",
+  "@queryAudioPlaying": {
+    "description": "The fixed excerpt interval being played, not elapsed playback progress.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "queryAudioPrepare": "Prepare audio excerpt",
   "queryAudioPreparing": "Preparing audio…",
   "queryAudioReadAloud": "Read answer aloud",
+  "queryAudioReading": "Reading answer aloud",
   "queryAudioRetry": "Retry audio",
+  "queryAudioSetupDetails": "Setup details",
+  "queryAudioSetupRequired": "Audio excerpts need a compatible transcription model.",
   "queryAudioStale": "The recording has changed. Prepare the timestamps again.",
   "queryAudioStop": "Stop audio",
   "queryAudioTimingUnavailable": "To prepare excerpts, select Melious Whisper or a supported Mistral Voxtral transcription model in this agent’s inference profile. The provider URL must use HTTPS.",
@@ -6409,10 +6424,20 @@
   },
   "queryReachHome": "Searches only this scope and its linked entries.",
   "queryReachUncategorized": "Searches this task and its directly linked uncategorized entries only.",
-  "queryRecall": "Uses relevant conclusions from earlier chats.",
+  "queryRecall": "This answer used saved conclusions.",
   "queryRecordings": "Recordings",
+  "queryRecordingTranscript": "Recording transcript",
   "queryRenameChat": "Rename chat",
   "queryRestoreChat": "Restore chat",
+  "querySavedConclusion": "Conclusion saved {date}",
+  "@querySavedConclusion": {
+    "description": "Creation time of an accessible saved conclusion; makes no assertion about its origin chat availability.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "querySavedQuote": "This saved quote reflects the source when the answer was written.",
   "querySavedVersion": "Saved version: {version}",
   "@querySavedVersion": {
@@ -6423,13 +6448,26 @@
       }
     }
   },
+  "querySavedVersionUnavailable": "Version date unavailable",
   "querySearching": "Searching linked notes and recordings…",
+  "querySourceAction": "{action}: {source}",
+  "@querySourceAction": {
+    "description": "Accessible action label identifying its evidence source or selected chat.",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "source": {
+        "type": "String"
+      }
+    }
+  },
   "querySourceChanged": "Source has changed",
   "querySourceDeleted": "Source deleted",
   "querySourceMoved": "Source moved to another category",
-  "querySurroundingLimit": "Surrounding text is a saved excerpt. Open the entry for the full discussion.",
+  "querySurroundingLimit": "This is the saved excerpt, which may not include the full discussion.",
   "querySurroundingText": "Show surrounding text",
-  "queryTranscribing": "Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.",
+  "queryTranscribing": "Press Send to submit text. Audio may already be with your provider.",
   "queryUnavailable": "This scope is no longer available with your current visibility settings.",
   "queryUnread": "New answer",
   "queryWelcomeCategory": "Ask {agentName} about this category",

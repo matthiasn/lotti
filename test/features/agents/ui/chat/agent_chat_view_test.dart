@@ -1,3 +1,6 @@
+import 'dart:ui' show Tristate;
+
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -6,13 +9,245 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
 import '../evolution/widgets/evolution_recorder_test_utils.dart';
 
 void main() {
+  setUpAll(loadAppFonts);
+
+  testWidgets('reply links keep message attribution and accessible actions', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final taps = <(AgentChatMessage, String, String)>[];
+    final message = AgentChatMessage(
+      id: 'feeder-reply',
+      role: AgentChatRole.agent,
+      text: 'See the [Decision](query-source:feeder).',
+      createdAt: DateTime(2026, 9, 10, 9),
+    );
+    try {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              composerEnabled: false,
+              history: AsyncData([message]),
+              onLinkTap: (message, url, title) =>
+                  taps.add((message, url, title)),
+            ),
+          ),
+          locale: const Locale('fr'),
+        ),
+      );
+      await tester.pump();
+      expect(find.bySemanticsLabel('Juno à 09:00'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Juno, 09:00 : ${message.text}'),
+        findsNothing,
+      );
+      final link = find.bySemanticsLabel('Decision');
+      expect(
+        tester
+            .getSemantics(link)
+            .getSemanticsData()
+            .hasAction(
+              SemanticsAction.tap,
+            ),
+        isTrue,
+      );
+      await tester.tap(find.text('Decision', findRichText: true));
+      expect(taps, [(message, 'query-source:feeder', 'Decision')]);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      semantics.dispose();
+    }
+  });
+
+  testWidgets(
+    'partial transcription expands within a narrow keyboard viewport and cancels',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        const size = Size(320, 760);
+        const keyboard = 240.0;
+        setTestSurfaceSize(tester, size);
+        final partial = List.generate(
+          12,
+          (index) =>
+              'Penguin feeder discussion $index keeps the smaller hopper '
+              'available for the next habitat trial.',
+        ).join(' ');
+        var cancelled = 0;
+        var sent = 0;
+        final drafts = <String>[];
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: Builder(
+                builder: (context) => AgentChatView(
+                  agentId: 'agent',
+                  agentName: 'Habitat Watcher',
+                  draft: '',
+                  isSending: false,
+                  onDraftChanged: drafts.add,
+                  onSend: () => sent++,
+                  onRetry: () {},
+                  showVoiceDetails: true,
+                  history: const AsyncData([]),
+                  footer: Padding(
+                    padding: EdgeInsets.all(context.designTokens.spacing.step4),
+                    child: Text(
+                      context.messages.queryTranscribing,
+                      style:
+                          context.designTokens.typography.styles.others.caption,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(
+              size: size,
+              textScaler: TextScaler.linear(1.5),
+              viewInsets: EdgeInsets.only(bottom: keyboard),
+            ),
+            overrides: [
+              chatRecorderControllerProvider.overrideWith(
+                () => ProcessingTestController(
+                  partialTranscript: partial,
+                  onCancelCalled: () => cancelled++,
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        final previewText = find.text(partial);
+        expect(
+          MediaQuery.textScalerOf(tester.element(previewText)).scale(10),
+          15,
+        );
+        final collapsed = tester.widget<Text>(previewText);
+        expect(collapsed.maxLines, inInclusiveRange(1, 3));
+        expect(collapsed.overflow, TextOverflow.ellipsis);
+        expect(tester.takeException(), isNull);
+        expect(
+          tester
+              .getSemantics(find.bySemanticsLabel('Show more'))
+              .flagsCollection
+              .isExpanded,
+          Tristate.isFalse,
+        );
+        await tester.tap(find.text('Show more'));
+        await tester.pump();
+        expect(
+          tester
+              .getSemantics(find.bySemanticsLabel('Show less'))
+              .flagsCollection
+              .isExpanded,
+          Tristate.isTrue,
+        );
+        final scroll = find.byKey(const ValueKey('chat-transcription-preview'));
+        final viewport = tester.getRect(scroll);
+        final chat = tester.getRect(find.byType(AgentChatView));
+        expect(viewport.height, lessThanOrEqualTo(chat.height / 4));
+        final cancel = find.widgetWithText(DesignSystemButton, 'Cancel');
+        final cancelRect = tester.getRect(cancel);
+        expect(cancelRect.height, greaterThanOrEqualTo(TapTargets.minimum));
+        expect(cancelRect.top, greaterThanOrEqualTo(viewport.bottom));
+        expect(cancelRect.bottom, lessThanOrEqualTo(size.height - keyboard));
+        expect(cancelRect.right, lessThanOrEqualTo(size.width));
+        final scrollController = tester
+            .widget<SingleChildScrollView>(scroll)
+            .controller!;
+        expect(scrollController.position.maxScrollExtent, greaterThan(0));
+        await tester.drag(scroll, const Offset(0, -120));
+        await tester.pump();
+        expect(scrollController.offset, greaterThan(0));
+        expect(tester.getRect(cancel), cancelRect);
+        await tester.tap(find.text('Show less'));
+        await tester.pump();
+        expect(tester.widget<Text>(previewText).maxLines, collapsed.maxLines);
+        await tester.tap(find.text('Show more'));
+        await tester.pump();
+        await tester.tap(find.text('Cancel'));
+        await tester.pump();
+        expect(cancelled, 1);
+        expect(drafts, isEmpty);
+        expect(sent, 0);
+        expect(find.text(partial), findsNothing);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          '',
+        );
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        semantics.dispose();
+      }
+    },
+  );
+
+  for (final partial in <String?>[null, 'The smaller hopper stays.']) {
+    testWidgets('short or empty transcription remains compact: $partial', (
+      tester,
+    ) async {
+      var cancelled = false;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Habitat Watcher',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              showVoiceDetails: true,
+              history: const AsyncData([]),
+            ),
+          ),
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ProcessingTestController(
+                partialTranscript: partial,
+                onCancelCalled: () => cancelled = true,
+              ),
+            ),
+          ],
+        ),
+      );
+      expect(find.text(partial ?? 'Transcribing…'), findsOneWidget);
+      expect(find.text('Show more'), findsNothing);
+      expect(find.text('Show less'), findsNothing);
+      final cancel = find.widgetWithText(DesignSystemButton, 'Cancel');
+      expect(
+        tester.getSize(cancel).height,
+        greaterThanOrEqualTo(TapTargets.minimum),
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+      expect(cancelled, isTrue);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   testWidgets(
     'supporting evidence belongs to its reply surface and reading width',
     (tester) async {
@@ -287,68 +522,89 @@ void main() {
   testWidgets('renders agent markdown and expands a collapsed long reply', (
     tester,
   ) async {
-    final longReply = List.generate(
-      12,
-      (index) => '${index + 1}. **Coaching point ${index + 1}** — details',
-    ).join('\n');
+    final semantics = tester.ensureSemantics();
+    try {
+      final longReply = List.generate(
+        12,
+        (index) => '${index + 1}. **Coaching point ${index + 1}** — details',
+      ).join('\n');
 
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Scaffold(
-          body: AgentChatView(
-            agentId: 'goal-1',
-            agentName: 'Juno',
-            draft: '',
-            isSending: false,
-            onDraftChanged: (_) {},
-            onSend: () {},
-            onRetry: () {},
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              onLinkTap: (_, _, _) {},
+            ),
           ),
+          overrides: [
+            agentChatProjectionProvider('goal-1').overrideWith(
+              (ref) async => [
+                AgentChatMessage(
+                  id: 'long-reply',
+                  role: AgentChatRole.agent,
+                  text: longReply,
+                  createdAt: DateTime(2026, 8, 11, 9),
+                ),
+              ],
+            ),
+          ],
         ),
-        overrides: [
-          agentChatProjectionProvider('goal-1').overrideWith(
-            (ref) async => [
-              AgentChatMessage(
-                id: 'long-reply',
-                role: AgentChatRole.agent,
-                text: longReply,
-                createdAt: DateTime(2026, 8, 11, 9),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(AgentMarkdownView), findsOneWidget);
-    expect(
-      tester.widget<GptMarkdown>(find.byType(GptMarkdown)).data,
-      longReply,
-    );
-    // Height-based collapse: `GptMarkdown.maxLines` counts each block
-    // element as one line, so it never truncated numbered coaching lists.
-    // The clamp is a clipped viewport instead.
-    const collapseClip = ValueKey('agent-reply-collapse');
-    expect(find.byKey(collapseClip), findsOneWidget);
-    final collapsedHeight = tester.getSize(find.byKey(collapseClip)).height;
-    expect(find.text('Show more'), findsOneWidget);
+      expect(find.byType(AgentMarkdownView), findsOneWidget);
+      expect(
+        tester.widget<GptMarkdown>(find.byType(GptMarkdown)).data,
+        longReply,
+      );
+      // Height-based collapse: `GptMarkdown.maxLines` counts each block
+      // element as one line, so it never truncated numbered coaching lists.
+      // The clamp is a clipped viewport instead.
+      const collapseClip = ValueKey('agent-reply-collapse');
+      expect(find.byKey(collapseClip), findsOneWidget);
+      final collapsedHeight = tester.getSize(find.byKey(collapseClip)).height;
+      expect(find.text('Show more'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Show more'))
+            .flagsCollection
+            .isExpanded,
+        Tristate.isFalse,
+      );
 
-    await tester.tap(find.text('Show more'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Show more'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Show less'), findsOneWidget);
-    expect(find.byKey(collapseClip), findsNothing);
-    expect(
-      tester.getSize(find.byType(AgentMarkdownView)).height,
-      greaterThan(collapsedHeight),
-    );
+      expect(find.text('Show less'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Show less'))
+            .flagsCollection
+            .isExpanded,
+        Tristate.isTrue,
+      );
+      expect(find.byKey(collapseClip), findsNothing);
+      expect(
+        tester.getSize(find.byType(AgentMarkdownView)).height,
+        greaterThan(collapsedHeight),
+      );
 
-    await tester.tap(find.text('Show less'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Show less'));
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(collapseClip), findsOneWidget);
-    expect(find.text('Show more'), findsOneWidget);
+      expect(find.byKey(collapseClip), findsOneWidget);
+      expect(find.text('Show more'), findsOneWidget);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      semantics.dispose();
+    }
   });
 
   testWidgets('a reply that fits the collapsed viewport shows no toggle', (

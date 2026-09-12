@@ -10984,6 +10984,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryAudioOpenRecording => 'Opname openen';
 
   @override
+  String queryAudioPlaying(String start, String end) {
+    return 'Speelt $start–$end af';
+  }
+
+  @override
   String get queryAudioPrepare => 'Audiofragment voorbereiden';
 
   @override
@@ -10993,7 +10998,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryAudioReadAloud => 'Antwoord voorlezen';
 
   @override
+  String get queryAudioReading => 'Antwoord wordt voorgelezen';
+
+  @override
   String get queryAudioRetry => 'Audio opnieuw proberen';
+
+  @override
+  String get queryAudioSetupDetails => 'Instellingsdetails';
+
+  @override
+  String get queryAudioSetupRequired =>
+      'Audiofragmenten vereisen een compatibel transcriptiemodel.';
 
   @override
   String get queryAudioStale =>
@@ -11190,16 +11205,24 @@ class AppLocalizationsNl extends AppLocalizations {
       'Zoekt alleen in deze taak en de rechtstreeks gekoppelde items zonder categorie.';
 
   @override
-  String get queryRecall => 'Gebruikt relevante conclusies uit eerdere chats.';
+  String get queryRecall => 'Dit antwoord gebruikte opgeslagen conclusies.';
 
   @override
   String get queryRecordings => 'Opnamen';
+
+  @override
+  String get queryRecordingTranscript => 'Transcript van de opname';
 
   @override
   String get queryRenameChat => 'Chat hernoemen';
 
   @override
   String get queryRestoreChat => 'Chat herstellen';
+
+  @override
+  String querySavedConclusion(String date) {
+    return 'Conclusie opgeslagen op $date';
+  }
 
   @override
   String get querySavedQuote =>
@@ -11211,7 +11234,15 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get querySavedVersionUnavailable => 'Versiedatum niet beschikbaar';
+
+  @override
   String get querySearching => 'Gekoppelde notities en opnamen doorzoeken…';
+
+  @override
+  String querySourceAction(String action, String source) {
+    return '$action: $source';
+  }
 
   @override
   String get querySourceChanged => 'Bron is gewijzigd';
@@ -11224,14 +11255,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get querySurroundingLimit =>
-      'De omringende tekst is een opgeslagen fragment. Open het item voor de volledige bespreking.';
+      'Dit is het opgeslagen fragment, dat mogelijk niet het hele gesprek bevat.';
 
   @override
   String get querySurroundingText => 'Omringende tekst tonen';
 
   @override
   String get queryTranscribing =>
-      'Transcriberen… je vraag wordt pas verstuurd als je op Verzenden drukt. De audio is mogelijk al naar je transcriptieprovider verstuurd.';
+      'Druk op Verzenden om tekst te versturen. Je aanbieder kan de audio al hebben.';
 
   @override
   String get queryUnavailable =>

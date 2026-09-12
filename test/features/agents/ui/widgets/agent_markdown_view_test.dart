@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' as legacy;
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
@@ -54,6 +55,30 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   group('AgentMarkdownView', () {
+    testWidgets('owner citations respond to pointer and keyboard activation', (
+      tester,
+    ) async {
+      final visited = <(String, String)>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          AgentMarkdownView(
+            'The feeder was approved [1](#query-evidence-1).',
+            onLinkTap: (url, title) => visited.add((url, title)),
+          ),
+        ),
+      );
+      await tester.pump();
+      final link = find.byWidgetPredicate(
+        (widget) => widget is InkWell && widget.onTap != null,
+      );
+      await tester.tap(link);
+      await tester.pump();
+      expect(visited, [('#query-evidence-1', '1')]);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(visited, [('#query-evidence-1', '1'), ('#query-evidence-1', '1')]);
+    });
     testWidgets('renders GptMarkdown with provided text', (tester) async {
       const markdownText = '# Hello World\n\nThis is a test.';
 

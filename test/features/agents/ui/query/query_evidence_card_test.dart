@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -89,7 +91,7 @@ void main() {
     'quote disclosure marks omitted context and keeps copy verbatim',
     (tester) async {
       await pump(tester);
-      expect(find.textContaining('mistral / voxtral'), findsOneWidget);
+      expect(find.text('Recording transcript'), findsOneWidget);
       await tester.tap(find.text('Show exact text'));
       await tester.pump();
       expect(find.text('Hide exact text'), findsOneWidget);
@@ -127,7 +129,7 @@ void main() {
             .toPlainText(),
         '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
       );
-      expect(find.textContaining('Saved version:'), findsOneWidget);
+      expect(find.text('Version date unavailable'), findsOneWidget);
       await tester.tap(find.text('Show surrounding text'));
       await tester.pump();
       expect(
@@ -139,7 +141,7 @@ void main() {
       );
       expect(
         find.text(
-          'Surrounding text is a saved excerpt. Open the entry for the full discussion.',
+          'This is the saved excerpt, which may not include the full discussion.',
         ),
         findsOneWidget,
       );
@@ -242,6 +244,76 @@ void main() {
       expect(find.byType(SelectableText), findsNothing);
     },
   );
+  testWidgets('full saved windows disclose their limit without altering copy', (
+    tester,
+  ) async {
+    evidence = evidence.copyWith(start: 0, end: evidence.sourceText.length);
+    await pump(tester);
+    await tester.tap(find.text('Show exact text'));
+    await tester.pump();
+    expect(find.text('Show surrounding text'), findsNothing);
+    expect(
+      find.text(
+        'This is the saved excerpt, which may not include the full discussion.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Version date unavailable'), findsOneWidget);
+    expect(
+      find.textContaining(evidence.fingerprint.substring(0, 8)),
+      findsNothing,
+    );
+    await tester.ensureVisible(find.text('Copy quote'));
+    await tester.tap(find.text('Copy quote'));
+    await tester.pump();
+    expect(copied, [evidence.sourceText]);
+  });
+
+  testWidgets(
+    'source actions expose their target and surrounding disclosure state',
+    (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await pump(tester);
+        expect(
+          find.bySemanticsLabel('Show exact text: Penguin habitat review'),
+          findsOneWidget,
+        );
+        await tester.tap(find.text('Show exact text'));
+        await tester.pump();
+        Finder disclosure() => find.bySemanticsLabel(
+          find.text('Show surrounding text').evaluate().isNotEmpty
+              ? 'Show surrounding text: Penguin habitat review'
+              : 'Hide surrounding text: Penguin habitat review',
+        );
+        expect(
+          tester.getSemantics(disclosure()).flagsCollection.isExpanded,
+          Tristate.isFalse,
+        );
+        await tester.tap(find.text('Show surrounding text'));
+        await tester.pump();
+        expect(
+          tester.getSemantics(disclosure()).flagsCollection.isExpanded,
+          Tristate.isTrue,
+        );
+        await tester.tap(find.text('Hide surrounding text'));
+        await tester.pump();
+        expect(
+          tester.getSemantics(disclosure()).flagsCollection.isExpanded,
+          Tristate.isFalse,
+        );
+        expect(
+          find.bySemanticsLabel('Copy quote: Penguin habitat review'),
+          findsOneWidget,
+        );
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
   for (final explicitDate in [false, true]) {
     testWidgets(
       'saved version uses its edit or transcript date (explicit=$explicitDate)',

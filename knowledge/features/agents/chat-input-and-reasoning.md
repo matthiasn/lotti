@@ -31,6 +31,10 @@ use an emphasized upward-arrow Send action. Both options default to the existing
 separate attachment and rounded-field treatment for other hosts.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
+Hosts can supply `onLinkTap` to resolve each link against its containing message.
+That opt-in preserves the rich reply's accessible text and link actions, with
+only author/time on the enclosing semantic node. Other hosts keep the existing
+flattened message announcement.
 Its composer and the agent improvement input widgets use
 the same voice-input primitives under `agents/ui/chat/`:
 
@@ -67,7 +71,14 @@ it to zero. Query hosts opt into a stable tabular clock and visible Stop/Cancel
 controls, including Cancel during transcription. Stop moves to
 `processing`, streams transcription chunks into `partialTranscript`, then
 publishes the finished `transcript` or a typed error and returns to `idle`.
-The UI consumes the finished transcript into its editable composer.
+The UI consumes the finished transcript into its editable composer. During
+processing, the shared composer shows up to three measured lines of partial
+text. Overflowing text offers Show more/less; expansion enables scrolling
+within six lines and a quarter of the available chat height, whichever is
+smaller. This height comes from the host layout, including keyboard constraints.
+Progress and Cancel remain outside that scroll area. Short text has no toggle;
+empty progress has a localized transcription label. Partial text is never sent
+or copied into the draft before transcription finishes.
 
 Hosts can pass a lazy `resolveTranscriptionTarget` callback into `start`. It is
 captured for that recording and awaited immediately before transcription;

@@ -10913,6 +10913,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryAudioOpenRecording => 'Open recording';
 
   @override
+  String queryAudioPlaying(String start, String end) {
+    return 'Playing $start–$end';
+  }
+
+  @override
   String get queryAudioPrepare => 'Prepare audio excerpt';
 
   @override
@@ -10922,7 +10927,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryAudioReadAloud => 'Read answer aloud';
 
   @override
+  String get queryAudioReading => 'Reading answer aloud';
+
+  @override
   String get queryAudioRetry => 'Retry audio';
+
+  @override
+  String get queryAudioSetupDetails => 'Setup details';
+
+  @override
+  String get queryAudioSetupRequired =>
+      'Audio excerpts need a compatible transcription model.';
 
   @override
   String get queryAudioStale =>
@@ -11115,16 +11130,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Searches this task and its directly linked uncategorized entries only.';
 
   @override
-  String get queryRecall => 'Uses relevant conclusions from earlier chats.';
+  String get queryRecall => 'This answer used saved conclusions.';
 
   @override
   String get queryRecordings => 'Recordings';
+
+  @override
+  String get queryRecordingTranscript => 'Recording transcript';
 
   @override
   String get queryRenameChat => 'Rename chat';
 
   @override
   String get queryRestoreChat => 'Restore chat';
+
+  @override
+  String querySavedConclusion(String date) {
+    return 'Conclusion saved $date';
+  }
 
   @override
   String get querySavedQuote =>
@@ -11136,7 +11159,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get querySavedVersionUnavailable => 'Version date unavailable';
+
+  @override
   String get querySearching => 'Searching linked notes and recordings…';
+
+  @override
+  String querySourceAction(String action, String source) {
+    return '$action: $source';
+  }
 
   @override
   String get querySourceChanged => 'Source has changed';
@@ -11149,14 +11180,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get querySurroundingLimit =>
-      'Surrounding text is a saved excerpt. Open the entry for the full discussion.';
+      'This is the saved excerpt, which may not include the full discussion.';
 
   @override
   String get querySurroundingText => 'Show surrounding text';
 
   @override
   String get queryTranscribing =>
-      'Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.';
+      'Press Send to submit text. Audio may already be with your provider.';
 
   @override
   String get queryUnavailable =>

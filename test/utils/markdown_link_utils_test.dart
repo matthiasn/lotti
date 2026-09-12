@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../mocks/mocks.dart';
+import '../widget_test_utils.dart';
 
 Future<void> _pumpMarkdownLink(
   WidgetTester tester, {
@@ -188,6 +189,24 @@ void main() {
   });
 
   group('buildMarkdownLink', () {
+    testWidgets('owner routing overrides URL launching', (tester) async {
+      var activated = 0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => buildMarkdownLink(
+              context,
+              const TextSpan(text: 'Saved evidence'),
+              '#query-evidence-1',
+              DefaultTextStyle.of(context).style,
+              onTap: () => activated++,
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Saved evidence'));
+      expect(activated, 1);
+    });
     testWidgets('renders link with correct styling', (tester) async {
       await _pumpMarkdownLink(
         tester,
