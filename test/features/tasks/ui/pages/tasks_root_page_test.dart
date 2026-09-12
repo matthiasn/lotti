@@ -312,6 +312,7 @@ void main() {
           const TasksRootPage(),
           mediaQueryData: const MediaQueryData(size: Size(1600, 900)),
           overrides: [
+            queryChatEnabledProvider.overrideWithValue(true),
             journalPageScopeProvider.overrideWithValue(true),
             journalPageControllerProvider(
               true,
@@ -596,6 +597,7 @@ void main() {
         ),
         mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
         overrides: [
+          queryChatEnabledProvider.overrideWithValue(true),
           journalPageScopeProvider.overrideWithValue(true),
           journalPageControllerProvider(
             true,

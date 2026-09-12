@@ -113,6 +113,18 @@ class QueryChatPane extends ConsumerStatefulWidget {
 
 class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
   final _storage = PageStorageBucket();
+  (String, int)? _sourceReturnEvidence;
+  FocusNode? _sourceReturnFocus;
+  final _ownerFocus = <(String, String), FocusNode>{};
+
+  @override
+  void dispose() {
+    for (final node in _ownerFocus.values) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
   final _evidenceKeys = <(String, int), GlobalKey<QueryEvidenceCardState>>{};
 
   Future<void> _openCitation(
@@ -178,7 +190,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     }
   }
 
-  Future<void> _openSource(String id) async {
+  Future<void> _openSource(String id, {FocusNode? returnFocus}) async {
     final fresh = await ref.read(querySourceAccessProvider).load([id]);
     if (!mounted) return;
     final current = QueryAccessSnapshot(
@@ -189,6 +201,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     );
     final entry = current.entries[id];
     if (entry == null || !current.allowsEntry(entry)) return;
+    _sourceReturnEvidence = null;
+    _sourceReturnFocus = returnFocus ?? FocusManager.instance.primaryFocus;
     setState(() => _sourceId = id);
   }
 
@@ -197,6 +211,16 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     if (!mounted) return;
     if (_sourceId != null) {
       setState(() => _sourceId = null);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final evidence = _evidenceKeys[_sourceReturnEvidence]?.currentState;
+        if (evidence != null) {
+          evidence.reveal();
+        } else if (_sourceReturnFocus?.context != null &&
+            _sourceReturnFocus!.canRequestFocus) {
+          _sourceReturnFocus!.requestFocus();
+        }
+      });
     } else {
       widget.onClose();
     }
@@ -349,6 +373,12 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(queryChatEnabledProvider, (_, enabled) {
+      if (!enabled) {
+        unawaited(ref.read(chatRecorderControllerProvider.notifier).cancel());
+      }
+    });
+    if (!ref.watch(queryChatEnabledProvider)) return const SizedBox.shrink();
     ref
       ..listen(configFlagProvider('private'), (previous, next) {
         if (previous?.hasValue == true && previous?.value != next.value) {
@@ -434,7 +464,11 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
       ProjectEntry(:final data) => data.title,
       _ => access.categories[widget.scope.id]?.name ?? target.label,
     };
-    final reach = widget.scope.kind == QueryScopeKind.category
+    final originalsOnly =
+        widget.scope.kind == QueryScopeKind.task && local.kind != null;
+    final reach = originalsOnly
+        ? messages.queryOriginalsHome
+        : widget.scope.kind == QueryScopeKind.category
         ? messages.queryReachCategoryOnly(categoryName ?? label)
         : categoryName == null
         ? messages.queryReachUncategorized
@@ -475,13 +509,19 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
             text: text,
             createdAt: event.createdAt,
           )
-        else if (event.data case QueryChatAnswer(:final text, :final evidence))
+        else if (event.data case QueryChatAnswer(
+          :final text,
+          :final evidence,
+          :final summaryBased,
+        ))
           AgentChatMessage(
             id: event.id,
             role: AgentChatRole.agent,
             // Route answer-local citations to their saved evidence cards.
             // Existing Markdown links retain their original destination.
-            text: _linkEvidenceCitations(text, evidence.length),
+            text: summaryBased
+                ? '**${messages.querySummaryBased}**\n\n$text'
+                : _linkEvidenceCitations(text, evidence.length),
             createdAt: event.createdAt,
           ),
     ];
@@ -495,6 +535,12 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         .where((e) => access.allowsEvent(e.data))
         .length;
     final source = access.entries[_sourceId];
+    if (_sourceId != null && (source == null || !access.allowsEntry(source))) {
+      // A source hidden while open must not leave a visibility placeholder.
+      _sourceId = null;
+      _sourceReturnEvidence = null;
+      _sourceReturnFocus = null;
+    }
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -523,33 +569,44 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       label: messages.queryHomeOnly,
                       size: DesignSystemChipSize.compactPillTouch,
                       outlined: true,
-                      selected: local.homeOnly,
-                      onPressed: running
+                      selected: local.homeOnly || originalsOnly,
+                      onPressed: running || originalsOnly
                           ? null
                           : () => controller.narrow(
                               id,
                               homeOnly: !local.homeOnly,
                             ),
                     ),
-                  for (final kind in [
-                    QuerySourceKind.text,
-                    QuerySourceKind.recording,
-                  ])
+                  if (widget.scope.kind == QueryScopeKind.task)
                     DesignSystemChip(
-                      label: kind == QuerySourceKind.text
-                          ? messages.queryNotes
-                          : messages.queryRecordings,
+                      label: messages.querySummaries,
                       size: DesignSystemChipSize.compactPillTouch,
                       outlined: true,
-                      selected: local.kind == kind,
+                      selected: local.kind == null,
                       onPressed: running
                           ? null
-                          : () => controller.narrow(
-                              id,
-                              kind: kind,
-                              clearKind: local.kind == kind,
-                            ),
+                          : () => controller.narrow(id, clearKind: true),
                     ),
+                  if (widget.scope.kind == QueryScopeKind.task)
+                    for (final kind in [
+                      QuerySourceKind.text,
+                      QuerySourceKind.recording,
+                    ])
+                      DesignSystemChip(
+                        label: kind == QuerySourceKind.text
+                            ? messages.queryNotes
+                            : messages.queryRecordings,
+                        size: DesignSystemChipSize.compactPillTouch,
+                        outlined: true,
+                        selected: local.kind == kind,
+                        onPressed: running
+                            ? null
+                            : () => controller.narrow(
+                                id,
+                                kind: kind,
+                                clearKind: local.kind == kind,
+                              ),
+                      ),
                 ],
               ),
               if (_sourceId == null) ...[
@@ -592,94 +649,34 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                         memories,
                         agent.displayName,
                       ),
-                      activity: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.spacing.step5,
-                            vertical: tokens.spacing.step3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: tokens.colors.background.level02,
-                            borderRadius: BorderRadius.circular(tokens.radii.l),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (showProvisional) ...[
-                                Text(
-                                  messages.queryDraftProvisional,
-                                  style: tokens.typography.styles.others.caption
-                                      .copyWith(
-                                        color:
-                                            tokens.colors.text.mediumEmphasis,
-                                      ),
-                                ),
-                                SizedBox(height: tokens.spacing.step2),
-                                // Plain text keeps every draft citation and URL inert.
-                                SelectableText(
-                                  provisional.text,
-                                  key: ValueKey(
-                                    'query-provisional-${provisional.questionId}',
-                                  ),
-                                  style:
-                                      tokens.typography.styles.body.bodySmall,
-                                ),
-                                SizedBox(height: tokens.spacing.step3),
-                              ],
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
+                      activity: showProvisional
+                          ? Padding(
+                              padding: EdgeInsets.all(tokens.spacing.step4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  SizedBox.square(
-                                    dimension: IconSizes.s,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: BorderWidths.emphasis,
-                                      color: tokens.colors.interactive.enabled,
-                                    ),
+                                  Text(
+                                    messages.queryDraftProvisional,
+                                    style:
+                                        tokens.typography.styles.others.caption,
                                   ),
-                                  SizedBox(width: tokens.spacing.step3),
-                                  Flexible(
-                                    child: Semantics(
-                                      liveRegion: true,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _activityLabel(context, local),
-                                            style: tokens
-                                                .typography
-                                                .styles
-                                                .body
-                                                .bodySmall,
-                                          ),
-                                          Text(
-                                            messages.queryChecked(
-                                              local.checked,
-                                            ),
-                                            style: tokens
-                                                .typography
-                                                .styles
-                                                .others
-                                                .caption,
-                                          ),
-                                        ],
-                                      ),
+                                  SizedBox(height: tokens.spacing.step2),
+                                  SelectableText(
+                                    provisional.text,
+                                    key: ValueKey(
+                                      'query-provisional-${provisional.questionId}',
                                     ),
-                                  ),
-                                  SizedBox(width: tokens.spacing.step3),
-                                  DesignSystemButton(
-                                    label: messages.cancelButton,
-                                    onPressed: () => controller.cancel(id),
-                                    variant: DesignSystemButtonVariant.tertiary,
-                                    size: DesignSystemButtonSize.dense,
+                                    style:
+                                        tokens.typography.styles.body.bodySmall,
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
+                            )
+                          : const SizedBox.shrink(),
+                      pinnedActivity: _progress(
+                        context,
+                        local,
+                        () => controller.cancel(id),
                       ),
                       footer: _footer(
                         context,
@@ -724,7 +721,9 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                 ),
                               if (answer.coverage.incomplete)
                                 Text(
-                                  messages.queryIncompleteShort,
+                                  answer.summaryBased
+                                      ? messages.querySummaryIncomplete
+                                      : messages.queryIncompleteShort,
                                   style:
                                       tokens.typography.styles.others.caption,
                                 ),
@@ -739,8 +738,10 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                   evidence: evidence,
                                   number: index + 1,
                                   access: access,
-                                  onOpen: (sourceId) =>
-                                      setState(() => _sourceId = sourceId),
+                                  onOpen: (sourceId) => setState(() {
+                                    _sourceReturnEvidence = (message.id, index);
+                                    _sourceId = sourceId;
+                                  }),
                                   audioControls:
                                       access.entries[evidence.source.id]
                                           is JournalAudio
@@ -765,89 +766,34 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                         )
                                       : null,
                                 ),
-                              ExpansionTile(
-                                key: PageStorageKey('${message.id}:coverage'),
-                                expandedCrossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                title: Text(
-                                  messages.queryCoverage,
-                                  style:
-                                      tokens.typography.styles.others.caption,
-                                ),
-                                childrenPadding: EdgeInsets.all(
-                                  tokens.spacing.step3,
-                                ),
-                                children: [
-                                  if (answer.coverage.incomplete)
-                                    Text(
-                                      messages.queryIncomplete,
-                                      style: tokens
-                                          .typography
-                                          .styles
-                                          .others
-                                          .caption,
-                                    ),
-                                  Text(
-                                    messages.queryChecked(
-                                      answer.coverage.checked,
-                                    ),
+                              if (answer.summaryBased)
+                                _summaryBasis(context, answer, access)
+                              else
+                                ExpansionTile(
+                                  key: PageStorageKey('${message.id}:coverage'),
+                                  expandedCrossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  title: Text(
+                                    messages.queryCoverage,
                                     style:
-                                        tokens.typography.styles.body.bodySmall,
+                                        tokens.typography.styles.others.caption,
                                   ),
-                                  if (answer.coverage.homeChecked
-                                      case final count?)
-                                    Text(
-                                      '${widget.scope.kind == QueryScopeKind.category ? messages.queryCoverageCategory : messages.queryHomeScope} · ${messages.queryChecked(count)}',
-                                      style: tokens
-                                          .typography
-                                          .styles
-                                          .body
-                                          .bodySmall,
-                                    ),
-                                  if (widget.scope.kind !=
-                                          QueryScopeKind.category &&
-                                      answer.coverage.categoryChecked != null)
-                                    Text(
-                                      '${messages.queryCoverageWider} · ${messages.queryChecked(answer.coverage.categoryChecked!)}',
-                                      style: tokens
-                                          .typography
-                                          .styles
-                                          .body
-                                          .bodySmall,
-                                    ),
-                                  Text(
-                                    messages.queryCoverageExcluded,
-                                    style:
-                                        tokens.typography.styles.body.bodySmall,
+                                  childrenPadding: EdgeInsets.all(
+                                    tokens.spacing.step3,
                                   ),
-                                  for (final reference
-                                      in answer.coverage.unreadableSources)
-                                    if (access.entries[reference.id]
-                                        case final JournalAudio audio)
-                                      if (access.allowsEntry(audio))
-                                        DesignSystemListItem(
-                                          titleMaxLines: 2,
-                                          subtitleMaxLines: null,
-                                          title:
-                                              '${messages.queryRecordings} · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(audio.meta.dateFrom)}',
-                                          subtitle:
-                                              audio.meta.categoryId ==
-                                                  reference.categoryId
-                                              ? messages.queryCoverageUnreadable
-                                              : '${messages.queryCoverageUnreadable}\n${messages.querySourceMoved}',
-                                          trailing: const Icon(
-                                            LottiIcons.openExternal,
-                                          ),
-                                          onTap: () => unawaited(
-                                            _guard(
-                                              () => _openSource(reference.id),
-                                            ),
-                                          ),
-                                        ),
-                                  if (answer.coverage.missingTranscripts > 0)
+                                  children: [
+                                    if (answer.coverage.incomplete)
+                                      Text(
+                                        messages.queryIncomplete,
+                                        style: tokens
+                                            .typography
+                                            .styles
+                                            .others
+                                            .caption,
+                                      ),
                                     Text(
-                                      messages.queryMissingTranscripts(
-                                        answer.coverage.missingTranscripts,
+                                      messages.queryChecked(
+                                        answer.coverage.checked,
                                       ),
                                       style: tokens
                                           .typography
@@ -855,8 +801,73 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                           .body
                                           .bodySmall,
                                     ),
-                                ],
-                              ),
+                                    if (answer.coverage.homeChecked
+                                        case final count?)
+                                      Text(
+                                        '${widget.scope.kind == QueryScopeKind.category ? messages.queryCoverageCategory : messages.queryHomeScope} · ${messages.queryChecked(count)}',
+                                        style: tokens
+                                            .typography
+                                            .styles
+                                            .body
+                                            .bodySmall,
+                                      ),
+                                    if (widget.scope.kind !=
+                                            QueryScopeKind.category &&
+                                        answer.coverage.categoryChecked != null)
+                                      Text(
+                                        '${messages.queryCoverageWider} · ${messages.queryChecked(answer.coverage.categoryChecked!)}',
+                                        style: tokens
+                                            .typography
+                                            .styles
+                                            .body
+                                            .bodySmall,
+                                      ),
+                                    Text(
+                                      messages.queryCoverageExcluded,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .body
+                                          .bodySmall,
+                                    ),
+                                    for (final reference
+                                        in answer.coverage.unreadableSources)
+                                      if (access.entries[reference.id]
+                                          case final JournalAudio audio)
+                                        if (access.allowsEntry(audio))
+                                          DesignSystemListItem(
+                                            titleMaxLines: 2,
+                                            subtitleMaxLines: null,
+                                            title:
+                                                '${messages.queryRecordings} · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(audio.meta.dateFrom)}',
+                                            subtitle:
+                                                audio.meta.categoryId ==
+                                                    reference.categoryId
+                                                ? messages
+                                                      .queryCoverageUnreadable
+                                                : '${messages.queryCoverageUnreadable}\n${messages.querySourceMoved}',
+                                            trailing: const Icon(
+                                              LottiIcons.openExternal,
+                                            ),
+                                            onTap: () => unawaited(
+                                              _guard(
+                                                () => _openSource(reference.id),
+                                              ),
+                                            ),
+                                          ),
+                                    if (answer.coverage.missingTranscripts > 0)
+                                      Text(
+                                        messages.queryMissingTranscripts(
+                                          answer.coverage.missingTranscripts,
+                                        ),
+                                        style: tokens
+                                            .typography
+                                            .styles
+                                            .body
+                                            .bodySmall,
+                                      ),
+                                  ],
+                                ),
                             ],
                           );
                         }
@@ -867,17 +878,10 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                 ),
               ] else
                 Expanded(
-                  child: source != null && access.allowsEntry(source)
-                      ? EntryDetailsPage(
-                          itemId: source.meta.id,
-                          showBackButton: false,
-                        )
-                      : Center(
-                          child: Text(
-                            messages.queryUnavailable,
-                            style: tokens.typography.styles.body.bodyMedium,
-                          ),
-                        ),
+                  child: EntryDetailsPage(
+                    itemId: source!.meta.id,
+                    showBackButton: false,
+                  ),
                 ),
             ],
           ),
@@ -931,11 +935,16 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   Expanded(
                     child: Tooltip(
                       message: '${_scopeKind(context)} · $label',
-                      child: Text(
-                        label,
-                        maxLines: compact ? 4 : 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.subtitle.subtitle1,
+                      child: Semantics(
+                        tooltip: reach,
+                        child: Text(
+                          label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: compact
+                              ? tokens.typography.styles.body.bodySmall
+                              : tokens.typography.styles.subtitle.subtitle1,
+                        ),
                       ),
                     ),
                   ),
@@ -954,13 +963,15 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   children: [
                     Expanded(child: switcher),
                     if (compact)
-                      Semantics(
-                        expanded: _showScope,
-                        child: DesignSystemIconAction(
-                          icon: LottiIcons.filter,
-                          tooltip: messages.querySearchScope,
-                          onPressed: () =>
-                              setState(() => _showScope = !_showScope),
+                      MergeSemantics(
+                        child: Semantics(
+                          expanded: _showScope,
+                          child: DesignSystemIconAction(
+                            icon: LottiIcons.filter,
+                            tooltip: messages.querySearchScope,
+                            onPressed: () =>
+                                setState(() => _showScope = !_showScope),
+                          ),
                         ),
                       ),
                     if (widget.onToggleExpanded != null)
@@ -975,15 +986,18 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       ),
                   ],
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-                  child: Text(
-                    reach,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
+                if (!compact || _showScope)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: tokens.spacing.step2,
+                    ),
+                    child: Text(
+                      reach,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
                     ),
                   ),
-                ),
                 if (!compact || _showScope)
                   Wrap(
                     spacing: tokens.spacing.step3,
@@ -1074,7 +1088,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step6),
+            padding: EdgeInsets.all(tokens.spacing.step4),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -1084,20 +1098,26 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      switch (widget.scope.kind) {
-                        QueryScopeKind.task => messages.queryWelcomeTask(
-                          agentName,
-                        ),
-                        QueryScopeKind.project => messages.queryWelcomeProject(
-                          agentName,
-                        ),
-                        QueryScopeKind.category =>
-                          messages.queryWelcomeCategory(agentName),
-                      },
-                      textAlign: TextAlign.center,
-                      style: tokens.typography.styles.heading.heading3,
-                    ),
+                    if (constraints.maxHeight >
+                        constraints.maxWidth.clamp(
+                          0,
+                          kActionListContentMaxWidth,
+                        ))
+                      Text(
+                        switch (widget.scope.kind) {
+                          QueryScopeKind.task => messages.queryWelcomeTask(
+                            agentName,
+                          ),
+                          QueryScopeKind.project =>
+                            messages.queryWelcomeProject(
+                              agentName,
+                            ),
+                          QueryScopeKind.category =>
+                            messages.queryWelcomeCategory(agentName),
+                        },
+                        textAlign: TextAlign.center,
+                        style: tokens.typography.styles.heading.heading3,
+                      ),
                     SizedBox(height: tokens.spacing.step3),
                     Text(
                       messages.queryEmptyBody,
@@ -1106,7 +1126,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                         color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
-                    SizedBox(height: tokens.spacing.step5),
+                    SizedBox(height: tokens.spacing.step3),
                     for (final example in [
                       messages.queryExampleDecision,
                       messages.queryExampleMeeting,
@@ -1177,43 +1197,48 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     final needsSetup =
         local.status == QueryTurnStatus.unavailable &&
         local.requestQuestionId == questionId;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          needsSetup
-              ? messages.queryInferenceUnavailable
-              : local.draftRetracted && local.requestQuestionId == questionId
-              ? messages.queryDraftRetracted
-              : terminal?.data is QueryChatCancelled
-              ? messages.aiAttributionStatusCancelled
-              : messages.queryFailed,
-          style: context.designTokens.typography.styles.others.caption,
-        ),
-        if (!chat.archived)
-          Wrap(
-            spacing: context.designTokens.spacing.step2,
-            children: [
-              if (needsSetup)
+    return Semantics(
+      liveRegion: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            needsSetup
+                ? messages.queryInferenceUnavailable
+                : local.draftRetracted && local.requestQuestionId == questionId
+                ? messages.queryDraftRetracted
+                : terminal?.data is QueryChatCancelled
+                ? messages.aiAttributionStatusCancelled
+                : messages.queryFailed,
+            style: context.designTokens.typography.styles.others.caption,
+          ),
+          if (!chat.archived)
+            Wrap(
+              spacing: context.designTokens.spacing.step2,
+              children: [
+                if (needsSetup)
+                  DesignSystemButton(
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                    label: messages.settingsAiTitle,
+                    onPressed: () => nav_service.beamToNamed('/settings/ai'),
+                    variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.dense,
+                  ),
                 DesignSystemButton(
-                  label: messages.settingsAiTitle,
-                  onPressed: () => nav_service.beamToNamed('/settings/ai'),
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  label: messages.aiInferenceErrorRetryButton,
+                  onPressed: running
+                      ? null
+                      : () => unawaited(
+                          controller.send(chat.id, retryQuestionId: questionId),
+                        ),
                   variant: DesignSystemButtonVariant.tertiary,
                   size: DesignSystemButtonSize.dense,
                 ),
-              DesignSystemButton(
-                label: messages.aiInferenceErrorRetryButton,
-                onPressed: running
-                    ? null
-                    : () => unawaited(
-                        controller.send(chat.id, retryQuestionId: questionId),
-                      ),
-                variant: DesignSystemButtonVariant.tertiary,
-                size: DesignSystemButtonSize.dense,
-              ),
-            ],
-          ),
-      ],
+              ],
+            ),
+        ],
+      ),
     );
   }
 
@@ -1454,6 +1479,126 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _summaryBasis(
+    BuildContext context,
+    QueryChatAnswer answer,
+    QueryAccessSnapshot access,
+  ) {
+    final messages = context.messages;
+    final tokens = context.designTokens;
+    final dependencies = answer.dependencies.map((ref) => ref.id).toSet();
+    final owners = <({String id, String title})>[
+      for (final id in answer.summaryOwnerIds.toSet())
+        if (dependencies.contains(id) &&
+            access.entries[id] != null &&
+            access.allowsEntry(access.entries[id]!))
+          if (switch (access.entries[id]) {
+                Task(:final data) => data.title,
+                ProjectEntry(:final data) => data.title,
+                _ => null,
+              }
+              case final String title)
+            (id: id, title: title),
+    ];
+    return ExpansionTile(
+      key: PageStorageKey(('summary-basis', answer.questionId)),
+      title: Text(
+        messages.querySummaryOwners,
+        style: tokens.typography.styles.others.caption,
+      ),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      childrenPadding: EdgeInsets.all(tokens.spacing.step3),
+      children: [
+        Text(
+          messages.querySummaryCoverage,
+          style: tokens.typography.styles.body.bodySmall,
+        ),
+        for (final owner in owners)
+          Focus(
+            focusNode: _ownerFocus.putIfAbsent((
+              answer.questionId,
+              owner.id,
+            ), FocusNode.new),
+            child: DesignSystemButton(
+              label: owner.title,
+              leadingIcon: LottiIcons.openExternal,
+              semanticsLabel: messages.querySourceAction(
+                messages.queryOpenCurrentEntry,
+                owner.title,
+              ),
+              variant: DesignSystemButtonVariant.tertiary,
+              size: DesignSystemButtonSize.dense,
+              tapTargetSize: MaterialTapTargetSize.padded,
+              onPressed: () => unawaited(
+                _guard(
+                  () => _openSource(
+                    owner.id,
+                    returnFocus: _ownerFocus[(answer.questionId, owner.id)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (owners.isNotEmpty)
+          Text(
+            messages.querySummaryCurrent,
+            style: tokens.typography.styles.others.caption,
+          ),
+      ],
+    );
+  }
+
+  Widget _progress(
+    BuildContext context,
+    QueryChatLocal local,
+    VoidCallback cancel,
+  ) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step2,
+      ),
+      child: Row(
+        children: [
+          const SizedBox.square(
+            dimension: IconSizes.s,
+            child: CircularProgressIndicator(
+              strokeWidth: BorderWidths.emphasis,
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Semantics(
+              liveRegion: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _activityLabel(context, local),
+                    style: tokens.typography.styles.others.caption,
+                  ),
+                  if (local.checked > 0)
+                    Text(
+                      context.messages.queryChecked(local.checked),
+                      style: tokens.typography.styles.others.caption,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          DesignSystemButton(
+            label: context.messages.cancelButton,
+            onPressed: cancel,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+            tapTargetSize: MaterialTapTargetSize.padded,
+          ),
+        ],
       ),
     );
   }

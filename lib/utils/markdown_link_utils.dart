@@ -76,6 +76,9 @@ Widget buildMarkdownLink(
       onTap: onTap ?? () => handleMarkdownLinkTap(url, ''),
       mouseCursor: SystemMouseCursors.click,
       child: Text.rich(
+        // GptMarkdown embeds this in a WidgetSpan, which scales its child.
+        // Applying MediaQuery scaling here too enlarges inline citations twice.
+        textScaler: TextScaler.noScaling,
         TextSpan(
           children: [text],
           style: style.copyWith(

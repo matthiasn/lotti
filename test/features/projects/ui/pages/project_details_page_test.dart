@@ -287,6 +287,7 @@ void main() {
       ),
       record: testRecord,
       extraOverrides: [
+        queryChatEnabledProvider.overrideWithValue(true),
         queryChatTargetProvider(scope).overrideWith(
           (ref) async => QueryChatTarget(
             scope: scope,

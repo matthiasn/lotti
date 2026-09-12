@@ -70,6 +70,7 @@ void main() {
         enableTooltipFlag: true,
         enableAiStreamingFlag: true,
         enableAiSummaryTtsFlag: false,
+        enableQueryChatFlag: false,
         recordLocationFlag: false,
         resendAttachments: false,
         enableLoggingFlag: false,
@@ -112,6 +113,23 @@ void main() {
         await initConfigFlags(db, inMemoryDatabase: true);
         expect(
           await db.getConfigFlag(enableMobileNavigationLauncherFlag),
+          isTrue,
+        );
+      } finally {
+        await db.upsertConfigFlag(flag.copyWith(status: false));
+      }
+    });
+
+    test('reinitializing flags preserves task chat opt-in', () async {
+      await initConfigFlags(db, inMemoryDatabase: true);
+      final flag = (await db.getConfigFlagByName(
+        enableQueryChatFlag,
+      ))!;
+      try {
+        await db.upsertConfigFlag(flag.copyWith(status: true));
+        await initConfigFlags(db, inMemoryDatabase: true);
+        expect(
+          await db.getConfigFlag(enableQueryChatFlag),
           isTrue,
         );
       } finally {

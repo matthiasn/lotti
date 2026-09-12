@@ -34,6 +34,7 @@ void main() {
   late QueryChatController controller;
   late StreamController<QueryChatData> history;
   late StreamController<bool> privacy;
+  late StreamController<bool> enabled;
   late Future<void> Function(String chatId) inspect;
   late Future<void> Function(String chatId) compose;
   late MockDomainLogger logger;
@@ -59,8 +60,13 @@ void main() {
     unavailable = false;
     history = StreamController<QueryChatData>.broadcast();
     privacy = StreamController<bool>.broadcast();
+    enabled = StreamController<bool>.broadcast();
     container = ProviderContainer(
       overrides: [
+        configFlagProvider('enable_query_chat').overrideWith((ref) async* {
+          yield true;
+          yield* enabled.stream;
+        }),
         domainLoggerProvider.overrideWithValue(logger),
         queryChatStoreProvider.overrideWithValue(bench.store),
         queryChatDataProvider(key).overrideWith((ref) => history.stream),
@@ -154,8 +160,46 @@ void main() {
     container.dispose();
     await history.close();
     await privacy.close();
+    await enabled.close();
     await bench.close();
   });
+
+  test(
+    'disabling query chat cancels work without deleting saved history',
+    () => withClock(Clock.fixed(now), () async {
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+      await container.read(configFlagProvider('enable_query_chat').future);
+      final id = await controller.create('Feeder');
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      inspect = (_) async {
+        entered.complete();
+        await release.future;
+      };
+      controller.updateDraft(id, 'What was approved?');
+      final running = controller.send(id);
+      await entered.future;
+      enabled.add(false);
+      await container.pump();
+      expect(
+        container.read(provider).local(id).status,
+        QueryTurnStatus.cancelled,
+      );
+      release.complete();
+      await running;
+      final saved = (await bench.store.load('agent')).chats.single;
+      expect(
+        saved.questions.single.data,
+        isA<QueryChatQuestion>().having(
+          (q) => q.text,
+          'question',
+          'What was approved?',
+        ),
+      );
+      expect(saved.answerFor(saved.questions.single.id), isNull);
+    }),
+  );
 
   test('privacy change clears a published draft awaiting projection', () async {
     await withClock(Clock.fixed(now), () async {

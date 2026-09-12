@@ -4376,6 +4376,7 @@ void main() {
           tester,
           navService: nav,
           viewportSize: _desktopViewportSize,
+          extraOverrides: [queryChatEnabledProvider.overrideWithValue(true)],
         );
         await tester.tap(find.byKey(const Key('day_view_panel_show_button')));
         await tester.pump();

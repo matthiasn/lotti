@@ -35,6 +35,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.history,
     this.emptyState,
     this.activity,
+    this.pinnedActivity,
     this.sendingLabel,
     this.footer,
     this.composerEnabled = true,
@@ -65,6 +66,9 @@ class AgentChatView extends ConsumerStatefulWidget {
   final AsyncValue<List<AgentChatMessage>>? history;
   final Widget? emptyState;
   final Widget? activity;
+
+  /// Optional persistent status above the composer for an active request.
+  final Widget? pinnedActivity;
 
   /// Describes the consumer's current operation in the composer and the
   /// default activity bubble's accessibility label.
@@ -271,6 +275,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                 );
                           }
                           final message = history[index];
+                          final groupAttachment =
+                              widget.groupAttachmentsWithReply &&
+                              message.role == AgentChatRole.agent;
                           final attachment = widget.attachmentBuilder?.call(
                             context,
                             message,
@@ -297,14 +304,18 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                           url,
                                           title,
                                         ),
-                                  attachment: widget.groupAttachmentsWithReply
+                                  attachment: groupAttachment
                                       ? attachment
                                       : null,
                                 ),
-                                if (attachment != null &&
-                                    !widget.groupAttachmentsWithReply) ...[
+                                if (attachment != null && !groupAttachment) ...[
                                   SizedBox(height: tokens.spacing.step2),
-                                  attachment,
+                                  KeyedSubtree(
+                                    key: ValueKey(
+                                      'goal-chat-attachment-${message.id}',
+                                    ),
+                                    child: attachment,
+                                  ),
                                 ],
                               ],
                             ),
@@ -313,6 +324,8 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                       ),
             },
           ),
+          if (widget.isSending && widget.pinnedActivity != null)
+            widget.pinnedActivity!,
           if (widget.hasFailedTurn)
             Padding(
               padding: EdgeInsets.symmetric(

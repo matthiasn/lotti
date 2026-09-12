@@ -11033,7 +11033,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Ask about earlier notes and meetings. Answers include the exact passages you can inspect.';
+      'Ask about decisions and earlier work. Answers distinguish summaries from exact passages.';
 
   @override
   String get queryExactStoredText => 'Exact stored text';
@@ -11185,7 +11185,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get querySavedVersionUnavailable => 'Version date unavailable';
 
   @override
-  String get querySearching => 'Searching linked notes and recordings…';
+  String get querySearching => 'Checking available information…';
 
   @override
   String get querySearchScope => 'Search scope and filters';
@@ -11213,7 +11213,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Press Send to submit text. Audio may already be with your provider.';
+      'Transcribing your recording. Audio may already be with your provider.';
 
   @override
   String get queryUnavailable =>
@@ -15437,6 +15437,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get configFlagEnableQueryChat => 'Experimental task chat';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Show chat for tasks, projects and categories. Disabled by default.';
+
+  @override
+  String get querySummaryBased => 'Based on summaries';
+
+  @override
+  String get querySummaryCoverage =>
+      'This answer uses task or project summaries. Original entries were not inspected.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Open a task or project to inspect its current summary. It may have changed since this answer.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Some information is missing from the available summaries.';
+
+  @override
+  String get querySummaryOwners => 'About this answer';
+
+  @override
+  String get queryOriginalsHome =>
+      'Checks this task and its directly linked entries only.';
+
+  @override
+  String get querySummaries => 'Summaries';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

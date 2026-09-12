@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_chat_pane.dart';
+import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -153,6 +154,7 @@ void main() {
     QueryScope activeScope = scope,
     MediaQueryData? mediaQueryData,
     QueryChatSession? session,
+    Stream<bool>? featureFlag,
     bool noAgent = false,
     bool companion = false,
     bool sourceDetailLoading = false,
@@ -189,6 +191,12 @@ void main() {
               });
               return null;
             }),
+          if (featureFlag == null)
+            queryChatEnabledProvider.overrideWithValue(true)
+          else
+            configFlagProvider(
+              'enable_query_chat',
+            ).overrideWith((ref) => featureFlag),
           queryChatTargetProvider(activeScope).overrideWith(
             (ref) async => QueryChatTarget(
               scope: activeScope,
@@ -292,6 +300,175 @@ void main() {
     matching: find.text(number, findRichText: true),
   );
 
+  testWidgets('disabling the feature hides open chat and cancels dictation', (
+    tester,
+  ) async {
+    final flags = StreamController<bool>.broadcast();
+    addTearDown(flags.close);
+    var cancelled = false;
+    await pump(
+      tester,
+      featureFlag: flags.stream,
+      activeRecorder: ProcessingTestController(
+        partialTranscript: null,
+        onCancelCalled: () => cancelled = true,
+      ),
+    );
+    expect(find.text('Feeder calibration'), findsNothing);
+    verifyNever(() => store.markRead(any(), any(), any()));
+    flags.add(true);
+    await tester.pump();
+    for (var frame = 0; frame < 8; frame++) {
+      await tester.pump();
+    }
+    expect(
+      ProviderScope.containerOf(
+        tester.element(find.byType(QueryChatPane)),
+      ).read(queryChatEnabledProvider),
+      isTrue,
+    );
+    expect(find.text('Feeder calibration'), findsOneWidget);
+    expect(cancelled, isFalse);
+    flags.add(false);
+    await tester.pump();
+    expect(find.text('Feeder calibration'), findsNothing);
+    expect(cancelled, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final projectOwner in [false, true]) {
+    testWidgets(
+      'summary answers disclose their basis and open attributed owners (project=$projectOwner)',
+      (
+        tester,
+      ) async {
+        getIt
+          ..registerSingleton<UserActivityService>(MockUserActivityService())
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
+        final task = bench.entries['task']! as Task;
+        bench.entries['task'] = task.copyWith(
+          data: task.data.copyWith(title: 'Feeder approval'),
+        );
+        final ownerId = projectOwner ? 'project' : 'task';
+        if (projectOwner) {
+          bench.entries['project'] = makeTestProject(
+            id: 'project',
+            categoryId: categoryMindfulness.id,
+            title: 'Feeder project',
+          );
+        }
+        final ownerTitle = projectOwner ? 'Feeder project' : 'Feeder approval';
+        events.addAll([
+          event(
+            'question',
+            'feeder',
+            const QueryChatEventData.question(text: 'What was approved?'),
+          ),
+          event(
+            'reply',
+            'feeder',
+            QueryChatEventData.answer(
+              questionId: 'question',
+              text: 'The summary records approval.',
+              coverage: const QueryCoverage(incomplete: true),
+              summaryBased: true,
+              summaryOwnerIds: [ownerId, 'unknown'],
+              dependencies: [
+                QuerySourceRef(
+                  id: ownerId,
+                  private: false,
+                  categoryPrivate: false,
+                  categoryId: categoryMindfulness.id,
+                ),
+              ],
+            ),
+          ),
+        ]);
+        await pump(tester, sourceDetailLoading: true, sourceDetailId: ownerId);
+        expect(find.textContaining('Sources checked: 0'), findsNothing);
+        expect(
+          find.text(
+            'Some information is missing from the available summaries.',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<AgentMarkdownView>(find.byType(AgentMarkdownView).last)
+              .text,
+          contains('Based on summaries'),
+        );
+        await tester.tap(find.text('About this answer'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text(
+            'This answer uses task or project summaries. Original entries were not inspected.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('unknown'), findsNothing);
+        await tester.ensureVisible(find.text(ownerTitle).last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(ownerTitle).last);
+        await tester.pump();
+        expect(
+          tester.widget<EntryDetailsPage>(find.byType(EntryDetailsPage)).itemId,
+          ownerId,
+        );
+        await tester.tap(find.byIcon(LottiIcons.back));
+        await tester.pump();
+        expect(find.text('About this answer'), findsOneWidget);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('original-entry filters explain their actual task-only reach', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('Notes'));
+    await tester.pump();
+    expect(
+      find.text('Checks this task and its directly linked entries only.'),
+      findsOneWidget,
+    );
+    final chips = tester.widgetList<DesignSystemChip>(
+      find.byType(DesignSystemChip),
+    );
+    final home = chips.singleWhere((chip) => chip.label == 'Home scope only');
+    expect(home.selected, isTrue);
+    expect(home.onPressed, isNull);
+    await tester.tap(find.text('Summaries'));
+    await tester.pump();
+    expect(
+      find.text('Checks this task and its directly linked entries only.'),
+      findsNothing,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final kind in [QueryScopeKind.project, QueryScopeKind.category]) {
+    testWidgets('$kind offers no unsupported original-entry filters', (
+      tester,
+    ) async {
+      bench.entries[categoryMindfulness.id] = makeTestProject(
+        id: categoryMindfulness.id,
+        categoryId: categoryMindfulness.id,
+        title: 'Penguin logistics',
+      );
+      await pump(
+        tester,
+        activeScope: QueryScope(kind: kind, id: categoryMindfulness.id),
+      );
+      expect(find.text('Notes'), findsNothing);
+      expect(find.text('Recordings'), findsNothing);
+      expect(find.text('Summaries'), findsNothing);
+      expect(find.text('Feeder calibration'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+
   testWidgets(
     'compact companion shows its task title and discloses scope controls at large text',
     (tester) async {
@@ -310,8 +487,8 @@ void main() {
       );
       final title = find.text('Inspect orbital penguin habitat');
       expect(
-        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
-        isFalse,
+        tester.renderObject<RenderParagraph>(title).maxLines,
+        2,
       );
       expect(find.text('Notes'), findsNothing);
       await tester.tap(find.byIcon(LottiIcons.filter));
@@ -711,7 +888,7 @@ void main() {
         );
         final label = answering
             ? 'Preparing an answer…'
-            : 'Searching linked notes and recordings…';
+            : 'Checking available information…';
         expect(
           tester
               .widget<DesignSystemTextInput>(find.byType(DesignSystemTextInput))
@@ -745,6 +922,8 @@ void main() {
     testWidgets(
       'empty ${kind.name} chat explains scope and drafts an example',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1000));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         final activeScope = QueryScope(
           kind: kind,
           id: switch (kind) {
@@ -764,7 +943,7 @@ void main() {
         );
         expect(
           find.text(
-            'Ask about earlier notes and meetings. Answers include the exact passages you can inspect.',
+            'Ask about decisions and earlier work. Answers distinguish summaries from exact passages.',
           ),
           findsOneWidget,
         );
@@ -940,7 +1119,7 @@ void main() {
       );
       expect(
         find.text(
-          'Press Send to submit text. Audio may already be with your provider.',
+          'Transcribing your recording. Audio may already be with your provider.',
         ),
         findsOneWidget,
       );
@@ -1572,6 +1751,50 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('phone progress and Cancel remain above the composer', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 422));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    events.addAll([
+      event(
+        'earlier-question',
+        'feeder',
+        const QueryChatEventData.question(text: 'Earlier feeder decision?'),
+      ),
+      event(
+        'earlier-answer',
+        'feeder',
+        QueryChatEventData.answer(
+          questionId: 'earlier-question',
+          text: List.filled(80, 'The feeder was approved.').join(' '),
+          coverage: const QueryCoverage(),
+        ),
+      ),
+    ]);
+    await pump(
+      tester,
+      companion: true,
+      session: const QueryChatSession(
+        selectedId: 'feeder',
+        chats: {
+          'feeder': QueryChatLocal(status: QueryTurnStatus.running, checked: 7),
+        },
+      ),
+    );
+    final composer = tester.getRect(find.byType(TextField));
+    final progress = tester.getRect(find.text('Sources checked: 7'));
+    final cancel = tester.getRect(find.text('Cancel'));
+    expect(progress.bottom, lessThan(composer.top));
+    expect(cancel.bottom, lessThan(composer.top));
+    expect(progress.top, greaterThan(0));
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    expect(find.text('Sources checked: 7'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets(
     'running chat exposes progress and Cancel, with other-chat status in the switcher',
     (tester) async {
@@ -1591,11 +1814,14 @@ void main() {
       );
       expect(find.text('Sources checked: 7'), findsOneWidget);
       expect(
-        find.bySemanticsLabel('Searching linked notes and recordings…'),
+        find.bySemanticsLabel('Checking available information…'),
         findsWidgets,
       );
       await switcher(tester);
-      expect(find.textContaining('Searching'), findsWidgets);
+      expect(
+        find.textContaining('Checking available information'),
+        findsWidgets,
+      );
       await switcher(tester);
       await tester.tap(find.text('Cancel'));
       await tester.pump();
@@ -1747,6 +1973,18 @@ void main() {
           find.byIcon(LottiIcons.close),
           companion ? findsOneWidget : findsNothing,
         );
+        await tester.tap(find.byIcon(LottiIcons.back));
+        await tester.pump();
+        await tester.pump();
+        expect(
+          FocusManager.instance.primaryFocus?.context
+              ?.findAncestorStateOfType<QueryEvidenceCardState>(),
+          isNotNull,
+        );
+        await tester.ensureVisible(find.text('Open entry'));
+        await tester.pump();
+        await tester.tap(find.text('Open entry'));
+        await tester.pump();
         bench.entries['note'] = bench.entries['note']!.copyWith(
           meta: bench.entries['note']!.meta.copyWith(private: true),
         );
@@ -1759,8 +1997,7 @@ void main() {
         data.add(snapshot());
         await tester.pump();
         await tester.pump();
-        await tester.tap(find.byIcon(LottiIcons.back).first);
-        await tester.pump();
+        // Losing source access already returned to chat without a placeholder.
         expect(find.byType(EntryDetailsPage), findsNothing);
         expect(
           tester.widget<TextField>(find.byType(TextField)).controller!.text,
@@ -1825,7 +2062,9 @@ void main() {
         ),
       ]);
       await pump(tester);
-      final first = find.byKey(const ValueKey('goal-chat-message-question-1'));
+      final first = find.byKey(
+        const ValueKey('goal-chat-attachment-question-1'),
+      );
       final retry = find.descendant(
         of: first,
         matching: find.text('Try Again'),
@@ -1839,7 +2078,7 @@ void main() {
       );
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('goal-chat-message-question-2')),
+          of: find.byKey(const ValueKey('goal-chat-attachment-question-2')),
           matching: find.text('Try Again'),
         ),
         findsNothing,
@@ -1887,7 +2126,7 @@ void main() {
         expect(find.text('Try Again'), saved ? findsOneWidget : findsNothing);
         expect(
           find.descendant(
-            of: find.byKey(const ValueKey('goal-chat-message-question')),
+            of: find.byKey(const ValueKey('goal-chat-attachment-question')),
             matching: find.text('AI Settings'),
           ),
           saved ? findsOneWidget : findsNothing,

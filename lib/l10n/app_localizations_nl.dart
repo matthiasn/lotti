@@ -11104,7 +11104,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Stel vragen over eerdere notities en vergaderingen. Antwoorden bevatten de exacte passages die je kunt nalezen.';
+      'Vraag naar beslissingen en eerder werk. Antwoorden maken onderscheid tussen samenvattingen en exacte passages.';
 
   @override
   String get queryExactStoredText => 'Exact opgeslagen tekst';
@@ -11260,7 +11260,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get querySavedVersionUnavailable => 'Versiedatum niet beschikbaar';
 
   @override
-  String get querySearching => 'Gekoppelde notities en opnamen doorzoeken…';
+  String get querySearching => 'Beschikbare informatie raadplegen…';
 
   @override
   String get querySearchScope => 'Zoekbereik en filters';
@@ -11288,7 +11288,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Druk op Verzenden om tekst te versturen. Je aanbieder kan de audio al hebben.';
+      'Je opname wordt uitgeschreven. Je aanbieder heeft de audio mogelijk al ontvangen.';
 
   @override
   String get queryUnavailable =>
@@ -15571,4 +15571,36 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get configFlagEnableQueryChat => 'Experimentele taakchat';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Toont chats voor taken, projecten en categorieën. Standaard uitgeschakeld.';
+
+  @override
+  String get querySummaryBased => 'Gebaseerd op samenvattingen';
+
+  @override
+  String get querySummaryCoverage =>
+      'Dit antwoord gebruikt taak- of projectsamenvattingen. De oorspronkelijke items zijn niet geraadpleegd.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Open een taak of project om de huidige samenvatting te bekijken. Die kan sinds dit antwoord zijn gewijzigd.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Er ontbreekt informatie in de beschikbare samenvattingen.';
+
+  @override
+  String get querySummaryOwners => 'Over dit antwoord';
+
+  @override
+  String get queryOriginalsHome =>
+      'Raadpleegt alleen deze taak en de direct gekoppelde items.';
+
+  @override
+  String get querySummaries => 'Samenvattingen';
 }

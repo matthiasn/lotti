@@ -11291,7 +11291,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Întrebați despre notițe și întâlniri anterioare. Răspunsurile includ pasajele exacte pe care le puteți consulta.';
+      'Întrebați despre decizii și activități anterioare. Răspunsurile disting rezumatele de pasajele exacte.';
 
   @override
   String get queryExactStoredText => 'Textul exact salvat';
@@ -11448,8 +11448,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Data versiunii nu este disponibilă';
 
   @override
-  String get querySearching =>
-      'Se caută în notele și înregistrările audio legate…';
+  String get querySearching => 'Se consultă informațiile disponibile…';
 
   @override
   String get querySearchScope => 'Domeniul de căutare și filtre';
@@ -11477,7 +11476,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Apăsați butonul de trimitere pentru a trimite textul. Furnizorul dvs. poate avea deja sunetul.';
+      'Se transcrie înregistrarea dvs. Este posibil ca furnizorul să fi primit deja sunetul.';
 
   @override
   String get queryUnavailable =>
@@ -15838,4 +15837,36 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get configFlagEnableQueryChat => 'Chat experimental pentru sarcini';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Afișează chaturi pentru sarcini, proiecte și categorii. Dezactivat implicit.';
+
+  @override
+  String get querySummaryBased => 'Bazat pe rezumate';
+
+  @override
+  String get querySummaryCoverage =>
+      'Acest răspuns folosește rezumate ale sarcinilor sau proiectelor. Înregistrările originale nu au fost consultate.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Deschideți o sarcină sau un proiect pentru a consulta rezumatul actual. Este posibil să se fi schimbat de la acest răspuns.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Unele informații lipsesc din rezumatele disponibile.';
+
+  @override
+  String get querySummaryOwners => 'Despre acest răspuns';
+
+  @override
+  String get queryOriginalsHome =>
+      'Consultă doar această sarcină și înregistrările legate direct de ea.';
+
+  @override
+  String get querySummaries => 'Rezumate';
 }

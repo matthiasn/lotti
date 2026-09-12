@@ -273,6 +273,10 @@ class QuerySummaryAnswerBuilder {
     await authorize(orientationSources);
     return draft.copyWith(
       text: answer,
+      summaryOwnerIds: [
+        for (final summary in used)
+          if (attributed.contains(summary.owner.id)) summary.owner.id,
+      ],
       coverage: coverage.copyWith(
         incomplete: incomplete || used.isEmpty || result['unresolved'] == true,
       ),

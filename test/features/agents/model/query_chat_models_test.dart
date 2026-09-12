@@ -81,11 +81,19 @@ void main() {
         text: 'The feeder task summary records calibration.',
         coverage: QueryCoverage(),
         summaryBased: true,
+        summaryOwnerIds: ['penguin-task'],
       );
       final payload =
           jsonDecode(jsonEncode(summary.toJson())) as Map<String, dynamic>;
       final decoded = QueryChatEventData.fromJson(payload) as QueryChatAnswer;
       expect(decoded.summaryBased, isTrue);
+      expect(decoded.summaryOwnerIds, ['penguin-task']);
+      payload.remove('summaryOwnerIds');
+      expect(
+        (QueryChatEventData.fromJson(payload) as QueryChatAnswer)
+            .summaryOwnerIds,
+        isEmpty,
+      );
       expect(decoded.copyWith(text: 'Updated wording.').summaryBased, isTrue);
       payload.remove('summaryBased');
       expect(

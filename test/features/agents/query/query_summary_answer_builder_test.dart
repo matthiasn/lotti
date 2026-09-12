@@ -131,6 +131,7 @@ void main() {
     expect(jsonEncode(prompts.last), contains('FULL other'));
     expect(result!.evidence, isEmpty);
     expect(result.summaryBased, isTrue);
+    expect(result.summaryOwnerIds, ['other']);
     expect(result.coverage.checked, 0);
     expect(result.coverage.incomplete, isFalse);
     expect(result.text, response['answer']);

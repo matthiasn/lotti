@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T12:48:35Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -88,6 +88,13 @@ sources:
 
 # Ownership and entry points
 
+The `enable_query_chat` configuration flag defaults to false. The Advanced
+Settings flag page exposes the localized experimental-chat toggle. While it is
+loading or disabled, Ask actions and query panes are hidden and their open
+providers reject opening. Disabling it closes existing panes and cancels active
+query requests and dictation; persisted history is retained. Enabling it does
+not reopen a pane. Existing task-agent improvement chats are unaffected.
+
 The **Ask** action opens a discussion without running inference. Task headers
 and task/project summary cards expose the action; the task action bar remains
 reserved for time tracking and capture. Project and saved-category details still
@@ -108,7 +115,8 @@ cannot accommodate both.
 Smaller hosts use an attached draggable sheet, initially half height, with an
 explicit Expand/Collapse control. While a keyboard is visible, the sheet uses the full
 available height and hides its collapse control; dismissing the keyboard restores
-the expansion controls. Dragging cannot shrink below the half-height detent. The task remains beneath the sheet. Changing window size
+the expansion controls. Dragging cannot shrink below the half-height detent. The task remains beneath the sheet. A fully expanded or keyboard-height sheet
+excludes the covered task from focus traversal and accessibility semantics. Changing window size
 reparents the same keyed chat state between sheet and dock; the detail retains
 its parent. Close unmounts chat so its recorder subscription cannot consume a
 later unrelated recording. The host retains the chat's `PageStorageBucket` for
@@ -134,14 +142,14 @@ stateDiagram-v2
 
 The header leads with the current scope title and provides a dedicated Close
 control in companion mode. Narrow or enlarged-text headers place the chat picker
-on its own row; search reach stays visible and optional filters open through a
-labelled disclosure. Wide standalone headers show the agent attribution and
-filters inline. The empty view centers three question cards beneath a
-scope-specific welcome. Choosing a question populates an editable draft.
+on its own row; search reach and filters open through a labelled disclosure.
+The scope title also exposes reach as an accessibility tooltip. Wide standalone headers show the agent attribution and
+filters inline. The empty view offers three editable question suggestions; short landscape
+reading areas omit the welcome heading to leave room for suggestions. Choosing a question populates an editable draft.
 
 Each answer keeps its numbered evidence inside the reply surface. Evidence
-starts with source metadata and a short summary; expanding reveals selectable
-exact text, with explicit omission markers outside the quotation. Surrounding
+starts with source metadata and a short summary; expanding replaces the
+synopsis with selectable exact text, with explicit omission markers outside the quotation. Surrounding
 text can be shown, while Copy quote always copies only the stored passage.
 The pill composer emphasizes Send when a draft is present. A running search
 keeps the next draft editable while Send remains disabled. Scope filters keep
@@ -153,7 +161,9 @@ Every expanded passage identifies itself as a saved excerpt, even when the
 quote fills its entire stored text window. Copy excludes that disclosure.
 Changed sources open through an “Open current entry” action. Inline numbered
 citations expand, focus and scroll to the matching card in that answer after a
-fresh visibility check; duplicate citation numbers in other answers are unrelated.
+fresh visibility check. Returning from an entry restores focus to its evidence
+card or summary-owner action when still mounted. Citation text scales once with
+its surrounding paragraph; duplicate citation numbers in other answers are unrelated.
 Evidence action labels include the source name and disclosure semantics expose
 expanded state. The chat switcher exposes its selected title and expanded state;
 archived-chat disclosure exposes its expanded state as well.
@@ -226,7 +236,13 @@ validation; the pipeline does not feed errors back for automatic model repair.
 
 Summary answers have no `QueryEvidence` cards and create no shared durable
 conclusion. The answer itself is saved as chat history with owner visibility
-dependencies and a `summaryBased` marker. The marker survives sync and reload;
+dependencies, a `summaryBased` marker and validated `summaryOwnerIds`. The IDs
+identify actual answer attributions separately from broader privacy dependencies.
+The UI labels summary answers and replaces original-source counts with a basis
+disclosure. Links intersect attributed IDs with dependencies and currently
+visible task/project entries. They open the current owner, with a note that its
+summary may have changed; legacy answers have no fabricated owner links.
+The marker survives sync and reload;
 `QueryAccessSnapshot.allowsEvent` hides saved summary answers when an owner is
 deleted or changes category. Historical exact-entry answers retain their
 existing tombstone behavior. Summary reads do not increment original-source
@@ -243,8 +259,10 @@ substitute a crawl of that other task's original entries.
 
 A question specifically requiring the home task's original wording/details can
 request the original-entry route. An explicit notes/recordings filter in a task
-chat also selects that route. Project/category source filters remain in the
-summary path and cannot authorize other tasks' raw entries.
+chat also selects that route. The UI then selects and disables the home-only
+chip and explains the direct-link boundary. Selecting Summaries clears the
+source-kind filter. Project/category chats omit unsupported original-entry
+filters and cannot authorize other tasks' raw entries.
 
 `QueryJournalCrawler` then inspects only the home task and directly linked
 visible entries in its category, excluding linked task/project bodies. The
@@ -321,15 +339,17 @@ saved answer is visible in the history projection. A failed draft is removed
 and a content-free verification message appears beside the same question's
 Retry action. Nothing starts audio playback or TTS from provisional text.
 
-A single activity bubble groups phase, visible checked-source count and Cancel,
-with a live-region announcement. The query composer omits the duplicate helper
+A pinned activity row above the composer groups phase, a checked-source count
+when nonzero and Cancel, with a live-region announcement. Provisional text stays
+in the message history. The query composer omits the duplicate helper
 status. The switcher exposes running/unread indicators, last-message previews,
 one labelled overflow menu per chat and the archived count. The selected chat
 uses the design-system activated row fill as well as selected semantics.
 Archive confirms that conclusions
 remain available; Delete names the selected keep/forget consequence.
 
-Recovery belongs to each unanswered question, including earlier failed turns.
+Recovery appears outside the user bubble beneath each unanswered question,
+including earlier failed turns, so system feedback is not attributed to the user.
 Retry assembles conversation history only through the selected question and
 excludes conclusions created later in the same chat.
 `requestQuestionId` identifies the current/last attempt's saved question and
@@ -381,7 +401,7 @@ stateDiagram-v2
   running --> failed: inference or persistence error
   running --> unavailable: inference setup missing
   running --> hidden: visibility check fails
-  running --> cancelled: Cancel, deletion or visibility change
+  running --> cancelled: Cancel, flag disabled, deletion or visibility change
   failed --> running: Retry or Send
   unavailable --> running: Send after setup correction
   hidden --> running: Send after access restored

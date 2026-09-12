@@ -11189,7 +11189,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Pergunta sobre notas e reuniões anteriores. As respostas incluem as passagens exatas que podes consultar.';
+      'Pergunte sobre decisões e trabalhos anteriores. As respostas distinguem resumos de trechos exatos.';
 
   @override
   String get queryExactStoredText => 'Texto exato guardado';
@@ -11343,7 +11343,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get querySavedVersionUnavailable => 'Data da versão indisponível';
 
   @override
-  String get querySearching => 'A pesquisar notas e gravações ligadas…';
+  String get querySearching => 'Consultando as informações disponíveis…';
 
   @override
   String get querySearchScope => 'Escopo da pesquisa e filtros';
@@ -11371,7 +11371,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Carrega em Enviar para enviar o texto. O teu fornecedor pode já ter o áudio.';
+      'Transcrevendo sua gravação. Seu provedor pode já ter recebido o áudio.';
 
   @override
   String get queryUnavailable =>
@@ -15666,4 +15666,36 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get configFlagEnableQueryChat => 'Chat de tarefas experimental';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Mostra chats de tarefas, projetos e categorias. Desativado por padrão.';
+
+  @override
+  String get querySummaryBased => 'Baseada em resumos';
+
+  @override
+  String get querySummaryCoverage =>
+      'Esta resposta usa resumos de tarefas ou projetos. As entradas originais não foram consultadas.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Abra uma tarefa ou um projeto para consultar o resumo atual. Ele pode ter mudado desde esta resposta.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Faltam informações nos resumos disponíveis.';
+
+  @override
+  String get querySummaryOwners => 'Sobre esta resposta';
+
+  @override
+  String get queryOriginalsHome =>
+      'Consulta apenas esta tarefa e suas entradas diretamente vinculadas.';
+
+  @override
+  String get querySummaries => 'Resumos';
 }

@@ -55,6 +55,34 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   group('AgentMarkdownView', () {
+    testWidgets('inline citations scale once with surrounding text', (
+      tester,
+    ) async {
+      Future<double> citationHeight(double scale) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: const AgentMarkdownView(
+                'Approved [1](#query-evidence-1).',
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        final link = find.byWidgetPredicate(
+          (widget) => widget is InkWell && widget.onTap != null,
+        );
+        final box = tester.renderObject<RenderBox>(link);
+        return (box.localToGlobal(Offset(0, box.size.height)) -
+                box.localToGlobal(Offset.zero))
+            .distance;
+      }
+
+      final regular = await citationHeight(1);
+      final enlarged = await citationHeight(1.5);
+      expect(enlarged / regular, closeTo(1.5, 0.05));
+    });
     testWidgets('owner citations respond to pointer and keyboard activation', (
       tester,
     ) async {
