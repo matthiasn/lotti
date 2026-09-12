@@ -4,6 +4,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.10]
+
+### Added
+
+- **Choose a default inference profile in AI Settings.** Agents without a
+  configured route can use your selected profile on this device.
+
+### Changed
+
+- **Discuss a task while keeping its details in view.** Task chats now open in
+  a resizable side panel on wide screens and an expandable sheet on phones.
+  Closing chat restores the task workspace and keeps your draft. Compact chat
+  headers make room for the task title, with search filters available on
+  demand.
+- **Query chat starts with existing task summaries.** It considers completed
+  tasks, reads full summaries where needed, and distinguishes summary-based
+  answers from verified original-entry quotes. Questions that need another
+  task agent remain explicitly unresolved until agent-to-agent chat is
+  available.
+- **Task and project questions need fewer model requests for short linked
+  notes.** Lotti checks fitting home sources together before deciding whether
+  to search elsewhere in the category, while keeping exact quotations and
+  coverage with the answer. Cancelling a stalled Melious request also stops
+  waiting for its longer provider timeout.
+- **Query answers can appear while they are being written.** Draft text is
+  visibly marked until its checks finish. If verification fails, the draft is
+  removed and you can retry the question. Cancel also stops the active stream.
+- **Query chats explain progress and make incomplete answers easier to
+  inspect.** See source counts while searching, open recordings that could not
+  be read, and retry an earlier failed question. You can draft your next
+  question while a search runs. Recording controls show elapsed time, and
+  saved quotes identify their text version and limited surrounding context.
+  Audio failures offer recovery actions beside the affected answer or quote,
+  and cancellation also stops a recording that is still starting.
+- **Inspect query answers with clearer evidence and accessible controls.**
+  Citations open their saved passages, excerpt boundaries and transcript dates
+  are clearer, and shared conclusions show when they were saved. Empty memory
+  disclosures disappear. Long voice transcripts expand without hiding Cancel,
+  and audio setup details stay behind a short explanation.
+
+### Fixed
+
+- **Larger text stays inside task controls and chat inputs.** Task actions
+  wrap when needed, and long input hints stay on one line without vertical
+  clipping.
+- **Relationship agents now honor the model chosen in their settings.**
+  Missing configuration retries less often and resumes when a usable profile
+  becomes available.
+- **Reduce background agent work.** Wakes reuse prepared memory when no
+  compaction is needed, deferred jobs avoid unnecessary queue checks, and
+  project recommendations are retired once per replacement.
+- **Image analysis no longer fails when its short summary is invalid.** The
+  full analysis is preserved when an AI response has an overlong one-line
+  summary or an invalid TLDR, instead of reporting an empty response.
+- **Startup does less database work when many agents are present.** Clearing
+  old wake countdowns now shares a bulk read and transaction instead of
+  opening a separate transaction for every agent, including idle ones.
+- **Daily digests have more room to finish.** Raised the response limit from
+  4,096 to 16,384 tokens to reduce failures caused by truncated responses.
+
 ## [1.1.9]
 
 ### Added
