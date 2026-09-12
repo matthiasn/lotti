@@ -10,8 +10,8 @@ import 'package:material_ui/material_ui.dart';
 /// 2-column grid card for the redesigned Profiles tab.
 ///
 /// Renders the profile name, an optional IN USE badge (when [isInUse]), the
-/// optional description, and one row per configured skill slot (thinking /
-/// image recognition / transcription / image generation). Each populated slot
+/// optional description, and one row per configured model slot (thinking /
+/// chat / image recognition / transcription / image generation). Each populated slot
 /// resolves its `providerModelId` to a display name via [modelLookup];
 /// unresolved ids render in the warning tone so dangling references stand out.
 /// Empty slots are omitted entirely. Tapping the card runs [onTap]; the
@@ -55,7 +55,7 @@ class AiProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    // Resolve once — providerTypeFor walks four model slots, no point
+    // Resolve once — providerTypeFor walks model slots, no point
     // re-running it for the header icon after the visual bundle.
     final providerType = providerTypeFor();
     final visual = aiProviderVisual(
@@ -76,6 +76,11 @@ class AiProfileCard extends StatelessWidget {
         icon: LottiIcons.reasoning,
         label: messages.aiCapabilityChipThinking,
         modelId: profile.thinkingModelId,
+      ),
+      _ProfileSlot(
+        icon: LottiIcons.chat,
+        label: messages.inferenceProfileChat,
+        modelId: profile.chatModelId,
       ),
       _ProfileSlot(
         icon: LottiIcons.image,

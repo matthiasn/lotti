@@ -529,6 +529,21 @@ void main() {
 
       testWidgets('$viewport AI profiles — $theme', (tester) async {
         await _withDevicePlatform(device, () async {
+          // An independently selected Chat route on the shared penguin fixture.
+          final profiles = [
+            for (final profile in manualDemoAiProfiles)
+              if (profile.id == manualProjectWaddleProfileId)
+                profile.copyWith(chatModelId: manualSardineLogisticsModelId)
+              else
+                profile,
+          ];
+          when(aiRepository.watchProfiles).thenAnswer(
+            (_) => Stream.value(profiles),
+          );
+          when(
+            () =>
+                aiRepository.watchConfigsByType(AiConfigType.inferenceProfile),
+          ).thenAnswer((_) => Stream.value(profiles));
           final world = ManualDemoWorld.penguinLogistics();
           await pumpSurface(
             tester,

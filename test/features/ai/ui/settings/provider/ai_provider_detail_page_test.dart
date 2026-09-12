@@ -474,7 +474,7 @@ void main() {
     );
 
     testWidgets(
-      'profile summary resolves slots against every configured model',
+      'chat-only provider dependency renders both chat and thinking models',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -502,8 +502,7 @@ void main() {
           name: 'Local (Ollama)',
           isDefault: true,
           thinking: thinkingModel.providerModelId,
-          transcription: transcriptionModel.providerModelId,
-        );
+        ).copyWith(chatModelId: transcriptionModel.id);
 
         await pumpWith(
           tester: tester,
@@ -522,6 +521,7 @@ void main() {
           ),
           findsOneWidget,
         );
+        expect(find.text('Chat model'), findsOneWidget);
         expect(find.text('missing'), findsNothing);
 
         await settleTimers(tester);
