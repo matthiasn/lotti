@@ -134,7 +134,12 @@ class QuerySummaryAnswerBuilder {
       await reader.authorize(catalog, summaries);
       final live = await access.load([scope.id, ...dependencies.keys]);
       cancellation.check();
-      if (!live.allowsContent(dependencies.values, private: private)) {
+      if (!live.allowsContent(dependencies.values, private: private) ||
+          dependencies.keys.any(
+            (id) =>
+                live.entries[id]?.meta.categoryId != catalog.categoryId ||
+                live.entries[id]?.meta.deletedAt != null,
+          )) {
         throw const QueryScopeUnavailable();
       }
       if (live.entries[scope.id] case final home?) {

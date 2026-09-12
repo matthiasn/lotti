@@ -82,6 +82,8 @@ void main() {
     QueryScope queryScope = scope,
     int maxBytes = 24000,
     QuerySourceKind? kind,
+    List<QuerySourceRef> historyDependencies = const [],
+    List<Map<String, String>> conversation = const [],
     void Function(String)? onText,
     void Function(QueryChatAnswer)? onReady,
   }) =>
@@ -105,8 +107,8 @@ void main() {
         scope: queryScope,
         questionId: 'question',
         question: 'What did the completed calibration establish?',
-        conversation: const [],
-        historyDependencies: const [],
+        conversation: conversation,
+        historyDependencies: historyDependencies,
         private: false,
         homeOnly: false,
         kind: kind,
@@ -321,6 +323,45 @@ void main() {
     await expectLater(build(), throwsA(isA<QueryCancelled>()));
     expect(prompts, hasLength(1));
   });
+
+  for (final change in ['moved', 'deleted']) {
+    test('a public history source change stops synthesis: $change', () async {
+      const movedCategory = 'other-category';
+      bench.categories.add(categoryMindfulness.copyWith(id: movedCategory));
+      bench.add('history', category: category);
+      final source = (await bench.crawler.access.load([
+        'history',
+      ])).reference(bench.entries['history']!);
+      onSelection = () {
+        final entry = bench.entries['history']!;
+        bench.entries['history'] = entry.copyWith(
+          meta: change == 'moved'
+              ? entry.meta.copyWith(categoryId: movedCategory)
+              : entry.meta.copyWith(deletedAt: DateTime(2026, 9, 12)),
+        );
+      };
+      await expectLater(
+        build(
+          historyDependencies: [source],
+          conversation: const [
+            {'role': 'agent', 'text': 'Earlier calibration context.'},
+          ],
+        ),
+        throwsA(isA<QueryScopeUnavailable>()),
+      );
+      expect(prompts, hasLength(1));
+      expect(
+        jsonEncode(prompts.single['conversation']),
+        contains('Earlier calibration context.'),
+      );
+      // Ordinary historical references stay visible. Summary inference requires
+      // a live dependency in the active category as well.
+      expect(
+        (await bench.crawler.access.load(['history'])).allowsReference(source),
+        isTrue,
+      );
+    });
+  }
 
   test('oversized input is rejected before inference', () async {
     await expectLater(build(maxBytes: 1), throwsFormatException);

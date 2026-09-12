@@ -176,6 +176,9 @@ dependencies and a `summaryBased` marker. The marker survives sync and reload;
 deleted or changes category. Historical exact-entry answers retain their
 existing tombstone behavior. Summary reads do not increment original-source
 inspection counts.
+Every inference authorization reload also requires live history dependencies
+in the active category, so a move or deletion during selection cannot carry
+old context into synthesis.
 The final `unresolved` flag marks unanswered parts as incomplete coverage.
 Questions left open by another task's full summary need that task's own agent;
 agent-to-agent questions are not yet implemented, and the pipeline does not
