@@ -120,6 +120,32 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     return requested;
   }
 
+  /// Avoids Melious' broken forced-tool mode for DeepSeek V4.1 Flash.
+  ///
+  /// Live text and image probes on 2026-09-12 returned literal DSML with
+  /// `true` instead of arguments for named and `required` choices; `auto`
+  /// returned structured calls. Only relax a named choice when the advertised
+  /// tool list already contains exactly that tool, so no other tool becomes
+  /// callable. Callers must still validate the result: `auto` permits prose.
+  /// Other models and unconstrained agent conversations retain their choices.
+  static ChatCompletionToolChoiceOption? resolveToolChoice(
+    String model,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? requested,
+  ) {
+    if (model.trim() == 'deepseek-v4.1-flash' &&
+        tools != null &&
+        tools.length == 1 &&
+        requested
+            is ChatCompletionToolChoiceOptionChatCompletionNamedToolChoice &&
+        requested.value.function.name == tools.single.function.name) {
+      return const ChatCompletionToolChoiceOption.mode(
+        ChatCompletionToolChoiceMode.auto,
+      );
+    }
+    return requested;
+  }
+
   static const _providerName = 'MeliousInferenceRepository';
   static const _modelListTimeout = Duration(seconds: 15);
   static const _imageGenerationTimeout = Duration(seconds: 180);
@@ -359,7 +385,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
-        toolChoice: toolChoice,
+        toolChoice: resolveToolChoice(model, tools, toolChoice),
         reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
       ),
     );
@@ -404,7 +430,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
-        toolChoice: toolChoice,
+        toolChoice: resolveToolChoice(model, tools, toolChoice),
         reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
       ),
     );
@@ -465,7 +491,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
-        toolChoice: toolChoice,
+        toolChoice: resolveToolChoice(model, tools, toolChoice),
         reasoningEffort: resolveReasoningEffort(model, null),
       ),
     ).asBroadcastStream();
@@ -512,7 +538,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
-        toolChoice: toolChoice,
+        toolChoice: resolveToolChoice(model, tools, toolChoice),
         reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
         stream: false,
       ),
