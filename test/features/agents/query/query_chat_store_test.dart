@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import 'query_test_utils.dart';
 
 void main() {
@@ -46,6 +47,59 @@ void main() {
           dependencies: (question.data as QueryChatQuestion).dependencies,
         ),
       );
+
+  for (final change in ['moved', 'deleted', 'memory']) {
+    test(
+      'summary publication rejects changed owners or memory: $change',
+      () async {
+        await withClock(Clock.fixed(now), () async {
+          final owner = testTask.copyWith(
+            meta: testTask.meta.copyWith(
+              id: 'other',
+              categoryId: null,
+              private: false,
+            ),
+          );
+          bench.entries['other'] = owner;
+          final chat = await store.create('agent', scope, 'Feeder');
+          final question = await store.ask(
+            'agent',
+            chat,
+            'What did calibration find?',
+          );
+          final current = await bench.crawler.access.load(['other']);
+          final built = result(question);
+          final summary = QueryBuiltAnswer(
+            answer: built.answer.copyWith(
+              dependencies: [
+                ...built.answer.dependencies,
+                current.reference(owner),
+              ],
+            ),
+            summaryBased: true,
+            memory: change == 'memory' ? built.memory : null,
+          );
+          if (change != 'memory') {
+            bench.entries['other'] = owner.copyWith(
+              meta: change == 'moved'
+                  ? owner.meta.copyWith(categoryId: bench.categories.first.id)
+                  : owner.meta.copyWith(deletedAt: now),
+            );
+          }
+          await expectLater(
+            store.publish('agent', chat, summary),
+            change == 'memory'
+                ? throwsFormatException
+                : throwsA(isA<QueryScopeUnavailable>()),
+          );
+          expect(
+            (await store.load('agent')).chats.single.answerFor(question.id),
+            isNull,
+          );
+        });
+      },
+    );
+  }
 
   test(
     'separate synced conversations survive rename, archive and reopening',

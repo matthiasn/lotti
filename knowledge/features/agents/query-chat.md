@@ -26,7 +26,15 @@ sources:
     last_modified: 2026-09-12
   - id: builder
     resource: ../../../lib/features/agents/query/query_answer_builder.dart
-    title: Whole-source batch inspection and evidence verification
+    title: Summary-first routing and home-entry evidence verification
+    last_modified: 2026-09-12
+  - id: summary-reader
+    resource: ../../../lib/features/agents/query/query_summary_reader.dart
+    title: Maintained task and project report layers
+    last_modified: 2026-09-12
+  - id: summary-answer
+    resource: ../../../lib/features/agents/query/query_summary_answer_builder.dart
+    title: TLDR selection and attributed summary answers
     last_modified: 2026-09-12
   - id: access
     resource: ../../../lib/features/agents/query/query_source_access.dart
@@ -128,58 +136,73 @@ unretained auto-disposed provider can otherwise fail during a database read
 before a question is saved. The temporary keep-alive link closes in `finally`,
 so completed lookups do not retain unused profiles or their dependencies.
 
-# Discovery boundaries
+# Summary-first discovery
 
-`QueryJournalCrawler` reads journal data without writing tasks, notes or links.
+The production `queryBuilderFactoryProvider` supplies a `QuerySummaryReader` to
+`QueryAnswerBuilder`. Query chat first reads maintained task TL;DRs and the parent
+project TL;DR, including completed tasks. One-liners do not enter retrieval.
+Reports are authorized as artifacts using the owning task/project's current
+visibility, deletion state and category. Query chat does not reconstruct their
+underlying entry dependencies or generate substitute summaries. A new question
+reads the latest published reports; a single question uses the same report
+revision across its TL;DR and full-summary layers.
 
-| Home | Initial corpus | Permitted expansion |
-|------|----------------|---------------------|
-| Task | Task and its direct visible links in either direction | Entries in the task's current category |
-| Project | Project, its visible same-category tasks, and direct links from that initial set | Entries in the project's category |
-| Category | Category-filtered keyword candidates and recent entries | Same category only |
-| Uncategorized task | Task and directly linked uncategorized entries | None; no keyword or general uncategorized crawl |
+| Scope | Initial task summaries | Wider summary discovery |
+|-------|------------------------|-------------------------|
+| Task | Own task and direct visible linked tasks | Same-category tasks |
+| Project | Visible same-category project tasks | Same-category tasks |
+| Category | Visible tasks in the category | Same category only |
+| Uncategorized task | Own task and directly linked uncategorized tasks | None |
 
-Hidden/deleted links do not grant access. Every discovered entry must pass
-current entry privacy, category privacy and lockdown before its text is used.
-Category expansion applies category/privacy filtering before the SQL limit,
-then rechecks candidates against live metadata. The optional home-only and
-notes/recordings chips narrow discovery. There is no cross-category control.
-Task/project affiliations come from visible links and the task-to-project map;
-project names also become privacy dependencies of the answer.
+The home-only chip disables wider task discovery. Hidden/deleted links grant no
+access. The reader batches report lookup, includes all task statuses and caps
+the task catalog at 200, prioritizing the home task and its neighbourhood.
+Missing reports and bounds mark discovery incomplete. The selection request has
+its own complete-input UTF-8 byte bound (24,000 by default); omitted TL;DRs also
+mark incomplete coverage. These are byte bounds, not token estimates.
 
-`QueryAnswerBuilder` first discovers only home for task/project requests whose
-complete inspection input fits its budget. One isolated request interprets the
-question, inspects all supplied sources, judges sufficiency and selects relevant
-memories. It skips standalone planning and preview shortlisting on this path.
-Sufficient home evidence goes straight to evidence-only synthesis: two model
-completions, regardless of how many small documents were inspected.
+`QuerySummaryAnswerBuilder` uses one isolated call to select at most six task IDs
+from the supplied TL;DRs. The second call reads full report bodies for the
+selected tasks. This avoids declaring a gap merely because a TL;DR is thin.
+Oversized full reports fall back to their TL;DR with incomplete coverage. Rejected
+summary text stays out of synthesis. The answer identifies its summary basis and
+attributes claims by owner title. Its structured owner IDs must match the
+supplied reports; numbered original-evidence citations are rejected.
 
-Insufficiency, an explicit wider-category request or incomplete home coverage
-permits category discovery. Home-only and uncategorized boundaries still apply.
-Previously inspected documents are reused only while fingerprint, representation
-version and representation date match. Fitting remaining documents share another
-inspection; larger sets use the bounded preview/window path. Discovery and
-inspection counts remain distinct: one batch can inspect twelve sources.
+Summary answers have no `QueryEvidence` cards and create no shared durable
+conclusion. The answer itself is saved as chat history with owner visibility
+dependencies. Summary reads do not increment original-source inspection counts.
+The final `unresolved` flag marks unanswered parts as incomplete coverage.
+Questions left open by another task's full summary need that task's own agent;
+agent-to-agent questions are not yet implemented, and the pipeline does not
+substitute a crawl of that other task's original entries.
 
-The full batch request, including system instructions, chat context and eligible
-memories, is bounded to 24,000 UTF-8 bytes; its source text is additionally bounded
-to 12,000 Dart string characters. These are input bounds, not token estimates.
-Sources are serialized in ID order before the changing question/chat tail.
-Live access is refreshed rather than trusting a cached prompt. The task wake's
-compacted log is not imported, and persisted task/project reports are not used
-as query evidence or orientation: their standard provenance does not enumerate
-all contributing source visibility dependencies. The investigation and measured
-variants are in the [latency evaluation](../../../docs/perf/2026-09-12-penguin-query-latency-eval.md).
+# Home-task original evidence
 
-Category queries and oversized home inputs retain planning, bounded discovery,
-preview shortlisting and source windows. Search is keyword retrieval plus recent
-category fallback, not an exhaustive semantic index. Up to eight sanitized OR
-terms feed FTS; ID lookups are chunked, and discovery caps readable documents at
-60. More than four unbatched sources share a shortlist containing extractive
-previews (up to 800 characters each, plus labels and dates), from which the model
-selects at most eight IDs. Previews never become evidence; skipped candidates
-mark coverage incomplete. Small sets avoid the shortlist call. Neither this
-fallback nor source shortlisting is described as whole-source batch inspection.
+A question specifically requiring the home task's original wording/details can
+request the original-entry route. An explicit notes/recordings filter in a task
+chat also selects that route. Project/category source filters remain in the
+summary path and cannot authorize other tasks' raw entries.
+
+`QueryJournalCrawler` then inspects only the home task and directly linked
+visible entries in its category, excluding linked task/project bodies. The
+`ownTaskOnly` mode rejects non-task scopes. Neither insufficiency nor a summary
+lookup failure silently expands this route across other tasks.
+
+Fitting home inputs use one isolated whole-source inspection and evidence-only
+synthesis. Larger inputs retain bounded shortlisting/windows. A preceding
+summary-selection call, when needed to choose this route, is an additional
+completion. The batch input is bounded to 24,000 UTF-8 bytes and its source text
+to 12,000 Dart string characters. Source IDs, fingerprint, representation version
+and representation date guard reuse within an attempt.
+
+The original pipeline remains available to the matched evaluation control by
+constructing `QueryAnswerBuilder` without a summary reader. That control permits
+same-category keyword/recent-entry expansion, unlike production summary-first
+routing. Its historical batching measurements are in the
+[latency evaluation](../../../docs/perf/2026-09-12-penguin-query-latency-eval.md);
+they are not measurements of summary-first retrieval. The task wake's compacted
+prefix is not imported into query chat.
 
 Visibility and category membership are checked around each batch and before
 individual source inspection. A malformed batch, unknown ID or non-contiguous
@@ -296,27 +319,21 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-  Question["Question and visible history through that question"] --> Fits{"Task/project home fits?"}
-  Fits -->|yes| Batch["Isolated home inspection and memory selection"]
-  Batch --> Enough{"Sufficient and no wider request or coverage gap?"}
-  Enough -->|yes| Evidence["Validated exact entry spans"]
-  Enough -->|expansion disabled| Evidence
-  Enough -->|no, expansion permitted| Expand["Same-category discovery; deduplicate representations"]
-  Expand --> Remaining{"Remaining input fits?"}
-  Remaining -->|yes| BatchMore["Isolated whole-source batch"]
-  BatchMore --> Evidence
-  Remaining -->|no| Windows["Shortlist and bounded source windows"]
-  Fits -->|no or category scope| Plan["Plan and bounded discovery"]
-  Plan --> Windows
-  Windows --> Evidence
-  Evidence --> Answer["Synthesis from accepted evidence, selected memory and chat context"]
-  Answer --> Draft["Provisional answer text only; inert citations"]
-  Draft --> Gate["Live access and citation validation"]
-  Draft -->|cancel or visibility loss| Clear["Clear transient text"]
-  Gate -->|invalid| Retract["Retract draft and offer Retry"]
-  Gate --> Commit["Transactional answer and useful conclusion"]
-  Batch -->|invalid response| Retry["Recoverable failure; no publication"]
-  BatchMore -->|invalid response| Retry
+  Question["Question and visible history"] --> TLDR["Read task and project TLDRs"]
+  TLDR --> Select["Isolated task selection"]
+  Select --> Full["Selected full summaries"]
+  Select -->|home-task originals needed| Inspect["Home entry inspection and exact-span validation"]
+  Filter["Task notes or recordings filter"] --> Inspect
+  Full --> Synthesis["Summary-attributed synthesis; explicit open questions"]
+  Inspect --> Exact["Evidence-only synthesis"]
+  Synthesis --> Draft["Provisional answer"]
+  Exact --> Draft
+  Draft -->|cancel or access lost| Clear["Clear draft"]
+  Draft --> Validate["Validate attribution and live access"]
+  Validate -->|invalid| Retry["Retract draft; Retry"]
+  Validate -->|valid| Publish["Transactional publication"]
+  Publish --> SummaryHistory["Summary answer: history only"]
+  Publish --> EvidenceHistory["Evidence answer: history and eligible conclusion"]
 ```
 
 Long-source inspection uses overlapping 12,000-character windows with a 10,000
@@ -325,7 +342,7 @@ Each source/window contributes at most three passages; discarding additional
 passages marks coverage incomplete.
 A batch consumes one inspection completion; planning, shortlist, separate memory
 selection and synthesis are additional completions. Each completion has isolated
-context, bounded response size and a two-minute collection deadline. Negative
+context, bounded response size and a two-minute collection deadline. Rejected
 candidate text never reaches synthesis or durable history. Source instructions
 are treated as untrusted data. Window extraction can discard a malformed quote
 and mark coverage incomplete; batch response validation rejects malformed or
@@ -383,6 +400,8 @@ preventing duplicate or late replies from resurrecting a deleted chat.
 - Current source metadata outranks the evidence's historical metadata. Public
   deletion tombstones permit saved quotes; private tombstones do not. An unknown
   or purged source fails closed.
+- Summary answers follow their task/project owners' visibility; entry changes
+  are handled by the existing summary lifecycle, not a query-side provenance graph.
 - Hidden private sources also hide derived answers, recalled memory, titles and
   previews. The pane conservatively hides an entire chat if any of its events
   is no longer visible; it exposes no hidden-content counter or placeholder.

@@ -213,6 +213,7 @@ void main() {
             overrides: [
               journalDbProvider.overrideWithValue(bench.db),
               agentSyncServiceProvider.overrideWithValue(bench.store.sync),
+              agentRepositoryProvider.overrideWithValue(bench.repository),
               cloudInferenceRepositoryProvider.overrideWithValue(cloud),
               profileResolverProvider.overrideWithValue(resolver),
               agentIdentityProvider('agent').overrideWith((ref) async {
@@ -248,6 +249,7 @@ void main() {
           lookup.complete();
           await completion;
           final builder = await pending;
+          expect(builder.summaryReader?.repository, same(bench.repository));
           await container.pump();
           expect(
             container.exists(

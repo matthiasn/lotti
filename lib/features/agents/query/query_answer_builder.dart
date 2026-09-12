@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/agents/query/query_summary_answer_builder.dart';
+import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 
 typedef QueryProgress = void Function(int checked, {required bool expanded});
@@ -17,10 +19,18 @@ typedef _QueryBatchResult = ({
 });
 
 class QueryBuiltAnswer {
-  const QueryBuiltAnswer({required this.answer, this.memory});
+  const QueryBuiltAnswer({
+    required this.answer,
+    this.memory,
+    this.summaryBased = false,
+  });
 
   final QueryChatAnswer answer;
   final QueryChatMemory? memory;
+
+  /// Publication rechecks live summary owners. This is request metadata, not
+  /// an alternative kind of exact-entry evidence or a shared conclusion.
+  final bool summaryBased;
 }
 
 List<QuerySourceRef> queryEventDependencies(QueryChatEventData data) =>
@@ -31,14 +41,16 @@ List<QuerySourceRef> queryEventDependencies(QueryChatEventData data) =>
       _ => const [],
     };
 
-/// Inspects fitting home corpora together before considering category search.
-/// Larger inputs retain isolated preview shortlisting and bounded windows.
-/// Negative candidate text never enters the answer prompt or durable memory.
+/// Production chat starts with maintained task/project summaries. Questions
+/// requiring original evidence may inspect the home task's entries separately.
+/// Without a summary reader, the original entry pipeline remains available to
+/// the matched evaluation control. Rejected source text never enters memory.
 class QueryAnswerBuilder {
   const QueryAnswerBuilder({
     required this.crawler,
     required this.access,
     required this.inference,
+    this.summaryReader,
     this.maxSourceCalls = 90,
     this.maxBatchBytes = defaultBatchInputBytes,
   });
@@ -48,6 +60,7 @@ class QueryAnswerBuilder {
   final QueryJournalCrawler crawler;
   final QuerySourceAccess access;
   final QueryTextInference inference;
+  final QuerySummaryReader? summaryReader;
   final int maxSourceCalls;
 
   /// Encoded input budget for complete-source inspection. Larger inputs retain
@@ -108,6 +121,17 @@ class QueryAnswerBuilder {
               (event.data is QueryChatQuestion ||
                   event.data is QueryChatAnswer),
         )
+        .where(
+          (event) =>
+              summaryReader == null ||
+              queryEventDependencies(event.data).every(
+                (source) =>
+                    initial.entries[source.id]?.meta.categoryId ==
+                    (chat.scope.kind == QueryScopeKind.category
+                        ? chat.scope.id
+                        : home?.meta.categoryId),
+              ),
+        )
         .toList();
     final context = history
         .skip((history.length - 10).clamp(0, history.length))
@@ -124,6 +148,37 @@ class QueryAnswerBuilder {
         for (final source in queryEventDependencies(event.data))
           source.id: source,
     };
+    final summaries = summaryReader;
+    if (summaries != null &&
+        (kind == null || chat.scope.kind != QueryScopeKind.task)) {
+      final summaryAnswer =
+          await QuerySummaryAnswerBuilder(
+            reader: summaries,
+            access: access,
+            inference: inference,
+            maxInputBytes: maxBatchBytes,
+          ).build(
+            scope: chat.scope,
+            questionId: question.id,
+            question: asked.text,
+            conversation: context,
+            historyDependencies: historyDependencies.values,
+            private: initial.showPrivate,
+            homeOnly: homeOnly,
+            kind: kind,
+            cancellation: cancellation,
+            onAnswering: onAnswering,
+            onSynthesisReady: onSynthesisReady,
+            onAnswerText: onAnswerText,
+            onFirstSynthesisToken: onFirstSynthesisToken,
+          );
+      if (summaryAnswer != null) {
+        return QueryBuiltAnswer(answer: summaryAnswer, summaryBased: true);
+      }
+    }
+    // A source-type filter requests original evidence. Until owning-agent
+    // questions exist, that route is restricted to the home task as well.
+    final restrictToHome = homeOnly || summaries != null;
     final batched = <String, _QueryBatchResult>{};
     final batchMemoryIds = <String>{};
     var batchCalls = 0;
@@ -156,6 +211,7 @@ class QueryAnswerBuilder {
         chat.scope,
         const [],
         homeOnly: true,
+        ownTaskOnly: summaries != null,
         kind: kind,
       );
       cancellation.check();
@@ -206,12 +262,15 @@ class QueryAnswerBuilder {
         homeCorpus!.coverage.incomplete;
     final corpus =
         batchPlan != null &&
-            (!needsExpansion || homeOnly || homeCorpus!.categoryId == null)
+            (!needsExpansion ||
+                restrictToHome ||
+                homeCorpus!.categoryId == null)
         ? homeCorpus!
         : await crawler.discover(
             chat.scope,
             terms,
-            homeOnly: homeOnly,
+            homeOnly: restrictToHome,
+            ownTaskOnly: summaries != null,
             kind: kind,
           );
     cancellation.check();

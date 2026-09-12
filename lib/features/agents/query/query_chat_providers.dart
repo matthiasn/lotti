@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_store.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -163,6 +164,7 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
   final access = ref.watch(querySourceAccessProvider);
   final journal = ref.watch(journalDbProvider);
   final cloud = ref.watch(cloudInferenceRepositoryProvider);
+  final agents = ref.watch(agentRepositoryProvider);
   return (scope, agentId, chatId) async {
     final current = await access.load([scope.id]);
     final categoryId = scope.kind == QueryScopeKind.category
@@ -173,6 +175,11 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
     );
     if (profile == null) throw const QueryInferenceUnavailable();
     return QueryAnswerBuilder(
+      summaryReader: QuerySummaryReader(
+        journal: journal,
+        access: access,
+        repository: agents,
+      ),
       crawler: QueryJournalCrawler(
         journal: journal,
         access: access,

@@ -153,8 +153,12 @@ class QueryJournalCrawler {
     QueryScope scope,
     List<String> searchTerms, {
     bool homeOnly = false,
+    bool ownTaskOnly = false,
     QuerySourceKind? kind,
   }) async {
+    if (ownTaskOnly && scope.kind != QueryScopeKind.task) {
+      throw ArgumentError('Original-entry fallback requires a home task');
+    }
     final initial = await access.load([scope.id]);
     final home = initial.entries[scope.id];
     final categoryId = scope.kind == QueryScopeKind.category
@@ -235,6 +239,11 @@ class QueryJournalCrawler {
       if (entry == null ||
           !current.allowsEntry(entry) ||
           entry.meta.categoryId != categoryId) {
+        continue;
+      }
+      if (ownTaskOnly &&
+          entry.meta.id != scope.id &&
+          (entry is Task || entry is ProjectEntry)) {
         continue;
       }
       final document = QuerySourceDocument.fromEntry(entry);

@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
@@ -201,6 +202,21 @@ class QueryChatStore {
     if (!current.allowsEvent(result.answer) ||
         !current.allowsEvent(question.data)) {
       throw const QueryScopeUnavailable();
+    }
+    if (result.summaryBased) {
+      if (result.memory != null || result.answer.evidence.isNotEmpty) {
+        throw const FormatException(
+          'Summary answer cannot publish exact evidence or memory',
+        );
+      }
+      for (final source in result.answer.dependencies) {
+        final owner = current.entries[source.id];
+        if ((owner is Task || owner is ProjectEntry) &&
+            (!current.allowsEntry(owner!) ||
+                owner.meta.categoryId != source.categoryId)) {
+          throw const QueryScopeUnavailable();
+        }
+      }
     }
     // Recall may have been forgotten on another device while inference ran.
     final liveMemoryIds = projection.memories.map((e) => e.id).toSet();
