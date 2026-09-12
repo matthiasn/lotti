@@ -5,9 +5,13 @@ description: The digest-shaped project agent that resists waking on every linked
 resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
 tags: [agents, project-agent, event-agent, digest, notifications]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-09-04T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: project-execution
+    resource: ../../../lib/features/agents/workflow/project_agent_execute.dart
+    title: Project wake persistence and recommendation replacement
+    last_modified: 2026-09-12
   - id: project-next-steps
     resource: ../../../lib/features/agents/service/project_recommendation_service.dart
     title: Current next steps, legacy migration, and individual decisions
@@ -15,40 +19,46 @@ sources:
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
     title: ProjectAgentWorkflow
-    last_modified: 2026-09-09
+    last_modified: 2026-09-10
   - id: project-proposals
     resource: ../../../lib/features/agents/workflow/project_proposal_reconciler.dart
     title: The guards that stop proposals accumulating
-    last_modified: 2026-09-09
+    last_modified: 2026-09-10
   - id: event-workflow
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
     title: EventAgentWorkflow
-    last_modified: 2026-07-21
+    last_modified: 2026-08-07
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation and announcement)
-    last_modified: 2026-08-16
+    last_modified: 2026-09-05
   - id: project-mutations
     resource: ../../../lib/features/agents/service/project_agent_mutation_coordinator.dart
     title: Shared project category, provisioning, and retirement exclusion
-    last_modified: 2026-09-04
+    last_modified: 2026-09-05
   - id: event-service
     resource: ../../../lib/features/agents/service/event_agent_service.dart
     title: EventAgentService (creation, content gate and announcement)
-    last_modified: 2026-07-26
+    last_modified: 2026-08-02
   - id: providers
     resource: ../../../lib/features/agents/state/agent_providers.dart
     title: Wake executor routing, content checkers and persistedStateChangedNotifier
-    last_modified: 2026-07-26
+    last_modified: 2026-09-05
   - id: sync-runtime
     resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
     title: Synced project-agent runtime reconciliation
-    last_modified: 2026-08-14
+    last_modified: 2026-08-19
   - id: project-detail-record
     resource: ../../../lib/features/projects/state/project_detail_record_provider.dart
     title: Project detail report read model
-    last_modified: 2026-08-14
+    last_modified: 2026-09-05
 ---
+
+Project recommendation replacement owns retirement of the previous recommendation
+sets for a run. The subsequent staged-retraction pass excludes
+`recommend_next_steps` items, avoiding a second write/decision and a false
+“already retracted” race against the workflow's own replacement. Other staged
+suggestion retractions still use their normal ownership checks.
 
 # Project agents
 

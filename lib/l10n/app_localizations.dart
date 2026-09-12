@@ -3846,6 +3846,12 @@ abstract class AppLocalizations {
   /// **'Providers'**
   String get aiSettingsCounterProviders;
 
+  /// No description provided for @aiSettingsDefaultProfileDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback for agents without a configured inference route on this device.'**
+  String get aiSettingsDefaultProfileDescription;
+
   /// No description provided for @aiSettingsEmptyDescription.
   ///
   /// In en, this message translates to:
@@ -3911,6 +3917,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vision'**
   String get aiSettingsModalityVision;
+
+  /// No description provided for @aiSettingsNoDefaultProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'No default profile'**
+  String get aiSettingsNoDefaultProfile;
 
   /// No description provided for @aiSettingsNoModelsConfigured.
   ///
@@ -18655,6 +18667,18 @@ abstract class AppLocalizations {
   /// **'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.'**
   String get queryDictated;
 
+  /// No description provided for @queryDraftProvisional.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft · not yet verified'**
+  String get queryDraftProvisional;
+
+  /// No description provided for @queryDraftRetracted.
+  ///
+  /// In en, this message translates to:
+  /// **'The draft answer could not be verified. Try again.'**
+  String get queryDraftRetracted;
+
   /// No description provided for @queryEarlierTextOmitted.
   ///
   /// In en, this message translates to:
@@ -25708,18 +25732,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @queryDraftProvisional.
-  ///
-  /// In en, this message translates to:
-  /// **'Draft · not yet verified'**
-  String get queryDraftProvisional;
-
-  /// No description provided for @queryDraftRetracted.
-  ///
-  /// In en, this message translates to:
-  /// **'The draft answer could not be verified. Try again.'**
-  String get queryDraftRetracted;
 }
 
 class _AppLocalizationsDelegate

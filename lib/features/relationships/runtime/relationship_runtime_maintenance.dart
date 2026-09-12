@@ -30,6 +30,7 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
     required this._relationshipAgentService,
     required this._relationshipRepository,
     this._domainLogger,
+    this.inferenceIsConfigured,
   });
 
   final AgentService _agentService;
@@ -38,6 +39,9 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
   final RelationshipAgentService _relationshipAgentService;
   final RelationshipRepository _relationshipRepository;
   final DomainLogger? _domainLogger;
+
+  /// Checks the same effective route as Phase B, including device settings.
+  final Future<bool> Function(AgentIdentityEntity)? inferenceIsConfigured;
 
   @override
   Future<void> restoreSubscriptions() async {
@@ -85,10 +89,57 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
             relationshipCadenceWake(identity.agentId, now),
           );
         }
+        await _resumeConfiguredEscalations(identity, now);
       } catch (error, stackTrace) {
         _log('beforeWakeScan', identity.agentId, error, stackTrace);
       }
     }
+  }
+
+  /// A config repair shortens only pending, backed-off escalation retries.
+  /// The sync-aware write causally supersedes the previous deadline and clears
+  /// its lease; the scheduled manager still elects one device before inference.
+  Future<void> _resumeConfiguredEscalations(
+    AgentIdentityEntity identity,
+    DateTime now,
+  ) async {
+    final configured = inferenceIsConfigured;
+    if (configured == null) return;
+    final state = await _repository.getAgentState(identity.agentId);
+    if (state == null || state.consecutiveFailureCount == 0) return;
+    final records = await _repository.getEntitiesByAgentId(
+      identity.agentId,
+      type: 'scheduledWake',
+    );
+    final retries = records
+        .whereType<ScheduledWakeEntity>()
+        .where(
+          (record) =>
+              record.status == ScheduledWakeStatus.pending &&
+              record.scheduledAt.isAfter(now) &&
+              relationshipEscalationDueDayFromTriggerTokens(
+                    record.triggerTokens.toSet(),
+                  ) !=
+                  null,
+        )
+        .toList();
+    if (retries.isEmpty || !await configured(identity)) return;
+    await _syncService.runInTransaction(() async {
+      for (final record in retries) {
+        // Check and update atomically: sync may consume or replace a retry
+        // while route resolution awaits storage.
+        final current = await _repository.getEntity(record.id);
+        if (current != record) continue;
+        await _syncService.upsertEntity(
+          record.copyWith(
+            scheduledAt: now.toUtc(),
+            updatedAt: now,
+            leaseHostId: null,
+            leaseUntil: null,
+          ),
+        );
+      }
+    });
   }
 
   /// Tears down an agent whose person is gone, and reports whether it did.

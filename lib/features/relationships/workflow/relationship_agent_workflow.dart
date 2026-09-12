@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
@@ -68,7 +69,7 @@ String relationshipAdId(String agentId, String runKey) => const Uuid().v5(
 
 /// The resolved inference route for a relationship agent. `profileId` is
 /// the profile that won the resolution chain, or null when the validated
-/// default model routes.
+/// default model or a direct thinking-model override routes.
 typedef RelationshipModelResolution = ({
   String modelId,
   AiConfigInferenceProvider provider,
@@ -76,25 +77,13 @@ typedef RelationshipModelResolution = ({
   String? profileId,
 });
 
-/// The single model-resolution chain for relationship-agent inference
-/// (ADR 0040 Decision 6, ADR 0059 Decision 7 / plan D6), first resolvable
-/// wins: the relationship's own AI profile (`RelationshipData.profileId`),
-/// then the agent config's profile, then the **default profile of the
-/// person's category** (looked up through [categoryProfileLookup]), then the
-/// validated default model. Phase B and the briefing disclosure both resolve
-/// through here so the provider a consent surface names is the one that
-/// actually runs.
-///
-/// The category step is what makes "Brief me" work for the ordinary setup:
-/// no screen pins a profile on a person, agent creation sets none on the
-/// agent, and the validated default is one specific cloud model — a user
-/// whose category routes everything else through their own profile was
-/// left with no route at all, and the card reported only "could not request
-/// the briefing". A dangling id at any step falls through to the next. The
-/// category lookup runs only once the explicit profiles have failed to
-/// resolve — it is a database read, and a transient failure there must not
-/// take down a route the person or the agent already pins. The lookup is
-/// optional so callers without a category source keep the two-step chain.
+/// Shared by Phase B and briefing disclosure so consent names the route used.
+/// An explicit typed setup is authoritative (including disabled/broken).
+/// Legacy agents try person profile, agent profile, category default, Settings
+/// default, then the validated built-in model. Explicit/category lookups are
+/// lazy; a transient fallback read cannot break an already resolved route.
+/// A selected Settings default that no longer resolves fails closed instead
+/// of silently sending inference to the built-in cloud model.
 Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   required RelationshipEntry? relationship,
   required AgentIdentityEntity? agentIdentity,
@@ -104,6 +93,22 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   final profileResolver = ProfileResolver(
     aiConfigRepository: aiConfigRepository,
   );
+  final setup = agentIdentity?.config.inferenceSetup;
+  if (setup != null) {
+    final details = await profileResolver.resolveSetup(setup);
+    final profile = details.profile;
+    if (profile == null) return null;
+    return (
+      modelId: profile.thinkingModelId,
+      provider: profile.thinkingProvider,
+      geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
+      // A direct override must disclose its own provider, never the locality
+      // of an optional base profile whose thinking slot it replaced.
+      profileId: details.source == AgentSetupResolutionSource.baseProfile
+          ? setup.baseProfileId
+          : null,
+    );
+  }
   Future<RelationshipModelResolution?> viaProfile(String profileId) async {
     final profile = await profileResolver.resolveByProfileId(profileId);
     if (profile == null) return null;
@@ -131,6 +136,12 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
       final resolved = await viaProfile(categoryProfileId);
       if (resolved != null) return resolved;
     }
+  }
+  final defaultProfileId = await aiConfigRepository.getDefaultProfileId();
+  if (defaultProfileId != null) {
+    // A selected but unavailable default is actionable configuration, not
+    // permission to send relationship data through an unrelated cloud model.
+    return viaProfile(defaultProfileId);
   }
   final direct = await resolveInferenceProviderWithModel(
     modelId: meliousGlm52ModelId,
@@ -181,7 +192,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   final DomainLogger? _domainLogger;
 
   /// The person's category default profile, the third step of
-  /// [resolveRelationshipAgentModel]. Null keeps the chain at two steps.
+  /// [resolveRelationshipAgentModel]. Null skips the category fallback.
   final CategoryProfileLookup? _categoryProfileLookup;
 
   @override
@@ -356,12 +367,21 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       factsBlock = '$factsBlock\n\n$relationshipReportRefreshInstruction';
     }
 
-    final resolved = await resolveRelationshipAgentModel(
-      relationship: relationship,
-      agentIdentity: agentIdentity,
-      aiConfigRepository: _aiConfigRepository,
-      categoryProfileLookup: _categoryProfileLookup,
-    );
+    RelationshipModelResolution? resolved;
+    try {
+      resolved = await resolveRelationshipAgentModel(
+        relationship: relationship,
+        agentIdentity: agentIdentity,
+        aiConfigRepository: _aiConfigRepository,
+        categoryProfileLookup: _categoryProfileLookup,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'failed to resolve relationship inference configuration',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     if (resolved == null) {
       // The escalation record is already consumed and Phase A will not
       // re-arm this episode — a temporarily unconfigured provider must not
@@ -372,6 +392,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           relationshipEscalationWorkspaceKey(escalationDueDay),
           triggerTokens,
           now,
+          configurationFailure: true,
         );
       }
       // A wake that never reached the model still failed: stamp it, so the
@@ -1012,17 +1033,6 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     return persisted is AgentMessageEntity && persisted.agentId == agentId;
   }
 
-  /// Re-arms a consumed escalation after a failure that committed nothing.
-  ///
-  /// The deadline is `now.toUtc()` — a strictly LATER instant than the
-  /// consumed record's, so this rides the resolver's supported
-  /// reschedule-beats-consume path (the goal precedent). Rebuilding the
-  /// record from the derivation instead would write a pending twin at the
-  /// consumed record's own deadline, and consumption is terminal at an
-  /// equal instant: any peer's consumed echo would kill the retry.
-  /// The ORIGINAL trigger tokens are forwarded verbatim — the baseline
-  /// token carries the pre-transition cadence status, which a re-derivation
-  /// after Phase A's register write can no longer reconstruct.
   /// Stamps the wake on the agent's state row: `lastWakeAt` either way, and
   /// the failure streak reset on success or bumped on failure — the two
   /// facts the person page's agent card reads to show *failed* with the
@@ -1058,14 +1068,49 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     }
   }
 
+  /// Re-arms a consumed escalation after a failure that committed nothing.
+  ///
+  /// Transient failures retry at `now.toUtc()` — a strictly LATER instant than the
+  /// consumed record's, so this rides the resolver's supported
+  /// reschedule-beats-consume path (the goal precedent). Rebuilding the
+  /// record from the derivation instead would write a pending twin at the
+  /// consumed record's own deadline, and consumption is terminal at an
+  /// equal instant: any peer's consumed echo would kill the retry.
+  /// The ORIGINAL trigger tokens are forwarded verbatim — the baseline
+  /// token carries the pre-transition cadence status, which a re-derivation
+  /// after Phase A's register write can no longer reconstruct.
+  /// Configuration failures back off from one hour to at most one day.
+  /// Maintenance can bring the pending retry forward once routing is fixed.
   /// Contained: a failed re-arm is logged, never masks the original error.
   Future<void> _rearmEscalation(
     String agentId,
     String escalationWorkspaceKey,
     Set<String> triggerTokens,
-    DateTime now,
-  ) async {
+    DateTime now, {
+    bool configurationFailure = false,
+  }) async {
     try {
+      var failures = 0;
+      if (configurationFailure) {
+        try {
+          failures =
+              (await _repository.getAgentState(
+                agentId,
+              ))?.consecutiveFailureCount ??
+              0;
+        } catch (error, stackTrace) {
+          // A broken counter read must not discard the durable episode.
+          // Preserve the retry using the base delay when its streak is unknown.
+          logError(
+            'failed to read relationship retry count',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      final delay = configurationFailure
+          ? Duration(hours: (1 << failures.clamp(0, 5)).clamp(1, 24))
+          : Duration.zero;
       await _syncService.upsertEntity(
         AgentDomainEntity.scheduledWake(
           id: scheduledWakeRecordId(
@@ -1073,7 +1118,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
             workspaceKey: escalationWorkspaceKey,
           ),
           agentId: agentId,
-          scheduledAt: now.toUtc(),
+          scheduledAt: now.toUtc().add(delay),
           status: ScheduledWakeStatus.pending,
           reason: WakeReason.scheduled.name,
           updatedAt: now,

@@ -40,6 +40,57 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  test('default profile persists and clears in device settings', () async {
+    final settings = MockSettingsDb();
+    final db = MockAiConfigDb();
+    when(db.close).thenAnswer((_) async {});
+    final repository = AiConfigRepository(db, settingsDb: settings);
+    addTearDown(repository.close);
+    const key = AiConfigRepository.defaultProfileSettingsKey;
+    when(() => settings.itemByKey(key)).thenAnswer((_) async => 'profile-1');
+    when(
+      () => settings.saveSettingsItem(key, 'profile-1'),
+    ).thenAnswer((_) async => 1);
+    when(() => settings.removeSettingsItem(key)).thenAnswer((_) async {});
+    final profile = AiConfig.inferenceProfile(
+      id: 'profile-1',
+      name: 'Default',
+      createdAt: fixedDate,
+      thinkingModelId: 'model-1',
+    );
+    when(() => db.getConfigById('profile-1')).thenAnswer((_) async => profile);
+    expect(await repository.getDefaultProfileId(), 'profile-1');
+    await repository.setDefaultProfileId('profile-1');
+    verify(() => settings.saveSettingsItem(key, 'profile-1')).called(1);
+    await repository.setDefaultProfileId(null);
+    verify(() => settings.removeSettingsItem(key)).called(1);
+    verifyNever(() => mockOutboxService.enqueueMessage(any()));
+  });
+
+  test(
+    'default profile rejects missing profiles and unavailable storage',
+    () async {
+      final settings = MockSettingsDb();
+      final db = MockAiConfigDb();
+      when(db.close).thenAnswer((_) async {});
+      final repository = AiConfigRepository(db, settingsDb: settings);
+      addTearDown(repository.close);
+      when(() => db.getConfigById('missing')).thenAnswer((_) async => null);
+      await expectLater(
+        repository.setDefaultProfileId('missing'),
+        throwsArgumentError,
+      );
+      verifyZeroInteractions(settings);
+      final withoutSettings = AiConfigRepository(db);
+      addTearDown(withoutSettings.close);
+      expect(await withoutSettings.getDefaultProfileId(), isNull);
+      await expectLater(
+        withoutSettings.setDefaultProfileId(null),
+        throwsStateError,
+      );
+    },
+  );
+
   group('AiConfigRepository with mocks', () {
     late MockAiConfigDb mockDb;
     late AiConfigRepository repository;

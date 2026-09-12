@@ -2266,6 +2266,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Fournisseurs';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Profil de secours pour les agents sans modèle configuré sur cet appareil.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Ajoute-en un pour activer la transcription, la reconnaissance d\'images, la génération d\'images et la recherche sémantique.';
 
@@ -2305,6 +2309,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Vision';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Aucun profil par défaut';
 
   @override
   String get aiSettingsNoModelsConfigured => 'Aucun modèle d\'IA configuré';
@@ -11257,6 +11264,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu peux modifier la transcription avant d’envoyer ta question. L’audio a peut-être déjà été envoyé à ton fournisseur de transcription.';
 
   @override
+  String get queryDraftProvisional => 'Brouillon · pas encore vérifié';
+
+  @override
+  String get queryDraftRetracted =>
+      'Le brouillon de la réponse n’a pas pu être vérifié. Réessaie.';
+
+  @override
   String get queryEarlierTextOmitted => '[Texte précédent non affiché]';
 
   @override
@@ -15679,11 +15693,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get queryDraftProvisional => 'Brouillon · pas encore vérifié';
-
-  @override
-  String get queryDraftRetracted =>
-      'Le brouillon de la réponse n’a pas pu être vérifié. Réessaie.';
 }

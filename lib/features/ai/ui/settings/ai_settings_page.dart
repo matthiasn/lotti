@@ -24,6 +24,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart'
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_empty_view.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -357,6 +359,18 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final aiRuntimeSettings = ref.watch(aiRuntimeSettingsControllerProvider);
+    final defaultProfileId = ref
+        .watch(defaultInferenceProfileControllerProvider)
+        .value;
+    final profiles =
+        ref
+            .watch(
+              aiConfigByTypeControllerProvider(AiConfigType.inferenceProfile),
+            )
+            .value
+            ?.whereType<AiConfigInferenceProfile>()
+            .toList() ??
+        const <AiConfigInferenceProfile>[];
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
       floatingActionButton: AiSettingsFloatingActionButton(
@@ -386,6 +400,24 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
               child: AiSettingsHeaderBar(
                 searchController: _searchController,
                 onSearchClear: _handleSearchClear,
+                profiles: profiles,
+                defaultProfileId: defaultProfileId,
+                onDefaultProfileChanged: (id) async {
+                  try {
+                    await ref
+                        .read(
+                          defaultInferenceProfileControllerProvider.notifier,
+                        )
+                        .selectProfile(id);
+                  } on Object {
+                    if (context.mounted) {
+                      context.showToast(
+                        tone: DesignSystemToastTone.error,
+                        title: context.messages.commonError,
+                      );
+                    }
+                  }
+                },
                 agentWakeConcurrency: aiRuntimeSettings.agentWakeConcurrency,
                 onAgentWakeConcurrencyChanged: (value) => ref
                     .read(aiRuntimeSettingsControllerProvider.notifier)

@@ -4,10 +4,10 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
-import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 
@@ -43,44 +43,15 @@ Future<ResolvedAgentSetup?> goalAgentResolvedSetup(
   final identity = identityEntity?.mapOrNull(agent: (value) => value);
   if (identity == null || identity.kind != AgentKinds.goalAgent) return null;
 
-  final profileId = identity.config.profileId;
-  if (profileId != null) {
-    final profile = await ref
-        .watch(profileResolverProvider)
-        .resolveByProfileId(profileId);
-    if (profile != null) {
-      return ResolvedAgentSetup(
-        status: AgentSetupResolutionStatus.resolved,
-        profile: profile,
-        source: identity.config.inferenceSetup == null
-            ? AgentSetupResolutionSource.legacyAgentProfile
-            : AgentSetupResolutionSource.baseProfile,
-        setupOrigin: identity.config.inferenceSetup?.origin,
+  ref.watch(
+    defaultInferenceProfileControllerProvider.select((value) => value.value),
+  );
+  return ref
+      .watch(profileResolverProvider)
+      .resolveStandalone(
+        agentConfig: identity.config,
+        legacyModelId: meliousGlm52ModelId,
       );
-    }
-  }
-
-  final direct = await resolveInferenceProviderWithModel(
-    modelId: meliousGlm52ModelId,
-    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
-    logTag: 'GoalAgentResolvedSetup',
-  );
-  if (direct != null) {
-    return ResolvedAgentSetup(
-      status: AgentSetupResolutionStatus.resolved,
-      profile: ResolvedProfile(
-        thinkingModelId: direct.model.providerModelId,
-        thinkingProvider: direct.provider,
-        thinkingModel: direct.model,
-      ),
-      source: AgentSetupResolutionSource.directModel,
-      setupOrigin: identity.config.inferenceSetup?.origin,
-    );
-  }
-  return ResolvedAgentSetup(
-    status: AgentSetupResolutionStatus.broken,
-    setupOrigin: identity.config.inferenceSetup?.origin,
-  );
 }
 
 Future<ResolvedAgentSetup?> taskAgentResolvedSetup(
@@ -104,6 +75,10 @@ Future<ResolvedAgentSetup?> taskAgentResolvedSetup(
     agentTemplateVersion: (value) => value,
   );
   if (version == null) return null;
+
+  ref.watch(
+    defaultInferenceProfileControllerProvider.select((value) => value.value),
+  );
 
   return ref
       .watch(profileResolverProvider)

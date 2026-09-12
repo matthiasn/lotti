@@ -5,21 +5,25 @@ description: Which profile drives a run, how model slots survive sync duplicates
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-06T12:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2026-10-19
 sources:
+  - id: device-default
+    resource: ../../../lib/features/ai/repository/ai_config_repository.dart
+    title: Device-local default profile storage
+    last_modified: 2026-09-12
   - id: resolver
     resource: ../../../lib/features/ai/util/profile_resolver.dart
     title: ProfileResolver
-    last_modified: 2026-07-13
+    last_modified: 2026-09-12
   - id: locality
     resource: ../../../lib/features/ai/helpers/profile_locality.dart
     title: profileIsLocal
-    last_modified: 2026-06-20
+    last_modified: 2026-09-06
   - id: pinning-ui
     resource: ../../../lib/features/ai/ui/widgets/profile_pinning_selector.dart
     title: Profile pinning selector
-    last_modified: 2026-06-26
+    last_modified: 2026-09-05
   - id: adr-0008
     resource: ../../../docs/adr/0008-inference-profiles-agent-provider-mapping.md
     title: ADR 0008 — Inference profiles and agent/provider mapping
@@ -57,7 +61,10 @@ flowchart TD
 
   CategoryBranch --> CategoryProfile["resolveByProfileId(category.defaultProfileId)"]
 
-  ProfileResolve --> Chain["agent profile → version profile → template profile → legacy modelId"]
+  ProfileResolve --> Typed{"Typed setup present?"}
+  Typed -->|yes| Setup["resolveSetup: disabled or configured route"]
+  Setup --> Thinking
+  Typed -->|no| Chain["selected legacy profile → legacy model → Settings default"]
   Chain --> Thinking{"Thinking slot resolves?"}
   Thinking -->|no| Abort["Return null and abort"]
   Thinking -->|yes| Optional["Resolve optional slots if configured"]
@@ -66,9 +73,23 @@ flowchart TD
   CategoryProfile --> Result
 ```
 
-The agent path resolution order is `agentConfig.profileId` →
-`AgentTemplateVersionEntity.profileId` → `AgentTemplateEntity.profileId` →
-legacy fallback `version.modelId ?? template.modelId`.
+An `AgentConfig.inferenceSetup` is authoritative: `resolveSetup` honors a direct
+thinking-model override and its optional base profile, or returns disabled/broken.
+It never falls through to unrelated defaults. Without a typed setup, the first
+configured profile id wins selection: agent, version, then template. If that
+profile cannot resolve, the legacy model (`version.modelId ?? template.modelId`)
+is tried, followed by the device's selected Settings default.
+
+`resolveStandalone` supports agents without templates. It honors a typed setup
+or legacy agent profile, then the Settings default; a built-in model is used only
+when no Settings default was selected. A deleted or unusable selected default
+fails closed. Relationship agents additionally retain their person/category
+profile steps, described in [relationships](../relationships.md).
+
+The fallback is device-local (`AI_DEFAULT_INFERENCE_PROFILE` in `SettingsDb`),
+because provider availability and credentials vary by device. Choosing or
+clearing it is explicit; profile deletion never substitutes another provider.
+The setting does not change authoritative setups or enable automation policies.
 
 **Only the thinking slot is fatal.** Optional slots resolve best-effort.
 

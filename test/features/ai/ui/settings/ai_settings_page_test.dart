@@ -386,7 +386,14 @@ void main() {
         profiles: const <AiConfig>[],
       );
 
-      final dropdown = find.byType(DesignSystemDropdown);
+      final dropdown = find.byWidgetPredicate(
+        (widget) =>
+            widget is DesignSystemDropdown &&
+            widget.label ==
+                AppLocalizations.of(
+                  tester.element(find.byType(AiSettingsPage)),
+                )!.aiSettingsAgentWakeConcurrencyLabel,
+      );
       await tester.tap(
         find.descendant(of: dropdown, matching: find.byType(InkWell)).first,
       );
@@ -409,6 +416,74 @@ void main() {
       await settleTimers(tester);
     });
   });
+
+  testWidgets(
+    'default profile selection persists, survives refresh, and reports failed saves',
+    (tester) async {
+      when(
+        () => mockRepository.setDefaultProfileId('selected'),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockRepository.setDefaultProfileId(null),
+      ).thenThrow(StateError('storage failed'));
+      final profile = buildProfile(
+        id: 'selected',
+        thinking: 'thinking',
+        name: 'My default',
+      );
+      await pumpWith(
+        tester: tester,
+        providers: [
+          buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+        ],
+        models: const [],
+        profiles: [profile],
+      );
+      final messages = AppLocalizations.of(
+        tester.element(find.byType(AiSettingsPage)),
+      )!;
+      final dropdown = find.byWidgetPredicate(
+        (widget) =>
+            widget is DesignSystemDropdown &&
+            widget.label == messages.agentDefaultProfileLabel,
+      );
+      await tester.tap(
+        find.descendant(of: dropdown, matching: find.byType(InkWell)).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text('My default').last);
+      await tester.pump();
+      verify(() => mockRepository.setDefaultProfileId('selected')).called(1);
+      expect(
+        tester.widget<DesignSystemDropdown>(dropdown).inputLabel,
+        'My default',
+      );
+      profilesController.add([profile.copyWith(name: 'Renamed default')]);
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemDropdown>(dropdown).inputLabel,
+        'Renamed default',
+      );
+      await tester.tap(
+        find.descendant(of: dropdown, matching: find.byType(InkWell)).first,
+      );
+      await tester.pump();
+      await tester.tap(find.text(messages.aiSettingsNoDefaultProfile).last);
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemDropdown>(dropdown).inputLabel,
+        'Renamed default',
+      );
+      expect(find.text(messages.commonError), findsOneWidget);
+      profilesController.add([]);
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemDropdown>(dropdown).inputLabel,
+        messages.inferenceProfileDetailNotFound,
+      );
+      await settleTimers(tester);
+    },
+  );
 
   group('AiSettingsPage — populated', () {
     testWidgets(

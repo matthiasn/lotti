@@ -177,7 +177,10 @@ Future<void> registerSingletons({
     dispose: (service) => service.dispose(),
   );
 
-  final aiConfigRepository = AiConfigRepository(AiConfigDb());
+  final aiConfigRepository = AiConfigRepository(
+    AiConfigDb(),
+    settingsDb: getIt<SettingsDb>(),
+  );
   getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
 
   final documentsDirectory = getIt<Directory>();

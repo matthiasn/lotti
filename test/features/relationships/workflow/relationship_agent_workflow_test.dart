@@ -436,6 +436,30 @@ void main() {
     });
   });
 
+  for (final failingRead in ['configuration', 'failure counter']) {
+    test(
+      '$failingRead read errors still preserve the escalation retry',
+      () async {
+        if (failingRead == 'configuration') {
+          when(
+            aiConfigRepository.getDefaultProfileId,
+          ).thenThrow(StateError('settings unavailable'));
+        } else {
+          when(
+            () => repository.getAgentState(agentId),
+          ).thenThrow(StateError('state unavailable'));
+        }
+        final tokens = {relationshipEscalationWorkspaceKey('2026-08-08')};
+        final result = await run(tokens: tokens);
+        expect(result.success, isFalse);
+        final retry = upserts.whereType<ScheduledWakeEntity>().single;
+        expect(retry.scheduledAt, now.toUtc().add(const Duration(hours: 1)));
+        expect(retry.triggerTokens.toSet(), tokens);
+        expect(conversationRepository.sendMessageDelegateCallCount, 0);
+      },
+    );
+  }
+
   test(
     'an unresolvable provider re-arms the consumed escalation — a '
     'temporarily unconfigured provider must not orphan the episode',
@@ -453,7 +477,7 @@ void main() {
       // resolver's reschedule-beats-consume path. A pending twin at the
       // consumed record's own instant would lose to consumption-is-terminal
       // on any peer echo, orphaning the retry fleet-wide.
-      expect(rearmed.scheduledAt, now.toUtc());
+      expect(rearmed.scheduledAt, now.toUtc().add(const Duration(hours: 1)));
       expect(rearmed.scheduledAt.isAfter(DateTime.utc(2026, 8, 8)), isTrue);
       // The ORIGINAL tokens ride along verbatim (the baseline token cannot
       // be regenerated after the register transitioned).
@@ -1689,6 +1713,112 @@ void main() {
     Future<String?> categoryLookup(String categoryId) async =>
         categoryId == 'cat-1' ? 'profile-cat' : null;
 
+    test(
+      'the Settings default supplies an otherwise unconfigured person',
+      () async {
+        stubCategoryProfileOnClaude();
+        when(
+          aiConfigRepository.getDefaultProfileId,
+        ).thenAnswer((_) async => 'profile-cat');
+        final resolved = await resolveRelationshipAgentModel(
+          relationship: relationship(),
+          agentIdentity: identity(),
+          aiConfigRepository: aiConfigRepository,
+        );
+        expect(resolved?.modelId, 'claude-x');
+        expect(resolved?.profileId, 'profile-cat');
+      },
+    );
+
+    test('a missing Settings default does not silently choose GLM', () async {
+      stubGlmResolution();
+      when(
+        aiConfigRepository.getDefaultProfileId,
+      ).thenAnswer((_) async => 'missing-profile');
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: relationship(),
+        agentIdentity: identity(),
+        aiConfigRepository: aiConfigRepository,
+      );
+      expect(resolved, isNull);
+    });
+
+    test('the model chosen in agent setup overrides legacy routes', () async {
+      stubCategoryProfileOnClaude();
+      when(
+        () => aiConfigRepository.getConfigById(claudeModel.id),
+      ).thenAnswer((_) async => claudeModel);
+      final configured = identity().copyWith(
+        config: const AgentConfig(
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            thinkingModelOverrideId: 'model-claude',
+          ),
+        ),
+      );
+
+      final resolved = await resolveRelationshipAgentModel(
+        relationship: relationship(),
+        agentIdentity: configured,
+        aiConfigRepository: aiConfigRepository,
+      );
+
+      expect(resolved?.modelId, 'claude-x');
+      expect(resolved?.provider, anthropicProvider);
+      expect(resolved?.profileId, isNull);
+    });
+
+    test(
+      'a typed base profile resolves without a legacy profile mirror',
+      () async {
+        stubCategoryProfileOnClaude();
+        final resolved = await resolveRelationshipAgentModel(
+          relationship: relationship(),
+          agentIdentity: identity().copyWith(
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-cat',
+              ),
+            ),
+          ),
+          aiConfigRepository: aiConfigRepository,
+        );
+
+        expect(resolved?.modelId, 'claude-x');
+        expect(resolved?.profileId, 'profile-cat');
+      },
+    );
+
+    for (final mode in AgentInferenceSetupMode.values) {
+      test(
+        'an unresolved typed $mode setup never falls through to GLM',
+        () async {
+          stubGlmResolution();
+          final resolved = await resolveRelationshipAgentModel(
+            relationship: relationship(),
+            agentIdentity: identity().copyWith(
+              config: AgentConfig(
+                inferenceSetup: AgentInferenceSetup(
+                  mode: mode,
+                  origin: AgentInferenceSetupOrigin.user,
+                  thinkingModelOverrideId: 'missing-model',
+                ),
+              ),
+            ),
+            aiConfigRepository: aiConfigRepository,
+          );
+
+          expect(resolved, isNull);
+          verifyNever(
+            () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+          );
+        },
+      );
+    }
+
     test("the category's default profile routes when neither the person nor "
         'the agent pins one — the ordinary setup', () async {
       stubCategoryProfileOnClaude();
@@ -2070,6 +2200,40 @@ void main() {
               consecutiveFailureCount: failures,
             )
             as AgentStateEntity;
+
+    test(
+      'missing configuration backs off exponentially with a one-day cap',
+      () async {
+        for (final (failures, hours) in [
+          (1, 2),
+          (3, 8),
+          (4, 16),
+          (5, 24),
+          (100, 24),
+        ]) {
+          upserts.clear();
+          when(
+            () => repository.getAgentState(agentId),
+          ).thenAnswer((_) async => stateRow(failures: failures));
+          final result = await run(
+            tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+          );
+          expect(result.success, isFalse);
+          expect(
+            upserts.whereType<ScheduledWakeEntity>().single.scheduledAt,
+            now.toUtc().add(Duration(hours: hours)),
+          );
+          expect(
+            upserts
+                .whereType<AgentStateEntity>()
+                .single
+                .consecutiveFailureCount,
+            failures + 1,
+          );
+        }
+        expect(conversationRepository.sendMessageDelegateCallCount, 0);
+      },
+    );
 
     void succeedingModel() {
       stubGlmResolution();

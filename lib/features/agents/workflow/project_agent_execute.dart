@@ -37,6 +37,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     required String threadId,
   }) async {
     final agentId = agentIdentity.id;
+    final preparationTimer = Stopwatch()..start();
+    final conversationTimer = Stopwatch();
+    final persistenceTimer = Stopwatch();
 
     _log(
       'wake start: agent=${DomainLogger.sanitizeId(agentId)}, '
@@ -307,6 +310,8 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       }
 
       // 9. Run the conversation.
+      preparationTimer.stop();
+      conversationTimer.start();
       final usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -325,6 +330,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         consumptionThreadId: recordConsumption ? threadId : null,
         rethrowInferenceErrors: true,
       );
+
+      conversationTimer.stop();
+      persistenceTimer.start();
 
       // Persist token usage.
       await _persistTokenUsage(
@@ -514,7 +522,17 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         // duplicate above, so applying the retraction would make a stable
         // suggestion disappear for no reason.
         await retractionService.applyStaged(
-          strategy.extractStagedRetractions(),
+          // replaceForRun already retires every old recommendation batch.
+          // Replaying these would persist duplicate decisions and report our
+          // own replacement as a race with the user.
+          strategy
+              .extractStagedRetractions()
+              .where(
+                (retraction) =>
+                    retraction.item.toolName !=
+                    ProjectAgentToolNames.recommendNextSteps,
+              )
+              .toList(),
           skipFingerprints: proposedItems.map(ChangeItem.fingerprint).toSet(),
         );
 
@@ -630,6 +648,17 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         stackTrace: s,
       );
     } finally {
+      preparationTimer.stop();
+      conversationTimer.stop();
+      persistenceTimer.stop();
+      _log(
+        'wake stages: agent=${DomainLogger.sanitizeId(agentId)} '
+        'run=${DomainLogger.sanitizeId(runKey)} '
+        'preparationMs=${preparationTimer.elapsedMilliseconds} '
+        'modelToolsMs=${conversationTimer.elapsedMilliseconds} '
+        'persistenceMs=${persistenceTimer.elapsedMilliseconds}',
+        subDomain: 'timings',
+      );
       conversationRepository.deleteConversation(conversationId);
     }
   }

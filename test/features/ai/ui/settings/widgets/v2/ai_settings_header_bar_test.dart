@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
@@ -10,6 +11,51 @@ import '../../../../../../widget_test_utils.dart';
 
 void main() {
   group('AiSettingsHeaderBar', () {
+    testWidgets(
+      'default profile picker selects and clears the configured route',
+      (tester) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+        final choices = <String?>[];
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            AiSettingsHeaderBar(
+              searchController: controller,
+              onSearchClear: () {},
+              agentWakeConcurrency: 3,
+              onAgentWakeConcurrencyChanged: (_) {},
+              profiles: [
+                AiConfigInferenceProfile(
+                  id: 'default-1',
+                  name: 'Chosen profile',
+                  createdAt: DateTime(2026),
+                  thinkingModelId: 'model-1',
+                ),
+              ],
+              onDefaultProfileChanged: choices.add,
+            ),
+          ),
+        );
+        await tester.pump();
+        final messages = tester
+            .element(find.byType(AiSettingsHeaderBar))
+            .messages;
+        await tester.tap(
+          find.widgetWithText(InkWell, messages.aiSettingsNoDefaultProfile),
+        );
+        await tester.pump();
+        await tester.tap(find.text('Chosen profile').last);
+        await tester.pump();
+        expect(choices, ['default-1']);
+        await tester.tap(
+          find.widgetWithText(InkWell, messages.aiSettingsNoDefaultProfile),
+        );
+        await tester.pump();
+        await tester.tap(find.text(messages.aiSettingsNoDefaultProfile).last);
+        await tester.pump();
+        expect(choices, ['default-1', null]);
+      },
+    );
     testWidgets(
       'renders the shared search and configured wake concurrency',
       (tester) async {

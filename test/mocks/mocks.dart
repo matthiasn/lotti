@@ -1072,8 +1072,12 @@ class MockChangeSetBuilder extends Mock implements ChangeSetBuilder {}
 class MockQueryChatStore extends Mock implements QueryChatStore {}
 
 class MockAgentSyncService extends Mock implements AgentSyncService {
+  /// Optional transaction boundary hook for concurrency regression tests.
+  Future<T> Function<T>(Future<T> Function() action)? transactionDelegate;
+
   @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+  Future<T> runInTransaction<T>(Future<T> Function() action) =>
+      transactionDelegate?.call<T>(action) ?? action();
 
   /// Default local host so tests that exercise counter (G-counter) increments
   /// don't each have to stub it. A fixed value is fine — workflow tests assert
@@ -1171,7 +1175,16 @@ class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
 
 class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+class MockAiConfigRepository extends Mock implements AiConfigRepository {
+  MockAiConfigRepository() {
+    when(getDefaultProfileId).thenAnswer((_) async => null);
+    for (final type in AiConfigType.values) {
+      when(
+        () => watchConfigsByType(type),
+      ).thenAnswer((_) => const Stream.empty());
+    }
+  }
+}
 
 class MockProviderPromptSetupService extends Mock
     implements ProviderPromptSetupService {}

@@ -15,6 +15,8 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -509,6 +511,131 @@ void main() {
         relationshipBriefingDisclosureProvider(relationshipId).future,
       );
     }
+
+    for (final local in [true, false]) {
+      test(
+        'direct override discloses its own provider locality: local=$local',
+        () async {
+          final selectedProvider = local ? ollamaProvider : meliousProvider;
+          final selectedModel = model(
+            local ? 'model-local' : 'model-glm',
+            selectedProvider.id,
+          );
+          when(
+            () => relationshipRepository.getRelationshipByIdUnfiltered(
+              relationshipId,
+            ),
+          ).thenAnswer((_) async => person());
+          when(() => agentRepository.getEntity(any())).thenAnswer(
+            (_) async => identity(
+              config: AgentConfig(
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  thinkingModelOverrideId: selectedModel.id,
+                ),
+              ),
+            ),
+          );
+          when(
+            () => aiConfigRepository.getConfigById(selectedModel.id),
+          ).thenAnswer((_) async => selectedModel);
+          when(
+            () => aiConfigRepository.getConfigById(selectedProvider.id),
+          ).thenAnswer((_) async => selectedProvider);
+          expect(await disclosure(), local ? isNull : 'Melious');
+        },
+      );
+    }
+
+    test(
+      'changing the Settings default refreshes the disclosed provider',
+      () async {
+        String? selected;
+        when(
+          aiConfigRepository.getDefaultProfileId,
+        ).thenAnswer((_) async => selected);
+        when(
+          () => aiConfigRepository.setDefaultProfileId(profileId),
+        ).thenAnswer((_) async {
+          selected = profileId;
+        });
+        when(
+          () => relationshipRepository.getRelationshipByIdUnfiltered(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async => person());
+        when(
+          () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            model('model-glm', 'melious-provider'),
+            model('model-local', 'ollama-provider'),
+          ],
+        );
+        when(
+          () => aiConfigRepository.getConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) async => [meliousProvider, ollamaProvider]);
+        when(
+          () => aiConfigRepository.getConfigById('melious-provider'),
+        ).thenAnswer((_) async => meliousProvider);
+        when(
+          () => aiConfigRepository.getConfigById('ollama-provider'),
+        ).thenAnswer((_) async => ollamaProvider);
+        when(
+          () => aiConfigRepository.getConfigById(profileId),
+        ).thenAnswer((_) async => profile('model-local'));
+        final manager = MockScheduledWakeManager();
+        final relationshipAgentService = MockRelationshipAgentService();
+        when(
+          () => relationshipAgentService.watchedRelationshipId(agentId),
+        ).thenAnswer((_) async => relationshipId);
+        when(
+          () => aiConfigRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) => Stream.value([model('model-glm', 'melious-provider')]),
+        );
+        final c = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(MockAgentService()),
+            agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+            relationshipAgentServiceProvider.overrideWithValue(
+              relationshipAgentService,
+            ),
+            scheduledWakeManagerProvider.overrideWithValue(manager),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+            aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
+            relationshipRepositoryProvider.overrideWithValue(
+              relationshipRepository,
+            ),
+            agentRepositoryProvider.overrideWithValue(agentRepository),
+            journalDbProvider.overrideWithValue(journalDb),
+          ],
+        );
+        addTearDown(c.dispose);
+        c.listen(relationshipRuntimeMaintenanceProvider, (_, _) {});
+        final maintenance = c.read(relationshipRuntimeMaintenanceProvider);
+        final target = relationshipBriefingDisclosureProvider(relationshipId);
+        c.listen(target, (_, _) {});
+        expect(await c.read(target.future), 'Melious');
+        await c.read(
+          aiConfigByTypeControllerProvider(AiConfigType.model).future,
+        );
+        verify(manager.requestCheck).called(1);
+        await c
+            .read(defaultInferenceProfileControllerProvider.notifier)
+            .selectProfile(profileId);
+        expect(await c.read(target.future), isNull);
+        verify(manager.requestCheck).called(1);
+        expect(await maintenance.inferenceIsConfigured!(identity()), isTrue);
+        when(
+          () => relationshipAgentService.watchedRelationshipId(agentId),
+        ).thenAnswer((_) async => null);
+        expect(await maintenance.inferenceIsConfigured!(identity()), isFalse);
+      },
+    );
 
     test('a fully local profile needs no disclosure', () async {
       when(

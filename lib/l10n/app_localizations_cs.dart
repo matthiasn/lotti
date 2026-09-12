@@ -2255,6 +2255,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Poskytovatelé';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Záložní profil pro agenty bez nastaveného modelu na tomto zařízení.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Přidej jednoho a odemkni přepis, rozpoznávání obrázků, generování obrázků a sémantické vyhledávání.';
 
@@ -2294,6 +2298,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Obraz';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Žádný výchozí profil';
 
   @override
   String get aiSettingsNoModelsConfigured =>
@@ -11207,6 +11214,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přepis můžeš upravit před odesláním otázky. Zvuk už mohl být odeslán tvému poskytovateli přepisu.';
 
   @override
+  String get queryDraftProvisional => 'Návrh · zatím neověřený';
+
+  @override
+  String get queryDraftRetracted =>
+      'Návrh odpovědi se nepodařilo ověřit. Zkus to znovu.';
+
+  @override
   String get queryEarlierTextOmitted => '[Dřívější text není zobrazen]';
 
   @override
@@ -15619,11 +15633,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get queryDraftProvisional => 'Návrh · zatím neověřený';
-
-  @override
-  String get queryDraftRetracted =>
-      'Návrh odpovědi se nepodařilo ověřit. Zkus to znovu.';
 }

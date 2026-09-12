@@ -2225,6 +2225,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Providers';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Fallback for agents without a configured inference route on this device.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Add one to unlock transcription, image recognition, image generation, and semantic search.';
 
@@ -2263,6 +2267,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Vision';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'No default profile';
 
   @override
   String get aiSettingsNoModelsConfigured => 'No AI models configured';
@@ -11009,6 +11016,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.';
 
   @override
+  String get queryDraftProvisional => 'Draft · not yet verified';
+
+  @override
+  String get queryDraftRetracted =>
+      'The draft answer could not be verified. Try again.';
+
+  @override
   String get queryEarlierTextOmitted => '[Earlier text not shown]';
 
   @override
@@ -15328,13 +15342,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get queryDraftProvisional => 'Draft · not yet verified';
-
-  @override
-  String get queryDraftRetracted =>
-      'The draft answer could not be verified. Try again.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

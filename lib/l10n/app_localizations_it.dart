@@ -2264,6 +2264,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiSettingsCounterProviders => 'Fornitori';
 
   @override
+  String get aiSettingsDefaultProfileDescription =>
+      'Profilo di riserva per gli agenti senza un modello configurato su questo dispositivo.';
+
+  @override
   String get aiSettingsEmptyDescription =>
       'Aggiungere uno per sbloccare la trascrizione, il riconoscimento delle immagini, la generazione di immagini e la ricerca semantica.';
 
@@ -2302,6 +2306,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get aiSettingsModalityVision => 'Visione';
+
+  @override
+  String get aiSettingsNoDefaultProfile => 'Nessun profilo predefinito';
 
   @override
   String get aiSettingsNoModelsConfigured => 'Nessun modello AI configurato';
@@ -11201,6 +11208,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Puoi modificare la trascrizione prima di inviare la domanda. L’audio potrebbe essere già stato inviato al tuo servizio di trascrizione.';
 
   @override
+  String get queryDraftProvisional => 'Bozza · non ancora verificata';
+
+  @override
+  String get queryDraftRetracted =>
+      'Non è stato possibile verificare la bozza della risposta. Riprova.';
+
+  @override
   String get queryEarlierTextOmitted => '[Testo precedente non mostrato]';
 
   @override
@@ -15616,11 +15630,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get queryDraftProvisional => 'Bozza · non ancora verificata';
-
-  @override
-  String get queryDraftRetracted =>
-      'Non è stato possibile verificare la bozza della risposta. Riprova.';
 }

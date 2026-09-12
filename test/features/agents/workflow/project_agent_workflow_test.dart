@@ -3621,6 +3621,28 @@ void main() {
           expect(result.success, isTrue);
 
           // domainLogger.error must have been called with the provenance error.
+          final timing =
+              verify(
+                    () => mockDomainLogger.log(
+                      LogDomain.agentWorkflow,
+                      captureAny<String>(that: startsWith('wake stages:')),
+                      subDomain: 'timings',
+                    ),
+                  ).captured.single
+                  as String;
+          expect(timing, contains('run=${DomainLogger.sanitizeId(runKey)}'));
+          for (final phase in [
+            'preparationMs',
+            'modelToolsMs',
+            'persistenceMs',
+          ]) {
+            expect(
+              RegExp('$phase=[0-9]+').hasMatch(timing),
+              isTrue,
+              reason: phase,
+            );
+          }
+
           verify(
             () => mockDomainLogger.error(
               any(),
@@ -4074,6 +4096,60 @@ void main() {
             contains(ProjectAgentToolNames.retractSuggestions),
           );
         });
+
+        test(
+          'recommendation replacement owns staged recommendation retractions',
+          () async {
+            const recommendation = ChangeItem(
+              toolName: ProjectAgentToolNames.recommendNextSteps,
+              args: {
+                'steps': [
+                  {'title': 'Review the launch'},
+                ],
+              },
+              humanSummary: 'Review the launch',
+            );
+            stubLedger(
+              ProposalLedger(
+                open: [openEntry(recommendation)],
+                resolved: const [],
+                pendingSets: [pendingSet(recommendation)],
+              ),
+            );
+            when(
+              () => mockAgentRepository.getPendingChangeSets(
+                any(),
+                taskId: any(named: 'taskId'),
+              ),
+            ).thenAnswer((_) async => [pendingSet(recommendation)]);
+            when(
+              () => mockAgentRepository.getEntity('set-previous'),
+            ).thenAnswer((_) async => pendingSet(recommendation));
+            final captured = await runWake([
+              ChatCompletionMessageToolCall(
+                id: 'retract-recommendation',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: ProjectAgentToolNames.retractSuggestions,
+                  arguments: jsonEncode({
+                    'proposals': [
+                      {
+                        'fingerprint': ChangeItem.fingerprint(recommendation),
+                        'reason': 'Superseded by the current next steps',
+                      },
+                    ],
+                  }),
+                ),
+              ),
+            ]);
+            final sets = captured.whereType<ChangeSetEntity>().where(
+              (set) => set.id == 'set-previous',
+            );
+            expect(sets, hasLength(1));
+            expect(sets.single.items.single.status, ChangeItemStatus.retracted);
+            expect(captured.whereType<ChangeDecisionEntity>(), isEmpty);
+          },
+        );
 
         test('applies a retraction the agent staged during the wake', () async {
           stubLedger(
