@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 
 /// Query dictation uses the current category default's transcription slot,
 /// independently of the task/agent's thinking setup. Resolve on each recording
@@ -38,6 +39,13 @@ queryTranscriptionTargetResolverProvider =
             (target.provider.inferenceProviderType ==
                     InferenceProviderType.mistral &&
                 target.model.providerModelId.contains('transcribe-realtime'))) {
+          throw _unavailable();
+        }
+        if (target.provider.inferenceProviderType ==
+                InferenceProviderType.sherpa &&
+            !await ref
+                .read(sherpaModelRepositoryProvider)
+                .isAvailable(target.model.providerModelId)) {
           throw _unavailable();
         }
         final liveProfile = await configs.getConfigById(profileId);

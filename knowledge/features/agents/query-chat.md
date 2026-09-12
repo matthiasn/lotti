@@ -89,7 +89,8 @@ The pill composer emphasizes Send when a draft is present.
 Query dictation resolves the current category's `defaultProfileId` and that
 profile's transcription slot at submission time. It does not inherit the task
 agent's model override or use automatic model discovery. Missing or unusable
-category transcription setup fails with the existing audio-setup error; it
+category transcription setup (including undownloaded Sherpa models) fails
+with the existing audio-setup error; it
 never silently chooses an installed Sherpa model. Scope visibility, category
 membership and default setup are rechecked before handing audio to the service.
 

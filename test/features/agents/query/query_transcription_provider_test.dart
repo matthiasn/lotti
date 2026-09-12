@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/query/query_transcription_provider.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
+import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -20,6 +21,7 @@ void main() {
 
   late QueryTestBench bench;
   late MockAiConfigRepository configs;
+  late MockSherpaModelRepository embeddedModels;
   late ProviderContainer container;
   late AiConfigInferenceProvider provider;
   late AiConfigModel model;
@@ -31,6 +33,8 @@ void main() {
       defaultProfileId: 'category-profile',
     );
     configs = MockAiConfigRepository();
+    embeddedModels = MockSherpaModelRepository();
+    when(() => embeddedModels.isAvailable(any())).thenAnswer((_) async => true);
     provider = testInferenceProvider(
       inferenceProviderType: InferenceProviderType.melious,
     );
@@ -62,6 +66,7 @@ void main() {
       overrides: [
         querySourceAccessProvider.overrideWithValue(bench.crawler.access),
         aiConfigRepositoryProvider.overrideWithValue(configs),
+        sherpaModelRepositoryProvider.overrideWithValue(embeddedModels),
       ],
     );
     addTearDown(container.dispose);
@@ -200,6 +205,31 @@ void main() {
       );
     },
   );
+
+  test('an undownloaded category Sherpa model reports missing setup', () async {
+    provider = provider.copyWith(
+      inferenceProviderType: InferenceProviderType.sherpa,
+    );
+    model = model.copyWith(providerModelId: 'small');
+    when(
+      () => embeddedModels.isAvailable('small'),
+    ).thenAnswer((_) async => false);
+    await expectLater(
+      container.read(
+        queryTranscriptionTargetResolverProvider(
+          const QueryScope(kind: QueryScopeKind.task, id: 'home'),
+        ),
+      )(),
+      throwsA(
+        isA<TranscriptionException>().having(
+          (error) => error.message,
+          'missing setup guidance',
+          contains('No audio-capable models'),
+        ),
+      ),
+    );
+    verify(() => embeddedModels.isAvailable('small')).called(1);
+  });
 
   test('a missing profile config fails closed', () async {
     when(

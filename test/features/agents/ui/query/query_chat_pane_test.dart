@@ -27,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../projects/test_utils.dart';
 import '../../query/query_test_utils.dart';
@@ -556,9 +557,13 @@ void main() {
         await pump(tester);
         Future<void> openDelete() async {
           await switcher(tester);
-          await tester.tap(find.byIcon(LottiIcons.more).first);
-          await tester.pump();
-          await tester.tap(find.text('Delete chat'));
+          if (forget) {
+            await tester.tap(find.byIcon(LottiIcons.more).first);
+            await tester.pump();
+            await tester.tap(find.text('Delete chat'));
+          } else {
+            await tester.tap(findMaterialTooltip('Delete chat').first);
+          }
           await tester.pumpAndSettle();
         }
 
@@ -836,40 +841,55 @@ void main() {
     },
   );
 
-  testWidgets(
-    'archive disables composition and restoring preserves the draft',
-    (tester) async {
-      await pump(tester);
-      await tester.enterText(find.byType(TextField), 'Feeder follow-up');
-      await switcher(tester);
-      await tester.tap(find.byIcon(LottiIcons.more).first);
-      await tester.pump();
-      await tester.tap(find.text('Archive chat'));
-      await tester.pump();
-      await tester.pump();
-      verify(() => store.archive('agent', 'feeder', archived: true)).called(1);
-      await switcher(tester);
-      await tester.tap(find.text('Archived chats'));
-      await tester.pump();
-      await tester.tap(find.text('Feeder calibration').last);
-      await tester.pump();
-      expect(find.textContaining('This chat is archived.'), findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
-      await tester.tap(find.text('Restore chat'));
-      await tester.pump();
-      await tester.pump();
-      verify(() => store.archive('agent', 'feeder', archived: false)).called(1);
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'Feeder follow-up',
-      );
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).enabled,
-        isNot(false),
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+  for (final directActions in [false, true]) {
+    testWidgets(
+      'archive disables composition and restoring preserves the draft (direct=$directActions)',
+      (tester) async {
+        await pump(tester);
+        await tester.enterText(find.byType(TextField), 'Feeder follow-up');
+        await switcher(tester);
+        if (directActions) {
+          await tester.tap(findMaterialTooltip('Archive chat').first);
+        } else {
+          await tester.tap(find.byIcon(LottiIcons.more).first);
+          await tester.pump();
+          await tester.tap(find.text('Archive chat'));
+        }
+        await tester.pump();
+        await tester.pump();
+        verify(
+          () => store.archive('agent', 'feeder', archived: true),
+        ).called(1);
+        await switcher(tester);
+        await tester.tap(find.text('Archived chats'));
+        await tester.pump();
+        await tester.tap(find.text('Feeder calibration').last);
+        await tester.pump();
+        expect(find.textContaining('This chat is archived.'), findsOneWidget);
+        expect(find.byType(TextField), findsNothing);
+        if (directActions) {
+          await switcher(tester);
+          await tester.tap(findMaterialTooltip('Restore chat').first);
+        } else {
+          await tester.tap(find.text('Restore chat'));
+        }
+        await tester.pump();
+        await tester.pump();
+        verify(
+          () => store.archive('agent', 'feeder', archived: false),
+        ).called(1);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          'Feeder follow-up',
+        );
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).enabled,
+          isNot(false),
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
 
   testWidgets('New chat starts isolated and examples only populate its draft', (
     tester,
