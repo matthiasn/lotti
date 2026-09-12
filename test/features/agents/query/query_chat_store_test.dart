@@ -48,9 +48,9 @@ void main() {
         ),
       );
 
-  for (final change in ['moved', 'deleted', 'memory']) {
+  for (final change in ['moved', 'deleted', 'memory', 'unchanged']) {
     test(
-      'summary publication rejects changed owners or memory: $change',
+      'summary publication validates owners and persists its basis: $change',
       () async {
         await withClock(Clock.fixed(now), () async {
           final owner = testTask.copyWith(
@@ -79,12 +79,25 @@ void main() {
             ),
             memory: change == 'memory' ? built.memory : null,
           );
-          if (change != 'memory') {
+          if (change == 'moved' || change == 'deleted') {
             bench.entries['other'] = owner.copyWith(
               meta: change == 'moved'
                   ? owner.meta.copyWith(categoryId: bench.categories.first.id)
                   : owner.meta.copyWith(deletedAt: now),
             );
+          }
+          if (change == 'unchanged') {
+            expect(await store.publish('agent', chat, summary), isTrue);
+            final reloaded = (await store.load('agent')).chats.single;
+            final saved = reloaded.answerFor(question.id)!;
+            expect((saved.data as QueryChatAnswer).summaryBased, isTrue);
+            expect((saved.data as QueryChatAnswer).text, summary.answer.text);
+            bench.entries['other'] = owner.copyWith(
+              meta: owner.meta.copyWith(deletedAt: now),
+            );
+            final live = await bench.crawler.access.load(['task', 'other']);
+            expect(live.allowsEvent(saved.data), isFalse);
+            return;
           }
           await expectLater(
             store.publish('agent', chat, summary),
