@@ -693,8 +693,14 @@ removed:
   The normal scheduled manager still elects a device before inference. A
   concurrent consume/replacement observed during resolution is left alone;
   the final check and reschedule share a transaction.
-  Saving the Settings default or changing profile/model/provider catalogs
-  requests a scan, so a repaired route need not wait out the backoff. Cadence
+  Saving the Settings default, changing profile/model/provider catalogs,
+  editing a person's profile/category or its category default, and receiving
+  an active relationship identity through sync all request a scan. The shared
+  inference picker emits `AgentNotificationScopes.inferenceSetup` after a
+  changed setup commits; maintenance listens to that scope rather than ordinary
+  agent writes, so its own repairs cannot create a scan loop. An unchanged
+  setup emits no route notification. A repaired route need not wait out the
+  backoff. Cadence
   repair runs independently before the configuration check. Configuration read
   exceptions also re-arm the episode; an unreadable failure counter uses the
   initial one-hour delay rather than discarding the retry.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
@@ -24,6 +26,7 @@ import 'package:lotti/features/relationships/service/relationship_reminder_servi
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/db_notification.dart';
 
 /// The OS-reminder projection of the cadence verdict (ADR 0039, plan v2
 /// phase 8) — durable inbox rows first, OS alarms second.
@@ -173,9 +176,23 @@ final relationshipRuntimeMaintenanceProvider =
           }
         }
 
-        ref.listen(defaultInferenceProfileControllerProvider, (previous, next) {
-          if (next.hasValue && previous?.value != next.value) requestCheck();
-        });
+        // Ordinary agent notifications include wake persistence itself;
+        // listening to those would turn each scan into another scan.
+        final subscription = ref
+            .watch(maybeUpdateNotificationsProvider)
+            ?.updateStream
+            .listen((ids) {
+              if (ids.contains(AgentNotificationScopes.inferenceSetup) ||
+                  ids.contains(relationshipNotification) ||
+                  ids.contains(categoriesNotification)) {
+                requestCheck();
+              }
+            });
+        ref
+          ..onDispose(() => unawaited(subscription?.cancel()))
+          ..listen(defaultInferenceProfileControllerProvider, (previous, next) {
+            if (next.hasValue && previous?.value != next.value) requestCheck();
+          });
         for (final type in [
           AiConfigType.inferenceProfile,
           AiConfigType.model,
@@ -192,6 +209,7 @@ final relationshipRuntimeMaintenanceProvider =
           relationshipAgentService: ref.watch(relationshipAgentServiceProvider),
           relationshipRepository: ref.watch(relationshipRepositoryProvider),
           domainLogger: ref.watch(domainLoggerProvider),
+          onIdentityRestored: requestCheck,
           inferenceIsConfigured: (identity) async {
             final relationshipId = await ref
                 .read(relationshipAgentServiceProvider)

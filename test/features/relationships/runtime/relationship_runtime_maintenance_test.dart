@@ -29,6 +29,7 @@ void main() {
   late MockRelationshipRepository relationshipRepository;
   late MockDomainLogger logger;
   late RelationshipRuntimeMaintenance maintenance;
+  late int scanRequests;
 
   const relationshipId = 'person-1';
 
@@ -84,6 +85,7 @@ void main() {
     relationshipAgentService = MockRelationshipAgentService();
     relationshipRepository = MockRelationshipRepository();
     logger = MockDomainLogger();
+    scanRequests = 0;
     maintenance = RelationshipRuntimeMaintenance(
       agentService: agentService,
       repository: repository,
@@ -91,6 +93,7 @@ void main() {
       relationshipAgentService: relationshipAgentService,
       relationshipRepository: relationshipRepository,
       domainLogger: logger,
+      onIdentityRestored: () => scanRequests++,
     );
     when(
       () => agentService.listAgents(lifecycle: AgentLifecycle.active),
@@ -436,6 +439,7 @@ void main() {
     test('an active synced-in identity subscribes immediately — no restart '
         'needed', () async {
       await maintenance.onIdentityReceived(identity());
+      expect(scanRequests, 1);
       verify(
         () => relationshipAgentService.registerSubscription(agentId),
       ).called(1);
@@ -449,6 +453,7 @@ void main() {
         () => relationshipAgentService.removeSubscription(agentId),
       ).called(1);
       verifyNever(() => relationshipAgentService.registerSubscription(any()));
+      expect(scanRequests, 0);
     });
 
     test('another kind is ignored entirely', () async {
@@ -456,6 +461,7 @@ void main() {
         identity(kind: AgentKinds.goalAgent),
       );
       verifyZeroInteractions(relationshipAgentService);
+      expect(scanRequests, 0);
     });
 
     test('a subscription failure is contained — the sync apply loop must '

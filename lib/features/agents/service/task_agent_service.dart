@@ -307,12 +307,13 @@ class TaskAgentService {
     return agentService.getAgent(agentId);
   }
 
-  /// Persist the complete inference setup for an existing task agent.
+  /// Persist the complete inference setup for an existing agent.
   ///
   /// Disabled setup is mirrored to the legacy-aware dormant lifecycle and
   /// cancels pending automatic work. Re-enabling a setup only reactivates an
   /// agent that was dormant because its previous typed setup was disabled;
   /// an independently paused legacy/configured agent stays paused.
+  /// Committed changes notify runtime route listeners without a content wake.
   Future<void> updateAgentInferenceSetup({
     required String agentId,
     required AgentInferenceSetup setup,
@@ -390,6 +391,14 @@ class TaskAgentService {
       } else {
         orchestrator.disableAutomaticUpdatesRuntime(agentId);
       }
+    }
+
+    if (previous.config != updated.config) {
+      updateNotifications?.notifyUiOnly({
+        agentId,
+        agentNotification,
+        AgentNotificationScopes.inferenceSetup,
+      });
     }
 
     if (postCommitSyncError != null) {

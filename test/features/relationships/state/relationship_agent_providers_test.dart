@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -27,6 +29,7 @@ import 'package:lotti/features/relationships/state/relationship_agent_providers.
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -86,6 +89,47 @@ void main() {
     addTearDown(c.dispose);
     return c;
   }
+
+  test('route edits and synced identities request scans, ordinary agent writes '
+      'do not', () async {
+    final updates = StreamController<Set<String>>.broadcast(sync: true);
+    addTearDown(updates.close);
+    final notifications = MockUpdateNotifications();
+    when(() => notifications.updateStream).thenAnswer((_) => updates.stream);
+    final manager = MockScheduledWakeManager();
+    final agentService = MockRelationshipAgentService();
+    when(
+      () => agentService.registerSubscription(agentId),
+    ).thenAnswer((_) async {});
+    final c = container(
+      overrides: [
+        maybeUpdateNotificationsProvider.overrideWithValue(notifications),
+        scheduledWakeManagerProvider.overrideWithValue(manager),
+        relationshipAgentServiceProvider.overrideWithValue(agentService),
+        aiConfigRepositoryProvider.overrideWithValue(MockAiConfigRepository()),
+      ],
+    );
+    final maintenance = c
+        .listen(relationshipRuntimeMaintenanceProvider, (_, _) {})
+        .read();
+    await c.read(defaultInferenceProfileControllerProvider.future);
+
+    updates.add({agentId, agentNotification});
+    verifyNever(manager.requestCheck);
+    for (final token in [
+      AgentNotificationScopes.inferenceSetup,
+      relationshipNotification,
+      categoriesNotification,
+    ]) {
+      updates.add({token});
+      verify(manager.requestCheck).called(1);
+    }
+    await maintenance.onIdentityReceived(identity());
+    verify(manager.requestCheck).called(1);
+    c.dispose();
+    updates.add({AgentNotificationScopes.inferenceSetup});
+    verifyNoMoreInteractions(manager);
+  });
 
   test(
     'the relationship_agent kind resolves to ITS registered runner — '
