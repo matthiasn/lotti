@@ -522,6 +522,70 @@ void main() {
       });
     });
 
+    test('a failing callback preserves later post-commit notifications', () {
+      fakeAsync((async) {
+        final transactionRepository = _TransactionCheckingAgentRepository();
+        final now = DateTime(2026, 9, 12, 10);
+        when(
+          () => transactionRepository.getAgentStatesWithPendingWakes(any()),
+        ).thenAnswer((_) async {
+          return {
+            for (final id in ['agent-1', 'agent-2'])
+              id: makeTestState(agentId: id, nextWakeAt: now),
+          };
+        });
+        when(
+          () => transactionRepository.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        final logger = MockDomainLogger();
+        final failure = StateError('notification failed');
+        final changed = <String>[];
+        final coordinator = WakeThrottleCoordinator(
+          repository: transactionRepository,
+          onDrainRequested: () async {},
+          onPersistedStateChanged: (id) {
+            expect(transactionRepository.insideTransaction, isFalse);
+            changed.add(id);
+            if (id == 'agent-1') throw failure;
+          },
+          throttleWindow: _generatedThrottleWindow,
+          domainLogger: logger,
+        );
+        addTearDown(coordinator.dispose);
+
+        coordinator
+          ..clearThrottle('agent-1')
+          ..clearThrottle('agent-2');
+        async.flushMicrotasks();
+
+        expect(changed, ['agent-1', 'agent-2']);
+        final saved = verify(
+          () => transactionRepository.upsertEntity(captureAny()),
+        ).captured.cast<AgentStateEntity>();
+        expect(saved.map((state) => state.agentId), changed);
+        expect(saved.every((state) => state.nextWakeAt == null), isTrue);
+        verify(
+          () => logger.error(
+            LogDomain.agentRuntime,
+            failure,
+            message: 'failed to notify persisted throttle change',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => logger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            message: any<String>(
+              named: 'message',
+              that: contains('failed to clear persisted throttle batch'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        );
+      });
+    });
+
     test('serializes clear batches and preserves a re-armed bulk-read row', () {
       fakeAsync((async) {
         final read = Completer<Map<String, AgentStateEntity>>();

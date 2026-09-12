@@ -11,7 +11,7 @@ sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner
-    last_modified: 2026-08-09
+    last_modified: 2026-09-12
   - id: skill-modal
     resource: ../../../lib/features/ai/ui/unified_ai_skills_modal.dart
     title: Unified AI skills modal

@@ -11,7 +11,7 @@ sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine
-    last_modified: 2026-08-16
+    last_modified: 2026-09-12
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
@@ -185,6 +185,7 @@ single-agent batch uses its direct state lookup; a multi-agent batch uses the
 existing chunked pending-wake query and only decodes states with pending wakes.
 States carrying only `scheduledWakeAt` are left untouched. Only states whose
 `nextWakeAt` is still set are written, and change callbacks run after commit.
+Each callback failure is logged separately and leaves later notifications running.
 A microtask starts the worker, which runs at most one clear batch at a time;
 requests arriving during that batch wait for the next one. Failed transactions
 produce no change callbacks and release requests so a later clear can retry.

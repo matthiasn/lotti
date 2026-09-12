@@ -200,7 +200,19 @@ class WakeThrottleCoordinator with AgentErrorLogging {
           });
         }
         final onChanged = onPersistedStateChanged;
-        if (onChanged != null) changed.forEach(onChanged);
+        if (onChanged != null) {
+          for (final agentId in changed) {
+            try {
+              onChanged(agentId);
+            } catch (e, s) {
+              logError(
+                'failed to notify persisted throttle change',
+                error: e,
+                stackTrace: s,
+              );
+            }
+          }
+        }
       } catch (e, s) {
         logError(
           'failed to clear persisted throttle batch (${agentIds.length} agents)',
