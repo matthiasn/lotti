@@ -30,6 +30,7 @@ void main() {
   late ProviderContainer container;
   late QueryChatController controller;
   late StreamController<QueryChatData> history;
+  late StreamController<bool> privacy;
   late Future<void> Function(String chatId) inspect;
   late Future<void> Function(String chatId) compose;
   late MockDomainLogger logger;
@@ -50,6 +51,7 @@ void main() {
     synthesis = null;
     unavailable = false;
     history = StreamController<QueryChatData>.broadcast();
+    privacy = StreamController<bool>.broadcast();
     container = ProviderContainer(
       overrides: [
         domainLoggerProvider.overrideWithValue(logger),
@@ -57,7 +59,10 @@ void main() {
         queryChatDataProvider(key).overrideWith((ref) => history.stream),
         configFlagProvider(
           'private',
-        ).overrideWith((ref) => Stream.value(false)),
+        ).overrideWith((ref) async* {
+          yield false;
+          yield* privacy.stream;
+        }),
         queryBuilderFactoryProvider.overrideWithValue((
           scope,
           agentId,
@@ -128,7 +133,38 @@ void main() {
   tearDown(() async {
     container.dispose();
     await history.close();
+    await privacy.close();
     await bench.close();
+  });
+
+  test('privacy change clears a published draft awaiting projection', () async {
+    await withClock(Clock.fixed(now), () async {
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+      await container.read(configFlagProvider('private').future);
+      final id = await controller.create('Feeder');
+      controller.updateDraft(id, 'What was recorded?');
+      await controller.send(id);
+      final local = container.read(provider).local(id);
+      expect(local.status, QueryTurnStatus.idle);
+      expect(local.provisional?.text, 'Answer for $id [1]');
+      final saved = await bench.store.load('agent');
+      expect(saved.chats.single.answerFor(local.requestQuestionId!), isNotNull);
+
+      privacy.add(true);
+      await container.pump();
+      expect(container.read(configFlagProvider('private')).value, isTrue);
+      privacy.add(false);
+      await container.pump();
+
+      expect(container.read(provider).local(id).provisional, isNull);
+      expect(
+        (await bench.store.load('agent')).chats.single.answerFor(
+          local.requestQuestionId!,
+        ),
+        saved.chats.single.answerFor(local.requestQuestionId!),
+      );
+    });
   });
 
   for (final outcome in ['publish', 'invalid citation', 'cancel', 'privacy']) {

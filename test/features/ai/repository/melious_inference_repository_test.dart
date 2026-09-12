@@ -818,6 +818,7 @@ void main() {
       final request = probe.requests.single;
       expect(request.model.toString(), contains('minimax-m2.7'));
       expect(request.stream, isTrue);
+      expect(request.streamOptions, isNull);
       expect(request.temperature, 0.2);
       expect(request.maxCompletionTokens, 128);
       expect(request.messages, hasLength(2));

@@ -390,7 +390,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
         )
         .copyWith(
-          streamOptions: const ChatCompletionStreamOptions(includeUsage: true),
+          streamOptions: preferStreaming
+              ? const ChatCompletionStreamOptions(includeUsage: true)
+              : null,
         );
     late StreamController<CreateChatCompletionStreamResponse> controller;
     StreamSubscription<CreateChatCompletionStreamResponse>? subscription;

@@ -225,7 +225,14 @@ class QueryChatController extends Notifier<QueryChatSession> {
   }
 
   void _cancelAll() {
-    _runs.keys.toList().forEach(cancel);
+    // Publication can finish before its history projection arrives. Those
+    // retained drafts still need clearing when access becomes unavailable.
+    <String>{
+      ..._runs.keys,
+      for (final entry in state.chats.entries)
+        if (entry.value.provisional != null) entry.key,
+    }.forEach(cancel);
+    _releaseIdleHistory();
   }
 
   void select(String? id) =>
