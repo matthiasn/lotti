@@ -142,6 +142,39 @@ const ChatCompletionToolChoiceOption entrySummaryToolChoice =
 EntrySummary parseEntrySummaryToolCall(
   List<ChatCompletionMessageToolCall> toolCalls,
 ) {
+  final args = _decodeEntrySummaryToolCall(toolCalls);
+
+  final oneLiner = _requireSummaryField(args, EntrySummaryToolArgs.oneLiner);
+  if (oneLiner.length > entrySummaryOneLinerMaxChars) {
+    throw EntrySummaryToolException(
+      '"${EntrySummaryToolArgs.oneLiner}" is ${oneLiner.length} chars, '
+      'over the $entrySummaryOneLinerMaxChars limit',
+    );
+  }
+
+  return EntrySummary(
+    oneLiner: oneLiner,
+    tldr: _requireSummaryField(args, EntrySummaryToolArgs.tldr),
+    summary: _requireSummaryField(args, EntrySummaryToolArgs.summary),
+  );
+}
+
+/// Recovers the full analysis when an image response's shorter tiers are invalid.
+///
+/// Only the first matching tool call is considered, just as for the strict
+/// parser. Its arguments must be valid JSON and its summary a non-empty string.
+/// Missing or invalid shorter tiers are ignored; audio summaries continue to
+/// use [parseEntrySummaryToolCall] to require all three tiers.
+String parseEntrySummaryToolBody(
+  List<ChatCompletionMessageToolCall> toolCalls,
+) => _requireSummaryField(
+  _decodeEntrySummaryToolCall(toolCalls),
+  EntrySummaryToolArgs.summary,
+);
+
+Map<String, dynamic> _decodeEntrySummaryToolCall(
+  List<ChatCompletionMessageToolCall> toolCalls,
+) {
   final call = toolCalls
       .where((toolCall) => toolCall.function.name == entrySummaryToolName)
       .firstOrNull;
@@ -165,33 +198,19 @@ EntrySummary parseEntrySummaryToolCall(
   if (decoded is! Map<String, dynamic>) {
     throw const EntrySummaryToolException('arguments are not a JSON object');
   }
-  final args = decoded;
+  return decoded;
+}
 
-  String requireField(String key) {
-    final value = args[key];
-    if (value is! String) {
-      throw EntrySummaryToolException(
-        value == null ? 'missing "$key"' : '"$key" is not a string',
-      );
-    }
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      throw EntrySummaryToolException('"$key" is empty');
-    }
-    return trimmed;
-  }
-
-  final oneLiner = requireField(EntrySummaryToolArgs.oneLiner);
-  if (oneLiner.length > entrySummaryOneLinerMaxChars) {
+String _requireSummaryField(Map<String, dynamic> args, String key) {
+  final value = args[key];
+  if (value is! String) {
     throw EntrySummaryToolException(
-      '"${EntrySummaryToolArgs.oneLiner}" is ${oneLiner.length} chars, '
-      'over the $entrySummaryOneLinerMaxChars limit',
+      value == null ? 'missing "$key"' : '"$key" is not a string',
     );
   }
-
-  return EntrySummary(
-    oneLiner: oneLiner,
-    tldr: requireField(EntrySummaryToolArgs.tldr),
-    summary: requireField(EntrySummaryToolArgs.summary),
-  );
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    throw EntrySummaryToolException('"$key" is empty');
+  }
+  return trimmed;
 }

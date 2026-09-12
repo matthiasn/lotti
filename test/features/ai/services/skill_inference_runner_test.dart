@@ -1815,36 +1815,38 @@ void main() {
           ).thenAnswer((_) => Stream.fromIterable(chunks));
         }
 
-        CreateChatCompletionStreamResponse tierChunk() =>
-            CreateChatCompletionStreamResponse(
-              id: 'resp-img',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
-                        index: 0,
-                        id: 'call-1',
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: entrySummaryToolName,
-                          arguments: jsonEncode({
-                            EntrySummaryToolArgs.oneLiner:
-                                'Dashboard shows the error rate flat at 0.2%.',
-                            EntrySummaryToolArgs.tldr:
-                                'The rollout has not moved the error rate.',
-                            EntrySummaryToolArgs.summary:
-                                '## Observed\n- Error rate 0.2%',
-                          }),
-                        ),
-                      ),
-                    ],
+        CreateChatCompletionStreamResponse tierChunk({
+          Map<String, Object?> overrides = const {},
+        }) => CreateChatCompletionStreamResponse(
+          id: 'resp-img',
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              delta: ChatCompletionStreamResponseDelta(
+                toolCalls: [
+                  ChatCompletionStreamMessageToolCallChunk(
+                    index: 0,
+                    id: 'call-1',
+                    function: ChatCompletionStreamMessageFunctionCall(
+                      name: entrySummaryToolName,
+                      arguments: jsonEncode({
+                        EntrySummaryToolArgs.oneLiner:
+                            'Dashboard shows the error rate flat at 0.2%.',
+                        EntrySummaryToolArgs.tldr:
+                            'The rollout has not moved the error rate.',
+                        EntrySummaryToolArgs.summary:
+                            '## Observed\n- Error rate 0.2%',
+                        ...overrides,
+                      }),
+                    ),
                   ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
-            );
+                ],
+              ),
+              index: 0,
+            ),
+          ],
+          object: 'chat.completion.chunk',
+          created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+        );
 
         setUp(() {
           when(
@@ -1911,6 +1913,62 @@ void main() {
             expect(data.type, AiResponseType.imageAnalysis);
           },
         );
+
+        for (final invalidTier in <String, Map<String, Object?>>{
+          'overlong one-liner': {
+            EntrySummaryToolArgs.oneLiner: 'x' * 149,
+          },
+          'empty TLDR': {EntrySummaryToolArgs.tldr: '   '},
+        }.entries) {
+          test(
+            'preserves image analysis with an ${invalidTier.key} '
+            'and no streamed prose',
+            () async {
+              final attribution = _registerInteractionCapture();
+              await stubImageOnDisk();
+              stubImageInference([tierChunk(overrides: invalidTier.value)]);
+              when(
+                () => mockAiInputRepo.createAiResponseEntry(
+                  id: any(named: 'id'),
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: any(named: 'linkedId'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).thenAnswer(
+                (invocation) async => makePersistedResponse(invocation),
+              );
+              stubLoggingEvent();
+
+              await runner.runImageAnalysis(
+                imageEntryId: 'img-1',
+                automationResult: resultWithVisionModel(
+                  model: toolCapableVisionModel(),
+                ),
+              );
+
+              final data =
+                  verify(
+                        () => mockAiInputRepo.createAiResponseEntry(
+                          id: any(named: 'id'),
+                          data: captureAny(named: 'data'),
+                          start: any(named: 'start'),
+                          linkedId: 'img-1',
+                          categoryId: any(named: 'categoryId'),
+                        ),
+                      ).captured.single
+                      as AiResponseData;
+              expect(data.response, '## Observed\n- Error rate 0.2%');
+              expect(data.oneLiner, isNull);
+              expect(data.tldr, isNull);
+              expect(data.type, AiResponseType.imageAnalysis);
+              expect(
+                _capturedEvents(attribution).single.responseDigest,
+                sha256.convert(utf8.encode(data.response)).toString(),
+              );
+            },
+          );
+        }
 
         test(
           'attaches the publishing tool and pins the model to it only when '

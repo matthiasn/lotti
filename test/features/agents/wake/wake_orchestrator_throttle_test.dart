@@ -545,6 +545,14 @@ void main() {
               return stateByAgent[agentId];
             });
             when(
+              () => generatedRepository.getAgentStatesWithPendingWakes(any()),
+            ).thenAnswer((invocation) async {
+              final ids = invocation.positionalArguments.single as List<String>;
+              return {
+                for (final id in ids) id: ?stateByAgent[id],
+              };
+            });
+            when(
               () => generatedRepository.upsertEntity(any()),
             ).thenAnswer((invocation) async {
               final entity =
