@@ -99,6 +99,7 @@ class SystemHealthState {
     this.isRunning = false,
     this.report,
     this.document,
+    this.savedReports = const [],
     this.failure,
   });
 
@@ -120,8 +121,11 @@ class SystemHealthState {
   /// and digest. Null after a restart even when [document] is restored.
   final SystemHealthReport? report;
 
-  /// What the page shows: the last run's report, or the newest saved one.
+  /// What the page shows: the last run's report, or a saved one.
   final SystemHealthReportDocument? document;
+
+  /// Every report saved on this device, newest first.
+  final List<SystemHealthReportDocument> savedReports;
 
   /// Redacted description of why the last run failed before producing a
   /// report (reading files, resolving flags). Model failures do not land
@@ -137,6 +141,7 @@ class SystemHealthState {
     bool? isRunning,
     SystemHealthReport? report,
     SystemHealthReportDocument? document,
+    List<SystemHealthReportDocument>? savedReports,
     String? failure,
     bool clearFailure = false,
   }) {
@@ -149,6 +154,7 @@ class SystemHealthState {
       isRunning: isRunning ?? this.isRunning,
       report: report ?? this.report,
       document: document ?? this.document,
+      savedReports: savedReports ?? this.savedReports,
       failure: clearFailure ? null : (failure ?? this.failure),
     );
   }
@@ -176,17 +182,24 @@ class SystemHealthController extends Notifier<SystemHealthState> {
 
   @override
   SystemHealthState build() {
-    unawaited(_restoreLatest());
+    unawaited(_loadSaved(restoreLatest: true));
     return const SystemHealthState();
   }
 
-  Future<void> _restoreLatest() async {
-    final document = await ref
-        .read(systemHealthReportStoreProvider)
-        .loadLatest();
-    if (document == null || !ref.mounted) return;
+  /// Lists the saved reports and, on first load, shows the newest one.
+  Future<void> _loadSaved({required bool restoreLatest}) async {
+    final saved = await ref.read(systemHealthReportStoreProvider).list();
+    if (!ref.mounted) return;
     // A run that finished first wins; the saved file is only a fallback.
-    if (state.document == null) state = state.copyWith(document: document);
+    final document = restoreLatest && state.document == null
+        ? saved.firstOrNull
+        : null;
+    state = state.copyWith(savedReports: saved, document: document);
+  }
+
+  /// Shows a previously saved report in place of the current one.
+  void showSaved(SystemHealthReportDocument document) {
+    state = state.copyWith(document: document);
   }
 
   void selectPreset(SystemHealthPreset preset) {
@@ -256,6 +269,7 @@ class SystemHealthController extends Notifier<SystemHealthState> {
         report: report,
         document: document,
       );
+      await _loadSaved(restoreLatest: false);
     } catch (error) {
       if (!ref.mounted) return;
       state = state.copyWith(

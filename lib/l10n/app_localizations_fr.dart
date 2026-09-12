@@ -14598,6 +14598,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String systemHealthAnalyzedWindow(String start, String end) {
+    return 'Analysé $start → $end';
+  }
+
+  @override
   String get systemHealthChooseModelTitle => 'Choisir un modèle';
 
   @override
@@ -14628,6 +14633,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get systemHealthFailedTitle => 'Échec de l\'analyse';
 
   @override
+  String systemHealthGeneratedAt(String time) {
+    return 'Généré $time';
+  }
+
+  @override
   String get systemHealthHideDigest => 'Masquer le résumé';
 
   @override
@@ -14655,6 +14665,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get systemHealthPresetLast7Days => '7 jours';
+
+  @override
+  String get systemHealthPreviousReportsDescription =>
+      'Chaque rapport est conservé sur cet appareil. Touche-en un pour l\'afficher à nouveau.';
+
+  @override
+  String get systemHealthPreviousReportsTitle => 'Rapports précédents';
 
   @override
   String get systemHealthRangeTitle => 'Période';

@@ -23945,6 +23945,12 @@ abstract class AppLocalizations {
   /// **'Step {step} of 3: {label}'**
   String syncWizardStepStatus(int step, String label);
 
+  /// No description provided for @systemHealthAnalyzedWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzed {start} → {end}'**
+  String systemHealthAnalyzedWindow(String start, String end);
+
   /// No description provided for @systemHealthChooseModelTitle.
   ///
   /// In en, this message translates to:
@@ -23999,6 +24005,12 @@ abstract class AppLocalizations {
   /// **'Analysis failed'**
   String get systemHealthFailedTitle;
 
+  /// No description provided for @systemHealthGeneratedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated {time}'**
+  String systemHealthGeneratedAt(String time);
+
   /// No description provided for @systemHealthHideDigest.
   ///
   /// In en, this message translates to:
@@ -24052,6 +24064,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'7 days'**
   String get systemHealthPresetLast7Days;
+
+  /// No description provided for @systemHealthPreviousReportsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Every report is kept on this device. Tap one to show it again.'**
+  String get systemHealthPreviousReportsDescription;
+
+  /// No description provided for @systemHealthPreviousReportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous reports'**
+  String get systemHealthPreviousReportsTitle;
 
   /// No description provided for @systemHealthRangeTitle.
   ///

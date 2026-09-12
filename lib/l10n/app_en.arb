@@ -8148,6 +8148,17 @@
       }
     }
   },
+  "systemHealthAnalyzedWindow": "Analyzed {start} → {end}",
+  "@systemHealthAnalyzedWindow": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "systemHealthChooseModelTitle": "Choose model",
   "systemHealthCopiedToast": "Report copied. Known personal-data patterns were redacted.",
   "systemHealthCopyButton": "Copy report",
@@ -8157,6 +8168,14 @@
   "systemHealthDomainsDescription": "The domains switched on here are the ones analyzed, the same setting that decides what gets logged. Slow queries are included when slow-query logging is on.",
   "systemHealthDomainsTitle": "Log domains",
   "systemHealthFailedTitle": "Analysis failed",
+  "systemHealthGeneratedAt": "Generated {time}",
+  "@systemHealthGeneratedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "systemHealthHideDigest": "Hide digest",
   "systemHealthModelDescription": "Writes the findings from the redacted digest. Proposes the thinking model of your default profile.",
   "systemHealthModelNone": "Digest only, no model",
@@ -8166,6 +8185,8 @@
   "systemHealthPresetLast14Days": "14 days",
   "systemHealthPresetLast24Hours": "24 h",
   "systemHealthPresetLast7Days": "7 days",
+  "systemHealthPreviousReportsDescription": "Every report is kept on this device. Tap one to show it again.",
+  "systemHealthPreviousReportsTitle": "Previous reports",
   "systemHealthRangeTitle": "Time range",
   "systemHealthReportTitle": "Report",
   "systemHealthRunButton": "Run analysis",

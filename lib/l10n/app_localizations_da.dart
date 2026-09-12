@@ -14355,6 +14355,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String systemHealthAnalyzedWindow(String start, String end) {
+    return 'Analyseret $start → $end';
+  }
+
+  @override
   String get systemHealthChooseModelTitle => 'Vælg model';
 
   @override
@@ -14385,6 +14390,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get systemHealthFailedTitle => 'Analysen mislykkedes';
 
   @override
+  String systemHealthGeneratedAt(String time) {
+    return 'Oprettet $time';
+  }
+
+  @override
   String get systemHealthHideDigest => 'Skjul sammendrag';
 
   @override
@@ -14412,6 +14422,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get systemHealthPresetLast7Days => '7 dage';
+
+  @override
+  String get systemHealthPreviousReportsDescription =>
+      'Hver rapport gemmes på denne enhed. Tryk på en for at vise den igen.';
+
+  @override
+  String get systemHealthPreviousReportsTitle => 'Tidligere rapporter';
 
   @override
   String get systemHealthRangeTitle => 'Tidsrum';

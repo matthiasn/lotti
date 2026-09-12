@@ -6,7 +6,10 @@ void main() {
 
   test('fromMarkdown splits a full report into summary and digest', () {
     const full =
-        '# Lotti system health report\n\n## Top findings\n\nText.\n\n'
+        '# Lotti system health report\n\n'
+        '- Generated: 2026-09-12 14:03\n'
+        '- Window: 2026-09-05 14:03 → 2026-09-12 14:03 (last 7 days)\n\n'
+        '## Top findings\n\nText.\n\n'
         '<details>\n<summary>Digest (redacted evidence)</summary>\n\n'
         '### Counts by domain\n\n| a | 1 |\n\n</details>\n';
     final document = SystemHealthReportDocument.fromMarkdown(
@@ -17,8 +20,11 @@ void main() {
     expect(document.markdown, full);
     expect(
       document.summaryMarkdown,
-      '# Lotti system health report\n\n## Top findings\n\nText.\n',
+      startsWith('# Lotti system health report'),
     );
+    expect(document.summaryMarkdown, endsWith('## Top findings\n\nText.\n'));
+    expect(document.windowStart, DateTime(2026, 9, 5, 14, 3));
+    expect(document.windowEnd, DateTime(2026, 9, 12, 14, 3));
     expect(document.digestMarkdown, '### Counts by domain\n\n| a | 1 |\n');
     expect(document.generatedAt, at);
     expect(document.path, '/x/report.md');
@@ -32,6 +38,8 @@ void main() {
     expect(document.summaryMarkdown, '# Report only\n');
     expect(document.digestMarkdown, isEmpty);
     expect(document.path, isNull);
+    expect(document.windowStart, isNull);
+    expect(document.windowEnd, isNull);
   });
 
   test('a truncated details block yields the remainder as digest', () {

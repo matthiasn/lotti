@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/system_health/domain/system_health_report.dart';
 import 'package:path/path.dart' as p;
@@ -27,33 +28,37 @@ class SystemHealthReportStore {
     return report.toDocument(path: file.path);
   }
 
-  /// The most recently generated saved report, or `null` when none exists
-  /// or the newest file cannot be read.
-  Future<SystemHealthReportDocument?> loadLatest() async {
-    if (!directory.existsSync()) return null;
-    File? newest;
-    DateTime? newestAt;
+  /// Every saved report, newest first. A file that cannot be read is left
+  /// out rather than failing the listing.
+  Future<List<SystemHealthReportDocument>> list() async {
+    if (!directory.existsSync()) return const [];
+    final files = <(DateTime, File)>[];
     await for (final entity in directory.list()) {
       if (entity is! File) continue;
       final at = _generatedAtFromName(p.basename(entity.path));
-      if (at == null) continue;
-      if (newestAt == null || at.isAfter(newestAt)) {
-        newest = entity;
-        newestAt = at;
+      if (at != null) files.add((at, entity));
+    }
+    files.sort((a, b) => b.$1.compareTo(a.$1));
+    final documents = <SystemHealthReportDocument>[];
+    for (final (at, file) in files) {
+      try {
+        documents.add(
+          SystemHealthReportDocument.fromMarkdown(
+            await file.readAsString(),
+            generatedAt: at,
+            path: file.path,
+          ),
+        );
+      } on FileSystemException {
+        continue;
       }
     }
-    if (newest == null || newestAt == null) return null;
-    try {
-      final markdown = await newest.readAsString();
-      return SystemHealthReportDocument.fromMarkdown(
-        markdown,
-        generatedAt: newestAt,
-        path: newest.path,
-      );
-    } on FileSystemException {
-      return null;
-    }
+    return documents;
   }
+
+  /// The most recently generated saved report, or `null` when none exists.
+  Future<SystemHealthReportDocument?> loadLatest() async =>
+      (await list()).firstOrNull;
 
   static final RegExp _fileName = RegExp(
     '^$filePrefix'

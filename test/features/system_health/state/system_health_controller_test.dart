@@ -294,7 +294,38 @@ void main() {
       expect(state.report, isNull);
       expect(state.document?.summaryMarkdown, contains('### Finding'));
       expect(state.document?.path, endsWith('.md'));
+      expect(state.document?.windowEnd, now);
+      expect(state.savedReports, hasLength(1));
     });
+
+    test(
+      'every run is listed, and a saved report can be shown again',
+      () async {
+        final container = makeContainer();
+        await run(container);
+        final firstPath = container
+            .read(systemHealthControllerProvider)
+            .document
+            ?.path;
+        await withClock(
+          Clock.fixed(now.add(const Duration(hours: 1))),
+          () => container.read(systemHealthControllerProvider.notifier).run(),
+        );
+        var state = container.read(systemHealthControllerProvider);
+        expect(state.savedReports, hasLength(2));
+        expect(state.savedReports.first.path, state.document?.path);
+        expect(state.savedReports.last.path, firstPath);
+
+        container
+            .read(systemHealthControllerProvider.notifier)
+            .showSaved(state.savedReports.last);
+        state = container.read(systemHealthControllerProvider);
+        expect(state.document?.path, firstPath);
+        expect(state.document?.windowEnd, now);
+        // The last run's report object is untouched by browsing.
+        expect(state.report?.generatedAt, now.add(const Duration(hours: 1)));
+      },
+    );
 
     test('a failed save still yields the report without a path', () async {
       final blocked = Directory(p.join(logs.path, 'system_health'));
