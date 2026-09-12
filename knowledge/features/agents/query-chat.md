@@ -93,9 +93,15 @@ keeps the next draft editable while Send remains disabled. Scope filters keep
 caption typography and a compact painted pill centered in the design-system
 touch-height target.
 Saved-text inspection shows the representation's edit/transcript date when
-available; legacy records fall back to their stored version date or content
-fingerprint. Surrounding text explicitly identifies itself as a bounded saved
-excerpt, and changed sources open through an “Open current entry” action.
+available; legacy records without a date show “Version date unavailable”.
+Every expanded passage identifies itself as a saved excerpt, even when the
+quote fills its entire stored text window. Copy excludes that disclosure.
+Changed sources open through an “Open current entry” action. Inline numbered
+citations expand, focus and scroll to the matching card in that answer after a
+fresh visibility check; duplicate citation numbers in other answers are unrelated.
+Evidence action labels include the source name and disclosure semantics expose
+expanded state. The chat switcher exposes its selected title and expanded state;
+archived-chat disclosure exposes its expanded state as well.
 
 Query dictation resolves the current category's `defaultProfileId` and that
 profile's transcription slot at submission time. It does not inherit the task
@@ -234,10 +240,13 @@ opening a recording. Incomplete coverage is visible beside the answer; the
 expanded disclosure lists scope counts and the excluded-category boundary.
 
 Recalled conclusions expand into their visible saved text and links to visible
-origin chats. Retained conclusions from deleted chats have no origin link. If
-no recalled conclusion is still available, the historical recall line remains
-plain text without an empty disclosure. Each expansion and selectable text has
-its own PageStorage key so saved booleans and scroll offsets cannot collide.
+origin chats. Each accessible conclusion shows its saved timestamp. An absent
+origin link makes no claim about deletion or privacy. The disclosure describes
+past use by this answer; when no recalled conclusion remains accessible, it is
+omitted entirely, without exposing hidden content or an empty disclosure.
+Each expansion and selectable text has its own PageStorage key so saved booleans
+and scroll offsets cannot collide. Evidence cards use stable storage identities
+separate from their navigation keys to retain disclosure across chat switches.
 
 Unexpected failures are logged under `chat/query.send` with their stage,
 exception type and a numeric Melious HTTP status when available. Exception
@@ -439,7 +448,10 @@ Audio recovery stays beside the affected quote or answer. Preparation offers
 Cancel; playback offers Stop audio. A missing recording offers Open recording
 and Retry audio; an unmatched quote or oversized upload offers Open recording
 without implying another identical request will help. Unsupported timing setup
-offers AI Settings and Retry audio together. Transient playback and speech
+offers a short explanation beside AI Settings and Retry audio, with detailed
+provider requirements behind Setup details. Playback identifies the fixed
+excerpt interval; speech identifies that the answer is being read aloud. These
+are activity labels, not elapsed-time progress. Transient playback and speech
 failures offer Retry audio. Opening a recording uses the pane's fresh source
 access check. The upload notice remains visible before timing preparation,
 including retries that can upload audio; opening an entry does not upload it.

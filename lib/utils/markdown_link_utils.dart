@@ -59,6 +59,7 @@ Future<void> handleMarkdownLinkTap(String url, String title) async {
 
 /// Builds a styled markdown link widget with underline and pointer cursor.
 ///
+/// [onTap] can route owner-local links without launching a URL.
 /// The [linkColor] defaults to the theme's primary color when not specified.
 Widget buildMarkdownLink(
   BuildContext context,
@@ -66,12 +67,13 @@ Widget buildMarkdownLink(
   String url,
   TextStyle style, {
   Color? linkColor,
+  VoidCallback? onTap,
 }) {
   final color = linkColor ?? Theme.of(context).colorScheme.primary;
   return Semantics(
     link: true,
     child: InkWell(
-      onTap: () => handleMarkdownLinkTap(url, ''),
+      onTap: onTap ?? () => handleMarkdownLinkTap(url, ''),
       mouseCursor: SystemMouseCursors.click,
       child: Text.rich(
         TextSpan(

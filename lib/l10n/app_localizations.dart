@@ -18487,6 +18487,12 @@ abstract class AppLocalizations {
   /// **'Open recording'**
   String get queryAudioOpenRecording;
 
+  /// The fixed excerpt interval being played, not elapsed playback progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing {start}–{end}'**
+  String queryAudioPlaying(String start, String end);
+
   /// No description provided for @queryAudioPrepare.
   ///
   /// In en, this message translates to:
@@ -18505,11 +18511,29 @@ abstract class AppLocalizations {
   /// **'Read answer aloud'**
   String get queryAudioReadAloud;
 
+  /// No description provided for @queryAudioReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading answer aloud'**
+  String get queryAudioReading;
+
   /// No description provided for @queryAudioRetry.
   ///
   /// In en, this message translates to:
   /// **'Retry audio'**
   String get queryAudioRetry;
+
+  /// No description provided for @queryAudioSetupDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup details'**
+  String get queryAudioSetupDetails;
+
+  /// No description provided for @queryAudioSetupRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio excerpts need a compatible transcription model.'**
+  String get queryAudioSetupRequired;
 
   /// No description provided for @queryAudioStale.
   ///
@@ -18832,7 +18856,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryRecall.
   ///
   /// In en, this message translates to:
-  /// **'Uses relevant conclusions from earlier chats.'**
+  /// **'This answer used saved conclusions.'**
   String get queryRecall;
 
   /// No description provided for @queryRecordings.
@@ -18840,6 +18864,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recordings'**
   String get queryRecordings;
+
+  /// No description provided for @queryRecordingTranscript.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording transcript'**
+  String get queryRecordingTranscript;
 
   /// No description provided for @queryRenameChat.
   ///
@@ -18853,6 +18883,12 @@ abstract class AppLocalizations {
   /// **'Restore chat'**
   String get queryRestoreChat;
 
+  /// Creation time of an accessible saved conclusion; makes no assertion about its origin chat availability.
+  ///
+  /// In en, this message translates to:
+  /// **'Conclusion saved {date}'**
+  String querySavedConclusion(String date);
+
   /// No description provided for @querySavedQuote.
   ///
   /// In en, this message translates to:
@@ -18865,11 +18901,23 @@ abstract class AppLocalizations {
   /// **'Saved version: {version}'**
   String querySavedVersion(String version);
 
+  /// No description provided for @querySavedVersionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Version date unavailable'**
+  String get querySavedVersionUnavailable;
+
   /// No description provided for @querySearching.
   ///
   /// In en, this message translates to:
   /// **'Searching linked notes and recordings…'**
   String get querySearching;
+
+  /// Accessible action label identifying its evidence source or selected chat.
+  ///
+  /// In en, this message translates to:
+  /// **'{action}: {source}'**
+  String querySourceAction(String action, String source);
 
   /// No description provided for @querySourceChanged.
   ///
@@ -18892,7 +18940,7 @@ abstract class AppLocalizations {
   /// No description provided for @querySurroundingLimit.
   ///
   /// In en, this message translates to:
-  /// **'Surrounding text is a saved excerpt. Open the entry for the full discussion.'**
+  /// **'This is the saved excerpt, which may not include the full discussion.'**
   String get querySurroundingLimit;
 
   /// No description provided for @querySurroundingText.
@@ -18904,7 +18952,7 @@ abstract class AppLocalizations {
   /// No description provided for @queryTranscribing.
   ///
   /// In en, this message translates to:
-  /// **'Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.'**
+  /// **'Press Send to submit text. Audio may already be with your provider.'**
   String get queryTranscribing;
 
   /// No description provided for @queryUnavailable.

@@ -10975,6 +10975,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryAudioOpenRecording => 'Öppna inspelning';
 
   @override
+  String queryAudioPlaying(String start, String end) {
+    return 'Spelar $start–$end';
+  }
+
+  @override
   String get queryAudioPrepare => 'Förbered ljudutdrag';
 
   @override
@@ -10984,7 +10989,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryAudioReadAloud => 'Läs upp svaret';
 
   @override
+  String get queryAudioReading => 'Läser upp svaret';
+
+  @override
   String get queryAudioRetry => 'Försök med ljud igen';
+
+  @override
+  String get queryAudioSetupDetails => 'Inställningsdetaljer';
+
+  @override
+  String get queryAudioSetupRequired =>
+      'Ljudutdrag kräver en kompatibel transkriptionsmodell.';
 
   @override
   String get queryAudioStale =>
@@ -11176,17 +11191,24 @@ class AppLocalizationsSv extends AppLocalizations {
       'Söker endast i den här uppgiften och dess direkt länkade inlägg utan kategori.';
 
   @override
-  String get queryRecall =>
-      'Använder relevanta slutsatser från tidigare chattar.';
+  String get queryRecall => 'Det här svaret använde sparade slutsatser.';
 
   @override
   String get queryRecordings => 'Inspelningar';
+
+  @override
+  String get queryRecordingTranscript => 'Inspelningens transkription';
 
   @override
   String get queryRenameChat => 'Byt namn på chatten';
 
   @override
   String get queryRestoreChat => 'Återställ chatt';
+
+  @override
+  String querySavedConclusion(String date) {
+    return 'Slutsats sparad $date';
+  }
 
   @override
   String get querySavedQuote =>
@@ -11198,7 +11220,15 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get querySavedVersionUnavailable => 'Versionsdatum saknas';
+
+  @override
   String get querySearching => 'Söker i länkade anteckningar och inspelningar…';
+
+  @override
+  String querySourceAction(String action, String source) {
+    return '$action: $source';
+  }
 
   @override
   String get querySourceChanged => 'Källan har ändrats';
@@ -11211,14 +11241,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get querySurroundingLimit =>
-      'Den omgivande texten är ett sparat utdrag. Öppna posten för hela diskussionen.';
+      'Det här är det sparade utdraget, som kanske inte innehåller hela diskussionen.';
 
   @override
   String get querySurroundingText => 'Visa omgivande text';
 
   @override
   String get queryTranscribing =>
-      'Transkriberar… din fråga skickas först när du trycker på Skicka. Ljudet kan redan ha skickats till din transkriptionsleverantör.';
+      'Tryck på Skicka för att skicka texten. Ljudet kan redan finnas hos din leverantör.';
 
   @override
   String get queryUnavailable =>

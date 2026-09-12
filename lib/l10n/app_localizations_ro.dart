@@ -11171,6 +11171,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryAudioOpenRecording => 'Deschideți înregistrarea';
 
   @override
+  String queryAudioPlaying(String start, String end) {
+    return 'Se redă $start–$end';
+  }
+
+  @override
   String get queryAudioPrepare => 'Pregătiți fragmentul audio';
 
   @override
@@ -11180,7 +11185,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get queryAudioReadAloud => 'Ascultați răspunsul';
 
   @override
+  String get queryAudioReading => 'Se citește răspunsul cu voce tare';
+
+  @override
   String get queryAudioRetry => 'Reîncercați redarea audio';
+
+  @override
+  String get queryAudioSetupDetails => 'Detalii de configurare';
+
+  @override
+  String get queryAudioSetupRequired =>
+      'Fragmentele audio necesită un model de transcriere compatibil.';
 
   @override
   String get queryAudioStale =>
@@ -11377,17 +11392,24 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se caută doar în această sarcină și în înregistrările fără categorie legate direct de ea.';
 
   @override
-  String get queryRecall =>
-      'Sunt utilizate concluzii relevante din conversații anterioare.';
+  String get queryRecall => 'Acest răspuns a folosit concluzii salvate.';
 
   @override
   String get queryRecordings => 'Înregistrări audio';
+
+  @override
+  String get queryRecordingTranscript => 'Transcrierea înregistrării';
 
   @override
   String get queryRenameChat => 'Redenumiți conversația';
 
   @override
   String get queryRestoreChat => 'Restabiliți conversația';
+
+  @override
+  String querySavedConclusion(String date) {
+    return 'Concluzie salvată la $date';
+  }
 
   @override
   String get querySavedQuote =>
@@ -11399,8 +11421,17 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get querySavedVersionUnavailable =>
+      'Data versiunii nu este disponibilă';
+
+  @override
   String get querySearching =>
       'Se caută în notele și înregistrările audio legate…';
+
+  @override
+  String querySourceAction(String action, String source) {
+    return '$action: $source';
+  }
 
   @override
   String get querySourceChanged => 'Sursa a fost modificată';
@@ -11413,14 +11444,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get querySurroundingLimit =>
-      'Textul din jur este un fragment salvat. Deschideți înregistrarea pentru întreaga discuție.';
+      'Acesta este fragmentul salvat, care poate să nu includă întreaga discuție.';
 
   @override
   String get querySurroundingText => 'Afișați textul din jur';
 
   @override
   String get queryTranscribing =>
-      'Se transcrie… întrebarea este trimisă doar când apăsați Trimiteți. Este posibil ca sunetul să fi fost deja trimis furnizorului dumneavoastră de transcriere.';
+      'Apăsați Trimite pentru a trimite textul. Furnizorul dvs. poate avea deja sunetul.';
 
   @override
   String get queryUnavailable =>

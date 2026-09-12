@@ -10965,6 +10965,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryAudioOpenRecording => 'Åbn optagelse';
 
   @override
+  String queryAudioPlaying(String start, String end) {
+    return 'Afspiller $start–$end';
+  }
+
+  @override
   String get queryAudioPrepare => 'Forbered lyduddrag';
 
   @override
@@ -10974,7 +10979,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryAudioReadAloud => 'Læs svaret højt';
 
   @override
+  String get queryAudioReading => 'Læser svaret højt';
+
+  @override
   String get queryAudioRetry => 'Prøv lyd igen';
+
+  @override
+  String get queryAudioSetupDetails => 'Opsætningsdetaljer';
+
+  @override
+  String get queryAudioSetupRequired =>
+      'Lyduddrag kræver en kompatibel transskriptionsmodel.';
 
   @override
   String get queryAudioStale =>
@@ -11168,17 +11183,24 @@ class AppLocalizationsDa extends AppLocalizations {
       'Søger kun i denne opgave og dens direkte tilknyttede indlæg uden kategori.';
 
   @override
-  String get queryRecall =>
-      'Bruger relevante konklusioner fra tidligere chats.';
+  String get queryRecall => 'Dette svar brugte gemte konklusioner.';
 
   @override
   String get queryRecordings => 'Optagelser';
+
+  @override
+  String get queryRecordingTranscript => 'Optagelsens transskription';
 
   @override
   String get queryRenameChat => 'Omdøb chat';
 
   @override
   String get queryRestoreChat => 'Gendan chat';
+
+  @override
+  String querySavedConclusion(String date) {
+    return 'Konklusion gemt $date';
+  }
 
   @override
   String get querySavedQuote =>
@@ -11190,7 +11212,15 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get querySavedVersionUnavailable => 'Versionsdato er ikke tilgængelig';
+
+  @override
   String get querySearching => 'Søger i tilknyttede noter og optagelser…';
+
+  @override
+  String querySourceAction(String action, String source) {
+    return '$action: $source';
+  }
 
   @override
   String get querySourceChanged => 'Kilden er ændret';
@@ -11203,14 +11233,14 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get querySurroundingLimit =>
-      'Den omgivende tekst er et gemt uddrag. Åbn posten for at se hele diskussionen.';
+      'Dette er det gemte uddrag, som muligvis ikke indeholder hele diskussionen.';
 
   @override
   String get querySurroundingText => 'Vis omgivende tekst';
 
   @override
   String get queryTranscribing =>
-      'Transskriberer… dit spørgsmål sendes først, når du trykker på Send. Lyden kan allerede være sendt til din transskriptionsudbyder.';
+      'Tryk Send for at sende teksten. Lyden kan allerede være hos din udbyder.';
 
   @override
   String get queryUnavailable =>

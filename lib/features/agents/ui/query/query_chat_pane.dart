@@ -36,8 +36,39 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// Turns bare answer citations into local links without changing Markdown's
+/// code spans/blocks, existing links, or numeric reference definitions.
+String _linkEvidenceCitations(String text, int evidenceCount) {
+  final referenceLabels = RegExp(
+    r'^ {0,3}\[(\d+)\]:',
+    multiLine: true,
+  ).allMatches(text).map((match) => match[1]).toSet();
+  // The first alternatives consume protected Markdown before the final
+  // numeric-citation alternative can see anything inside it. An unclosed
+  // fence protects the remainder of the answer as code, too.
+  final tokens = RegExp(
+    r'(^[ \t]{0,3}(`{3,}|~{3,})[^\n]*(?:\n|$)[\s\S]*?'
+    r'(?:^[ \t]{0,3}\2[`~]*[ \t]*(?=\n|$)|(?![\s\S])))'
+    r'|(`+)[\s\S]*?\3'
+    r'|^(?: {4}|\t)[^\n]*'
+    r'|\\.'
+    r'|!?\[[^\]\n]*\](?:\([^\)\n]*\)|[ \t]*(?:\n[ \t]*)?\[[^\]\n]*\])'
+    r'|\[(\d+)\](?!:)',
+    multiLine: true,
+  );
+  return text.replaceAllMapped(tokens, (match) {
+    final label = match[4];
+    if (label == null || referenceLabels.contains(label)) return match[0]!;
+    final number = int.tryParse(label);
+    return number != null && number > 0 && number <= evidenceCount
+        ? '[$label](#query-evidence-$label)'
+        : '($label)';
+  });
+}
 
 /// The same pane is a desktop detail replacement and a mobile full page.
 /// Opening evidence stays inside it, preserving the chat's draft and scroll.
@@ -51,6 +82,45 @@ class QueryChatPane extends ConsumerStatefulWidget {
 
 class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
   final _storage = PageStorageBucket();
+  final _evidenceKeys = <(String, int), GlobalKey<QueryEvidenceCardState>>{};
+
+  Future<void> _openCitation(
+    AgentChatMessage message,
+    String url,
+    String title,
+    QueryChatHistory? chat,
+  ) async {
+    final match = RegExp(r'^#query-evidence-(\d+)$').firstMatch(url);
+    if (match == null) {
+      await handleMarkdownLinkTap(url, title);
+      return;
+    }
+    final number = int.tryParse(match[1]!);
+    if (number == null) return;
+    final index = number - 1;
+    final answer = chat?.events
+        .where((e) => e.id == message.id)
+        .firstOrNull
+        ?.data;
+    if (answer is! QueryChatAnswer ||
+        index < 0 ||
+        index >= answer.evidence.length) {
+      return;
+    }
+    final source = answer.evidence[index].source;
+    final fresh = await ref.read(querySourceAccessProvider).load([source.id]);
+    if (!mounted) return;
+    final current = QueryAccessSnapshot(
+      showPrivate: ref.read(configFlagProvider('private')).value == true,
+      categories: fresh.categories,
+      entries: fresh.entries,
+      lockdown: ref.read(lockdownControllerProvider),
+    );
+    if (current.allowsReference(source)) {
+      _evidenceKeys[(message.id, index)]?.currentState?.reveal();
+    }
+  }
+
   String? _sourceId;
   String? _readThrough;
   String? _dictatedChat;
@@ -366,19 +436,22 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
             text: text,
             createdAt: event.createdAt,
           )
-        else if (event.data case QueryChatAnswer(:final text))
+        else if (event.data case QueryChatAnswer(:final text, :final evidence))
           AgentChatMessage(
             id: event.id,
             role: AgentChatRole.agent,
-            // GPT Markdown treats bare [n] as a web citation. These numbers
-            // refer to our evidence cards, so keep them as ordinary text.
-            text: text.replaceAllMapped(
-              RegExp(r'\[(\d+)\]'),
-              (match) => '(${match[1]})',
-            ),
+            // Route answer-local citations to their saved evidence cards.
+            // Existing Markdown links retain their original destination.
+            text: _linkEvidenceCitations(text, evidence.length),
             createdAt: event.createdAt,
           ),
     ];
+    final visibleEvidenceKeys = {
+      for (final event in chat?.events ?? const <AgentQueryChatEventEntity>[])
+        if (event.data case QueryChatAnswer(:final evidence))
+          for (final (index, _) in evidence.indexed) (event.id, index),
+    };
+    _evidenceKeys.removeWhere((key, _) => !visibleEvidenceKeys.contains(key));
     final memories = data.projection.memories
         .where((e) => access.allowsEvent(e.data))
         .length;
@@ -553,6 +626,9 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                         _guard(() => _send(controller, chat, local)),
                       ),
                       onRetry: () {},
+                      onLinkTap: (message, url, title) => unawaited(
+                        _guard(() => _openCitation(message, url, title, chat)),
+                      ),
                       scrollOnReplies: false,
                       groupAttachmentsWithReply: true,
                       allowDraftWhileSending: true,
@@ -680,7 +756,11 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                               for (final (index, evidence)
                                   in answer.evidence.indexed)
                                 QueryEvidenceCard(
-                                  key: PageStorageKey('${message.id}:$index'),
+                                  key: _evidenceKeys.putIfAbsent(
+                                    (message.id, index),
+                                    GlobalKey<QueryEvidenceCardState>.new,
+                                  ),
+                                  storageId: '${message.id}:$index',
                                   evidence: evidence,
                                   number: index + 1,
                                   access: access,
@@ -1060,10 +1140,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
           access.allowsEvent(event.data),
     );
     if (recalled.isEmpty) {
-      return Text(
-        context.messages.queryRecall,
-        style: context.designTokens.typography.styles.others.caption,
-      );
+      return const SizedBox.shrink();
     }
     return ExpansionTile(
       key: PageStorageKey('recall:${answer.questionId}'),
@@ -1079,6 +1156,15 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    context.messages.querySavedConclusion(
+                      DateFormat.yMMMd(
+                        Localizations.localeOf(context).toString(),
+                      ).add_Hm().format(event.createdAt),
+                    ),
+                    style:
+                        context.designTokens.typography.styles.others.caption,
+                  ),
                   SelectableText(
                     key: PageStorageKey('memory-text:${event.id}'),
                     text,
@@ -1205,12 +1291,20 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
               SizedBox(width: context.designTokens.spacing.step2),
             ],
             Flexible(
-              child: DesignSystemButton(
-                label: selected?.title ?? messages.queryNewChat,
-                semanticsLabel: messages.queryChats,
-                trailingIcon: LottiIcons.chevronDown,
-                onPressed: toggle,
-                variant: DesignSystemButtonVariant.outlined,
+              child: MergeSemantics(
+                child: Semantics(
+                  expanded: isOpen,
+                  child: DesignSystemButton(
+                    label: selected?.title ?? messages.queryNewChat,
+                    semanticsLabel: messages.querySourceAction(
+                      messages.queryChats,
+                      selected?.title ?? messages.queryNewChat,
+                    ),
+                    trailingIcon: LottiIcons.chevronDown,
+                    onPressed: toggle,
+                    variant: DesignSystemButtonVariant.outlined,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1242,15 +1336,20 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   session.local(chat.id),
                   selected?.id,
                 ),
-              DesignSystemListItem(
-                title:
-                    '${messages.queryArchivedChats} · ${chats.where((c) => c.archived).length}',
-                leading: const Icon(LottiIcons.archive, size: IconSizes.s),
-                trailing: Icon(
-                  _showArchived ? LottiIcons.collapse : LottiIcons.expand,
-                  size: IconSizes.s,
+              MergeSemantics(
+                child: Semantics(
+                  expanded: _showArchived,
+                  child: DesignSystemListItem(
+                    title:
+                        '${messages.queryArchivedChats} · ${chats.where((c) => c.archived).length}',
+                    leading: const Icon(LottiIcons.archive, size: IconSizes.s),
+                    trailing: Icon(
+                      _showArchived ? LottiIcons.collapse : LottiIcons.expand,
+                      size: IconSizes.s,
+                    ),
+                    onTap: () => setState(() => _showArchived = !_showArchived),
+                  ),
                 ),
-                onTap: () => setState(() => _showArchived = !_showArchived),
               ),
               if (_showArchived)
                 for (final chat in chats.where((c) => c.archived))

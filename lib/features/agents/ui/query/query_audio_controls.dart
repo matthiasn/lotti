@@ -33,7 +33,11 @@ class QueryAnswerSpeechButton extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (active) _AudioStatus(status: audio.status),
+        if (active)
+          _AudioStatus(
+            status: audio.status,
+            playingLabel: context.messages.queryAudioReading,
+          ),
         DesignSystemButton(
           label: busy
               ? audio.status == QueryAudioStatus.preparing
@@ -120,7 +124,16 @@ class QueryEvidenceAudioControls extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (active) _AudioStatus(status: status),
+        if (active)
+          _AudioStatus(
+            status: status,
+            playingLabel: range == null
+                ? null
+                : messages.queryAudioPlaying(
+                    _timestamp(range.start),
+                    _timestamp(range.end),
+                  ),
+          ),
         Wrap(
           spacing: tokens.spacing.step2,
           children: [
@@ -178,15 +191,17 @@ class QueryEvidenceAudioControls extends ConsumerWidget {
 }
 
 class _AudioStatus extends StatelessWidget {
-  const _AudioStatus({required this.status});
+  const _AudioStatus({required this.status, this.playingLabel});
   final QueryAudioStatus status;
+  final String? playingLabel;
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final label = switch (status) {
       QueryAudioStatus.preparing => messages.queryAudioPreparing,
       QueryAudioStatus.unmatched => messages.queryAudioNoMatch,
-      QueryAudioStatus.unavailable => messages.queryAudioTimingUnavailable,
+      QueryAudioStatus.unavailable => messages.queryAudioSetupRequired,
+      QueryAudioStatus.playing => playingLabel,
       QueryAudioStatus.stale => messages.queryAudioStale,
       QueryAudioStatus.missingFile => messages.queryAudioMissingFile,
       QueryAudioStatus.tooLarge => messages.queryAudioTooLarge,
@@ -197,12 +212,44 @@ class _AudioStatus extends StatelessWidget {
         ? const SizedBox.shrink()
         : Semantics(
             liveRegion: true,
-            child: Text(
-              label,
-              style: context.designTokens.typography.styles.others.caption
-                  .copyWith(
-                    color: context.designTokens.colors.text.mediumEmphasis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: context.designTokens.typography.styles.others.caption
+                      .copyWith(
+                        color: context.designTokens.colors.text.mediumEmphasis,
+                      ),
+                ),
+                if (status == QueryAudioStatus.unavailable)
+                  Material(
+                    type: MaterialType.transparency,
+                    child: ExpansionTile(
+                      title: Text(
+                        messages.queryAudioSetupDetails,
+                        style: context
+                            .designTokens
+                            .typography
+                            .styles
+                            .others
+                            .caption,
+                      ),
+                      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          messages.queryAudioTimingUnavailable,
+                          style: context
+                              .designTokens
+                              .typography
+                              .styles
+                              .others
+                              .caption,
+                        ),
+                      ],
+                    ),
                   ),
+              ],
             ),
           );
   }

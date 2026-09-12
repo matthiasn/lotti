@@ -15,6 +15,7 @@ class AgentMarkdownView extends StatelessWidget {
     this.style,
     this.maxLines,
     this.overflow,
+    this.onLinkTap,
     super.key,
   });
 
@@ -31,6 +32,9 @@ class AgentMarkdownView extends StatelessWidget {
 
   /// Overflow treatment used when [maxLines] clamps the rendered Markdown.
   final TextOverflow? overflow;
+
+  /// Optional owner routing for links such as answer-local evidence citations.
+  final void Function(String url, String title)? onLinkTap;
 
   @override
   Widget build(BuildContext context) {
@@ -89,8 +93,16 @@ class AgentMarkdownView extends StatelessWidget {
             style: bodyStyle,
             maxLines: maxLines,
             overflow: overflow,
-            onLinkTap: handleMarkdownLinkTap,
-            linkBuilder: buildMarkdownLink,
+            onLinkTap: onLinkTap ?? handleMarkdownLinkTap,
+            linkBuilder: (context, text, url, style) => buildMarkdownLink(
+              context,
+              text,
+              url,
+              style,
+              onTap: onLinkTap == null
+                  ? null
+                  : () => onLinkTap!(url, text.toPlainText()),
+            ),
           ),
         ),
       ),
