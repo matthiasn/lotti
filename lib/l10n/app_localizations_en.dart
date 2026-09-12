@@ -10870,6 +10870,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryArchiveChat => 'Archive chat';
 
   @override
+  String get queryArchiveConfirmation =>
+      'Chat archived. Its conclusions remain available.';
+
+  @override
   String get queryArchivedChats => 'Archived chats';
 
   @override
@@ -10904,6 +10908,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get queryAudioNoMatch =>
       'This quote could not be matched unambiguously to the recording. You can still open the full entry.';
+
+  @override
+  String get queryAudioOpenRecording => 'Open recording';
+
+  @override
+  String get queryAudioRetry => 'Retry audio';
 
   @override
   String get queryAudioPrepare => 'Prepare audio excerpt';
@@ -10954,11 +10964,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryCoverage => 'What was searched';
 
   @override
+  String get queryCoverageCategory => 'This category';
+
+  @override
+  String get queryCoverageExcluded => 'Other categories were not searched.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'No searchable text when this answer was written. Open the recording to inspect it.';
+
+  @override
+  String get queryCoverageWider => 'Other entries in this category';
+
+  @override
   String get queryDeleteChat => 'Delete chat';
 
   @override
   String get queryDeleteExplanation =>
       'Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.';
+
+  @override
+  String get queryDeleteForget => 'Delete and forget conclusions';
+
+  @override
+  String get queryDeleteKeep => 'Delete and keep conclusions';
 
   @override
   String get queryDictated =>
@@ -11005,8 +11034,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryHomeOnly => 'Home scope only';
 
   @override
+  String get queryHomeScope => 'Home scope';
+
+  @override
   String get queryIncomplete =>
       'Coverage is incomplete. Missing evidence does not mean the discussion never happened.';
+
+  @override
+  String get queryIncompleteShort => 'Some sources could not be checked.';
 
   @override
   String get queryInferenceUnavailable =>
@@ -11050,6 +11085,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryNotes => 'Notes';
 
   @override
+  String get queryOpenCurrentEntry => 'Open current entry';
+
+  @override
   String get queryOpenEntry => 'Open entry';
 
   @override
@@ -11067,6 +11105,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String queryReachCategoryOnly(String category) {
     return 'Searches within $category.';
   }
+
+  @override
+  String get queryReachHome =>
+      'Searches only this scope and its linked entries.';
 
   @override
   String get queryReachUncategorized =>
@@ -11089,6 +11131,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'This saved quote reflects the source when the answer was written.';
 
   @override
+  String querySavedVersion(String version) {
+    return 'Saved version: $version';
+  }
+
+  @override
   String get querySearching => 'Searching linked notes and recordings…';
 
   @override
@@ -11099,6 +11146,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Source moved to another category';
+
+  @override
+  String get querySurroundingLimit =>
+      'Surrounding text is a saved excerpt. Open the entry for the full discussion.';
 
   @override
   String get querySurroundingText => 'Show surrounding text';
@@ -15246,45 +15297,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get queryDeleteKeep => 'Delete and keep conclusions';
-
-  @override
-  String get queryDeleteForget => 'Delete and forget conclusions';
-
-  @override
-  String get queryReachHome =>
-      'Searches only this scope and its linked entries.';
-
-  @override
-  String get queryHomeScope => 'Home scope';
-
-  @override
-  String get queryCoverageWider => 'Other entries in this category';
-
-  @override
-  String get queryCoverageExcluded => 'Other categories were not searched.';
-
-  @override
-  String get queryCoverageUnreadable =>
-      'No searchable text when this answer was written. Open the recording to inspect it.';
-
-  @override
-  String querySavedVersion(String version) {
-    return 'Saved version: $version';
-  }
-
-  @override
-  String get querySurroundingLimit =>
-      'Surrounding text is a saved excerpt. Open the entry for the full discussion.';
-
-  @override
-  String get queryOpenCurrentEntry => 'Open current entry';
-
-  @override
-  String get queryArchiveConfirmation =>
-      'Chat archived. Its conclusions remain available.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

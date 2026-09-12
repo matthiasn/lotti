@@ -715,6 +715,8 @@ in a one-off literal because it looked close enough is exactly how design system
 turn into decorative fiction.
 
 `DesignSystemChipSize.compactPillTouch` retains caption typography and pill
-radii while using the touch chip's minimum height (`spacing.step9`). Scoped
-query filters use it so a compact label does not imply a small interaction
-area; ordinary `compactPill` metrics remain unchanged.
+radii while using the touch chip's minimum interaction height (`spacing.step9`).
+Its painted pill stays at content height and is centered inside the full target;
+tapping the transparent outer target still activates it. Scoped query filters
+use this variant. Hover/selection retain the shared palette, and ordinary
+`compactPill` metrics remain unchanged.

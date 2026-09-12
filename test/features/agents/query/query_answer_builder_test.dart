@@ -34,6 +34,93 @@ void main() {
     unread: false,
   );
 
+  for (final questionPresent in [true, false]) {
+    test(
+      'old-question retry excludes later turns and memories (present=$questionPresent)',
+      () async {
+        final bench = QueryTestBench()..add('task');
+        final earlier = question.copyWith(
+          id: 'earlier',
+          createdAt: date.subtract(const Duration(minutes: 1)),
+          data: const QueryChatEventData.question(
+            text: 'Earlier feeder context',
+          ),
+        );
+        final later = question.copyWith(
+          id: 'later',
+          createdAt: date.add(const Duration(minutes: 1)),
+          data: const QueryChatEventData.question(
+            text: 'Future unrelated topic',
+          ),
+        );
+        final laterMemory = later.copyWith(
+          id: 'later-memory',
+          data: const QueryChatEventData.memory(
+            questionId: 'later',
+            text: 'Future unrelated conclusion',
+          ),
+        );
+        final retryChat = QueryChatHistory(
+          id: chat.id,
+          scope: chat.scope,
+          title: chat.title,
+          private: false,
+          archived: false,
+          lastActivity: later.createdAt,
+          events: [earlier, if (questionPresent) question, later, laterMemory],
+          unread: false,
+        );
+        final prompts = <Map<String, dynamic>>[];
+        final result =
+            await QueryAnswerBuilder(
+              crawler: bench.crawler,
+              access: bench.crawler.access,
+              inference: QueryTextInference(
+                generate: (system, prompt) {
+                  final input = jsonDecode(prompt) as Map<String, dynamic>;
+                  prompts.add(input);
+                  return Stream.value(
+                    jsonEncode(
+                      system.contains('Rephrase')
+                          ? {
+                              'question': 'What was decided?',
+                              'terms': <String>[],
+                            }
+                          : system.contains('Extract passages')
+                          ? {
+                              'passages': [
+                                {'quote': input['source']},
+                              ],
+                            }
+                          : {
+                              'answer': 'The original feeder decision [1].',
+                              'conclusion': 'The original feeder decision.',
+                            },
+                    ),
+                  );
+                },
+              ),
+            ).build(
+              chat: retryChat,
+              question: question,
+              memories: [laterMemory],
+              cancellation: QueryCancellation(),
+              onProgress: (_, {required expanded}) {},
+            );
+        expect(prompts.first['conversation'], [
+          if (questionPresent)
+            {'role': 'user', 'text': 'Earlier feeder context'},
+          {'role': 'user', 'text': 'What was decided?'},
+        ]);
+        expect(jsonEncode(prompts), isNot(contains('Future unrelated')));
+        expect(prompts, hasLength(3));
+        expect(result.answer.recalledMemoryIds, isEmpty);
+        expect(result.memory?.text, 'The original feeder decision.');
+        expect(result.answer.evidence.single.quote, 'Feeder decision in task.');
+      },
+    );
+  }
+
   group('batched source shortlisting', () {
     late QueryTestBench bench;
     late List<String> calls;

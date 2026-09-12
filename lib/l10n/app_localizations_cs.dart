@@ -11068,6 +11068,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryArchiveChat => 'Archivovat chat';
 
   @override
+  String get queryArchiveConfirmation =>
+      'Chat archivován. Jeho závěry zůstávají dostupné.';
+
+  @override
   String get queryArchivedChats => 'Archivované chaty';
 
   @override
@@ -11102,6 +11106,12 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get queryAudioNoMatch =>
       'Tento citát se nepodařilo jednoznačně přiřadit k nahrávce. Stále můžeš otevřít celý záznam.';
+
+  @override
+  String get queryAudioOpenRecording => 'Otevřít nahrávku';
+
+  @override
+  String get queryAudioRetry => 'Zkusit zvuk znovu';
 
   @override
   String get queryAudioPrepare => 'Připravit zvukový úryvek';
@@ -11152,11 +11162,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryCoverage => 'Co bylo prohledáno';
 
   @override
+  String get queryCoverageCategory => 'Tato kategorie';
+
+  @override
+  String get queryCoverageExcluded => 'Ostatní kategorie nebyly prohledány.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Při vytvoření této odpovědi nebyl dostupný prohledávatelný text. Otevři nahrávku a prohlédni si ji.';
+
+  @override
+  String get queryCoverageWider => 'Další záznamy v této kategorii';
+
+  @override
   String get queryDeleteChat => 'Smazat chat';
 
   @override
   String get queryDeleteExplanation =>
       'Smazat tuto konverzaci? Vyber, co se stane se sdílenými závěry. Zdrojové záznamy zůstanou zachovány.';
+
+  @override
+  String get queryDeleteForget => 'Smazat a zapomenout závěry';
+
+  @override
+  String get queryDeleteKeep => 'Smazat a ponechat závěry';
 
   @override
   String get queryDictated =>
@@ -11203,8 +11232,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryHomeOnly => 'Jen základní rozsah';
 
   @override
+  String get queryHomeScope => 'Výchozí oblast';
+
+  @override
   String get queryIncomplete =>
       'Hledání není úplné. Chybějící důkazy neznamenají, že diskuze nikdy neproběhla.';
+
+  @override
+  String get queryIncompleteShort =>
+      'Některé zdroje se nepodařilo zkontrolovat.';
 
   @override
   String get queryInferenceUnavailable =>
@@ -11251,6 +11287,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryNotes => 'Poznámky';
 
   @override
+  String get queryOpenCurrentEntry => 'Otevřít aktuální záznam';
+
+  @override
   String get queryOpenEntry => 'Otevřít záznam';
 
   @override
@@ -11268,6 +11307,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String queryReachCategoryOnly(String category) {
     return 'Hledá v kategorii $category.';
   }
+
+  @override
+  String get queryReachHome =>
+      'Prohledává pouze tuto oblast a její propojené záznamy.';
 
   @override
   String get queryReachUncategorized =>
@@ -11290,6 +11333,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tato uložená citace odpovídá zdroji v době odpovědi.';
 
   @override
+  String querySavedVersion(String version) {
+    return 'Uložená verze: $version';
+  }
+
+  @override
   String get querySearching => 'Hledání v propojených poznámkách a nahrávkách…';
 
   @override
@@ -11300,6 +11348,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Zdroj přesunut do jiné kategorie';
+
+  @override
+  String get querySurroundingLimit =>
+      'Okolní text je uložený výňatek. Otevři záznam pro celou diskuzi.';
 
   @override
   String get querySurroundingText => 'Zobrazit okolní text';
@@ -15536,43 +15588,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get queryDeleteKeep => 'Smazat a ponechat závěry';
-
-  @override
-  String get queryDeleteForget => 'Smazat a zapomenout závěry';
-
-  @override
-  String get queryReachHome =>
-      'Prohledává pouze tuto oblast a její propojené záznamy.';
-
-  @override
-  String get queryHomeScope => 'Výchozí oblast';
-
-  @override
-  String get queryCoverageWider => 'Další záznamy v této kategorii';
-
-  @override
-  String get queryCoverageExcluded => 'Ostatní kategorie nebyly prohledány.';
-
-  @override
-  String get queryCoverageUnreadable =>
-      'Při vytvoření této odpovědi nebyl dostupný prohledávatelný text. Otevři nahrávku a prohlédni si ji.';
-
-  @override
-  String querySavedVersion(String version) {
-    return 'Uložená verze: $version';
-  }
-
-  @override
-  String get querySurroundingLimit =>
-      'Okolní text je uložený výňatek. Otevři záznam pro celou diskuzi.';
-
-  @override
-  String get queryOpenCurrentEntry => 'Otevřít aktuální záznam';
-
-  @override
-  String get queryArchiveConfirmation =>
-      'Chat archivován. Jeho závěry zůstávají dostupné.';
 }

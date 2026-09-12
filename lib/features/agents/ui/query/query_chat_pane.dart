@@ -650,6 +650,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                             controller,
                             chat,
                             row.id,
+                            local: local,
                             running: running,
                           );
                         }
@@ -672,9 +673,9 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                 ),
                               if (answer.coverage.incomplete)
                                 Text(
-                                  messages.queryIncomplete,
+                                  messages.queryIncompleteShort,
                                   style:
-                                      tokens.typography.styles.body.bodySmall,
+                                      tokens.typography.styles.others.caption,
                                 ),
                               for (final (index, evidence)
                                   in answer.evidence.indexed)
@@ -691,6 +692,15 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                       ? QueryEvidenceAudioControls(
                                           chatKey: audioKey,
                                           actionId: '${message.id}:$index',
+                                          onOpenEntry: () => unawaited(
+                                            _guard(
+                                              () => _openSource(
+                                                evidence.source.id,
+                                              ),
+                                            ),
+                                          ),
+                                          onOpenSettings: () => nav_service
+                                              .beamToNamed('/settings/ai'),
                                           evidence: evidence,
                                           audio:
                                               access.entries[evidence
@@ -702,6 +712,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                 ),
                               ExpansionTile(
                                 key: PageStorageKey('${message.id}:coverage'),
+                                expandedCrossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 title: Text(
                                   messages.queryCoverage,
                                   style:
@@ -711,6 +723,15 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                   tokens.spacing.step3,
                                 ),
                                 children: [
+                                  if (answer.coverage.incomplete)
+                                    Text(
+                                      messages.queryIncomplete,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .others
+                                          .caption,
+                                    ),
                                   Text(
                                     messages.queryChecked(
                                       answer.coverage.checked,
@@ -721,17 +742,18 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                   if (answer.coverage.homeChecked
                                       case final count?)
                                     Text(
-                                      '${messages.queryHomeScope} · ${messages.queryChecked(count)}',
+                                      '${widget.scope.kind == QueryScopeKind.category ? messages.queryCoverageCategory : messages.queryHomeScope} · ${messages.queryChecked(count)}',
                                       style: tokens
                                           .typography
                                           .styles
                                           .body
                                           .bodySmall,
                                     ),
-                                  if (answer.coverage.categoryChecked
-                                      case final count?)
+                                  if (widget.scope.kind !=
+                                          QueryScopeKind.category &&
+                                      answer.coverage.categoryChecked != null)
                                     Text(
-                                      '${messages.queryCoverageWider} · ${messages.queryChecked(count)}',
+                                      '${messages.queryCoverageWider} · ${messages.queryChecked(answer.coverage.categoryChecked!)}',
                                       style: tokens
                                           .typography
                                           .styles
@@ -970,6 +992,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     QueryChatController controller,
     QueryChatHistory chat,
     String questionId, {
+    required QueryChatLocal local,
     required bool running,
   }) {
     final terminal = chat.events
@@ -982,25 +1005,42 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         )
         .lastOrNull;
     final messages = context.messages;
+    final needsSetup =
+        local.status == QueryTurnStatus.unavailable &&
+        local.requestQuestionId == questionId;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          terminal?.data is QueryChatCancelled
+          needsSetup
+              ? messages.queryInferenceUnavailable
+              : terminal?.data is QueryChatCancelled
               ? messages.aiAttributionStatusCancelled
               : messages.queryFailed,
           style: context.designTokens.typography.styles.others.caption,
         ),
         if (!chat.archived)
-          DesignSystemButton(
-            label: messages.aiInferenceErrorRetryButton,
-            onPressed: running
-                ? null
-                : () => unawaited(
-                    controller.send(chat.id, retryQuestionId: questionId),
-                  ),
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.dense,
+          Wrap(
+            spacing: context.designTokens.spacing.step2,
+            children: [
+              if (needsSetup)
+                DesignSystemButton(
+                  label: messages.settingsAiTitle,
+                  onPressed: () => nav_service.beamToNamed('/settings/ai'),
+                  variant: DesignSystemButtonVariant.tertiary,
+                  size: DesignSystemButtonSize.dense,
+                ),
+              DesignSystemButton(
+                label: messages.aiInferenceErrorRetryButton,
+                onPressed: running
+                    ? null
+                    : () => unawaited(
+                        controller.send(chat.id, retryQuestionId: questionId),
+                      ),
+                variant: DesignSystemButtonVariant.tertiary,
+                size: DesignSystemButtonSize.dense,
+              ),
+            ],
           ),
       ],
     );
@@ -1084,7 +1124,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     final text = chat?.archived == true
         ? messages.queryArchivedReadOnly
         : switch (local.status) {
-            QueryTurnStatus.unavailable => messages.queryInferenceUnavailable,
+            QueryTurnStatus.unavailable =>
+              hasRecovery ? null : messages.queryInferenceUnavailable,
             QueryTurnStatus.hidden => messages.queryUnavailable,
             QueryTurnStatus.failed => hasRecovery ? null : messages.queryFailed,
             QueryTurnStatus.cancelled =>
@@ -1265,6 +1306,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
       title: chat.title,
       subtitle: status,
       selected: chat.id == selectedId,
+      activated: chat.id == selectedId,
       onTap: () => unawaited(_select(controller, chat.id)),
       leading: local.status == QueryTurnStatus.running || chat.unread
           ? DesignSystemBadge.dot(
@@ -1274,60 +1316,36 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
               excludeFromSemantics: true,
             )
           : null,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DesignSystemIconAction(
-            icon: chat.archived ? LottiIcons.unarchive : LottiIcons.archive,
-            tooltip: chat.archived
+      trailing: DesignSystemContextMenuButton(
+        items: [
+          DesignSystemContextMenuItem(
+            label: messages.queryRenameChat,
+            icon: LottiIcons.edit,
+            onTap: () => unawaited(_guard(() => _rename(controller, chat))),
+          ),
+          DesignSystemContextMenuItem(
+            label: chat.archived
                 ? messages.queryRestoreChat
                 : messages.queryArchiveChat,
-            onPressed: () {
+            icon: chat.archived ? LottiIcons.unarchive : LottiIcons.archive,
+            onTap: () {
               _closeMenu();
               unawaited(
                 _guard(
-                  () => _archive(controller, chat.id, archived: !chat.archived),
+                  () => _archive(
+                    controller,
+                    chat.id,
+                    archived: !chat.archived,
+                  ),
                 ),
               );
             },
           ),
-          DesignSystemIconAction(
+          DesignSystemContextMenuItem(
+            label: messages.queryDeleteChat,
             icon: LottiIcons.delete,
-            tooltip: messages.queryDeleteChat,
-            onPressed: () => unawaited(_guard(() => _delete(controller, chat))),
-          ),
-          DesignSystemContextMenuButton(
-            items: [
-              DesignSystemContextMenuItem(
-                label: messages.queryRenameChat,
-                icon: LottiIcons.edit,
-                onTap: () => unawaited(_guard(() => _rename(controller, chat))),
-              ),
-              DesignSystemContextMenuItem(
-                label: chat.archived
-                    ? messages.queryRestoreChat
-                    : messages.queryArchiveChat,
-                icon: chat.archived ? LottiIcons.unarchive : LottiIcons.archive,
-                onTap: () {
-                  _closeMenu();
-                  unawaited(
-                    _guard(
-                      () => _archive(
-                        controller,
-                        chat.id,
-                        archived: !chat.archived,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              DesignSystemContextMenuItem(
-                label: messages.queryDeleteChat,
-                icon: LottiIcons.delete,
-                isDestructive: true,
-                onTap: () => unawaited(_guard(() => _delete(controller, chat))),
-              ),
-            ],
+            isDestructive: true,
+            onTap: () => unawaited(_guard(() => _delete(controller, chat))),
           ),
         ],
       ),

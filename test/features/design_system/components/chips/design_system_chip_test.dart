@@ -26,6 +26,10 @@ void main() {
         final target = find.byType(InkWell).first;
         final rect = tester.getRect(target);
         expect(rect.height, greaterThanOrEqualTo(40));
+        final painted = tester.getRect(find.byType(Ink).first);
+        expect(painted.height, lessThan(rect.height));
+        expect(painted.center.dy, rect.center.dy);
+        expect(painted.contains(rect.topCenter + const Offset(0, 1)), isFalse);
         await tester.tapAt(rect.topCenter + const Offset(0, 1));
         expect(taps, 1);
         expect(

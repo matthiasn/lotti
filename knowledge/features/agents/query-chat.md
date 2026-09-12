@@ -40,6 +40,10 @@ sources:
     resource: ../../../lib/features/agents/query/query_audio_controller.dart
     title: Chat-owned audio and live authorization
     last_modified: 2026-09-11
+  - id: audio-controls
+    resource: ../../../lib/features/agents/ui/query/query_audio_controls.dart
+    title: Playback, preparation and adjacent recovery actions
+    last_modified: 2026-09-12
   - id: timing
     resource: ../../../lib/classes/audio_transcript_timing.dart
     title: Recording-bound transcript timing sidecar
@@ -86,7 +90,8 @@ exact text, with explicit omission markers outside the quotation. Surrounding
 text can be shown, while Copy quote always copies only the stored passage.
 The pill composer emphasizes Send when a draft is present. A running search
 keeps the next draft editable while Send remains disabled. Scope filters keep
-caption typography and use the design-system touch-height pill variant.
+caption typography and a compact painted pill centered in the design-system
+touch-height target.
 Saved-text inspection shows the representation's edit/transcript date when
 available; legacy records fall back to their stored version date or content
 fingerprint. Surrounding text explicitly identifies itself as a bounded saved
@@ -183,14 +188,23 @@ activity. The transient `answering` flag resets on each Send or Retry.
 A single activity bubble groups phase, visible checked-source count and Cancel,
 with a live-region announcement. The query composer omits the duplicate helper
 status. The switcher exposes running/unread indicators, last-message previews,
-archive/delete actions and the archived count. Archive confirms that conclusions
+one labelled overflow menu per chat and the archived count. The selected chat
+uses the design-system activated row fill as well as selected semantics.
+Archive confirms that conclusions
 remain available; Delete names the selected keep/forget consequence.
 
 Recovery belongs to each unanswered question, including earlier failed turns.
+Retry assembles conversation history only through the selected question and
+excludes conclusions created later in the same chat.
 `requestQuestionId` identifies the current/last attempt's saved question and
 resets before a new send, so failures before question persistence retain footer
 feedback and the draft rather than disappearing behind an older answer.
-Unavailable inference setup links directly to AI settings.
+Unavailable inference setup links directly to AI settings beside its saved
+question, alongside Retry so the saved request can resume after setup changes;
+failures before persistence keep that recovery in the composer footer.
+A short caption flags incomplete coverage above evidence cards; the expanded
+coverage panel explains what missing evidence does and does not establish.
+Its counts and recovery rows share a leading alignment.
 
 Coverage stores nullable home/category inspection counts (null for older
 answers), plus references to unreadable recordings. These references also enter
@@ -390,6 +404,15 @@ A short quote gets about a minute of listening context, clamped to the recording
 a long quote retains its full segment span with a little context. When imported
 duration metadata is zero, the last timed speech bounds the excerpt instead. Provider
 segments determine every boundary: character offsets never become seconds.
+
+Audio recovery stays beside the affected quote or answer. Preparation offers
+Cancel; playback offers Stop audio. A missing recording offers Open recording
+and Retry audio; an unmatched quote or oversized upload offers Open recording
+without implying another identical request will help. Unsupported timing setup
+offers AI Settings and Retry audio together. Transient playback and speech
+failures offer Retry audio. Opening a recording uses the pane's fresh source
+access check. The upload notice remains visible before timing preparation,
+including retries that can upload audio; opening an entry does not upload it.
 
 A retained historical quote can use already-matching timing after a text edit.
 Generating new timing requires the source text and category still to match the

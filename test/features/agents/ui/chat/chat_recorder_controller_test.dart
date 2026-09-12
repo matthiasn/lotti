@@ -222,6 +222,331 @@ void main() {
     },
   );
 
+  group('recording operation ownership', () {
+    late ProviderContainer container;
+    late ChatRecorderController controller;
+    late List<MockAudioRecorder> recorders;
+    late MockAudioTranscriptionService service;
+    late List<String> paths;
+    late int creations;
+    late Directory directory;
+    late Future<Directory> Function() directoryProvider;
+
+    setUp(() async {
+      directory = await Directory.systemTemp.createTemp('chat_owned_');
+      directoryProvider = () async => directory;
+      addTearDown(() async {
+        if (await directory.exists()) await directory.delete(recursive: true);
+      });
+      paths = [];
+      creations = 0;
+      recorders = [MockAudioRecorder(), MockAudioRecorder()];
+      for (final recorder in recorders) {
+        when(recorder.hasPermission).thenAnswer((_) async => true);
+        when(recorder.stop).thenAnswer((_) async => null);
+        when(recorder.dispose).thenAnswer((_) async {});
+        when(() => recorder.onAmplitudeChanged(any())).thenAnswer(
+          (_) => const Stream.empty(),
+        );
+        when(() => recorder.start(any(), path: any(named: 'path'))).thenAnswer(
+          (call) async {
+            final path = call.namedArguments[#path] as String;
+            paths.add(path);
+            await File(path).writeAsString('recording $creations');
+          },
+        );
+      }
+      service = MockAudioTranscriptionService();
+      when(() => service.transcribeStream(any())).thenAnswer(
+        (_) => Stream.value('New question'),
+      );
+      var millis = 1000;
+      container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => recorders[creations++],
+              nowMillisProvider: () => millis++,
+              tempDirectoryProvider: () => directoryProvider(),
+              transcriptionService: service,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        chatRecorderControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      controller = container.read(chatRecorderControllerProvider.notifier);
+      addTearDown(controller.dispose);
+    });
+
+    for (final boundary in ['permission', 'directory', 'native start']) {
+      test('cancel drains pending startup at $boundary', () async {
+        final entered = Completer<void>();
+        final released = Completer<void>();
+        switch (boundary) {
+          case 'permission':
+            when(recorders.first.hasPermission).thenAnswer((_) async {
+              entered.complete();
+              await released.future;
+              return true;
+            });
+          case 'directory':
+            directoryProvider = () async {
+              entered.complete();
+              await released.future;
+              return directory;
+            };
+          case 'native start':
+            when(
+              () => recorders.first.start(any(), path: any(named: 'path')),
+            ).thenAnswer((call) async {
+              final path = call.namedArguments[#path] as String;
+              paths.add(path);
+              await File(path).writeAsString('abandoned startup');
+              entered.complete();
+              await released.future;
+            });
+        }
+        final observed = <ChatRecorderStatus>[];
+        final listener = container.listen(
+          chatRecorderControllerProvider,
+          (_, value) => observed.add(value.status),
+        );
+        addTearDown(listener.close);
+        final startup = controller.start();
+        await entered.future;
+        var cancelled = false;
+        final cancellation = controller.cancel().then((_) => cancelled = true);
+        addTearDown(() async {
+          if (!released.isCompleted) released.complete();
+          await startup;
+          await cancellation;
+          await controller.cancel();
+        });
+        await pumpEventQueue();
+        expect(cancelled, isFalse);
+        await controller.start();
+        expect(creations, 1);
+        released.complete();
+        await startup;
+        await cancellation;
+        expect(observed, isNot(contains(ChatRecorderStatus.recording)));
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.idle,
+        );
+        expect(
+          container.read(chatRecorderControllerProvider).transcript,
+          isNull,
+        );
+        verify(recorders.first.dispose).called(1);
+        if (boundary == 'native start') {
+          verify(recorders.first.stop).called(1);
+        } else {
+          verifyNever(
+            () => recorders.first.start(any(), path: any(named: 'path')),
+          );
+        }
+        expect(
+          await Directory('${directory.path}/lotti_chat_rec').exists(),
+          isFalse,
+        );
+        verifyNever(() => service.transcribeStream(any()));
+
+        directoryProvider = () async => directory;
+        await controller.start();
+        expect(creations, 2);
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.recording,
+        );
+        await controller.stopAndTranscribe();
+        expect(
+          container.read(chatRecorderControllerProvider).transcript,
+          'New question',
+        );
+      });
+    }
+
+    for (final pendingStop in [false, true]) {
+      test(
+        'cancelled operation cannot clean up the next recording '
+        '(pending stop: $pendingStop)',
+        () async {
+          final entered = Completer<void>();
+          final stopped = Completer<String?>();
+          final oldTranscript = StreamController<String>.broadcast();
+          addTearDown(() async {
+            if (!stopped.isCompleted) stopped.complete();
+            if (!oldTranscript.isClosed) await oldTranscript.close();
+          });
+          await controller.start();
+          final oldPath = paths.single;
+          if (pendingStop) {
+            var stops = 0;
+            when(recorders.first.stop).thenAnswer((_) {
+              if (stops++ == 0) {
+                entered.complete();
+                return stopped.future;
+              }
+              return Future.value();
+            });
+          } else {
+            when(() => service.transcribeStream(oldPath)).thenAnswer((_) {
+              entered.complete();
+              return oldTranscript.stream;
+            });
+          }
+          final oldOperation = controller.stopAndTranscribe();
+          await entered.future;
+          await controller.cancel();
+          expect(await File(oldPath).exists(), isFalse);
+          await controller.start();
+          final newPath = paths.last;
+          expect(newPath, isNot(oldPath));
+          expect(await File(newPath).readAsString(), 'recording 2');
+
+          if (pendingStop) {
+            stopped.complete();
+          } else {
+            oldTranscript.add('Discarded question');
+            await oldTranscript.close();
+          }
+          await oldOperation;
+          verifyNever(recorders.last.dispose);
+          verifyNever(recorders.last.stop);
+          expect(await File(newPath).readAsString(), 'recording 2');
+          expect(
+            container.read(chatRecorderControllerProvider).status,
+            ChatRecorderStatus.recording,
+          );
+          expect(
+            container.read(chatRecorderControllerProvider).transcript,
+            isNull,
+          );
+          if (pendingStop) {
+            verifyNever(() => service.transcribeStream(any()));
+          }
+
+          await controller.stopAndTranscribe();
+          expect(
+            container.read(chatRecorderControllerProvider).transcript,
+            'New question',
+          );
+          verify(() => service.transcribeStream(newPath)).called(1);
+          verify(recorders.last.dispose).called(1);
+          expect(await File(newPath).exists(), isFalse);
+        },
+      );
+    }
+
+    test('completion stays processing until its cleanup finishes', () async {
+      final disposing = Completer<void>();
+      final released = Completer<void>();
+      addTearDown(() {
+        if (!released.isCompleted) released.complete();
+      });
+      when(recorders.first.dispose).thenAnswer((_) {
+        disposing.complete();
+        return released.future;
+      });
+      await controller.start();
+      final operation = controller.stopAndTranscribe();
+      await disposing.future;
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.processing,
+      );
+      expect(container.read(chatRecorderControllerProvider).transcript, isNull);
+      await controller.start();
+      expect(creations, 1);
+      released.complete();
+      await operation;
+      expect(
+        container.read(chatRecorderControllerProvider).transcript,
+        'New question',
+      );
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.idle,
+      );
+      expect(await File(paths.single).exists(), isFalse);
+    });
+
+    test(
+      'dispose joins owned cleanup and prevents a later recording',
+      () async {
+        final disposing = Completer<void>();
+        final released = Completer<void>();
+        addTearDown(() {
+          if (!released.isCompleted) released.complete();
+        });
+        when(recorders.first.dispose).thenAnswer((_) {
+          if (!disposing.isCompleted) disposing.complete();
+          return released.future;
+        });
+        await controller.start();
+        final operation = controller.stopAndTranscribe();
+        await disposing.future;
+        var disposed = false;
+        final disposal = controller.dispose().then((_) => disposed = true);
+        await pumpEventQueue();
+        expect(disposed, isFalse);
+        verify(recorders.first.dispose).called(1);
+        released.complete();
+        await operation;
+        await disposal;
+        expect(await File(paths.single).exists(), isFalse);
+        expect(
+          container.read(chatRecorderControllerProvider).transcript,
+          isNull,
+        );
+        await controller.start();
+        expect(creations, 1);
+      },
+    );
+
+    test(
+      'concurrent cancellation joins cleanup before allowing restart',
+      () async {
+        final disposing = Completer<void>();
+        final released = Completer<void>();
+        addTearDown(() {
+          if (!released.isCompleted) released.complete();
+        });
+        when(recorders.first.dispose).thenAnswer((_) {
+          disposing.complete();
+          return released.future;
+        });
+        await controller.start();
+        final firstCancel = controller.cancel();
+        await disposing.future;
+        final secondCancel = controller.cancel();
+        expect(identical(firstCancel, secondCancel), isTrue);
+        await controller.start();
+        expect(creations, 1);
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.recording,
+        );
+        released.complete();
+        await Future.wait([firstCancel, secondCancel]);
+        verify(recorders.first.dispose).called(1);
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.idle,
+        );
+        await controller.start();
+        expect(creations, 2);
+        await controller.cancel();
+      },
+    );
+  });
+
   group('explicit transcription target', () {
     late ProviderContainer container;
     late ChatRecorderController controller;

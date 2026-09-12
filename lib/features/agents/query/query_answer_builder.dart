@@ -53,8 +53,22 @@ class QueryAnswerBuilder {
     QuerySourceKind? kind,
   }) async {
     final asked = question.data as QueryChatQuestion;
+    // Retrying an older question must not reinterpret it using later turns.
+    final questionIndex = chat.events.indexWhere(
+      (event) => event.id == question.id,
+    );
+    final precedingEvents = questionIndex < 0
+        ? [question]
+        : chat.events.take(questionIndex + 1);
+    final priorMemories = memories
+        .where(
+          (event) =>
+              event.chatId != chat.id ||
+              compareQueryEvents(event, question) < 0,
+        )
+        .toList();
     final priorRefs = <String, QuerySourceRef>{
-      for (final event in [...chat.events, ...memories])
+      for (final event in [...precedingEvents, ...priorMemories])
         for (final source in queryEventDependencies(event.data))
           source.id: source,
     };
@@ -67,7 +81,7 @@ class QueryAnswerBuilder {
         : home == null || !initial.allowsEntry(home)) {
       throw const QueryScopeUnavailable();
     }
-    final history = chat.events
+    final history = precedingEvents
         .where(
           (event) =>
               initial.allowsEvent(event.data) &&
@@ -261,7 +275,7 @@ class QueryAnswerBuilder {
     )) {
       throw const QueryScopeUnavailable();
     }
-    final eligibleMemories = memories.reversed
+    final eligibleMemories = priorMemories.reversed
         .where(
           (event) =>
               memoryAccess.allowsEvent(event.data) &&

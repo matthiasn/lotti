@@ -11061,6 +11061,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryArchiveChat => 'Archivia chat';
 
   @override
+  String get queryArchiveConfirmation =>
+      'Chat archiviata. Le sue conclusioni restano disponibili.';
+
+  @override
   String get queryArchivedChats => 'Chat archiviate';
 
   @override
@@ -11095,6 +11099,12 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get queryAudioNoMatch =>
       'Non è stato possibile associare questa citazione in modo univoco alla registrazione. Puoi comunque aprire la voce completa.';
+
+  @override
+  String get queryAudioOpenRecording => 'Apri registrazione';
+
+  @override
+  String get queryAudioRetry => 'Riprova audio';
 
   @override
   String get queryAudioPrepare => 'Prepara estratto audio';
@@ -11145,11 +11155,31 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryCoverage => 'Cosa è stato cercato';
 
   @override
+  String get queryCoverageCategory => 'Questa categoria';
+
+  @override
+  String get queryCoverageExcluded =>
+      'Le altre categorie non sono state cercate.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Nessun testo ricercabile al momento di questa risposta. Apri la registrazione per consultarla.';
+
+  @override
+  String get queryCoverageWider => 'Altre voci di questa categoria';
+
+  @override
   String get queryDeleteChat => 'Elimina chat';
 
   @override
   String get queryDeleteExplanation =>
       'Eliminare questa conversazione? Scegli cosa succede alle conclusioni condivise. Le voci di origine rimangono intatte.';
+
+  @override
+  String get queryDeleteForget => 'Elimina e dimentica le conclusioni';
+
+  @override
+  String get queryDeleteKeep => 'Elimina e conserva le conclusioni';
 
   @override
   String get queryDictated =>
@@ -11196,8 +11226,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryHomeOnly => 'Solo ambito iniziale';
 
   @override
+  String get queryHomeScope => 'Ambito iniziale';
+
+  @override
   String get queryIncomplete =>
       'La ricerca è incompleta. L’assenza di prove non significa che la discussione non sia mai avvenuta.';
+
+  @override
+  String get queryIncompleteShort =>
+      'Non è stato possibile verificare alcune fonti.';
 
   @override
   String get queryInferenceUnavailable =>
@@ -11242,6 +11279,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryNotes => 'Note';
 
   @override
+  String get queryOpenCurrentEntry => 'Apri la voce attuale';
+
+  @override
   String get queryOpenEntry => 'Apri voce';
 
   @override
@@ -11252,13 +11292,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Cerca in questo ambito e in $category.';
+    return 'La ricerca include questo ambito e $category.';
   }
 
   @override
   String queryReachCategoryOnly(String category) {
     return 'Cerca in $category.';
   }
+
+  @override
+  String get queryReachHome =>
+      'La ricerca include solo questo ambito e le voci collegate.';
 
   @override
   String get queryReachUncategorized =>
@@ -11281,6 +11325,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questa citazione salvata riflette la fonte al momento della risposta.';
 
   @override
+  String querySavedVersion(String version) {
+    return 'Versione salvata: $version';
+  }
+
+  @override
   String get querySearching => 'Ricerca nelle note e registrazioni collegate…';
 
   @override
@@ -11291,6 +11340,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Fonte spostata in un’altra categoria';
+
+  @override
+  String get querySurroundingLimit =>
+      'Il testo circostante è un estratto salvato. Apri la voce per consultare tutta la discussione.';
 
   @override
   String get querySurroundingText => 'Mostra contesto';
@@ -15530,44 +15583,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get queryDeleteKeep => 'Elimina e conserva le conclusioni';
-
-  @override
-  String get queryDeleteForget => 'Elimina e dimentica le conclusioni';
-
-  @override
-  String get queryReachHome =>
-      'Cerca solo in questo ambito e nelle voci collegate.';
-
-  @override
-  String get queryHomeScope => 'Ambito iniziale';
-
-  @override
-  String get queryCoverageWider => 'Altre voci di questa categoria';
-
-  @override
-  String get queryCoverageExcluded =>
-      'Le altre categorie non sono state cercate.';
-
-  @override
-  String get queryCoverageUnreadable =>
-      'Nessun testo ricercabile al momento di questa risposta. Apri la registrazione per consultarla.';
-
-  @override
-  String querySavedVersion(String version) {
-    return 'Versione salvata: $version';
-  }
-
-  @override
-  String get querySurroundingLimit =>
-      'Il testo circostante è un estratto salvato. Apri la voce per consultare tutta la discussione.';
-
-  @override
-  String get queryOpenCurrentEntry => 'Apri la voce attuale';
-
-  @override
-  String get queryArchiveConfirmation =>
-      'Chat archiviata. Le sue conclusioni restano disponibili.';
 }

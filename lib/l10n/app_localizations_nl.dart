@@ -10941,6 +10941,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryArchiveChat => 'Chat archiveren';
 
   @override
+  String get queryArchiveConfirmation =>
+      'Chat gearchiveerd. De conclusies blijven beschikbaar.';
+
+  @override
   String get queryArchivedChats => 'Gearchiveerde chats';
 
   @override
@@ -10975,6 +10979,12 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get queryAudioNoMatch =>
       'Dit citaat kon niet eenduidig aan de opname worden gekoppeld. Je kunt nog steeds het volledige item openen.';
+
+  @override
+  String get queryAudioOpenRecording => 'Opname openen';
+
+  @override
+  String get queryAudioRetry => 'Audio opnieuw proberen';
 
   @override
   String get queryAudioPrepare => 'Audiofragment voorbereiden';
@@ -11025,11 +11035,30 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryCoverage => 'Wat is doorzocht?';
 
   @override
+  String get queryCoverageCategory => 'Deze categorie';
+
+  @override
+  String get queryCoverageExcluded => 'Andere categorieën zijn niet doorzocht.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Geen doorzoekbare tekst toen dit antwoord werd geschreven. Open de opname om deze te bekijken.';
+
+  @override
+  String get queryCoverageWider => 'Andere items in deze categorie';
+
+  @override
   String get queryDeleteChat => 'Chat verwijderen';
 
   @override
   String get queryDeleteExplanation =>
       'Deze conversatie verwijderen? Kies wat er met de gedeelde conclusies gebeurt. Bronitems blijven intact.';
+
+  @override
+  String get queryDeleteForget => 'Verwijderen en conclusies vergeten';
+
+  @override
+  String get queryDeleteKeep => 'Verwijderen en conclusies bewaren';
 
   @override
   String get queryDictated =>
@@ -11078,8 +11107,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryHomeOnly => 'Alleen eigen bereik';
 
   @override
+  String get queryHomeScope => 'Eigen bereik';
+
+  @override
   String get queryIncomplete =>
       'De zoekdekking is onvolledig. Ontbrekend bewijs betekent niet dat het gesprek nooit heeft plaatsgevonden.';
+
+  @override
+  String get queryIncompleteShort =>
+      'Sommige bronnen konden niet worden gecontroleerd.';
 
   @override
   String get queryInferenceUnavailable =>
@@ -11124,6 +11160,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryNotes => 'Notities';
 
   @override
+  String get queryOpenCurrentEntry => 'Huidig item openen';
+
+  @override
   String get queryOpenEntry => 'Item openen';
 
   @override
@@ -11141,6 +11180,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String queryReachCategoryOnly(String category) {
     return 'Zoekt binnen $category.';
   }
+
+  @override
+  String get queryReachHome =>
+      'Zoekt alleen binnen dit bereik en de gekoppelde items.';
 
   @override
   String get queryReachUncategorized =>
@@ -11163,6 +11206,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit opgeslagen citaat geeft de bron weer op het moment van het antwoord.';
 
   @override
+  String querySavedVersion(String version) {
+    return 'Opgeslagen versie: $version';
+  }
+
+  @override
   String get querySearching => 'Gekoppelde notities en opnamen doorzoeken…';
 
   @override
@@ -11173,6 +11221,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get querySourceMoved => 'Bron verplaatst naar een andere categorie';
+
+  @override
+  String get querySurroundingLimit =>
+      'De omringende tekst is een opgeslagen fragment. Open het item voor de volledige bespreking.';
 
   @override
   String get querySurroundingText => 'Omringende tekst tonen';
@@ -15379,43 +15431,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get queryDeleteKeep => 'Verwijderen en conclusies bewaren';
-
-  @override
-  String get queryDeleteForget => 'Verwijderen en conclusies vergeten';
-
-  @override
-  String get queryReachHome =>
-      'Zoekt alleen binnen dit bereik en de gekoppelde items.';
-
-  @override
-  String get queryHomeScope => 'Oorspronkelijk bereik';
-
-  @override
-  String get queryCoverageWider => 'Andere items in deze categorie';
-
-  @override
-  String get queryCoverageExcluded => 'Andere categorieën zijn niet doorzocht.';
-
-  @override
-  String get queryCoverageUnreadable =>
-      'Geen doorzoekbare tekst toen dit antwoord werd geschreven. Open de opname om deze te bekijken.';
-
-  @override
-  String querySavedVersion(String version) {
-    return 'Opgeslagen versie: $version';
-  }
-
-  @override
-  String get querySurroundingLimit =>
-      'De omringende tekst is een opgeslagen fragment. Open het item voor de volledige bespreking.';
-
-  @override
-  String get queryOpenCurrentEntry => 'Huidig item openen';
-
-  @override
-  String get queryArchiveConfirmation =>
-      'Chat gearchiveerd. De conclusies blijven beschikbaar.';
 }
