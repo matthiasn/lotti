@@ -44,21 +44,40 @@ import 'package:material_ui/material_ui.dart';
 /// code spans/blocks, existing links, or numeric reference definitions.
 String _linkEvidenceCitations(String text, int evidenceCount) {
   final referenceLabels = RegExp(
-    r'^ {0,3}\[(\d+)\]:',
+    r'^ {0,3}\[([^\]\n]+)\]:',
     multiLine: true,
   ).allMatches(text).map((match) => match[1]).toSet();
+  final referencePattern = referenceLabels
+      .whereType<String>()
+      .map(RegExp.escape)
+      .join('|');
   // The first alternatives consume protected Markdown before the final
   // numeric-citation alternative can see anything inside it. An unclosed
   // fence protects the remainder of the answer as code, too.
   final tokens = RegExp(
-    r'(^[ \t]{0,3}(`{3,}|~{3,})[^\n]*(?:\n|$)[\s\S]*?'
-    r'(?:^[ \t]{0,3}\2[`~]*[ \t]*(?=\n|$)|(?![\s\S])))'
-    r'|(`+)[\s\S]*?\3'
-    r'|^(?: {4}|\t)[^\n]*'
-    r'|\\.'
-    r'|!?\[[^\]\n]*\](?:\([^\)\n]*\)|[ \t]*(?:\n[ \t]*)?\[[^\]\n]*\])'
-    r'|\[(\d+)\](?!:)',
+    [
+      [
+        r'(^[ \t]{0,3}(`{3,}|~{3,})[^\n]*(?:\n|$)[\s\S]*?',
+        r'(?:^[ \t]{0,3}\2[`~]*[ \t]*(?=\n|$)|(?![\s\S])))',
+      ].join(),
+      r'(`+)[\s\S]*?\3',
+      r'^(?: {4}|\t)[^\n]*',
+      r'\\.',
+      r'!?\[[^\]\n]*\]\([^\)\n]*\)',
+      // Adjacent citations are links individually unless the second bracket
+      // actually names a reference definition (Markdown labels ignore case).
+      if (referencePattern.isNotEmpty) ...[
+        [
+          r'!?\[[^\]\n]*\][ \t]*(?:\n[ \t]*)?\[(?:',
+          referencePattern,
+          r')\]',
+        ].join(),
+        [r'!?\[(?:', referencePattern, r')\][ \t]*\[\]'].join(),
+      ],
+      r'\[(\d+)\](?!:)',
+    ].join('|'),
     multiLine: true,
+    caseSensitive: false,
   );
   return text.replaceAllMapped(tokens, (match) {
     final label = match[4];

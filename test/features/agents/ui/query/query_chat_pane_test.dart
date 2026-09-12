@@ -277,12 +277,12 @@ void main() {
     return evidence;
   }
 
-  Finder citationIn(String suffix) => find.descendant(
+  Finder citationIn(String suffix, {String number = '1'}) => find.descendant(
     of: find.descendant(
       of: find.byKey(ValueKey('goal-chat-message-reply-$suffix')),
       matching: find.byType(AgentMarkdownView),
     ),
-    matching: find.text('1', findRichText: true),
+    matching: find.text(number, findRichText: true),
   );
 
   testWidgets(
@@ -312,6 +312,70 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  for (final separator in [' ', '']) {
+    testWidgets(
+      'adjacent citations each open their own evidence (spaced=${separator.isNotEmpty})',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1200, 2200)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final first = addCitationAnswer(
+          'adjacent',
+          answerText: 'The habitat decision has two sources [1]$separator[2].',
+        );
+        final second = addCitationAnswer('second');
+        events.removeWhere(
+          (event) =>
+              event.id == 'question-second' || event.id == 'reply-second',
+        );
+        final index = events.indexWhere(
+          (event) => event.id == 'reply-adjacent',
+        );
+        final answer = events[index].data as QueryChatAnswer;
+        events[index] = events[index].copyWith(
+          data: answer.copyWith(
+            evidence: [first, second],
+            dependencies: [first.source, second.source],
+          ),
+        );
+        await pump(tester);
+        expect(find.byType(SelectableText), findsNothing);
+        await tester.tap(citationIn('adjacent'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(first.quote, findRichText: true), findsOneWidget);
+        expect(find.text(second.quote, findRichText: true), findsNothing);
+        final secondLink = citationIn('adjacent', number: '2');
+        await tester.ensureVisible(secondLink);
+        await tester.tap(secondLink);
+        await tester.pump();
+        await tester.pump();
+        expect(find.text(first.quote, findRichText: true), findsOneWidget);
+        expect(find.text(second.quote, findRichText: true), findsOneWidget);
+        expect(find.byType(EntryDetailsPage), findsNothing);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('defined numeric reference remains an external link', (
+    tester,
+  ) async {
+    const answer =
+        'Reference [1][2] stays external.\n\n'
+        '[2]: https://example.com/habitat';
+    addCitationAnswer('numeric-reference', answerText: answer);
+    await pump(tester);
+    expect(
+      tester.widget<AgentMarkdownView>(find.byType(AgentMarkdownView)).text,
+      answer,
+    );
+    expect(find.byType(SelectableText), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 
   testWidgets(
     'citation routing preserves literal code and reference links',
