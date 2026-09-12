@@ -111,6 +111,7 @@ def main():
         "QUERY_EVAL_HOME_ONLY": "1" if args.home_only else "0",
         "QUERY_EVAL_VARIANT": args.variant,
         "QUERY_EVAL_LEGACY_FLOW": "1" if args.legacy_flow else "0",
+        "QUERY_EVAL_PYTHON": sys.executable,
     })
     output.parent.mkdir(parents=True, exist_ok=True)
     # Keep compiler/provider output beside the synthetic artifact; credentials

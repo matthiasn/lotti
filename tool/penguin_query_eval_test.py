@@ -51,6 +51,7 @@ class PenguinQueryEvalTest(unittest.TestCase):
         self.assertEqual(kwargs["env"]["QUERY_EVAL_MODEL"], "deepseek-v4.1-flash")
         self.assertEqual(kwargs["env"]["QUERY_EVAL_VARIANT"], "synthetic-test")
         self.assertEqual(kwargs["env"]["QUERY_EVAL_LEGACY_FLOW"], "0")
+        self.assertEqual(kwargs["env"]["QUERY_EVAL_PYTHON"], sys.executable)
         self.assertEqual(kwargs["env"]["QUERY_EVAL_OUTPUT"], str(self.output))
         process.wait.assert_called_once_with(timeout=900)
 

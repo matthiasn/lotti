@@ -118,10 +118,11 @@ void main() {
           ? 1
           : QueryAnswerBuilder.defaultBatchInputBytes;
       Future<Map<String, dynamic>> readRevision() async {
-        final result = await Process.run('python3', [
-          'tool/penguin_query_eval.py',
-          '--print-revision',
-        ]);
+        final result = await Process.run(
+          env['QUERY_EVAL_PYTHON'] ??
+              (Platform.isWindows ? 'python' : 'python3'),
+          ['tool/penguin_query_eval.py', '--print-revision'],
+        );
         if (result.exitCode != 0) {
           throw StateError('Unable to identify the evaluated revision');
         }
