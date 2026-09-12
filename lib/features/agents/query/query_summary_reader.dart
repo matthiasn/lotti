@@ -26,7 +26,7 @@ class QuerySummary {
   /// one-liner or the full report body. Missing TL;DRs stay explicitly missing.
   Map<String, Object?> get orientation => {
     'ownerId': owner.id,
-    'taskId': owner.id,
+    if (status != null) 'taskId': owner.id,
     'reportId': report.id,
     'title': title,
     if (status != null) 'status': status,

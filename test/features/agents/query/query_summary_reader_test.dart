@@ -196,5 +196,7 @@ void main() {
       'Habitat calibration is complete.',
     );
     expect(catalog.project!.orientation.containsKey('content'), isFalse);
+    expect(catalog.project!.orientation.containsKey('taskId'), isFalse);
+    expect(catalog.project!.orientation['ownerId'], 'project');
   });
 }
