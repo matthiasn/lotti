@@ -29,7 +29,8 @@ or those two keys from the repository's ignored `.env`. Existing environment
 values take precedence. `QUERY_EVAL_API_KEY` and `QUERY_EVAL_BASE_URL` are
 explicit overrides. It never executes dotenv text as shell code. The model
 must be explicit; this eval does not guess the model selected in the app.
-Artifacts and raw process logs must be outside the repository. Do not publish
+Non-local endpoints require HTTPS; HTTP is accepted only for explicit loopback
+hosts. Artifacts and raw process logs must be outside the repository. Do not publish
 raw provider logs without inspecting them for sensitive material.
 
 The normal test suite skips live inference. Run only the offline fixture and
@@ -60,7 +61,10 @@ wider-category case to judge that deliberately restricted variant.
 Every positive result must contain the expected facts and relevant exact
 quotes, cite evidence, and retain source fingerprints and category boundaries.
 The wider answer must attribute its evidence as outside home. Negative cases
-must acknowledge the missing information and return no evidence cards. This
+must acknowledge the missing information, return no evidence cards, and avoid
+concrete price/humidity values in the answer itself. The English-fixture value
+checks catch common numeral and spelled-out currency/measurement forms; they
+are not a complete semantic hallucination detector. This
 last gate is intentionally conservative: inspect a negative case with partial
 context manually instead of relabeling it a provider failure. These vocabulary
 and provenance checks are useful gates, not a semantic judge. Review each
@@ -68,7 +72,8 @@ answer for unsupported claims, omitted qualifications and citation entailment.
 
 ## Measurements and limits
 
-The JSON records source-code hashes, selected model and provider, corpus
+The JSON records the Git commit/tree, a hash of tracked edits, hashes of
+untracked files, selected source-code hashes, model/provider, and corpus
 ranking, question-to-built-answer wall time, time when final answering begins,
 per-completion stage/duration/input characters/output characters, provider
 input/output/reasoning/cache tokens and billing credits when available, shortlist
@@ -77,8 +82,12 @@ Each case allows at most eight source inspection calls and twelve completions;
 the process stops after fifteen minutes. Authentication failures stop the run.
 The existing production two-minute completion timeout still applies.
 
-The measured interval excludes fixture seeding, app startup, chat persistence
-and widget rendering. Per-call duration includes transport, generation, JSON
+The measured interval excludes fixture seeding, app startup, chat persistence,
+widget rendering and synchronous artifact-checkpoint writes. The report retains
+checkpoint duration and wall time including checkpoints separately. It stops the
+built-answer timer before the eval’s own quality checks. Partial checkpoints are
+still written before and after each model call so stalled runs remain inspectable.
+The Git identity is checked again at the end; a changed checkout fails the run. Per-call duration includes transport, generation, JSON
 parsing and thinking removal. Character counts are separate from the provider token counts. It does not
 measure first-token latency.
 The final answer is buffered by the production path; build completion is the
@@ -209,6 +218,22 @@ The retrieval implementation consequently does not inject stored report text.
 The safe summary follow-up needs complete transitive source dependencies and
 live access validation, with unknown provenance failing closed. This limitation
 also rules out importing the task wake's cached context wholesale. 
+
+## Historical timing caveat
+
+The numerical tables below precede the checkpoint-I/O correction. Their
+`totalMs` includes artifact writes and the eval’s post-build quality checks.
+Per-completion durations exclude checkpoint I/O. Across the GLM matched local
+and follow-up samples, the entire difference between total time and the sum of
+model-call durations is 28–95 ms per question; that includes all database and
+other harness overhead, so checkpoint I/O cannot exceed it. This bound is far
+smaller than the multi-second observed differences, but it is not a measurement
+of the writes themselves. Retain the raw samples; do not silently subtract an
+assumed overhead. Future samples record the exact checkpoint exclusion.
+
+Older artifacts also lack the newly added Git identity fields. Their selected
+source hashes and recorded checkout history remain available; they must not be
+presented as though they had the new provenance or timing schema.
 
 ## Measured GLM-5.3 comparison (2026-09-12)
 

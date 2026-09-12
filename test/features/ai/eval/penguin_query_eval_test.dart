@@ -14,6 +14,94 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  test('eval credentials require HTTPS except on explicit loopback hosts', () {
+    for (final endpoint in [
+      'https://inference.example/v1',
+      'http://localhost:8080/v1',
+      'http://127.0.0.1:8080/v1',
+      'http://[::1]:8080/v1',
+    ]) {
+      expect(validatePenguinQueryEndpoint(endpoint).toString(), endpoint);
+    }
+    for (final endpoint in [
+      'http://inference.example/v1',
+      'http://localhost.example/v1',
+      'http://127.0.0.1.example/v1',
+      'ftp://localhost/v1',
+      '/v1',
+    ]) {
+      expect(
+        () => validatePenguinQueryEndpoint(endpoint),
+        throwsFormatException,
+      );
+    }
+  });
+
+  test(
+    'a refusal cannot conceal an invented price or humidity measurement',
+    () {
+      final absent = penguinQueryQuestions.singleWhere((q) => q.id == 'absent');
+      final boundary = penguinQueryQuestions.singleWhere(
+        (q) => q.id == 'category_boundary',
+      );
+      for (final text in [
+        'No evidence, but the price was €500.',
+        'No record found; it cost five hundred euros.',
+      ]) {
+        expect(hasForbiddenPenguinAnswerValue(absent, text), isTrue);
+      }
+      for (final text in [
+        'No evidence, but humidity rose by 9 points.',
+        'Not established, though the increase was nine percentage points.',
+      ]) {
+        expect(hasForbiddenPenguinAnswerValue(boundary, text), isTrue);
+      }
+      expect(
+        hasForbiddenPenguinAnswerValue(
+          absent,
+          'No agreed price found in 57 checked sources.',
+        ),
+        isFalse,
+      );
+      expect(
+        hasForbiddenPenguinAnswerValue(
+          boundary,
+          'The three-day change is unknown; 58 sources were checked.',
+        ),
+        isFalse,
+      );
+      expect(
+        hasForbiddenPenguinAnswerValue(
+          penguinQueryQuestions.first,
+          '101.3 kPa',
+        ),
+        isFalse,
+      );
+    },
+  );
+
+  test('question timing excludes checkpoint I/O and post-build validation', () {
+    var micros = 100;
+    final timer = QueryEvalTimer(readMicroseconds: () => micros);
+    micros += 20;
+    timer.checkpoint(() => micros += 1000);
+    micros += 30;
+    expect(timer.elapsedMicroseconds, 50);
+    expect(timer.checkpointMicroseconds, 1000);
+    expect(
+      () => timer.checkpoint(() {
+        micros += 500;
+        throw StateError('synthetic checkpoint failure');
+      }),
+      throwsStateError,
+    );
+    timer.stop();
+    micros += 200;
+    expect(timer.elapsedMicroseconds, 50);
+    expect(timer.wallMicroseconds, 1550);
+    expect(timer.checkpointMicroseconds, 1500);
+  });
+
   test('follow-up retains actual outputs before the retry memory cutoff', () {
     final first = makePenguinQueryTurn(penguinQueryQuestions.first);
     const actual = QueryBuiltAnswer(

@@ -51,6 +51,7 @@ void main() {
         reason: 'Set QUERY_EVAL_BASE_URL or MELIOUS_BASE_URL',
       );
       expect(model, isNotNull, reason: 'Explicit QUERY_EVAL_MODEL is required');
+      final endpoint = validatePenguinQueryEndpoint(baseUrl!);
       expect(
         output,
         isNotNull,
@@ -77,7 +78,7 @@ void main() {
       final provider = AiConfigInferenceProvider(
         id: 'penguin-query-eval-provider',
         name: 'Penguin query eval',
-        baseUrl: baseUrl!,
+        baseUrl: endpoint.toString(),
         apiKey: apiKey,
         inferenceProviderType: InferenceProviderType.melious,
         createdAt: manualDemoNow,
@@ -116,13 +117,26 @@ void main() {
       final batchInputBytes = legacyFlow
           ? 1
           : QueryAnswerBuilder.defaultBatchInputBytes;
+      Future<Map<String, dynamic>> readRevision() async {
+        final result = await Process.run('python3', [
+          'tool/penguin_query_eval.py',
+          '--print-revision',
+        ]);
+        if (result.exitCode != 0) {
+          throw StateError('Unable to identify the evaluated revision');
+        }
+        return jsonDecode(result.stdout as String) as Map<String, dynamic>;
+      }
+
       final report = <String, Object?>{
         'schemaVersion': 1,
+        'gitRevision': await readRevision(),
         'sourceHashes': {
           for (final file in [
             'lib/features/agents/query/query_answer_builder.dart',
             'lib/features/agents/query/query_journal_crawler.dart',
             'lib/features/agents/query/query_text_inference.dart',
+            'lib/features/agents/query/query_source_access.dart',
             'lib/features/ai/repository/cloud_inference_generate.dart',
             'lib/features/ai/repository/melious_inference_repository.dart',
             'lib/features/ai_consumption/service/ai_interaction_capture.dart',
@@ -141,7 +155,7 @@ void main() {
         },
         'model': model,
         'provider': provider.inferenceProviderType.name,
-        'endpointOrigin': Uri.parse(baseUrl).origin,
+        'endpointOrigin': endpoint.origin,
         'homeOnly': homeOnly,
         'legacyFlow': legacyFlow,
         'turnOrdering':
@@ -155,7 +169,7 @@ void main() {
         },
         'measurement':
             'Question-to-built-answer wall time; excludes fixture seeding and UI. '
-            'Per-call time includes HTTP, inference and JSON parsing. No token/TTFT claims. '
+            'Per-call time includes HTTP, inference and JSON parsing. No TTFT claims. '
             'Provider cache is uncontrolled; repeat sequentially before comparing medians.',
         'qualityLimit':
             'Deterministic fact, quote and citation gates; manual semantic review still required.',
@@ -188,9 +202,12 @@ void main() {
         );
         final question = turn.question;
         questionEvents[scenario.id] = question;
-        final measured = MeasuredQueryInference(original, onCallRecorded: save);
+        final clock = QueryEvalTimer();
+        final measured = MeasuredQueryInference(
+          original,
+          onCallRecorded: () => clock.checkpoint(save),
+        );
         final cancellation = QueryCancellation();
-        final clock = Stopwatch()..start();
         final artifact = <String, Object?>{
           'case': scenario.id,
           'question': scenario.question,
@@ -231,6 +248,7 @@ void main() {
                       clock.elapsedMicroseconds / 1000;
                 },
               );
+          clock.stop();
           answers[scenario.id] = built;
           final answer = built.answer;
           final quotes = answer.evidence.map((e) => e.quote).join('\n');
@@ -268,7 +286,10 @@ void main() {
                 answer.evidence.any(
                   (e) => e.outsideHome && e.quote.contains('nine minutes'),
                 ),
-            'noInventedAnswer': !scenario.absent || answer.evidence.isEmpty,
+            'noInventedAnswer':
+                !scenario.absent ||
+                (answer.evidence.isEmpty &&
+                    !hasForbiddenPenguinAnswerValue(scenario, answer.text)),
           };
           artifact.addAll({
             'status': 'complete',
@@ -294,6 +315,8 @@ void main() {
           cancellation.cancel();
           artifact.addAll({
             'totalMs': clock.elapsedMicroseconds / 1000,
+            'wallIncludingCheckpointsMs': clock.wallMicroseconds / 1000,
+            'artifactCheckpointMs': clock.checkpointMicroseconds / 1000,
             'checkedSources': checked,
             'callCount': measured.calls.length,
             'providerUsage': [
@@ -321,6 +344,16 @@ void main() {
         );
         if (authorizationFailed) break;
       }
+      report['gitRevisionAtEnd'] = await readRevision();
+      report['revisionUnchanged'] =
+          jsonEncode(report['gitRevision']) ==
+          jsonEncode(report['gitRevisionAtEnd']);
+      save();
+      expect(
+        report['revisionUnchanged'],
+        isTrue,
+        reason: 'Checkout changed during evaluation; do not compare this run',
+      );
       expect(
         artifacts.every((a) => a['passed'] == true),
         isTrue,

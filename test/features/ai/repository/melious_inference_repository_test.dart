@@ -2882,6 +2882,56 @@ void main() {
     const baseUrl = 'https://api.melious.ai/v1';
     const apiKey = 'key';
 
+    test(
+      'completed response impact survives cancellation without late text',
+      () {
+        fakeAsync((async) {
+          final pending = Completer<http.Response>();
+          var requested = false;
+          final repository = MeliousInferenceRepository(
+            httpClient: MockClient((_) {
+              requested = true;
+              // A response already in flight can win the HTTP abort race.
+              return pending.future;
+            }),
+          );
+          addTearDown(repository.close);
+          final collector = InferenceImpactCollector();
+          final received = <CreateChatCompletionStreamResponse>[];
+          final subscription = repository
+              .generateText(
+                prompt: 'synthetic question',
+                model: 'deepseek-v4.1-flash',
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                impactCollector: collector,
+              )
+              .listen(received.add);
+          async.flushMicrotasks();
+          expect(requested, isTrue);
+          unawaited(subscription.cancel());
+          pending.complete(
+            http.Response(
+              jsonEncode({
+                'choices': [
+                  {
+                    'message': {'content': 'Do not emit after cancellation'},
+                  },
+                ],
+                'billing_cost': {'credits': '0.0007'},
+                'environment_impact': {'energy_kwh': 0.0031},
+              }),
+              200,
+            ),
+          );
+          async.flushMicrotasks();
+          expect(received, isEmpty);
+          expect(collector.impact?.costCreditsDecimal, '0.0007');
+          expect(collector.impact?.energyKwh, 0.0031);
+        });
+      },
+    );
+
     for (final deadline in [false, true]) {
       test(
         'query cancellation deadline=$deadline aborts only its HTTP call',

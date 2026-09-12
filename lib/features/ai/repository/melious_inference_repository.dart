@@ -551,10 +551,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
             stream: false,
           ),
         );
-        if (cancelled) return;
         if (result.impact.hasData) {
           impactCollector.impact = result.impact;
         }
+        if (cancelled) return;
 
         final id = 'melious-chat-${const Uuid().v4()}';
         controller.add(

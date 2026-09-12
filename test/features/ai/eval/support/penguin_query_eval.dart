@@ -132,6 +132,34 @@ class PenguinQueryDatabase {
 /// Timings around the production inference boundary. The delegate remains
 /// QueryTextInference.forProfile: no alternate provider protocol or prompts.
 /// Durations include transport, generation, JSON parsing and reasoning removal.
+/// Separates production elapsed time from synchronous artifact checkpoints.
+class QueryEvalTimer {
+  QueryEvalTimer({int Function()? readMicroseconds}) {
+    final clock = Stopwatch()..start();
+    _read = readMicroseconds ?? () => clock.elapsedMicroseconds;
+    _startedAt = _read();
+  }
+
+  late final int Function() _read;
+  late final int _startedAt;
+  int? _stoppedAt;
+  int checkpointMicroseconds = 0;
+
+  int get wallMicroseconds => (_stoppedAt ?? _read()) - _startedAt;
+  int get elapsedMicroseconds => wallMicroseconds - checkpointMicroseconds;
+
+  void checkpoint(void Function() persist) {
+    final startedAt = _read();
+    try {
+      persist();
+    } finally {
+      checkpointMicroseconds += _read() - startedAt;
+    }
+  }
+
+  void stop() => _stoppedAt ??= _read();
+}
+
 class MeasuredQueryInference implements QueryTextInference {
   MeasuredQueryInference(this.delegate, {this.onCallRecorded});
   final QueryTextInference delegate;
@@ -185,6 +213,44 @@ class MeasuredQueryInference implements QueryTextInference {
       onCallRecorded?.call();
     }
   }
+}
+
+/// Credentials may use cleartext HTTP only on an explicit loopback endpoint.
+Uri validatePenguinQueryEndpoint(String value) {
+  final uri = Uri.parse(value);
+  final loopback = const {'localhost', '127.0.0.1', '::1'}.contains(uri.host);
+  if (uri.host.isEmpty ||
+      (uri.scheme != 'https' && !(uri.scheme == 'http' && loopback))) {
+    throw const FormatException('Query eval endpoint requires HTTPS');
+  }
+  return uri;
+}
+
+/// Conservative English-fixture checks supplement, rather than replace, the
+/// manual review. A refusal phrase must not hide an invented price or reading.
+bool hasForbiddenPenguinAnswerValue(
+  PenguinQueryQuestion question,
+  String text,
+) {
+  if (!question.absent) return false;
+  const number =
+      r'(?:\d+(?:[.,]\d+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|'
+      'eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|'
+      'nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|'
+      'hundred|thousand|million)';
+  const boundary = r'\b';
+  const currency = r'[€$£]\s*';
+  const currencyUnit = r'\s*(?:euros?|eur|dollars?|pounds?)\b';
+  const humidityUnit = r'\s*(?:percentage\s+points?|points?\b|percent\b|%)';
+  const increase = r'\b(?:rose|increased?|rise)\s+(?:by\s+)?';
+  final pattern = switch (question.id) {
+    'absent' => '$currency$number|$boundary$number$currencyUnit',
+    'category_boundary' =>
+      '$boundary$number$humidityUnit|$increase$number$boundary',
+    _ => null,
+  };
+  return pattern != null &&
+      RegExp(pattern, caseSensitive: false).hasMatch(text);
 }
 
 class PenguinQueryQuestion {

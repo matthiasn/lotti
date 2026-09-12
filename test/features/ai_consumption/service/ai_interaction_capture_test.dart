@@ -146,6 +146,29 @@ void main() {
       expect(event.errorCode, 'StateError');
       expect(event.errorSummary, isNull);
     });
+
+    test(
+      'provider subscription failure is recorded and reaches the caller',
+      () async {
+        final source = StreamController<String>();
+        final existingListener = source.stream.listen((_) {});
+        try {
+          // Reusing a single-subscription stream throws from listen itself,
+          // rather than delivering an error event after subscription succeeds.
+          await expectLater(
+            captureSource(() => source.stream).toList(),
+            throwsStateError,
+          );
+          final event = bench.recordedInteractions.single;
+          expect(event.interactionStatus, AiInteractionStatus.failed);
+          expect(event.errorCode, 'StateError');
+          expect(event.errorSummary, isNull);
+        } finally {
+          await existingListener.cancel();
+          await source.close();
+        }
+      },
+    );
   });
 
   test('starts attribution before invoking the provider', () async {
