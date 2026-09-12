@@ -215,6 +215,14 @@ Oversized full reports fall back to their TL;DR with incomplete coverage. Reject
 summary text stays out of synthesis. The answer identifies its summary basis and
 attributes claims by owner title. Its structured owner IDs must match the
 supplied reports; numbered original-evidence citations are rejected.
+The selection guidance keeps ordinary factual questions on summaries even when
+details are missing. Only explicit home-task original inspection or verbatim
+requests ask for the evidence route, selecting the home owner alone. This is
+model guidance; live access and cross-task raw-entry restrictions remain code
+checks. Synthesis guidance puts the JSON contract first, requires exact owner
+titles (rendered in bold), and permits an unresolved answer with no owner IDs
+when no factual answer is supported. Malformed JSON or attribution still fails
+validation; the pipeline does not feed errors back for automatic model repair.
 
 Summary answers have no `QueryEvidence` cards and create no shared durable
 conclusion. The answer itself is saved as chat history with owner visibility
@@ -255,7 +263,16 @@ constructing `QueryAnswerBuilder` without a summary reader. That control permits
 same-category keyword/recent-entry expansion, unlike production summary-first
 routing. Its historical batching measurements are in the
 [latency evaluation](../../../docs/perf/2026-09-12-penguin-query-latency-eval.md);
-they are not measurements of summary-first retrieval. The task wake's compacted
+they are not measurements of summary-first retrieval. The harness can also load
+a frozen, query-neutral generated report bundle through real agent storage using
+`--summary-reports`; report preparation is separate from chat timing and is not
+the task-agent wake workflow. Both modes retain the same factual questions;
+summary mode additionally checks absence of raw inspection, evidence cards and
+shared conclusions. Added paraphrase cases retain the original fact and
+forbidden-value checks; an explicit home quote case instead requires validated
+original evidence. Synthetic artifacts retain parsed responses and malformed
+JSON diagnostics for prompt evaluation; production diagnostics stay content-free.
+The task wake's compacted
 prefix is not imported into query chat.
 
 Visibility and category membership are checked around each batch and before

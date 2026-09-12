@@ -1,15 +1,20 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:crypto/crypto.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as links;
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
+import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
@@ -89,6 +94,97 @@ class PenguinQueryDatabase {
   final journal = JournalDb(inMemoryDatabase: true);
   final fts = Fts5Db(inMemoryDatabase: true);
   final searches = <String>[];
+  final agents = AgentDatabase(inMemoryDatabase: true);
+  late final agentRepository = AgentRepository(agents);
+  late final summaryReader = QuerySummaryReader(
+    journal: journal,
+    access: access,
+    repository: agentRepository,
+  );
+
+  /// Query-neutral source inputs, frozen independently of the eval questions.
+  /// Only a task's own readable same-category entries feed its report.
+  List<Map<String, Object?>> get reportInputs => [
+    for (final task in corpus.rankedTasks)
+      {
+        'ownerId': task.meta.id,
+        'title': task.data.title,
+        'sources': [
+          for (final entry in corpus.world.journalEntities)
+            if ((entry.meta.id == task.meta.id ||
+                    (entry is! Task &&
+                        entry is! ProjectEntry &&
+                        corpus.linkedIds(task).contains(entry.meta.id))) &&
+                entry.meta.categoryId == task.meta.categoryId &&
+                entry.meta.private != true &&
+                entry.meta.deletedAt == null)
+              if (QuerySourceDocument.fromEntry(entry) case final document?)
+                {'id': document.entry.meta.id, 'text': document.text},
+        ],
+      },
+  ];
+
+  String get reportInputsHash =>
+      sha256.convert(utf8.encode(jsonEncode(reportInputs))).toString();
+
+  /// Seed actual report/head/link storage, rejecting stale or partial bundles.
+  Future<void> seedReports(Map<String, dynamic> bundle) async {
+    if (bundle['sourceHash'] != reportInputsHash) {
+      throw const FormatException('Report fixture does not match the corpus');
+    }
+    final rows = (bundle['reports'] as List).cast<Map<String, dynamic>>();
+    final expected = corpus.rankedTasks.map((task) => task.meta.id).toSet();
+    if (rows.length != expected.length ||
+        !rows.map((r) => r['ownerId']).toSet().containsAll(expected)) {
+      throw const FormatException(
+        'Report fixture has missing or unknown owners',
+      );
+    }
+    for (final row in rows) {
+      for (final key in ['oneLiner', 'tldr', 'content']) {
+        if (row[key] is! String || (row[key] as String).trim().isEmpty) {
+          throw const FormatException('Report fixture has an empty layer');
+        }
+      }
+    }
+    for (final row in rows) {
+      final id = row['ownerId'] as String;
+      final agentId = 'summary-agent-$id';
+      final reportId = 'summary-report-$id';
+      await agentRepository.upsertEntity(
+        AgentReportEntity(
+          id: reportId,
+          agentId: agentId,
+          scope: 'current',
+          createdAt: manualDemoNow,
+          vectorClock: null,
+          oneLiner: row['oneLiner'] as String,
+          tldr: row['tldr'] as String,
+          content: row['content'] as String,
+        ),
+      );
+      await agentRepository.upsertEntity(
+        AgentReportHeadEntity(
+          id: 'summary-head-$id',
+          agentId: agentId,
+          scope: 'current',
+          reportId: reportId,
+          updatedAt: manualDemoNow,
+          vectorClock: null,
+        ),
+      );
+      await agentRepository.upsertLink(
+        links.AgentLink.agentTask(
+          id: 'summary-link-$id',
+          fromId: agentId,
+          toId: id,
+          createdAt: manualDemoNow,
+          updatedAt: manualDemoNow,
+          vectorClock: null,
+        ),
+      );
+    }
+  }
 
   late final access = QuerySourceAccess(
     journal: journal,
@@ -124,6 +220,7 @@ class PenguinQueryDatabase {
   }
 
   Future<void> close() async {
+    await agents.close();
     await journal.close();
     await fts.close();
   }
@@ -178,6 +275,13 @@ class MeasuredQueryInference implements QueryTextInference {
       throw StateError('Query eval completion cap reached');
     }
     final stage = switch (system) {
+      final s when s.startsWith('Task-summary orientation.') =>
+        'summary-selection',
+      final s
+          when s.startsWith(
+            'Answer using the supplied task/project summaries only.',
+          ) =>
+        'summary-answer',
       final s when s.contains('Inspect sources together') => 'batch',
       final s when s.contains('Rephrase the question') => 'plan',
       final s when s.contains('Shortlist sources') => 'shortlist',
@@ -193,27 +297,58 @@ class MeasuredQueryInference implements QueryTextInference {
         'candidateCount': sources.length,
       if (input['source'] case final String source)
         'sourceCharacters': source.length,
+      if (input['tasks'] case final List<dynamic> tasks)
+        'orientationTaskCount': tasks.length,
+      if (input['summaries'] case final List<dynamic> summaries)
+        'fullSummaryCount': summaries
+            .where((s) => (s as Map).containsKey('content'))
+            .length,
     };
     calls.add(record);
     onCallRecorded?.call();
     final clock = Stopwatch()..start();
+    var lastAnswerPrefix = '';
     try {
       final result = await delegate.complete(
         system: system,
         input: input,
         cancellation: cancellation,
-        onAnswerText: onAnswerText,
+        onAnswerText: onAnswerText == null
+            ? null
+            : (text) {
+                lastAnswerPrefix = text;
+                onAnswerText(text);
+              },
         onFirstToken: () {
           record['firstTokenMs'] = clock.elapsedMicroseconds / 1000;
           onFirstToken?.call();
         },
       );
       record['outputCharacters'] = jsonEncode(result).length;
+      // This opt-in harness is restricted to synthetic inputs. Retain parsed
+      // payloads so a validation failure can be diagnosed after generation.
+      record['response'] = result;
+      if (stage == 'summary-selection') {
+        record['selectedTaskIds'] = result['taskIds'];
+        record['needsHomeEvidence'] = result['needsHomeEvidence'];
+      }
+      if (stage == 'summary-answer') {
+        record['answerOwnerIds'] = result['ownerIds'];
+        record['unresolved'] = result['unresolved'];
+      }
       record['status'] = 'complete';
       return result;
     } catch (error) {
       // Error messages can contain provider request/credential details.
       record['status'] = error.runtimeType.toString();
+      if (error is FormatException) {
+        record['formatFailure'] = {
+          'message': error.message,
+          'offset': error.offset,
+          if (error.source case final String source) 'source': source,
+          'lastAnswerPrefix': lastAnswerPrefix,
+        };
+      }
       rethrow;
     } finally {
       record['milliseconds'] = clock.elapsedMicroseconds / 1000;
@@ -250,15 +385,18 @@ bool hasForbiddenPenguinAnswerValue(
   const currencyUnit = r'\s*(?:euros?|eur|dollars?|pounds?)\b';
   const humidityUnit = r'\s*(?:percentage\s+points?|points?\b|percent\b|%)';
   const increase = r'\b(?:rose|increased?|rise)\s+(?:by\s+)?';
-  final pattern = switch (question.id) {
-    'absent' => '$currency$number|$boundary$number$currencyUnit',
-    'category_boundary' =>
+  final pattern = switch (question.forbiddenValue) {
+    PenguinForbiddenValue.price =>
+      '$currency$number|$boundary$number$currencyUnit',
+    PenguinForbiddenValue.humidity =>
       '$boundary$number$humidityUnit|$increase$number$boundary',
-    _ => null,
+    null => null,
   };
   return pattern != null &&
       RegExp(pattern, caseSensitive: false).hasMatch(text);
 }
+
+enum PenguinForbiddenValue { price, humidity }
 
 class PenguinQueryQuestion {
   const PenguinQueryQuestion({
@@ -268,7 +406,8 @@ class PenguinQueryQuestion {
     required this.quoteTerms,
     this.followUpTo,
     this.outsideHome = false,
-    this.absent = false,
+    this.forbiddenValue,
+    this.requiresOriginalEvidence = false,
   });
   final String id;
   final String question;
@@ -276,7 +415,9 @@ class PenguinQueryQuestion {
   final List<String> quoteTerms;
   final String? followUpTo;
   final bool outsideHome;
-  final bool absent;
+  final PenguinForbiddenValue? forbiddenValue;
+  bool get absent => forbiddenValue != null;
+  final bool requiresOriginalEvidence;
 }
 
 /// Uses actual preceding outputs with realistic deterministic event ordering.
@@ -389,7 +530,7 @@ const penguinQueryQuestions = [
       ],
     ],
     quoteTerms: [],
-    absent: true,
+    forbiddenValue: PenguinForbiddenValue.price,
   ),
   PenguinQueryQuestion(
     id: 'category_boundary',
@@ -409,6 +550,46 @@ const penguinQueryQuestions = [
       ],
     ],
     quoteTerms: [],
-    absent: true,
+    forbiddenValue: PenguinForbiddenValue.humidity,
+  ),
+];
+
+/// Held-out phrasings keep the original facts and exclusion gates. They are
+/// separate from the unchanged baseline cases, with one explicit quote request
+/// to ensure guidance does not disable legitimate own-task original evidence.
+final List<PenguinQueryQuestion> penguinQueryHoldoutQuestions = [
+  for (final original in penguinQueryQuestions)
+    PenguinQueryQuestion(
+      id: 'holdout_${original.id}',
+      question: switch (original.id) {
+        'local' =>
+          'Give me the overnight seal pressure and confirmed penguin headcount.',
+        'follow_up' => 'And where exactly was that sleeping penguin?',
+        'wider_category' =>
+          'Which part of the launch rehearsal took longer than planned, and by how much?',
+        'absent' =>
+          'Do we have a confirmed cost for insuring the habitat? If so, how much in euros?',
+        'category_boundary' =>
+          'What was the three-day increase in humidity in Bay C, in percentage points?',
+        _ => throw StateError('A new baseline case needs a reviewed holdout'),
+      },
+      answerTerms: original.answerTerms,
+      quoteTerms: original.quoteTerms,
+      followUpTo: original.followUpTo == null
+          ? null
+          : 'holdout_${original.followUpTo}',
+      outsideHome: original.outsideHome,
+      forbiddenValue: original.forbiddenValue,
+    ),
+  const PenguinQueryQuestion(
+    id: 'holdout_exact_quote',
+    question:
+        'Quote the original seal-walk note verbatim where it records the overnight pressure and roll-call result.',
+    answerTerms: [
+      ['101.3'],
+      ['37'],
+    ],
+    quoteTerms: ['101.3', '37'],
+    requiresOriginalEvidence: true,
   ),
 ];

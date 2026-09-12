@@ -25,11 +25,11 @@ class PenguinQueryEvalTest(unittest.TestCase):
             "--variant", "synthetic-test", "--output", str(self.output),
         ]
 
-    def run_main(self, process):
+    def run_main(self, process, dotenv=None):
         with (
             patch.object(sys, "argv", self.args),
             patch.dict(os.environ, {}, clear=True),
-            patch.object(Path, "read_text", return_value=(
+            patch.object(Path, "read_text", return_value=dotenv or (
                 'MELIOUS_API_KEY="synthetic key"\n'
                 'MELIOUS_BASE_URL="https://synthetic.invalid/v1"\n'
             )),
@@ -62,6 +62,30 @@ class PenguinQueryEvalTest(unittest.TestCase):
         result, start = self.run_main(process)
         self.assertEqual(result, 0)
         self.assertEqual(start.call_args.kwargs["env"]["QUERY_EVAL_STREAM_SYNTHESIS"], "1")
+
+    def test_summary_fixture_and_preparation_are_explicit(self):
+        self.args.extend(["--summary-reports", str(self.output.parent / "reports.json")])
+        process = Mock(pid=12345)
+        process.wait.return_value = 0
+        result, start = self.run_main(process)
+        self.assertEqual(result, 0)
+        self.assertEqual(start.call_args.kwargs["env"]["QUERY_EVAL_SUMMARY_REPORTS"], str(self.output.parent / "reports.json"))
+        self.assertEqual(start.call_args.kwargs["env"]["QUERY_EVAL_PREPARE_REPORTS"], "0")
+
+    def test_local_service_aliases_are_loaded_without_unrelated_settings(self):
+        process = Mock(pid=12345)
+        process.wait.return_value = 0
+        result, start = self.run_main(process, (
+            'UP_UPSTREAM_API_KEY="synthetic alias"\n'
+            'UP_UPSTREAM_BASE_URL="https://synthetic.invalid/v1"\n'
+            'UNRELATED_SECRET="do not load"\n'
+        ))
+        self.assertEqual(result, 0)
+        env = start.call_args.kwargs["env"]
+        self.assertEqual(env["MELIOUS_API_KEY"], "synthetic alias")
+        self.assertEqual(env["MELIOUS_BASE_URL"], "https://synthetic.invalid/v1")
+        self.assertNotIn("UNRELATED_SECRET", env)
+        self.assertNotIn("synthetic alias", repr(start.call_args.args))
 
     def test_legacy_control_is_explicit(self):
         self.args.append("--legacy-flow")

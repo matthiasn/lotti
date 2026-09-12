@@ -25,7 +25,9 @@ python3 tool/penguin_query_eval.py \
 ```
 
 The runner reads `MELIOUS_API_KEY` and `MELIOUS_BASE_URL` from the environment,
-or those two keys from the repository's ignored `.env`. Existing environment
+or those two keys from the repository's ignored `.env` (or `--env-file`).
+The local service aliases `UP_UPSTREAM_API_KEY` and `UP_UPSTREAM_BASE_URL`
+are accepted when canonical keys are absent; no other dotenv keys are loaded. Existing environment
 values take precedence. `QUERY_EVAL_API_KEY` and `QUERY_EVAL_BASE_URL` are
 explicit overrides. It never executes dotenv text as shell code. The model
 must be explicit; this eval does not guess the model selected in the app.
@@ -58,7 +60,7 @@ wider-category case to judge that deliberately restricted variant.
 | `absent` | Agreed habitat insurance price | Not present. Must acknowledge the missing evidence. |
 | `category_boundary` | Bay C humidity rise | Nine points exists only in another category, despite a direct task link. Must not disclose it. |
 
-Every positive result must contain the expected facts and relevant exact
+For the entry control, every positive result must contain the expected facts and relevant exact
 quotes, cite evidence, and retain source fingerprints and category boundaries.
 The wider answer must attribute its evidence as outside home. Negative cases
 must acknowledge the missing information, return no evidence cards, and avoid
@@ -88,10 +90,10 @@ checkpoint duration and wall time including checkpoints separately. It stops the
 built-answer timer before the eval’s own quality checks. Partial checkpoints are
 still written before and after each model call so stalled runs remain inspectable.
 The Git identity is checked again at the end; a changed checkout fails the run. Per-call duration includes transport, generation, JSON
-parsing and thinking removal. Character counts are separate from the provider token counts. It does not
-measure first-token latency.
-The final answer is buffered by the production path; build completion is the
-first complete answer available to its caller. Provider cache and concurrent
+parsing and thinking removal. Character counts are separate from provider token counts.
+With `--stream-synthesis`, first synthesis token and first visible answer text
+are measured separately from total built-answer time; publication still waits
+for validation. Without that flag, synthesis remains buffered. Provider cache and concurrent
 server load are uncontrolled. Run at least three sequential samples on the
 same model before comparing medians and ranges, and keep cold and warm results
 visible instead of pooling model IDs.
@@ -173,51 +175,170 @@ agent-task links and current report heads. Parent project reports use
 `getLatestProjectReportForProjectId`. The wake builder already loads linked
 summaries in bulk and annotates directed relations; those summaries sit in the
 wake's volatile tail so a neighbour update cannot invalidate its earlier log.
-These assets can orient query inspection but cannot replace exact entry spans.
+Production now selects promising tasks from TL;DRs and reads selected full
+reports before answering. It attributes derived answers to owner titles without
+exact-entry cards or shared conclusions. Original evidence is a separate own-task
+route; asking another task's agent remains deferred. Summary authorization follows
+current owner visibility/category and the report lifecycle, rather than a query-side
+transitive entry-provenance graph. The runtime contract is in
+[query chat](../../knowledge/features/agents/query-chat.md).
 
-The merged handover is the implementation direction: fitting home batching,
-chat-stable same-category neighbourhood orientation, insufficiency-driven
-expansion, then secondary overhead. Budget-extension and cost UI follow the
-retrieval change as a separate surface change. Ordinary report updates may
-leave orientation stale; privacy, deletion, lockdown and category changes must
-still invalidate its use immediately. Agent-to-agent questioning is deferred.
+## Frozen-summary evaluation
 
-The canonical corpus has no guaranteed precomputed agent reports. Missing
-reports must remain explicit absences; never invent summaries for a live eval.
-Use deterministic report fixtures to test orientation independently, and keep
-the shipped penguin world unchanged for the original comparison.
+The shipped penguin world has no precomputed agent reports. The original mode
+therefore remains explicitly labelled `entry-control`. `--prepare-summary-reports`
+creates an additional, query-neutral generated fixture from each task's own
+same-category readable linked text. It does not see the eval questions or their
+expected answers. This preparation uses live inference but **is not the production
+task-agent wake workflow**. Its cost and timings are separate from query latency.
+Reports are never hand-corrected to satisfy an answer check.
 
+Use that artifact with `--summary-reports /outside/repo/reports.json` to exercise
+the production summary reader, real agent report/head/link storage and the current
+summary-first answer builder. Reuse identical frozen bytes across matched samples
+and models. The artifact records its hash; source-input hashes reject stale bundles,
+and missing/unknown owners or empty report layers fail fixture setup.
 
-## Separate synthesis-streaming follow-up
+```sh
+python3 tool/penguin_query_eval.py --model deepseek-v4.1-flash \
+  --variant report-preparation --prepare-summary-reports \
+  --output /tmp/lotti-query-eval/reports.json
+python3 tool/penguin_query_eval.py --model deepseek-v4.1-flash \
+  --variant summary-first --summary-reports /tmp/lotti-query-eval/reports.json \
+  --stream-synthesis --output /tmp/lotti-query-eval/summary-1.json
+```
 
-After retrieval is measured, a separate PR will stream synthesis only. The
-inspection response stays disposable and hidden. Draft prose is explicitly
-provisional, citation links remain unavailable until validated, and successful
-publication must preserve the displayed text byte-for-byte. Validation failure
-retracts the draft visibly into the existing per-question Retry path. Privacy
-changes, cancel, delete and forget cut the stream and clear all provisional
-state; no draft text is persisted or sent to TTS. Unsupported routes retain
-buffering and the selected model. Measure first synthesis token separately from
-total built-answer time. Provider impact availability on streaming responses
-must be checked rather than silently dropping accounting. This follow-up does
-not change discovery, inspection, evidence or memory semantics.
+The same five questions and expected facts remain. Summary answers must carry
+owner attribution, same-category dependencies, no original evidence cards, no raw
+source inspection and no durable shared memory. Expected exact quotes and citation
+numbers remain gates for the entry control only: a derived report is not an original
+source. Missing facts in generated reports remain quality failures, not reasons to
+edit the fixture or relax expectations. In particular, the wider case explicitly
+asks to search notes: summary-first must honestly disclose that notes were not
+inspected. Manual review checks entailment, qualifications and owner attribution
+in addition to automated vocabulary checks.
 
+Synthesis streaming is merged. Provisional text and first-token measurements are
+available for both variants; total latency remains the question-to-built-answer
+measurement. This harness does not measure widget rendering, durable publication,
+the task-agent summary lifecycle, or real-world long transcripts.
 
-## Summary authorization gap
+## Summary-first model comparison (2026-09-12)
 
-The standard report writers (`WakeOutputWriter` and `ProjectAgentExecute`)
-record inference/accounting provenance, but no complete set of contributing
-journal source references. Owner-task visibility alone therefore cannot prove
-that a retained report excludes an entry subsequently hidden, deleted, or moved
-to another category. The legacy task-input reader applies the privacy setting
-at the time of that wake; that is not a durable authorization record for later
-query use. Compacted history and other agents' reports make reconstructing the
-complete dependency set from current links insufficient.
+Three repeats of all five unchanged cases per model used streamed synthesis and
+one frozen query-neutral bundle of 28 generated task reports. Eighteen authorized
+same-category TL;DRs reached selection. Runtime was merged main `e6763975518e`,
+with only harness changes. Every matched invocation verified unchanged checkout
+identity. DeepSeek entry/summary controls were interleaved, then GLM-5.3 Flash,
+GLM-5.3 and Nemotron alternated each round. Caches and provider load were uncontrolled.
 
-The retrieval implementation consequently does not inject stored report text.
-The safe summary follow-up needs complete transitive source dependencies and
-live access validation, with unknown provenance failing closed. This limitation
-also rules out importing the task wake's cached context wholesale. 
+These are **first answer text / complete validated built answer**, median seconds.
+Both include selection and retrieval; neither includes widget painting or durable
+chat publication. Each numerical cell below has three completed samples.
+
+| Model | Local | Follow-up | Wider category | All gates passed |
+|---|---:|---:|---:|---:|
+| deepseek-v4.1-flash | 9.84 / 11.30 | 13.64 / 14.88 | 20.43 / 21.67 | 13/15 |
+| glm-5.3-flash | 2.06 / 3.02 | 2.22 / 3.03 | 1.87 / 2.82 | 9/15 |
+| glm-5.3 | 6.19 / 6.99 | 1.41 / 1.85 | 12.10 / 12.82 | 15/15 |
+
+Nemotron (`nemotron-3-nano-30b-a3b`) passed only 2/15 planned cases: six
+`FormatException` failures prevented publication and blocked two follow-ups.
+Its only completed local sample took 3.45 / 3.86 seconds; this is **not** a
+three-sample successful median. A separate diagnostic replay later passed both
+local and wider questions; it is excluded from these matched results and does
+not erase the validation failures. The harness now retains parsed synthetic
+responses for diagnosing such failures.
+
+GLM-5.3 Flash completed all 15 responses in 2.52–3.93 seconds, but all six negative
+cases set `needsHomeEvidence=true`, bypassed the full-summary answer, and inspected
+seven own-task originals. No cross-category value was disclosed, but the summary
+ladder gates failed. DeepSeek took this fallback once; two price refusals also
+missed the unchanged lexical absence gate despite correctly declining to invent a
+price on manual review. GLM-5.3 passed all gates, with completion times ranging
+from 1.74 to 33.96 seconds. DeepSeek's slowest follow-up took 41.31 seconds,
+including 37.94 seconds for selection; keep this outlier visible.
+
+The three DeepSeek entry-control local samples completed in 13.86, 14.23 and
+12.47 seconds, versus summary-first 9.47, 11.30 and 13.01. Broader summary-first
+questions were slower than that entry control. Do not generalize the local gain
+to all queries, or treat the two answer bases as identical products.
+
+Per-call token, reasoning and cache usage are recorded. Melious omitted billing
+and energy metadata for streamed synthesis, so complete per-question cost/energy
+totals remain unknown. The report-preparation calls took 415.2 seconds separately
+from chat timing; they are not task-wake workflow measurements. Long-source and
+actual UI/controller timing remain unmeasured.
+
+Raw artifacts use `deepseek-summary-matched-{entry,summary}-20260912-{1,2,3}.json`
+and `{glm-5.3-flash,glm-5.3,nemotron-3-nano-30b-a3b}-summary-20260912-{1,2,3}.json`
+in the external `query_latency_eval` directory. The full report
+`2026-09-12-summary-chat-eval-results.md` retains every sample, range, failed gate,
+answer, and token count. The shared report bundle SHA-256 is
+`0a707519eac60c94933221181ff50d8a05d52dfb4e663010dd1300909cd4de93`.
+
+## Flash guidance iteration (2026-09-12)
+
+The final shared selection/synthesis prompts passed **33/33** checks with
+`glm-5.3-flash`: three repeats of the five original cases (**15/15**, versus
+9/15 before) and six additional paraphrase/original-quote cases (**18/18**).
+The added cases were used during tuning and are regression cases, not unseen
+holdouts. The shipped corpus, frozen reports, canonical questions, expected
+facts, forbidden values and production validators were unchanged. No automatic
+repair retry or model switch was added.
+
+The original guidance let ordinary factual or unanswered questions request raw
+home entries. It also left Flash prone to unescaped title quotation marks,
+prose outside JSON, and owner IDs without exact title attribution. The revised
+selector explicitly keeps missing details on the full-summary path and reserves
+the original route for explicit home-task requests. Synthesis puts the JSON
+contract first, uses exact bold owner titles and permits a wholly unanswered,
+unresolved response without attributed factual claims. These are instructions,
+not a new deterministic intent classifier; malformed answers still fail checks.
+
+| Case | First text median [range], seconds | Validated answer median [range], seconds | Calls |
+|---|---:|---:|---:|
+| Local | 2.523 [1.503–2.822] | 4.004 [2.337–4.530] | 2 |
+| Follow-up | 1.503 [1.382–2.194] | 2.733 [2.166–3.273] | 2 |
+| Wider category | 1.583 [1.505–1.736] | 2.542 [2.416–2.706] | 2 |
+| Absent | 2.356 [1.483–2.483] | 2.960 [2.079–3.128] | 2 |
+| Category boundary | 1.758 [1.599–2.359] | 2.324 [2.214–3.110] | 2 |
+| Explicit home quote | 6.017 [4.457–6.548] | 6.682 [5.062–7.136] | 3 |
+
+The timing boundary is unchanged: answer callback and validated built answer,
+excluding screen painting and chat persistence. Every ordinary final case stayed
+on summaries with no original evidence or shared conclusions; the explicit quote
+required validated home evidence. Two unnecessary raw-inspection paths were
+removed from the original negative cases. The local completion median increased
+from 3.02 to 4.00 seconds, while the other original-case medians decreased.
+This is a routing/reliability improvement, not a speedup on every question.
+
+Median input tokens for local increased from 4,602 to 5,276 with the longer
+contract and different selected owners. Median output tokens across the original
+cases were 200–292 after versus 284–442 before. Full cost/energy remains unknown
+because streamed synthesis omits those provider metrics. No total cost saving is
+claimed. Cache state and service load were uncontrolled.
+
+All failed iterations remain in external artifacts. Reverting only the production
+prompts after the final sweeps reproduced failures (**6/11** passed); ordinary
+questions again selected raw entries. The final prompts were restored. Manual
+review retained the intended facts and uncertainty, but found unnecessary detail
+in some refusals and one seals-versus-bays paraphrase. Automated passes therefore
+are not a claim of perfect semantic quality or general reliability.
+
+Raw final files are `glm-5.3-flash-guidance-v6-20260912-{1,2,3}.json`, with every
+answer and diagnostic in `2026-09-12-flash-guidance-eval-results.md` and
+`flash-guidance-v6-aggregates-20260912.json` outside the repository. The same frozen
+report bundle and settings as the model comparison above were used throughout.
+
+Single post-change control sweeps also passed **11/11** each for `glm-5.3` and
+`deepseek-v4.1-flash`. These are regression controls, not three-sample latency
+comparisons. Their total times ranged 1.43–9.30 seconds and 3.80–18.94 seconds
+respectively; each artifact records an unchanged checkout.
+Manual review found DeepSeek incorrectly treating a missing count in one report
+as conflicting with 37 in another. This escapes the current fact/attribution
+gates; its automated control pass is not a complete semantic endorsement. The
+same weakness occurs in two earlier DeepSeek baseline local answers.
 
 ## Historical timing caveat
 
