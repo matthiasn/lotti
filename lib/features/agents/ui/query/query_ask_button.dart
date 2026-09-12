@@ -21,6 +21,7 @@ class QueryAskButton extends ConsumerWidget {
   final bool fullLabel;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(queryChatEnabledProvider)) return const SizedBox.shrink();
     final messages = context.messages;
     final label = switch (scope.kind) {
       QueryScopeKind.task => messages.queryAskTask,

@@ -21,6 +21,46 @@ import '../evolution/widgets/evolution_recorder_test_utils.dart';
 void main() {
   setUpAll(loadAppFonts);
 
+  testWidgets('question recovery stays outside the user bubble', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'agent',
+            agentName: 'Habitat Watcher',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+            history: AsyncData([
+              AgentChatMessage(
+                id: 'question',
+                role: AgentChatRole.user,
+                text: 'Which feeder?',
+                createdAt: DateTime(2026, 9, 12),
+              ),
+            ]),
+            conversationId: 'query',
+            composerEnabled: false,
+            groupAttachmentsWithReply: true,
+            attachmentBuilder: (_, _) => const Text('Retry this question'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final bubble = find.byKey(const ValueKey('goal-chat-message-question'));
+    final recovery = find.text('Retry this question');
+    expect(find.descendant(of: bubble, matching: recovery), findsNothing);
+    expect(
+      tester.getTopLeft(recovery).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(bubble).dy),
+    );
+  });
+
   testWidgets('reply links keep message attribution and accessible actions', (
     tester,
   ) async {

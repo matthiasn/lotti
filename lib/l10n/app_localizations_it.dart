@@ -3468,6 +3468,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mostra le caratteristiche di gestione del progetto per l\'organizzazione dei compiti in progetti.';
 
   @override
+  String get configFlagEnableQueryChat => 'Chat attività sperimentale';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Mostra le chat per attività, progetti e categorie. Disattivata per impostazione predefinita.';
+
+  @override
   String get configFlagEnableRelationships => 'Attiva la pagina Persone';
 
   @override
@@ -11065,6 +11072,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get provisionedSyncTitle => 'Dispositivi';
 
   @override
+  String get queryAllSources => 'Tutti';
+
+  @override
   String get queryArchiveChat => 'Archivia chat';
 
   @override
@@ -11225,7 +11235,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Chiedi informazioni su note e riunioni precedenti. Le risposte includono i passaggi esatti che puoi consultare.';
+      'Chiedi informazioni sulle decisioni e sul lavoro passato. Le risposte distinguono i riepiloghi dai passaggi esatti.';
 
   @override
   String get queryExactStoredText => 'Testo esatto salvato';
@@ -11323,6 +11333,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get queryOpenEntry => 'Apri voce';
 
   @override
+  String get queryOriginalsHome =>
+      'Consulta solo questa attività e le voci collegate direttamente.';
+
+  @override
   String get queryOtherProject => 'Oltre l’ambito iniziale';
 
   @override
@@ -11381,7 +11395,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Data della versione non disponibile';
 
   @override
-  String get querySearching => 'Ricerca nelle note e registrazioni collegate…';
+  String get querySearching => 'Consultazione delle informazioni disponibili…';
 
   @override
   String get querySearchScope => 'Ambito di ricerca e filtri';
@@ -11401,6 +11415,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get querySourceMoved => 'Fonte spostata in un’altra categoria';
 
   @override
+  String get querySummaryBased => 'Basata sui riepiloghi';
+
+  @override
+  String get querySummaryCoverage =>
+      'Questa risposta usa riepiloghi di attività o progetti. Le voci originali non sono state consultate.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Apri un’attività o un progetto per consultarne il riepilogo attuale. Potrebbe essere cambiato dopo questa risposta.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Alcune informazioni mancano nei riepiloghi disponibili.';
+
+  @override
+  String get querySummaryOwners => 'Informazioni su questa risposta';
+
+  @override
   String get querySurroundingLimit =>
       'Questo è l’estratto salvato, che potrebbe non includere l’intera discussione.';
 
@@ -11409,7 +11441,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Premi Invia per inviare il testo. Il tuo fornitore potrebbe già avere l’audio.';
+      'Trascrizione della tua registrazione. Il tuo fornitore potrebbe già avere l’audio.';
 
   @override
   String get queryUnavailable =>

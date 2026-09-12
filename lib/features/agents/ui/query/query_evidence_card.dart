@@ -247,7 +247,7 @@ class QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                 ),
               if (deleted || changed || moved)
                 Text(messages.querySavedQuote, style: caption),
-              if (evidence.summary.isNotEmpty)
+              if (evidence.summary.isNotEmpty && !_expanded)
                 Padding(
                   padding: EdgeInsets.only(top: tokens.spacing.step3),
                   child: Text(evidence.summary, style: body),
@@ -258,6 +258,7 @@ class QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                 child: Semantics(
                   expanded: _expanded,
                   child: DesignSystemButton(
+                    tapTargetSize: MaterialTapTargetSize.padded,
                     label: _expanded
                         ? messages.queryHideExactText
                         : messages.queryExactText,
@@ -355,6 +356,7 @@ class QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                         child: Semantics(
                           expanded: _surrounding,
                           child: DesignSystemButton(
+                            tapTargetSize: MaterialTapTargetSize.padded,
                             semanticsLabel: messages.querySourceAction(
                               _surrounding
                                   ? messages.queryHideSurrounding
@@ -372,6 +374,7 @@ class QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                       ),
                     if (!deleted)
                       DesignSystemButton(
+                        tapTargetSize: MaterialTapTargetSize.padded,
                         label: changed
                             ? messages.queryOpenCurrentEntry
                             : messages.queryOpenEntry,
@@ -387,6 +390,7 @@ class QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                         size: DesignSystemButtonSize.dense,
                       ),
                     DesignSystemButton(
+                      tapTargetSize: MaterialTapTargetSize.padded,
                       label: _copied
                           ? messages.queryCopied
                           : messages.queryCopyQuote,

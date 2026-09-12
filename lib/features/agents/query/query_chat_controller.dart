@@ -108,6 +108,9 @@ class QueryChatController extends Notifier<QueryChatSession> {
   @override
   QueryChatSession build() {
     ref
+      ..listen(queryChatEnabledProvider, (_, enabled) {
+        if (!enabled) _cancelAll();
+      })
       ..listen(configFlagProvider('private'), (previous, next) {
         if (previous?.value == true && next.value != true) _cancelAll();
       })

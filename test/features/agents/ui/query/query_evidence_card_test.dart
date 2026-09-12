@@ -92,9 +92,11 @@ void main() {
     (tester) async {
       await pump(tester);
       expect(find.text('Recording transcript'), findsOneWidget);
+      expect(find.text(evidence.summary), findsOneWidget);
       await tester.tap(find.text('Show exact text'));
       await tester.pump();
       expect(find.text('Hide exact text'), findsOneWidget);
+      expect(find.text(evidence.summary), findsNothing);
       expect(find.text('Exact stored text'), findsOneWidget);
       final passage = tester
           .widget<SelectableText>(find.byType(SelectableText))

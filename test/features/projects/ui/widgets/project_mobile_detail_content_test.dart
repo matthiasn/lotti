@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -57,9 +59,12 @@ void main() {
           );
 
     return makeTestableWidget2(
-      Theme(
-        data: DesignSystemTheme.dark(),
-        child: Scaffold(body: content),
+      ProviderScope(
+        overrides: [queryChatEnabledProvider.overrideWithValue(false)],
+        child: Theme(
+          data: DesignSystemTheme.dark(),
+          child: Scaffold(body: content),
+        ),
       ),
       mediaQueryData: MediaQueryData(
         size: size,

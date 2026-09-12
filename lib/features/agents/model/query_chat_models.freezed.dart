@@ -1354,7 +1354,7 @@ return memory(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( QueryScope scope,  String title,  bool private)?  created,TResult Function( String title,  bool private)?  renamed,TResult Function( bool archived)?  archived,TResult Function( bool forget)?  deleted,TResult Function( String throughEventId)?  read,TResult Function( String text,  bool private,  List<QuerySourceRef> dependencies)?  question,TResult Function( String questionId,  String text,  QueryCoverage coverage,  bool summaryBased,  bool private,  List<QueryEvidence> evidence,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  answer,TResult Function( String questionId)?  failed,TResult Function( String questionId)?  cancelled,TResult Function( String questionId,  String text,  bool private,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  memory,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( QueryScope scope,  String title,  bool private)?  created,TResult Function( String title,  bool private)?  renamed,TResult Function( bool archived)?  archived,TResult Function( bool forget)?  deleted,TResult Function( String throughEventId)?  read,TResult Function( String text,  bool private,  List<QuerySourceRef> dependencies)?  question,TResult Function( String questionId,  String text,  QueryCoverage coverage,  bool summaryBased,  List<String> summaryOwnerIds,  bool private,  List<QueryEvidence> evidence,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  answer,TResult Function( String questionId)?  failed,TResult Function( String questionId)?  cancelled,TResult Function( String questionId,  String text,  bool private,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  memory,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case QueryChatCreated() when created != null:
 return created(_that.scope,_that.title,_that.private);case QueryChatRenamed() when renamed != null:
@@ -1363,7 +1363,7 @@ return archived(_that.archived);case QueryChatDeleted() when deleted != null:
 return deleted(_that.forget);case QueryChatRead() when read != null:
 return read(_that.throughEventId);case QueryChatQuestion() when question != null:
 return question(_that.text,_that.private,_that.dependencies);case QueryChatAnswer() when answer != null:
-return answer(_that.questionId,_that.text,_that.coverage,_that.summaryBased,_that.private,_that.evidence,_that.dependencies,_that.recalledMemoryIds);case QueryChatFailed() when failed != null:
+return answer(_that.questionId,_that.text,_that.coverage,_that.summaryBased,_that.summaryOwnerIds,_that.private,_that.evidence,_that.dependencies,_that.recalledMemoryIds);case QueryChatFailed() when failed != null:
 return failed(_that.questionId);case QueryChatCancelled() when cancelled != null:
 return cancelled(_that.questionId);case QueryChatMemory() when memory != null:
 return memory(_that.questionId,_that.text,_that.private,_that.dependencies,_that.recalledMemoryIds);case _:
@@ -1384,7 +1384,7 @@ return memory(_that.questionId,_that.text,_that.private,_that.dependencies,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( QueryScope scope,  String title,  bool private)  created,required TResult Function( String title,  bool private)  renamed,required TResult Function( bool archived)  archived,required TResult Function( bool forget)  deleted,required TResult Function( String throughEventId)  read,required TResult Function( String text,  bool private,  List<QuerySourceRef> dependencies)  question,required TResult Function( String questionId,  String text,  QueryCoverage coverage,  bool summaryBased,  bool private,  List<QueryEvidence> evidence,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)  answer,required TResult Function( String questionId)  failed,required TResult Function( String questionId)  cancelled,required TResult Function( String questionId,  String text,  bool private,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)  memory,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( QueryScope scope,  String title,  bool private)  created,required TResult Function( String title,  bool private)  renamed,required TResult Function( bool archived)  archived,required TResult Function( bool forget)  deleted,required TResult Function( String throughEventId)  read,required TResult Function( String text,  bool private,  List<QuerySourceRef> dependencies)  question,required TResult Function( String questionId,  String text,  QueryCoverage coverage,  bool summaryBased,  List<String> summaryOwnerIds,  bool private,  List<QueryEvidence> evidence,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)  answer,required TResult Function( String questionId)  failed,required TResult Function( String questionId)  cancelled,required TResult Function( String questionId,  String text,  bool private,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)  memory,}) {final _that = this;
 switch (_that) {
 case QueryChatCreated():
 return created(_that.scope,_that.title,_that.private);case QueryChatRenamed():
@@ -1393,7 +1393,7 @@ return archived(_that.archived);case QueryChatDeleted():
 return deleted(_that.forget);case QueryChatRead():
 return read(_that.throughEventId);case QueryChatQuestion():
 return question(_that.text,_that.private,_that.dependencies);case QueryChatAnswer():
-return answer(_that.questionId,_that.text,_that.coverage,_that.summaryBased,_that.private,_that.evidence,_that.dependencies,_that.recalledMemoryIds);case QueryChatFailed():
+return answer(_that.questionId,_that.text,_that.coverage,_that.summaryBased,_that.summaryOwnerIds,_that.private,_that.evidence,_that.dependencies,_that.recalledMemoryIds);case QueryChatFailed():
 return failed(_that.questionId);case QueryChatCancelled():
 return cancelled(_that.questionId);case QueryChatMemory():
 return memory(_that.questionId,_that.text,_that.private,_that.dependencies,_that.recalledMemoryIds);}
@@ -1410,7 +1410,7 @@ return memory(_that.questionId,_that.text,_that.private,_that.dependencies,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( QueryScope scope,  String title,  bool private)?  created,TResult? Function( String title,  bool private)?  renamed,TResult? Function( bool archived)?  archived,TResult? Function( bool forget)?  deleted,TResult? Function( String throughEventId)?  read,TResult? Function( String text,  bool private,  List<QuerySourceRef> dependencies)?  question,TResult? Function( String questionId,  String text,  QueryCoverage coverage,  bool summaryBased,  bool private,  List<QueryEvidence> evidence,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  answer,TResult? Function( String questionId)?  failed,TResult? Function( String questionId)?  cancelled,TResult? Function( String questionId,  String text,  bool private,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  memory,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( QueryScope scope,  String title,  bool private)?  created,TResult? Function( String title,  bool private)?  renamed,TResult? Function( bool archived)?  archived,TResult? Function( bool forget)?  deleted,TResult? Function( String throughEventId)?  read,TResult? Function( String text,  bool private,  List<QuerySourceRef> dependencies)?  question,TResult? Function( String questionId,  String text,  QueryCoverage coverage,  bool summaryBased,  List<String> summaryOwnerIds,  bool private,  List<QueryEvidence> evidence,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  answer,TResult? Function( String questionId)?  failed,TResult? Function( String questionId)?  cancelled,TResult? Function( String questionId,  String text,  bool private,  List<QuerySourceRef> dependencies,  List<String> recalledMemoryIds)?  memory,}) {final _that = this;
 switch (_that) {
 case QueryChatCreated() when created != null:
 return created(_that.scope,_that.title,_that.private);case QueryChatRenamed() when renamed != null:
@@ -1419,7 +1419,7 @@ return archived(_that.archived);case QueryChatDeleted() when deleted != null:
 return deleted(_that.forget);case QueryChatRead() when read != null:
 return read(_that.throughEventId);case QueryChatQuestion() when question != null:
 return question(_that.text,_that.private,_that.dependencies);case QueryChatAnswer() when answer != null:
-return answer(_that.questionId,_that.text,_that.coverage,_that.summaryBased,_that.private,_that.evidence,_that.dependencies,_that.recalledMemoryIds);case QueryChatFailed() when failed != null:
+return answer(_that.questionId,_that.text,_that.coverage,_that.summaryBased,_that.summaryOwnerIds,_that.private,_that.evidence,_that.dependencies,_that.recalledMemoryIds);case QueryChatFailed() when failed != null:
 return failed(_that.questionId);case QueryChatCancelled() when cancelled != null:
 return cancelled(_that.questionId);case QueryChatMemory() when memory != null:
 return memory(_that.questionId,_that.text,_that.private,_that.dependencies,_that.recalledMemoryIds);case _:
@@ -1897,7 +1897,7 @@ as List<QuerySourceRef>,
 @JsonSerializable()
 
 class QueryChatAnswer implements QueryChatEventData {
-  const QueryChatAnswer({required this.questionId, required this.text, required this.coverage, this.summaryBased = false, this.private = false, final  List<QueryEvidence> evidence = const [], final  List<QuerySourceRef> dependencies = const [], final  List<String> recalledMemoryIds = const [], final  String? $type}): _evidence = evidence,_dependencies = dependencies,_recalledMemoryIds = recalledMemoryIds,$type = $type ?? 'answer';
+  const QueryChatAnswer({required this.questionId, required this.text, required this.coverage, this.summaryBased = false, final  List<String> summaryOwnerIds = const [], this.private = false, final  List<QueryEvidence> evidence = const [], final  List<QuerySourceRef> dependencies = const [], final  List<String> recalledMemoryIds = const [], final  String? $type}): _summaryOwnerIds = summaryOwnerIds,_evidence = evidence,_dependencies = dependencies,_recalledMemoryIds = recalledMemoryIds,$type = $type ?? 'answer';
   factory QueryChatAnswer.fromJson(Map<String, dynamic> json) => _$QueryChatAnswerFromJson(json);
 
  final  String questionId;
@@ -1905,6 +1905,15 @@ class QueryChatAnswer implements QueryChatEventData {
  final  QueryCoverage coverage;
 // Summary owners stay live and in scope after save, sync, and reload.
 @JsonKey() final  bool summaryBased;
+// Validated answer attributions, distinct from broader privacy dependencies.
+ final  List<String> _summaryOwnerIds;
+// Validated answer attributions, distinct from broader privacy dependencies.
+@JsonKey() List<String> get summaryOwnerIds {
+  if (_summaryOwnerIds is EqualUnmodifiableListView) return _summaryOwnerIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_summaryOwnerIds);
+}
+
 @JsonKey() final  bool private;
  final  List<QueryEvidence> _evidence;
 @JsonKey() List<QueryEvidence> get evidence {
@@ -1945,16 +1954,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueryChatAnswer&&(identical(other.questionId, questionId) || other.questionId == questionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.coverage, coverage) || other.coverage == coverage)&&(identical(other.summaryBased, summaryBased) || other.summaryBased == summaryBased)&&(identical(other.private, private) || other.private == private)&&const DeepCollectionEquality().equals(other._evidence, _evidence)&&const DeepCollectionEquality().equals(other._dependencies, _dependencies)&&const DeepCollectionEquality().equals(other._recalledMemoryIds, _recalledMemoryIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueryChatAnswer&&(identical(other.questionId, questionId) || other.questionId == questionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.coverage, coverage) || other.coverage == coverage)&&(identical(other.summaryBased, summaryBased) || other.summaryBased == summaryBased)&&const DeepCollectionEquality().equals(other._summaryOwnerIds, _summaryOwnerIds)&&(identical(other.private, private) || other.private == private)&&const DeepCollectionEquality().equals(other._evidence, _evidence)&&const DeepCollectionEquality().equals(other._dependencies, _dependencies)&&const DeepCollectionEquality().equals(other._recalledMemoryIds, _recalledMemoryIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,questionId,text,coverage,summaryBased,private,const DeepCollectionEquality().hash(_evidence),const DeepCollectionEquality().hash(_dependencies),const DeepCollectionEquality().hash(_recalledMemoryIds));
+int get hashCode => Object.hash(runtimeType,questionId,text,coverage,summaryBased,const DeepCollectionEquality().hash(_summaryOwnerIds),private,const DeepCollectionEquality().hash(_evidence),const DeepCollectionEquality().hash(_dependencies),const DeepCollectionEquality().hash(_recalledMemoryIds));
 
 @override
 String toString() {
-  return 'QueryChatEventData.answer(questionId: $questionId, text: $text, coverage: $coverage, summaryBased: $summaryBased, private: $private, evidence: $evidence, dependencies: $dependencies, recalledMemoryIds: $recalledMemoryIds)';
+  return 'QueryChatEventData.answer(questionId: $questionId, text: $text, coverage: $coverage, summaryBased: $summaryBased, summaryOwnerIds: $summaryOwnerIds, private: $private, evidence: $evidence, dependencies: $dependencies, recalledMemoryIds: $recalledMemoryIds)';
 }
 
 
@@ -1965,7 +1974,7 @@ abstract mixin class $QueryChatAnswerCopyWith<$Res> implements $QueryChatEventDa
   factory $QueryChatAnswerCopyWith(QueryChatAnswer value, $Res Function(QueryChatAnswer) _then) = _$QueryChatAnswerCopyWithImpl;
 @useResult
 $Res call({
- String questionId, String text, QueryCoverage coverage, bool summaryBased, bool private, List<QueryEvidence> evidence, List<QuerySourceRef> dependencies, List<String> recalledMemoryIds
+ String questionId, String text, QueryCoverage coverage, bool summaryBased, List<String> summaryOwnerIds, bool private, List<QueryEvidence> evidence, List<QuerySourceRef> dependencies, List<String> recalledMemoryIds
 });
 
 
@@ -1982,13 +1991,14 @@ class _$QueryChatAnswerCopyWithImpl<$Res>
 
 /// Create a copy of QueryChatEventData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? questionId = null,Object? text = null,Object? coverage = null,Object? summaryBased = null,Object? private = null,Object? evidence = null,Object? dependencies = null,Object? recalledMemoryIds = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? questionId = null,Object? text = null,Object? coverage = null,Object? summaryBased = null,Object? summaryOwnerIds = null,Object? private = null,Object? evidence = null,Object? dependencies = null,Object? recalledMemoryIds = null,}) {
   return _then(QueryChatAnswer(
 questionId: null == questionId ? _self.questionId : questionId // ignore: cast_nullable_to_non_nullable
 as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
 as String,coverage: null == coverage ? _self.coverage : coverage // ignore: cast_nullable_to_non_nullable
 as QueryCoverage,summaryBased: null == summaryBased ? _self.summaryBased : summaryBased // ignore: cast_nullable_to_non_nullable
-as bool,private: null == private ? _self.private : private // ignore: cast_nullable_to_non_nullable
+as bool,summaryOwnerIds: null == summaryOwnerIds ? _self._summaryOwnerIds : summaryOwnerIds // ignore: cast_nullable_to_non_nullable
+as List<String>,private: null == private ? _self.private : private // ignore: cast_nullable_to_non_nullable
 as bool,evidence: null == evidence ? _self._evidence : evidence // ignore: cast_nullable_to_non_nullable
 as List<QueryEvidence>,dependencies: null == dependencies ? _self._dependencies : dependencies // ignore: cast_nullable_to_non_nullable
 as List<QuerySourceRef>,recalledMemoryIds: null == recalledMemoryIds ? _self._recalledMemoryIds : recalledMemoryIds // ignore: cast_nullable_to_non_nullable

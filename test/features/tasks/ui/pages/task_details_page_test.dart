@@ -239,6 +239,7 @@ void main() {
           TaskDetailsPage(taskId: testTask.id),
           overrides: [
             ...hTaskDetailsPageOverrides(),
+            queryChatEnabledProvider.overrideWithValue(true),
             queryChatTargetProvider(scope).overrideWith(
               (ref) async => QueryChatTarget(
                 scope: scope,

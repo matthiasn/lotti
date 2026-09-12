@@ -36,6 +36,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableQueryChatFlag,
+      description: 'Enable experimental task, project and category chat?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableAiSummaryTtsFlag,
       description: 'Enable local AI summary playback?',
       status: false,

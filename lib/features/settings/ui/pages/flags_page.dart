@@ -101,6 +101,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableTooltipFlag,
     enableAiStreamingFlag,
     enableAiSummaryTtsFlag,
+    enableQueryChatFlag,
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
@@ -161,6 +162,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return LottiIcons.bolt;
       case enableAiSummaryTtsFlag:
         return LottiIcons.volume;
+      case enableQueryChatFlag:
+        return LottiIcons.chat;
       case enableLoggingFlag:
         return LottiIcons.bug;
       case enableMatrixFlag:
@@ -214,6 +217,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableAiStreamingDescription;
       case enableAiSummaryTtsFlag:
         return context.messages.configFlagEnableAiSummaryTtsDescription;
+      case enableQueryChatFlag:
+        return context.messages.configFlagEnableQueryChatDescription;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLoggingDescription;
       case enableMatrixFlag:
@@ -269,6 +274,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableAiStreaming;
       case enableAiSummaryTtsFlag:
         return context.messages.configFlagEnableAiSummaryTts;
+      case enableQueryChatFlag:
+        return context.messages.configFlagEnableQueryChat;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLogging;
       case enableMatrixFlag:

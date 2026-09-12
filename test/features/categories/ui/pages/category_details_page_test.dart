@@ -147,6 +147,7 @@ void main() {
         tester,
         settle: true,
         extraOverrides: [
+          queryChatEnabledProvider.overrideWithValue(true),
           queryChatTargetProvider(scope).overrideWith(
             (ref) async => QueryChatTarget(
               scope: scope,

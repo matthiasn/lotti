@@ -150,75 +150,92 @@ class _QueryCompanionState extends ConsumerState<QueryCompanion> {
               ),
             );
 
-        return Stack(
-          children: [
-            Positioned.fill(
-              right: open && docked ? width + tokens.spacing.step2 : 0,
-              child: widget.child,
-            ),
-            if (open)
+        return ListenableBuilder(
+          listenable: _sheet,
+          builder: (context, _) => Stack(
+            children: [
               Positioned.fill(
-                left: docked ? constraints.maxWidth - width : 0,
-                child: docked
-                    ? chat()
-                    : DraggableScrollableSheet(
-                        controller: _sheet,
-                        minChildSize: keyboardVisible ? 1 : .5,
-                        // Start with Flutter's default half-height detent.
-                        // A keyboard already occupying the page needs the
-                        // full available reading area instead.
-                        initialChildSize: keyboardVisible ? 1 : .5,
-                        builder: (context, scrollController) => Material(
-                          color: tokens.colors.background.level01,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(tokens.radii.l),
-                            ),
-                            side: BorderSide(
-                              color: tokens.colors.decorative.level01,
-                            ),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: CustomScrollView(
-                            controller: scrollController,
-                            slivers: [
-                              SliverFillRemaining(
-                                child: ListenableBuilder(
-                                  listenable: _sheet,
-                                  builder: (context, _) => chat(
-                                    onToggleExpanded: keyboardVisible
-                                        ? null
-                                        : _toggleSheet,
-                                    expanded:
-                                        _sheet.isAttached && _sheet.size == 1,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-              ),
-            if (open && docked)
-              Positioned(
-                top: 0,
-                bottom: 0,
-                right: width,
-                width: tokens.spacing.step2,
-                child: ResizableDivider(
-                  currentValue: width,
-                  minValue: minimum,
-                  maxValue: maximum,
-                  reverse: true,
-                  onDrag: (delta) => setState(
-                    () => _preferredWidth = (width + delta).clamp(
-                      minimum,
-                      maximum,
-                    ),
+                right: open && docked ? width + tokens.spacing.step2 : 0,
+                child: ExcludeFocus(
+                  excluding:
+                      open &&
+                      !docked &&
+                      (keyboardVisible ||
+                          (_sheet.isAttached && _sheet.size == 1)),
+                  child: ExcludeSemantics(
+                    excluding:
+                        open &&
+                        !docked &&
+                        (keyboardVisible ||
+                            (_sheet.isAttached && _sheet.size == 1)),
+                    child: widget.child,
                   ),
                 ),
               ),
-          ],
+              if (open)
+                Positioned.fill(
+                  left: docked ? constraints.maxWidth - width : 0,
+                  child: docked
+                      ? chat()
+                      : DraggableScrollableSheet(
+                          controller: _sheet,
+                          minChildSize: keyboardVisible ? 1 : .5,
+                          // Start with Flutter's default half-height detent.
+                          // A keyboard already occupying the page needs the
+                          // full available reading area instead.
+                          initialChildSize: keyboardVisible ? 1 : .5,
+                          builder: (context, scrollController) => Material(
+                            color: tokens.colors.background.level01,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(tokens.radii.l),
+                              ),
+                              side: BorderSide(
+                                color: tokens.colors.decorative.level01,
+                              ),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: CustomScrollView(
+                              controller: scrollController,
+                              slivers: [
+                                SliverFillRemaining(
+                                  child: ListenableBuilder(
+                                    listenable: _sheet,
+                                    builder: (context, _) => chat(
+                                      onToggleExpanded: keyboardVisible
+                                          ? null
+                                          : _toggleSheet,
+                                      expanded:
+                                          _sheet.isAttached && _sheet.size == 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              if (open && docked)
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: width,
+                  width: tokens.spacing.step2,
+                  child: ResizableDivider(
+                    currentValue: width,
+                    minValue: minimum,
+                    maxValue: maximum,
+                    reverse: true,
+                    onDrag: (delta) => setState(
+                      () => _preferredWidth = (width + delta).clamp(
+                        minimum,
+                        maximum,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );

@@ -3468,6 +3468,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit funkce správy projektů pro organizaci úkolů do projektů.';
 
   @override
+  String get configFlagEnableQueryChat => 'Experimentální chat k úkolům';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Zobrazí chaty pro úkoly, projekty a kategorie. Ve výchozím stavu je vypnutý.';
+
+  @override
   String get configFlagEnableRelationships => 'Zapnout stránku Lidé';
 
   @override
@@ -11072,6 +11079,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncTitle => 'Zařízení';
 
   @override
+  String get queryAllSources => 'Vše';
+
+  @override
   String get queryArchiveChat => 'Archivovat chat';
 
   @override
@@ -11231,7 +11241,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Zeptej se na dřívější poznámky a schůzky. Odpovědi obsahují přesné pasáže, které si můžeš prohlédnout.';
+      'Ptej se na rozhodnutí a dřívější práci. Odpovědi rozlišují souhrny od přesných pasáží.';
 
   @override
   String get queryExactStoredText => 'Přesný uložený text';
@@ -11331,6 +11341,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get queryOpenEntry => 'Otevřít záznam';
 
   @override
+  String get queryOriginalsHome =>
+      'Prohlíží pouze tento úkol a jeho přímo propojené záznamy.';
+
+  @override
   String get queryOtherProject => 'Mimo základní rozsah';
 
   @override
@@ -11387,7 +11401,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get querySavedVersionUnavailable => 'Datum verze není k dispozici';
 
   @override
-  String get querySearching => 'Hledání v propojených poznámkách a nahrávkách…';
+  String get querySearching => 'Prohlížení dostupných informací…';
 
   @override
   String get querySearchScope => 'Rozsah hledání a filtry';
@@ -11407,6 +11421,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get querySourceMoved => 'Zdroj přesunut do jiné kategorie';
 
   @override
+  String get querySummaryBased => 'Na základě souhrnů';
+
+  @override
+  String get querySummaryCoverage =>
+      'Tato odpověď využívá souhrny úkolů nebo projektů. Původní záznamy nebyly prohlédnuty.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Otevři úkol nebo projekt a prohlédni si jeho aktuální souhrn. Od této odpovědi se mohl změnit.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'V dostupných souhrnech chybí některé informace.';
+
+  @override
+  String get querySummaryOwners => 'O této odpovědi';
+
+  @override
   String get querySurroundingLimit =>
       'Toto je uložený úryvek, který nemusí obsahovat celou diskusi.';
 
@@ -11415,7 +11447,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Text odešleš tlačítkem Odeslat. Zvuk už může být u tvého poskytovatele.';
+      'Přepisování tvé nahrávky. Poskytovatel už mohl zvuk obdržet.';
 
   @override
   String get queryUnavailable =>

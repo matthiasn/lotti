@@ -40,6 +40,11 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
+    name: enableQueryChatFlag,
+    description: 'Enable experimental task, project and category chat?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableAiSummaryTtsFlag,
     description: 'Enable local AI summary playback?',
     status: false,

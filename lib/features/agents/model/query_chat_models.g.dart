@@ -206,6 +206,11 @@ QueryChatAnswer _$QueryChatAnswerFromJson(Map<String, dynamic> json) =>
         json['coverage'] as Map<String, dynamic>,
       ),
       summaryBased: json['summaryBased'] as bool? ?? false,
+      summaryOwnerIds:
+          (json['summaryOwnerIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       private: json['private'] as bool? ?? false,
       evidence:
           (json['evidence'] as List<dynamic>?)
@@ -231,6 +236,7 @@ Map<String, dynamic> _$QueryChatAnswerToJson(QueryChatAnswer instance) =>
       'text': instance.text,
       'coverage': instance.coverage,
       'summaryBased': instance.summaryBased,
+      'summaryOwnerIds': instance.summaryOwnerIds,
       'private': instance.private,
       'evidence': instance.evidence,
       'dependencies': instance.dependencies,

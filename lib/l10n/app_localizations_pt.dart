@@ -3457,6 +3457,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mostre recursos de gerenciamento de projetos para organizar tarefas em projetos.';
 
   @override
+  String get configFlagEnableQueryChat => 'Chat de tarefas experimental';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Mostra chats de tarefas, projetos e categorias. Desativado por padrão.';
+
+  @override
   String get configFlagEnableRelationships => 'Ativar a página Pessoas';
 
   @override
@@ -11029,6 +11036,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get provisionedSyncTitle => 'Dispositivos';
 
   @override
+  String get queryAllSources => 'Todos';
+
+  @override
   String get queryArchiveChat => 'Arquivar chat';
 
   @override
@@ -11189,7 +11199,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Pergunta sobre notas e reuniões anteriores. As respostas incluem as passagens exatas que podes consultar.';
+      'Pergunta sobre decisões e trabalhos anteriores. As respostas distinguem resumos de trechos exatos.';
 
   @override
   String get queryExactStoredText => 'Texto exato guardado';
@@ -11287,6 +11297,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queryOpenEntry => 'Abrir entrada';
 
   @override
+  String get queryOriginalsHome =>
+      'Consulta apenas esta tarefa e suas entradas diretamente vinculadas.';
+
+  @override
   String get queryOtherProject => 'Fora do âmbito de origem';
 
   @override
@@ -11343,7 +11357,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get querySavedVersionUnavailable => 'Data da versão indisponível';
 
   @override
-  String get querySearching => 'A pesquisar notas e gravações ligadas…';
+  String get querySearching => 'A consultar as informações disponíveis…';
 
   @override
   String get querySearchScope => 'Escopo da pesquisa e filtros';
@@ -11363,6 +11377,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get querySourceMoved => 'Fonte movida para outra categoria';
 
   @override
+  String get querySummaryBased => 'Baseada em resumos';
+
+  @override
+  String get querySummaryCoverage =>
+      'Esta resposta usa resumos de tarefas ou projetos. As entradas originais não foram consultadas.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Abre uma tarefa ou um projeto para consultar o resumo atual. Pode ter mudado desde esta resposta.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Faltam informações nos resumos disponíveis.';
+
+  @override
+  String get querySummaryOwners => 'Sobre esta resposta';
+
+  @override
   String get querySurroundingLimit =>
       'Este é o excerto guardado, que pode não incluir toda a conversa.';
 
@@ -11371,7 +11403,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Carrega em Enviar para enviar o texto. O teu fornecedor pode já ter o áudio.';
+      'A transcrever a tua gravação. O teu fornecedor pode já ter recebido o áudio.';
 
   @override
   String get queryUnavailable =>

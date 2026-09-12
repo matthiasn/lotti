@@ -30,7 +30,7 @@ import '../../../../widget_test_utils.dart';
 /// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
 /// `displayedItems`, and asserting against the production list would make this
 /// a tautology.
-const _displayedFlagCount = 13;
+const _displayedFlagCount = 14;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +55,11 @@ void main() {
     when(() => mockDb.watchConfigFlags()).thenAnswer(
       (_) => Stream<Set<ConfigFlag>>.fromIterable([
         {
+          const ConfigFlag(
+            name: enableQueryChatFlag,
+            description: 'Enable experimental task, project and category chat?',
+            status: false,
+          ),
           const ConfigFlag(
             name: privateFlag,
             description: 'Show private entries?',
@@ -366,6 +371,18 @@ void main() {
             description: (m) => m.configFlagEnableForkHealingDescription,
             icon: LottiIcons.merge,
             expectedToggle: null,
+          ),
+          (
+            name: 'query-chat',
+            title: (m) => m.configFlagEnableQueryChat,
+            description: (m) => m.configFlagEnableQueryChatDescription,
+            icon: LottiIcons.chat,
+            expectedToggle: const ConfigFlag(
+              name: enableQueryChatFlag,
+              description:
+                  'Enable experimental task, project and category chat?',
+              status: true,
+            ),
           ),
           (
             name: 'ai-summary-tts',

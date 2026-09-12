@@ -3425,6 +3425,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vis projektstyringsfunktioner til at organisere opgaver i projekter.';
 
   @override
+  String get configFlagEnableQueryChat => 'Eksperimentel opgavechat';
+
+  @override
+  String get configFlagEnableQueryChatDescription =>
+      'Viser chats for opgaver, projekter og kategorier. Slået fra som standard.';
+
+  @override
   String get configFlagEnableRelationships => 'Aktivér Personer-siden';
 
   @override
@@ -10926,6 +10933,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncTitle => 'Enheder';
 
   @override
+  String get queryAllSources => 'Alle';
+
+  @override
   String get queryArchiveChat => 'Arkivér chat';
 
   @override
@@ -11085,7 +11095,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryEmptyBody =>
-      'Spørg til tidligere noter og møder. Svarene indeholder de præcise passager, du kan læse.';
+      'Spørg om beslutninger og tidligere arbejde. Svar skelner mellem opsummeringer og ordrette passager.';
 
   @override
   String get queryExactStoredText => 'Præcis gemt tekst';
@@ -11182,6 +11192,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryOpenEntry => 'Åbn indlæg';
 
   @override
+  String get queryOriginalsHome =>
+      'Gennemgår kun denne opgave og dens direkte tilknyttede poster.';
+
+  @override
   String get queryOtherProject => 'Uden for udgangsområdet';
 
   @override
@@ -11238,7 +11252,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get querySavedVersionUnavailable => 'Versionsdato er ikke tilgængelig';
 
   @override
-  String get querySearching => 'Søger i tilknyttede noter og optagelser…';
+  String get querySearching => 'Gennemgår tilgængelige oplysninger…';
 
   @override
   String get querySearchScope => 'Søgeområde og filtre';
@@ -11258,6 +11272,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get querySourceMoved => 'Kilde flyttet til en anden kategori';
 
   @override
+  String get querySummaryBased => 'Baseret på opsummeringer';
+
+  @override
+  String get querySummaryCoverage =>
+      'Dette svar bruger opsummeringer af opgaver eller projekter. De oprindelige poster blev ikke gennemgået.';
+
+  @override
+  String get querySummaryCurrent =>
+      'Åbn en opgave eller et projekt for at læse den aktuelle opsummering. Den kan være ændret siden dette svar.';
+
+  @override
+  String get querySummaryIncomplete =>
+      'Der mangler oplysninger i de tilgængelige opsummeringer.';
+
+  @override
+  String get querySummaryOwners => 'Om dette svar';
+
+  @override
   String get querySurroundingLimit =>
       'Dette er det gemte uddrag, som muligvis ikke indeholder hele diskussionen.';
 
@@ -11266,7 +11298,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Tryk Send for at sende teksten. Lyden kan allerede være hos din udbyder.';
+      'Transskriberer din optagelse. Lyden kan allerede være hos din udbyder.';
 
   @override
   String get queryUnavailable =>

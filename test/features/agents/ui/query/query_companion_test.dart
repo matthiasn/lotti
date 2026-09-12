@@ -83,11 +83,15 @@ void main() {
           scope: scope,
           child: Focus(
             focusNode: taskFocus,
-            child: const SizedBox.expand(key: detailKey),
+            child: Semantics(
+              label: 'Task detail controls',
+              child: const SizedBox.expand(key: detailKey),
+            ),
           ),
         ),
         mediaQueryData: mediaQueryData,
         overrides: [
+          queryChatEnabledProvider.overrideWithValue(true),
           queryChatTargetProvider(scope).overrideWith(
             (ref) async => QueryChatTarget(
               scope: scope,
@@ -225,6 +229,30 @@ void main() {
       expect(tester.element(find.byKey(detailKey)), same(detail));
     },
   );
+
+  testWidgets('expanded phone chat excludes covered task focus and semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await pump(tester, size: const Size(390, 844));
+    await open(tester);
+    expect(taskFocus.canRequestFocus, isTrue);
+    expect(find.semantics.byLabel('Task detail controls'), findsOneWidget);
+    tester
+        .widget<QueryChatPane>(find.byType(QueryChatPane))
+        .onToggleExpanded!();
+    await tester.pumpAndSettle();
+    expect(taskFocus.canRequestFocus, isFalse);
+    expect(find.semantics.byLabel('Task detail controls'), findsNothing);
+    tester
+        .widget<QueryChatPane>(find.byType(QueryChatPane))
+        .onToggleExpanded!();
+    await tester.pumpAndSettle();
+    expect(taskFocus.canRequestFocus, isTrue);
+    expect(find.semantics.byLabel('Task detail controls'), findsOneWidget);
+    semantics.dispose();
+  });
 
   testWidgets(
     'keyboard uses the available phone height and cannot drag below its reading area',

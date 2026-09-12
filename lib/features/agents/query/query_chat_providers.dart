@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -28,6 +29,12 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/consts.dart';
+
+/// Experimental scoped chat is hidden until explicitly enabled.
+final queryChatEnabledProvider = Provider<bool>(
+  (ref) => ref.watch(configFlagProvider(enableQueryChatFlag)).value ?? false,
+);
 
 final querySourceAccessProvider = Provider<QuerySourceAccess>(
   (ref) => QuerySourceAccess(
@@ -269,8 +276,8 @@ final StreamProviderFamily<QueryChatData, QueryChatKey> queryChatDataProvider =
       return controller.stream;
     });
 
-/// Detail hosts keep their state while the query pane temporarily replaces
-/// their content. Each task/project/category owns its own navigation toggle.
+/// Each scope owns its navigation toggle. Disabling the feature closes every
+/// open scope without deleting its saved conversations.
 final NotifierProviderFamily<QueryPaneOpen, bool, QueryScope>
 queryPaneOpenProvider =
     NotifierProvider.family<QueryPaneOpen, bool, QueryScope>(QueryPaneOpen.new);
@@ -279,7 +286,11 @@ class QueryPaneOpen extends Notifier<bool> {
   QueryPaneOpen(this.scope);
   final QueryScope scope;
   @override
-  bool build() => false;
+  bool build() {
+    ref.watch(queryChatEnabledProvider);
+    return false;
+  }
+
   bool get open => state;
-  set open(bool value) => state = value;
+  set open(bool value) => state = value && ref.read(queryChatEnabledProvider);
 }
