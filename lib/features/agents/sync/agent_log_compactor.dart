@@ -223,6 +223,13 @@ class AgentLogCompactor {
     // assembleContextAsOf could later reconstruct a different prompt once the
     // dropped content arrives.
     final resolved = await _resolveEventContents(tailEvents);
+    return _assembleResolved(view.active, resolved);
+  }
+
+  AssembledLog _assembleResolved(
+    SummaryCheckpoint? active,
+    List<({InputEvent event, Map<String, Object?> content})> resolved,
+  ) {
     final tail = [
       for (final loaded in resolved)
         TailLine(
@@ -233,10 +240,10 @@ class AgentLogCompactor {
 
     return AssembledLog(
       text: assembleCompactedTaskLog(
-        summaryText: view.active?.summaryText,
+        summaryText: active?.summaryText,
         tail: tail,
       ),
-      activeSummaryId: view.active?.id,
+      activeSummaryId: active?.id,
       lastEventPosition: resolved.isEmpty ? null : resolved.last.event.position,
     );
   }
@@ -468,9 +475,10 @@ class AgentLogCompactor {
   }
 
   /// Compacts [agentId] if its uncovered tail exceeds [budget] tokens, calling
-  /// [summarize] to distill the folded events. Returns the appended summary's
-  /// id, or null when nothing needed folding (a pure read in that case — no
-  /// writes, no outbox churn).
+  /// [summarize] to distill the folded events. Returns the assembled context
+  /// and the new summary id, or a null id if no fold was needed. The no-fold
+  /// path renders the already resolved tail with no second projection or
+  /// payload read. A committed fold re-projects the checkpoint and live tail.
   ///
   /// **Hysteresis.** [budget] is the *trigger* (high watermark): nothing happens
   /// while the tail fits it. Once exceeded, the fold goes *deeper* — down to
@@ -481,7 +489,7 @@ class AgentLogCompactor {
   /// the prompt prefix) on nearly every subsequent wake. When [retainTokens] is
   /// null or `>= budget`, the fold stops at [budget] (the pre-hysteresis
   /// behaviour).
-  Future<String?> maybeCompact({
+  Future<({AssembledLog log, String? newSummaryId})> compactAndAssemble({
     required String agentId,
     required int budget,
     required AgentSummarizer summarize,
@@ -491,7 +499,9 @@ class AgentLogCompactor {
     String? runKey,
   }) async {
     final view = await _projectActiveView(agentId);
-    if (view.log.events.isEmpty) return null;
+    if (view.log.events.isEmpty) {
+      return (log: const AssembledLog.empty(), newSummaryId: null);
+    }
 
     final tailEvents = visibleTailEvents(
       log: view.log,
@@ -501,6 +511,39 @@ class AgentLogCompactor {
     // concurrently.
     final loadedTail = await _resolveEventContents(tailEvents);
 
+    final newSummaryId = await _compactResolved(
+      agentId: agentId,
+      view: view,
+      loadedTail: loadedTail,
+      budget: budget,
+      retainTokens: retainTokens,
+      summarize: summarize,
+      at: at,
+      threadId: threadId,
+      runKey: runKey,
+    );
+    return (
+      // A fold changes the checkpoint; re-project so concurrent synced input
+      // and the newly committed summary both participate in the final view.
+      log: newSummaryId == null
+          ? _assembleResolved(view.active, loadedTail)
+          : await assembleContextDetailed(agentId),
+      newSummaryId: newSummaryId,
+    );
+  }
+
+  Future<String?> _compactResolved({
+    required String agentId,
+    required ({InputEventLog log, SummaryCheckpoint? active}) view,
+    required List<({InputEvent event, Map<String, Object?> content})>
+    loadedTail,
+    required int budget,
+    required AgentSummarizer summarize,
+    required DateTime at,
+    int? retainTokens,
+    String? threadId,
+    String? runKey,
+  }) async {
     final tail = [
       for (final loaded in loadedTail)
         TailEntry(

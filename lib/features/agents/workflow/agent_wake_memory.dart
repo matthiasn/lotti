@@ -162,10 +162,13 @@ class AgentWakeMemory {
       resolveInlineContent: resolveInlineContent,
     );
 
+    AssembledLog? assembled;
+    var folded = false;
+    final preparation = Stopwatch()..start();
     final summarizerService = logSummarizer;
     if (summarizerService != null) {
       try {
-        await compactor.maybeCompact(
+        final prepared = await compactor.compactAndAssemble(
           agentId: agentId,
           budget: budget,
           retainTokens: retainTokens,
@@ -180,6 +183,8 @@ class AgentWakeMemory {
           threadId: threadId,
           runKey: runKey,
         );
+        assembled = prepared.log;
+        folded = prepared.newSummaryId != null;
       } catch (e) {
         _logError('failed to compact agent log', error: e);
       }
@@ -189,9 +194,8 @@ class AgentWakeMemory {
     // compaction are optional and non-fatal, so if nothing was captured
     // (empty assembly) the wake falls back to the full inline context rather
     // than losing its log.
-    AssembledLog? assembled;
     try {
-      assembled = await compactor.assembleContextDetailed(agentId);
+      assembled ??= await compactor.assembleContextDetailed(agentId);
     } catch (e) {
       // Non-fatal: a read-side bug degrades to the legacy inline context
       // (and logs loudly) instead of killing the wake.
@@ -205,6 +209,8 @@ class AgentWakeMemory {
     // PII-safe read-flip diagnostics: which gate kept the inline context?
     _log(
       'compaction read-flip: capture=$captureSucceeded '
+      'elapsedMs=${preparation.elapsedMilliseconds} folded=$folded '
+      'budgetTokens=$budget retainTokens=$retainTokens '
       'assembledChars=${compactedLog?.length ?? -1} '
       'useCompactedLog=$useCompactedLog',
     );

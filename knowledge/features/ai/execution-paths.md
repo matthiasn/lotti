@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T14:24:03Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: runner
@@ -15,23 +15,23 @@ sources:
   - id: skill-modal
     resource: ../../../lib/features/ai/ui/unified_ai_skills_modal.dart
     title: Unified AI skills modal
-    last_modified: 2026-08-09
+    last_modified: 2026-09-06
   - id: image-selector
     resource: ../../../lib/features/ai/ui/image_generation/reference_image_selection_widget.dart
     title: Shared reference-image selector
-    last_modified: 2026-08-10
+    last_modified: 2026-09-05
   - id: automation
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: ProfileAutomationService
-    last_modified: 2026-07-26
+    last_modified: 2026-09-06
   - id: prompt-builder
     resource: ../../../lib/features/ai/helpers/skill_prompt_builder.dart
     title: SkillPromptBuilder
-    last_modified: 2026-06-27
+    last_modified: 2026-08-21
   - id: unified
     resource: ../../../lib/features/ai/repository/unified_ai_inference_repository.dart
     title: UnifiedAiInferenceRepository (legacy prompt path)
-    last_modified: 2026-08-15
+    last_modified: 2026-08-20
   - id: image-paths
     resource: ../../../lib/utils/image_utils.dart
     title: Journal image path resolution
@@ -235,7 +235,7 @@ slot populated, so a profile deliberately chosen for a task still wins every
 capability it does own, and only the missing one falls through.
 
 **Why the walk exists:** picking a thinking model by hand resolves the task to a
-bare model route. `ProfileResolver._resolveTypedSetup` returns a `ResolvedProfile`
+bare model route. `ProfileResolver.resolveSetup` returns a `ResolvedProfile`
 carrying a thinking model and nothing else — no capability slots, no
 `skillAssignments` — whenever `AgentInferenceSetup` has a
 `thinkingModelOverrideId` and no `baseProfileId`. Treating that as the last word

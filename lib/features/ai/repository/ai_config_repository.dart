@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
@@ -29,9 +30,33 @@ AiConfigRepository aiConfigRepository(Ref ref) {
 }
 
 class AiConfigRepository {
-  AiConfigRepository(this._db);
+  AiConfigRepository(this._db, {this._settingsDb});
 
   final AiConfigDb _db;
+  final SettingsDb? _settingsDb;
+
+  /// Device-local fallback; credentials and available providers vary by device.
+  static const defaultProfileSettingsKey = 'AI_DEFAULT_INFERENCE_PROFILE';
+
+  Future<String?> getDefaultProfileId() async =>
+      _settingsDb?.itemByKey(defaultProfileSettingsKey);
+
+  /// Persists a deliberate default choice, or clears it without choosing an
+  /// arbitrary replacement. Missing/deleted profiles remain visibly unresolved.
+  Future<void> setDefaultProfileId(String? profileId) async {
+    final settings = _settingsDb;
+    if (settings == null) throw StateError('Settings storage is unavailable');
+    if (profileId == null) {
+      await settings.removeSettingsItem(defaultProfileSettingsKey);
+    } else {
+      final profile = await getConfigById(profileId);
+      if (profile is! AiConfigInferenceProfile) {
+        throw ArgumentError.value(profileId, 'profileId', 'Profile not found');
+      }
+      await settings.saveSettingsItem(defaultProfileSettingsKey, profileId);
+    }
+  }
+
   final Map<AiConfigType, List<AiConfig>> _configsByTypeCache =
       <AiConfigType, List<AiConfig>>{};
   final Map<AiConfigType, Future<List<AiConfig>>> _configsByTypeInFlight =

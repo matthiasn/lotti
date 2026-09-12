@@ -13,6 +13,9 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     required String threadId,
   }) async {
     final agentId = agentIdentity.id;
+    final preparationTimer = Stopwatch()..start();
+    final conversationTimer = Stopwatch();
+    final persistenceTimer = Stopwatch();
 
     _log(
       'wake start: agent=${DomainLogger.sanitizeId(agentId)}, '
@@ -580,6 +583,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // 7. Invoke the LLM and execute tool calls via AgentToolExecutor.
       final inferenceTemperature =
           TaskAgentEvidenceSynthesis.usesCompactScaffold(modelId) ? 0.0 : 0.3;
+      preparationTimer.stop();
+      conversationTimer.start();
       var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
@@ -785,6 +790,9 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         }
       }
 
+      conversationTimer.stop();
+      persistenceTimer.start();
+
       // Persist token usage as a synced entity (non-fatal on failure).
       await _persistTokenUsage(
         usage: usage,
@@ -916,6 +924,17 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
       return WakeResult(success: false, error: e.toString());
     } finally {
+      preparationTimer.stop();
+      conversationTimer.stop();
+      persistenceTimer.stop();
+      _log(
+        'wake stages: agent=${DomainLogger.sanitizeId(agentId)} '
+        'run=${DomainLogger.sanitizeId(runKey)} '
+        'preparationMs=${preparationTimer.elapsedMilliseconds} '
+        'modelToolsMs=${conversationTimer.elapsedMilliseconds} '
+        'persistenceMs=${persistenceTimer.elapsedMilliseconds}',
+        subDomain: 'timings',
+      );
       // 12. Clean up in-memory conversation to prevent resource leaks.
       conversationRepository.deleteConversation(conversationId);
     }

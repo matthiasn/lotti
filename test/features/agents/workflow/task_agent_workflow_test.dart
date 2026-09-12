@@ -1218,6 +1218,28 @@ void main() {
         ]);
         expect(messages.last, contains('requiredCorrections'));
         expect(messages.last, contains('processNarration'));
+        final timing =
+            verify(
+                  () => domainLogger.log(
+                    LogDomain.agentWorkflow,
+                    captureAny<String>(that: startsWith('wake stages:')),
+                    subDomain: 'timings',
+                  ),
+                ).captured.single
+                as String;
+        expect(timing, contains('run=${DomainLogger.sanitizeId(runKey)}'));
+        for (final phase in [
+          'preparationMs',
+          'modelToolsMs',
+          'persistenceMs',
+        ]) {
+          expect(
+            RegExp('$phase=[0-9]+').hasMatch(timing),
+            isTrue,
+            reason: phase,
+          );
+        }
+
         verify(
           () => domainLogger.log(
             LogDomain.agentWorkflow,

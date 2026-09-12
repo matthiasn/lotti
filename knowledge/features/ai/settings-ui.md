@@ -5,13 +5,17 @@ description: "A single scrolling CustomScrollView with nothing pinned, three tab
 resource: ../../../lib/features/ai/ui/settings
 tags: [ai, settings, ui, slivers]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:45:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2026-10-19
 sources:
+  - id: runtime-settings
+    resource: ../../../lib/features/ai/state/ai_runtime_settings_controller.dart
+    title: Runtime and default profile settings controllers
+    last_modified: 2026-09-12
   - id: src
     resource: ../../../lib/features/ai/ui/settings
     title: AI settings UI source
-    last_modified: 2026-07-26
+    last_modified: 2026-09-12
 ---
 
 The AI settings page renders as **one `CustomScrollView`** in which **nothing is
@@ -22,7 +26,7 @@ content.
 CustomScrollView(
   slivers: [
     SettingsPageHeader(...),            // shared settings title strip
-    SliverToBoxAdapter(                 // search + concurrency (not pinned)
+    SliverToBoxAdapter(                 // search + runtime defaults (not pinned)
       child: AiSettingsHeaderBar(...),
     ),
     SliverToBoxAdapter(                 // tab bar (not pinned)
@@ -45,8 +49,21 @@ screen.
 # Three tabs, one filter model
 
 Providers, models and profiles are tabs over the same header, so search and the
-concurrency control stay in one place rather than being repeated per tab. Only the
+runtime controls stay in one place rather than being repeated per tab. Only the
 models tab adds its own filter-chip strip.
+
+# Default inference profile
+
+The header includes a profile selector and an explicit “No default profile”
+choice. It lists all profiles independently of the active tab/search. A saved
+selection follows profile renames; a deleted profile displays the missing-profile
+label until the user chooses another or clears it. Failed saves show an error
+and retain the last persisted selection. Writes are serialized so rapid choices
+cannot persist out of order.
+
+The device-local routing contract is in
+[profile resolution](profile-resolution.md). `DefaultInferenceProfileController`
+notifies model summaries and relationship maintenance after a successful save.
 
 # The empty state is a first-run path, not a message
 

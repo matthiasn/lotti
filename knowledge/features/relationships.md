@@ -5,41 +5,41 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-14T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: src
     resource: ../../lib/features/relationships
     title: Relationships feature source
-    last_modified: 2026-08-18
+    last_modified: 2026-09-12
   - id: queries
     resource: ../../lib/database/database_relationship_queries.dart
     title: Relationship and check-in queries
-    last_modified: 2026-08-14
+    last_modified: 2026-09-06
   - id: model
     resource: ../../lib/classes/relationship_data.dart
     title: RelationshipData, RelationshipStatus, ContactChannel, AvatarCrop
-    last_modified: 2026-09-08
+    last_modified: 2026-09-09
   - id: persona-avatar
     resource: ../../lib/features/relationships/ui/shared/persona_avatar.dart
     title: PersonaAvatar — the four faces of a person
-    last_modified: 2026-09-08
+    last_modified: 2026-09-09
   - id: image-resolver
     resource: ../../lib/widgets/media/journal_image_resolver.dart
     title: JournalImageResolver — file, stand-in or nothing, and when that changes
-    last_modified: 2026-09-08
+    last_modified: 2026-09-09
   - id: avatar-actions
     resource: ../../lib/features/relationships/ui/widgets/person_photo_actions.dart
     title: PersonPhotoActions — choose, re-crop, remove, with the surfaces injected
-    last_modified: 2026-09-08
+    last_modified: 2026-09-09
   - id: crop-geometry
     resource: ../../lib/features/relationships/ui/shared/cover_crop_geometry.dart
     title: CoverCropGeometry — the renderer's model, for the surface that edits it
-    last_modified: 2026-09-08
+    last_modified: 2026-09-09
   - id: photo-card
     resource: ../../lib/features/relationships/ui/widgets/person_photo_card.dart
     title: PersonPhotoCard — face and banner in the person form
-    last_modified: 2026-09-08
+    last_modified: 2026-09-09
   - id: list-model
     resource: ../../lib/features/relationships/ui/model/people_list_model.dart
     title: The People list's bands, pills and summary — pure logic
@@ -63,7 +63,7 @@ sources:
   - id: person-form
     resource: ../../lib/features/relationships/ui/widgets/relationship_form_modal.dart
     title: The add/edit person form — three cards, pinned actions
-    last_modified: 2026-09-06
+    last_modified: 2026-09-09
   - id: chat-pane
     resource: ../../lib/features/relationships/ui/widgets/relationship_chat_pane.dart
     title: The per-person chat pane and its agent header
@@ -71,71 +71,71 @@ sources:
   - id: contact-import
     resource: ../../lib/features/relationships/ui/pages/contact_import_page.dart
     title: Contact import and its review step
-    last_modified: 2026-09-06
+    last_modified: 2026-09-09
   - id: adr-0038
     resource: ../../docs/adr/0038-relationship-domain-model.md
     title: ADR 0038 — Relationship domain model
-    last_modified: 2026-08-13
+    last_modified: 2026-08-19
   - id: runtime
     resource: ../../lib/features/relationships/runtime/relationship_agent_phase_a.dart
     title: RelationshipAgentPhaseA — the deterministic tier
-    last_modified: 2026-08-16
+    last_modified: 2026-08-19
   - id: workflow
     resource: ../../lib/features/relationships/workflow/relationship_agent_workflow.dart
     title: RelationshipAgentWorkflow — the LLM tier
-    last_modified: 2026-08-16
+    last_modified: 2026-09-12
   - id: adr-0059
     resource: ../../docs/adr/0059-relationship-agent-runtime-and-nudge-generalization.md
     title: ADR 0059 — Relationship agents on the shared runtime
-    last_modified: 2026-08-16
+    last_modified: 2026-08-19
   - id: subject-agent
     resource: ../../lib/features/agents/service/subject_agent_lookup.dart
     title: SubjectAgentResolver — the kind-agnostic agent lookup
-    last_modified: 2026-08-17
+    last_modified: 2026-08-26
   - id: briefing-card
     resource: ../../lib/features/relationships/ui/widgets/relationship_briefing_card.dart
     title: RelationshipBriefingCard — the briefing on the shared AI panel
-    last_modified: 2026-08-24
+    last_modified: 2026-09-06
   - id: ai-card-chrome
     resource: ../../lib/features/agents/ui/widgets/ai_card_chrome.dart
     title: aiCardDecoration — the chrome every agent report card shares
-    last_modified: 2026-08-24
+    last_modified: 2026-09-05
   - id: transcript-wait
     resource: ../../lib/features/relationships/service/check_in_transcription_service.dart
     title: CheckInTranscriptionService — waiting for a spoken check-in's transcript
-    last_modified: 2026-08-18
+    last_modified: 2026-08-19
   - id: runner
     resource: ../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner — why a failed transcription never throws
-    last_modified: 2026-08-18
+    last_modified: 2026-09-12
   - id: automation
     resource: ../../lib/features/ai/helpers/profile_automation_resolver.dart
     title: ProfileAutomationResolver — subject-shaped profile resolution
-    last_modified: 2026-08-17
+    last_modified: 2026-08-19
   - id: reminders
     resource: ../../lib/features/relationships/service/relationship_reminder_service.dart
     title: RelationshipReminderService — the OS-reminder projection
-    last_modified: 2026-08-17
+    last_modified: 2026-08-19
   - id: adr-0039
     resource: ../../docs/adr/0039-relationship-check-in-reminders.md
     title: ADR 0039 — Relationship check-in reminders
-    last_modified: 2026-08-17
+    last_modified: 2026-08-19
   - id: contacts
     resource: ../../lib/features/relationships/service/contacts_service.dart
     title: ContactsService — the flutter_contacts boundary
-    last_modified: 2026-08-17
+    last_modified: 2026-08-19
   - id: mapper
     resource: ../../lib/features/relationships/service/contact_import_mapper.dart
     title: The only file that knows the plugin's types
-    last_modified: 2026-08-17
+    last_modified: 2026-08-19
   - id: pending
     resource: ../../lib/features/relationships/service/pending_interaction_store.dart
     title: PendingInteractionStore — the device-local post-call marker
-    last_modified: 2026-08-17
+    last_modified: 2026-08-19
   - id: adr-0041
     resource: ../../docs/adr/0041-relationship-contact-linking.md
     title: ADR 0041 — Relationship contact linking
-    last_modified: 2026-08-18
+    last_modified: 2026-08-24
 ---
 
 A person the user deliberately tracks is a `JournalEntity.relationship`; each
@@ -676,17 +676,25 @@ removed:
   completion stream (shutdown, runtime teardown) fails the turn rather than
   leaving the caller on a future that can no longer complete, which would
   strand the composer disabled.
-- **One resolution chain, first resolvable wins.**
-  `resolveRelationshipAgentModel` routes inference through the person's own
-  profile (`RelationshipData.profileId`), then the agent config's profile,
-  then the **default profile of the person's category** (the `JournalDb`
-  read the automation resolver uses for a spoken check-in's transcript), then
-  the validated default model (ADR 0040 Decision 6, ADR 0059 Decision 7).
-  The category step is the one an ordinary setup actually reaches: no screen
-  pins a profile on a person and agent creation sets none, so without it a
-  user who routes the category through their own profile had no route at
-  all and "Brief me" failed with a generic toast. A dangling id at any step
-  falls through to the next.
+- **One resolution chain for runtime and disclosure.**
+  `resolveRelationshipAgentModel` honors the typed setup saved by the shared
+  model picker, including direct thinking-model overrides. Disabled or broken
+  typed setups do not fall through. Legacy agents try the person's profile,
+  agent profile, category default, then the device's Settings default. The
+  validated GLM built-in is used only if no Settings default was selected.
+  A selected Settings default that cannot resolve is an error. The generic
+  fallback contract is in [profile resolution](ai/profile-resolution.md).
+- **Missing configuration backs off without orphaning the episode.**
+  Escalation retries keep their original workspace and trigger tokens, with
+  delays of 1, 2, 4, 8, 16, then 24 hours based on the failure streak. Transient
+  inference failures retain their immediate retry. Before each scheduled scan,
+  maintenance checks future retries belonging to failed agents; if their route
+  now resolves, it advances the pending deadline and clears the old lease.
+  The normal scheduled manager still elects a device before inference. A
+  concurrent consume/replacement observed during resolution is left alone.
+  Saving the Settings default or changing profile/model/provider catalogs
+  requests a scan, so a repaired route need not wait out the backoff. Cadence
+  repair runs independently before the configuration check.
 - **Disclosure fails closed.** The "Brief me" card resolves the agent's
   model to a provider name through that same chain; a cloud provider is
   named in a consent dialog first (ADR 0037), and an unresolvable profile is
@@ -694,7 +702,8 @@ removed:
   through the person's own profile whatever this device's private-entry
   display preference, so the dialog must see the same row — and a route that
   resolves to nothing at all throws (the card surfaces the failure and logs
-  the reason) rather than reading as "local, proceed silently".
+  the reason) rather than reading as "local, proceed silently". A direct model
+  override checks its own provider locality, not its optional base profile.
 
 ## The briefing wears the shared AI panel
 

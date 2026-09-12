@@ -725,6 +725,32 @@ void main() {
       },
     );
 
+    test(
+      'keeps maintenance listeners active between scheduled scans',
+      () async {
+        final changes = StreamController<int>.broadcast(sync: true);
+        addTearDown(changes.close);
+        final configuration = StreamProvider<int>((ref) => changes.stream);
+        final observed = <int>[];
+        final container = bench.createContainer(
+          runtimeMaintenance: (ref) {
+            ref.listen(configuration, (_, next) {
+              if (next.hasValue) observed.add(next.requireValue);
+            });
+            return const [];
+          },
+        );
+        await bench.initAndSubscribe(container);
+        await container.pump();
+        changes.add(1);
+        await pumpEventQueue();
+        expect(observed, [1]);
+        changes.add(2);
+        await pumpEventQueue();
+        expect(observed, [1, 2]);
+      },
+    );
+
     test('logs once and keeps aborted runtime restoration failed', () async {
       final domainLogger = MockDomainLogger();
       when(

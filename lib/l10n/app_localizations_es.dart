@@ -11223,6 +11223,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Puedes editar la transcripción antes de enviar tu pregunta. Es posible que el audio ya se haya enviado a tu proveedor de transcripción.';
 
   @override
+  String get queryDraftProvisional => 'Borrador · aún sin verificar';
+
+  @override
+  String get queryDraftRetracted =>
+      'No se pudo verificar el borrador de la respuesta. Inténtalo de nuevo.';
+
+  @override
   String get queryEarlierTextOmitted => '[Texto anterior no mostrado]';
 
   @override
@@ -15629,9 +15636,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get whatsNewSkipButton => 'Omitir';
 
   @override
-  String get queryDraftProvisional => 'Borrador · aún sin verificar';
+  String get aiSettingsNoDefaultProfile => 'Sin perfil predeterminado';
 
   @override
-  String get queryDraftRetracted =>
-      'No se pudo verificar el borrador de la respuesta. Inténtalo de nuevo.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Perfil alternativo para agentes sin un modelo configurado en este dispositivo.';
 }

@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -28,6 +30,83 @@ void main() {
     expect(
       container.read(aiRuntimeSettingsControllerProvider),
       const AiRuntimeSettings(),
+    );
+  });
+
+  test('default profile publishes only successful persisted choices', () async {
+    final repository = MockAiConfigRepository();
+    when(repository.getDefaultProfileId).thenAnswer((_) async => 'original');
+    final saved = Completer<void>();
+    when(
+      () => repository.setDefaultProfileId('chosen'),
+    ).thenAnswer((_) => saved.future);
+    final container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(container.dispose);
+    expect(
+      await container.read(defaultInferenceProfileControllerProvider.future),
+      'original',
+    );
+    final save = container
+        .read(defaultInferenceProfileControllerProvider.notifier)
+        .selectProfile('chosen');
+    expect(
+      container.read(defaultInferenceProfileControllerProvider).value,
+      'original',
+    );
+    saved.complete();
+    await save;
+    expect(
+      container.read(defaultInferenceProfileControllerProvider).value,
+      'chosen',
+    );
+    when(
+      () => repository.setDefaultProfileId(null),
+    ).thenThrow(StateError('write failed'));
+    await expectLater(
+      container
+          .read(defaultInferenceProfileControllerProvider.notifier)
+          .selectProfile(null),
+      throwsStateError,
+    );
+    expect(
+      container.read(defaultInferenceProfileControllerProvider).value,
+      'chosen',
+    );
+  });
+
+  test('default profile writes preserve the order of rapid choices', () async {
+    final repository = MockAiConfigRepository();
+    final firstWrite = Completer<void>();
+    final calls = <String?>[];
+    when(() => repository.setDefaultProfileId('first')).thenAnswer((_) {
+      calls.add('first');
+      return firstWrite.future;
+    });
+    when(() => repository.setDefaultProfileId('second')).thenAnswer((_) async {
+      calls.add('second');
+    });
+    final container = ProviderContainer(
+      overrides: [aiConfigRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+    await container.read(defaultInferenceProfileControllerProvider.future);
+    final controller = container.read(
+      defaultInferenceProfileControllerProvider.notifier,
+    );
+    final first = controller.selectProfile('first');
+    final second = controller.selectProfile('second');
+    await pumpEventQueue();
+    expect(calls, ['first']);
+    firstWrite.complete();
+    await Future.wait([first, second]);
+    expect(calls, ['first', 'second']);
+    expect(
+      container.read(defaultInferenceProfileControllerProvider).value,
+      'second',
     );
   });
 

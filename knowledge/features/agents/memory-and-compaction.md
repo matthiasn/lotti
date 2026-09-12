@@ -5,13 +5,13 @@ description: The append-only input event log, LLM-distilled summary checkpoints,
 resource: ../../../lib/features/agents/projection
 tags: [agents, memory, compaction, event-log, prefix-cache]
 status: stable
-generated: { by: codex/5, at: 2026-07-29T14:43:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: projection
     resource: ../../../lib/features/agents/projection
     title: Event log, input capture, checkpoint selection, the pure fold
-    last_modified: 2026-07-26
+    last_modified: 2026-08-07
   - id: summarizer
     resource: ../../../lib/features/agents/service/agent_log_llm_summarizer.dart
     title: Summary checkpoint writer
@@ -19,11 +19,11 @@ sources:
   - id: agents-src
     resource: ../../../lib/features/agents
     title: Agents feature source
-    last_modified: 2026-07-29
+    last_modified: 2026-09-12
   - id: adr-0017
     resource: ../../../docs/adr/0017-deterministic-log-compaction.md
     title: ADR 0017 — Deterministic log compaction
-    last_modified: 2026-06-09
+    last_modified: 2026-07-29
   - id: adr-0020
     resource: ../../../docs/adr/0020-agent-input-capture.md
     title: ADR 0020 — Agent input capture
@@ -69,6 +69,14 @@ capturing it would duplicate other agents' synced data.
 
 All workflows share one pipeline, `AgentWakeMemory` (capture → fold → assemble →
 read-flip gates), so failure isolation and diagnostics are identical everywhere.
+
+`compactAndAssemble` projects the active checkpoint and resolves the visible
+tail once. If no fold is needed, it renders that same prepared snapshot. After a
+fold commits, it re-projects to include the new checkpoint and concurrent synced
+input. Nothing is cached across wakes. A failed fold still falls back to a fresh
+assembly; capture/read failures preserve the existing inline-context fallback.
+Diagnostics include preparation milliseconds, whether a fold occurred, context
+character count, and trigger/retain token budgets, without memory content.
 
 ## Capture
 
@@ -186,7 +194,7 @@ in the summary prose and are never reloaded.
 
 ## Cadence and prefix caching
 
-`maybeCompact` uses two watermarks:
+`AgentLogCompactor.compactAndAssemble` uses two watermarks:
 
 | Watermark | Default | Role |
 |-----------|---------|------|

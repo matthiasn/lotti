@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T14:39:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: wake
@@ -15,7 +15,7 @@ sources:
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
-    last_modified: 2026-07-13
+    last_modified: 2026-08-11
   - id: runtime-settings
     resource: ../../../lib/features/ai/model/ai_runtime_settings.dart
     title: Concurrency bounds
@@ -304,6 +304,23 @@ room for the bounded pre-wake hook and terminal status persistence. Progress is
 refreshed again immediately before the executor timer is armed, so pre-execution
 persistence and policy latency never shorten the executor's own ten-minute
 window.
+
+Runtime initialization watches the feature maintenance registry for its entire
+lifetime. Reading it only during scans would pause its configuration listeners
+between scans and delay recovery after a profile is repaired.
+
+The safety net skips a drain when every queued job is a subscription wake whose
+throttle deadline is still in the future. The deadline timer dispatches it when
+due; an expired deadline, immediate job, or active drain still permits the
+minute check. This avoids repeated idle queue scans without weakening stale-drain
+recovery.
+
+Task and project workflow logs include `wake stages` with sanitized agent/run
+identifiers and `preparationMs`, `modelToolsMs`, and `persistenceMs`. Preparation
+includes context and prompt setup; model/tools includes follow-up model calls
+and tool work; persistence covers final output handling. The log is emitted from
+conversation cleanup on success and failure, so a failed inference still exposes
+where time was spent. Memory preparation has separate compaction diagnostics.
 
 # Completion signalling
 

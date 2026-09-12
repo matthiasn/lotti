@@ -52,6 +52,86 @@ void main() {
   }
 
   group('ProfileResolver', () {
+    test(
+      'standalone agents use Settings default and preserve explicit routes',
+      () async {
+        stubModelResolution(modelId: 'chosen-model');
+        stubProfile(
+          testInferenceProfile(id: 'default', thinkingModelId: 'chosen-model'),
+        );
+        when(
+          mockAiConfig.getDefaultProfileId,
+        ).thenAnswer((_) async => 'default');
+        final fallback = await resolver.resolveStandalone(
+          agentConfig: const AgentConfig(),
+          legacyModelId: 'glm-5.2',
+        );
+        expect(fallback.profile?.thinkingModelId, 'chosen-model');
+        expect(fallback.source, AgentSetupResolutionSource.baseProfile);
+        stubProfile(
+          testInferenceProfile(id: 'explicit', thinkingModelId: 'chosen-model'),
+        );
+        clearInteractions(mockAiConfig);
+        final explicit = await resolver.resolveStandalone(
+          agentConfig: const AgentConfig(profileId: 'explicit'),
+          legacyModelId: 'glm-5.2',
+        );
+        expect(explicit.source, AgentSetupResolutionSource.legacyAgentProfile);
+        verifyNever(mockAiConfig.getDefaultProfileId);
+        final disabled = await resolver.resolveStandalone(
+          agentConfig: const AgentConfig(
+            inferenceSetup: AgentInferenceSetup(
+              mode: AgentInferenceSetupMode.disabled,
+              origin: AgentInferenceSetupOrigin.user,
+            ),
+          ),
+          legacyModelId: 'glm-5.2',
+        );
+        expect(disabled.status, AgentSetupResolutionStatus.disabled);
+        verifyNever(mockAiConfig.getDefaultProfileId);
+      },
+    );
+
+    test(
+      'missing selected Settings default never switches to the built-in model',
+      () async {
+        stubModelResolution(modelId: 'glm-5.2');
+        when(
+          mockAiConfig.getDefaultProfileId,
+        ).thenAnswer((_) async => 'missing');
+        when(
+          () => mockAiConfig.getConfigById('missing'),
+        ).thenAnswer((_) async => null);
+        final result = await resolver.resolveStandalone(
+          agentConfig: const AgentConfig(),
+          legacyModelId: 'glm-5.2',
+        );
+        expect(result.status, AgentSetupResolutionStatus.broken);
+        expect(result.profile, isNull);
+        verifyNever(() => mockAiConfig.getConfigsByType(AiConfigType.model));
+      },
+    );
+
+    test(
+      'template agents without a usable legacy route use the Settings default',
+      () async {
+        stubModelResolution(modelId: 'chosen-model');
+        stubProfile(
+          testInferenceProfile(id: 'default', thinkingModelId: 'chosen-model'),
+        );
+        when(
+          mockAiConfig.getDefaultProfileId,
+        ).thenAnswer((_) async => 'default');
+        final result = await resolver.resolveDetailed(
+          agentConfig: const AgentConfig(),
+          template: makeTestTemplate(modelId: 'unavailable'),
+          version: makeTestTemplateVersion(modelId: 'unavailable'),
+        );
+        expect(result.profile?.thinkingModelId, 'chosen-model');
+        expect(result.source, AgentSetupResolutionSource.baseProfile);
+      },
+    );
+
     test('typed disabled setup blocks every legacy fallback', () async {
       final result = await resolver.resolveDetailed(
         agentConfig: const AgentConfig(

@@ -11009,6 +11009,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.';
 
   @override
+  String get queryDraftProvisional => 'Draft · not yet verified';
+
+  @override
+  String get queryDraftRetracted =>
+      'The draft answer could not be verified. Try again.';
+
+  @override
   String get queryEarlierTextOmitted => '[Earlier text not shown]';
 
   @override
@@ -15330,11 +15337,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whatsNewSkipButton => 'Skip';
 
   @override
-  String get queryDraftProvisional => 'Draft · not yet verified';
+  String get aiSettingsNoDefaultProfile => 'No default profile';
 
   @override
-  String get queryDraftRetracted =>
-      'The draft answer could not be verified. Try again.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Fallback for agents without a configured inference route on this device.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

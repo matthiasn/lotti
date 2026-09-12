@@ -8,9 +8,12 @@ import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/profile_locality.dart';
+import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
@@ -163,14 +166,52 @@ final relationshipAgentWakeRunnersProvider =
 /// The relationships contribution to `agentRuntimeMaintenanceProvider`.
 final relationshipRuntimeMaintenanceProvider =
     Provider<RelationshipRuntimeMaintenance>(
-      (ref) => RelationshipRuntimeMaintenance(
-        agentService: ref.watch(agentServiceProvider),
-        repository: ref.watch(agentRepositoryProvider),
-        syncService: ref.watch(agentSyncServiceProvider),
-        relationshipAgentService: ref.watch(relationshipAgentServiceProvider),
-        relationshipRepository: ref.watch(relationshipRepositoryProvider),
-        domainLogger: ref.watch(domainLoggerProvider),
-      ),
+      (ref) {
+        void requestCheck() {
+          if (ref.mounted) {
+            ref.read(scheduledWakeManagerProvider).requestCheck();
+          }
+        }
+
+        ref.listen(defaultInferenceProfileControllerProvider, (previous, next) {
+          if (next.hasValue && previous?.value != next.value) requestCheck();
+        });
+        for (final type in [
+          AiConfigType.inferenceProfile,
+          AiConfigType.model,
+          AiConfigType.inferenceProvider,
+        ]) {
+          ref.listen(aiConfigByTypeControllerProvider(type), (previous, next) {
+            if (next.hasValue && previous?.value != next.value) requestCheck();
+          });
+        }
+        return RelationshipRuntimeMaintenance(
+          agentService: ref.watch(agentServiceProvider),
+          repository: ref.watch(agentRepositoryProvider),
+          syncService: ref.watch(agentSyncServiceProvider),
+          relationshipAgentService: ref.watch(relationshipAgentServiceProvider),
+          relationshipRepository: ref.watch(relationshipRepositoryProvider),
+          domainLogger: ref.watch(domainLoggerProvider),
+          inferenceIsConfigured: (identity) async {
+            final relationshipId = await ref
+                .read(relationshipAgentServiceProvider)
+                .watchedRelationshipId(identity.agentId);
+            if (relationshipId == null) return false;
+            final relationship = await ref
+                .read(relationshipRepositoryProvider)
+                .getRelationshipByIdUnfiltered(relationshipId);
+            return await resolveRelationshipAgentModel(
+                  relationship: relationship,
+                  agentIdentity: identity,
+                  aiConfigRepository: ref.read(aiConfigRepositoryProvider),
+                  categoryProfileLookup: ref.read(
+                    relationshipCategoryProfileLookupProvider,
+                  ),
+                ) !=
+                null;
+          },
+        );
+      },
       name: 'relationshipRuntimeMaintenanceProvider',
     );
 
@@ -189,6 +230,11 @@ final FutureProviderFamily<String?, String>
 relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
     .family<String?, String>((ref, relationshipId) async {
       final aiConfigRepository = ref.watch(aiConfigRepositoryProvider);
+      ref.watch(
+        defaultInferenceProfileControllerProvider.select(
+          (value) => value.value,
+        ),
+      );
       final relationship = await ref
           .watch(relationshipRepositoryProvider)
           .getRelationshipByIdUnfiltered(relationshipId);
@@ -215,6 +261,12 @@ relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
             await profileIsLocal(config, aiConfigRepository)) {
           return null;
         }
+      }
+      if (profileId == null &&
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            resolved.provider.inferenceProviderType,
+          )) {
+        return null;
       }
       return resolved.provider.name;
     }, name: 'relationshipBriefingDisclosureProvider');

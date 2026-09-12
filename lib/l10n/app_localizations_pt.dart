@@ -11165,6 +11165,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Podes editar a transcrição antes de enviares a pergunta. O áudio pode já ter sido enviado ao teu fornecedor de transcrição.';
 
   @override
+  String get queryDraftProvisional => 'Rascunho · ainda não verificado';
+
+  @override
+  String get queryDraftRetracted =>
+      'Não foi possível verificar o rascunho da resposta. Tenta novamente.';
+
+  @override
   String get queryEarlierTextOmitted => '[Texto anterior não apresentado]';
 
   @override
@@ -15559,9 +15566,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get whatsNewSkipButton => 'Pular';
 
   @override
-  String get queryDraftProvisional => 'Rascunho · ainda não verificado';
+  String get aiSettingsNoDefaultProfile => 'Sem perfil predefinido';
 
   @override
-  String get queryDraftRetracted =>
-      'Não foi possível verificar o rascunho da resposta. Tenta novamente.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Perfil alternativo para agentes sem um modelo configurado neste dispositivo.';
 }

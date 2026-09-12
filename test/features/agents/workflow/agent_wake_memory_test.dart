@@ -3,11 +3,13 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
+import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 final _provider =
@@ -38,6 +40,7 @@ class _ThrowingCaptureService implements AgentInputCaptureService {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
   late MockAgentSyncService syncService;
   late MockAgentRepository agentRepository;
 
@@ -57,6 +60,60 @@ void main() {
     at: DateTime(2024, 3, 15),
     threadId: 'thread-1',
     runKey: 'run-1',
+  );
+
+  test(
+    'unfolded wake resolves each memory source once and refreshes next wake',
+    () async {
+      when(() => syncService.repository).thenReturn(agentRepository);
+      when(
+        () => agentRepository.getMessagesByKind(any(), any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => agentRepository.getLinksFrom(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => agentRepository.getEntitiesByIds(any()),
+      ).thenAnswer((_) async => {});
+      final summarizer = MockAgentLogLlmSummarizer();
+      final memory = AgentWakeMemory(
+        syncService: syncService,
+        logSummarizer: summarizer,
+      );
+      final at = DateTime.utc(2024, 3, 15);
+      var reads = 0;
+      Future<WakeMemoryView> wake() => memory.compactAndAssemble(
+        agentId: 'agent-1',
+        captureSucceeded: true,
+        model: 'model-1',
+        provider: _provider,
+        at: at,
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        inlineEvents: [
+          InputEvent.inlineDeferred(
+            position: EventPosition(at: at, sourceAt: at, key: 'capture|entry'),
+            contentEntryId: 'entry',
+            sourceCreatedAt: at,
+          ),
+        ],
+        resolveInlineContent: (_) async => {'text': 'snapshot ${++reads}'},
+      );
+      final first = await wake();
+      expect(first.useCompactedLog, isTrue);
+      expect(first.compactedLog, contains('snapshot 1'));
+      expect(reads, 1);
+      final second = await wake();
+      expect(second.compactedLog, contains('snapshot 2'));
+      expect(reads, 2);
+      verify(
+        () => agentRepository.getMessagesByKind(
+          'agent-1',
+          AgentMessageKind.system,
+        ),
+      ).called(2);
+      verifyZeroInteractions(summarizer);
+    },
   );
 
   group('compactAndAssemble read-flip gates', () {

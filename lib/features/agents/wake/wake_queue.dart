@@ -241,6 +241,10 @@ class WakeQueue {
   /// Whether the queue has no pending jobs.
   bool get isEmpty => _queue.isEmpty;
 
+  /// Inspects pending work without changing its FIFO order or dedupe history.
+  bool hasJobWhere(bool Function(WakeJob job) predicate) =>
+      _queue.any(predicate);
+
   /// Number of pending jobs.
   int get length => _queue.length;
 

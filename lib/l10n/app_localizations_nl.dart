@@ -11080,6 +11080,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je kunt de transcriptie bewerken voordat je je vraag verstuurt. De audio kan al naar je transcriptieaanbieder zijn verstuurd.';
 
   @override
+  String get queryDraftProvisional => 'Concept · nog niet geverifieerd';
+
+  @override
+  String get queryDraftRetracted =>
+      'Het conceptantwoord kon niet worden geverifieerd. Probeer het opnieuw.';
+
+  @override
   String get queryEarlierTextOmitted => '[Eerdere tekst niet getoond]';
 
   @override
@@ -15464,9 +15471,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get whatsNewSkipButton => 'Overslaan';
 
   @override
-  String get queryDraftProvisional => 'Concept · nog niet geverifieerd';
+  String get aiSettingsNoDefaultProfile => 'Geen standaardprofiel';
 
   @override
-  String get queryDraftRetracted =>
-      'Het conceptantwoord kon niet worden geverifieerd. Probeer het opnieuw.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Terugvalprofiel voor agents zonder ingesteld model op dit apparaat.';
 }

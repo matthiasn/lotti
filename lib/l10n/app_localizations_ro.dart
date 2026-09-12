@@ -11267,6 +11267,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Puteți edita transcrierea înainte de a trimite întrebarea. Este posibil ca sunetul să fi fost deja trimis furnizorului dvs. de transcriere.';
 
   @override
+  String get queryDraftProvisional => 'Ciornă · încă neverificată';
+
+  @override
+  String get queryDraftRetracted =>
+      'Ciorna răspunsului nu a putut fi verificată. Încercați din nou.';
+
+  @override
   String get queryEarlierTextOmitted => '[Textul anterior nu este afișat]';
 
   @override
@@ -15731,9 +15738,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get whatsNewSkipButton => 'Omite';
 
   @override
-  String get queryDraftProvisional => 'Ciornă · încă neverificată';
+  String get aiSettingsNoDefaultProfile => 'Niciun profil implicit';
 
   @override
-  String get queryDraftRetracted =>
-      'Ciorna răspunsului nu a putut fi verificată. Încercați din nou.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Profil de rezervă pentru agenții fără un model configurat pe acest dispozitiv.';
 }

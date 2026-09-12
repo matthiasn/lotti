@@ -142,7 +142,10 @@ class InitProviderBench {
   }
 
   /// Creates a [ProviderContainer] with all mocks wired in.
-  ProviderContainer createContainer({DomainLogger? testDomainLogger}) {
+  ProviderContainer createContainer({
+    DomainLogger? testDomainLogger,
+    List<AgentRuntimeMaintenance> Function(Ref)? runtimeMaintenance,
+  }) {
     final container = ProviderContainer(
       overrides: [
         agentServiceProvider.overrideWithValue(mockService),
@@ -165,7 +168,8 @@ class InitProviderBench {
           (ref) => ref.watch(dayAgentWakeRunnersProvider),
         ),
         agentRuntimeMaintenanceProvider.overrideWith(
-          (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
+          runtimeMaintenance ??
+              (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
         ),
         projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         agentTemplateServiceProvider.overrideWithValue(mockTemplateService),

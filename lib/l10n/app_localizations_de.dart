@@ -11131,6 +11131,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du kannst das Transkript bearbeiten, bevor du deine Frage sendest. Das Audio wurde möglicherweise bereits an deinen Transkriptionsanbieter gesendet.';
 
   @override
+  String get queryDraftProvisional => 'Entwurf · noch nicht geprüft';
+
+  @override
+  String get queryDraftRetracted =>
+      'Der Antwortentwurf konnte nicht geprüft werden. Versuch es erneut.';
+
+  @override
   String get queryEarlierTextOmitted => '[Vorheriger Text nicht angezeigt]';
 
   @override
@@ -15537,9 +15544,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get whatsNewSkipButton => 'Überspringen';
 
   @override
-  String get queryDraftProvisional => 'Entwurf · noch nicht geprüft';
+  String get aiSettingsNoDefaultProfile => 'Kein Standardprofil';
 
   @override
-  String get queryDraftRetracted =>
-      'Der Antwortentwurf konnte nicht geprüft werden. Versuch es erneut.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Ersatzprofil für Agenten ohne konfigurierte Inferenz auf diesem Gerät.';
 }

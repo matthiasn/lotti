@@ -11201,6 +11201,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Puoi modificare la trascrizione prima di inviare la domanda. L’audio potrebbe essere già stato inviato al tuo servizio di trascrizione.';
 
   @override
+  String get queryDraftProvisional => 'Bozza · non ancora verificata';
+
+  @override
+  String get queryDraftRetracted =>
+      'Non è stato possibile verificare la bozza della risposta. Riprova.';
+
+  @override
   String get queryEarlierTextOmitted => '[Testo precedente non mostrato]';
 
   @override
@@ -15618,9 +15625,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get whatsNewSkipButton => 'Salta!';
 
   @override
-  String get queryDraftProvisional => 'Bozza · non ancora verificata';
+  String get aiSettingsNoDefaultProfile => 'Nessun profilo predefinito';
 
   @override
-  String get queryDraftRetracted =>
-      'Non è stato possibile verificare la bozza della risposta. Riprova.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Profilo alternativo per gli agenti senza un modello configurato su questo dispositivo.';
 }

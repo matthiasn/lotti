@@ -3,7 +3,38 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/get_it.dart';
+
+/// The explicit device-wide fallback for otherwise unconfigured inference.
+final defaultInferenceProfileControllerProvider =
+    AsyncNotifierProvider<DefaultInferenceProfileController, String?>(
+      DefaultInferenceProfileController.new,
+      name: 'defaultInferenceProfileControllerProvider',
+    );
+
+class DefaultInferenceProfileController extends AsyncNotifier<String?> {
+  @override
+  Future<String?> build() =>
+      ref.watch(aiConfigRepositoryProvider).getDefaultProfileId();
+
+  Future<void> _pendingSave = Future<void>.value();
+
+  /// Serializes choices and publishes only persisted values. A failed save
+  /// leaves the last choice visible and does not block subsequent changes.
+  Future<void> selectProfile(String? profileId) {
+    final save = _pendingSave.then((_) async {
+      await future;
+      await ref.read(aiConfigRepositoryProvider).setDefaultProfileId(profileId);
+      if (ref.mounted) state = AsyncData(profileId);
+    });
+    _pendingSave = save.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return save;
+  }
+}
 
 /// Holds device-local AI runtime settings and persists user changes.
 final aiRuntimeSettingsControllerProvider =

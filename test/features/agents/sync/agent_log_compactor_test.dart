@@ -26,6 +26,24 @@ import 'in_memory_agent_repository.dart';
 const _agentId = 'agent-1';
 
 extension on AgentLogCompactor {
+  Future<String?> maybeCompact({
+    required String agentId,
+    required int budget,
+    required AgentSummarizer summarize,
+    required DateTime at,
+    int? retainTokens,
+    String? threadId,
+    String? runKey,
+  }) async => (await compactAndAssemble(
+    agentId: agentId,
+    budget: budget,
+    summarize: summarize,
+    at: at,
+    retainTokens: retainTokens,
+    threadId: threadId,
+    runKey: runKey,
+  )).newSummaryId;
+
   Future<String> assembleContext(String agentId) async =>
       (await assembleContextDetailed(agentId)).text;
 }

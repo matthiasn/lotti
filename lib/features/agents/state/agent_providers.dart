@@ -565,6 +565,11 @@ Future<void> agentInitialization(Ref ref) async {
   // and ahead of every hourly tick thereafter.
   ref.watch(scheduledWakeManagerProvider).start();
 
+  // Keep feature maintenance reactive for the runtime's lifetime. A lazy
+  // read in beforeCheck alone pauses its provider listeners between scans,
+  // so a repaired inference configuration would not request an early retry.
+  ref.watch(agentRuntimeMaintenanceProvider);
+
   // 3.6. Track project-linked activity without triggering immediate wakes.
   projectActivityMonitor.start();
 

@@ -1,3 +1,4 @@
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
@@ -21,6 +22,9 @@ class AiSettingsHeaderBar extends StatelessWidget {
     required this.onSearchClear,
     required this.agentWakeConcurrency,
     required this.onAgentWakeConcurrencyChanged,
+    this.profiles = const [],
+    this.defaultProfileId,
+    this.onDefaultProfileChanged,
     super.key,
   });
 
@@ -28,6 +32,9 @@ class AiSettingsHeaderBar extends StatelessWidget {
   final VoidCallback onSearchClear;
   final int agentWakeConcurrency;
   final ValueChanged<int> onAgentWakeConcurrencyChanged;
+  final List<AiConfigInferenceProfile> profiles;
+  final String? defaultProfileId;
+  final ValueChanged<String?>? onDefaultProfileChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +82,42 @@ class AiSettingsHeaderBar extends StatelessWidget {
               color: tokens.colors.text.mediumEmphasis,
             ),
           ),
+          if (onDefaultProfileChanged != null) ...[
+            SizedBox(height: tokens.spacing.step4),
+            DesignSystemDropdown(
+              label: context.messages.agentDefaultProfileLabel,
+              inputLabel: defaultProfileId == null
+                  ? context.messages.aiSettingsNoDefaultProfile
+                  : profiles
+                            .where((profile) => profile.id == defaultProfileId)
+                            .firstOrNull
+                            ?.name ??
+                        context.messages.inferenceProfileDetailNotFound,
+              items: [
+                DesignSystemDropdownItem(
+                  id: '',
+                  label: context.messages.aiSettingsNoDefaultProfile,
+                  selected: defaultProfileId == null,
+                ),
+                for (final profile in profiles)
+                  DesignSystemDropdownItem(
+                    id: profile.id,
+                    label: profile.name,
+                    selected: profile.id == defaultProfileId,
+                  ),
+              ],
+              onItemPressed: (item) => onDefaultProfileChanged!(
+                item.id.isEmpty ? null : item.id,
+              ),
+            ),
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              context.messages.aiSettingsDefaultProfileDescription,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
         ],
       ),
     );

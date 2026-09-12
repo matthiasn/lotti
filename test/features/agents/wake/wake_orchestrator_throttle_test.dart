@@ -1944,6 +1944,52 @@ void main() {
       );
     });
     group('safety-net periodic drain', () {
+      test(
+        'future-only jobs skip idle drains but still run at their deadline',
+        () {
+          fakeAsync((async) {
+            final logger = MockDomainLogger();
+            final subject = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: runner,
+              domainLogger: logger,
+            );
+            var executions = 0;
+            subject.wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executions++;
+              return null;
+            };
+            final controller = StreamController<Set<String>>.broadcast();
+            subject
+              ..start(controller.stream)
+              ..setThrottleDeadline(
+                'agent-1',
+                clock.now().add(const Duration(hours: 1)),
+              );
+            queue.enqueue(makeJob(runKey: 'future-job'));
+            async.elapse(const Duration(minutes: 30));
+            expect(executions, 0);
+            expect(queue.length, 1);
+            verifyNever(
+              () => logger.log(
+                LogDomain.agentRuntime,
+                any<String>(that: contains('drain started')),
+                subDomain: 'drain',
+              ),
+            );
+            async
+              ..elapse(const Duration(minutes: 30))
+              ..flushMicrotasks();
+            expect(executions, 1);
+            expect(queue.isEmpty, isTrue);
+            unawaited(subject.stop());
+            unawaited(controller.close());
+            async.flushMicrotasks();
+          });
+        },
+      );
+
       test('safety-net timer fires processNext for stuck jobs', () {
         fakeAsync((async) {
           var executionCount = 0;

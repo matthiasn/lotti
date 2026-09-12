@@ -11071,6 +11071,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du kan redigera transkriptionen innan du skickar din fråga. Ljudet kan redan ha skickats till din transkriberingsleverantör.';
 
   @override
+  String get queryDraftProvisional => 'Utkast · ännu inte verifierat';
+
+  @override
+  String get queryDraftRetracted =>
+      'Svarsutkastet kunde inte verifieras. Försök igen.';
+
+  @override
   String get queryEarlierTextOmitted => '[Tidigare text visas inte]';
 
   @override
@@ -15439,9 +15446,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get whatsNewSkipButton => 'Hoppa över';
 
   @override
-  String get queryDraftProvisional => 'Utkast · ännu inte verifierat';
+  String get aiSettingsNoDefaultProfile => 'Ingen standardprofil';
 
   @override
-  String get queryDraftRetracted =>
-      'Svarsutkastet kunde inte verifieras. Försök igen.';
+  String get aiSettingsDefaultProfileDescription =>
+      'Reservprofil för agenter utan en konfigurerad modell på den här enheten.';
 }

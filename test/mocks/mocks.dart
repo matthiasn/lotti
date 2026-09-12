@@ -1171,7 +1171,16 @@ class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
 
 class MockTaskToolDispatcher extends Mock implements TaskToolDispatcher {}
 
-class MockAiConfigRepository extends Mock implements AiConfigRepository {}
+class MockAiConfigRepository extends Mock implements AiConfigRepository {
+  MockAiConfigRepository() {
+    when(getDefaultProfileId).thenAnswer((_) async => null);
+    for (final type in AiConfigType.values) {
+      when(
+        () => watchConfigsByType(type),
+      ).thenAnswer((_) => const Stream.empty());
+    }
+  }
+}
 
 class MockProviderPromptSetupService extends Mock
     implements ProviderPromptSetupService {}
