@@ -178,6 +178,17 @@ def main() -> int:
         "--declared-mime", help="Override MIME to probe app JPEG labeling"
     )
     args = parser.parse_args()
+    cases = []
+    for case in args.cases:
+        source, _, choice = case.partition("-")
+        if source not in {"text", "image"} or choice not in {
+            "absent",
+            "forced",
+            "auto",
+            "required",
+        }:
+            parser.error(f"Unsupported case: {case}")
+        cases.append((case, source, choice))
     key, base = credentials(args.env_file)
     endpoint = base.rstrip("/") + "/chat/completions"
     parsed = urllib.parse.urlparse(endpoint)
@@ -196,15 +207,7 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     opener = urllib.request.build_opener(NoRedirect)
     failed = False
-    for case in args.cases:
-        source, choice = case.split("-", 1)
-        if source not in {"text", "image"} or choice not in {
-            "absent",
-            "forced",
-            "auto",
-            "required",
-        }:
-            parser.error(f"Unsupported case: {case}")
+    for case, source, choice in cases:
         body = build_request(args.model, source, choice, image_url, args.stream)
         if args.temperature is not None:
             body["temperature"] = args.temperature
