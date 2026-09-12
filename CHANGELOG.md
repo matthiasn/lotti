@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.11]
+
+### Added
+
+- **Choose a separate model for chat in an inference profile.** The optional
+  Chat model setting lets task, project and category conversations use a
+  different model from background agent work. Leave it unset to keep using
+  the profile's resolved Thinking model.
+- **A System health tool in Settings → Advanced writes a shareable log
+  report.** Pick a time range, keep or adjust the logging domains, and Lotti
+  reads its own log files, replaces known personal-data patterns — emails,
+  ids, tokens, IP addresses, file paths with your user name — with
+  placeholders, takes error text only from the PII-safe error log, and asks
+  the AI model of your choice for the three findings most worth fixing, slow
+  database queries included. One tap copies the report as Markdown, ready to
+  paste into a coding assistant or a bug report. Every report is kept: earlier
+  ones are listed under *Previous reports*, and the report on screen says
+  which period it analyzed and when it was generated.
+
+### Changed
+
+- **Task chat is now an opt-in experiment.** Enable Experimental task chat in
+  Advanced Settings to show chat for tasks, projects and categories. Turning it
+  off closes chat and stops active requests while keeping saved conversations.
+
+### Fixed
+
+- **Chat answers explain what they are based on.** Summary answers link to their
+  attributed tasks and projects instead of showing misleading zero-source counts.
+  Original-entry filters clearly describe their task-only search scope.
+- **Chat is easier to read and navigate on phones.** Progress and Cancel stay
+  above the composer, citations respect larger text settings, and expanded chat
+  keeps keyboard and screen-reader focus out of covered task controls.
+- **Task chat follows summaries more reliably with faster models.** Clearer
+  guidance keeps ordinary factual questions on task summaries, preserves
+  explicit requests for original quotes, and reduces malformed answers and
+  missing task attribution with GLM-5.3 Flash.
+- **Model pickers no longer show a stale list after you add or remove
+  models.** The shared catalog behind the agent, Daily OS and System health
+  pickers now follows changes to models, providers and profiles as they
+  happen, including ones arriving through sync, instead of holding the list
+  it loaded at app start.
+
 ## [1.1.10]
 
 ### Added

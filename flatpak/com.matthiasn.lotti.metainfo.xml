@@ -40,6 +40,17 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.11" date="2026-09-13">
+      <description>
+        <p>Added: choose a separate model for chat in an inference profile. The optional Chat model setting lets task, project and category conversations use a different model from background agent work. Leave it unset to keep using the profile's resolved Thinking model.</p>
+        <p>Added: a System health tool in Settings under Advanced writes a shareable log report. Pick a time range, keep or adjust the logging domains, and Lotti reads its own log files, replaces known personal-data patterns - emails, ids, tokens, IP addresses, file paths with your user name - with placeholders, takes error text only from the PII-safe error log, and asks the AI model of your choice for the three findings most worth fixing, slow database queries included. One tap copies the report as Markdown, ready to paste into a coding assistant or a bug report. Every report is kept: earlier ones are listed under "Previous reports", and the report on screen says which period it analyzed and when it was generated.</p>
+        <p>Changed: task chat is now an opt-in experiment. Enable Experimental task chat in Advanced Settings to show chat for tasks, projects and categories. Turning it off closes chat and stops active requests while keeping saved conversations.</p>
+        <p>Fixed: chat answers explain what they are based on. Summary answers link to their attributed tasks and projects instead of showing misleading zero-source counts. Original-entry filters clearly describe their task-only search scope.</p>
+        <p>Fixed: chat is easier to read and navigate on phones. Progress and Cancel stay above the composer, citations respect larger text settings, and expanded chat keeps keyboard and screen-reader focus out of covered task controls.</p>
+        <p>Fixed: task chat follows summaries more reliably with faster models. Clearer guidance keeps ordinary factual questions on task summaries, preserves explicit requests for original quotes, and reduces malformed answers and missing task attribution with GLM-5.3 Flash.</p>
+        <p>Fixed: model pickers no longer show a stale list after you add or remove models. The shared catalog behind the agent, Daily OS and System health pickers now follows changes to models, providers and profiles as they happen, including ones arriving through sync, instead of holding the list it loaded at app start.</p>
+      </description>
+    </release>
     <release version="1.1.10" date="2026-09-12">
       <description>
         <p>Added: choose a default inference profile in AI Settings. Agents without a configured route can use your selected profile on this device.</p>
