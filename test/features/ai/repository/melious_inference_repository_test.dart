@@ -18,11 +18,13 @@ import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 // The SDK exception requires an enum omitted from its public barrel.
 import 'package:openai_dart/src/generated/client.dart' show HttpMethod;
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 
 class _ChatStreamProbe {
@@ -712,7 +714,6 @@ void main() {
               baseUrl: baseUrl,
               apiKey: apiKey,
               preferStreaming: true,
-              impactCollector: InferenceImpactCollector(),
             )
             .toList();
         expect(chunks.first.choices?.first.delta?.content, 'Recorded [1]');
@@ -791,6 +792,70 @@ void main() {
         expect(bufferedCalls, 0);
       });
     }
+
+    test(
+      'default SDK streaming decodes text and usage through the HTTP boundary',
+      () async {
+        final sent = <Map<String, dynamic>>[];
+        final transport = MockClient((request) async {
+          sent.add(jsonDecode(request.body) as Map<String, dynamic>);
+          return http.Response(
+            'data: ${jsonEncode({
+              'id': 'synthetic-stream',
+              'object': 'chat.completion.chunk',
+              'created': 0,
+              'model': 'glm-5.3',
+              'choices': [
+                {
+                  'index': 0,
+                  'delta': {'content': 'Recorded penguins'},
+                },
+              ],
+            })}\n\n'
+            'data: ${jsonEncode({
+              'id': 'synthetic-stream',
+              'object': 'chat.completion.chunk',
+              'created': 0,
+              'model': 'glm-5.3',
+              'choices': <Object?>[],
+              'usage': {'prompt_tokens': 8, 'completion_tokens': 2, 'total_tokens': 10},
+            })}\n\ndata: [DONE]\n\n',
+            200,
+            headers: {'content-type': 'text/event-stream'},
+          );
+        });
+        final repository = MeliousInferenceRepository(httpClient: transport);
+        addTearDown(repository.close);
+        final sdkClient = MockHttpClient();
+        when(() => sdkClient.send(any())).thenAnswer(
+          (call) => transport.send(
+            call.positionalArguments.single as http.BaseRequest,
+          ),
+        );
+        final chunks = await http.runWithClient(
+          () => repository
+              .generateText(
+                prompt: 'Synthetic penguin question',
+                model: 'glm-5.3',
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                preferStreaming: true,
+                impactCollector: InferenceImpactCollector(),
+              )
+              .toList(),
+          () => sdkClient,
+        );
+        expect(
+          chunks.first.choices?.single.delta?.content,
+          'Recorded penguins',
+        );
+        expect(chunks.last.usage?.totalTokens, 10);
+        expect(sent.single['stream'], isTrue);
+        expect(sent.single['stream_options'], {'include_usage': true});
+        expect(sent.single['model'], 'glm-5.3');
+        verify(sdkClient.close).called(1);
+      },
+    );
 
     test('generateText streams text and sends prompt request body', () async {
       final probe = _ChatStreamProbe(content: 'melious response');

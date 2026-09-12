@@ -36,6 +36,7 @@ void main() {
   late MockDomainLogger logger;
   Exception? setupError;
   Stream<String>? synthesis;
+  var recall = false;
   var malformed = false;
   var unavailable = false;
   final now = DateTime(2026, 9, 10, 12);
@@ -47,6 +48,7 @@ void main() {
     bench = QueryPersistenceBench()..add('task');
     inspect = (_) async {};
     compose = (_) async {};
+    recall = false;
     malformed = false;
     synthesis = null;
     unavailable = false;
@@ -85,7 +87,11 @@ void main() {
                     'terms': ['feeder'],
                     'sufficient': sources.isNotEmpty,
                     'searchCategory': false,
-                    'memoryIds': <String>[],
+                    'memoryIds': <String>[
+                      if (recall)
+                        for (final memory in input['memories'] as List)
+                          (memory as Map<String, dynamic>)['id'] as String,
+                    ],
                     'passages': [
                       for (final source in sources)
                         {
@@ -158,6 +164,7 @@ void main() {
       await container.pump();
 
       expect(container.read(provider).local(id).provisional, isNull);
+      expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
       expect(
         (await bench.store.load('agent')).chats.single.answerFor(
           local.requestQuestionId!,
@@ -167,11 +174,29 @@ void main() {
     });
   });
 
-  for (final outcome in ['publish', 'invalid citation', 'cancel', 'privacy']) {
+  for (final outcome in [
+    'publish',
+    'refresh',
+    'invalid citation',
+    'cancel',
+    'privacy',
+    'moved',
+    'load failure',
+    'deleted',
+    'forgotten',
+    'history error',
+  ]) {
     test(
       'provisional synthesis $outcome preserves the publication boundary',
       () async {
         await withClock(Clock.fixed(now), () async {
+          String? memoryChat;
+          if (outcome == 'forgotten') {
+            memoryChat = await controller.create('Earlier feeder discussion');
+            controller.updateDraft(memoryChat, 'What did we record?');
+            await controller.send(memoryChat);
+            recall = true;
+          }
           var stopped = false;
           final stream = StreamController<String>(
             onCancel: () => stopped = true,
@@ -202,43 +227,97 @@ void main() {
           final draft = container.read(provider).local(chatId).provisional!;
           expect(draft.text, text);
           final before = await bench.store.load('agent');
-          expect(before.chats.single.answerFor(draft.questionId), isNull);
-          if (outcome == 'privacy') {
+          expect(
+            before.chats
+                .firstWhere((c) => c.id == chatId)
+                .answerFor(draft.questionId),
+            isNull,
+          );
+          final initialAccess = await bench.crawler.access.load(['task']);
+          if (outcome == 'privacy' || outcome == 'moved') {
             final task = bench.entries['task']!;
             bench.entries['task'] = task.copyWith(
-              meta: task.meta.copyWith(private: true),
+              meta: outcome == 'privacy'
+                  ? task.meta.copyWith(private: true)
+                  : task.meta.copyWith(categoryId: bench.categories.first.id),
             );
+          }
+          if (outcome == 'load failure') {
+            when(
+              bench.db.getAllCategories,
+            ).thenThrow(StateError('Access unavailable'));
+          }
+          if (outcome == 'deleted') {
+            await bench.store.delete('agent', chatId, forget: true);
+          }
+          if (outcome == 'forgotten') {
+            expect(draft.recalledMemoryIds, isNotEmpty);
+            await bench.store.delete('agent', memoryChat!, forget: true);
+          }
+          if (outcome == 'history error') {
+            history.addError(StateError('History unavailable'));
+            await container.pump();
+          } else if ([
+            'privacy',
+            'moved',
+            'load failure',
+            'deleted',
+            'forgotten',
+            'refresh',
+          ].contains(outcome)) {
             history.add(
               QueryChatData(
-                projection: before,
-                access: await bench.crawler.access.load(['task']),
+                projection: ['deleted', 'forgotten'].contains(outcome)
+                    ? await bench.store.load('agent')
+                    : before,
+                access: initialAccess,
               ),
             );
             await container.pump();
-            expect(container.read(provider).local(chatId).provisional, isNull);
-          } else if (outcome == 'cancel') {
-            controller.cancel(chatId);
-            expect(container.read(provider).local(chatId).provisional, isNull);
-          } else {
+          }
+          if (outcome == 'load failure') {
+            when(
+              bench.db.getAllCategories,
+            ).thenAnswer((_) async => bench.categories);
+          }
+          if (outcome == 'cancel') controller.cancel(chatId);
+          if (['publish', 'refresh', 'invalid citation'].contains(outcome)) {
             stream.add('","conclusion":""}');
             await stream.close();
+          } else {
+            expect(container.read(provider).local(chatId).provisional, isNull);
           }
           await request;
           final after = await bench.store.load('agent');
           final local = container.read(provider).local(chatId);
-          if (outcome == 'publish') {
+          final savedChat = after.chats
+              .where((c) => c.id == chatId)
+              .firstOrNull;
+          if (outcome == 'publish' || outcome == 'refresh') {
             expect(
-              (after.chats.single.answerFor(draft.questionId)!.data
-                      as QueryChatAnswer)
+              (savedChat!.answerFor(draft.questionId)!.data as QueryChatAnswer)
                   .text,
               draft.text,
             );
             expect(local.draftRetracted, isFalse);
+            history.add(
+              QueryChatData(projection: after, access: initialAccess),
+            );
+            await container.pump();
+            expect(container.read(provider).local(chatId).provisional, isNull);
           } else {
             expect(local.provisional, isNull);
-            expect(after.chats.single.answerFor(draft.questionId), isNull);
+            expect(savedChat?.answerFor(draft.questionId), isNull);
             expect(local.draftRetracted, outcome == 'invalid citation');
-            expect(local.requestQuestionId, draft.questionId);
+            if (outcome == 'deleted') {
+              expect(
+                container.read(provider).chats.containsKey(chatId),
+                isFalse,
+              );
+              expect(savedChat, isNull);
+            } else {
+              expect(local.requestQuestionId, draft.questionId);
+            }
             expect(stopped, isTrue);
           }
           subscription.close();
