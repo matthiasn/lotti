@@ -40,6 +40,23 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.10" date="2026-09-12">
+      <description>
+        <p>Added: choose a default inference profile in AI Settings. Agents without a configured route can use your selected profile on this device.</p>
+        <p>Changed: discuss a task while keeping its details in view. Task chats now open in a resizable side panel on wide screens and an expandable sheet on phones. Closing chat restores the task workspace and keeps your draft. Compact chat headers make room for the task title, with search filters available on demand.</p>
+        <p>Changed: query chat starts with existing task summaries. It considers completed tasks, reads full summaries where needed, and distinguishes summary-based answers from verified original-entry quotes. Questions that need another task agent remain explicitly unresolved until agent-to-agent chat is available.</p>
+        <p>Changed: task and project questions need fewer model requests for short linked notes. Lotti checks fitting home sources together before deciding whether to search elsewhere in the category, while keeping exact quotations and coverage with the answer. Cancelling a stalled Melious request also stops waiting for its longer provider timeout.</p>
+        <p>Changed: query answers can appear while they are being written. Draft text is visibly marked until its checks finish. If verification fails, the draft is removed and you can retry the question. Cancel also stops the active stream.</p>
+        <p>Changed: query chats explain progress and make incomplete answers easier to inspect. See source counts while searching, open recordings that could not be read, and retry an earlier failed question. You can draft your next question while a search runs. Recording controls show elapsed time, and saved quotes identify their text version and limited surrounding context. Audio failures offer recovery actions beside the affected answer or quote, and cancellation also stops a recording that is still starting.</p>
+        <p>Changed: inspect query answers with clearer evidence and accessible controls. Citations open their saved passages, excerpt boundaries and transcript dates are clearer, and shared conclusions show when they were saved. Empty memory disclosures disappear. Long voice transcripts expand without hiding Cancel, and audio setup details stay behind a short explanation.</p>
+        <p>Fixed: larger text stays inside task controls and chat inputs. Task actions wrap when needed, and long input hints stay on one line without vertical clipping.</p>
+        <p>Fixed: relationship agents now honor the model chosen in their settings. Missing configuration retries less often and resumes when a usable profile becomes available.</p>
+        <p>Fixed: reduce background agent work. Wakes reuse prepared memory when no compaction is needed, deferred jobs avoid unnecessary queue checks, and project recommendations are retired once per replacement.</p>
+        <p>Fixed: image analysis no longer fails when its short summary is invalid. The full analysis is preserved when an AI response has an overlong one-line summary or an invalid TLDR, instead of reporting an empty response.</p>
+        <p>Fixed: startup does less database work when many agents are present. Clearing old wake countdowns now shares a bulk read and transaction instead of opening a separate transaction for every agent, including idle ones.</p>
+        <p>Fixed: daily digests have more room to finish. Raised the response limit from 4,096 to 16,384 tokens to reduce failures caused by truncated responses.</p>
+      </description>
+    </release>
     <release version="1.1.9" date="2026-09-12">
       <description>
         <p>Added: listen to the recording behind a quoted answer. Query chats can prepare timestamps using Melious Whisper or a compatible Mistral Voxtral model in the agent's transcription profile, then play the matching excerpt from the original recording. Saved quotes and notes keep their wording. Answers can also be read aloud using local text-to-speech when enabled; switching chats or hiding private content stops playback.</p>
