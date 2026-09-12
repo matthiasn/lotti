@@ -57,8 +57,18 @@ class SystemHealthBody extends ConsumerStatefulWidget {
 class _SystemHealthBodyState extends ConsumerState<SystemHealthBody> {
   bool _showDigest = false;
 
-  static final DateFormat _day = DateFormat.yMMMd();
-  static final DateFormat _instant = DateFormat.yMMMd().add_Hm();
+  /// Formatters follow the in-app locale, which can differ from the process
+  /// default `Intl` locale when the user picked another language.
+  late DateFormat _day;
+  late DateFormat _instant;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context).toString();
+    _day = DateFormat.yMMMd(locale);
+    _instant = DateFormat.yMMMd(locale).add_Hm();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -304,6 +314,8 @@ class _SystemHealthBodyState extends ConsumerState<SystemHealthBody> {
                     subtitle: _describeWindow(messages, saved),
                     leading: const SettingsIcon(icon: LottiIcons.description),
                     activated:
+                        saved.path != null && saved.path == document?.path,
+                    selected:
                         saved.path != null && saved.path == document?.path,
                     showDivider: index < state.savedReports.length - 1,
                     dividerIndent: SettingsIcon.dividerIndent(tokens),

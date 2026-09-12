@@ -504,6 +504,7 @@ void main() {
       contains('### Older'),
     );
     expect(tester.widget<DesignSystemListItem>(olderRow).activated, isTrue);
+    expect(tester.widget<DesignSystemListItem>(olderRow).selected, isTrue);
     expect(
       tester
           .widget<DesignSystemListItem>(
@@ -512,6 +513,31 @@ void main() {
           .activated,
       isFalse,
     );
+  });
+
+  testWidgets('dates follow the in-app locale', (tester) async {
+    reportStore.latest = SystemHealthReportDocument.fromMarkdown(
+      '# Lotti system health report\n\n'
+      '- Window: 2026-09-04 08:00 → 2026-09-11 08:00 (last 7 days)\n\n'
+      '## Top findings\n\n### Older\n',
+      generatedAt: DateTime(2026, 9, 11, 8),
+      path: '/reports/system-health-2026-09-11-080000.md',
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const SingleChildScrollView(child: SystemHealthBody()),
+        overrides: overrides(),
+        locale: const Locale('de'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final row = tester.widget<DesignSystemListItem>(
+      find.byKey(const Key('system_health_saved_0')),
+    );
+    expect(row.title, '11. Sept. 2026 08:00');
+    expect(row.subtitle, contains('4. Sept. 2026 08:00'));
   });
 
   testWidgets('a run that cannot start shows a failure toast', (tester) async {
