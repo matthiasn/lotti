@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../projects/test_utils.dart';
 import '../test_data/entity_factories.dart';
 import 'query_test_utils.dart';
 
@@ -22,6 +23,7 @@ void main() {
   late QuerySummaryReader reader;
   late Map<String, AgentReportEntity> reports;
   late List<Map<String, dynamic>> prompts;
+  late List<String> systems;
   late Map<String, Object?> plan;
   late Map<String, Object?> response;
   late QueryCancellation cancellation;
@@ -60,6 +62,7 @@ void main() {
       repository: repository,
     );
     prompts = [];
+    systems = [];
     plan = {
       'taskIds': ['other'],
       'useProject': false,
@@ -78,6 +81,7 @@ void main() {
   Future<QueryChatAnswer?> build({
     QueryScope queryScope = scope,
     int maxBytes = 24000,
+    QuerySourceKind? kind,
     void Function(String)? onText,
     void Function(QueryChatAnswer)? onReady,
   }) =>
@@ -87,6 +91,7 @@ void main() {
         maxInputBytes: maxBytes,
         inference: QueryTextInference(
           generate: (system, prompt) {
+            systems.add(system);
             prompts.add(jsonDecode(prompt) as Map<String, dynamic>);
             if (system.startsWith('Task-summary orientation.')) {
               onSelection?.call();
@@ -104,6 +109,7 @@ void main() {
         historyDependencies: const [],
         private: false,
         homeOnly: false,
+        kind: kind,
         cancellation: cancellation,
         onAnswerText: onText,
         onSynthesisReady: onReady,
@@ -161,6 +167,88 @@ void main() {
     plan['taskIds'] = ['foreign'];
     await expectLater(build(), throwsFormatException);
     expect(prompts, hasLength(1));
+  });
+
+  test(
+    'project questions read the project report and member task TLDRs',
+    () async {
+      bench.entries['project'] = makeTestProject(
+        id: 'project',
+        categoryId: category,
+        title: 'Penguin logistics',
+      );
+      bench.taskProjects['other'] = 'project';
+      when(
+        () => repository.getLatestProjectReportForProjectId('project'),
+      ).thenAnswer(
+        (_) async => makeTestReport(
+          tldr: 'Project calibration results.',
+          content: 'FULL PROJECT: completed.',
+        ),
+      );
+      plan['useProject'] = true;
+      response['answer'] =
+          'The Penguin logistics summary records completed calibration.';
+      response['ownerIds'] = ['project'];
+      final answer = await build(
+        queryScope: const QueryScope(
+          kind: QueryScopeKind.project,
+          id: 'project',
+        ),
+        kind: QuerySourceKind.recording,
+      );
+      expect(
+        (prompts.first['project'] as Map)['tldr'],
+        'Project calibration results.',
+      );
+      expect(jsonEncode(prompts.last), contains('FULL PROJECT'));
+      expect(prompts.last['requestedOriginalSourceKind'], 'recording');
+      expect(answer!.coverage.incomplete, isTrue);
+      expect(answer.dependencies.map((s) => s.id), contains('project'));
+      expect(bench.searches, isEmpty);
+    },
+  );
+
+  test(
+    'oversized project orientation is omitted with honest coverage',
+    () async {
+      bench.entries['project'] = makeTestProject(
+        id: 'project',
+        categoryId: category,
+      );
+      bench.taskProjects['home'] = 'project';
+      when(
+        () => repository.getLatestProjectReportForProjectId('project'),
+      ).thenAnswer((_) async => makeTestReport(tldr: 'x' * 30000));
+      final answer = await build();
+      expect(prompts.first.containsKey('project'), isFalse);
+      expect(answer!.coverage.incomplete, isTrue);
+      expect(answer.dependencies.map((s) => s.id), isNot(contains('project')));
+      plan['useProject'] = true;
+      await expectLater(build(), throwsFormatException);
+    },
+  );
+
+  test('a selected TLDR that cannot fit synthesis is not sent', () async {
+    reports['other'] = reports['other']!.copyWith(tldr: 'x' * 22000);
+    await build(maxBytes: 30000);
+    final selectionBytes =
+        utf8.encode(systems.first).length +
+        utf8.encode(jsonEncode(prompts.first)).length;
+    final answerBytes =
+        utf8.encode(systems.last).length +
+        utf8.encode(jsonEncode(prompts.last)).length;
+    expect(answerBytes, greaterThan(selectionBytes + 16));
+    prompts.clear();
+    response = {
+      'answer': 'The available summaries leave the question open.',
+      'ownerIds': <String>[],
+      'unresolved': true,
+    };
+    final answer = await build(maxBytes: selectionBytes + 16);
+    expect(prompts.last['summaries'], isEmpty);
+    expect(answer!.coverage.incomplete, isTrue);
+    expect(answer.text, response['answer']);
   });
 
   for (final invalid in ['citation', 'owner', 'title', 'shape']) {
