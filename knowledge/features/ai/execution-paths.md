@@ -235,8 +235,8 @@ slot populated, so a profile deliberately chosen for a task still wins every
 capability it does own, and only the missing one falls through.
 
 **Why the walk exists:** picking a thinking model by hand resolves the task to a
-bare model route. `ProfileResolver.resolveSetup` returns a `ResolvedProfile`
-carrying a thinking model and nothing else — no capability slots, no
+bare model route. `ProfileResolver.resolveSetup` returns setup details whose
+`ResolvedProfile` carries a thinking model and nothing else — no capability slots, no
 `skillAssignments` — whenever `AgentInferenceSetup` has a
 `thinkingModelOverrideId` and no `baseProfileId`. Treating that as the last word
 switched the category's automatic transcription and image analysis off *as a side

@@ -694,7 +694,9 @@ removed:
   concurrent consume/replacement observed during resolution is left alone.
   Saving the Settings default or changing profile/model/provider catalogs
   requests a scan, so a repaired route need not wait out the backoff. Cadence
-  repair runs independently before the configuration check.
+  repair runs independently before the configuration check. Configuration read
+  exceptions also re-arm the episode; an unreadable failure counter uses the
+  initial one-hour delay rather than discarding the retry.
 - **Disclosure fails closed.** The "Brief me" card resolves the agent's
   model to a provider name through that same chain; a cloud provider is
   named in a consent dialog first (ADR 0037), and an unresolvable profile is

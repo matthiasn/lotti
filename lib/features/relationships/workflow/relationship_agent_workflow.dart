@@ -367,12 +367,21 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       factsBlock = '$factsBlock\n\n$relationshipReportRefreshInstruction';
     }
 
-    final resolved = await resolveRelationshipAgentModel(
-      relationship: relationship,
-      agentIdentity: agentIdentity,
-      aiConfigRepository: _aiConfigRepository,
-      categoryProfileLookup: _categoryProfileLookup,
-    );
+    RelationshipModelResolution? resolved;
+    try {
+      resolved = await resolveRelationshipAgentModel(
+        relationship: relationship,
+        agentIdentity: agentIdentity,
+        aiConfigRepository: _aiConfigRepository,
+        categoryProfileLookup: _categoryProfileLookup,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'failed to resolve relationship inference configuration',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     if (resolved == null) {
       // The escalation record is already consumed and Phase A will not
       // re-arm this episode — a temporarily unconfigured provider must not
@@ -1081,12 +1090,24 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     bool configurationFailure = false,
   }) async {
     try {
-      final failures = configurationFailure
-          ? (await _repository.getAgentState(
-                  agentId,
-                ))?.consecutiveFailureCount ??
-                0
-          : 0;
+      var failures = 0;
+      if (configurationFailure) {
+        try {
+          failures =
+              (await _repository.getAgentState(
+                agentId,
+              ))?.consecutiveFailureCount ??
+              0;
+        } catch (error, stackTrace) {
+          // A broken counter read must not discard the durable episode.
+          // Preserve the retry using the base delay when its streak is unknown.
+          logError(
+            'failed to read relationship retry count',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
       final delay = configurationFailure
           ? Duration(hours: (1 << failures.clamp(0, 5)).clamp(1, 24))
           : Duration.zero;

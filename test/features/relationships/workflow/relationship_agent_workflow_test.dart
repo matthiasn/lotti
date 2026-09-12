@@ -436,6 +436,30 @@ void main() {
     });
   });
 
+  for (final failingRead in ['configuration', 'failure counter']) {
+    test(
+      '$failingRead read errors still preserve the escalation retry',
+      () async {
+        if (failingRead == 'configuration') {
+          when(
+            aiConfigRepository.getDefaultProfileId,
+          ).thenThrow(StateError('settings unavailable'));
+        } else {
+          when(
+            () => repository.getAgentState(agentId),
+          ).thenThrow(StateError('state unavailable'));
+        }
+        final tokens = {relationshipEscalationWorkspaceKey('2026-08-08')};
+        final result = await run(tokens: tokens);
+        expect(result.success, isFalse);
+        final retry = upserts.whereType<ScheduledWakeEntity>().single;
+        expect(retry.scheduledAt, now.toUtc().add(const Duration(hours: 1)));
+        expect(retry.triggerTokens.toSet(), tokens);
+        expect(conversationRepository.sendMessageDelegateCallCount, 0);
+      },
+    );
+  }
+
   test(
     'an unresolvable provider re-arms the consumed escalation — a '
     'temporarily unconfigured provider must not orphan the episode',
