@@ -52,15 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Relationship agents now honor the model chosen in their settings.**
   Missing configuration retries less often and resumes when a usable profile
   becomes available.
-- **Reduce background agent work.** Wakes reuse prepared memory when no
-  compaction is needed, deferred jobs avoid unnecessary queue checks, and
-  project recommendations are retired once per replacement.
+- **Reduced background activity from agents.** Agents avoid repeating
+  preparation and checks when no new work is needed.
 - **Image analysis no longer fails when its short summary is invalid.** The
   full analysis is preserved when an AI response has an overlong one-line
   summary or an invalid TLDR, instead of reporting an empty response.
-- **Startup does less database work when many agents are present.** Clearing
-  old wake countdowns now shares a bulk read and transaction instead of
-  opening a separate transaction for every agent, including idle ones.
+- **Less startup overhead with many agents.** Lotti clears old agent
+  countdowns together, reducing the work needed to open your journal.
 - **Daily digests have more room to finish.** Raised the response limit from
   4,096 to 16,384 tokens to reduce failures caused by truncated responses.
 
