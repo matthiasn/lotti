@@ -6363,6 +6363,8 @@
   "queryDeleteForget": "Delete and forget conclusions",
   "queryDeleteKeep": "Delete and keep conclusions",
   "queryDictated": "You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.",
+  "queryDraftProvisional": "Draft · not yet verified",
+  "queryDraftRetracted": "The draft answer could not be verified. Try again.",
   "queryEarlierTextOmitted": "[Earlier text not shown]",
   "queryEmptyBody": "Ask about earlier notes and meetings. Answers include the exact passages you can inspect.",
   "queryExactStoredText": "Exact stored text",

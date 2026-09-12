@@ -26,6 +26,8 @@ class QueryChatLocal {
     this.kind,
     this.answering = false,
     this.requestQuestionId,
+    this.provisional,
+    this.draftRetracted = false,
   });
   final String draft;
   final bool draftPrivate;
@@ -35,6 +37,10 @@ class QueryChatLocal {
   final bool homeOnly;
   final QuerySourceKind? kind;
   final bool answering;
+
+  /// Ephemeral synthesis only; never persisted before validation.
+  final QueryChatAnswer? provisional;
+  final bool draftRetracted;
 
   /// The saved question for the current/last attempt; null before persistence.
   final String? requestQuestionId;
@@ -51,6 +57,9 @@ class QueryChatLocal {
     bool? answering,
     String? requestQuestionId,
     bool clearRequestQuestion = false,
+    QueryChatAnswer? provisional,
+    bool clearProvisional = false,
+    bool? draftRetracted,
   }) => QueryChatLocal(
     draft: draft ?? this.draft,
     draftPrivate: draftPrivate ?? this.draftPrivate,
@@ -60,6 +69,8 @@ class QueryChatLocal {
     homeOnly: homeOnly ?? this.homeOnly,
     kind: clearKind ? null : kind ?? this.kind,
     answering: answering ?? this.answering,
+    provisional: clearProvisional ? null : provisional ?? this.provisional,
+    draftRetracted: draftRetracted ?? this.draftRetracted,
     requestQuestionId: clearRequestQuestion
         ? null
         : requestQuestionId ?? this.requestQuestionId,
@@ -117,7 +128,37 @@ class QueryChatController extends Notifier<QueryChatSession> {
   void _watchRunningHistory() {
     _runningHistory ??= ref.listen(queryChatDataProvider(key), (_, next) {
       final projection = next.value?.projection;
-      if (projection == null) return;
+      if (projection == null) {
+        if (next.hasError) _cancelAll();
+        return;
+      }
+      for (final entry in state.chats.entries.toList()) {
+        final draft = entry.value.provisional;
+        if (draft == null) continue;
+        final chat = projection.chats
+            .where((c) => c.id == entry.key)
+            .firstOrNull;
+        if (chat == null) {
+          _runs.remove(entry.key)?.cancel();
+          state = QueryChatSession(
+            selectedId: state.selectedId == entry.key ? null : state.selectedId,
+            chats: {...state.chats}..remove(entry.key),
+          );
+          continue;
+        }
+        if (chat.answerFor(draft.questionId) != null &&
+            entry.value.status != QueryTurnStatus.running) {
+          _set(entry.key, entry.value.copyWith(clearProvisional: true));
+        } else if (_runs[entry.key] case final run?) {
+          if (draft.recalledMemoryIds.any(
+            (id) => !projection.memories.any((m) => m.id == id),
+          )) {
+            cancel(entry.key);
+          } else {
+            unawaited(_recheckProvisional(entry.key, draft, run));
+          }
+        }
+      }
       final live = projection.chats.map((c) => c.id).toSet();
       for (final removed in _observed.difference(live)) {
         _runs.remove(removed)?.cancel();
@@ -130,14 +171,49 @@ class QueryChatController extends Notifier<QueryChatSession> {
       _observed
         ..clear()
         ..addAll(live);
+      _releaseIdleHistory();
     });
   }
 
   void _releaseIdleHistory() {
-    if (_runs.isNotEmpty) return;
+    if (_runs.isNotEmpty ||
+        state.chats.values.any((c) => c.provisional != null)) {
+      return;
+    }
     _runningHistory?.close();
     _runningHistory = null;
     _observed.clear();
+  }
+
+  Future<void> _recheckProvisional(
+    String id,
+    QueryChatAnswer draft,
+    QueryCancellation run,
+  ) async {
+    try {
+      final access = await ref
+          .read(queryChatStoreProvider)
+          .access
+          .load(
+            draft.dependencies.map((source) => source.id),
+          );
+      if (!ref.mounted || run.isCancelled || !identical(_runs[id], run)) return;
+      final scoped = [
+        ...draft.evidence.map((e) => e.source),
+        ...draft.coverage.unreadableSources,
+        ...draft.dependencies.where((s) => s.id == key.scope.id),
+      ];
+      if (!access.allowsContent(draft.dependencies, private: draft.private) ||
+          scoped.any(
+            (s) => access.entries[s.id]?.meta.categoryId != s.categoryId,
+          ) ||
+          (key.scope.kind == QueryScopeKind.category &&
+              !access.allowsCategory(key.scope.id))) {
+        cancel(id);
+      }
+    } catch (_) {
+      if (ref.mounted && identical(_runs[id], run)) cancel(id);
+    }
   }
 
   void _set(String id, QueryChatLocal local) {
@@ -149,7 +225,15 @@ class QueryChatController extends Notifier<QueryChatSession> {
   }
 
   void _cancelAll() {
+    // Publication can finish before its history projection arrives. Those
+    // retained drafts still need clearing when access becomes unavailable.
     _runs.keys.toList().forEach(cancel);
+    for (final entry in state.chats.entries.toList()) {
+      if (entry.value.provisional != null && !_runs.containsKey(entry.key)) {
+        _set(entry.key, entry.value.copyWith(clearProvisional: true));
+      }
+    }
+    _releaseIdleHistory();
   }
 
   void select(String? id) =>
@@ -210,6 +294,12 @@ class QueryChatController extends Notifier<QueryChatSession> {
 
   Future<void> delete(String id, {required bool forget}) async {
     _runs.remove(id)?.cancel();
+    _set(
+      id,
+      state
+          .local(id)
+          .copyWith(status: QueryTurnStatus.cancelled, clearProvisional: true),
+    );
     _releaseIdleHistory();
     await ref
         .read(queryChatStoreProvider)
@@ -226,7 +316,12 @@ class QueryChatController extends Notifier<QueryChatSession> {
     _runs[id]?.cancel();
     // Keep the slot occupied until cleanup completes, preventing a retry from
     // racing a cancelled request's terminal event.
-    _set(id, state.local(id).copyWith(status: QueryTurnStatus.cancelled));
+    _set(
+      id,
+      state
+          .local(id)
+          .copyWith(status: QueryTurnStatus.cancelled, clearProvisional: true),
+    );
   }
 
   Future<void> send(String id, {String? retryQuestionId}) async {
@@ -246,6 +341,8 @@ class QueryChatController extends Notifier<QueryChatSession> {
         checked: 0,
         expanded: false,
         answering: false,
+        clearProvisional: true,
+        draftRetracted: false,
         requestQuestionId: retryQuestionId,
         clearRequestQuestion: retryQuestionId == null,
       ),
@@ -300,6 +397,23 @@ class QueryChatController extends Notifier<QueryChatSession> {
         cancellation: cancellation,
         homeOnly: local.homeOnly,
         kind: local.kind,
+        onSynthesisReady: (answer) {
+          cancellation.check();
+          _set(id, state.local(id).copyWith(provisional: answer));
+        },
+        onAnswerText: (text) {
+          cancellation.check();
+          if (!ref.mounted || !identical(_runs[id], cancellation)) return;
+          final current = state.local(id).provisional;
+          if (current != null) {
+            _set(
+              id,
+              state
+                  .local(id)
+                  .copyWith(provisional: current.copyWith(text: text)),
+            );
+          }
+        },
         onAnswering: () {
           if (!cancellation.isCancelled) {
             stage = 'answer';
@@ -320,9 +434,38 @@ class QueryChatController extends Notifier<QueryChatSession> {
       final published = await store.publish(key.agentId, id, result);
       if (!published) throw const QueryCancelled();
       if (ref.mounted) {
-        _set(id, state.local(id).copyWith(status: QueryTurnStatus.idle));
+        final visible = ref
+            .read(queryChatDataProvider(key))
+            .value
+            ?.projection
+            .chats
+            .where((c) => c.id == id)
+            .firstOrNull
+            ?.answerFor(question.id);
+        _set(
+          id,
+          state
+              .local(id)
+              .copyWith(
+                status: QueryTurnStatus.idle,
+                clearProvisional: visible != null,
+              ),
+        );
       }
     } catch (error, stack) {
+      if (ref.mounted && identical(_runs[id], cancellation)) {
+        final local = state.local(id);
+        _set(
+          id,
+          local.copyWith(
+            draftRetracted:
+                local.provisional?.text.isNotEmpty == true &&
+                error is! QueryCancelled &&
+                error is! QueryScopeUnavailable,
+            clearProvisional: true,
+          ),
+        );
+      }
       if (error is! QueryCancelled &&
           error is! QueryScopeUnavailable &&
           error is! QueryInferenceUnavailable) {

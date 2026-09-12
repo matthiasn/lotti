@@ -78,6 +78,7 @@ def main():
     parser.add_argument("--output", required=True, type=Path, help="JSON artifact outside the repository")
     parser.add_argument("--cases", default="local,follow_up,wider_category,absent,category_boundary")
     parser.add_argument("--home-only", action="store_true")
+    parser.add_argument("--stream-synthesis", action="store_true")
     parser.add_argument("--legacy-flow", action="store_true", help="Force the original preview/window path for a matched control")
     parser.add_argument("--variant", required=True, help="Explicit code/comparison variant")
     args = parser.parse_args()
@@ -112,6 +113,7 @@ def main():
         "QUERY_EVAL_VARIANT": args.variant,
         "QUERY_EVAL_LEGACY_FLOW": "1" if args.legacy_flow else "0",
         "QUERY_EVAL_PYTHON": sys.executable,
+        "QUERY_EVAL_STREAM_SYNTHESIS": "1" if args.stream_synthesis else "0",
     })
     output.parent.mkdir(parents=True, exist_ok=True)
     # Keep compiler/provider output beside the synthetic artifact; credentials

@@ -15616,4 +15616,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get queryDraftProvisional => 'Bozza · non ancora verificata';
+
+  @override
+  String get queryDraftRetracted =>
+      'Non è stato possibile verificare la bozza della risposta. Riprova.';
 }

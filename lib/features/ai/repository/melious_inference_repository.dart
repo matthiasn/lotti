@@ -340,8 +340,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// Melious returns `environment_impact` + `billing_cost` (only present on
   /// non-streaming responses); the parsed impact is written to the collector and
   /// the buffered reply is re-emitted as a single synthetic stream chunk so
-  /// existing consumers are unchanged. Without a collector the original
-  /// streaming path is used verbatim.
+  /// existing consumers are unchanged. [preferStreaming] retains the collector
+  /// but requests incremental text and token usage. Only an explicit initial
+  /// rejection of a streaming parameter permits one same-model buffered
+  /// fallback; other errors and partial responses are never retried here.
   Stream<CreateChatCompletionStreamResponse> generateText({
     required String prompt,
     required String model,
@@ -354,6 +356,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
+    bool preferStreaming = false,
   }) {
     final messages = [
       if (systemMessage != null)
@@ -362,7 +365,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         content: ChatCompletionUserMessageContent.string(prompt),
       ),
     ];
-    if (impactCollector != null) {
+    if (impactCollector != null && !preferStreaming) {
       return _nonStreamingChat(
         messages: messages,
         model: model,
@@ -376,21 +379,113 @@ class MeliousInferenceRepository extends TranscriptionRepository {
         impactCollector: impactCollector,
       );
     }
-    final stream = _chatCompletionStreamFactory(
-      baseUrl: baseUrl,
-      apiKey: apiKey,
-      request: _helpers.createBaseRequest(
-        messages: messages,
-        model: model,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: resolveToolChoice(model, tools, toolChoice),
-        reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
-      ),
-    );
+    final request = _helpers
+        .createBaseRequest(
+          messages: messages,
+          model: model,
+          temperature: temperature,
+          maxCompletionTokens: maxCompletionTokens,
+          tools: tools,
+          toolChoice: resolveToolChoice(model, tools, toolChoice),
+          reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
+        )
+        .copyWith(
+          streamOptions: preferStreaming
+              ? const ChatCompletionStreamOptions(includeUsage: true)
+              : null,
+        );
+    late StreamController<CreateChatCompletionStreamResponse> controller;
+    StreamSubscription<CreateChatCompletionStreamResponse>? subscription;
+    var emitted = false;
+    var cancelled = false;
+    bool permitsFallback(Object error) {
+      if (!preferStreaming ||
+          emitted ||
+          error is! OpenAIClientException ||
+          (error.code != 400 && error.code != 422)) {
+        return false;
+      }
+      var body = error.body;
+      if (body is String) {
+        try {
+          body = jsonDecode(body);
+        } catch (_) {
+          return false;
+        }
+      }
+      final detail = body is Map ? body['error'] : null;
+      final parameter = detail is Map ? detail['param'] : null;
+      return parameter == 'stream' || parameter == 'stream_options';
+    }
 
-    return _helpers.filterAnthropicPings(stream).asBroadcastStream();
+    void finishError(Object error, StackTrace stack) {
+      if (cancelled) return;
+      controller.addError(error, stack);
+      unawaited(controller.close());
+    }
+
+    void listen(
+      Stream<CreateChatCompletionStreamResponse> source, {
+      required bool fallback,
+    }) {
+      subscription = source.listen(
+        (chunk) {
+          if (cancelled) return;
+          emitted = true;
+          controller.add(chunk);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (cancelled) return;
+          if (!fallback && permitsFallback(error)) {
+            listen(
+              _nonStreamingChat(
+                messages: messages,
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                temperature: temperature,
+                maxCompletionTokens: maxCompletionTokens,
+                tools: tools,
+                toolChoice: toolChoice,
+                reasoningEffort: reasoningEffort,
+                impactCollector: impactCollector ?? InferenceImpactCollector(),
+              ),
+              fallback: true,
+            );
+          } else {
+            finishError(error, stack);
+          }
+        },
+        onDone: () => unawaited(controller.close()),
+        cancelOnError: true,
+      );
+    }
+
+    controller = StreamController<CreateChatCompletionStreamResponse>(
+      onListen: () {
+        try {
+          listen(
+            _helpers.filterAnthropicPings(
+              _chatCompletionStreamFactory(
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                request: request,
+              ),
+            ),
+            fallback: false,
+          );
+        } catch (error, stack) {
+          finishError(error, stack);
+        }
+      },
+      onCancel: () {
+        cancelled = true;
+        return subscription?.cancel();
+      },
+    );
+    return controller.stream.asBroadcastStream(
+      onCancel: (subscription) => unawaited(subscription.cancel()),
+    );
   }
 
   /// Generates with full conversation history through Melious' OpenAI-compatible
@@ -504,7 +599,10 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     required CreateChatCompletionRequest request,
   }) {
     final client = OpenAIClient(baseUrl: baseUrl, apiKey: apiKey);
-    return client.createChatCompletionStream(request: request);
+    return const CloudInferenceRequestHelpers().filterAnthropicPings(
+      client.createChatCompletionStream(request: request),
+      onClose: client.endSession,
+    );
   }
 
   /// Non-streaming Melious chat: one raw POST that returns the full body

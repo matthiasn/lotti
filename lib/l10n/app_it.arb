@@ -4724,6 +4724,8 @@
   "queryDeleteForget": "Elimina e dimentica le conclusioni",
   "queryDeleteKeep": "Elimina e conserva le conclusioni",
   "queryDictated": "Puoi modificare la trascrizione prima di inviare la domanda. L’audio potrebbe essere già stato inviato al tuo servizio di trascrizione.",
+  "queryDraftProvisional": "Bozza · non ancora verificata",
+  "queryDraftRetracted": "Non è stato possibile verificare la bozza della risposta. Riprova.",
   "queryEarlierTextOmitted": "[Testo precedente non mostrato]",
   "queryEmptyBody": "Chiedi informazioni su note e riunioni precedenti. Le risposte includono i passaggi esatti che puoi consultare.",
   "queryExactStoredText": "Testo esatto salvato",

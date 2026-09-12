@@ -128,6 +128,50 @@ void main() {
   });
 
   group('filterAnthropicPings', () {
+    test('pause and resume reach the upstream subscription', () async {
+      var paused = false;
+      var resumed = false;
+      final source = StreamController<CreateChatCompletionStreamResponse>(
+        onPause: () => paused = true,
+        onResume: () => resumed = true,
+      );
+      final received = Completer<CreateChatCompletionStreamResponse>();
+      final subscription =
+          helpers.filterAnthropicPings(source.stream).listen(received.complete)
+            ..pause();
+      expect(paused, isTrue);
+      source.add(chunk('resumed answer'));
+      expect(received.isCompleted, isFalse);
+      subscription.resume();
+      expect(
+        (await received.future).choices?.single.delta?.content,
+        'resumed answer',
+      );
+      expect(resumed, isTrue);
+      await subscription.cancel();
+      await source.close();
+    });
+
+    test('listens lazily and cancels the owned idle source', () async {
+      var listened = false;
+      var cancelled = false;
+      var closed = 0;
+      final source = StreamController<CreateChatCompletionStreamResponse>(
+        onListen: () => listened = true,
+        onCancel: () => cancelled = true,
+      );
+      final stream = helpers.filterAnthropicPings(
+        source.stream,
+        onClose: () => closed++,
+      );
+      expect(listened, isFalse);
+      final subscription = stream.listen((_) {});
+      expect(listened, isTrue);
+      await subscription.cancel();
+      expect(cancelled, isTrue);
+      expect(closed, 1);
+      await source.close();
+    });
     test('swallows Anthropic ping errors and keeps valid chunks', () async {
       final source = Stream<CreateChatCompletionStreamResponse>.multi((c) {
         c

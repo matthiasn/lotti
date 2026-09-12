@@ -4,6 +4,7 @@ import 'dart:ui' show Locale;
 
 import 'package:a2ui_core/a2ui_core.dart' show CreateSurfaceMessage;
 import 'package:drift/drift.dart' as drift;
+import 'package:http/http.dart' as http;
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -249,6 +250,7 @@ FutureOr<AgentStateEntity?> _fallbackAgentStateUpdate(
 /// `registerFallbackValue()` calls across test files. Safe to call multiple
 /// times — mocktail deduplicates internally.
 void registerAllFallbackValues() {
+  registerFallbackValue(http.Request('GET', Uri.parse('https://example.test')));
   // Sealed union / abstract class fallbacks (need real instances)
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(fallbackProjectEntry);

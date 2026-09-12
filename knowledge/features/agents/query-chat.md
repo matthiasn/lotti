@@ -210,6 +210,23 @@ inspection and resets after inspection. Saved `coverage.expanded` records
 whether any outside-home source was checked; it is separate from current
 activity. The transient `answering` flag resets on each Send or Retry.
 
+Synthesis alone can display a provisional answer. `QueryTextInference` decodes
+only the leading JSON `answer` string incrementally, buffering incomplete
+escapes and surrogate pairs; other field orders stay buffered. Inspection,
+reasoning and the durable conclusion are never rendered. The draft uses plain
+text with a visible unverified label, so citations and URLs are inert. The final
+parsed text must extend the displayed prefix without changing it; existing
+citation and live-access checks still run before transactional publication.
+
+`QueryChatLocal.provisional` holds the answer's dependencies and text only in
+memory. Active history notifications recheck those dependencies and category
+membership, including sources not yet in persisted history. Privacy/lockdown
+changes, unavailable access, forgotten recalled memory and chat deletion cancel
+the request and clear the draft. Normal publication keeps it only until the
+saved answer is visible in the history projection. A failed draft is removed
+and a content-free verification message appears beside the same question's
+Retry action. Nothing starts audio playback or TTS from provisional text.
+
 A single activity bubble groups phase, visible checked-source count and Cancel,
 with a live-region announcement. The query composer omits the duplicate helper
 status. The switcher exposes running/unread indicators, last-message previews,
@@ -263,6 +280,7 @@ stateDiagram-v2
   state running {
     [*] --> searching
     searching --> answering: Verified evidence ready for synthesis
+    answering --> provisional: First decoded answer text
   }
   idle --> running: Send
   running --> idle: answer committed
@@ -292,7 +310,10 @@ flowchart TD
   Plan --> Windows
   Windows --> Evidence
   Evidence --> Answer["Synthesis from accepted evidence, selected memory and chat context"]
-  Answer --> Gate["Live access and citation validation"]
+  Answer --> Draft["Provisional answer text only; inert citations"]
+  Draft --> Gate["Live access and citation validation"]
+  Draft -->|cancel or visibility loss| Clear["Clear transient text"]
+  Gate -->|invalid| Retract["Retract draft and offer Retry"]
   Gate --> Commit["Transactional answer and useful conclusion"]
   Batch -->|invalid response| Retry["Recoverable failure; no publication"]
   BatchMore -->|invalid response| Retry
@@ -311,9 +332,16 @@ and mark coverage incomplete; batch response validation rejects malformed or
 foreign passages as a whole. Evidence summaries are interpretations, not quotes.
 
 `QueryTextInference` uses the profile's thinking route through the existing
-cloud inference repository. The optional registered `AiInteractionCapture`
+cloud inference repository. Synthesis requests `preferStreaming`; inspection
+retains the accounting-oriented buffered path. The transport fallback and the
+absence of streamed Melious cost/energy fields are described in
+[provider routing](../ai/provider-routing.md#melious-reports-cost-and-impact-only-off-the-streaming-path).
+The optional registered `AiInteractionCapture`
 records agent/chat attribution, route IDs, usage and request/response digests;
-it does not retain an additional raw prompt log.
+it does not retain an additional raw prompt log. The live query evaluator
+records first synthesis content-token time, first decoded visible-answer time
+and total built-answer time separately. Streamed-answer equality is an explicit
+quality gate; a missing provider cost is unavailable, never zero.
 
 # Evidence, memory and deletion
 

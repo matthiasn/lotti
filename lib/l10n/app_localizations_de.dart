@@ -15535,4 +15535,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get queryDraftProvisional => 'Entwurf · noch nicht geprüft';
+
+  @override
+  String get queryDraftRetracted =>
+      'Der Antwortentwurf konnte nicht geprüft werden. Versuch es erneut.';
 }

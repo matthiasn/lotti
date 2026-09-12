@@ -4257,6 +4257,8 @@
   "queryDeleteForget": "Smazat a zapomenout závěry",
   "queryDeleteKeep": "Smazat a ponechat závěry",
   "queryDictated": "Přepis můžeš upravit před odesláním otázky. Zvuk už mohl být odeslán tvému poskytovateli přepisu.",
+  "queryDraftProvisional": "Návrh · zatím neověřený",
+  "queryDraftRetracted": "Návrh odpovědi se nepodařilo ověřit. Zkus to znovu.",
   "queryEarlierTextOmitted": "[Dřívější text není zobrazen]",
   "queryEmptyBody": "Zeptej se na dřívější poznámky a schůzky. Odpovědi obsahují přesné pasáže, které si můžeš prohlédnout.",
   "queryExactStoredText": "Přesný uložený text",

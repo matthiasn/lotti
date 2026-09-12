@@ -25708,6 +25708,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// No description provided for @queryDraftProvisional.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft · not yet verified'**
+  String get queryDraftProvisional;
+
+  /// No description provided for @queryDraftRetracted.
+  ///
+  /// In en, this message translates to:
+  /// **'The draft answer could not be verified. Try again.'**
+  String get queryDraftRetracted;
 }
 
 class _AppLocalizationsDelegate

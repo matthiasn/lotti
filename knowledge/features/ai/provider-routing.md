@@ -46,8 +46,8 @@ handles local providers such as Ollama, Whisper, Voxtral and oMLX.
 It is a thin **facade**: every public method delegates to
 `CloudInferenceGenerate` (text + image) or `CloudInferenceGenerateMore` (audio,
 multi-turn, image generation, model install/cleanup), both sharing one
-`CloudInferenceRequestHelpers`. The mockable surface and all call sites are
-unchanged.
+`CloudInferenceRequestHelpers`. The facade remains the mockable surface. Its `generate` method can request
+streaming while keeping an impact collector for buffered fallback.
 
 | Operation | Dedicated branches | Fallback |
 |-----------|--------------------|----------|
@@ -200,7 +200,7 @@ endpoint has to opt in:
 
 | Endpoint | How it buffers | Impact captured |
 |----------|----------------|-----------------|
-| `POST /chat/completions` | `_nonStreamingChat` when a collector is supplied — deliberately forfeiting incremental deltas, since Melious reports impact only when not streaming | Yes |
+| `POST /chat/completions` | `_nonStreamingChat` when a collector is supplied, unless `generateText` requests `preferStreaming` | Buffered responses only |
 | `POST /audio/transcriptions` (whisper-class ids) | Always one buffered POST | Yes, via `executeTranscription`'s `onSuccessResponse` hook |
 | `POST /chat/completions` with temporary-MP3 audio (Voxtral ids) | Always buffered | Yes |
 | `POST /images/generations` | Always buffered | Yes |
@@ -210,6 +210,21 @@ that ignores the parameter silently records nothing — the call still succeeds
 and the transcript still arrives, which is why the gap is invisible until the
 consumption charts come up short. Fields Melious omits leave the collector
 untouched rather than writing zeros.
+
+Scoped query synthesis opts into `preferStreaming` and requests a trailing token
+usage event. Its collector remains available, but the streamed responses tested
+with GLM-5.3 and DeepSeek Flash v4.1 omit billing and environmental impact.
+Streaming cost/energy therefore remains unavailable. An initial HTTP 400/422
+whose structured error names `stream` or `stream_options` permits one buffered
+fallback with identical model and reasoning settings. Authentication, overload,
+timeout, unrelated malformed requests and streams that already emitted data do
+not trigger fallback. Buffered fallback retains returned usage and impact.
+
+The ping filter subscribes lazily and owns upstream cancellation. The Melious
+SDK adapter and generic text compatibility route also close their own client
+on cancellation/completion; an injected caller-owned compatibility client is
+not closed. Cancelling the last broadcast listener cancels its owned upstream
+subscription, including while waiting for the first token.
 
 A small curated static catalog exists for immediate setup before live-catalog
 rows are installed: `deepseek-v4-pro`, `glm-5.2`, `gemma-4-26b-a4b`,

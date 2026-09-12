@@ -30,10 +30,13 @@ void main() {
   late ProviderContainer container;
   late QueryChatController controller;
   late StreamController<QueryChatData> history;
+  late StreamController<bool> privacy;
   late Future<void> Function(String chatId) inspect;
   late Future<void> Function(String chatId) compose;
   late MockDomainLogger logger;
   Exception? setupError;
+  Stream<String>? synthesis;
+  var recall = false;
   var malformed = false;
   var unavailable = false;
   final now = DateTime(2026, 9, 10, 12);
@@ -45,9 +48,12 @@ void main() {
     bench = QueryPersistenceBench()..add('task');
     inspect = (_) async {};
     compose = (_) async {};
+    recall = false;
     malformed = false;
+    synthesis = null;
     unavailable = false;
     history = StreamController<QueryChatData>.broadcast();
+    privacy = StreamController<bool>.broadcast();
     container = ProviderContainer(
       overrides: [
         domainLoggerProvider.overrideWithValue(logger),
@@ -55,7 +61,10 @@ void main() {
         queryChatDataProvider(key).overrideWith((ref) => history.stream),
         configFlagProvider(
           'private',
-        ).overrideWith((ref) => Stream.value(false)),
+        ).overrideWith((ref) async* {
+          yield false;
+          yield* privacy.stream;
+        }),
         queryBuilderFactoryProvider.overrideWithValue((
           scope,
           agentId,
@@ -78,7 +87,11 @@ void main() {
                     'terms': ['feeder'],
                     'sufficient': sources.isNotEmpty,
                     'searchCategory': false,
-                    'memoryIds': <String>[],
+                    'memoryIds': <String>[
+                      if (recall)
+                        for (final memory in input['memories'] as List)
+                          (memory as Map<String, dynamic>)['id'] as String,
+                    ],
                     'passages': [
                       for (final source in sources)
                         {
@@ -104,6 +117,10 @@ void main() {
                   yield '{"ids":[]}';
                 } else {
                   await compose(chatId);
+                  if (synthesis case final stream?) {
+                    yield* stream;
+                    return;
+                  }
                   yield malformed
                       ? 'invalid'
                       : jsonEncode({
@@ -122,8 +139,193 @@ void main() {
   tearDown(() async {
     container.dispose();
     await history.close();
+    await privacy.close();
     await bench.close();
   });
+
+  test('privacy change clears a published draft awaiting projection', () async {
+    await withClock(Clock.fixed(now), () async {
+      final subscription = container.listen(provider, (_, _) {});
+      addTearDown(subscription.close);
+      await container.read(configFlagProvider('private').future);
+      final id = await controller.create('Feeder');
+      controller.updateDraft(id, 'What was recorded?');
+      await controller.send(id);
+      final local = container.read(provider).local(id);
+      expect(local.status, QueryTurnStatus.idle);
+      expect(local.provisional?.text, 'Answer for $id [1]');
+      final saved = await bench.store.load('agent');
+      expect(saved.chats.single.answerFor(local.requestQuestionId!), isNotNull);
+
+      privacy.add(true);
+      await container.pump();
+      expect(container.read(configFlagProvider('private')).value, isTrue);
+      privacy.add(false);
+      await container.pump();
+
+      expect(container.read(provider).local(id).provisional, isNull);
+      expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
+      expect(
+        (await bench.store.load('agent')).chats.single.answerFor(
+          local.requestQuestionId!,
+        ),
+        saved.chats.single.answerFor(local.requestQuestionId!),
+      );
+    });
+  });
+
+  for (final outcome in [
+    'publish',
+    'refresh',
+    'invalid citation',
+    'cancel',
+    'privacy',
+    'moved',
+    'load failure',
+    'deleted',
+    'forgotten',
+    'history error',
+  ]) {
+    test(
+      'provisional synthesis $outcome preserves the publication boundary',
+      () async {
+        await withClock(Clock.fixed(now), () async {
+          String? memoryChat;
+          if (outcome == 'forgotten') {
+            memoryChat = await controller.create('Earlier feeder discussion');
+            controller.updateDraft(memoryChat, 'What did we record?');
+            await controller.send(memoryChat);
+            recall = true;
+          }
+          var stopped = false;
+          final stream = StreamController<String>(
+            onCancel: () => stopped = true,
+          );
+          synthesis = stream.stream;
+          addTearDown(() {
+            container.read(provider).chats.keys.forEach(controller.cancel);
+            unawaited(stream.close());
+          });
+          final started = Completer<void>();
+          compose = (_) async => started.complete();
+          final chatId = await controller.create('Synthetic habitat');
+          controller.updateDraft(chatId, 'What was recorded?');
+          final seen = Completer<void>();
+          final subscription = container.listen(provider, (_, next) {
+            if (next.local(chatId).provisional?.text.isNotEmpty == true &&
+                !seen.isCompleted) {
+              seen.complete();
+            }
+          });
+          final request = controller.send(chatId);
+          await started.future;
+          final text = outcome == 'invalid citation'
+              ? 'Unsupported [999]'
+              : 'Recorded [1]';
+          stream.add('{"answer":"$text');
+          await seen.future;
+          final draft = container.read(provider).local(chatId).provisional!;
+          expect(draft.text, text);
+          final before = await bench.store.load('agent');
+          expect(
+            before.chats
+                .firstWhere((c) => c.id == chatId)
+                .answerFor(draft.questionId),
+            isNull,
+          );
+          final initialAccess = await bench.crawler.access.load(['task']);
+          if (outcome == 'privacy' || outcome == 'moved') {
+            final task = bench.entries['task']!;
+            bench.entries['task'] = task.copyWith(
+              meta: outcome == 'privacy'
+                  ? task.meta.copyWith(private: true)
+                  : task.meta.copyWith(categoryId: bench.categories.first.id),
+            );
+          }
+          if (outcome == 'load failure') {
+            when(
+              bench.db.getAllCategories,
+            ).thenThrow(StateError('Access unavailable'));
+          }
+          if (outcome == 'deleted') {
+            await bench.store.delete('agent', chatId, forget: true);
+          }
+          if (outcome == 'forgotten') {
+            expect(draft.recalledMemoryIds, isNotEmpty);
+            await bench.store.delete('agent', memoryChat!, forget: true);
+          }
+          if (outcome == 'history error') {
+            history.addError(StateError('History unavailable'));
+            await container.pump();
+          } else if ([
+            'privacy',
+            'moved',
+            'load failure',
+            'deleted',
+            'forgotten',
+            'refresh',
+          ].contains(outcome)) {
+            history.add(
+              QueryChatData(
+                projection: ['deleted', 'forgotten'].contains(outcome)
+                    ? await bench.store.load('agent')
+                    : before,
+                access: initialAccess,
+              ),
+            );
+            await container.pump();
+          }
+          if (outcome == 'load failure') {
+            when(
+              bench.db.getAllCategories,
+            ).thenAnswer((_) async => bench.categories);
+          }
+          if (outcome == 'cancel') controller.cancel(chatId);
+          if (['publish', 'refresh', 'invalid citation'].contains(outcome)) {
+            stream.add('","conclusion":""}');
+            await stream.close();
+          } else {
+            expect(container.read(provider).local(chatId).provisional, isNull);
+          }
+          await request;
+          final after = await bench.store.load('agent');
+          final local = container.read(provider).local(chatId);
+          final savedChat = after.chats
+              .where((c) => c.id == chatId)
+              .firstOrNull;
+          if (outcome == 'publish' || outcome == 'refresh') {
+            expect(
+              (savedChat!.answerFor(draft.questionId)!.data as QueryChatAnswer)
+                  .text,
+              draft.text,
+            );
+            expect(local.draftRetracted, isFalse);
+            history.add(
+              QueryChatData(projection: after, access: initialAccess),
+            );
+            await container.pump();
+            expect(container.read(provider).local(chatId).provisional, isNull);
+          } else {
+            expect(local.provisional, isNull);
+            expect(savedChat?.answerFor(draft.questionId), isNull);
+            expect(local.draftRetracted, outcome == 'invalid citation');
+            if (outcome == 'deleted') {
+              expect(
+                container.read(provider).chats.containsKey(chatId),
+                isFalse,
+              );
+              expect(savedChat, isNull);
+            } else {
+              expect(local.requestQuestionId, draft.questionId);
+            }
+            expect(stopped, isTrue);
+          }
+          subscription.close();
+          await stream.close();
+        });
+      },
+    );
+  }
 
   test(
     'searching changes to answering only at synthesis and resets on retry',

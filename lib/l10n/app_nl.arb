@@ -4723,6 +4723,8 @@
   "queryDeleteForget": "Verwijderen en conclusies vergeten",
   "queryDeleteKeep": "Verwijderen en conclusies bewaren",
   "queryDictated": "Je kunt de transcriptie bewerken voordat je je vraag verstuurt. De audio kan al naar je transcriptieaanbieder zijn verstuurd.",
+  "queryDraftProvisional": "Concept · nog niet geverifieerd",
+  "queryDraftRetracted": "Het conceptantwoord kon niet worden geverifieerd. Probeer het opnieuw.",
   "queryEarlierTextOmitted": "[Eerdere tekst niet getoond]",
   "queryEmptyBody": "Stel vragen over eerdere notities en vergaderingen. Antwoorden bevatten de exacte passages die je kunt nalezen.",
   "queryExactStoredText": "Exact opgeslagen tekst",

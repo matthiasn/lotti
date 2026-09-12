@@ -27,6 +27,7 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
           String model,
           String baseUrl,
           ReasoningEffort? reasoningEffort,
+          bool preferStreaming,
         })
       >[];
   final imageCalls =
@@ -45,12 +46,14 @@ class _FakeMeliousInferenceRepository extends MeliousInferenceRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
     InferenceImpactCollector? impactCollector,
+    bool preferStreaming = false,
   }) {
     textCalls.add((
       prompt: prompt,
       model: model,
       baseUrl: baseUrl,
       reasoningEffort: reasoningEffort,
+      preferStreaming: preferStreaming,
     ));
     return Stream.value(_chunk('melious text'));
   }
@@ -369,11 +372,13 @@ void main() {
             systemMessage: 'be brief',
             maxCompletionTokens: 512,
             reasoningEffort: ReasoningEffort.high,
+            preferStreaming: true,
           )
           .toList();
 
       expect(chunks.single.choices?.single.delta?.content, 'melious text');
       expect(fakeMeliousRepo.textCalls, hasLength(1));
+      expect(fakeMeliousRepo.textCalls.single.preferStreaming, isTrue);
       expect(fakeMeliousRepo.textCalls.single.prompt, prompt);
       expect(fakeMeliousRepo.textCalls.single.model, 'qwen/qwen3-vl-plus');
       expect(

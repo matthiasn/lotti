@@ -15729,4 +15729,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get queryDraftProvisional => 'Ciornă · încă neverificată';
+
+  @override
+  String get queryDraftRetracted =>
+      'Ciorna răspunsului nu a putut fi verificată. Încercați din nou.';
 }
