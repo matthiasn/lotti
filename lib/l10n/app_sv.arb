@@ -3356,6 +3356,8 @@
   "imageViewerPreviousTooltip": "Föregående bild",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kan väljas för nya poster när du är på",
+  "inferenceProfileChat": "Chattmodell",
+  "inferenceProfileChatUsesThinking": "Använder resonemangsmodellen om inget väljs",
   "inferenceProfileChooseModelTitle": "Välj en modell",
   "inferenceProfileChooseTitle": "Välj en inferensprofil",
   "inferenceProfileCreateTitle": "Skapa profil",

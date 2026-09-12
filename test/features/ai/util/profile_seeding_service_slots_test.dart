@@ -177,6 +177,7 @@ void main() {
               id: profileGeminiFlashId,
               name: 'Gemini Flash',
               thinkingModelId: 'models/gemini-3-flash-preview',
+              chatModelId: 'models/gemini-3-flash-preview',
               transcriptionModelId: 'models/gemini-3-flash-preview',
               isDefault: true,
               createdAt: DateTime(2026),
@@ -191,6 +192,7 @@ void main() {
         ).captured;
         final upgraded = captured.single as AiConfigInferenceProfile;
         expect(upgraded.thinkingModelId, 'model-gemini-flash');
+        expect(upgraded.chatModelId, 'model-gemini-flash');
         expect(upgraded.transcriptionModelId, 'model-gemini-flash');
       },
     );

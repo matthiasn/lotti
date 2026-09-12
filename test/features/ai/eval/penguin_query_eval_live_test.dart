@@ -386,6 +386,20 @@ void main() {
                     byId[ref.id]?.meta.categoryId ==
                     corpus.task.meta.categoryId,
               ),
+              // Keep the historical attribution gate for matched comparisons;
+              // report the new guidance-format requirement separately.
+              'boldOwnerAttribution':
+                  scenario.absent ||
+                  hasBoldPenguinOwner(
+                    answer.text,
+                    corpus.world.tasks
+                        .where(
+                          (task) =>
+                              task.meta.categoryId ==
+                              corpus.task.meta.categoryId,
+                        )
+                        .map((task) => task.data.title),
+                  ),
               'attributesOwner':
                   scenario.absent ||
                   corpus.world.tasks.any(
@@ -395,6 +409,9 @@ void main() {
                   ),
             },
             if (scenario.requiresOriginalEvidence) ...{
+              'requestedVerbatimAnswer': scenario.hasRequestedVerbatimAnswer(
+                answer.text,
+              ),
               'usesOriginalEvidence':
                   !answer.summaryBased &&
                   answer.evidence.isNotEmpty &&

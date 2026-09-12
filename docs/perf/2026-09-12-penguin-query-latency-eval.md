@@ -287,6 +287,14 @@ holdouts. The shipped corpus, frozen reports, canonical questions, expected
 facts, forbidden values and production validators were unchanged. No automatic
 repair retry or model switch was added.
 
+Review added separate `boldOwnerAttribution` and `requestedVerbatimAnswer`
+gates: an unformatted title no longer satisfies the guidance-format check, and
+paraphrase with valid evidence does not satisfy the explicit quote request.
+The historical attribution gate remains separately recorded. Rechecking the
+33 saved final answers against the additional requirements passed; this was
+an artifact audit, not another live latency sample. Earlier baseline pass counts
+above retain their original gate definitions.
+
 The original guidance let ordinary factual or unanswered questions request raw
 home entries. It also left Flash prone to unescaped title quotation marks,
 prose outside JSON, and owner IDs without exact title attribution. The revised

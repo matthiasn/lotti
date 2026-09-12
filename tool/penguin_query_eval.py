@@ -110,7 +110,7 @@ def main():
                 connection[key] = tokens[0]
     for canonical, alias in (("MELIOUS_API_KEY", "UP_UPSTREAM_API_KEY"), ("MELIOUS_BASE_URL", "UP_UPSTREAM_BASE_URL")):
         if canonical not in env:
-            value = connection.get(canonical) or connection.get(alias)
+            value = env.get(alias) or connection.get(canonical) or connection.get(alias)
             if value:
                 env[canonical] = value
     if not (env.get("QUERY_EVAL_API_KEY") or env.get("MELIOUS_API_KEY")):

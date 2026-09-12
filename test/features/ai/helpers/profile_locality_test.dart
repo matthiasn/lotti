@@ -48,14 +48,14 @@ class _ProfileLocalityScenario {
   });
 
   /// One entry per slot index, in the fixed order:
-  /// thinking, thinkingHighEnd, imageRecognition, transcription, imageGeneration.
+  /// thinking, thinkingHighEnd, imageRecognition, transcription, imageGeneration, chat.
   final List<_SlotShape> shapes;
 
   /// Provider type chosen for each slot when its shape resolves a provider.
   /// Ignored for unset / missingModel / missingProvider slots.
   final List<InferenceProviderType> providerTypes;
 
-  static const slotCount = 5;
+  static const slotCount = 6;
 
   /// Model id assigned to a populated slot at [index].
   String _modelIdFor(int index) => 'model-$index';
@@ -116,6 +116,7 @@ class _ProfileLocalityScenario {
       imageRecognitionModelId: ids[2],
       transcriptionModelId: ids[3],
       imageGenerationModelId: ids[4],
+      chatModelId: ids[5],
     );
   }
 
@@ -164,6 +165,7 @@ extension _AnyProfileLocalityScenario on glados.Any {
 AiConfigInferenceProfile _profile({
   String id = 'profile-1',
   String thinkingModelId = 'thinking-model',
+  String? chatModelId,
   String? thinkingHighEndModelId,
   String? imageRecognitionModelId,
   String? transcriptionModelId,
@@ -174,6 +176,7 @@ AiConfigInferenceProfile _profile({
         name: 'Test',
         createdAt: DateTime.utc(2026, 3, 15),
         thinkingModelId: thinkingModelId,
+        chatModelId: chatModelId,
         thinkingHighEndModelId: thinkingHighEndModelId,
         imageRecognitionModelId: imageRecognitionModelId,
         transcriptionModelId: transcriptionModelId,
@@ -265,6 +268,29 @@ void main() {
       () => repo.getConfigById(pid),
     ).thenAnswer((_) async => stubbedProviders[pid]);
   }
+
+  test(
+    'cloud or unresolved chat slots prevent local-only classification',
+    () async {
+      stubModelWithProvider(
+        providerModelId: 'thinking-model',
+        providerType: InferenceProviderType.ollama,
+      );
+      stubModelWithProvider(
+        providerModelId: 'chat-model',
+        providerType: InferenceProviderType.openAi,
+      );
+      expect(
+        await profileIsLocal(_profile(chatModelId: 'chat-model'), repo),
+        isFalse,
+      );
+      expect(
+        await profileIsLocal(_profile(chatModelId: 'missing-chat'), repo),
+        isFalse,
+      );
+      expect(await profileIsLocal(_profile(), repo), isTrue);
+    },
+  );
 
   group('profileIsLocal — happy path (all populated slots local)', () {
     test('thinking slot only, local provider → true', () async {

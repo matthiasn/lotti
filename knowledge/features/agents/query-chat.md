@@ -445,8 +445,13 @@ are treated as untrusted data. Window extraction can discard a malformed quote
 and mark coverage incomplete; batch response validation rejects malformed or
 foreign passages as a whole. Evidence summaries are interpretations, not quotes.
 
-`QueryTextInference` uses the profile's thinking route through the existing
-cloud inference repository. Synthesis requests `preferStreaming`; inspection
+`QueryTextInference` uses the profile's optional Chat route, falling back to
+resolved Thinking only when Chat is unset. An unavailable selected Chat model
+produces the existing recoverable setup error. This applies to selection,
+inspection and synthesis, including their model limits and usage attribution;
+agent wakes keep their Thinking route. The slot and override rules live in
+[profile resolution](../ai/profile-resolution.md#choosing-a-chat-model).
+Requests use the existing cloud inference repository. Synthesis requests `preferStreaming`; inspection
 retains the accounting-oriented buffered path. The transport fallback and the
 absence of streamed Melious cost/energy fields are described in
 [provider routing](../ai/provider-routing.md#melious-reports-cost-and-impact-only-off-the-streaming-path).

@@ -3356,6 +3356,8 @@
   "imageViewerPreviousTooltip": "Forrige billede",
   "inactiveLabel": "Inaktiv",
   "inactiveSwitchDescription": "Kan vælges til nye indførsler, når den er på",
+  "inferenceProfileChat": "Chatmodel",
+  "inferenceProfileChatUsesThinking": "Bruger tænkemodellen, når der ikke er valgt en",
   "inferenceProfileChooseModelTitle": "Vælg en model",
   "inferenceProfileChooseTitle": "Vælg en inferensprofil",
   "inferenceProfileCreateTitle": "Opret profil",

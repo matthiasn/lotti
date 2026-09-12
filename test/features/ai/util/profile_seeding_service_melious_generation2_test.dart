@@ -266,6 +266,8 @@ void main() {
     /// stamping generation 2 so the profile is not reconsidered every launch.
     final userEdits = <String, AiConfigInferenceProfile Function()>{
       'renamed': () => generation1Profile(name: 'My Melious'),
+      'hand-picked chat model': () =>
+          generation1Profile().copyWith(chatModelId: 'row-qwen'),
       'described': () => generation1Profile(description: 'my notes'),
       'pinned to a host': () => generation1Profile(pinnedHostId: 'host-1'),
       'marked desktop only': () => generation1Profile(desktopOnly: true),
@@ -300,6 +302,7 @@ void main() {
         // at all — never with a migrated slot.
         final effective = profile ?? original;
         expect(effective.thinkingModelId, original.thinkingModelId);
+        expect(effective.chatModelId, original.chatModelId);
         expect(
           effective.thinkingHighEndModelId,
           original.thinkingHighEndModelId,

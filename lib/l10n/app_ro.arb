@@ -3003,6 +3003,8 @@
   "imageViewerPreviousTooltip": "Imaginea anterioară",
   "inactiveLabel": "Inactiv",
   "inactiveSwitchDescription": "Poate fi ales pentru intrări noi când este activ",
+  "inferenceProfileChat": "Model de chat",
+  "inferenceProfileChatUsesThinking": "Folosește modelul de gândire dacă nu este selectat",
   "inferenceProfileChooseModelTitle": "Alegeți un model",
   "inferenceProfileChooseTitle": "Alegeți un profil de inferență",
   "inferenceProfileCreateTitle": "Creați un profil",

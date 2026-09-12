@@ -648,6 +648,7 @@ class ProfileSeedingService {
         profile.seedGeneration < meliousProfileSeedGeneration2 &&
         profile.name == 'Melious.ai' &&
         profile.description == null &&
+        profile.chatModelId == null &&
         _slotMatchesProviderModelId(
           profile.thinkingModelId,
           meliousQwen35122BA10BModelId,
@@ -694,6 +695,7 @@ class ProfileSeedingService {
         profile.seedGeneration < meliousProfileSeedGeneration1 &&
         profile.name == 'Melious.ai' &&
         profile.description == null &&
+        profile.chatModelId == null &&
         _meliousThinkingSlotMatchesDefaultOrLegacy(
           profile.thinkingModelId,
           models,
@@ -839,6 +841,7 @@ class ProfileSeedingService {
     List<AiConfigModel> models,
   ) {
     return profile.description == null &&
+        profile.chatModelId == null &&
         profile.thinkingHighEndModelId == null &&
         _slotMatchesProviderModelId(
           profile.thinkingModelId,
@@ -865,6 +868,7 @@ class ProfileSeedingService {
     return profile.id == profileLocalPowerId &&
         profile.name == _legacyLocalPowerName &&
         profile.description == null &&
+        profile.chatModelId == null &&
         profile.thinkingHighEndModelId == null &&
         _slotMatchesProviderModelId(
           profile.thinkingModelId,
@@ -928,6 +932,7 @@ class ProfileSeedingService {
             profile.name == _legacyLocalPowerName);
     if (!nameUntouched ||
         profile.description != null ||
+        profile.chatModelId != null ||
         profile.pinnedHostId != null ||
         profile.isDefault != template.isDefault ||
         profile.desktopOnly != template.desktopOnly) {
@@ -954,6 +959,11 @@ class ProfileSeedingService {
     return profile.copyWith(
       thinkingModelId: _resolveModelSlot(
         profile.thinkingModelId,
+        models,
+        preferredProviderIds: preferredProviderIds,
+      ),
+      chatModelId: _resolveOptionalModelSlot(
+        profile.chatModelId,
         models,
         preferredProviderIds: preferredProviderIds,
       ),

@@ -7770,6 +7770,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kan worden gekozen voor nieuwe items wanneer op';
 
   @override
+  String get inferenceProfileChat => 'Chatmodel';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Gebruikt het denkmodel als er niets is ingesteld';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Kies een model';
 
   @override

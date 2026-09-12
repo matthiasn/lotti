@@ -3010,6 +3010,8 @@
   "imageViewerPreviousTooltip": "Předchozí obrázek",
   "inactiveLabel": "Neaktivní",
   "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",
+  "inferenceProfileChat": "Model pro chat",
+  "inferenceProfileChatUsesThinking": "Pokud není nastaven, použije se model pro uvažování",
   "inferenceProfileChooseModelTitle": "Vyber model",
   "inferenceProfileChooseTitle": "Vyber profil inference",
   "inferenceProfileCreateTitle": "Vytvořit profil",

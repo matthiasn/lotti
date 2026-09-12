@@ -3355,6 +3355,8 @@
   "imageViewerPreviousTooltip": "Vorige afbeelding",
   "inactiveLabel": "Inactief",
   "inactiveSwitchDescription": "Kan worden gekozen voor nieuwe items wanneer op",
+  "inferenceProfileChat": "Chatmodel",
+  "inferenceProfileChatUsesThinking": "Gebruikt het denkmodel als er niets is ingesteld",
   "inferenceProfileChooseModelTitle": "Kies een model",
   "inferenceProfileChooseTitle": "Kies een inferentieprofiel",
   "inferenceProfileCreateTitle": "Profiel aanmaken",

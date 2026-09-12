@@ -13,6 +13,73 @@ void main() {
     final provider1 = testInferenceProvider(id: 'p1');
     final provider2 = testInferenceProvider(id: 'p2');
 
+    test(
+      'chat route identity and failure state survive thinking replacement',
+      () {
+        final chat = testAiModel(id: 'chat-row');
+        final override = testAiModel(id: 'override-row');
+        final profile = ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: provider1,
+          chatModelId: chat.providerModelId,
+          chatProvider: provider2,
+          chatModel: chat,
+        );
+        final updated = profile.withThinkingRoute(
+          model: override,
+          provider: provider1,
+        );
+        expect(updated.thinkingModelId, override.providerModelId);
+        expect(updated.effectiveChatModelId, chat.providerModelId);
+        expect(updated.effectiveChatProvider, provider2);
+        expect(updated.effectiveChatModel, chat);
+        final unavailable = ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: provider1,
+          chatModelUnavailable: true,
+        );
+        expect(
+          unavailable
+              .withThinkingRoute(model: override, provider: provider1)
+              .chatModelUnavailable,
+          isTrue,
+        );
+        final variants = <ResolvedProfile>{
+          profile,
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider1,
+            chatModelId: 'different',
+            chatProvider: provider2,
+            chatModel: chat,
+          ),
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider1,
+            chatModelId: chat.providerModelId,
+            chatProvider: provider1,
+            chatModel: chat,
+          ),
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider1,
+            chatModelId: chat.providerModelId,
+            chatProvider: provider2,
+            chatModel: override,
+          ),
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider1,
+            chatModelId: chat.providerModelId,
+            chatProvider: provider2,
+            chatModel: chat,
+            chatModelUnavailable: true,
+          ),
+        };
+        expect(variants, hasLength(5));
+      },
+    );
+
     test('equal instances are equal', () {
       final a = ResolvedProfile(
         thinkingModelId: 'model-a',

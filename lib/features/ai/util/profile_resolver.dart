@@ -291,6 +291,13 @@ class ProfileResolver {
     }
 
     // Resolve optional slots (non-fatal).
+    final chatSlot = config.chatModelId == null
+        ? null
+        : await resolveInferenceProviderForProfileSlot(
+            modelId: config.chatModelId!,
+            aiConfigRepository: _aiConfigRepository,
+            logTag: _logTag,
+          );
     final thinkingHighEndSlot = config.thinkingHighEndModelId != null
         ? await resolveInferenceProviderForProfileSlot(
             modelId: config.thinkingHighEndModelId!,
@@ -327,6 +334,10 @@ class ProfileResolver {
       thinkingModelId: thinkingSlot.model.providerModelId,
       thinkingProvider: thinkingSlot.provider,
       thinkingModel: thinkingSlot.model,
+      chatModelId: chatSlot?.model.providerModelId,
+      chatProvider: chatSlot?.provider,
+      chatModel: chatSlot?.model,
+      chatModelUnavailable: config.chatModelId != null && chatSlot == null,
       thinkingHighEndModelId: thinkingHighEndSlot?.model.providerModelId,
       thinkingHighEndProvider: thinkingHighEndSlot?.provider,
       thinkingHighEndModel: thinkingHighEndSlot?.model,

@@ -39,6 +39,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   late final TextEditingController _descriptionController;
 
   String? _thinkingModelId;
+  String? _chatModelId;
   String? _thinkingHighEndModelId;
   String? _imageRecognitionModelId;
   String? _transcriptionModelId;
@@ -64,6 +65,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
       return _nameController.text.trim().isNotEmpty ||
           _descriptionController.text.trim().isNotEmpty ||
           _thinkingModelId != null ||
+          _chatModelId != null ||
           _thinkingHighEndModelId != null ||
           _imageRecognitionModelId != null ||
           _transcriptionModelId != null ||
@@ -75,6 +77,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     return _nameController.text != p.name ||
         _descriptionController.text != (p.description ?? '') ||
         _thinkingModelId != p.thinkingModelId ||
+        _chatModelId != p.chatModelId ||
         _thinkingHighEndModelId != p.thinkingHighEndModelId ||
         _imageRecognitionModelId != p.imageRecognitionModelId ||
         _transcriptionModelId != p.transcriptionModelId ||
@@ -91,6 +94,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     _nameController = TextEditingController(text: p?.name ?? '');
     _descriptionController = TextEditingController(text: p?.description ?? '');
     _thinkingModelId = p?.thinkingModelId;
+    _chatModelId = p?.chatModelId;
     _thinkingHighEndModelId = p?.thinkingHighEndModelId;
     _imageRecognitionModelId = p?.imageRecognitionModelId;
     _transcriptionModelId = p?.transcriptionModelId;
@@ -216,6 +220,18 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             ),
             const SizedBox(height: 16),
 
+            // Interactive chat can use a different model from agent work.
+            ModelSlotField(
+              label: messages.inferenceProfileChat,
+              hintText: messages.inferenceProfileChatUsesThinking,
+              modelId: _chatModelId,
+              filter: (m) =>
+                  m.inputModalities.contains(Modality.text) &&
+                  m.outputModalities.contains(Modality.text),
+              onModelSelected: (id) => setState(() => _chatModelId = id),
+            ),
+            SizedBox(height: tokens.spacing.step4),
+
             // High-end thinking model (optional)
             ModelSlotField(
               label: context.messages.inferenceProfileThinkingHighEnd,
@@ -277,6 +293,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
               pinnedHostId: _pinnedHostId,
               referencedModelIds: <String>{
                 ?_thinkingModelId,
+                ?_chatModelId,
                 ?_thinkingHighEndModelId,
                 ?_imageRecognitionModelId,
                 ?_transcriptionModelId,
@@ -438,6 +455,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         _thinkingHighEndModelId,
         models,
       );
+      final chatModelId = _normalizeModelSlotId(_chatModelId, models);
       final imageRecognitionModelId = _normalizeModelSlotId(
         _imageRecognitionModelId,
         models,
@@ -468,6 +486,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 id: widget.existingProfile?.id ?? const Uuid().v4(),
                 name: _nameController.text.trim(),
                 thinkingModelId: thinkingModelId,
+                chatModelId: chatModelId,
                 thinkingHighEndModelId: thinkingHighEndModelId,
                 imageRecognitionModelId: imageRecognitionModelId,
                 transcriptionModelId: transcriptionModelId,

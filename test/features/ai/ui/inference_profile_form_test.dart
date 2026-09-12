@@ -102,6 +102,52 @@ void main() {
   }
 
   group('InferenceProfileForm', () {
+    for (final clear in [false, true]) {
+      testWidgets(
+        'chat model can be ${clear ? 'cleared' : 'selected'} without changing thinking',
+        (tester) async {
+          final thinking = testAiModel(
+            id: 'thinking-row',
+          ).copyWith(name: 'Agent reasoning');
+          final chat = testAiModel(id: 'chat-row').copyWith(
+            name: 'Fast chat',
+            supportsFunctionCalling: false,
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+          );
+          final profile = testInferenceProfile(
+            thinkingModelId: thinking.id,
+          ).copyWith(chatModelId: clear ? chat.id : null);
+          await tester.pumpWidget(
+            buildSubject(existingProfile: profile, models: [thinking, chat]),
+          );
+          await tester.pumpAndSettle();
+          final save = find.widgetWithIcon(DesignSystemButton, LottiIcons.save);
+          expect(tester.widget<DesignSystemButton>(save).onPressed, isNull);
+          if (clear) {
+            await tester.tap(
+              find.descendant(
+                of: _pickerField('Chat model'),
+                matching: find.byIcon(LottiIcons.close),
+              ),
+            );
+          } else {
+            expect(find.text('Uses thinking model when unset'), findsOneWidget);
+            await tester.tap(_pickerTapTarget('Chat model'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Fast chat'));
+          }
+          await tester.pumpAndSettle();
+          expect(tester.widget<DesignSystemButton>(save).onPressed, isNotNull);
+          await tester.tap(save);
+          await tester.pumpAndSettle();
+          final saved = fakeProfileController.savedProfiles.single;
+          expect(saved.thinkingModelId, thinking.id);
+          expect(saved.chatModelId, clear ? isNull : chat.id);
+        },
+      );
+    }
+
     testWidgets('shows create title when no existing profile', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
@@ -158,17 +204,18 @@ void main() {
       expect(switchTile.value, isTrue);
     });
 
-    testWidgets('shows all five model slot fields', (tester) async {
+    testWidgets('shows all six model slot fields', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.byType(SettingsPickerField, skipOffstage: false),
-        findsNWidgets(5),
+        findsNWidgets(6),
       );
       for (final label in [
         'Thinking *',
+        'Chat model',
         'Thinking (High-End)',
         'Image Recognition',
         'Transcription',
@@ -291,6 +338,7 @@ void main() {
       // Use scrollUntilVisible since the ListView may not render all at once.
       for (final label in [
         'Thinking *',
+        'Chat model',
         'Thinking (High-End)',
         'Image Recognition',
         'Transcription',

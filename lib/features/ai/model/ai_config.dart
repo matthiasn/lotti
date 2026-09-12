@@ -158,6 +158,10 @@ sealed class AiConfig with _$AiConfig {
     /// Model config id for agentic thinking (tool calling, reasoning).
     required String thinkingModelId,
 
+    /// Optional model config id for interactive query chat. When unset,
+    /// chat uses the agent's resolved thinking model.
+    String? chatModelId,
+
     /// Model config id for high-end thinking tasks (e.g. coding prompt
     /// generation) where quality matters more than speed/cost.
     /// Falls back to the regular thinking model when not set.

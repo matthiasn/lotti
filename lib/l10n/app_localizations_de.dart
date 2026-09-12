@@ -7813,6 +7813,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kann für neue Einträge gewählt werden, wenn aktiv';
 
   @override
+  String get inferenceProfileChat => 'Chat-Modell';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Ohne Auswahl wird das Denkmodell verwendet';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Modell auswählen';
 
   @override

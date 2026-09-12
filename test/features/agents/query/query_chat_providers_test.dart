@@ -129,6 +129,35 @@ void main() {
       await setUpTestGetIt();
     });
     tearDown(tearDownTestGetIt);
+    test('unavailable chat slot uses the setup recovery path', () async {
+      final bench = QueryPersistenceBench()
+        ..add('task', category: categoryMindfulness.id);
+      addTearDown(bench.close);
+      final cloud = MockCloudInferenceRepository();
+      const scope = QueryScope(kind: QueryScopeKind.task, id: 'task');
+      final container = ProviderContainer(
+        overrides: [
+          journalDbProvider.overrideWithValue(bench.db),
+          querySourceAccessProvider.overrideWithValue(bench.crawler.access),
+          agentRepositoryProvider.overrideWithValue(bench.repository),
+          cloudInferenceRepositoryProvider.overrideWithValue(cloud),
+          queryProfileProvider((agentId: 'agent', scope: scope)).overrideWith(
+            (ref) async => ResolvedProfile(
+              thinkingModelId: 'thinking',
+              thinkingProvider: testInferenceProvider(),
+              chatModelUnavailable: true,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await expectLater(
+        container.read(queryBuilderFactoryProvider)(scope, 'agent', 'chat'),
+        throwsA(isA<QueryInferenceUnavailable>()),
+      );
+      verifyZeroInteractions(cloud);
+    });
+
     for (final kind in QueryScopeKind.values) {
       test(
         '$kind keeps profile loading alive across frames for a query',

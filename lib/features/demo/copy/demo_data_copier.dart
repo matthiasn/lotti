@@ -402,6 +402,7 @@ class DemoDataCopier {
     String? keep(String? modelId) =>
         modelId != null && carriedModelIds.contains(modelId) ? modelId : null;
     return profile.copyWith(
+      chatModelId: keep(profile.chatModelId),
       thinkingHighEndModelId: keep(profile.thinkingHighEndModelId),
       imageRecognitionModelId: keep(profile.imageRecognitionModelId),
       transcriptionModelId: keep(profile.transcriptionModelId),
@@ -670,6 +671,7 @@ class DemoDataCopier {
       String? keep(String? modelId) =>
           modelId != null && active.contains(modelId) ? modelId : null;
       final pruned = config.copyWith(
+        chatModelId: keep(config.chatModelId),
         thinkingHighEndModelId: keep(config.thinkingHighEndModelId),
         imageRecognitionModelId: keep(config.imageRecognitionModelId),
         transcriptionModelId: keep(config.transcriptionModelId),

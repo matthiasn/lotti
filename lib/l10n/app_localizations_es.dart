@@ -7874,6 +7874,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se puede elegir para nuevas entradas cuando está activo';
 
   @override
+  String get inferenceProfileChat => 'Modelo de chat';
+
+  @override
+  String get inferenceProfileChatUsesThinking =>
+      'Si no se configura, usa el modelo de razonamiento';
+
+  @override
   String get inferenceProfileChooseModelTitle => 'Elige un modelo';
 
   @override
