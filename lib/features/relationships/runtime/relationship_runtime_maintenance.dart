@@ -31,6 +31,7 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
     required this._relationshipRepository,
     this._domainLogger,
     this.inferenceIsConfigured,
+    this.onIdentityRestored,
   });
 
   final AgentService _agentService;
@@ -42,6 +43,9 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
 
   /// Checks the same effective route as Phase B, including device settings.
   final Future<bool> Function(AgentIdentityEntity)? inferenceIsConfigured;
+
+  /// Rescans pending retries after an active identity arrives through sync.
+  final void Function()? onIdentityRestored;
 
   @override
   Future<void> restoreSubscriptions() async {
@@ -182,6 +186,7 @@ class RelationshipRuntimeMaintenance implements AgentRuntimeMaintenance {
         return;
       }
       await _relationshipAgentService.registerSubscription(identity.agentId);
+      onIdentityRestored?.call();
     } catch (error, stackTrace) {
       _log('onIdentityReceived', identity.agentId, error, stackTrace);
     }

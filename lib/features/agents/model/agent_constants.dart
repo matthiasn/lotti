@@ -15,6 +15,9 @@ abstract final class AgentKinds {
 
 /// Notification scopes that carry meaning beyond a single agent entity ID.
 abstract final class AgentNotificationScopes {
+  /// A committed inference setup edit can unblock scheduled agent work.
+  static const inferenceSetup = 'AGENT_INFERENCE_SETUP_CHANGED';
+
   /// Forces the Projects overview to refresh agent-authored one-liners.
   static const projectOverview = 'PROJECT_AGENT_OVERVIEW_CHANGED';
 }

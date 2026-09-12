@@ -2173,6 +2173,13 @@ void main() {
         ).captured;
         final updated = captured.first as AgentIdentityEntity;
         expect(updated.config.profileId, 'new-profile-id');
+        verify(
+          () => mockUpdateNotifications.notifyUiOnly({
+            'agent-1',
+            agentNotification,
+            AgentNotificationScopes.inferenceSetup,
+          }),
+        ).called(1);
         expect(
           updated.config.inferenceSetup,
           const AgentInferenceSetup(
@@ -2233,6 +2240,29 @@ void main() {
     });
 
     group('persistent inference setup', () {
+      test('an unchanged setup does not request another route scan', () async {
+        const setup = AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: 'profile-1',
+        );
+        when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+          (_) async => makeIdentity(
+            config: const AgentConfig(
+              profileId: 'profile-1',
+              inferenceSetup: setup,
+            ),
+          ),
+        );
+
+        await service.updateAgentInferenceSetup(
+          agentId: 'agent-1',
+          setup: setup,
+        );
+
+        verifyNever(() => mockUpdateNotifications.notifyUiOnly(any()));
+      });
+
       test('rejects configured setup without a profile or model', () async {
         await expectLater(
           () => service.updateAgentInferenceSetup(
