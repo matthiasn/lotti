@@ -38,6 +38,8 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.sendingLabel,
     this.footer,
     this.composerEnabled = true,
+    this.allowDraftWhileSending = false,
+    this.showVoiceDetails = false,
     this.scrollOnReplies = true,
     this.conversationId,
     this.groupAttachmentsWithReply = false,
@@ -68,6 +70,12 @@ class AgentChatView extends ConsumerStatefulWidget {
   final String? sendingLabel;
   final Widget? footer;
   final bool composerEnabled;
+
+  /// Allow preparation of the next draft while Send remains disabled.
+  final bool allowDraftWhileSending;
+
+  /// Show elapsed capture time and a cancellable transcription state.
+  final bool showVoiceDetails;
   final bool scrollOnReplies;
   final String? conversationId;
 
@@ -319,6 +327,8 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
             controller: _controller,
             agentName: widget.agentName,
             isSending: widget.isSending,
+            allowDraftWhileSending: widget.allowDraftWhileSending,
+            showVoiceDetails: widget.showVoiceDetails,
             sendingLabel:
                 widget.sendingLabel ??
                 context.messages.goalChatResponding(widget.agentName),
@@ -347,6 +357,8 @@ class _ChatComposer extends ConsumerWidget {
     required this.controller,
     required this.agentName,
     required this.isSending,
+    required this.allowDraftWhileSending,
+    required this.showVoiceDetails,
     required this.sendingLabel,
     required this.draft,
     required this.onDraftChanged,
@@ -358,6 +370,8 @@ class _ChatComposer extends ConsumerWidget {
   final TextEditingController controller;
   final String agentName;
   final bool isSending;
+  final bool allowDraftWhileSending;
+  final bool showVoiceDetails;
   final String sendingLabel;
   final String draft;
   final ValueChanged<String> onDraftChanged;
@@ -382,6 +396,7 @@ class _ChatComposer extends ConsumerWidget {
         padding: EdgeInsets.all(tokens.spacing.step4),
         child: switch (status) {
           ChatRecorderStatus.recording => _RecordingControls(
+            elapsed: showVoiceDetails ? recorderState.elapsed : null,
             amplitudes: ref
                 .read(chatRecorderControllerProvider.notifier)
                 .getNormalizedAmplitudeHistory(),
@@ -393,11 +408,16 @@ class _ChatComposer extends ConsumerWidget {
           ),
           ChatRecorderStatus.processing => _TranscriptionProgress(
             partialTranscript: recorderState.partialTranscript ?? '',
+            onCancel: showVoiceDetails
+                ? () =>
+                      ref.read(chatRecorderControllerProvider.notifier).cancel()
+                : null,
           ),
           _ => _IdleComposer(
             controller: controller,
             agentName: agentName,
             isSending: isSending,
+            allowDraftWhileSending: allowDraftWhileSending,
             sendingLabel: sendingLabel,
             draft: draft,
             onDraftChanged: onDraftChanged,
@@ -420,6 +440,7 @@ class _IdleComposer extends StatelessWidget {
     required this.controller,
     required this.agentName,
     required this.isSending,
+    required this.allowDraftWhileSending,
     required this.sendingLabel,
     required this.draft,
     required this.onDraftChanged,
@@ -431,6 +452,7 @@ class _IdleComposer extends StatelessWidget {
   final TextEditingController controller;
   final String agentName;
   final bool isSending;
+  final bool allowDraftWhileSending;
   final String sendingLabel;
   final String draft;
   final ValueChanged<String> onDraftChanged;
@@ -452,8 +474,10 @@ class _IdleComposer extends StatelessWidget {
             controller: controller,
             shape: shape,
             hintText: context.messages.goalChatPlaceholder(agentName),
-            helperText: isSending ? sendingLabel : null,
-            enabled: !isSending,
+            helperText: isSending && !allowDraftWhileSending
+                ? sendingLabel
+                : null,
+            enabled: !isSending || allowDraftWhileSending,
             textCapitalization: TextCapitalization.sentences,
             emphasizeTrailingIcon:
                 hasText && shape == DesignSystemTextInputShape.pill,
@@ -470,7 +494,7 @@ class _IdleComposer extends StatelessWidget {
                 : (canRecord ? context.messages.chatInputRecordVoice : null),
             onChanged: onDraftChanged,
             onSubmitted: (_) {
-              if (draft.trim().isNotEmpty) onSend();
+              if (canSend) onSend();
             },
           ),
         ),
@@ -484,11 +508,13 @@ class _RecordingControls extends StatelessWidget {
     required this.amplitudes,
     required this.onCancel,
     required this.onStop,
+    this.elapsed,
   });
 
   final List<double> amplitudes;
   final VoidCallback onCancel;
   final VoidCallback onStop;
+  final Duration? elapsed;
 
   @override
   Widget build(BuildContext context) {
@@ -499,32 +525,80 @@ class _RecordingControls extends StatelessWidget {
       },
       child: Focus(
         autofocus: true,
-        child: Row(
-          children: [
-            Expanded(
-              child: WaveformBars(amplitudesNormalized: amplitudes),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            _CircleIconButton(
-              icon: LottiIcons.close,
-              onPressed: onCancel,
-              tooltip: context.messages.chatInputCancelRecording,
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            _CircleIconButton(
-              icon: LottiIcons.stop,
-              onPressed: onStop,
-              tooltip: context.messages.chatInputStopTranscribe,
-            ),
-          ],
-        ),
+        child: elapsed != null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: tokens.spacing.step9,
+                        child: Text(
+                          '${elapsed!.inMinutes.toString().padLeft(2, '0')}:${(elapsed!.inSeconds % 60).toString().padLeft(2, '0')}',
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: WaveformBars(amplitudesNormalized: amplitudes),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: tokens.spacing.step2),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: tokens.spacing.step3,
+                    runSpacing: tokens.spacing.step2,
+                    children: [
+                      DesignSystemButton(
+                        label: context.messages.cancelButton,
+                        onPressed: onCancel,
+                        variant: DesignSystemButtonVariant.outlined,
+                      ),
+                      DesignSystemButton(
+                        label: context.messages.audioRecordingStop,
+                        onPressed: onStop,
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: WaveformBars(amplitudesNormalized: amplitudes),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  _CircleIconButton(
+                    icon: LottiIcons.close,
+                    onPressed: onCancel,
+                    tooltip: context.messages.chatInputCancelRecording,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  _CircleIconButton(
+                    icon: LottiIcons.stop,
+                    onPressed: onStop,
+                    tooltip: context.messages.chatInputStopTranscribe,
+                  ),
+                ],
+              ),
       ),
     );
   }
 }
 
 class _TranscriptionProgress extends StatelessWidget {
-  const _TranscriptionProgress({required this.partialTranscript});
+  const _TranscriptionProgress({
+    required this.partialTranscript,
+    this.onCancel,
+  });
+
+  final VoidCallback? onCancel;
 
   final String partialTranscript;
 
@@ -577,6 +651,13 @@ class _TranscriptionProgress extends StatelessWidget {
             ],
           ),
         ),
+        if (onCancel != null)
+          DesignSystemButton(
+            label: context.messages.cancelButton,
+            onPressed: onCancel,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+          ),
       ],
     );
   }

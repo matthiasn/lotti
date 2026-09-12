@@ -158,6 +158,70 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  test(
+    'capture elapsed time follows the injected clock and resets on restart',
+    () async {
+      final directory = await Directory.systemTemp.createTemp('query_elapsed_');
+      addTearDown(() async {
+        if (await directory.exists()) await directory.delete(recursive: true);
+      });
+      final recorder = MockAudioRecorder();
+      final amplitude = StreamController<record.Amplitude>.broadcast(
+        sync: true,
+      );
+      addTearDown(amplitude.close);
+      when(recorder.hasPermission).thenAnswer((_) async => true);
+      when(recorder.dispose).thenAnswer((_) async {});
+      when(recorder.stop).thenAnswer((_) async => null);
+      when(
+        () => recorder.start(any(), path: any(named: 'path')),
+      ).thenAnswer((_) async {});
+      when(
+        () => recorder.onAmplitudeChanged(any()),
+      ).thenAnswer((_) => amplitude.stream);
+      var millis = 1000;
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => recorder,
+              nowMillisProvider: () => millis,
+              tempDirectoryProvider: () async => directory,
+              transcriptionService: MockAudioTranscriptionService(),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        chatRecorderControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      millis += 61000;
+      amplitude.add(record.Amplitude(current: -40, max: -30));
+      expect(
+        container.read(chatRecorderControllerProvider).elapsed,
+        const Duration(seconds: 61),
+      );
+      expect(container.read(chatRecorderControllerProvider).amplitudeHistory, [
+        -40,
+      ]);
+      await controller.cancel();
+      await controller.start();
+      expect(
+        container.read(chatRecorderControllerProvider).elapsed,
+        Duration.zero,
+      );
+      await controller.cancel();
+      await controller.dispose();
+    },
+  );
+
   group('explicit transcription target', () {
     late ProviderContainer container;
     late ChatRecorderController controller;

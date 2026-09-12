@@ -11,6 +11,34 @@ import '../../../../widget_test_utils.dart';
 void main() {
   group('DesignSystemChip', () {
     testWidgets(
+      'compact touch pills respond at the edge of a forty-pixel target',
+      (tester) async {
+        var taps = 0;
+        await _pumpChip(
+          tester,
+          DesignSystemChip(
+            label: 'Notes',
+            outlined: true,
+            size: DesignSystemChipSize.compactPillTouch,
+            onPressed: () => taps++,
+          ),
+        );
+        final target = find.byType(InkWell).first;
+        final rect = tester.getRect(target);
+        expect(rect.height, greaterThanOrEqualTo(40));
+        await tester.tapAt(rect.topCenter + const Offset(0, 1));
+        expect(taps, 1);
+        expect(
+          tester.widget<Text>(find.text('Notes')).style?.fontSize ??
+              DefaultTextStyle.of(
+                tester.element(find.text('Notes')),
+              ).style.fontSize,
+          dsTokensLight.typography.styles.others.caption.fontSize,
+        );
+      },
+    );
+
+    testWidgets(
       'outlined filters stay quiet until selected and retain activation semantics',
       (tester) async {
         var taps = 0;

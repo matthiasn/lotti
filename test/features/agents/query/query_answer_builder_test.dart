@@ -42,6 +42,7 @@ void main() {
     Object? selected;
     void Function()? duringShortlist;
     late QueryCancellation cancellation;
+    late List<(int, bool)> progress;
 
     setUp(() {
       bench = QueryTestBench()..add('task');
@@ -51,6 +52,7 @@ void main() {
           ..link('task', 'source-$i');
       }
       calls = [];
+      progress = [];
       selected = ['source-41'];
       duringShortlist = null;
       answerInput = null;
@@ -104,7 +106,8 @@ void main() {
           question: question,
           memories: [],
           cancellation: cancellation,
-          onProgress: (_, {required expanded}) {},
+          onProgress: (checked, {required expanded}) =>
+              progress.add((checked, expanded)),
         );
 
     test(
@@ -125,8 +128,85 @@ void main() {
           'Feeder decision in source-41.',
         );
         expect(result.answer.coverage.checked, 1);
+        expect(result.answer.coverage.homeChecked, 1);
+        expect(result.answer.coverage.categoryChecked, 0);
+        expect(result.answer.coverage.expanded, isFalse);
         expect(result.answer.coverage.incomplete, isTrue);
         expect(jsonEncode(answerInput), isNot(contains('source-40')));
+      },
+    );
+
+    test(
+      'current scope progress changes before wider and home inspections',
+      () async {
+        final category = categoryMindfulness.id;
+        bench.entries.updateAll(
+          (_, entry) =>
+              entry.copyWith(meta: entry.meta.copyWith(categoryId: category)),
+        );
+        bench.add('wider', category: category);
+        selected = ['wider', 'source-1'];
+        final result = await build();
+        expect(progress, [
+          (0, true),
+          (1, true),
+          (1, false),
+          (2, false),
+          (2, false),
+        ]);
+        expect(result.answer.coverage.homeChecked, 1);
+        expect(result.answer.coverage.categoryChecked, 1);
+        expect(result.answer.coverage.expanded, isTrue);
+      },
+    );
+
+    for (final moveCategory in [false, true]) {
+      test(
+        'unreadable source change before answering fails closed (move=$moveCategory)',
+        () async {
+          bench.entries['recording'] = testAudioEntry.copyWith(
+            meta: testAudioEntry.meta.copyWith(
+              id: 'recording',
+              categoryId: null,
+            ),
+            entryText: null,
+            data: testAudioEntry.data.copyWith(transcripts: []),
+          );
+          bench.link('task', 'recording');
+          duringShortlist = () {
+            final entry = bench.entries['recording']!;
+            bench.entries['recording'] = entry.copyWith(
+              meta: entry.meta.copyWith(
+                private: !moveCategory,
+                categoryId: moveCategory ? categoryMindfulness.id : null,
+              ),
+            );
+          };
+          await expectLater(build(), throwsA(isA<QueryScopeUnavailable>()));
+          expect(calls, isNot(contains('answer')));
+        },
+      );
+    }
+
+    test(
+      'unreadable source references remain privacy dependencies of the answer',
+      () async {
+        bench.entries['recording'] = testAudioEntry.copyWith(
+          meta: testAudioEntry.meta.copyWith(id: 'recording', categoryId: null),
+          entryText: null,
+          data: testAudioEntry.data.copyWith(transcripts: []),
+        );
+        bench.link('task', 'recording');
+        final result = await build();
+        expect(result.answer.coverage.unreadableSources.single.id, 'recording');
+        expect(
+          result.answer.dependencies.map((source) => source.id),
+          contains('recording'),
+        );
+        expect(
+          result.answer.evidence.single.textVersionDate,
+          bench.entries['source-41']!.meta.updatedAt,
+        );
       },
     );
 

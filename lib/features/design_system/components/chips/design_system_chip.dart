@@ -19,6 +19,9 @@ enum DesignSystemChipSize {
   /// the filters it acts on, in both type size and corner shape.
   compactPill,
 
+  /// Caption-sized pill with the same minimum target as a touch chip.
+  compactPillTouch,
+
   touch,
 }
 
@@ -324,7 +327,8 @@ class _ChipSizeSpec {
         accessoryIconSize: tokens.typography.lineHeight.caption,
         minHeight: null,
       ),
-      DesignSystemChipSize.compactPill => _ChipSizeSpec(
+      DesignSystemChipSize.compactPill ||
+      DesignSystemChipSize.compactPillTouch => _ChipSizeSpec(
         labelStyle: tokens.typography.styles.others.caption,
         horizontalPadding: tokens.spacing.step2 + tokens.spacing.step1,
         verticalPadding: tokens.spacing.step1,
@@ -332,7 +336,9 @@ class _ChipSizeSpec {
         cornerRadius: tokens.radii.badgesPills,
         accessoryBoxSize: tokens.typography.lineHeight.caption,
         accessoryIconSize: tokens.typography.lineHeight.caption,
-        minHeight: null,
+        minHeight: size == DesignSystemChipSize.compactPillTouch
+            ? tokens.spacing.step9
+            : null,
       ),
       DesignSystemChipSize.touch => _ChipSizeSpec(
         labelStyle: tokens.typography.styles.body.bodyMedium,

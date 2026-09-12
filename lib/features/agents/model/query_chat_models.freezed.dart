@@ -553,7 +553,7 @@ as String?,
 /// @nodoc
 mixin _$QueryEvidence {
 
- QuerySourceRef get source; QuerySourceKind get kind; String get label; DateTime get sourceDate; String get textVersion; String get fingerprint; String get sourceText; int get start; int get end; String get summary; List<String> get affiliations; bool get outsideHome; String get relevance;
+ QuerySourceRef get source; QuerySourceKind get kind; String get label; DateTime get sourceDate; String get textVersion; String get fingerprint; String get sourceText; int get start; int get end; String get summary; DateTime? get textVersionDate; List<String> get affiliations; bool get outsideHome; String get relevance;
 /// Create a copy of QueryEvidence
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -566,16 +566,16 @@ $QueryEvidenceCopyWith<QueryEvidence> get copyWith => _$QueryEvidenceCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueryEvidence&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.sourceDate, sourceDate) || other.sourceDate == sourceDate)&&(identical(other.textVersion, textVersion) || other.textVersion == textVersion)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&(identical(other.sourceText, sourceText) || other.sourceText == sourceText)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.summary, summary) || other.summary == summary)&&const DeepCollectionEquality().equals(other.affiliations, affiliations)&&(identical(other.outsideHome, outsideHome) || other.outsideHome == outsideHome)&&(identical(other.relevance, relevance) || other.relevance == relevance));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueryEvidence&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.sourceDate, sourceDate) || other.sourceDate == sourceDate)&&(identical(other.textVersion, textVersion) || other.textVersion == textVersion)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&(identical(other.sourceText, sourceText) || other.sourceText == sourceText)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.textVersionDate, textVersionDate) || other.textVersionDate == textVersionDate)&&const DeepCollectionEquality().equals(other.affiliations, affiliations)&&(identical(other.outsideHome, outsideHome) || other.outsideHome == outsideHome)&&(identical(other.relevance, relevance) || other.relevance == relevance));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,source,kind,label,sourceDate,textVersion,fingerprint,sourceText,start,end,summary,const DeepCollectionEquality().hash(affiliations),outsideHome,relevance);
+int get hashCode => Object.hash(runtimeType,source,kind,label,sourceDate,textVersion,fingerprint,sourceText,start,end,summary,textVersionDate,const DeepCollectionEquality().hash(affiliations),outsideHome,relevance);
 
 @override
 String toString() {
-  return 'QueryEvidence(source: $source, kind: $kind, label: $label, sourceDate: $sourceDate, textVersion: $textVersion, fingerprint: $fingerprint, sourceText: $sourceText, start: $start, end: $end, summary: $summary, affiliations: $affiliations, outsideHome: $outsideHome, relevance: $relevance)';
+  return 'QueryEvidence(source: $source, kind: $kind, label: $label, sourceDate: $sourceDate, textVersion: $textVersion, fingerprint: $fingerprint, sourceText: $sourceText, start: $start, end: $end, summary: $summary, textVersionDate: $textVersionDate, affiliations: $affiliations, outsideHome: $outsideHome, relevance: $relevance)';
 }
 
 
@@ -586,7 +586,7 @@ abstract mixin class $QueryEvidenceCopyWith<$Res>  {
   factory $QueryEvidenceCopyWith(QueryEvidence value, $Res Function(QueryEvidence) _then) = _$QueryEvidenceCopyWithImpl;
 @useResult
 $Res call({
- QuerySourceRef source, QuerySourceKind kind, String label, DateTime sourceDate, String textVersion, String fingerprint, String sourceText, int start, int end, String summary, List<String> affiliations, bool outsideHome, String relevance
+ QuerySourceRef source, QuerySourceKind kind, String label, DateTime sourceDate, String textVersion, String fingerprint, String sourceText, int start, int end, String summary, DateTime? textVersionDate, List<String> affiliations, bool outsideHome, String relevance
 });
 
 
@@ -603,7 +603,7 @@ class _$QueryEvidenceCopyWithImpl<$Res>
 
 /// Create a copy of QueryEvidence
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? source = null,Object? kind = null,Object? label = null,Object? sourceDate = null,Object? textVersion = null,Object? fingerprint = null,Object? sourceText = null,Object? start = null,Object? end = null,Object? summary = null,Object? affiliations = null,Object? outsideHome = null,Object? relevance = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? source = null,Object? kind = null,Object? label = null,Object? sourceDate = null,Object? textVersion = null,Object? fingerprint = null,Object? sourceText = null,Object? start = null,Object? end = null,Object? summary = null,Object? textVersionDate = freezed,Object? affiliations = null,Object? outsideHome = null,Object? relevance = null,}) {
   return _then(_self.copyWith(
 source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as QuerySourceRef,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -615,7 +615,8 @@ as String,sourceText: null == sourceText ? _self.sourceText : sourceText // igno
 as String,start: null == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
 as int,end: null == end ? _self.end : end // ignore: cast_nullable_to_non_nullable
 as int,summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
-as String,affiliations: null == affiliations ? _self.affiliations : affiliations // ignore: cast_nullable_to_non_nullable
+as String,textVersionDate: freezed == textVersionDate ? _self.textVersionDate : textVersionDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,affiliations: null == affiliations ? _self.affiliations : affiliations // ignore: cast_nullable_to_non_nullable
 as List<String>,outsideHome: null == outsideHome ? _self.outsideHome : outsideHome // ignore: cast_nullable_to_non_nullable
 as bool,relevance: null == relevance ? _self.relevance : relevance // ignore: cast_nullable_to_non_nullable
 as String,
@@ -712,10 +713,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( QuerySourceRef source,  QuerySourceKind kind,  String label,  DateTime sourceDate,  String textVersion,  String fingerprint,  String sourceText,  int start,  int end,  String summary,  List<String> affiliations,  bool outsideHome,  String relevance)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( QuerySourceRef source,  QuerySourceKind kind,  String label,  DateTime sourceDate,  String textVersion,  String fingerprint,  String sourceText,  int start,  int end,  String summary,  DateTime? textVersionDate,  List<String> affiliations,  bool outsideHome,  String relevance)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QueryEvidence() when $default != null:
-return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textVersion,_that.fingerprint,_that.sourceText,_that.start,_that.end,_that.summary,_that.affiliations,_that.outsideHome,_that.relevance);case _:
+return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textVersion,_that.fingerprint,_that.sourceText,_that.start,_that.end,_that.summary,_that.textVersionDate,_that.affiliations,_that.outsideHome,_that.relevance);case _:
   return orElse();
 
 }
@@ -733,10 +734,10 @@ return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textV
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( QuerySourceRef source,  QuerySourceKind kind,  String label,  DateTime sourceDate,  String textVersion,  String fingerprint,  String sourceText,  int start,  int end,  String summary,  List<String> affiliations,  bool outsideHome,  String relevance)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( QuerySourceRef source,  QuerySourceKind kind,  String label,  DateTime sourceDate,  String textVersion,  String fingerprint,  String sourceText,  int start,  int end,  String summary,  DateTime? textVersionDate,  List<String> affiliations,  bool outsideHome,  String relevance)  $default,) {final _that = this;
 switch (_that) {
 case _QueryEvidence():
-return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textVersion,_that.fingerprint,_that.sourceText,_that.start,_that.end,_that.summary,_that.affiliations,_that.outsideHome,_that.relevance);case _:
+return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textVersion,_that.fingerprint,_that.sourceText,_that.start,_that.end,_that.summary,_that.textVersionDate,_that.affiliations,_that.outsideHome,_that.relevance);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -753,10 +754,10 @@ return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textV
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( QuerySourceRef source,  QuerySourceKind kind,  String label,  DateTime sourceDate,  String textVersion,  String fingerprint,  String sourceText,  int start,  int end,  String summary,  List<String> affiliations,  bool outsideHome,  String relevance)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( QuerySourceRef source,  QuerySourceKind kind,  String label,  DateTime sourceDate,  String textVersion,  String fingerprint,  String sourceText,  int start,  int end,  String summary,  DateTime? textVersionDate,  List<String> affiliations,  bool outsideHome,  String relevance)?  $default,) {final _that = this;
 switch (_that) {
 case _QueryEvidence() when $default != null:
-return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textVersion,_that.fingerprint,_that.sourceText,_that.start,_that.end,_that.summary,_that.affiliations,_that.outsideHome,_that.relevance);case _:
+return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textVersion,_that.fingerprint,_that.sourceText,_that.start,_that.end,_that.summary,_that.textVersionDate,_that.affiliations,_that.outsideHome,_that.relevance);case _:
   return null;
 
 }
@@ -768,7 +769,7 @@ return $default(_that.source,_that.kind,_that.label,_that.sourceDate,_that.textV
 @JsonSerializable()
 
 class _QueryEvidence extends QueryEvidence {
-  const _QueryEvidence({required this.source, required this.kind, required this.label, required this.sourceDate, required this.textVersion, required this.fingerprint, required this.sourceText, required this.start, required this.end, required this.summary, final  List<String> affiliations = const [], this.outsideHome = false, this.relevance = ''}): _affiliations = affiliations,super._();
+  const _QueryEvidence({required this.source, required this.kind, required this.label, required this.sourceDate, required this.textVersion, required this.fingerprint, required this.sourceText, required this.start, required this.end, required this.summary, this.textVersionDate, final  List<String> affiliations = const [], this.outsideHome = false, this.relevance = ''}): _affiliations = affiliations,super._();
   factory _QueryEvidence.fromJson(Map<String, dynamic> json) => _$QueryEvidenceFromJson(json);
 
 @override final  QuerySourceRef source;
@@ -781,6 +782,7 @@ class _QueryEvidence extends QueryEvidence {
 @override final  int start;
 @override final  int end;
 @override final  String summary;
+@override final  DateTime? textVersionDate;
  final  List<String> _affiliations;
 @override@JsonKey() List<String> get affiliations {
   if (_affiliations is EqualUnmodifiableListView) return _affiliations;
@@ -804,16 +806,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QueryEvidence&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.sourceDate, sourceDate) || other.sourceDate == sourceDate)&&(identical(other.textVersion, textVersion) || other.textVersion == textVersion)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&(identical(other.sourceText, sourceText) || other.sourceText == sourceText)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.summary, summary) || other.summary == summary)&&const DeepCollectionEquality().equals(other._affiliations, _affiliations)&&(identical(other.outsideHome, outsideHome) || other.outsideHome == outsideHome)&&(identical(other.relevance, relevance) || other.relevance == relevance));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QueryEvidence&&(identical(other.source, source) || other.source == source)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.sourceDate, sourceDate) || other.sourceDate == sourceDate)&&(identical(other.textVersion, textVersion) || other.textVersion == textVersion)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint)&&(identical(other.sourceText, sourceText) || other.sourceText == sourceText)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.textVersionDate, textVersionDate) || other.textVersionDate == textVersionDate)&&const DeepCollectionEquality().equals(other._affiliations, _affiliations)&&(identical(other.outsideHome, outsideHome) || other.outsideHome == outsideHome)&&(identical(other.relevance, relevance) || other.relevance == relevance));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,source,kind,label,sourceDate,textVersion,fingerprint,sourceText,start,end,summary,const DeepCollectionEquality().hash(_affiliations),outsideHome,relevance);
+int get hashCode => Object.hash(runtimeType,source,kind,label,sourceDate,textVersion,fingerprint,sourceText,start,end,summary,textVersionDate,const DeepCollectionEquality().hash(_affiliations),outsideHome,relevance);
 
 @override
 String toString() {
-  return 'QueryEvidence(source: $source, kind: $kind, label: $label, sourceDate: $sourceDate, textVersion: $textVersion, fingerprint: $fingerprint, sourceText: $sourceText, start: $start, end: $end, summary: $summary, affiliations: $affiliations, outsideHome: $outsideHome, relevance: $relevance)';
+  return 'QueryEvidence(source: $source, kind: $kind, label: $label, sourceDate: $sourceDate, textVersion: $textVersion, fingerprint: $fingerprint, sourceText: $sourceText, start: $start, end: $end, summary: $summary, textVersionDate: $textVersionDate, affiliations: $affiliations, outsideHome: $outsideHome, relevance: $relevance)';
 }
 
 
@@ -824,7 +826,7 @@ abstract mixin class _$QueryEvidenceCopyWith<$Res> implements $QueryEvidenceCopy
   factory _$QueryEvidenceCopyWith(_QueryEvidence value, $Res Function(_QueryEvidence) _then) = __$QueryEvidenceCopyWithImpl;
 @override @useResult
 $Res call({
- QuerySourceRef source, QuerySourceKind kind, String label, DateTime sourceDate, String textVersion, String fingerprint, String sourceText, int start, int end, String summary, List<String> affiliations, bool outsideHome, String relevance
+ QuerySourceRef source, QuerySourceKind kind, String label, DateTime sourceDate, String textVersion, String fingerprint, String sourceText, int start, int end, String summary, DateTime? textVersionDate, List<String> affiliations, bool outsideHome, String relevance
 });
 
 
@@ -841,7 +843,7 @@ class __$QueryEvidenceCopyWithImpl<$Res>
 
 /// Create a copy of QueryEvidence
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? source = null,Object? kind = null,Object? label = null,Object? sourceDate = null,Object? textVersion = null,Object? fingerprint = null,Object? sourceText = null,Object? start = null,Object? end = null,Object? summary = null,Object? affiliations = null,Object? outsideHome = null,Object? relevance = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? source = null,Object? kind = null,Object? label = null,Object? sourceDate = null,Object? textVersion = null,Object? fingerprint = null,Object? sourceText = null,Object? start = null,Object? end = null,Object? summary = null,Object? textVersionDate = freezed,Object? affiliations = null,Object? outsideHome = null,Object? relevance = null,}) {
   return _then(_QueryEvidence(
 source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as QuerySourceRef,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -853,7 +855,8 @@ as String,sourceText: null == sourceText ? _self.sourceText : sourceText // igno
 as String,start: null == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
 as int,end: null == end ? _self.end : end // ignore: cast_nullable_to_non_nullable
 as int,summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
-as String,affiliations: null == affiliations ? _self._affiliations : affiliations // ignore: cast_nullable_to_non_nullable
+as String,textVersionDate: freezed == textVersionDate ? _self.textVersionDate : textVersionDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,affiliations: null == affiliations ? _self._affiliations : affiliations // ignore: cast_nullable_to_non_nullable
 as List<String>,outsideHome: null == outsideHome ? _self.outsideHome : outsideHome // ignore: cast_nullable_to_non_nullable
 as bool,relevance: null == relevance ? _self.relevance : relevance // ignore: cast_nullable_to_non_nullable
 as String,
@@ -876,7 +879,8 @@ $QuerySourceRefCopyWith<$Res> get source {
 /// @nodoc
 mixin _$QueryCoverage {
 
- int get checked; int get missingTranscripts; bool get incomplete; bool get expanded;
+ int get checked; int get missingTranscripts; bool get incomplete; bool get expanded;// Null denotes historical answers that did not record scope-layer counts.
+ int? get homeChecked; int? get categoryChecked; List<QuerySourceRef> get unreadableSources;
 /// Create a copy of QueryCoverage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -889,16 +893,16 @@ $QueryCoverageCopyWith<QueryCoverage> get copyWith => _$QueryCoverageCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueryCoverage&&(identical(other.checked, checked) || other.checked == checked)&&(identical(other.missingTranscripts, missingTranscripts) || other.missingTranscripts == missingTranscripts)&&(identical(other.incomplete, incomplete) || other.incomplete == incomplete)&&(identical(other.expanded, expanded) || other.expanded == expanded));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QueryCoverage&&(identical(other.checked, checked) || other.checked == checked)&&(identical(other.missingTranscripts, missingTranscripts) || other.missingTranscripts == missingTranscripts)&&(identical(other.incomplete, incomplete) || other.incomplete == incomplete)&&(identical(other.expanded, expanded) || other.expanded == expanded)&&(identical(other.homeChecked, homeChecked) || other.homeChecked == homeChecked)&&(identical(other.categoryChecked, categoryChecked) || other.categoryChecked == categoryChecked)&&const DeepCollectionEquality().equals(other.unreadableSources, unreadableSources));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,checked,missingTranscripts,incomplete,expanded);
+int get hashCode => Object.hash(runtimeType,checked,missingTranscripts,incomplete,expanded,homeChecked,categoryChecked,const DeepCollectionEquality().hash(unreadableSources));
 
 @override
 String toString() {
-  return 'QueryCoverage(checked: $checked, missingTranscripts: $missingTranscripts, incomplete: $incomplete, expanded: $expanded)';
+  return 'QueryCoverage(checked: $checked, missingTranscripts: $missingTranscripts, incomplete: $incomplete, expanded: $expanded, homeChecked: $homeChecked, categoryChecked: $categoryChecked, unreadableSources: $unreadableSources)';
 }
 
 
@@ -909,7 +913,7 @@ abstract mixin class $QueryCoverageCopyWith<$Res>  {
   factory $QueryCoverageCopyWith(QueryCoverage value, $Res Function(QueryCoverage) _then) = _$QueryCoverageCopyWithImpl;
 @useResult
 $Res call({
- int checked, int missingTranscripts, bool incomplete, bool expanded
+ int checked, int missingTranscripts, bool incomplete, bool expanded, int? homeChecked, int? categoryChecked, List<QuerySourceRef> unreadableSources
 });
 
 
@@ -926,13 +930,16 @@ class _$QueryCoverageCopyWithImpl<$Res>
 
 /// Create a copy of QueryCoverage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? checked = null,Object? missingTranscripts = null,Object? incomplete = null,Object? expanded = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? checked = null,Object? missingTranscripts = null,Object? incomplete = null,Object? expanded = null,Object? homeChecked = freezed,Object? categoryChecked = freezed,Object? unreadableSources = null,}) {
   return _then(_self.copyWith(
 checked: null == checked ? _self.checked : checked // ignore: cast_nullable_to_non_nullable
 as int,missingTranscripts: null == missingTranscripts ? _self.missingTranscripts : missingTranscripts // ignore: cast_nullable_to_non_nullable
 as int,incomplete: null == incomplete ? _self.incomplete : incomplete // ignore: cast_nullable_to_non_nullable
 as bool,expanded: null == expanded ? _self.expanded : expanded // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,homeChecked: freezed == homeChecked ? _self.homeChecked : homeChecked // ignore: cast_nullable_to_non_nullable
+as int?,categoryChecked: freezed == categoryChecked ? _self.categoryChecked : categoryChecked // ignore: cast_nullable_to_non_nullable
+as int?,unreadableSources: null == unreadableSources ? _self.unreadableSources : unreadableSources // ignore: cast_nullable_to_non_nullable
+as List<QuerySourceRef>,
   ));
 }
 
@@ -1017,10 +1024,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int checked,  int missingTranscripts,  bool incomplete,  bool expanded)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int checked,  int missingTranscripts,  bool incomplete,  bool expanded,  int? homeChecked,  int? categoryChecked,  List<QuerySourceRef> unreadableSources)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QueryCoverage() when $default != null:
-return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.expanded);case _:
+return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.expanded,_that.homeChecked,_that.categoryChecked,_that.unreadableSources);case _:
   return orElse();
 
 }
@@ -1038,10 +1045,10 @@ return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.ex
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int checked,  int missingTranscripts,  bool incomplete,  bool expanded)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int checked,  int missingTranscripts,  bool incomplete,  bool expanded,  int? homeChecked,  int? categoryChecked,  List<QuerySourceRef> unreadableSources)  $default,) {final _that = this;
 switch (_that) {
 case _QueryCoverage():
-return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.expanded);case _:
+return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.expanded,_that.homeChecked,_that.categoryChecked,_that.unreadableSources);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1058,10 +1065,10 @@ return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.ex
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int checked,  int missingTranscripts,  bool incomplete,  bool expanded)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int checked,  int missingTranscripts,  bool incomplete,  bool expanded,  int? homeChecked,  int? categoryChecked,  List<QuerySourceRef> unreadableSources)?  $default,) {final _that = this;
 switch (_that) {
 case _QueryCoverage() when $default != null:
-return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.expanded);case _:
+return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.expanded,_that.homeChecked,_that.categoryChecked,_that.unreadableSources);case _:
   return null;
 
 }
@@ -1073,13 +1080,23 @@ return $default(_that.checked,_that.missingTranscripts,_that.incomplete,_that.ex
 @JsonSerializable()
 
 class _QueryCoverage implements QueryCoverage {
-  const _QueryCoverage({this.checked = 0, this.missingTranscripts = 0, this.incomplete = false, this.expanded = false});
+  const _QueryCoverage({this.checked = 0, this.missingTranscripts = 0, this.incomplete = false, this.expanded = false, this.homeChecked, this.categoryChecked, final  List<QuerySourceRef> unreadableSources = const []}): _unreadableSources = unreadableSources;
   factory _QueryCoverage.fromJson(Map<String, dynamic> json) => _$QueryCoverageFromJson(json);
 
 @override@JsonKey() final  int checked;
 @override@JsonKey() final  int missingTranscripts;
 @override@JsonKey() final  bool incomplete;
 @override@JsonKey() final  bool expanded;
+// Null denotes historical answers that did not record scope-layer counts.
+@override final  int? homeChecked;
+@override final  int? categoryChecked;
+ final  List<QuerySourceRef> _unreadableSources;
+@override@JsonKey() List<QuerySourceRef> get unreadableSources {
+  if (_unreadableSources is EqualUnmodifiableListView) return _unreadableSources;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_unreadableSources);
+}
+
 
 /// Create a copy of QueryCoverage
 /// with the given fields replaced by the non-null parameter values.
@@ -1094,16 +1111,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QueryCoverage&&(identical(other.checked, checked) || other.checked == checked)&&(identical(other.missingTranscripts, missingTranscripts) || other.missingTranscripts == missingTranscripts)&&(identical(other.incomplete, incomplete) || other.incomplete == incomplete)&&(identical(other.expanded, expanded) || other.expanded == expanded));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QueryCoverage&&(identical(other.checked, checked) || other.checked == checked)&&(identical(other.missingTranscripts, missingTranscripts) || other.missingTranscripts == missingTranscripts)&&(identical(other.incomplete, incomplete) || other.incomplete == incomplete)&&(identical(other.expanded, expanded) || other.expanded == expanded)&&(identical(other.homeChecked, homeChecked) || other.homeChecked == homeChecked)&&(identical(other.categoryChecked, categoryChecked) || other.categoryChecked == categoryChecked)&&const DeepCollectionEquality().equals(other._unreadableSources, _unreadableSources));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,checked,missingTranscripts,incomplete,expanded);
+int get hashCode => Object.hash(runtimeType,checked,missingTranscripts,incomplete,expanded,homeChecked,categoryChecked,const DeepCollectionEquality().hash(_unreadableSources));
 
 @override
 String toString() {
-  return 'QueryCoverage(checked: $checked, missingTranscripts: $missingTranscripts, incomplete: $incomplete, expanded: $expanded)';
+  return 'QueryCoverage(checked: $checked, missingTranscripts: $missingTranscripts, incomplete: $incomplete, expanded: $expanded, homeChecked: $homeChecked, categoryChecked: $categoryChecked, unreadableSources: $unreadableSources)';
 }
 
 
@@ -1114,7 +1131,7 @@ abstract mixin class _$QueryCoverageCopyWith<$Res> implements $QueryCoverageCopy
   factory _$QueryCoverageCopyWith(_QueryCoverage value, $Res Function(_QueryCoverage) _then) = __$QueryCoverageCopyWithImpl;
 @override @useResult
 $Res call({
- int checked, int missingTranscripts, bool incomplete, bool expanded
+ int checked, int missingTranscripts, bool incomplete, bool expanded, int? homeChecked, int? categoryChecked, List<QuerySourceRef> unreadableSources
 });
 
 
@@ -1131,13 +1148,16 @@ class __$QueryCoverageCopyWithImpl<$Res>
 
 /// Create a copy of QueryCoverage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? checked = null,Object? missingTranscripts = null,Object? incomplete = null,Object? expanded = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? checked = null,Object? missingTranscripts = null,Object? incomplete = null,Object? expanded = null,Object? homeChecked = freezed,Object? categoryChecked = freezed,Object? unreadableSources = null,}) {
   return _then(_QueryCoverage(
 checked: null == checked ? _self.checked : checked // ignore: cast_nullable_to_non_nullable
 as int,missingTranscripts: null == missingTranscripts ? _self.missingTranscripts : missingTranscripts // ignore: cast_nullable_to_non_nullable
 as int,incomplete: null == incomplete ? _self.incomplete : incomplete // ignore: cast_nullable_to_non_nullable
 as bool,expanded: null == expanded ? _self.expanded : expanded // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,homeChecked: freezed == homeChecked ? _self.homeChecked : homeChecked // ignore: cast_nullable_to_non_nullable
+as int?,categoryChecked: freezed == categoryChecked ? _self.categoryChecked : categoryChecked // ignore: cast_nullable_to_non_nullable
+as int?,unreadableSources: null == unreadableSources ? _self._unreadableSources : unreadableSources // ignore: cast_nullable_to_non_nullable
+as List<QuerySourceRef>,
   ));
 }
 

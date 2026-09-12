@@ -11111,7 +11111,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get queryExpanding =>
-      'Andere Projekte in dieser Kategorie werden geprüft…';
+      'Weitere Einträge in dieser Kategorie werden geprüft…';
 
   @override
   String get queryFailed =>
@@ -11158,9 +11158,9 @@ class AppLocalizationsDe extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count Aufnahmen haben keinen durchsuchbaren Text. Öffne sie im Journal, um sie zu transkribieren.',
+          '$count Aufnahmen hatten keinen durchsuchbaren Text, als diese Antwort entstand.',
       one:
-          '1 Aufnahme hat keinen durchsuchbaren Text. Öffne sie im Journal, um sie zu transkribieren.',
+          '1 Aufnahme hatte keinen durchsuchbaren Text, als diese Antwort entstand.',
     );
     return '$_temp0';
   }
@@ -11186,7 +11186,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Durchsucht zuerst diesen Bereich, dann $category.';
+    return 'Durchsucht diesen Bereich und $category.';
   }
 
   @override
@@ -15450,4 +15450,44 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get queryDeleteKeep => 'Löschen und Schlussfolgerungen behalten';
+
+  @override
+  String get queryDeleteForget => 'Löschen und Schlussfolgerungen vergessen';
+
+  @override
+  String get queryReachHome =>
+      'Durchsucht nur diesen Bereich und seine verknüpften Einträge.';
+
+  @override
+  String get queryHomeScope => 'Ausgangsbereich';
+
+  @override
+  String get queryCoverageWider => 'Weitere Einträge in dieser Kategorie';
+
+  @override
+  String get queryCoverageExcluded =>
+      'Andere Kategorien wurden nicht durchsucht.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Als diese Antwort entstand, gab es keinen durchsuchbaren Text. Öffne die Aufnahme, um sie anzusehen.';
+
+  @override
+  String querySavedVersion(String version) {
+    return 'Gespeicherte Version: $version';
+  }
+
+  @override
+  String get querySurroundingLimit =>
+      'Der umgebende Text ist ein gespeicherter Auszug. Öffne den Eintrag für die vollständige Diskussion.';
+
+  @override
+  String get queryOpenCurrentEntry => 'Aktuellen Eintrag öffnen';
+
+  @override
+  String get queryArchiveConfirmation =>
+      'Chat archiviert. Seine Schlussfolgerungen bleiben verfügbar.';
 }

@@ -713,3 +713,8 @@ stability than the exports provide.
 When a value is missing, the preferred fix is upstream or at the DS seam. Sneaking
 in a one-off literal because it looked close enough is exactly how design systems
 turn into decorative fiction.
+
+`DesignSystemChipSize.compactPillTouch` retains caption typography and pill
+radii while using the touch chip's minimum height (`spacing.step9`). Scoped
+query filters use it so a compact label does not imply a small interaction
+area; ordinary `compactPill` metrics remain unchanged.

@@ -188,9 +188,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       // Increment operation ID for this recording session
       final currentOpId = ++_operationId;
 
+      final startedAt = _nowMillisProvider();
+
       // Set recording status immediately after successful start
       state = state.copyWith(
         status: ChatRecorderStatus.recording,
+        elapsed: Duration.zero,
         amplitudeHistory: [], // Clear old history
       );
 
@@ -207,6 +210,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
             final dBFS = event.current;
             state = state.copyWith(
               status: ChatRecorderStatus.recording,
+              elapsed: Duration(
+                milliseconds: (_nowMillisProvider() - startedAt).clamp(
+                  0,
+                  _config.maxSeconds * 1000,
+                ),
+              ),
               amplitudeHistory: appendAmplitudeSample(
                 state.amplitudeHistory,
                 dBFS,

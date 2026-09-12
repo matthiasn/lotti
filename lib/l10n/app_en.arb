@@ -6294,6 +6294,7 @@
   "provisionedSyncSummaryUser": "Sync account",
   "provisionedSyncTitle": "Devices",
   "queryArchiveChat": "Archive chat",
+  "queryArchiveConfirmation": "Chat archived. Its conclusions remain available.",
   "queryArchivedChats": "Archived chats",
   "queryArchivedReadOnly": "This chat is archived. Restore it to continue the conversation.",
   "queryAsk": "Ask",
@@ -6336,8 +6337,13 @@
   "queryCopied": "Copied",
   "queryCopyQuote": "Copy quote",
   "queryCoverage": "What was searched",
+  "queryCoverageExcluded": "Other categories were not searched.",
+  "queryCoverageUnreadable": "No searchable text when this answer was written. Open the recording to inspect it.",
+  "queryCoverageWider": "Other entries in this category",
   "queryDeleteChat": "Delete chat",
   "queryDeleteExplanation": "Delete this conversation? Choose what happens to its shared conclusions. Source entries are unaffected.",
+  "queryDeleteForget": "Delete and forget conclusions",
+  "queryDeleteKeep": "Delete and keep conclusions",
   "queryDictated": "You can edit the transcript before sending your question. Audio may already have been sent to your transcription provider.",
   "queryEarlierTextOmitted": "[Earlier text not shown]",
   "queryEmptyBody": "Ask about earlier notes and meetings. Answers include the exact passages you can inspect.",
@@ -6346,12 +6352,13 @@
   "queryExampleDecision": "What did we agree on?",
   "queryExampleMeeting": "In which meeting did we discuss this?",
   "queryExampleSuggestion": "Was that a decision or a suggestion?",
-  "queryExpanding": "Checking other projects in this category…",
+  "queryExpanding": "Checking other entries in this category…",
   "queryFailed": "The search could not finish. Try again.",
   "queryForgetConclusions": "Forget conclusions",
   "queryHideExactText": "Hide exact text",
   "queryHideSurrounding": "Hide surrounding text",
   "queryHomeOnly": "Home scope only",
+  "queryHomeScope": "Home scope",
   "queryIncomplete": "Coverage is incomplete. Missing evidence does not mean the discussion never happened.",
   "queryInferenceUnavailable": "No usable inference setup. Configure the agent’s model or the category’s default profile, then retry.",
   "queryKeepConclusions": "Keep conclusions",
@@ -6365,7 +6372,7 @@
       }
     }
   },
-  "queryMissingTranscripts": "{count, plural, one{1 recording has no searchable text. Open it in the journal to transcribe it.} other{{count} recordings have no searchable text. Open them in the journal to transcribe them.}}",
+  "queryMissingTranscripts": "{count, plural, one{1 recording had no searchable text when this answer was written.} other{{count} recordings had no searchable text when this answer was written.}}",
   "@queryMissingTranscripts": {
     "placeholders": {
       "count": {
@@ -6376,10 +6383,11 @@
   "queryNewChat": "New chat",
   "queryNoAgent": "This scope needs its usual agent assignment before you can chat. Return to details to configure it.",
   "queryNotes": "Notes",
+  "queryOpenCurrentEntry": "Open current entry",
   "queryOpenEntry": "Open entry",
   "queryOtherProject": "Beyond the home scope",
   "queryPreparingAnswer": "Preparing an answer…",
-  "queryReachCategory": "Searches this scope first, then {category}.",
+  "queryReachCategory": "Searches this scope and {category}.",
   "@queryReachCategory": {
     "placeholders": {
       "category": {
@@ -6395,16 +6403,27 @@
       }
     }
   },
+  "queryReachHome": "Searches only this scope and its linked entries.",
   "queryReachUncategorized": "Searches this task and its directly linked uncategorized entries only.",
   "queryRecall": "Uses relevant conclusions from earlier chats.",
   "queryRecordings": "Recordings",
   "queryRenameChat": "Rename chat",
   "queryRestoreChat": "Restore chat",
   "querySavedQuote": "This saved quote reflects the source when the answer was written.",
+  "querySavedVersion": "Saved version: {version}",
+  "@querySavedVersion": {
+    "description": "Identifies the historical text version by edit date or short content fingerprint.",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "querySearching": "Searching linked notes and recordings…",
   "querySourceChanged": "Source has changed",
   "querySourceDeleted": "Source deleted",
   "querySourceMoved": "Source moved to another category",
+  "querySurroundingLimit": "Surrounding text is a saved excerpt. Open the entry for the full discussion.",
   "querySurroundingText": "Show surrounding text",
   "queryTranscribing": "Transcribing… your question is sent only when you press Send. Audio may already have been sent to your transcription provider.",
   "queryUnavailable": "This scope is no longer available with your current visibility settings.",

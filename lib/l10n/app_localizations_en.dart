@@ -10987,7 +10987,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryExampleSuggestion => 'Was that a decision or a suggestion?';
 
   @override
-  String get queryExpanding => 'Checking other projects in this category…';
+  String get queryExpanding => 'Checking other entries in this category…';
 
   @override
   String get queryFailed => 'The search could not finish. Try again.';
@@ -11033,9 +11033,8 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count recordings have no searchable text. Open them in the journal to transcribe them.',
-      one:
-          '1 recording has no searchable text. Open it in the journal to transcribe it.',
+          '$count recordings had no searchable text when this answer was written.',
+      one: '1 recording had no searchable text when this answer was written.',
     );
     return '$_temp0';
   }
@@ -11061,7 +11060,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Searches this scope first, then $category.';
+    return 'Searches this scope and $category.';
   }
 
   @override
@@ -15247,6 +15246,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get queryDeleteKeep => 'Delete and keep conclusions';
+
+  @override
+  String get queryDeleteForget => 'Delete and forget conclusions';
+
+  @override
+  String get queryReachHome =>
+      'Searches only this scope and its linked entries.';
+
+  @override
+  String get queryHomeScope => 'Home scope';
+
+  @override
+  String get queryCoverageWider => 'Other entries in this category';
+
+  @override
+  String get queryCoverageExcluded => 'Other categories were not searched.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'No searchable text when this answer was written. Open the recording to inspect it.';
+
+  @override
+  String querySavedVersion(String version) {
+    return 'Saved version: $version';
+  }
+
+  @override
+  String get querySurroundingLimit =>
+      'Surrounding text is a saved excerpt. Open the entry for the full discussion.';
+
+  @override
+  String get queryOpenCurrentEntry => 'Open current entry';
+
+  @override
+  String get queryArchiveConfirmation =>
+      'Chat archived. Its conclusions remain available.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

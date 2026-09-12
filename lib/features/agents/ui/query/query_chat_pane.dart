@@ -35,6 +35,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -73,6 +74,20 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         );
       }
     }
+  }
+
+  Future<void> _openSource(String id) async {
+    final fresh = await ref.read(querySourceAccessProvider).load([id]);
+    if (!mounted) return;
+    final current = QueryAccessSnapshot(
+      showPrivate: ref.read(configFlagProvider('private')).value == true,
+      categories: fresh.categories,
+      entries: fresh.entries,
+      lockdown: ref.read(lockdownControllerProvider),
+    );
+    final entry = current.entries[id];
+    if (entry == null || !current.allowsEntry(entry)) return;
+    setState(() => _sourceId = id);
   }
 
   Future<void> _leave() async {
@@ -155,6 +170,20 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     }
   }
 
+  Future<void> _archive(
+    QueryChatController controller,
+    String id, {
+    required bool archived,
+  }) async {
+    await controller.archive(id, archived: archived);
+    if (mounted && archived) {
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: context.messages.queryArchiveConfirmation,
+      );
+    }
+  }
+
   Future<void> _delete(
     QueryChatController controller,
     QueryChatHistory chat,
@@ -193,7 +222,9 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
               SizedBox(height: tokens.spacing.step5),
               DesignSystemModalActionBar(
                 primary: DesignSystemButton(
-                  label: messages.queryDeleteChat,
+                  label: forget
+                      ? messages.queryDeleteForget
+                      : messages.queryDeleteKeep,
                   fullWidth: true,
                   variant: DesignSystemButtonVariant.danger,
                   onPressed: () => Navigator.of(context).pop(forget),
@@ -305,14 +336,12 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         ? messages.queryReachCategoryOnly(categoryName ?? label)
         : categoryName == null
         ? messages.queryReachUncategorized
+        : local.homeOnly
+        ? messages.queryReachHome
         : messages.queryReachCategory(categoryName);
     final tokens = context.designTokens;
     final lastQuestion = chat?.questions.lastOrNull;
     final running = local.status == QueryTurnStatus.running;
-    final pending =
-        lastQuestion != null &&
-        chat!.answerFor(lastQuestion.id) == null &&
-        !running;
     final lastAnswer = chat?.events
         .where((e) => e.data is QueryChatAnswer)
         .lastOrNull;
@@ -472,7 +501,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                             widget.scope.kind != QueryScopeKind.category)
                           DesignSystemChip(
                             label: messages.queryHomeOnly,
-                            size: DesignSystemChipSize.compactPill,
+                            size: DesignSystemChipSize.compactPillTouch,
                             outlined: true,
                             selected: local.homeOnly,
                             onPressed: running
@@ -490,7 +519,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                             label: kind == QuerySourceKind.text
                                 ? messages.queryNotes
                                 : messages.queryRecordings,
-                            size: DesignSystemChipSize.compactPill,
+                            size: DesignSystemChipSize.compactPillTouch,
                             outlined: true,
                             selected: local.kind == kind,
                             onPressed: running
@@ -526,6 +555,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                       onRetry: () {},
                       scrollOnReplies: false,
                       groupAttachmentsWithReply: true,
+                      allowDraftWhileSending: true,
+                      showVoiceDetails: true,
                       replyTextStyle: tokens.typography.styles.body.bodySmall,
                       resolveTranscriptionTarget: ref.watch(
                         queryTranscriptionTargetResolverProvider(widget.scope),
@@ -562,12 +593,29 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                               ),
                               SizedBox(width: tokens.spacing.step3),
                               Flexible(
-                                child: Tooltip(
-                                  message: messages.queryChecked(local.checked),
-                                  child: Text(
-                                    _activityLabel(context, local),
-                                    style:
-                                        tokens.typography.styles.body.bodySmall,
+                                child: Semantics(
+                                  liveRegion: true,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _activityLabel(context, local),
+                                        style: tokens
+                                            .typography
+                                            .styles
+                                            .body
+                                            .bodySmall,
+                                      ),
+                                      Text(
+                                        messages.queryChecked(local.checked),
+                                        style: tokens
+                                            .typography
+                                            .styles
+                                            .others
+                                            .caption,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -587,12 +635,24 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                         controller,
                         chat,
                         local,
-                        pending ? lastQuestion.id : null,
                       ),
                       attachmentBuilder: (context, message) {
                         final row = chat?.events
                             .where((e) => e.id == message.id)
                             .firstOrNull;
+                        if (row?.data is QueryChatQuestion &&
+                            chat != null &&
+                            chat.answerFor(row!.id) == null &&
+                            (chat.failed(row.id) ||
+                                (!running && row.id == lastQuestion?.id))) {
+                          return _questionRecovery(
+                            context,
+                            controller,
+                            chat,
+                            row.id,
+                            running: running,
+                          );
+                        }
                         if (row?.data case final QueryChatAnswer answer) {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -602,10 +662,19 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                 answerId: message.id,
                               ),
                               if (answer.recalledMemoryIds.isNotEmpty)
+                                _recalledConclusions(
+                                  context,
+                                  answer,
+                                  data.projection,
+                                  visible,
+                                  access,
+                                  controller,
+                                ),
+                              if (answer.coverage.incomplete)
                                 Text(
-                                  messages.queryRecall,
+                                  messages.queryIncomplete,
                                   style:
-                                      tokens.typography.styles.others.caption,
+                                      tokens.typography.styles.body.bodySmall,
                                 ),
                               for (final (index, evidence)
                                   in answer.evidence.indexed)
@@ -649,15 +718,55 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                                     style:
                                         tokens.typography.styles.body.bodySmall,
                                   ),
-                                  if (answer.coverage.incomplete)
+                                  if (answer.coverage.homeChecked
+                                      case final count?)
                                     Text(
-                                      messages.queryIncomplete,
+                                      '${messages.queryHomeScope} · ${messages.queryChecked(count)}',
                                       style: tokens
                                           .typography
                                           .styles
                                           .body
                                           .bodySmall,
                                     ),
+                                  if (answer.coverage.categoryChecked
+                                      case final count?)
+                                    Text(
+                                      '${messages.queryCoverageWider} · ${messages.queryChecked(count)}',
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .body
+                                          .bodySmall,
+                                    ),
+                                  Text(
+                                    messages.queryCoverageExcluded,
+                                    style:
+                                        tokens.typography.styles.body.bodySmall,
+                                  ),
+                                  for (final reference
+                                      in answer.coverage.unreadableSources)
+                                    if (access.entries[reference.id]
+                                        case final JournalAudio audio)
+                                      if (access.allowsEntry(audio))
+                                        DesignSystemListItem(
+                                          titleMaxLines: 2,
+                                          subtitleMaxLines: null,
+                                          title:
+                                              '${messages.queryRecordings} · ${DateFormat.yMMMd(Localizations.localeOf(context).toString()).add_Hm().format(audio.meta.dateFrom)}',
+                                          subtitle:
+                                              audio.meta.categoryId ==
+                                                  reference.categoryId
+                                              ? messages.queryCoverageUnreadable
+                                              : '${messages.queryCoverageUnreadable}\n${messages.querySourceMoved}',
+                                          trailing: const Icon(
+                                            LottiIcons.openExternal,
+                                          ),
+                                          onTap: () => unawaited(
+                                            _guard(
+                                              () => _openSource(reference.id),
+                                            ),
+                                          ),
+                                        ),
                                   if (answer.coverage.missingTranscripts > 0)
                                     Text(
                                       messages.queryMissingTranscripts(
@@ -856,24 +965,130 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
     );
   }
 
+  Widget _questionRecovery(
+    BuildContext context,
+    QueryChatController controller,
+    QueryChatHistory chat,
+    String questionId, {
+    required bool running,
+  }) {
+    final terminal = chat.events
+        .where(
+          (event) => switch (event.data) {
+            QueryChatFailed(questionId: final id) ||
+            QueryChatCancelled(questionId: final id) => id == questionId,
+            _ => false,
+          },
+        )
+        .lastOrNull;
+    final messages = context.messages;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          terminal?.data is QueryChatCancelled
+              ? messages.aiAttributionStatusCancelled
+              : messages.queryFailed,
+          style: context.designTokens.typography.styles.others.caption,
+        ),
+        if (!chat.archived)
+          DesignSystemButton(
+            label: messages.aiInferenceErrorRetryButton,
+            onPressed: running
+                ? null
+                : () => unawaited(
+                    controller.send(chat.id, retryQuestionId: questionId),
+                  ),
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+          ),
+      ],
+    );
+  }
+
+  Widget _recalledConclusions(
+    BuildContext context,
+    QueryChatAnswer answer,
+    QueryChatProjection projection,
+    List<QueryChatHistory> visible,
+    QueryAccessSnapshot access,
+    QueryChatController controller,
+  ) {
+    final recalled = projection.memories.where(
+      (event) =>
+          answer.recalledMemoryIds.contains(event.id) &&
+          access.allowsEvent(event.data),
+    );
+    if (recalled.isEmpty) {
+      return Text(
+        context.messages.queryRecall,
+        style: context.designTokens.typography.styles.others.caption,
+      );
+    }
+    return ExpansionTile(
+      key: PageStorageKey('recall:${answer.questionId}'),
+      title: Text(
+        context.messages.queryRecall,
+        style: context.designTokens.typography.styles.others.caption,
+      ),
+      children: [
+        for (final event in recalled)
+          if (event.data case QueryChatMemory(:final text))
+            Padding(
+              padding: EdgeInsets.all(context.designTokens.spacing.step3),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SelectableText(
+                    key: PageStorageKey('memory-text:${event.id}'),
+                    text,
+                    style:
+                        context.designTokens.typography.styles.body.bodySmall,
+                  ),
+                  if (visible
+                          .where((chat) => chat.id == event.chatId)
+                          .firstOrNull
+                      case final origin?)
+                    DesignSystemButton(
+                      label: origin.title,
+                      onPressed: () =>
+                          unawaited(_select(controller, origin.id)),
+                      variant: DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.dense,
+                    ),
+                ],
+              ),
+            ),
+      ],
+    );
+  }
+
   Widget? _footer(
     BuildContext context,
     QueryChatController controller,
     QueryChatHistory? chat,
     QueryChatLocal local,
-    String? retryId,
   ) {
     final messages = context.messages;
     final recorderStatus = ref.watch(
       chatRecorderControllerProvider.select((s) => s.status),
     );
+    final hasRecovery =
+        local.requestQuestionId != null &&
+        chat?.questions.any(
+              (question) =>
+                  question.id == local.requestQuestionId &&
+                  chat.answerFor(question.id) == null,
+            ) ==
+            true;
     final text = chat?.archived == true
         ? messages.queryArchivedReadOnly
         : switch (local.status) {
             QueryTurnStatus.unavailable => messages.queryInferenceUnavailable,
             QueryTurnStatus.hidden => messages.queryUnavailable,
-            QueryTurnStatus.failed => messages.queryFailed,
-            QueryTurnStatus.cancelled => messages.aiAttributionStatusCancelled,
+            QueryTurnStatus.failed => hasRecovery ? null : messages.queryFailed,
+            QueryTurnStatus.cancelled =>
+              hasRecovery ? null : messages.aiAttributionStatusCancelled,
             _ =>
               recorderStatus == ChatRecorderStatus.processing
                   ? messages.queryTranscribing
@@ -882,7 +1097,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   ? messages.queryDictated
                   : null,
           };
-    if (text == null && retryId == null) return null;
+    if (text == null) return null;
     final tokens = context.designTokens;
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -891,21 +1106,18 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
       ),
       child: Column(
         children: [
-          if (text != null)
-            Text(text, style: tokens.typography.styles.others.caption),
+          Text(text, style: tokens.typography.styles.others.caption),
+          if (local.status == QueryTurnStatus.unavailable)
+            DesignSystemButton(
+              label: messages.settingsAiTitle,
+              onPressed: () => nav_service.beamToNamed('/settings/ai'),
+              variant: DesignSystemButtonVariant.tertiary,
+            ),
           if (chat != null && chat.archived)
             DesignSystemButton(
               label: messages.queryRestoreChat,
               onPressed: () => unawaited(
                 _guard(() => controller.archive(chat.id, archived: false)),
-              ),
-              variant: DesignSystemButtonVariant.tertiary,
-            )
-          else if (retryId != null)
-            DesignSystemButton(
-              label: messages.aiInferenceErrorRetryButton,
-              onPressed: () => unawaited(
-                controller.send(chat!.id, retryQuestionId: retryId),
               ),
               variant: DesignSystemButtonVariant.tertiary,
             ),
@@ -990,7 +1202,8 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   selected?.id,
                 ),
               DesignSystemListItem(
-                title: messages.queryArchivedChats,
+                title:
+                    '${messages.queryArchivedChats} · ${chats.where((c) => c.archived).length}',
                 leading: const Icon(LottiIcons.archive, size: IconSizes.s),
                 trailing: Icon(
                   _showArchived ? LottiIcons.collapse : LottiIcons.expand,
@@ -1035,9 +1248,19 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
         ? messages.queryUnread
         : local.status == QueryTurnStatus.failed
         ? messages.queryFailed
-        : DateFormat.yMMMd(
-            Localizations.localeOf(context).toString(),
-          ).format(chat.lastActivity);
+        : chat.events.reversed
+                  .map(
+                    (event) => switch (event.data) {
+                      QueryChatAnswer(:final text) ||
+                      QueryChatQuestion(:final text) => text,
+                      _ => '',
+                    },
+                  )
+                  .where((text) => text.isNotEmpty)
+                  .firstOrNull ??
+              DateFormat.yMMMd(
+                Localizations.localeOf(context).toString(),
+              ).format(chat.lastActivity);
     return DesignSystemListItem(
       title: chat.title,
       subtitle: status,
@@ -1063,7 +1286,7 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
               _closeMenu();
               unawaited(
                 _guard(
-                  () => controller.archive(chat.id, archived: !chat.archived),
+                  () => _archive(controller, chat.id, archived: !chat.archived),
                 ),
               );
             },
@@ -1089,8 +1312,11 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                   _closeMenu();
                   unawaited(
                     _guard(
-                      () =>
-                          controller.archive(chat.id, archived: !chat.archived),
+                      () => _archive(
+                        controller,
+                        chat.id,
+                        archived: !chat.archived,
+                      ),
                     ),
                   );
                 },

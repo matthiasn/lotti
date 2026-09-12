@@ -11246,7 +11246,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryExpanding =>
-      'Se verifică alte proiecte din această categorie…';
+      'Se verifică alte înregistrări din această categorie…';
 
   @override
   String get queryFailed => 'Căutarea nu s-a putut încheia. Reîncercați.';
@@ -11292,11 +11292,11 @@ class AppLocalizationsRo extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count de înregistrări audio nu au text căutabil. Deschideți-le în jurnal pentru a le transcrie.',
+          '$count de înregistrări audio nu aveau text căutabil la redactarea acestui răspuns.',
       few:
-          '$count înregistrări audio nu au text căutabil. Deschideți-le în jurnal pentru a le transcrie.',
+          '$count înregistrări audio nu aveau text căutabil la redactarea acestui răspuns.',
       one:
-          '1 înregistrare audio nu are text căutabil. Deschideți-o în jurnal pentru a o transcrie.',
+          '1 înregistrare audio nu avea text căutabil la redactarea acestui răspuns.',
     );
     return '$_temp0';
   }
@@ -11322,7 +11322,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Se caută mai întâi în acest domeniu, apoi în $category.';
+    return 'Caută în acest domeniu și în $category.';
   }
 
   @override
@@ -15647,4 +15647,43 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get queryDeleteKeep => 'Ștergeți și păstrați concluziile';
+
+  @override
+  String get queryDeleteForget => 'Ștergeți și eliminați concluziile';
+
+  @override
+  String get queryReachHome =>
+      'Caută doar în acest domeniu și în înregistrările asociate.';
+
+  @override
+  String get queryHomeScope => 'Domeniu inițial';
+
+  @override
+  String get queryCoverageWider => 'Alte înregistrări din această categorie';
+
+  @override
+  String get queryCoverageExcluded => 'Nu s-a căutat în alte categorii.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Nu exista text căutabil la redactarea acestui răspuns. Deschideți înregistrarea audio pentru a o verifica.';
+
+  @override
+  String querySavedVersion(String version) {
+    return 'Versiune salvată: $version';
+  }
+
+  @override
+  String get querySurroundingLimit =>
+      'Textul din jur este un fragment salvat. Deschideți înregistrarea pentru întreaga discuție.';
+
+  @override
+  String get queryOpenCurrentEntry => 'Deschideți înregistrarea actuală';
+
+  @override
+  String get queryArchiveConfirmation =>
+      'Conversație arhivată. Concluziile rămân disponibile.';
 }

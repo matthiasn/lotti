@@ -11142,7 +11142,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queryExampleSuggestion => 'Foi uma decisão ou uma sugestão?';
 
   @override
-  String get queryExpanding => 'A verificar outros projetos desta categoria…';
+  String get queryExpanding => 'A verificar outras entradas desta categoria…';
 
   @override
   String get queryFailed => 'A pesquisa não terminou. Tenta novamente.';
@@ -11188,9 +11188,9 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count gravações não têm texto pesquisável. Abre-as no diário para as transcrever.',
+          '$count gravações não tinham texto pesquisável quando esta resposta foi escrita.',
       one:
-          '1 gravação não tem texto pesquisável. Abre-a no diário para a transcrever.',
+          '1 gravação não tinha texto pesquisável quando esta resposta foi escrita.',
     );
     return '$_temp0';
   }
@@ -11216,7 +11216,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Pesquisa primeiro neste âmbito e depois em $category.';
+    return 'Pesquisa neste âmbito e em $category.';
   }
 
   @override
@@ -15473,4 +15473,44 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get queryDeleteKeep => 'Eliminar e manter as conclusões';
+
+  @override
+  String get queryDeleteForget => 'Eliminar e esquecer as conclusões';
+
+  @override
+  String get queryReachHome =>
+      'Pesquisa apenas neste âmbito e nas entradas associadas.';
+
+  @override
+  String get queryHomeScope => 'Âmbito inicial';
+
+  @override
+  String get queryCoverageWider => 'Outras entradas desta categoria';
+
+  @override
+  String get queryCoverageExcluded =>
+      'As outras categorias não foram pesquisadas.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Não havia texto pesquisável quando esta resposta foi escrita. Abre a gravação para a consultar.';
+
+  @override
+  String querySavedVersion(String version) {
+    return 'Versão guardada: $version';
+  }
+
+  @override
+  String get querySurroundingLimit =>
+      'O texto envolvente é um excerto guardado. Abre a entrada para consultar toda a discussão.';
+
+  @override
+  String get queryOpenCurrentEntry => 'Abrir a entrada atual';
+
+  @override
+  String get queryArchiveConfirmation =>
+      'Conversa arquivada. As conclusões continuam disponíveis.';
 }

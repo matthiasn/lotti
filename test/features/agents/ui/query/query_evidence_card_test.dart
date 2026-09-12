@@ -127,6 +127,7 @@ void main() {
             .toPlainText(),
         '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
       );
+      expect(find.textContaining('Saved version:'), findsOneWidget);
       await tester.tap(find.text('Show surrounding text'));
       await tester.pump();
       expect(
@@ -135,6 +136,12 @@ void main() {
             .textSpan!
             .toPlainText(),
         evidence.sourceText,
+      );
+      expect(
+        find.text(
+          'Surrounding text is a saved excerpt. Open the entry for the full discussion.',
+        ),
+        findsOneWidget,
       );
       await tester.ensureVisible(find.text('Copy quote'));
       await tester.tap(find.text('Copy quote'));
@@ -164,6 +171,9 @@ void main() {
             .toPlainText(),
         '[Earlier text not shown]\n${evidence.quote}\n[Later text not shown]',
       );
+      await tester.ensureVisible(find.text('Open current entry'));
+      await tester.tap(find.text('Open current entry'));
+      expect(opened, ['meeting']);
       final current = bench.entries['meeting']!;
       bench.entries['meeting'] = current.copyWith(
         meta: current.meta.copyWith(deletedAt: DateTime(2026, 9, 10)),
@@ -232,4 +242,28 @@ void main() {
       expect(find.byType(SelectableText), findsNothing);
     },
   );
+  for (final explicitDate in [false, true]) {
+    testWidgets(
+      'saved version uses its edit or transcript date (explicit=$explicitDate)',
+      (tester) async {
+        evidence = evidence.copyWith(
+          textVersion: explicitDate
+              ? 'transcript:mistral:voxtral:stable-id'
+              : 'entryText:2026-07-18T09:30:00.000',
+          textVersionDate: explicitDate ? DateTime(2026, 7, 18, 9, 30) : null,
+        );
+        await pump(tester);
+        await tester.tap(find.text('Show exact text'));
+        await tester.pump();
+        expect(
+          find.text('Saved version: Jul 18, 2026 09:30:00'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(evidence.fingerprint.substring(0, 8)),
+          findsNothing,
+        );
+      },
+    );
+  }
 }

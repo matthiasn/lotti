@@ -110,10 +110,13 @@ class QueryAnswerBuilder {
       for (final event in history)
         for (final source in queryEventDependencies(event.data))
           source.id: source,
+      for (final source in corpus.coverage.unreadableSources) source.id: source,
       if (corpus.access.entries[chat.scope.id] case final entry?)
         entry.meta.id: corpus.access.reference(entry),
     };
     var checked = 0;
+    var homeChecked = 0;
+    var categoryChecked = 0;
     var calls = 0;
     final shortlist = await _shortlist(
       corpus,
@@ -130,6 +133,12 @@ class QueryAnswerBuilder {
         incomplete = true;
         break;
       }
+      final outsideHome =
+          chat.scope.kind != QueryScopeKind.category &&
+          !corpus.homeIds.contains(document.entry.meta.id);
+      // Current activity describes the source about to be inspected, while
+      // saved coverage below records whether any wider source was checked.
+      onProgress(checked, expanded: outsideHome);
       final source = corpus.access.reference(document.entry);
       final affiliations = corpus.affiliations[source.id];
       final sourceDependencies = [source, ...?affiliations?.sources];
@@ -205,6 +214,7 @@ class QueryAnswerBuilder {
               label: document.label,
               sourceDate: document.entry.meta.dateFrom,
               textVersion: document.version,
+              textVersionDate: document.versionDate,
               fingerprint: document.fingerprint,
               // Keep bounded surrounding discussion, not an unbounded copy
               // of the full journal entry for every accepted passage.
@@ -230,9 +240,16 @@ class QueryAnswerBuilder {
         if (end == document.text.length) break;
       }
       checked++;
-      onProgress(checked, expanded: corpus.coverage.expanded);
+      if (chat.scope.kind == QueryScopeKind.category ||
+          corpus.homeIds.contains(source.id)) {
+        homeChecked++;
+      } else {
+        categoryChecked++;
+      }
+      onProgress(checked, expanded: outsideHome);
     }
 
+    onProgress(checked, expanded: false);
     final memoryAccess = await access.load([
       ...dependencies.keys,
       ...priorRefs.keys,
@@ -282,6 +299,10 @@ class QueryAnswerBuilder {
         }
       }
     }
+    final scopedReferences = [
+      ...evidence.map((item) => item.source),
+      ...corpus.coverage.unreadableSources,
+    ];
     final current = await access.load(dependencies.keys);
     cancellation.check();
     if (!current.allowsContent(
@@ -291,15 +312,17 @@ class QueryAnswerBuilder {
       throw const QueryScopeUnavailable();
     }
     if (!current.allowsCategory(corpus.categoryId) ||
-        evidence.any(
-          (e) =>
-              current.entries[e.source.id]?.meta.categoryId !=
-              corpus.categoryId,
+        scopedReferences.any(
+          (source) =>
+              current.entries[source.id]?.meta.categoryId != corpus.categoryId,
         )) {
       throw const QueryScopeUnavailable();
     }
     final coverage = corpus.coverage.copyWith(
       checked: checked,
+      homeChecked: homeChecked,
+      categoryChecked: categoryChecked,
+      expanded: categoryChecked > 0,
       incomplete: incomplete,
     );
     onAnswering?.call();
@@ -350,9 +373,9 @@ class QueryAnswerBuilder {
       throw const QueryScopeUnavailable();
     }
     if (!last.allowsCategory(corpus.categoryId) ||
-        evidence.any(
-          (e) =>
-              last.entries[e.source.id]?.meta.categoryId != corpus.categoryId,
+        scopedReferences.any(
+          (source) =>
+              last.entries[source.id]?.meta.categoryId != corpus.categoryId,
         )) {
       throw const QueryScopeUnavailable();
     }

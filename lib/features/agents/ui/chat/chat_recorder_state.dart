@@ -45,6 +45,7 @@ class ChatRecorderState {
     this.partialTranscript,
     this.error,
     this.errorKind,
+    this.elapsed = Duration.zero,
   });
 
   const ChatRecorderState.initial()
@@ -53,10 +54,14 @@ class ChatRecorderState {
       transcript = null,
       partialTranscript = null,
       error = null,
-      errorKind = null;
+      errorKind = null,
+      elapsed = Duration.zero;
 
   // Fields
   final ChatRecorderStatus status;
+
+  /// Wall-clock capture duration, updated with amplitude samples.
+  final Duration elapsed;
   final List<double> amplitudeHistory; // dBFS history
   final String? transcript; // last finished transcript waiting to be consumed
   final String? partialTranscript; // in-progress transcript during streaming
@@ -79,9 +84,11 @@ class ChatRecorderState {
     String? partialTranscript,
     String? error,
     ChatRecorderErrorKind? errorKind,
+    Duration? elapsed,
   }) {
     return ChatRecorderState(
       status: status ?? this.status,
+      elapsed: elapsed ?? this.elapsed,
       amplitudeHistory: amplitudeHistory ?? this.amplitudeHistory,
       transcript: transcript,
       partialTranscript: partialTranscript,

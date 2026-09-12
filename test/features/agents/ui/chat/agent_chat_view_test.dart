@@ -1124,4 +1124,84 @@ void main() {
       );
     },
   );
+  testWidgets(
+    'query recording clock crosses a minute without moving stop controls',
+    (tester) async {
+      var stopped = 0;
+      final recorder = RecordingCallbackController(
+        initialElapsed: const Duration(seconds: 59),
+        onStopCalled: () => stopped++,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Habitat Watcher',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+              showVoiceDetails: true,
+              history: const AsyncData([]),
+            ),
+          ),
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(() => recorder),
+          ],
+        ),
+      );
+      final clock = tester.getRect(find.text('00:59'));
+      final stop = tester.getRect(find.text('Stop'));
+      recorder.updateElapsed(const Duration(minutes: 1));
+      await tester.pump();
+      expect(tester.getRect(find.text('01:00')), clock);
+      expect(tester.getRect(find.text('Stop')), stop);
+      await tester.tap(find.text('Stop'));
+      await tester.pump();
+      expect(stopped, 1);
+      expect(find.text('01:00'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'query transcription can be cancelled without submitting partial text',
+    (tester) async {
+      var cancelled = 0;
+      var sent = 0;
+      final recorder = ProcessingTestController(
+        partialTranscript: 'Feeder cali',
+        onCancelCalled: () => cancelled++,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'agent',
+              agentName: 'Habitat Watcher',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () => sent++,
+              onRetry: () {},
+              showVoiceDetails: true,
+              history: const AsyncData([]),
+            ),
+          ),
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(() => recorder),
+          ],
+        ),
+      );
+      expect(find.text('Feeder cali'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+      expect(cancelled, 1);
+      expect(sent, 0);
+      expect(find.text('Feeder cali'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 }

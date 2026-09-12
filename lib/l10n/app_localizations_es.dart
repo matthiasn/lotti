@@ -11201,7 +11201,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get queryExampleSuggestion => '¿Fue una decisión o una sugerencia?';
 
   @override
-  String get queryExpanding => 'Comprobando otros proyectos de esta categoría…';
+  String get queryExpanding => 'Revisando otras entradas de esta categoría…';
 
   @override
   String get queryFailed =>
@@ -11248,9 +11248,9 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count grabaciones no tienen texto consultable. Ábrelas en el diario para transcribirlas.',
+          '$count grabaciones no tenían texto para buscar cuando se escribió esta respuesta.',
       one:
-          '1 grabación no tiene texto consultable. Ábrela en el diario para transcribirla.',
+          '1 grabación no tenía texto para buscar cuando se escribió esta respuesta.',
     );
     return '$_temp0';
   }
@@ -11276,7 +11276,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Busca primero en este ámbito y después en $category.';
+    return 'Busca en este ámbito y en $category.';
   }
 
   @override
@@ -15545,4 +15545,43 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String get queryDeleteKeep => 'Eliminar y conservar las conclusiones';
+
+  @override
+  String get queryDeleteForget => 'Eliminar y olvidar las conclusiones';
+
+  @override
+  String get queryReachHome =>
+      'Busca solo en este ámbito y sus entradas vinculadas.';
+
+  @override
+  String get queryHomeScope => 'Ámbito inicial';
+
+  @override
+  String get queryCoverageWider => 'Otras entradas de esta categoría';
+
+  @override
+  String get queryCoverageExcluded => 'No se buscaron otras categorías.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'No había texto para buscar cuando se escribió esta respuesta. Abre la grabación para consultarla.';
+
+  @override
+  String querySavedVersion(String version) {
+    return 'Versión guardada: $version';
+  }
+
+  @override
+  String get querySurroundingLimit =>
+      'El texto circundante es un fragmento guardado. Abre la entrada para ver toda la conversación.';
+
+  @override
+  String get queryOpenCurrentEntry => 'Abrir la entrada actual';
+
+  @override
+  String get queryArchiveConfirmation =>
+      'Chat archivado. Sus conclusiones siguen disponibles.';
 }

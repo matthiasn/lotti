@@ -11049,8 +11049,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get queryExampleSuggestion => 'Var det ett beslut eller ett förslag?';
 
   @override
-  String get queryExpanding =>
-      'Kontrollerar andra projekt i den här kategorin…';
+  String get queryExpanding => 'Kontrollerar andra poster i den här kategorin…';
 
   @override
   String get queryFailed => 'Sökningen kunde inte slutföras. Försök igen.';
@@ -11095,10 +11094,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other:
-          '$count inspelningar saknar sökbar text. Öppna dem i journalen för att transkribera dem.',
-      one:
-          '1 inspelning saknar sökbar text. Öppna den i journalen för att transkribera den.',
+      other: '$count inspelningar saknade sökbar text när detta svar skrevs.',
+      one: '1 inspelning saknade sökbar text när detta svar skrevs.',
     );
     return '$_temp0';
   }
@@ -11124,7 +11121,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Söker först inom det här området och sedan i $category.';
+    return 'Söker i detta område och i $category.';
   }
 
   @override
@@ -15359,4 +15356,43 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get queryDeleteKeep => 'Radera och behåll slutsatser';
+
+  @override
+  String get queryDeleteForget => 'Radera och glöm slutsatser';
+
+  @override
+  String get queryReachHome =>
+      'Söker bara i detta område och dess länkade poster.';
+
+  @override
+  String get queryHomeScope => 'Ursprungligt område';
+
+  @override
+  String get queryCoverageWider => 'Andra poster i den här kategorin';
+
+  @override
+  String get queryCoverageExcluded => 'Andra kategorier genomsöktes inte.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Ingen sökbar text när detta svar skrevs. Öppna inspelningen för att granska den.';
+
+  @override
+  String querySavedVersion(String version) {
+    return 'Sparad version: $version';
+  }
+
+  @override
+  String get querySurroundingLimit =>
+      'Den omgivande texten är ett sparat utdrag. Öppna posten för hela diskussionen.';
+
+  @override
+  String get queryOpenCurrentEntry => 'Öppna aktuell post';
+
+  @override
+  String get queryArchiveConfirmation =>
+      'Chatten har arkiverats. Slutsatserna är fortfarande tillgängliga.';
 }

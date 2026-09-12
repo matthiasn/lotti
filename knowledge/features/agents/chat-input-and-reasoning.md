@@ -61,7 +61,10 @@ stateDiagram-v2
 ```
 
 Start checks microphone permission, records to an app-scoped temporary `.m4a`
-file, samples amplitude, and arms a maximum-duration stop. Stop moves to
+file, samples amplitude, and arms a maximum-duration stop. The injected clock
+also supplies elapsed capture time on amplitude updates; a new recording resets
+it to zero. Query hosts opt into a stable tabular clock and visible Stop/Cancel
+controls, including Cancel during transcription. Stop moves to
 `processing`, streams transcription chunks into `partialTranscript`, then
 publishes the finished `transcript` or a typed error and returns to `idle`.
 The UI consumes the finished transcript into its editable composer.
@@ -79,7 +82,7 @@ replace a newer recording's state. Disposal and completion perform best-effort
 cleanup of recorder resources and temporary files; cleanup failures are caught.
 
 `ChatRecorderState.copyWith` clears transcript, partial transcript, and error
-fields when omitted. Status and amplitude history retain their previous values.
+fields when omitted. Status, amplitude history and elapsed time retain their previous values.
 Callers preserving a partial result must explicitly pass it again.
 
 # Reasoning rendering

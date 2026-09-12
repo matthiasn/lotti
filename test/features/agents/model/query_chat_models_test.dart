@@ -72,4 +72,42 @@ void main() {
       );
     }
   });
+  test(
+    'coverage preserves scope counts and unreadable-source privacy across serialization',
+    () {
+      final legacy = QueryCoverage.fromJson({'checked': 3}).toJson();
+      expect(legacy['homeChecked'], isNull);
+      expect(legacy['categoryChecked'], isNull);
+      final payload = {
+        'checked': 3,
+        'homeChecked': 2,
+        'categoryChecked': 1,
+        'unreadableSources': [source.toJson()],
+      };
+      final saved = QueryCoverage.fromJson(payload).toJson();
+      expect(saved['homeChecked'], 2);
+      expect(saved['categoryChecked'], 1);
+      expect(
+        (jsonDecode(jsonEncode(saved))
+            as Map<String, dynamic>)['unreadableSources'],
+        [
+          source.toJson(),
+        ],
+      );
+    },
+  );
+  test(
+    'saved text version date survives without depending on current source metadata',
+    () {
+      final payload = {
+        ...evidence.toJson(),
+        'textVersionDate': '2026-07-18T09:30:00.000',
+      };
+      final saved = QueryEvidence.fromJson(
+        jsonDecode(jsonEncode(payload)) as Map<String, dynamic>,
+      ).toJson();
+      expect(saved['textVersionDate'], '2026-07-18T09:30:00.000');
+      expect(saved['sourceDate'], '2026-07-17T00:00:00.000');
+    },
+  );
 }

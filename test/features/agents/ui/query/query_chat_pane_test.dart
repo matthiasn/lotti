@@ -22,6 +22,7 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -148,6 +149,7 @@ void main() {
     QueryChatSession? session,
     bool noAgent = false,
     bool sourceDetailLoading = false,
+    String sourceDetailId = 'note',
     ChatRecorderController? activeRecorder,
     ChatTranscriptionTargetResolver? transcriptionResolver,
   }) async {
@@ -167,7 +169,7 @@ void main() {
         overrides: [
           if (sourceDetailLoading)
             entryControllerProvider(
-              'note',
+              sourceDetailId,
             ).overrideWithBuild((ref, notifier) async {
               ref.onDispose(() {
                 notifier.controller.dispose();
@@ -294,12 +296,23 @@ void main() {
           tester
               .widget<DesignSystemTextInput>(find.byType(DesignSystemTextInput))
               .helperText,
-          label,
+          isNull,
         );
         expect(find.text('Habitat Watcher is replying…'), findsNothing);
         expect(
           tester.widget<TextField>(find.byType(TextField)).enabled,
-          isFalse,
+          isTrue,
+        );
+        await tester.enterText(find.byType(TextField), 'Next feeder question');
+        await tester.pump();
+        await tester.testTextInput.receiveAction(TextInputAction.send);
+        await tester.pump();
+        expect(inferenceCalls, 0);
+        expect(
+          ProviderScope.containerOf(
+            tester.element(find.byType(QueryChatPane)),
+          ).read(queryChatControllerProvider(key)).local('feeder').draft,
+          'Next feeder question',
         );
         await switcher(tester);
         expect(find.text(label), findsWidgets);
@@ -578,7 +591,13 @@ void main() {
           await tester.tap(find.text('Forget conclusions'));
           await tester.pump();
         }
-        await tester.tap(find.text('Delete chat').last);
+        await tester.tap(
+          find.text(
+            forget
+                ? 'Delete and forget conclusions'
+                : 'Delete and keep conclusions',
+          ),
+        );
         await tester.pumpAndSettle();
         verify(() => store.delete('agent', 'feeder', forget: forget)).called(1);
         expect(find.text('Roll call'), findsOneWidget);
@@ -861,7 +880,7 @@ void main() {
           () => store.archive('agent', 'feeder', archived: true),
         ).called(1);
         await switcher(tester);
-        await tester.tap(find.text('Archived chats'));
+        await tester.tap(find.text('Archived chats · 1'));
         await tester.pump();
         await tester.tap(find.text('Feeder calibration').last);
         await tester.pump();
@@ -1035,7 +1054,7 @@ void main() {
           },
         ),
       );
-      expect(find.byTooltip('Sources checked: 7'), findsOneWidget);
+      expect(find.text('Sources checked: 7'), findsOneWidget);
       expect(
         find.bySemanticsLabel('Searching linked notes and recordings…'),
         findsWidgets,
@@ -1157,7 +1176,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Sources checked: 3'), findsOneWidget);
       expect(
-        find.textContaining('2 recordings have no searchable text'),
+        find.textContaining('2 recordings had no searchable text'),
         findsOneWidget,
       );
       await tester.ensureVisible(find.text('Show exact text'));
@@ -1196,4 +1215,265 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+  testWidgets(
+    'an older failed question retains its own retry after a later answer',
+    (tester) async {
+      events.addAll([
+        event(
+          'question-1',
+          'feeder',
+          const QueryChatEventData.question(text: 'Which feeder?'),
+        ),
+        event(
+          'question-2',
+          'feeder',
+          const QueryChatEventData.question(text: 'When was roll call?'),
+        ),
+        event(
+          'failed',
+          'feeder',
+          const QueryChatEventData.failed(questionId: 'question-1'),
+        ),
+        event(
+          'reply',
+          'feeder',
+          const QueryChatEventData.answer(
+            questionId: 'question-2',
+            text: 'Roll call was at dawn.',
+            coverage: QueryCoverage(),
+          ),
+        ),
+      ]);
+      await pump(tester);
+      final first = find.byKey(const ValueKey('goal-chat-message-question-1'));
+      final retry = find.descendant(
+        of: first,
+        matching: find.text('Try Again'),
+      );
+      expect(
+        find.descendant(
+          of: first,
+          matching: find.text('The search could not finish. Try again.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('goal-chat-message-question-2')),
+          matching: find.text('Try Again'),
+        ),
+        findsNothing,
+      );
+      await tester.tap(retry);
+      await tester.pump();
+      expect(inferenceCalls, 1);
+      expect(
+        events.where((event) => event.data is QueryChatQuestion),
+        hasLength(2),
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets('missing setup opens AI settings and keeps the question draft', (
+    tester,
+  ) async {
+    final navigation = RecordingMockNavService();
+    getIt.registerSingleton<NavService>(navigation);
+    await pump(
+      tester,
+      session: const QueryChatSession(
+        selectedId: 'feeder',
+        chats: {
+          'feeder': QueryChatLocal(
+            status: QueryTurnStatus.unavailable,
+            draft: 'Feeder follow-up',
+          ),
+        },
+      ),
+    );
+    await tester.tap(find.text('AI Settings'));
+    expect(navigation.navigationHistory, ['/settings/ai']);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'Feeder follow-up',
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+    'recalled conclusions can be inspected and opened in their original chat',
+    (tester) async {
+      events.addAll([
+        event(
+          'memory',
+          'roll-call',
+          const QueryChatEventData.memory(
+            questionId: 'origin',
+            text: 'The spare feeder is a suggestion.',
+          ),
+        ),
+        event(
+          'question',
+          'feeder',
+          const QueryChatEventData.question(text: 'Was it decided?'),
+        ),
+        event(
+          'reply',
+          'feeder',
+          const QueryChatEventData.answer(
+            questionId: 'question',
+            text: 'It was a suggestion.',
+            coverage: QueryCoverage(),
+            recalledMemoryIds: ['memory'],
+          ),
+        ),
+      ]);
+      await pump(tester);
+      expect(find.text('The spare feeder is a suggestion.'), findsNothing);
+      await tester.tap(
+        find.text('Uses relevant conclusions from earlier chats.'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('The spare feeder is a suggestion.'), findsOneWidget);
+      await tester.tap(find.text('Roll call'));
+      await tester.pump();
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(QueryChatPane)),
+        ).read(queryChatControllerProvider(key)).selectedId,
+        'roll-call',
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
+    'a failed unsaved follow-up remains visible after an answered question',
+    (tester) async {
+      events.addAll([
+        event(
+          'question',
+          'feeder',
+          const QueryChatEventData.question(text: 'First question'),
+        ),
+        event(
+          'reply',
+          'feeder',
+          const QueryChatEventData.answer(
+            questionId: 'question',
+            text: 'First answer',
+            coverage: QueryCoverage(),
+          ),
+        ),
+      ]);
+      await pump(
+        tester,
+        session: const QueryChatSession(
+          selectedId: 'feeder',
+          chats: {
+            'feeder': QueryChatLocal(
+              status: QueryTurnStatus.failed,
+              draft: 'Second question',
+            ),
+          },
+        ),
+      );
+      expect(
+        find.text('The search could not finish. Try again.'),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Second question',
+      );
+      expect(find.text('Try Again'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  for (final hideSource in [false, true]) {
+    testWidgets(
+      'unreadable recording recovery rechecks live privacy (hidden=$hideSource)',
+      (tester) async {
+        getIt
+          ..registerSingleton<UserActivityService>(MockUserActivityService())
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
+        bench.entries['unreadable'] = testAudioEntry.copyWith(
+          meta: testAudioEntry.meta.copyWith(
+            id: 'unreadable',
+            categoryId: categoryMindfulness.id,
+            private: false,
+          ),
+          entryText: null,
+          data: testAudioEntry.data.copyWith(transcripts: []),
+        );
+        final source = QuerySourceRef(
+          id: 'unreadable',
+          private: false,
+          categoryPrivate: false,
+          categoryId: categoryMindfulness.id,
+        );
+        events.addAll([
+          event(
+            'question',
+            'feeder',
+            const QueryChatEventData.question(text: 'Feeder decision?'),
+          ),
+          event(
+            'reply',
+            'feeder',
+            QueryChatEventData.answer(
+              questionId: 'question',
+              text: 'Some recordings could not be read.',
+              dependencies: [source],
+              coverage: QueryCoverage(
+                checked: 2,
+                homeChecked: 2,
+                categoryChecked: 0,
+                incomplete: true,
+                missingTranscripts: 1,
+                unreadableSources: [source],
+              ),
+            ),
+          ),
+        ]);
+        await pump(
+          tester,
+          sourceDetailLoading: true,
+          sourceDetailId: 'unreadable',
+        );
+        await tester.tap(find.text('What was searched'));
+        await tester.pumpAndSettle();
+        expect(find.text('Home scope · Sources checked: 2'), findsOneWidget);
+        final action = find.text(
+          'No searchable text when this answer was written. Open the recording to inspect it.',
+        );
+        await tester.ensureVisible(action);
+        await tester.pump();
+        if (hideSource) {
+          final entry = bench.entries['unreadable']!;
+          bench.entries['unreadable'] = entry.copyWith(
+            meta: entry.meta.copyWith(private: true),
+          );
+          // Deliberately do not publish a new view snapshot before the tap.
+        }
+        await tester.tap(action);
+        await tester.pump();
+        await tester.pump();
+        expect(
+          find.byType(EntryDetailsPage),
+          hideSource ? findsNothing : findsOneWidget,
+        );
+        if (!hideSource) {
+          await tester.tap(find.byIcon(LottiIcons.back).first);
+          await tester.pump();
+          expect(
+            find.text('Some recordings could not be read.'),
+            findsOneWidget,
+          );
+        }
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  }
 }

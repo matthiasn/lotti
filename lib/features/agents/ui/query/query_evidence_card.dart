@@ -86,6 +86,27 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
     widget.onOpen(source.id);
   }
 
+  String _savedVersion(BuildContext context) {
+    final evidence = widget.evidence;
+    final separator = evidence.textVersion.indexOf(':');
+    final date =
+        evidence.textVersionDate ??
+        (!evidence.textVersion.startsWith('transcript:') && separator >= 0
+            ? DateTime.tryParse(evidence.textVersion.substring(separator + 1))
+            : null);
+    if (date != null) {
+      return DateFormat.yMMMd(
+        Localizations.localeOf(context).toString(),
+      ).add_Hms().format(date);
+    }
+    // Older transcript IDs are opaque. Identify the saved text by its content
+    // fingerprint rather than mislabeling the recording date as a version date.
+    return evidence.fingerprint.substring(
+      0,
+      evidence.fingerprint.length.clamp(0, 8),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final evidence = widget.evidence;
@@ -186,9 +207,11 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
           ])
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step2),
-              child: Text(
-                status,
-                style: caption.copyWith(color: tokens.colors.alert.warning.ink),
+              child: DesignSystemBadge.outlined(
+                label: status,
+                tone: deleted
+                    ? DesignSystemBadgeTone.danger
+                    : DesignSystemBadgeTone.warning,
               ),
             ),
           if (deleted || changed || moved)
@@ -215,6 +238,10 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
           if (_expanded) ...[
             SizedBox(height: tokens.spacing.step3),
             Text(messages.queryExactStoredText, style: caption),
+            Text(
+              messages.querySavedVersion(_savedVersion(context)),
+              style: caption,
+            ),
             if (transcript)
               Text(messages.queryMachineTranscript, style: caption),
             SizedBox(height: tokens.spacing.step3),
@@ -271,6 +298,8 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
               ),
             ),
             SizedBox(height: tokens.spacing.step2),
+            if (_surrounding)
+              Text(messages.querySurroundingLimit, style: caption),
             Wrap(
               spacing: tokens.spacing.step2,
               runSpacing: tokens.spacing.step2,
@@ -287,7 +316,9 @@ class _QueryEvidenceCardState extends ConsumerState<QueryEvidenceCard> {
                   ),
                 if (!deleted)
                   DesignSystemButton(
-                    label: messages.queryOpenEntry,
+                    label: changed
+                        ? messages.queryOpenCurrentEntry
+                        : messages.queryOpenEntry,
                     leadingIcon: LottiIcons.openExternal,
                     onPressed: _open,
                     variant: DesignSystemButtonVariant.tertiary,

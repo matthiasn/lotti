@@ -11040,7 +11040,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Var det en beslutning eller et forslag?';
 
   @override
-  String get queryExpanding => 'Tjekker andre projekter i denne kategori…';
+  String get queryExpanding => 'Kontrollerer andre poster i denne kategori…';
 
   @override
   String get queryFailed => 'Søgningen kunne ikke afsluttes. Prøv igen.';
@@ -11086,9 +11086,8 @@ class AppLocalizationsDa extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count optagelser har ingen søgbar tekst. Åbn dem i journalen for at transskribere dem.',
-      one:
-          '1 optagelse har ingen søgbar tekst. Åbn den i journalen for at transskribere den.',
+          '$count optagelser havde ingen søgbar tekst, da dette svar blev skrevet.',
+      one: '1 optagelse havde ingen søgbar tekst, da dette svar blev skrevet.',
     );
     return '$_temp0';
   }
@@ -11114,7 +11113,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String queryReachCategory(String category) {
-    return 'Søger først i dette område og derefter i $category.';
+    return 'Søger i dette område og i $category.';
   }
 
   @override
@@ -15339,4 +15338,43 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get queryDeleteKeep => 'Slet og behold konklusioner';
+
+  @override
+  String get queryDeleteForget => 'Slet og glem konklusioner';
+
+  @override
+  String get queryReachHome =>
+      'Søger kun i dette område og dets tilknyttede poster.';
+
+  @override
+  String get queryHomeScope => 'Oprindeligt område';
+
+  @override
+  String get queryCoverageWider => 'Andre poster i denne kategori';
+
+  @override
+  String get queryCoverageExcluded => 'Andre kategorier blev ikke gennemsøgt.';
+
+  @override
+  String get queryCoverageUnreadable =>
+      'Ingen søgbar tekst, da dette svar blev skrevet. Åbn optagelsen for at se den.';
+
+  @override
+  String querySavedVersion(String version) {
+    return 'Gemt version: $version';
+  }
+
+  @override
+  String get querySurroundingLimit =>
+      'Den omgivende tekst er et gemt uddrag. Åbn posten for at se hele diskussionen.';
+
+  @override
+  String get queryOpenCurrentEntry => 'Åbn den aktuelle post';
+
+  @override
+  String get queryArchiveConfirmation =>
+      'Chat arkiveret. Konklusionerne er stadig tilgængelige.';
 }

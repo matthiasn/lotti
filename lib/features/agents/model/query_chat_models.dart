@@ -50,6 +50,7 @@ abstract class QueryEvidence with _$QueryEvidence {
     required int start,
     required int end,
     required String summary,
+    DateTime? textVersionDate,
     @Default([]) List<String> affiliations,
     @Default(false) bool outsideHome,
     @Default('') String relevance,
@@ -73,6 +74,10 @@ abstract class QueryCoverage with _$QueryCoverage {
     @Default(0) int missingTranscripts,
     @Default(false) bool incomplete,
     @Default(false) bool expanded,
+    // Null denotes historical answers that did not record scope-layer counts.
+    int? homeChecked,
+    int? categoryChecked,
+    @Default([]) List<QuerySourceRef> unreadableSources,
   }) = _QueryCoverage;
 
   factory QueryCoverage.fromJson(Map<String, dynamic> json) =>

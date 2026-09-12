@@ -20,16 +20,23 @@ class RecordingCallbackController extends ChatRecorderController {
   RecordingCallbackController({
     this.onCancelCalled,
     this.onStopCalled,
+    this.initialElapsed = Duration.zero,
   });
 
   final VoidCallback? onCancelCalled;
   final VoidCallback? onStopCalled;
+  final Duration initialElapsed;
+
+  void updateElapsed(Duration elapsed) {
+    state = state.copyWith(elapsed: elapsed);
+  }
 
   @override
   ChatRecorderState build() {
-    return const ChatRecorderState(
+    return ChatRecorderState(
       status: ChatRecorderStatus.recording,
-      amplitudeHistory: [],
+      amplitudeHistory: const [],
+      elapsed: initialElapsed,
     );
   }
 
@@ -51,7 +58,18 @@ class RecordingCallbackController extends ChatRecorderController {
 
 /// Controller that starts in processing state.
 class ProcessingTestController extends ChatRecorderController {
-  ProcessingTestController({required this._partialTranscript});
+  ProcessingTestController({
+    required this._partialTranscript,
+    this.onCancelCalled,
+  });
+
+  final VoidCallback? onCancelCalled;
+
+  @override
+  Future<void> cancel() async {
+    onCancelCalled?.call();
+    state = const ChatRecorderState.initial();
+  }
 
   final String? _partialTranscript;
 

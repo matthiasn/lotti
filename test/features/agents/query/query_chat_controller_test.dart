@@ -438,6 +438,10 @@ void main() {
       await controller.send(id);
       expect(container.read(provider).local(id).status, QueryTurnStatus.failed);
       final failed = (await bench.store.load('agent')).chats.single;
+      expect(
+        container.read(provider).local(id).requestQuestionId,
+        failed.questions.single.id,
+      );
       malformed = false;
       await controller.send(id, retryQuestionId: failed.questions.single.id);
       final recovered = (await bench.store.load('agent')).chats.single;
@@ -445,6 +449,29 @@ void main() {
       expect(recovered.answerFor(recovered.questions.single.id), isNotNull);
       expect(container.read(provider).local(id).status, QueryTurnStatus.idle);
     }),
+  );
+
+  test(
+    'a new pre-save failure clears the previous request question id',
+    () async {
+      final id = await controller.create('Feeder');
+      controller.updateDraft(id, 'First question');
+      await controller.send(id);
+      final first = (await bench.store.load(
+        'agent',
+      )).chats.single.questions.single;
+      expect(container.read(provider).local(id).requestQuestionId, first.id);
+      controller.updateDraft(id, 'Second question');
+      setupError = const FormatException('setup failed');
+      await controller.send(id);
+      expect(container.read(provider).local(id).status, QueryTurnStatus.failed);
+      expect(container.read(provider).local(id).requestQuestionId, isNull);
+      expect(container.read(provider).local(id).draft, 'Second question');
+      expect(
+        (await bench.store.load('agent')).chats.single.questions,
+        hasLength(1),
+      );
+    },
   );
 
   test(
