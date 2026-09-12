@@ -225,61 +225,77 @@ void main() {
     },
   );
 
-  testWidgets('external pane visibility changes transfer focus', (
-    tester,
-  ) async {
-    final listPaneVisible = ValueNotifier(true);
-    final listFocusNode = FocusNode(debugLabel: 'external-list');
-    final detailFocusNode = FocusNode(debugLabel: 'external-detail');
-    addTearDown(listPaneVisible.dispose);
-    addTearDown(listFocusNode.dispose);
-    addTearDown(detailFocusNode.dispose);
+  for (final autoFocus in [true, false]) {
+    testWidgets('external reveal focus policy (automatic=$autoFocus)', (
+      tester,
+    ) async {
+      final listPaneVisible = ValueNotifier(true);
+      final listFocusNode = FocusNode(debugLabel: 'external-list');
+      final detailFocusNode = FocusNode(debugLabel: 'external-detail');
+      addTearDown(listPaneVisible.dispose);
+      addTearDown(listFocusNode.dispose);
+      addTearDown(detailFocusNode.dispose);
 
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        ValueListenableBuilder<bool>(
-          valueListenable: listPaneVisible,
-          builder: (context, visible, _) => ListDetailFocusTraversal(
-            debugLabel: 'external-split',
-            listPaneVisible: visible,
-            canHideListPane: true,
-            listPane: SizedBox(
-              width: 240,
-              child: TextButton(
-                focusNode: listFocusNode,
-                onPressed: () {},
-                child: const Text('External list row'),
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          ValueListenableBuilder<bool>(
+            valueListenable: listPaneVisible,
+            builder: (context, visible, _) => ListDetailFocusTraversal(
+              debugLabel: 'external-split',
+              listPaneVisible: visible,
+              focusListOnExternalReveal: autoFocus,
+              onListPaneVisibilityChanged: (value) =>
+                  listPaneVisible.value = value,
+              canHideListPane: true,
+              listPane: SizedBox(
+                width: 240,
+                child: TextButton(
+                  focusNode: listFocusNode,
+                  onPressed: () {},
+                  child: const Text('External list row'),
+                ),
               ),
-            ),
-            divider: const SizedBox(width: 3),
-            detailPane: Align(
-              alignment: Alignment.topLeft,
-              child: TextButton(
-                focusNode: detailFocusNode,
-                onPressed: () {},
-                child: const Text('External detail action'),
+              divider: const SizedBox(width: 3),
+              detailPane: Align(
+                alignment: Alignment.topLeft,
+                child: TextButton(
+                  focusNode: detailFocusNode,
+                  onPressed: () {},
+                  child: const Text('External detail action'),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    listFocusNode.requestFocus();
-    await tester.pump();
-    listPaneVisible.value = false;
-    await tester.pump();
-    await tester.pump();
+      listFocusNode.requestFocus();
+      await tester.pump();
+      listPaneVisible.value = false;
+      await tester.pump();
+      await tester.pump();
 
-    expect(detailFocusNode.hasFocus, isTrue);
+      expect(detailFocusNode.hasFocus, isTrue);
 
-    listPaneVisible.value = true;
-    await tester.pump();
-    await tester.pump();
+      listPaneVisible.value = true;
+      await tester.pump();
+      await tester.pump();
 
-    expect(listFocusNode.hasFocus, isTrue);
-  });
-
+      expect(listFocusNode.hasFocus, autoFocus);
+      expect(detailFocusNode.hasFocus, !autoFocus);
+      if (!autoFocus) {
+        listPaneVisible.value = false;
+        await tester.pump();
+        await tester.pump();
+        ListDetailFocusTraversal.maybeOf(
+          tester.element(find.text('External detail action')),
+        )!.showListPane();
+        await tester.pump();
+        await tester.pump();
+        expect(listFocusNode.hasFocus, isTrue);
+      }
+    });
+  }
   testWidgets('refuses to hide the list without an actionable detail', (
     tester,
   ) async {

@@ -152,6 +152,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
                 },
                 child: ListDetailFocusTraversal(
                   debugLabel: 'projects-split',
+                  focusListOnExternalReveal: !canHideListPane,
                   listPaneVisible: listPaneVisible,
                   canHideListPane: canHideListPane,
                   onListPaneVisibilityChanged: (visible) {

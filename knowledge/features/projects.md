@@ -244,7 +244,8 @@ Project chat uses the retained companion described in
 [query chat](agents/query-chat.md#ownership-and-entry-points). Opening it may
 temporarily hide the list to make room without changing its saved collapse
 preference; Show list or keyboard search restores browsing and closes chat when
-the list and discussion cannot both fit.
+the list and discussion cannot both fit. Automatic list restoration after Close
+keeps focus on the Ask control; an explicit Show list action focuses browsing.
 
 Project detail actions preserve workspace continuity. Edit uses the
 Projects-owned `/projects/<id>/edit` route on mobile and desktop, with an

@@ -52,6 +52,7 @@ class ListDetailFocusTraversal extends StatefulWidget {
     required this.divider,
     required this.detailPane,
     this.listPaneVisible = true,
+    this.focusListOnExternalReveal = true,
     this.canHideListPane = false,
     this.onListPaneVisibilityChanged,
     super.key,
@@ -62,6 +63,11 @@ class ListDetailFocusTraversal extends StatefulWidget {
   final Widget divider;
   final Widget detailPane;
   final bool listPaneVisible;
+
+  /// Whether a host-driven reveal transfers focus into the list. Disable when
+  /// restoring space after closing a companion that restores its own opener.
+  /// Explicit [ListDetailFocusTraversalController.showListPane] still focuses it.
+  final bool focusListOnExternalReveal;
   final bool canHideListPane;
   final ValueChanged<bool>? onListPaneVisibilityChanged;
 
@@ -83,7 +89,10 @@ class _ListDetailFocusTraversalState extends State<ListDetailFocusTraversal> {
     _focusDetails,
     () => widget.listPaneVisible,
     () => widget.canHideListPane,
-    (visible) => widget.onListPaneVisibilityChanged?.call(visible),
+    (visible) {
+      widget.onListPaneVisibilityChanged?.call(visible);
+      if (visible && !widget.focusListOnExternalReveal) _focusList();
+    },
   );
 
   void _focusList() => _focusRegion(_listRegionId);
@@ -104,7 +113,7 @@ class _ListDetailFocusTraversalState extends State<ListDetailFocusTraversal> {
     if (oldWidget.listPaneVisible == widget.listPaneVisible) return;
 
     if (widget.listPaneVisible) {
-      _focusList();
+      if (widget.focusListOnExternalReveal) _focusList();
     } else {
       _focusDetails();
     }

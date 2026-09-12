@@ -2,9 +2,11 @@
 
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
@@ -53,13 +55,15 @@ import '../../test_utils.dart';
 
 /// Loading-state detail controller stub for the split-view swap test.
 class _StubProjectDetailController extends ProjectDetailController {
-  _StubProjectDetailController() : super('p1');
+  _StubProjectDetailController({this.project}) : super('p1');
+
+  final ProjectEntry? project;
 
   @override
-  ProjectDetailState build() => const ProjectDetailState(
-    project: null,
+  ProjectDetailState build() => ProjectDetailState(
+    project: project,
     linkedTasks: [],
-    isLoading: true,
+    isLoading: project == null,
     isSaving: false,
     hasChanges: false,
   );
@@ -1401,6 +1405,66 @@ void main() {
   });
 
   group('desktop split-view layout', () {
+    testWidgets(
+      'closing project chat returns focus to Ask after restoring the list',
+      (tester) async {
+        const scope = QueryScope(kind: QueryScopeKind.project, id: 'p1');
+        const size = Size(1200, 900);
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final nav = getIt<NavService>() as MockNavService;
+        final selected = ValueNotifier<String?>('p1');
+        addTearDown(selected.dispose);
+        when(() => nav.desktopSelectedProjectId).thenReturn(selected);
+        final project = makeTestProject(
+          id: 'p1',
+          title: 'Penguin habitat',
+          categoryId: 'work',
+        );
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: size),
+          extraOverrides: [
+            queryChatEnabledProvider.overrideWithValue(true),
+            queryChatTargetProvider(scope).overrideWith(
+              (ref) async => const QueryChatTarget(
+                scope: scope,
+                label: 'Penguin habitat',
+                agent: null,
+              ),
+            ),
+            chatRecorderControllerProvider.overrideWith(
+              TranscriptEmittingController.new,
+            ),
+            projectDetailControllerProvider('p1').overrideWith(
+              () => _StubProjectDetailController(project: project),
+            ),
+            projectDetailRecordProvider('p1').overrideWith(
+              (ref) async => makeTestProjectRecord(project: project),
+            ),
+          ],
+        );
+        await tester.pump();
+        await tester.pump();
+        final opener = Focus.of(tester.element(find.text('Ask')))
+          ..requestFocus();
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Device Sync'), findsNothing);
+        expect(opener.hasFocus, isFalse);
+        await tester.tap(find.byIcon(LottiIcons.close).last);
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Device Sync'), findsOneWidget);
+        expect(opener.hasFocus, isTrue);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+
     for (final useSearch in [false, true]) {
       testWidgets('project companion restores its list (search=$useSearch)', (
         tester,
