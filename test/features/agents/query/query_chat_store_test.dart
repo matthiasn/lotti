@@ -71,12 +71,12 @@ void main() {
           final built = result(question);
           final summary = QueryBuiltAnswer(
             answer: built.answer.copyWith(
+              summaryBased: true,
               dependencies: [
                 ...built.answer.dependencies,
                 current.reference(owner),
               ],
             ),
-            summaryBased: true,
             memory: change == 'memory' ? built.memory : null,
           );
           if (change != 'memory') {

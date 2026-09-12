@@ -171,7 +171,11 @@ supplied reports; numbered original-evidence citations are rejected.
 
 Summary answers have no `QueryEvidence` cards and create no shared durable
 conclusion. The answer itself is saved as chat history with owner visibility
-dependencies. Summary reads do not increment original-source inspection counts.
+dependencies and a `summaryBased` marker. The marker survives sync and reload;
+`QueryAccessSnapshot.allowsEvent` hides saved summary answers when an owner is
+deleted or changes category. Historical exact-entry answers retain their
+existing tombstone behavior. Summary reads do not increment original-source
+inspection counts.
 The final `unresolved` flag marks unanswered parts as incomplete coverage.
 Questions left open by another task's full summary need that task's own agent;
 agent-to-agent questions are not yet implemented, and the pipeline does not

@@ -199,4 +199,36 @@ void main() {
     expect(catalog.project!.orientation.containsKey('taskId'), isFalse);
     expect(catalog.project!.orientation['ownerId'], 'project');
   });
+
+  for (final projectScope in [false, true]) {
+    test(
+      'missing visible project report marks coverage incomplete: $projectScope',
+      () async {
+        bench.entries['project'] = makeTestProject(
+          id: 'project',
+          categoryId: category,
+        );
+        bench.taskProjects['home'] = 'project';
+        when(
+          () => repository.getLatestProjectReportForProjectId('project'),
+        ).thenAnswer((_) async => null);
+        final catalog = await reader.discover(
+          projectScope
+              ? const QueryScope(kind: QueryScopeKind.project, id: 'project')
+              : scope,
+        );
+        expect(catalog.project, isNull);
+        expect(catalog.tasks.map((s) => s.owner.id), contains('home'));
+        expect(catalog.incomplete, isTrue);
+        bench.entries['project'] = bench.entries['project']!.copyWith(
+          meta: bench.entries['project']!.meta.copyWith(private: true),
+        );
+        if (!projectScope) {
+          final hidden = await reader.discover(scope);
+          expect(hidden.incomplete, isFalse);
+          expect(hidden.project, isNull);
+        }
+      },
+    );
+  }
 }

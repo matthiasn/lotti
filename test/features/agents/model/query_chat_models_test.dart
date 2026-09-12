@@ -72,6 +72,28 @@ void main() {
       );
     }
   });
+
+  test(
+    'summary basis survives serialization and old answers default to evidence',
+    () {
+      const summary = QueryChatAnswer(
+        questionId: 'question',
+        text: 'The feeder task summary records calibration.',
+        coverage: QueryCoverage(),
+        summaryBased: true,
+      );
+      final payload =
+          jsonDecode(jsonEncode(summary.toJson())) as Map<String, dynamic>;
+      final decoded = QueryChatEventData.fromJson(payload) as QueryChatAnswer;
+      expect(decoded.summaryBased, isTrue);
+      expect(decoded.copyWith(text: 'Updated wording.').summaryBased, isTrue);
+      payload.remove('summaryBased');
+      expect(
+        (QueryChatEventData.fromJson(payload) as QueryChatAnswer).summaryBased,
+        isFalse,
+      );
+    },
+  );
   test(
     'coverage preserves scope counts and unreadable-source privacy across serialization',
     () {

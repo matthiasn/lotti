@@ -197,11 +197,20 @@ class QuerySummaryReader {
         summaries.add(item);
       }
     }
+    final parentSummary = projectId == null
+        ? null
+        : summary(projectId, projectReport);
+    if (project is ProjectEntry &&
+        owners.allowsEntry(project) &&
+        project.meta.categoryId == categoryId &&
+        parentSummary == null) {
+      incomplete = true;
+    }
     return QuerySummaryCatalog(
       scope: scope,
       categoryId: categoryId,
       tasks: summaries,
-      project: projectId == null ? null : summary(projectId, projectReport),
+      project: parentSummary,
       incomplete: incomplete,
     );
   }

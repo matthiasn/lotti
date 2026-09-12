@@ -119,6 +119,8 @@ sealed class QueryChatEventData with _$QueryChatEventData {
     required String questionId,
     required String text,
     required QueryCoverage coverage,
+    // Summary owners stay live and in scope after save, sync, and reload.
+    @Default(false) bool summaryBased,
     @Default(false) bool private,
     @Default([]) List<QueryEvidence> evidence,
     @Default([]) List<QuerySourceRef> dependencies,

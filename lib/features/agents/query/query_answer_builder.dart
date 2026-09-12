@@ -22,15 +22,10 @@ class QueryBuiltAnswer {
   const QueryBuiltAnswer({
     required this.answer,
     this.memory,
-    this.summaryBased = false,
   });
 
   final QueryChatAnswer answer;
   final QueryChatMemory? memory;
-
-  /// Publication rechecks live summary owners. This is request metadata, not
-  /// an alternative kind of exact-entry evidence or a shared conclusion.
-  final bool summaryBased;
 }
 
 List<QuerySourceRef> queryEventDependencies(QueryChatEventData data) =>
@@ -173,7 +168,7 @@ class QueryAnswerBuilder {
             onFirstSynthesisToken: onFirstSynthesisToken,
           );
       if (summaryAnswer != null) {
-        return QueryBuiltAnswer(answer: summaryAnswer, summaryBased: true);
+        return QueryBuiltAnswer(answer: summaryAnswer);
       }
     }
     // A source-type filter requests original evidence. Until owning-agent

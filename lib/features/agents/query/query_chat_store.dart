@@ -203,7 +203,7 @@ class QueryChatStore {
         !current.allowsEvent(question.data)) {
       throw const QueryScopeUnavailable();
     }
-    if (result.summaryBased) {
+    if (result.answer.summaryBased) {
       if (result.memory != null || result.answer.evidence.isNotEmpty) {
         throw const FormatException(
           'Summary answer cannot publish exact evidence or memory',

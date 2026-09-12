@@ -204,14 +204,14 @@ class QueryChatController extends Notifier<QueryChatSession> {
         ...draft.dependencies.where(
           // Summary answers have owner dependencies rather than quote cards.
           // Their owners must remain in scope throughout provisional rendering.
-          (s) => draft.evidence.isEmpty || s.id == key.scope.id,
+          (s) => draft.summaryBased || s.id == key.scope.id,
         ),
       ];
       if (!access.allowsContent(draft.dependencies, private: draft.private) ||
           scoped.any(
             (s) =>
                 access.entries[s.id]?.meta.categoryId != s.categoryId ||
-                (draft.evidence.isEmpty &&
+                (draft.summaryBased &&
                     access.entries[s.id]?.meta.deletedAt != null),
           ) ||
           (key.scope.kind == QueryScopeKind.category &&

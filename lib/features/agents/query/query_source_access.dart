@@ -50,10 +50,15 @@ class QueryAccessSnapshot {
       dependencies,
       private: private,
     ),
-    QueryChatAnswer(:final private, :final dependencies) => allowsContent(
-      dependencies,
-      private: private,
-    ),
+    QueryChatAnswer(:final private, :final dependencies, :final summaryBased) =>
+      allowsContent(dependencies, private: private) &&
+          (!summaryBased ||
+              dependencies.every((source) {
+                final owner = entries[source.id];
+                return owner != null &&
+                    allowsEntry(owner) &&
+                    owner.meta.categoryId == source.categoryId;
+              })),
     QueryChatMemory(:final private, :final dependencies) => allowsContent(
       dependencies,
       private: private,

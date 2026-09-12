@@ -215,6 +215,7 @@ class QuerySummaryAnswerBuilder {
       incomplete: incomplete,
     );
     final draft = QueryChatAnswer(
+      summaryBased: true,
       questionId: questionId,
       text: '',
       coverage: coverage,
