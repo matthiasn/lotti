@@ -87,9 +87,12 @@ kontakter som i logafsnittet ovenfor, så et domæne, der er slået til, bliver
 både logget *og* analyseret – og vælg den model, der skriver fundene. Lotti
 foreslår tænkemodellen fra din standardprofil til inferens.
 
-Før noget analyseres, fjernes personlige data fra loglinjerne: e-mailadresser,
-id'er, adgangstokens, filstier med dit brugernavn, IP-adresser og telefonnumre
-erstattes med pladsholdere. Rapporten nævner de tre fund, der fortjener mest
+Før noget analyseres, erstattes kendte mønstre af personlige data i
+loglinjerne med pladsholdere: e-mailadresser, id'er, adgangstokens, filstier
+med dit brugernavn, IP-adresser og telefonnumre. Fejlteksten kommer fra den
+sikre fejllog, som aldrig indeholder den rå undtagelse. Fri tekst i en
+logbesked renses ikke, så rapporten er kun så ren som de loglinjer, den er
+bygget af. Rapporten nævner de tre fund, der fortjener mest
 opmærksomhed, hver med belæg, sandsynlig årsag og et næste skridt, og beholder
 det komprimerede sammendrag nedenunder. **Kopiér rapport** lægger det hele i
 udklipsholderen som Markdown, klar til en fejlrapport eller en kodeassistent.

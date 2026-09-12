@@ -31,8 +31,9 @@ class SystemHealthReportBuilder {
       'ids, tokens and credentials, home-directory paths, IP addresses, '
       'phone numbers and URL query strings were replaced with bracketed '
       'placeholders. Error text is taken from the PII-safe error log '
-      '(message and error type, never the raw exception); log messages are '
-      'telemetry by contract and carry no user content.';
+      '(message and error type, never the raw exception). Free text inside '
+      'a log message is not scrubbed; log messages are telemetry by '
+      'contract and should carry no user content.';
 
   RenderedSystemHealthReport renderReport({
     required SystemHealthRequest request,

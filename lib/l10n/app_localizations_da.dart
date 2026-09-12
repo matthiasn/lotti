@@ -14359,7 +14359,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Rapporten er kopieret. Den indeholder ingen personlige data.';
+      'Rapporten er kopieret. Kendte mønstre af personlige data er fjernet.';
 
   @override
   String get systemHealthCopyButton => 'Kopiér rapport';
@@ -14372,7 +14372,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Gennemgår logfilerne på denne enhed for fejl, advarsler og langsomme forespørgsler, fjerner personlige data og skriver en kort rapport, som du kan indsætte i en kodeassistent.';
+      'Gennemgår logfilerne på denne enhed for fejl, advarsler og langsomme forespørgsler, fjerner kendte mønstre af personlige data og skriver en kort rapport, som du kan indsætte i en kodeassistent.';
 
   @override
   String get systemHealthDomainsDescription =>

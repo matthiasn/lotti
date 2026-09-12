@@ -8149,11 +8149,11 @@
     }
   },
   "systemHealthChooseModelTitle": "Choose model",
-  "systemHealthCopiedToast": "Report copied. It contains no personal data.",
+  "systemHealthCopiedToast": "Report copied. Known personal-data patterns were redacted.",
   "systemHealthCopyButton": "Copy report",
   "systemHealthCustomFromLabel": "From",
   "systemHealthCustomToLabel": "To",
-  "systemHealthDescription": "Scans the log files on this device for errors, warnings and slow queries, strips personal data, and writes a short report you can paste into a coding assistant.",
+  "systemHealthDescription": "Scans the log files on this device for errors, warnings and slow queries, redacts known personal-data patterns, and writes a short report you can paste into a coding assistant.",
   "systemHealthDomainsDescription": "The domains switched on here are the ones analyzed, the same setting that decides what gets logged. Slow queries are included when slow-query logging is on.",
   "systemHealthDomainsTitle": "Log domains",
   "systemHealthFailedTitle": "Analysis failed",

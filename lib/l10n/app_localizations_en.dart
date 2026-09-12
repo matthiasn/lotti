@@ -14275,7 +14275,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Report copied. It contains no personal data.';
+      'Report copied. Known personal-data patterns were redacted.';
 
   @override
   String get systemHealthCopyButton => 'Copy report';
@@ -14288,7 +14288,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Scans the log files on this device for errors, warnings and slow queries, strips personal data, and writes a short report you can paste into a coding assistant.';
+      'Scans the log files on this device for errors, warnings and slow queries, redacts known personal-data patterns, and writes a short report you can paste into a coding assistant.';
 
   @override
   String get systemHealthDomainsDescription =>

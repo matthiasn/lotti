@@ -87,10 +87,12 @@ zijn dezelfde schakelaars als in het loggedeelte hierboven, dus een ingeschakeld
 domein wordt gelogd *én* geanalyseerd – en kies het model dat de bevindingen
 schrijft. Lotti stelt het denkmodel van je standaard inferentieprofiel voor.
 
-Voordat er iets wordt geanalyseerd, worden persoonlijke gegevens uit de
-logregels verwijderd: e-mailadressen, identifiers, toegangstokens, bestandspaden
-met je gebruikersnaam, IP-adressen en telefoonnummers worden vervangen door
-plaatshouders. Het rapport noemt de drie bevindingen die de meeste aandacht
+Voordat er iets wordt geanalyseerd, worden bekende patronen van persoonlijke
+gegevens in de logregels vervangen door plaatshouders: e-mailadressen,
+identifiers, toegangstokens, bestandspaden met je gebruikersnaam, IP-adressen
+en telefoonnummers. De fouttekst komt uit het veilige foutenlog, dat nooit de
+ruwe uitzondering bevat. Vrije tekst in een logbericht wordt niet opgeschoond,
+dus het rapport is maar zo schoon als de logregels waaruit het is opgebouwd. Het rapport noemt de drie bevindingen die de meeste aandacht
 verdienen, elk met het bewijs, de waarschijnlijke oorzaak en een volgende stap,
 en houdt daaronder de verdichte samenvatting. **Rapport kopiëren** zet alles als
 Markdown op het klembord, klaar voor een bugmelding of een codeerassistent. Elk

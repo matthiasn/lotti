@@ -14549,7 +14549,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Zpráva zkopírována. Neobsahuje žádné osobní údaje.';
+      'Zpráva zkopírována. Známé vzory osobních údajů byly odstraněny.';
 
   @override
   String get systemHealthCopyButton => 'Kopírovat zprávu';
@@ -14562,7 +14562,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Prohledá soubory logů v tomto zařízení a najde chyby, varování a pomalé dotazy, odstraní osobní údaje a napíše krátkou zprávu, kterou můžeš vložit do programovacího asistenta.';
+      'Prohledá soubory logů v tomto zařízení a najde chyby, varování a pomalé dotazy, odstraní známé vzory osobních údajů a napíše krátkou zprávu, kterou můžeš vložit do programovacího asistenta.';
 
   @override
   String get systemHealthDomainsDescription =>

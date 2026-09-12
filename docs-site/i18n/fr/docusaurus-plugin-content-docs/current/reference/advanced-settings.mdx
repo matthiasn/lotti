@@ -91,10 +91,13 @@ la section sur la journalisation ci-dessus, un domaine activé est donc
 journalisé *et* analysé – puis choisis le modèle qui rédige les constats. Lotti
 propose le modèle de réflexion de ton profil d'inférence par défaut.
 
-Avant toute analyse, les données personnelles sont retirées des lignes de
-journal : adresses e-mail, identifiants, jetons d'accès, chemins de fichiers
-contenant ton nom d'utilisateur, adresses IP et numéros de téléphone sont
-remplacés par des espaces réservés. Le rapport présente les trois constats qui
+Avant toute analyse, les motifs connus de données personnelles dans les
+lignes de journal sont remplacés par des espaces réservés : adresses e-mail,
+identifiants, jetons d'accès, chemins de fichiers contenant ton nom
+d'utilisateur, adresses IP et numéros de téléphone. Le texte des erreurs
+provient du journal d'erreurs sûr, qui ne contient jamais l'exception brute.
+Le texte libre d'un message de journal n'est pas nettoyé : le rapport n'est
+donc propre que dans la mesure où les lignes de journal le sont. Le rapport présente les trois constats qui
 méritent le plus d'attention, avec les indices, la cause probable et une
 prochaine étape, et garde le résumé condensé en dessous. **Copier le rapport**
 place l'ensemble dans le presse-papiers au format Markdown, prêt pour un rapport

@@ -14652,7 +14652,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Raport copiat. Nu conține date personale.';
+      'Raport copiat. Tiparele cunoscute de date personale au fost eliminate.';
 
   @override
   String get systemHealthCopyButton => 'Copiați raportul';
@@ -14665,7 +14665,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Parcurge fișierele jurnal de pe acest dispozitiv în căutarea erorilor, avertismentelor și interogărilor lente, elimină datele personale și scrie un raport scurt pe care îl puteți lipi într-un asistent de programare.';
+      'Parcurge fișierele jurnal de pe acest dispozitiv în căutarea erorilor, avertismentelor și interogărilor lente, elimină tiparele cunoscute de date personale și scrie un raport scurt pe care îl puteți lipi într-un asistent de programare.';
 
   @override
   String get systemHealthDomainsDescription =>

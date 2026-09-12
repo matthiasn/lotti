@@ -87,9 +87,12 @@ det är samma reglage som i loggavsnittet ovan, så en påslagen domän loggas *
 analyseras – och välj modellen som skriver slutsatserna. Lotti föreslår
 tankemodellen i din standardprofil för inferens.
 
-Innan något analyseras tas personuppgifter bort ur loggraderna: e-postadresser,
-identifierare, åtkomsttoken, filsökvägar med ditt användarnamn, IP-adresser och
-telefonnummer ersätts med platshållare. Rapporten tar upp de tre slutsatser som
+Innan något analyseras ersätts kända mönster av personuppgifter i
+loggraderna med platshållare: e-postadresser, identifierare, åtkomsttoken,
+filsökvägar med ditt användarnamn, IP-adresser och telefonnummer. Feltexten
+kommer från den säkra felloggen, som aldrig innehåller det råa undantaget.
+Fri text i ett loggmeddelande rensas inte, så rapporten är bara så ren som
+loggraderna den byggdes av. Rapporten tar upp de tre slutsatser som
 förtjänar mest uppmärksamhet, var och en med belägg, trolig orsak och ett nästa
 steg, och behåller den komprimerade sammanfattningen under. **Kopiera rapport**
 lägger allt i urklipp som Markdown, redo för en buggrapport eller en

@@ -89,10 +89,13 @@ seção de registro acima, então um domínio ativado é registrado *e* analisad
 escolha o modelo que escreve as conclusões. O Lotti propõe o modelo de
 raciocínio do seu perfil de inferência padrão.
 
-Antes de qualquer análise, os dados pessoais são removidos das linhas de
-registro: endereços de e-mail, identificadores, tokens de acesso, caminhos de
-arquivo com seu nome de usuário, endereços IP e números de telefone são
-substituídos por marcadores. O relatório apresenta as três conclusões que mais
+Antes de qualquer análise, os padrões conhecidos de dados pessoais nas linhas
+de registro são substituídos por marcadores: endereços de e-mail,
+identificadores, tokens de acesso, caminhos de arquivo com seu nome de
+usuário, endereços IP e números de telefone. O texto dos erros vem do registro
+de erros seguro, que nunca contém a exceção bruta. O texto livre de uma
+mensagem de registro não é limpo, então o relatório é tão limpo quanto as
+linhas de registro que o originaram. O relatório apresenta as três conclusões que mais
 merecem atenção, com as evidências, a causa provável e um próximo passo, e
 mantém abaixo o resumo condensado. **Copiar relatório** coloca tudo na área de
 transferência como Markdown, pronto para um relatório de bug ou um assistente de

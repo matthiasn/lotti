@@ -180,6 +180,29 @@ void main() {
       expect(digest.superSlowQueryCount, 1);
     });
 
+    test('a super-slow entry without its slow-file twin is still counted', () {
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            slowQuery(timestamp: t0),
+            // Same timestamp, elapsed and statement: the duplicate copy.
+            slowQuery(timestamp: t0, isSuperSlow: true),
+            // A later day whose slow file is gone: only the super copy exists.
+            slowQuery(
+              timestamp: t0.add(const Duration(days: 1)),
+              elapsedMs: 400,
+              isSuperSlow: true,
+            ),
+          ],
+        ),
+      );
+      final bucket = digest.slowQueries.single;
+      expect(bucket.count, 2);
+      expect(bucket.superSlowCount, 2);
+      expect(bucket.maxMs, 400);
+      expect(bucket.totalMs, 420);
+    });
+
     test('a statement seen only in the super-slow file still gets stats', () {
       final digest = builder.build(
         input(

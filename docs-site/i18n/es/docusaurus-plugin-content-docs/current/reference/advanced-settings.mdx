@@ -91,10 +91,13 @@ de arriba, así que un dominio activado se registra *y* se analiza) y elige el
 modelo que redacta los hallazgos. Lotti propone el modelo de razonamiento de tu
 perfil de inferencia predeterminado.
 
-Antes de analizar nada, se eliminan los datos personales de las líneas de
-registro: direcciones de correo, identificadores, tokens de acceso, rutas de
-archivo con tu nombre de usuario, direcciones IP y números de teléfono se
-sustituyen por marcadores. El informe recoge los tres hallazgos que más atención
+Antes de analizar nada, los patrones conocidos de datos personales de las
+líneas de registro se sustituyen por marcadores: direcciones de correo,
+identificadores, tokens de acceso, rutas de archivo con tu nombre de usuario,
+direcciones IP y números de teléfono. El texto de los errores procede del
+registro de errores seguro, que nunca incluye la excepción en bruto. El texto
+libre de un mensaje de registro no se limpia, así que el informe solo es tan
+limpio como las líneas de registro de las que procede. El informe recoge los tres hallazgos que más atención
 merecen, con la evidencia, la causa probable y un siguiente paso, y conserva
 debajo el resumen condensado. **Copiar informe** deja todo en el portapapeles
 como Markdown, listo para un informe de error o un asistente de programación.

@@ -83,9 +83,12 @@ jsou to stejné přepínače jako v části o logování výše, takže zapnutá
 loguje *i* analyzuje – a vyber model, který napíše zjištění. Lotti navrhne
 myslicí model tvého výchozího inferenčního profilu.
 
-Než se cokoli analyzuje, odstraní se z řádků logu osobní údaje: e-mailové
-adresy, identifikátory, přístupové tokeny, cesty k souborům s tvým uživatelským
-jménem, IP adresy a telefonní čísla se nahradí zástupnými symboly. Zpráva uvádí
+Než se cokoli analyzuje, nahradí se v řádcích logu známé vzory osobních
+údajů zástupnými symboly: e-mailové adresy, identifikátory, přístupové
+tokeny, cesty k souborům s tvým uživatelským jménem, IP adresy a telefonní
+čísla. Text chyb pochází z bezpečného logu chyb, který nikdy neobsahuje
+surovou výjimku. Volný text ve zprávě logu se nečistí, takže zpráva je jen
+tak čistá jako řádky logu, ze kterých vznikla. Zpráva uvádí
 tři zjištění, která si zaslouží nejvíc pozornosti, každé s důkazy,
 pravděpodobnou příčinou a dalším krokem, a pod nimi ponechá zhuštěný přehled.
 **Kopírovat zprávu** vloží vše do schránky jako Markdown, připravené pro hlášení

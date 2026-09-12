@@ -38,6 +38,17 @@ void main() {
     );
   });
 
+  test('redacts quoted JSON credential fields and quoted values', () {
+    expect(
+      redactor.redact('{"apiKey": "sk-live 1234", "name": "x"}'),
+      '{"apiKey": [redacted], "name": "x"}',
+    );
+    expect(
+      redactor.redact('password=\'hunter two\' token="a b c" secret=plain'),
+      'password=[redacted] token=[redacted] secret=[redacted]',
+    );
+  });
+
   test('replaces long opaque tokens but not code paths', () {
     final secret = 'a1B2c3D4' * 6;
     expect(redactor.redact('key $secret end'), 'key [token] end');

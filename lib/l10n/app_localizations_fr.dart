@@ -14602,7 +14602,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Rapport copié. Il ne contient aucune donnée personnelle.';
+      'Rapport copié. Les données personnelles reconnues ont été masquées.';
 
   @override
   String get systemHealthCopyButton => 'Copier le rapport';
@@ -14615,7 +14615,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Parcourt les fichiers journaux de cet appareil à la recherche d\'erreurs, d\'avertissements et de requêtes lentes, supprime les données personnelles et rédige un court rapport que tu peux coller dans un assistant de codage.';
+      'Parcourt les fichiers journaux de cet appareil à la recherche d\'erreurs, d\'avertissements et de requêtes lentes, masque les motifs connus de données personnelles et rédige un court rapport que tu peux coller dans un assistant de codage.';
 
   @override
   String get systemHealthDomainsDescription =>

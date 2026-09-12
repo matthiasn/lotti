@@ -83,9 +83,12 @@ same ones as in the logging section above, so a domain that is switched on is
 both logged *and* analyzed — and pick the model that writes the findings. Lotti
 proposes the thinking model of your default inference profile.
 
-Before anything is analyzed, personal data is stripped from the log lines:
-email addresses, identifiers, access tokens, file paths that include your user
-name, IP addresses and phone numbers are replaced with placeholders. The report
+Before anything is analyzed, known personal-data patterns in the log lines
+are replaced with placeholders: email addresses, identifiers, access tokens,
+file paths that include your user name, IP addresses and phone numbers. Error
+text comes from the safe error log, which never carries the raw exception.
+Free text inside a log message is not scrubbed, so the report is only as
+clean as the log lines it was built from. The report
 lists the three findings that most deserve attention, each with the evidence,
 the likely cause and a next step, and keeps the condensed digest underneath.
 **Copy report** puts the whole thing on the clipboard as Markdown, ready for a

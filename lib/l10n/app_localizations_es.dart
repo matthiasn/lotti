@@ -14556,7 +14556,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Informe copiado. No contiene datos personales.';
+      'Informe copiado. Se han redactado los patrones conocidos de datos personales.';
 
   @override
   String get systemHealthCopyButton => 'Copiar informe';
@@ -14569,7 +14569,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Revisa los archivos de registro de este dispositivo en busca de errores, avisos y consultas lentas, elimina los datos personales y redacta un informe breve que puedes pegar en un asistente de programación.';
+      'Revisa los archivos de registro de este dispositivo en busca de errores, avisos y consultas lentas, redacta los patrones conocidos de datos personales y escribe un informe breve que puedes pegar en un asistente de programación.';
 
   @override
   String get systemHealthDomainsDescription =>

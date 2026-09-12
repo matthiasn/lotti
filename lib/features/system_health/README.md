@@ -18,12 +18,14 @@ assistant or a bug report.
 - **Proposes a model, lets the user change it.** The default profile's
   thinking model is preselected, the same one the AI popup menu would fall
   back to; the shared model picker offers every agentic text model.
-- **Never leaks personal data.** Error text comes from the PII-safe error
-  log, which carries a message and an error type but never the raw
-  exception, and every message and statement is redacted before it is
-  grouped, shown, sent to a model or copied: emails, UUIDs, Matrix ids,
+- **Redacts known personal-data patterns.** Error text comes from the
+  PII-safe error log, which carries a message and an error type but never
+  the raw exception, and every message and statement is redacted before it
+  is grouped, shown, sent to a model or copied: emails, UUIDs, Matrix ids,
   credentials, home-directory paths, IP addresses, phone numbers and URL
-  query strings become bracketed placeholders. The report says so.
+  query strings become bracketed placeholders. Free text inside a log
+  message is not scrubbed — the logging contract keeps user content out of
+  messages — and the report says exactly what was applied.
 - **Stays short.** Three findings, each with the evidence, the likely cause
   and one next step. The full digest sits underneath, collapsed, for whoever
   wants to check the reasoning.

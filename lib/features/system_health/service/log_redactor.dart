@@ -28,11 +28,13 @@ class LogRedactor {
     r'[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b',
   );
 
-  /// `key=value` / `key: value` pairs whose key names a credential.
+  /// `key=value` / `key: value` / `"key": "value"` pairs whose key names a
+  /// credential. A quoted value may contain spaces; an unquoted one ends at
+  /// whitespace or a separator.
   static final RegExp _credentialPair = RegExp(
-    r'\b(api[_\-]?key|access[_\-]?token|refresh[_\-]?token|token|secret|'
-    r'password|passwd|authorization|cookie|session[_\-]?id)'
-    r'(\s*[=:]\s*)("?)(?:bearer\s+)?[^\s,;"]+\3',
+    r'''(["']?)\b(api[_\-]?key|access[_\-]?token|refresh[_\-]?token|token|'''
+    r'''secret|password|passwd|authorization|cookie|session[_\-]?id)\b\1'''
+    r'''(\s*[=:]\s*)(?:"[^"]*"|'[^']*'|(?:bearer\s+)?[^\s,;"']+)''',
     caseSensitive: false,
   );
 
@@ -89,7 +91,7 @@ class LogRedactor {
     result = result.replaceAllMapped(_uuid, (m) => '[id:${m.group(1)}]');
     result = result.replaceAllMapped(
       _credentialPair,
-      (m) => '${m.group(1)}${m.group(2)}[redacted]',
+      (m) => '${m.group(1)}${m.group(2)}${m.group(1)}${m.group(3)}[redacted]',
     );
     result = result.replaceAllMapped(_bearer, (m) => '${m.group(1)}[redacted]');
     result = result.replaceAll(_opaqueToken, '[token]');

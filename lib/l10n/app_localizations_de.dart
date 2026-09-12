@@ -14466,7 +14466,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Bericht kopiert. Er enthält keine persönlichen Daten.';
+      'Bericht kopiert. Bekannte Muster persönlicher Daten wurden entfernt.';
 
   @override
   String get systemHealthCopyButton => 'Bericht kopieren';
@@ -14479,7 +14479,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Durchsucht die Logdateien auf diesem Gerät nach Fehlern, Warnungen und langsamen Abfragen, entfernt persönliche Daten und schreibt einen kurzen Bericht, den du in einen Coding-Assistenten einfügen kannst.';
+      'Durchsucht die Logdateien auf diesem Gerät nach Fehlern, Warnungen und langsamen Abfragen, entfernt bekannte Muster persönlicher Daten und schreibt einen kurzen Bericht, den du in einen Coding-Assistenten einfügen kannst.';
 
   @override
   String get systemHealthDomainsDescription =>

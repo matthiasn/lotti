@@ -23954,7 +23954,7 @@ abstract class AppLocalizations {
   /// No description provided for @systemHealthCopiedToast.
   ///
   /// In en, this message translates to:
-  /// **'Report copied. It contains no personal data.'**
+  /// **'Report copied. Known personal-data patterns were redacted.'**
   String get systemHealthCopiedToast;
 
   /// No description provided for @systemHealthCopyButton.
@@ -23978,7 +23978,7 @@ abstract class AppLocalizations {
   /// No description provided for @systemHealthDescription.
   ///
   /// In en, this message translates to:
-  /// **'Scans the log files on this device for errors, warnings and slow queries, strips personal data, and writes a short report you can paste into a coding assistant.'**
+  /// **'Scans the log files on this device for errors, warnings and slow queries, redacts known personal-data patterns, and writes a short report you can paste into a coding assistant.'**
   String get systemHealthDescription;
 
   /// No description provided for @systemHealthDomainsDescription.

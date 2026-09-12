@@ -92,10 +92,13 @@ qui sopra, quindi un dominio attivo viene registrato *e* analizzato – e scegli
 il modello che scrive i risultati. Lotti propone il modello di ragionamento del
 tuo profilo di inferenza predefinito.
 
-Prima di qualsiasi analisi, i dati personali vengono rimossi dalle righe di
-log: indirizzi e-mail, identificatori, token di accesso, percorsi di file con il
-tuo nome utente, indirizzi IP e numeri di telefono vengono sostituiti da
-segnaposto. Il report elenca i tre risultati che meritano più attenzione, con
+Prima di qualsiasi analisi, i pattern noti di dati personali nelle righe di
+log vengono sostituiti da segnaposto: indirizzi e-mail, identificatori, token
+di accesso, percorsi di file con il tuo nome utente, indirizzi IP e numeri di
+telefono. Il testo degli errori proviene dal log degli errori sicuro, che non
+contiene mai l'eccezione grezza. Il testo libero di un messaggio di log non
+viene ripulito, quindi il report è pulito solo quanto le righe di log da cui
+nasce. Il report elenca i tre risultati che meritano più attenzione, con
 le evidenze, la causa probabile e un passo successivo, e mantiene sotto il
 riepilogo condensato. **Copia report** mette tutto negli appunti come Markdown,
 pronto per una segnalazione di bug o un assistente di programmazione. Ogni

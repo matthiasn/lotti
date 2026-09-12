@@ -43,10 +43,13 @@ secțiunea despre jurnalizare de mai sus, deci un domeniu activat este jurnaliza
 *și* analizat – și alegeți modelul care scrie constatările. Lotti propune
 modelul de raționament al profilului dvs. de inferență implicit.
 
-Înainte de orice analiză, datele personale sunt eliminate din liniile
-jurnalului: adresele de e-mail, identificatorii, tokenurile de acces, căile de
-fișiere care conțin numele dvs. de utilizator, adresele IP și numerele de
-telefon sunt înlocuite cu substituenți. Raportul prezintă cele trei constatări
+Înainte de orice analiză, tiparele cunoscute de date personale din liniile
+jurnalului sunt înlocuite cu substituenți: adresele de e-mail,
+identificatorii, tokenurile de acces, căile de fișiere care conțin numele
+dvs. de utilizator, adresele IP și numerele de telefon. Textul erorilor
+provine din jurnalul de erori sigur, care nu conține niciodată excepția
+brută. Textul liber dintr-un mesaj de jurnal nu este curățat, așa că raportul
+este doar atât de curat cât liniile de jurnal din care a fost construit. Raportul prezintă cele trei constatări
 care merită cea mai multă atenție, fiecare cu dovezile, cauza probabilă și un
 pas următor, și păstrează dedesubt rezumatul condensat. **Copiați raportul**
 pune totul în clipboard ca Markdown, gata pentru un raport de eroare sau un

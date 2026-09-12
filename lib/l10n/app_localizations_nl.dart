@@ -14399,7 +14399,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Rapport gekopieerd. Het bevat geen persoonlijke gegevens.';
+      'Rapport gekopieerd. Bekende patronen van persoonlijke gegevens zijn weggelaten.';
 
   @override
   String get systemHealthCopyButton => 'Rapport kopiëren';
@@ -14412,7 +14412,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Doorzoekt de logbestanden op dit apparaat op fouten, waarschuwingen en trage query\'s, verwijdert persoonlijke gegevens en schrijft een kort rapport dat je in een codeerassistent kunt plakken.';
+      'Doorzoekt de logbestanden op dit apparaat op fouten, waarschuwingen en trage query\'s, laat bekende patronen van persoonlijke gegevens weg en schrijft een kort rapport dat je in een codeerassistent kunt plakken.';
 
   @override
   String get systemHealthDomainsDescription =>

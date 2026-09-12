@@ -261,17 +261,30 @@ class _SlowQueryAccumulator {
   final String statement;
   final String operation;
 
-  /// Elapsed values from the slow file. The super-slow file duplicates the
-  /// same queries with a plan attached, so they are not counted twice.
+  /// Elapsed values from the slow file, keyed so the super-slow copy of the
+  /// same entry can be recognised.
   final List<double> slowElapsed = [];
-  final List<double> superElapsed = [];
+  final Set<String> slowKeys = {};
+
+  /// Super-slow entries, with the key that identifies their slow-file twin.
+  final List<(String key, double elapsedMs)> superEntries = [];
   final Set<String> planShapes = {};
   final Set<String> topFrames = {};
   DateTime? firstSeen;
   DateTime? lastSeen;
 
   void add(SlowQueryRecord query, LogRedactor redactor) {
-    (query.isSuperSlow ? superElapsed : slowElapsed).add(query.elapsedMs);
+    // Both files write the same timestamp, elapsed and statement for one
+    // query, which is identity enough to spot the duplicate.
+    final key =
+        '${query.timestamp.toIso8601String()}|${query.elapsedMs}|'
+        '${query.statement}';
+    if (query.isSuperSlow) {
+      superEntries.add((key, query.elapsedMs));
+    } else {
+      slowElapsed.add(query.elapsedMs);
+      slowKeys.add(key);
+    }
     if (query.planRows.isNotEmpty) {
       planShapes.add(query.planRows.join(' | '));
     }
@@ -289,16 +302,19 @@ class _SlowQueryAccumulator {
   }
 
   SlowQueryBucket toBucket(int maxPlanShapes, int maxTopFrames) {
-    // A query above the super-slow cutoff is written to both files. Prefer
-    // the slow file's series for statistics and fall back to the super-slow
-    // series when only that file exists.
-    final series = (slowElapsed.isNotEmpty ? slowElapsed : superElapsed)
-      ..sort();
+    // A query above the super-slow cutoff is written to both files. Count
+    // each entry once: the slow file's series, plus any super-slow entry
+    // whose twin is missing (a deleted or rotated slow file).
+    final series = [
+      ...slowElapsed,
+      for (final (key, elapsed) in superEntries)
+        if (!slowKeys.contains(key)) elapsed,
+    ]..sort();
     return SlowQueryBucket(
       statement: statement,
       operation: operation,
       count: series.length,
-      superSlowCount: superElapsed.length,
+      superSlowCount: superEntries.length,
       p50Ms: _percentile(series, 0.5),
       p95Ms: _percentile(series, 0.95),
       maxMs: series.last,

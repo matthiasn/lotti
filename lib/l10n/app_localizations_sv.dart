@@ -14376,7 +14376,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get systemHealthCopiedToast =>
-      'Rapporten är kopierad. Den innehåller inga personuppgifter.';
+      'Rapporten är kopierad. Kända mönster av personuppgifter har maskerats.';
 
   @override
   String get systemHealthCopyButton => 'Kopiera rapport';
@@ -14389,7 +14389,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get systemHealthDescription =>
-      'Söker igenom loggfilerna på den här enheten efter fel, varningar och långsamma frågor, tar bort personuppgifter och skriver en kort rapport som du kan klistra in i en kodassistent.';
+      'Söker igenom loggfilerna på den här enheten efter fel, varningar och långsamma frågor, maskerar kända mönster av personuppgifter och skriver en kort rapport som du kan klistra in i en kodassistent.';
 
   @override
   String get systemHealthDomainsDescription =>

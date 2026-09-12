@@ -83,9 +83,12 @@ Protokollierung oben, eine eingeschaltete Domäne wird also protokolliert *und*
 analysiert – und wähle das Modell, das die Erkenntnisse schreibt. Lotti schlägt
 das Denkmodell deines Standard-Inferenzprofils vor.
 
-Bevor etwas analysiert wird, werden persönliche Daten aus den Logzeilen
-entfernt: E-Mail-Adressen, Kennungen, Zugriffstoken, Dateipfade mit deinem
-Benutzernamen, IP-Adressen und Telefonnummern werden durch Platzhalter ersetzt.
+Bevor etwas analysiert wird, werden bekannte Muster persönlicher Daten in den
+Logzeilen durch Platzhalter ersetzt: E-Mail-Adressen, Kennungen,
+Zugriffstoken, Dateipfade mit deinem Benutzernamen, IP-Adressen und
+Telefonnummern. Fehlertexte stammen aus dem sicheren Fehlerlog, das nie die
+rohe Ausnahme enthält. Freier Text in einer Logmeldung wird nicht bereinigt –
+der Bericht ist also nur so sauber wie die Logzeilen, aus denen er entstand.
 Der Bericht nennt die drei Erkenntnisse, die am meisten Aufmerksamkeit
 verdienen, jeweils mit Belegen, wahrscheinlicher Ursache und einem nächsten
 Schritt, und behält darunter die verdichtete Zusammenfassung. **Bericht
