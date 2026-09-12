@@ -4307,7 +4307,7 @@
   "querySourceMoved": "Sursă mutată în altă categorie",
   "querySurroundingLimit": "Acesta este fragmentul salvat, care poate să nu includă întreaga discuție.",
   "querySurroundingText": "Afișați textul din jur",
-  "queryTranscribing": "Apăsați Trimite pentru a trimite textul. Furnizorul dvs. poate avea deja sunetul.",
+  "queryTranscribing": "Apăsați butonul de trimitere pentru a trimite textul. Furnizorul dvs. poate avea deja sunetul.",
   "queryUnavailable": "Acest domeniu nu mai este disponibil cu setările dvs. actuale de vizibilitate.",
   "queryUnread": "Răspuns nou",
   "queryWelcomeCategory": "Întrebați agentul {agentName} despre această categorie",

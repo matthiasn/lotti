@@ -11451,7 +11451,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryTranscribing =>
-      'Apăsați Trimite pentru a trimite textul. Furnizorul dvs. poate avea deja sunetul.';
+      'Apăsați butonul de trimitere pentru a trimite textul. Furnizorul dvs. poate avea deja sunetul.';
 
   @override
   String get queryUnavailable =>
