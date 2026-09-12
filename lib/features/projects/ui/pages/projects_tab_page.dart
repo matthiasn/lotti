@@ -128,6 +128,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
                   queryOpen &&
                   constraints.maxWidth <
                       listPaneWidth +
+                          ResizableDivider.layoutWidth +
                           QueryCompanion.minimumDockedWidth(context);
               final listPaneVisible =
                   !canHideListPane ||

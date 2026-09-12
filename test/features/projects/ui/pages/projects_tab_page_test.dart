@@ -12,6 +12,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/query/query_companion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
@@ -1464,6 +1465,78 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       },
     );
+
+    testWidgets('project companion includes divider width at docking boundary', (
+      tester,
+    ) async {
+      const scope = QueryScope(kind: QueryScopeKind.project, id: 'p1');
+      const size = Size(1400, 900);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final nav = getIt<NavService>() as MockNavService;
+      final selected = ValueNotifier<String?>('p1');
+      addTearDown(selected.dispose);
+      when(() => nav.desktopSelectedProjectId).thenReturn(selected);
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: size),
+        extraOverrides: [
+          queryChatEnabledProvider.overrideWithValue(true),
+          queryChatTargetProvider(scope).overrideWith(
+            (ref) async => const QueryChatTarget(
+              scope: scope,
+              label: 'Penguin habitat',
+              agent: null,
+            ),
+          ),
+          chatRecorderControllerProvider.overrideWith(
+            TranscriptEmittingController.new,
+          ),
+          projectDetailControllerProvider(
+            'p1',
+          ).overrideWith(_StubProjectDetailController.new),
+          projectDetailRecordProvider('p1').overrideWith((ref) async => null),
+        ],
+      );
+      final context = tester.element(find.byType(ProjectsTabPage));
+      final container = ProviderScope.containerOf(context);
+      final panes = container.read(paneWidthControllerProvider.notifier);
+      final dividerWidth = tester.getSize(find.byType(ResizableDivider)).width;
+      final fittingListWidth =
+          size.width -
+          QueryCompanion.minimumDockedWidth(context) -
+          dividerWidth;
+      panes.updateListPaneWidth(
+        fittingListWidth -
+            container.read(paneWidthControllerProvider).listPaneWidth,
+      );
+      container.read(queryPaneOpenProvider(scope).notifier).open = true;
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Device Sync'), findsOneWidget);
+      expect(find.byType(DraggableScrollableSheet), findsNothing);
+
+      // One pixel less detail space must suppress the list, keeping chat docked.
+      panes.updateListPaneWidth(1);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Device Sync'), findsNothing);
+      expect(find.byType(DraggableScrollableSheet), findsNothing);
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isFalse,
+      );
+
+      panes.updateListPaneWidth(-1);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Device Sync'), findsOneWidget);
+      expect(find.byType(DraggableScrollableSheet), findsNothing);
+      expect(container.read(queryPaneOpenProvider(scope)), isTrue);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
 
     for (final useSearch in [false, true]) {
       testWidgets('project companion restores its list (search=$useSearch)', (
