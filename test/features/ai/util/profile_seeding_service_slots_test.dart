@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -46,6 +47,75 @@ void main() {
   });
 
   group('ProfileSeedingService.upgradeExisting', () {
+    for (final legacyPower in [false, true]) {
+      for (final hasChat in [false, true]) {
+        test(
+          'local migration legacy=$legacyPower preserves chat choice=$hasChat',
+          () async {
+            final profile = AiConfigInferenceProfile(
+              id: profileLocalPowerId,
+              name: legacyPower ? 'Local Power (Ollama)' : 'Local Power (oMLX)',
+              thinkingModelId: legacyPower
+                  ? 'qwen3.6:35b-a3b-coding-nvfp4'
+                  : omlxRecommendedMultimodalModelId,
+              imageRecognitionModelId: legacyPower
+                  ? 'qwen3.5:27b'
+                  : omlxRecommendedMultimodalModelId,
+              chatModelId: hasChat ? 'chosen-chat' : null,
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            );
+            when(
+              () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+            ).thenAnswer((_) async => [profile]);
+            when(
+              () => mockRepo.getConfigsByType(AiConfigType.model),
+            ).thenAnswer(
+              (_) async => [
+                for (final id in {
+                  profile.thinkingModelId,
+                  profile.imageRecognitionModelId!,
+                  omlxRecommendedMultimodalModelId,
+                  omlxWhisperLargeV3TurboModelId,
+                  'chosen-chat',
+                })
+                  AiTestDataFactory.createTestModel(
+                    id: id,
+                    providerModelId: id,
+                  ),
+              ],
+            );
+
+            await service.upgradeExisting();
+
+            if (hasChat) {
+              // Choosing Chat makes this a user-edited profile: startup must
+              // neither migrate its other routes nor enable transcription.
+              verifyNever(() => mockRepo.saveConfig(any()));
+            } else {
+              final saved =
+                  verify(
+                        () => mockRepo.saveConfig(captureAny()),
+                      ).captured.single
+                      as AiConfigInferenceProfile;
+              expect(saved.name, 'Local Power (oMLX)');
+              expect(saved.thinkingModelId, omlxRecommendedMultimodalModelId);
+              expect(
+                saved.imageRecognitionModelId,
+                omlxRecommendedMultimodalModelId,
+              );
+              expect(
+                saved.transcriptionModelId,
+                omlxWhisperLargeV3TurboModelId,
+              );
+              expect(saved.skillAssignments, isNotEmpty);
+              expect(saved.chatModelId, isNull);
+            }
+          },
+        );
+      }
+    }
+
     // Regression guard: `upgradeExisting` used to re-add the template's
     // `automate: true` assignments whenever a default profile's list was
     // empty — so clearing every assignment, the obvious way to say "stop
