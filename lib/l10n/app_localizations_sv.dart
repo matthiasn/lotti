@@ -11039,6 +11039,12 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get queryCloseChat => 'Stäng chatt';
+
+  @override
+  String get queryCollapseChat => 'Fäll ihop chatt';
+
+  @override
   String get queryCopied => 'Kopierat';
 
   @override
@@ -11105,6 +11111,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get queryExampleSuggestion => 'Var det ett beslut eller ett förslag?';
+
+  @override
+  String get queryExpandChat => 'Expandera chatt';
 
   @override
   String get queryExpanding => 'Kontrollerar andra poster i den här kategorin…';
@@ -11238,6 +11247,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get querySearching => 'Söker i länkade anteckningar och inspelningar…';
+
+  @override
+  String get querySearchScope => 'Sökområde och filter';
 
   @override
   String querySourceAction(String action, String source) {

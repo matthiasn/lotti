@@ -442,8 +442,9 @@ wider task. `TasksRootPage` mounts it as a peer to the task page — its own
 title, a hairline left rule, and its own scroll, so glanced-at metadata does
 not move when the task beside it scrolls.
 
-Two conditions, both required:
+Three conditions, all required:
 
+- the task chat companion is closed (see [query chat](../agents/query-chat.md));
 - the list pane is collapsed **and** a task is selected — the column is the
   focus-mode layout, not a permanent fourth column; and
 - the detail pane measures at least `kTaskMetaColumnMinHostWidth` (960).

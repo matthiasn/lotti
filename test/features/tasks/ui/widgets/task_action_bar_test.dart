@@ -191,6 +191,7 @@ void main() {
     WidgetTester tester, {
     AudioRecorderState? recorderState,
     Widget? topSlot,
+    MediaQueryData? mediaQueryData,
     List<Override> extraOverrides = const [],
   }) async {
     await tester.pumpWidget(
@@ -201,6 +202,7 @@ void main() {
             topSlot: topSlot,
           ),
         ),
+        mediaQueryData: mediaQueryData,
         overrides: [
           ...extraOverrides,
           entryCreationServiceProvider.overrideWithValue(mockCreationService),
@@ -214,6 +216,33 @@ void main() {
     );
     await tester.pump();
   }
+
+  testWidgets(
+    'large text wraps task actions without clipping their hit targets',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpBar(
+        tester,
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 844),
+          textScaler: TextScaler.linear(1.5),
+        ),
+      );
+      final bounds = tester.getRect(find.byType(TaskActionBar));
+      for (final key in [
+        TaskActionBar.trackTimeKey,
+        TaskActionBar.audioKey,
+        TaskActionBar.moreKey,
+      ]) {
+        final control = tester.getRect(find.byKey(key));
+        expect(control.left, greaterThanOrEqualTo(bounds.left));
+        expect(control.right, lessThanOrEqualTo(bounds.right));
+        expect(control.bottom, lessThanOrEqualTo(bounds.bottom));
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   test('dark glass footer palette shields controls from bright content', () {
     final colors = DesignSystemGlassStrip.overlayColors(dsTokensDark);

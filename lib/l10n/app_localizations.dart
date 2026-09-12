@@ -18595,6 +18595,18 @@ abstract class AppLocalizations {
   /// **'Sources checked: {count}'**
   String queryChecked(int count);
 
+  /// No description provided for @queryCloseChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Close chat'**
+  String get queryCloseChat;
+
+  /// No description provided for @queryCollapseChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse chat'**
+  String get queryCollapseChat;
+
   /// No description provided for @queryCopied.
   ///
   /// In en, this message translates to:
@@ -18720,6 +18732,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Was that a decision or a suggestion?'**
   String get queryExampleSuggestion;
+
+  /// No description provided for @queryExpandChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand chat'**
+  String get queryExpandChat;
 
   /// No description provided for @queryExpanding.
   ///
@@ -18936,6 +18954,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Searching linked notes and recordings…'**
   String get querySearching;
+
+  /// No description provided for @querySearchScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Search scope and filters'**
+  String get querySearchScope;
 
   /// Accessible action label identifying its evidence source or selected chat.
   ///

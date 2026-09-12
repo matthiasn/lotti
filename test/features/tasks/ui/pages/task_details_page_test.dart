@@ -226,7 +226,7 @@ void main() {
     setUp(() => registerTaskDetailsServices(stubTaskEntity: false));
     tearDown(getIt.reset);
 
-    testWidgets('Ask opens the task scope and Back restores the task details', (
+    testWidgets('Ask keeps the task details mounted while its chat is open', (
       tester,
     ) async {
       setTestSurfaceSize(tester, phoneMediaQueryData.size);
@@ -263,16 +263,36 @@ void main() {
         ),
         findsNothing,
       );
+      final taskActions = tester.element(find.byType(TaskActionBar));
       await tester.tap(find.byType(QueryAskButton).first);
       await tester.pumpAndSettle();
       expect(
         tester.widget<QueryChatPane>(find.byType(QueryChatPane)).scope,
         scope,
       );
-      await tester.tap(find.byIcon(LottiIcons.back).first);
+      expect(find.byType(TaskActionBar), findsOneWidget);
+      expect(tester.element(find.byType(TaskActionBar)), same(taskActions));
+      await tester.tap(find.byIcon(LottiIcons.close).first);
       await tester.pumpAndSettle();
       expect(find.byType(QueryChatPane), findsNothing);
       expect(find.text(testTask.data.title), findsOneWidget);
+      await tester.tap(find.byType(QueryAskButton).first);
+      await tester.pumpAndSettle();
+      final chatState = tester.state(find.byType(QueryChatPane));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TaskDetailsPage)),
+      );
+      when(
+        () => mockJournalDb.journalEntityById(testTask.id),
+      ).thenAnswer((_) async => null);
+      container.invalidate(entryControllerProvider(testTask.id));
+      await tester.pumpAndSettle();
+      expect(find.byType(TaskActionBar), findsNothing);
+      expect(tester.state(find.byType(QueryChatPane)), same(chatState));
+      await tester.tap(find.byIcon(LottiIcons.close).first);
+      await tester.pumpAndSettle();
+      expect(container.read(queryPaneOpenProvider(scope)), isFalse);
+      expect(find.byType(QueryChatPane), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

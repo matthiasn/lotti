@@ -33,12 +33,13 @@ import 'package:material_ui/material_ui.dart';
 ///   tail (linked task / event / paste image / capture screenshot — the
 ///   latter desktop-only inside that sheet)
 ///
-/// The capture actions stay together in a [Row] with width-based priority drop: on
+/// The capture actions use a [Wrap] with width-based priority drop: on
 /// narrow viewports the lower-priority trailing icons (image, then
 /// checklist) are hidden once the inner width falls below
 /// [minWidthForImageButton] / [minWidthForChecklistButton] instead of
 /// overflowing the right edge. Agent conversations are accessed from the
-/// task header and agent summary card.
+/// task header and agent summary card. Large accessibility text can wrap the
+/// remaining lead actions onto another line without clipping their hit targets.
 class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({
     required this.task,
@@ -346,7 +347,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     onStop: _onStopTimer,
                   ),
                   ...[
-                    SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
                       key: TaskActionBar.audioKey,
                       icon: LottiIcons.mic,
@@ -373,7 +373,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     ),
                   ],
                   if (showChecklist) ...[
-                    SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
                       key: TaskActionBar.checklistKey,
                       icon: LottiIcons.checkAll,
@@ -382,7 +381,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     ),
                   ],
                   if (showImage) ...[
-                    SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
                       key: TaskActionBar.imageKey,
                       icon: LottiIcons.image,
@@ -390,7 +388,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       onPressed: _onImagePressed,
                     ),
                   ],
-                  SizedBox(width: spacing.step4),
                   // The sheet this opens titles itself "Add" and holds
                   // creation verbs — including the page's only route to a
                   // linked sub-task. An overflow glyph promised leftovers
@@ -421,8 +418,11 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       onPressed: _onMorePressed,
                     ),
                 ];
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
+                return Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: spacing.step4,
+                  runSpacing: spacing.step4,
                   children: rowChildren,
                 );
               },

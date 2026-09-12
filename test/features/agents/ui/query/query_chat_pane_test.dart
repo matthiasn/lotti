@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:ui' show Tristate;
 
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
@@ -152,6 +154,7 @@ void main() {
     MediaQueryData? mediaQueryData,
     QueryChatSession? session,
     bool noAgent = false,
+    bool companion = false,
     bool sourceDetailLoading = false,
     String sourceDetailId = 'note',
     ChatRecorderController? activeRecorder,
@@ -169,7 +172,11 @@ void main() {
     }
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        QueryChatPane(scope: activeScope, onClose: () => closeCalls++),
+        QueryChatPane(
+          scope: activeScope,
+          onClose: () => closeCalls++,
+          companion: companion,
+        ),
         mediaQueryData: mediaQueryData,
         overrides: [
           if (sourceDetailLoading)
@@ -283,6 +290,42 @@ void main() {
       matching: find.byType(AgentMarkdownView),
     ),
     matching: find.text(number, findRichText: true),
+  );
+
+  testWidgets(
+    'compact companion shows its task title and discloses scope controls at large text',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      bench.entries['task'] = (bench.entries['task']! as Task).copyWith(
+        data: testTask.data.copyWith(title: 'Inspect orbital penguin habitat'),
+      );
+      await pump(
+        tester,
+        companion: true,
+        mediaQueryData: const MediaQueryData(
+          size: Size(320, 844),
+          textScaler: TextScaler.linear(1.5),
+        ),
+      );
+      final title = find.text('Inspect orbital penguin habitat');
+      expect(
+        tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+        isFalse,
+      );
+      expect(find.text('Notes'), findsNothing);
+      await tester.tap(find.byIcon(LottiIcons.filter));
+      await tester.pump();
+      expect(find.text('Notes'), findsOneWidget);
+      expect(find.text('Recordings'), findsOneWidget);
+      await tester.tap(find.byIcon(LottiIcons.filter));
+      await tester.pump();
+      expect(find.text('Notes'), findsNothing);
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pump();
+      expect(closeCalls, 1);
+      expect(tester.takeException(), isNull);
+    },
   );
 
   testWidgets(
@@ -573,7 +616,7 @@ void main() {
         'Was that a decision or a suggestion?',
       );
       expect(inferenceCalls, 0);
-      await tester.tap(find.text('Task · Add tests for journal page'));
+      await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pump();
       expect(closeCalls, 1);
       await tester.pumpWidget(const SizedBox());
@@ -1469,7 +1512,14 @@ void main() {
         QueryScopeKind.project => 'Project',
         QueryScopeKind.category => 'Category',
       };
-      expect(find.text('$scopeLabel · $label'), findsOneWidget);
+      expect(find.text(label), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Tooltip && widget.message == '$scopeLabel · $label',
+        ),
+        findsOneWidget,
+      );
       await tester.enterText(find.byType(TextField), 'Saved draft');
       await tester.tap(find.byIcon(LottiIcons.back));
       await tester.pump();
@@ -1590,154 +1640,161 @@ void main() {
     },
   );
 
-  testWidgets(
-    'answer evidence exposes coverage and opens its source without losing the draft',
-    (tester) async {
-      getIt
-        ..registerSingleton<UserActivityService>(MockUserActivityService())
-        ..registerSingleton<EditorStateService>(MockEditorStateService());
-      bench.add('note', category: categoryMindfulness.id);
-      bench.entries['note'] = testAudioEntry.copyWith(
-        meta: bench.entries['note']!.meta,
-        entryText: bench.entries['note']!.entryText,
-      );
-      final document = QuerySourceDocument.fromEntry(bench.entries['note']!)!;
-      final source = QuerySourceRef(
-        id: 'note',
-        private: false,
-        categoryPrivate: false,
-        categoryId: categoryMindfulness.id,
-      );
-      events.addAll([
-        event(
-          'question',
-          'feeder',
-          const QueryChatEventData.question(text: 'What was the decision?'),
-        ),
-        event(
-          'reply',
-          'feeder',
-          QueryChatEventData.answer(
-            questionId: 'question',
-            text: 'The feeder decision is recorded [1].',
-            coverage: const QueryCoverage(
-              checked: 3,
-              incomplete: true,
-              missingTranscripts: 2,
-            ),
-            recalledMemoryIds: ['memory'],
-            dependencies: [source],
-            evidence: [
-              QueryEvidence(
-                source: source,
-                kind: document.kind,
-                label: 'Feeder meeting',
-                sourceDate: document.entry.meta.dateFrom,
-                textVersion: document.version,
-                fingerprint: document.fingerprint,
-                sourceText: document.text,
-                start: 0,
-                end: document.text.length,
-                summary: 'Feeder discussion',
-              ),
-            ],
+  for (final companion in [false, true]) {
+    testWidgets(
+      'answer evidence exposes coverage and opens its source without losing the draft (companion=$companion)',
+      (tester) async {
+        getIt
+          ..registerSingleton<UserActivityService>(MockUserActivityService())
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
+        bench.add('note', category: categoryMindfulness.id);
+        bench.entries['note'] = testAudioEntry.copyWith(
+          meta: bench.entries['note']!.meta,
+          entryText: bench.entries['note']!.entryText,
+        );
+        final document = QuerySourceDocument.fromEntry(bench.entries['note']!)!;
+        final source = QuerySourceRef(
+          id: 'note',
+          private: false,
+          categoryPrivate: false,
+          categoryId: categoryMindfulness.id,
+        );
+        events.addAll([
+          event(
+            'question',
+            'feeder',
+            const QueryChatEventData.question(text: 'What was the decision?'),
           ),
-        ),
-      ]);
-      await pump(tester, sourceDetailLoading: true);
-      expect(find.text('Prepare audio excerpt'), findsOneWidget);
-      await tester.enterText(find.byType(TextField), 'Follow-up draft');
-      expect(
-        find.textContaining(
-          'The feeder decision is recorded',
-          findRichText: true,
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.text('This answer used saved conclusions.'),
-        findsNothing,
-      );
-      const explanation =
-          'Coverage is incomplete. Missing evidence does not mean the discussion never happened.';
-      expect(find.text(explanation), findsNothing);
-      final shortWarning = find.text('Some sources could not be checked.');
-      expect(shortWarning, findsOneWidget);
-      final tokens = tester.element(shortWarning).designTokens;
-      expect(
-        tester.widget<Text>(shortWarning).style,
-        tokens.typography.styles.others.caption,
-      );
-      await tester.ensureVisible(find.text('What was searched'));
-      await tester.pump();
-      await tester.tap(find.text('What was searched'));
-      await tester.pumpAndSettle();
-      expect(find.text('Sources checked: 3'), findsOneWidget);
-      expect(find.text(explanation), findsOneWidget);
-      expect(
-        find.textContaining('2 recordings had no searchable text'),
-        findsOneWidget,
-      );
-      await tester.ensureVisible(find.text('Show exact text'));
-      await tester.pump();
-      await tester.tap(find.text('Show exact text'));
-      await tester.pump();
-      await tester.ensureVisible(find.text('Open entry'));
-      await tester.pump();
-      await tester.tap(find.text('Open entry'));
-      await tester.pump();
-      await tester.pump();
-      expect(
-        tester.widget<EntryDetailsPage>(find.byType(EntryDetailsPage)).itemId,
-        'note',
-      );
-      bench.entries['note'] = bench.entries['note']!.copyWith(
-        meta: bench.entries['note']!.meta.copyWith(private: true),
-      );
-      data.add(snapshot());
-      await tester.pump();
-      await tester.pump();
-      expect(find.byType(EntryDetailsPage), findsNothing);
-      expect(find.text('Feeder meeting'), findsNothing);
-      bench.entries['note'] = document.entry;
-      data.add(snapshot());
-      await tester.pump();
-      await tester.pump();
-      await tester.tap(find.byIcon(LottiIcons.back).first);
-      await tester.pump();
-      expect(find.byType(EntryDetailsPage), findsNothing);
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'Follow-up draft',
-      );
-      expect(closeCalls, 0);
-      final navigation = RecordingMockNavService();
-      getIt.registerSingleton<NavService>(navigation);
-      final audioControls = tester.widget<QueryEvidenceAudioControls>(
-        find.byType(QueryEvidenceAudioControls),
-      );
-      audioControls.onOpenSettings();
-      expect(navigation.navigationHistory, ['/settings/ai']);
-      // The media widget tests exercise the visible recovery buttons. Here the
-      // pane's callbacks must recheck access even before its snapshot updates.
-      bench.entries['note'] = document.entry.copyWith(
-        meta: document.entry.meta.copyWith(private: true),
-      );
-      audioControls.onOpenEntry();
-      await tester.pump();
-      await tester.pump();
-      expect(find.byType(EntryDetailsPage), findsNothing);
-      bench.entries['note'] = document.entry;
-      audioControls.onOpenEntry();
-      await tester.pump();
-      await tester.pump();
-      expect(
-        tester.widget<EntryDetailsPage>(find.byType(EntryDetailsPage)).itemId,
-        'note',
-      );
-      await tester.pumpWidget(const SizedBox.shrink());
-    },
-  );
+          event(
+            'reply',
+            'feeder',
+            QueryChatEventData.answer(
+              questionId: 'question',
+              text: 'The feeder decision is recorded [1].',
+              coverage: const QueryCoverage(
+                checked: 3,
+                incomplete: true,
+                missingTranscripts: 2,
+              ),
+              recalledMemoryIds: ['memory'],
+              dependencies: [source],
+              evidence: [
+                QueryEvidence(
+                  source: source,
+                  kind: document.kind,
+                  label: 'Feeder meeting',
+                  sourceDate: document.entry.meta.dateFrom,
+                  textVersion: document.version,
+                  fingerprint: document.fingerprint,
+                  sourceText: document.text,
+                  start: 0,
+                  end: document.text.length,
+                  summary: 'Feeder discussion',
+                ),
+              ],
+            ),
+          ),
+        ]);
+        await pump(tester, sourceDetailLoading: true, companion: companion);
+        expect(find.text('Prepare audio excerpt'), findsOneWidget);
+        await tester.enterText(find.byType(TextField), 'Follow-up draft');
+        expect(
+          find.textContaining(
+            'The feeder decision is recorded',
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text('This answer used saved conclusions.'),
+          findsNothing,
+        );
+        const explanation =
+            'Coverage is incomplete. Missing evidence does not mean the discussion never happened.';
+        expect(find.text(explanation), findsNothing);
+        final shortWarning = find.text('Some sources could not be checked.');
+        expect(shortWarning, findsOneWidget);
+        final tokens = tester.element(shortWarning).designTokens;
+        expect(
+          tester.widget<Text>(shortWarning).style,
+          tokens.typography.styles.others.caption,
+        );
+        await tester.ensureVisible(find.text('What was searched'));
+        await tester.pump();
+        await tester.tap(find.text('What was searched'));
+        await tester.pumpAndSettle();
+        expect(find.text('Sources checked: 3'), findsOneWidget);
+        expect(find.text(explanation), findsOneWidget);
+        expect(
+          find.textContaining('2 recordings had no searchable text'),
+          findsOneWidget,
+        );
+        await tester.ensureVisible(find.text('Show exact text'));
+        await tester.pump();
+        await tester.tap(find.text('Show exact text'));
+        await tester.pump();
+        await tester.ensureVisible(find.text('Open entry'));
+        await tester.pump();
+        await tester.tap(find.text('Open entry'));
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.widget<EntryDetailsPage>(find.byType(EntryDetailsPage)).itemId,
+          'note',
+        );
+        expect(find.byIcon(LottiIcons.back), findsOneWidget);
+        expect(
+          find.byIcon(LottiIcons.close),
+          companion ? findsOneWidget : findsNothing,
+        );
+        bench.entries['note'] = bench.entries['note']!.copyWith(
+          meta: bench.entries['note']!.meta.copyWith(private: true),
+        );
+        data.add(snapshot());
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(EntryDetailsPage), findsNothing);
+        expect(find.text('Feeder meeting'), findsNothing);
+        bench.entries['note'] = document.entry;
+        data.add(snapshot());
+        await tester.pump();
+        await tester.pump();
+        await tester.tap(find.byIcon(LottiIcons.back).first);
+        await tester.pump();
+        expect(find.byType(EntryDetailsPage), findsNothing);
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          'Follow-up draft',
+        );
+        expect(closeCalls, 0);
+        final navigation = RecordingMockNavService();
+        getIt.registerSingleton<NavService>(navigation);
+        final audioControls = tester.widget<QueryEvidenceAudioControls>(
+          find.byType(QueryEvidenceAudioControls),
+        );
+        audioControls.onOpenSettings();
+        expect(navigation.navigationHistory, ['/settings/ai']);
+        // The media widget tests exercise the visible recovery buttons. Here the
+        // pane's callbacks must recheck access even before its snapshot updates.
+        bench.entries['note'] = document.entry.copyWith(
+          meta: document.entry.meta.copyWith(private: true),
+        );
+        audioControls.onOpenEntry();
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(EntryDetailsPage), findsNothing);
+        bench.entries['note'] = document.entry;
+        audioControls.onOpenEntry();
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.widget<EntryDetailsPage>(find.byType(EntryDetailsPage)).itemId,
+          'note',
+        );
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
   testWidgets(
     'an older failed question retains its own retry after a later answer',
     (tester) async {

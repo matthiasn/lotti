@@ -11235,6 +11235,12 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get queryCloseChat => 'Închideți conversația';
+
+  @override
+  String get queryCollapseChat => 'Restrângeți conversația';
+
+  @override
   String get queryCopied => 'Copiat';
 
   @override
@@ -11301,6 +11307,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queryExampleSuggestion => 'A fost o decizie sau o sugestie?';
+
+  @override
+  String get queryExpandChat => 'Extindeți conversația';
 
   @override
   String get queryExpanding =>
@@ -11441,6 +11450,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get querySearching =>
       'Se caută în notele și înregistrările audio legate…';
+
+  @override
+  String get querySearchScope => 'Domeniul de căutare și filtre';
 
   @override
   String querySourceAction(String action, String source) {
