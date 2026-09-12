@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/ui/chat/thinking_parser.dart';
 import 'package:lotti/features/ai/model/ai_call_impact.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -188,6 +189,40 @@ class QueryTextInference {
   final QueryTextStream _generate;
   final QueryTextStream? _generateSynthesis;
 
+  static const _clockGuidance =
+      ' The top-level currentTime is the device clock for this request. '
+      'Use its localDate and localTimestamp to resolve today, yesterday, '
+      'tomorrow and other relative dates. Dates in sources, reports and prior '
+      'conversation are historical; never use them as the current date. '
+      'The clock is request metadata, not source evidence or a durable task '
+      'conclusion. Do not invent a different current date.';
+
+  /// Includes the same clock guidance and metadata sent to the provider, so
+  /// retrieval budgets still bound the complete request. Timestamps use seconds
+  /// and a fixed-width UTC offset, keeping their size stable across calls.
+  static int requestBytes(String system, Map<String, Object?> input) =>
+      utf8.encode('$system$_clockGuidance').length +
+      utf8.encode(jsonEncode(_withCurrentTime(input))).length;
+
+  static Map<String, Object?> _withCurrentTime(Map<String, Object?> input) {
+    final now = clock.now();
+    final local = now.toIso8601String().split('.').first;
+    final minutes = now.timeZoneOffset.inMinutes;
+    final hours = (minutes.abs() ~/ 60).toString().padLeft(2, '0');
+    final remainder = (minutes.abs() % 60).toString().padLeft(2, '0');
+    final offset = '${minutes < 0 ? '-' : '+'}$hours:$remainder';
+    return {
+      for (final entry in input.entries)
+        if (entry.key != 'currentTime') entry.key: entry.value,
+      // Append volatile clock data after stable sources and replace any stale
+      // caller-supplied clock. Never cache this at profile/chat construction.
+      'currentTime': {
+        'localDate': local.split('T').first,
+        'localTimestamp': '$local$offset',
+      },
+    };
+  }
+
   Future<Map<String, dynamic>> complete({
     required String system,
     required Map<String, Object?> input,
@@ -200,8 +235,8 @@ class QueryTextInference {
     var received = false;
     final response = await cancellation.collect(
       (onAnswerText == null ? _generate : _generateSynthesis ?? _generate)(
-        system,
-        jsonEncode(input),
+        '$system$_clockGuidance',
+        jsonEncode(_withCurrentTime(input)),
       ),
       onText: (raw) {
         if (!received && raw.isNotEmpty) {
