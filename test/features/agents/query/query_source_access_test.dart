@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -96,7 +98,9 @@ void main() {
       summaryBased: true,
       dependencies: [ref],
     );
-    final saved = QueryChatEventData.fromJson(summary.toJson());
+    final saved = QueryChatEventData.fromJson(
+      jsonDecode(jsonEncode(summary)) as Map<String, dynamic>,
+    );
     expect(snapshot().allowsEvent(saved), isTrue);
     final movedCategory = category.copyWith(id: 'another-category');
     final moved = note.copyWith(
