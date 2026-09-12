@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T23:43:06Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T12:48:35Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -26,7 +26,7 @@ sources:
     last_modified: 2026-09-12
   - id: builder
     resource: ../../../lib/features/agents/query/query_answer_builder.dart
-    title: Batched source shortlisting and evidence verification
+    title: Whole-source batch inspection and evidence verification
     last_modified: 2026-09-12
   - id: access
     resource: ../../../lib/features/agents/query/query_source_access.dart
@@ -141,26 +141,45 @@ notes/recordings chips narrow discovery. There is no cross-category control.
 Task/project affiliations come from visible links and the task-to-project map;
 project names also become privacy dependencies of the answer.
 
-Discovery still gathers home and permitted category candidates before
-inspecting source text. The reach label describes that combined scope without
-promising sufficiency-driven home-first expansion. Home-only narrowing has its
-own reach label. Home-first batching remains separate work.
+`QueryAnswerBuilder` first discovers only home for task/project requests whose
+complete inspection input fits its budget. One isolated request interprets the
+question, inspects all supplied sources, judges sufficiency and selects relevant
+memories. It skips standalone planning and preview shortlisting on this path.
+Sufficient home evidence goes straight to evidence-only synthesis: two model
+completions, regardless of how many small documents were inspected.
 
-The current search is bounded keyword retrieval plus recent-category fallback,
-not an exhaustive semantic index. Up to eight sanitized OR terms feed FTS; ID
-lookups are chunked. Discovery caps the readable corpus at 60 documents. Corpora of more than four
-sources share one shortlisting request containing bounded extractive previews
-(up to 800 source characters each, plus labels and dates). Short entries are
-included whole; long entries contribute their opening and a search-term window
-or ending. Entries do not share a standard stored summary field, so this step
-does not claim these previews are generated summaries. The model ranks up to
-eight source IDs for exact-text inspection. IDs outside the supplied corpus or
-malformed output fail the request; previews never become evidence. Skipping any
-candidate marks coverage incomplete. Small corpora avoid the extra call.
-Visibility and category membership are rechecked for the entire overview before
-it is sent, then again before every selected source is inspected. Missing
-transcripts and limits contribute to incomplete coverage; a failed database or
-inference operation is retryable, not a claim that no discussion occurred.
+Insufficiency, an explicit wider-category request or incomplete home coverage
+permits category discovery. Home-only and uncategorized boundaries still apply.
+Previously inspected documents are reused only while fingerprint, representation
+version and representation date match. Fitting remaining documents share another
+inspection; larger sets use the bounded preview/window path. Discovery and
+inspection counts remain distinct: one batch can inspect twelve sources.
+
+The full batch request, including system instructions, chat context and eligible
+memories, is bounded to 24,000 UTF-8 bytes; its source text is additionally bounded
+to 12,000 Dart string characters. These are input bounds, not token estimates.
+Sources are serialized in ID order before the changing question/chat tail.
+Live access is refreshed rather than trusting a cached prompt. The task wake's
+compacted log is not imported, and persisted task/project reports are not used
+as query evidence or orientation: their standard provenance does not enumerate
+all contributing source visibility dependencies. The investigation and measured
+variants are in the [latency evaluation](../../../docs/perf/2026-09-12-penguin-query-latency-eval.md).
+
+Category queries and oversized home inputs retain planning, bounded discovery,
+preview shortlisting and source windows. Search is keyword retrieval plus recent
+category fallback, not an exhaustive semantic index. Up to eight sanitized OR
+terms feed FTS; ID lookups are chunked, and discovery caps readable documents at
+60. More than four unbatched sources share a shortlist containing extractive
+previews (up to 800 characters each, plus labels and dates), from which the model
+selects at most eight IDs. Previews never become evidence; skipped candidates
+mark coverage incomplete. Small sets avoid the shortlist call. Neither this
+fallback nor source shortlisting is described as whole-source batch inspection.
+
+Visibility and category membership are checked around each batch and before
+individual source inspection. A malformed batch, unknown ID or non-contiguous
+quote fails the request into the normal Retry path. Missing transcripts and
+limits contribute to incomplete coverage; a failed database or inference
+operation is retryable, not a claim that no discussion occurred.
 
 Text comes from one stored representation: `entryText.plainText` if present,
 otherwise the newest audio transcript or a task/project/checklist title. Empty
@@ -250,26 +269,37 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-  Question["Question and last ten visible chat messages"] --> Plan["Standalone query and search terms"]
-  Plan --> Discover["Bounded home and category discovery"]
-  Discover --> Inspect["Fresh completion for each source window"]
-  Inspect --> Verify{"Exact substring present?"}
-  Verify -->|yes| Evidence["Verified passage, source snapshot and dependencies"]
-  Verify -->|no| Discard["Discard candidate; no conversation or memory event"]
-  Recall["Visible same-category shared conclusions"] --> Select["Separate relevance selection"]
-  Select --> Answer["Final answer from positive evidence and selected recall"]
-  Evidence --> Answer
-  Answer --> Gate["Recheck privacy, deletion and recalled-memory availability"]
-  Gate --> Commit["Atomically append answer and useful conclusion"]
+  Question["Question and visible history through that question"] --> Fits{"Task/project home fits?"}
+  Fits -->|yes| Batch["Isolated home inspection and memory selection"]
+  Batch --> Enough{"Sufficient and no wider request or coverage gap?"}
+  Enough -->|yes| Evidence["Validated exact entry spans"]
+  Enough -->|expansion disabled| Evidence
+  Enough -->|no, expansion permitted| Expand["Same-category discovery; deduplicate representations"]
+  Expand --> Remaining{"Remaining input fits?"}
+  Remaining -->|yes| BatchMore["Isolated whole-source batch"]
+  BatchMore --> Evidence
+  Remaining -->|no| Windows["Shortlist and bounded source windows"]
+  Fits -->|no or category scope| Plan["Plan and bounded discovery"]
+  Plan --> Windows
+  Windows --> Evidence
+  Evidence --> Answer["Synthesis from accepted evidence, selected memory and chat context"]
+  Answer --> Gate["Live access and citation validation"]
+  Gate --> Commit["Transactional answer and useful conclusion"]
+  Batch -->|invalid response| Retry["Recoverable failure; no publication"]
+  BatchMore -->|invalid response| Retry
 ```
 
-Source inspection uses overlapping 12,000-character windows with a 10,000
-character stride, at most 90 source calls and 12 accepted passages. Each call
-has a fresh context, a cancellable stream and bounded response size. Negative
-candidate text never reaches the final answer prompt or durable history.
-Source instructions are explicitly treated as untrusted data. Model quotes
-must be exact substrings; fabricated quotations are discarded and coverage is
-marked incomplete. Summaries remain model interpretations, not verified quotes.
+Long-source inspection uses overlapping 12,000-character windows with a 10,000
+character stride, at most 90 inspection completions and 12 accepted passages.
+Each source/window contributes at most three passages; discarding additional
+passages marks coverage incomplete.
+A batch consumes one inspection completion; planning, shortlist, separate memory
+selection and synthesis are additional completions. Each completion has isolated
+context, bounded response size and a two-minute collection deadline. Negative
+candidate text never reaches synthesis or durable history. Source instructions
+are treated as untrusted data. Window extraction can discard a malformed quote
+and mark coverage incomplete; batch response validation rejects malformed or
+foreign passages as a whole. Evidence summaries are interpretations, not quotes.
 
 `QueryTextInference` uses the profile's thinking route through the existing
 cloud inference repository. The optional registered `AiInteractionCapture`

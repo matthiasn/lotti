@@ -73,6 +73,7 @@ void main() {
         final prompts = <Map<String, dynamic>>[];
         final result =
             await QueryAnswerBuilder(
+              maxBatchBytes: 1,
               crawler: bench.crawler,
               access: bench.crawler.access,
               inference: QueryTextInference(
@@ -121,7 +122,446 @@ void main() {
     );
   }
 
-  group('batched source shortlisting', () {
+  group('fitting home inspection', () {
+    late QueryTestBench bench;
+    late List<String> stages;
+    late List<Map<String, dynamic>> batchInputs;
+    late List<String> batchPrompts;
+    late List<(int, bool)> progress;
+    late QueryCancellation cancellation;
+    var wanted = 'source-1';
+    var memories = <AgentQueryChatEventEntity>[];
+    var memoryIds = <String>[];
+    var forceCategory = false;
+    Map<String, Object?>? invalidBatch;
+    void Function()? duringBatch;
+    Map<String, dynamic>? answerInput;
+
+    setUp(() {
+      bench = QueryTestBench()..add('task', category: categoryMindfulness.id);
+      for (var i = 1; i < 12; i++) {
+        bench
+          ..add('source-$i', category: categoryMindfulness.id)
+          ..link('task', 'source-$i');
+      }
+      bench.add('wider', category: categoryMindfulness.id);
+      stages = [];
+      batchInputs = [];
+      batchPrompts = [];
+      progress = [];
+      cancellation = QueryCancellation();
+      wanted = 'source-1';
+      memories = [];
+      memoryIds = [];
+      forceCategory = false;
+      invalidBatch = null;
+      duringBatch = null;
+      answerInput = null;
+    });
+
+    Future<QueryBuiltAnswer> build({
+      bool homeOnly = false,
+      int sourceCalls = 90,
+      AgentQueryChatEventEntity? askedQuestion,
+    }) =>
+        QueryAnswerBuilder(
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          maxSourceCalls: sourceCalls,
+          inference: QueryTextInference(
+            generate: (system, prompt) {
+              final input = jsonDecode(prompt) as Map<String, dynamic>;
+              Map<String, Object?> result;
+              if (system.contains('Inspect sources together')) {
+                stages.add('batch');
+                batchInputs.add(input);
+                batchPrompts.add(prompt);
+                duringBatch?.call();
+                final sources = (input['sources'] as List)
+                    .cast<Map<String, dynamic>>();
+                final selected = sources
+                    .where((source) => source['id'] == wanted)
+                    .firstOrNull;
+                result =
+                    invalidBatch ??
+                    {
+                      'question': 'What was decided?',
+                      'terms': ['feeder'],
+                      'sufficient': selected != null,
+                      'searchCategory': forceCategory,
+                      'memoryIds': memoryIds,
+                      'passages': [
+                        if (selected != null)
+                          {
+                            'sourceId': wanted,
+                            'quote': selected['text'],
+                            'summary': 'Recorded decision',
+                            'reason': 'Answers the question',
+                          },
+                      ],
+                    };
+              } else if (system.contains('Rephrase')) {
+                stages.add('plan');
+                result = {
+                  'question': 'What was decided?',
+                  'terms': ['feeder'],
+                };
+              } else if (system.contains('Shortlist sources')) {
+                stages.add('shortlist');
+                result = {
+                  'ids': [wanted],
+                };
+              } else if (system.contains('Extract passages')) {
+                stages.add('extract');
+                result = {
+                  'passages': [
+                    {'quote': input['source']},
+                  ],
+                };
+              } else {
+                stages.add('answer');
+                answerInput = input;
+                result = {
+                  'answer': (input['evidence'] as List).isEmpty
+                      ? 'Not established.'
+                      : 'The feeder decision is recorded [1].',
+                  'conclusion': '',
+                };
+              }
+              return Stream.value(jsonEncode(result));
+            },
+          ),
+        ).build(
+          chat: chat,
+          question: askedQuestion ?? question,
+          memories: memories,
+          cancellation: cancellation,
+          homeOnly: homeOnly,
+          onProgress: (checked, {required expanded}) =>
+              progress.add((checked, expanded)),
+        );
+
+    test(
+      'twelve short home sources need two calls and no category search',
+      () async {
+        final result = await build();
+        expect(stages, ['batch', 'answer']);
+        expect(bench.categoryReads, 0);
+        expect(bench.searches, isEmpty);
+        expect(batchInputs.single['sources'] as List, hasLength(12));
+        expect(result.answer.coverage.checked, 12);
+        expect(result.answer.coverage.homeChecked, 12);
+        expect(result.answer.coverage.categoryChecked, 0);
+        expect(progress.last.$1, 12);
+        for (var i = 1; i < progress.length; i++) {
+          expect(progress[i].$1, greaterThanOrEqualTo(progress[i - 1].$1));
+        }
+        expect(result.answer.coverage.expanded, isFalse);
+        expect(result.answer.coverage.incomplete, isFalse);
+        expect(result.answer.evidence.single.source.id, wanted);
+        expect(
+          result.answer.evidence.single.quote,
+          'Feeder decision in source-1.',
+        );
+        expect(
+          jsonEncode(answerInput),
+          isNot(contains('Feeder decision in source-2.')),
+        );
+      },
+    );
+
+    test(
+      'unchanged sources form the same prefix ahead of a new question',
+      () async {
+        await build();
+        final first = batchPrompts.single;
+        expect(first, startsWith('{"sources":'));
+        final prefix = first.substring(0, first.indexOf(',"question":'));
+        expect(prefix, contains('Feeder decision in source-11.'));
+        expect(prefix, contains('Feeder decision in task.'));
+        final reversed = bench.links.reversed.toList();
+        bench.links
+          ..clear()
+          ..addAll(reversed);
+        await build(
+          askedQuestion: question.copyWith(
+            id: 'follow-up',
+            data: const QueryChatQuestion(text: 'What happened next?'),
+          ),
+        );
+        expect(batchPrompts.last, startsWith(prefix));
+        expect(batchInputs.last['question'], 'What happened next?');
+        expect(batchPrompts.last, isNot(first));
+      },
+    );
+
+    test('one inspection budget still counts every batched source', () async {
+      final result = await build(sourceCalls: 1);
+      expect(stages, ['batch', 'answer']);
+      expect(result.answer.coverage.checked, 12);
+      expect(result.answer.evidence.single.source.id, wanted);
+    });
+
+    test(
+      'discarding passages at the per-source cap marks coverage incomplete',
+      () async {
+        invalidBatch = {
+          'question': 'What was decided?',
+          'terms': ['feeder'],
+          'sufficient': true,
+          'searchCategory': false,
+          'memoryIds': <String>[],
+          'passages': [
+            for (final quote in [
+              'Feeder',
+              'decision',
+              'source-1',
+              'Feeder decision',
+            ])
+              {'sourceId': wanted, 'quote': quote},
+          ],
+        };
+        final result = await build();
+        expect(result.answer.evidence, hasLength(3));
+        expect(result.answer.coverage.incomplete, isTrue);
+        expect(result.answer.coverage.checked, 12);
+      },
+    );
+
+    test(
+      'insufficient home evidence expands once without inspecting home again',
+      () async {
+        wanted = 'wider';
+        final result = await build();
+        expect(stages, ['batch', 'batch', 'answer']);
+        expect(
+          (batchInputs.last['sources'] as List).map(
+            (source) => (source as Map)['id'],
+          ),
+          ['wider'],
+        );
+        expect(result.answer.evidence.single.outsideHome, isTrue);
+        expect(result.answer.coverage.checked, 13);
+        expect(result.answer.coverage.homeChecked, 12);
+        expect(result.answer.coverage.categoryChecked, 1);
+        expect(result.answer.coverage.expanded, isTrue);
+      },
+    );
+
+    test(
+      'an explicit category request expands even with sufficient home evidence',
+      () async {
+        forceCategory = true;
+        await build();
+        expect(stages, ['batch', 'batch', 'answer']);
+        expect(
+          ((batchInputs.last['sources'] as List).single as Map)['id'],
+          'wider',
+        );
+      },
+    );
+
+    for (final hasWider in [true, false]) {
+      test(
+        'expansion reinspects a new representation (wider=$hasWider)',
+        () async {
+          forceCategory = true;
+          if (!hasWider) bench.entries.remove('wider');
+          duringBatch = () {
+            if (batchInputs.length != 1) return;
+            final entry = bench.entries[wanted]!;
+            bench.entries[wanted] = entry.copyWith(
+              meta: entry.meta.copyWith(updatedAt: DateTime(2026, 9, 12)),
+            );
+          };
+          final result = await build();
+          if (!hasWider) {
+            expect(progress.every((event) => !event.$2), isTrue);
+          }
+          expect(stages, ['batch', 'batch', 'answer']);
+          expect(
+            (batchInputs.last['sources'] as List).map(
+              (source) => (source as Map)['id'],
+            ),
+            contains(wanted),
+          );
+          expect(
+            result.answer.evidence.single.textVersionDate,
+            DateTime(2026, 9, 12),
+          );
+          expect(
+            result.answer.evidence.single.quote,
+            'Feeder decision in source-1.',
+          );
+        },
+      );
+    }
+
+    test('home-only does not expand an insufficient answer', () async {
+      wanted = 'wider';
+      final result = await build(homeOnly: true);
+      expect(stages, ['batch', 'answer']);
+      expect(bench.categoryReads, 0);
+      expect(result.answer.evidence, isEmpty);
+    });
+
+    for (final invalid in [
+      'foreign source',
+      'nonverbatim quote',
+      'missing sufficiency',
+      'unknown memory',
+      'malformed passage',
+    ]) {
+      test('rejects a batch with $invalid before synthesis', () async {
+        invalidBatch = {
+          'question': 'What was decided?',
+          'terms': ['feeder'],
+          'sufficient': true,
+          'searchCategory': false,
+          'memoryIds': <String>[],
+          'passages': [
+            {
+              'sourceId': invalid == 'foreign source'
+                  ? 'not-supplied'
+                  : 'source-1',
+              'quote': invalid == 'nonverbatim quote'
+                  ? 'Invented decision'
+                  : 'Feeder decision in source-1.',
+            },
+          ],
+        };
+        switch (invalid) {
+          case 'missing sufficiency':
+            invalidBatch!.remove('sufficient');
+          case 'unknown memory':
+            invalidBatch!['memoryIds'] = ['not-supplied'];
+          case 'malformed passage':
+            invalidBatch!['passages'] = ['not a passage object'];
+        }
+        await expectLater(build(), throwsFormatException);
+        expect(stages, ['batch']);
+        expect(answerInput, isNull);
+      });
+    }
+
+    test('privacy changing during a batch prevents the answer', () async {
+      duringBatch = () {
+        final entry = bench.entries[wanted]!;
+        bench.entries[wanted] = entry.copyWith(
+          meta: entry.meta.copyWith(private: true),
+        );
+      };
+      await expectLater(build(), throwsA(isA<QueryScopeUnavailable>()));
+      expect(stages, ['batch']);
+    });
+
+    test('oversized home text retains bounded exact-source windows', () async {
+      final entry = bench.entries[wanted]!;
+      bench.entries[wanted] = entry.copyWith(
+        entryText: EntryText(
+          plainText: '${'x' * 13000} The final feeder decision.',
+        ),
+      );
+      final result = await build();
+      expect(stages, ['plan', 'shortlist', 'extract', 'extract', 'answer']);
+      expect(result.answer.evidence, hasLength(2));
+      expect(
+        result.answer.evidence.every((e) => e.sourceText.length <= 12000),
+        isTrue,
+      );
+      expect(
+        result.answer.evidence.last.quote,
+        endsWith('The final feeder decision.'),
+      );
+      expect(result.answer.coverage.incomplete, isTrue);
+    });
+
+    AgentQueryChatEventEntity memory(String id, String text) =>
+        AgentQueryChatEventEntity(
+          id: id,
+          agentId: 'agent',
+          chatId: 'earlier-chat',
+          createdAt: date.subtract(const Duration(days: 1)),
+          vectorClock: null,
+          data: QueryChatMemory(
+            questionId: 'earlier-question',
+            text: text,
+            dependencies: [
+              QuerySourceRef(
+                id: 'memory-source',
+                categoryId: categoryMindfulness.id,
+                private: false,
+                categoryPrivate: false,
+              ),
+            ],
+          ),
+        );
+
+    test(
+      'memory selection shares inspection and forwards only the selected conclusion',
+      () async {
+        bench.add('memory-source', category: categoryMindfulness.id);
+        memories = [
+          memory('relevant', 'Previously recorded feeder context.'),
+          memory('irrelevant', 'Unrelated earlier conversation.'),
+        ];
+        memoryIds = ['relevant'];
+        final result = await build();
+        expect(stages, ['batch', 'answer']);
+        expect(batchInputs.single['memories'] as List, hasLength(2));
+        expect(result.answer.recalledMemoryIds, ['relevant']);
+        expect(
+          jsonEncode(answerInput),
+          contains('Previously recorded feeder context.'),
+        );
+        expect(
+          jsonEncode(answerInput),
+          isNot(contains('Unrelated earlier conversation.')),
+        );
+      },
+    );
+
+    test(
+      'a recalled source moving category during inspection aborts the answer',
+      () async {
+        bench
+          ..add('memory-source', category: categoryMindfulness.id)
+          ..categories.add(categoryMindfulness.copyWith(id: 'other-category'));
+        memories = [memory('relevant', 'Previously recorded feeder context.')];
+        memoryIds = ['relevant'];
+        duringBatch = () {
+          final entry = bench.entries['memory-source']!;
+          bench.entries['memory-source'] = entry.copyWith(
+            meta: entry.meta.copyWith(categoryId: 'other-category'),
+          );
+        };
+        await expectLater(build(), throwsA(isA<QueryScopeUnavailable>()));
+        expect(stages, ['batch']);
+      },
+    );
+
+    test(
+      'discovery without remaining inspection budget does not claim category coverage',
+      () async {
+        wanted = 'wider';
+        final result = await build(sourceCalls: 1);
+        expect(stages, ['batch', 'answer']);
+        expect(result.answer.coverage.checked, 12);
+        expect(result.answer.coverage.expanded, isFalse);
+        expect(result.answer.coverage.incomplete, isTrue);
+        expect(result.answer.evidence, isEmpty);
+      },
+    );
+
+    test('cancelling a batch prevents synthesis', () async {
+      duringBatch = cancellation.cancel;
+      await expectLater(build(), throwsA(isA<QueryCancelled>()));
+      expect(stages, ['batch']);
+    });
+  });
+
+  // A one-byte input budget exercises the bounded oversized-input fallback.
+  group('oversized-corpus source shortlisting', () {
     late QueryTestBench bench;
     late List<String> calls;
     late Map<String, dynamic> shortlistInput;
@@ -148,6 +588,7 @@ void main() {
 
     Future<QueryBuiltAnswer> build() =>
         QueryAnswerBuilder(
+          maxBatchBytes: 1,
           crawler: bench.crawler,
           access: bench.crawler.access,
           inference: QueryTextInference(
@@ -448,6 +889,7 @@ void main() {
       );
       final result =
           await QueryAnswerBuilder(
+            maxBatchBytes: 1,
             crawler: bench.crawler,
             access: bench.crawler.access,
             inference: inference,
@@ -491,6 +933,7 @@ void main() {
       );
       final result =
           await QueryAnswerBuilder(
+            maxBatchBytes: 1,
             crawler: bench.crawler,
             access: bench.crawler.access,
             inference: inference,
@@ -531,6 +974,7 @@ void main() {
       );
       await expectLater(
         QueryAnswerBuilder(
+          maxBatchBytes: 1,
           crawler: bench.crawler,
           access: bench.crawler.access,
           inference: inference,
@@ -586,6 +1030,7 @@ void main() {
       );
       final result =
           await QueryAnswerBuilder(
+            maxBatchBytes: 1,
             crawler: bench.crawler,
             access: bench.crawler.access,
             inference: inference,
@@ -691,6 +1136,7 @@ void main() {
       );
       final result =
           await QueryAnswerBuilder(
+            maxBatchBytes: 1,
             crawler: bench.crawler,
             access: bench.crawler.access,
             inference: inference,
@@ -745,6 +1191,7 @@ void main() {
         );
         final result =
             await QueryAnswerBuilder(
+              maxBatchBytes: 1,
               crawler: bench.crawler,
               access: bench.crawler.access,
               inference: inference,

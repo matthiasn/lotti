@@ -15,6 +15,8 @@ on:
       - "tool/task_agent_model_eval_judge_test.py"
       - "tool/deepseek_image_probe.py"
       - "tool/deepseek_image_probe_test.py"
+      - "tool/penguin_query_eval.py"
+      - "tool/penguin_query_eval_test.py"
       - "tool/pr_screenshot_publish.py"
       - "tool/pr_screenshot_publish_test.py"
       - "tool/play_promote.py"
@@ -31,6 +33,8 @@ on:
       - "tool/task_agent_model_eval_judge_test.py"
       - "tool/deepseek_image_probe.py"
       - "tool/deepseek_image_probe_test.py"
+      - "tool/penguin_query_eval.py"
+      - "tool/penguin_query_eval_test.py"
       - "tool/pr_screenshot_publish.py"
       - "tool/pr_screenshot_publish_test.py"
       - "tool/play_promote.py"
@@ -100,6 +104,9 @@ jobs:
 
       - name: Test image inference probe
         run: python -m unittest tool.deepseek_image_probe_test
+
+      - name: Test query latency runner
+        run: python -m unittest tool.penguin_query_eval_test
 
   pr-screenshot-publisher:
     name: PR Screenshot Publisher (test)

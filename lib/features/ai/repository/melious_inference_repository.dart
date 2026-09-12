@@ -516,7 +516,9 @@ class MeliousInferenceRepository extends TranscriptionRepository {
   /// no incremental deltas — `onProgress` in the unified path fires only once,
   /// when the call completes (or [_chatCompletionTimeout] trips). Melious only
   /// reports impact/cost on non-streaming responses, and streaming display is
-  /// not needed for the measured call sites.
+  /// not needed for the measured call sites. Cancelling the stream aborts only
+  /// its HTTP request, so a query deadline does not wait for the longer backend
+  /// timeout or close the shared client used by sibling requests.
   Stream<CreateChatCompletionStreamResponse> _nonStreamingChat({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -528,73 +530,101 @@ class MeliousInferenceRepository extends TranscriptionRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
-  }) async* {
-    final result = await _postChatCompletion(
-      baseUrl: baseUrl,
-      apiKey: apiKey,
-      request: _helpers.createBaseRequest(
-        messages: messages,
-        model: model,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: resolveToolChoice(model, tools, toolChoice),
-        reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
-        stream: false,
-      ),
-    );
-    if (result.impact.hasData) {
-      impactCollector.impact = result.impact;
+  }) {
+    final abort = Completer<void>();
+    var cancelled = false;
+    late final StreamController<CreateChatCompletionStreamResponse> controller;
+    Future<void> run() async {
+      try {
+        final result = await _postChatCompletion(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          abortTrigger: abort.future,
+          request: _helpers.createBaseRequest(
+            messages: messages,
+            model: model,
+            temperature: temperature,
+            maxCompletionTokens: maxCompletionTokens,
+            tools: tools,
+            toolChoice: resolveToolChoice(model, tools, toolChoice),
+            reasoningEffort: resolveReasoningEffort(model, reasoningEffort),
+            stream: false,
+          ),
+        );
+        if (result.impact.hasData) {
+          impactCollector.impact = result.impact;
+        }
+        if (cancelled) return;
+
+        final id = 'melious-chat-${const Uuid().v4()}';
+        controller.add(
+          CreateChatCompletionStreamResponse(
+            id: id,
+            created: 0,
+            model: model,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                finishReason: result.finishReason,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: result.content.isEmpty ? null : result.content,
+                  toolCalls: result.toolCalls.isEmpty ? null : result.toolCalls,
+                ),
+              ),
+            ],
+          ),
+        );
+        // Trailing usage-only chunk, mirroring the streaming API's final usage
+        // frame that consumers read token counts from.
+        final usage = result.usage;
+        if (usage != null) {
+          controller.add(
+            CreateChatCompletionStreamResponse(
+              id: id,
+              created: 0,
+              model: model,
+              choices: const [],
+              usage: usage,
+            ),
+          );
+        }
+      } catch (error, stack) {
+        if (!cancelled) controller.addError(error, stack);
+      } finally {
+        unawaited(controller.close());
+      }
     }
 
-    final id = 'melious-chat-${const Uuid().v4()}';
-    yield CreateChatCompletionStreamResponse(
-      id: id,
-      created: 0,
-      model: model,
-      choices: [
-        ChatCompletionStreamResponseChoice(
-          index: 0,
-          finishReason: result.finishReason,
-          delta: ChatCompletionStreamResponseDelta(
-            content: result.content.isEmpty ? null : result.content,
-            toolCalls: result.toolCalls.isEmpty ? null : result.toolCalls,
-          ),
-        ),
-      ],
+    controller = StreamController<CreateChatCompletionStreamResponse>(
+      onListen: () => unawaited(run()),
+      onCancel: () {
+        cancelled = true;
+        if (!abort.isCompleted) abort.complete();
+      },
     );
-    // Trailing usage-only chunk, mirroring the streaming API's final usage
-    // frame that consumers read token counts from.
-    final usage = result.usage;
-    if (usage != null) {
-      yield CreateChatCompletionStreamResponse(
-        id: id,
-        created: 0,
-        model: model,
-        choices: const [],
-        usage: usage,
-      );
-    }
+    return controller.stream;
   }
 
   Future<_MeliousChatResult> _postChatCompletion({
     required String baseUrl,
     required String apiKey,
+    required Future<void> abortTrigger,
     required CreateChatCompletionRequest request,
     Duration timeout = _chatCompletionTimeout,
   }) async {
     final uri = _buildEndpointUri(baseUrl, 'chat/completions');
     try {
-      final response = await httpClient
-          .post(
-            uri,
-            headers: {
+      final upload =
+          http.AbortableRequest('POST', uri, abortTrigger: abortTrigger)
+            ..headers.addAll({
               'Content-Type': 'application/json',
               'Accept': 'application/json',
               'Authorization': 'Bearer ${apiKey.trim()}',
-            },
-            body: jsonEncode(request.toJson()),
-          )
+            })
+            ..body = jsonEncode(request.toJson());
+      final response = await httpClient
+          .send(upload)
+          .then(http.Response.fromStream)
           .timeout(timeout);
 
       if (response.statusCode < 200 || response.statusCode >= 300) {

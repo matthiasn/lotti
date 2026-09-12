@@ -5,7 +5,7 @@ description: "Two small facts per piece of AI work — who initiated it and what
 resource: ../../lib/features/ai_consumption
 tags: [ai-consumption, attribution, cost, impact]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-11T01:43:18Z }
+generated: { by: codex/gpt-6, at: 2026-09-12T12:48:35Z }
 stale_after: 2027-02-22
 sources:
   - id: src
@@ -57,3 +57,13 @@ without a temporary sort.
 See [AI work attribution](ai/attribution.md) for the producing side and
 [agent persistence](agents/persistence-and-sync.md) for how a wake groups its
 calls into one attribution.
+
+
+`AiInteractionCapture.captureStream` directly owns the provider subscription so
+cancellation can reach a provider that has not emitted yet. It closes its
+intermediate stream to release the accounting generator, then lets that
+generator finalize one cancelled interaction. Cancellation while attribution
+is resolving prevents provider invocation. Normal completion and failure retain
+their existing usage, digest and status accounting; no raw request or response
+is persisted. Query cancellation can therefore abort the buffered Melious HTTP
+request even when the accounting wrapper is installed.

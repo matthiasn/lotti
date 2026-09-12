@@ -95,100 +95,155 @@ class AiInteractionCapture {
     List<AiArtifactReference> intendedOutputs = const [],
     String? taskId,
     String? categoryId,
-  }) async* {
-    final startedAt = clock.now().toUtc();
-    final pending =
-        existingSession ??
-        await beginSession(
-          workType: workType,
-          trigger: AiTriggerSnapshot(type: triggerType),
-          initiator: initiator,
-          automationId: automationId,
-          automationDisplayName: automationDisplayName,
-          attributionId: attributionId,
-          intendedOutputs: intendedOutputs,
-          taskId: taskId,
-          categoryId: categoryId,
-        );
-    final response = StringBuffer();
-    AiCapturedUsage? usage;
-    var streamCompleted = false;
-    var interactionRecorded = false;
-    try {
-      await for (final chunk in invoke()) {
-        response.write(responseText(chunk));
-        usage = usageForChunk?.call(chunk) ?? usage;
-        yield chunk;
-      }
-      streamCompleted = true;
-    } on Object catch (error) {
-      interactionRecorded = true;
-      try {
-        await _finish(
-          pending: pending,
-          interactionKind: interactionKind,
-          responseType: responseType,
-          providerType: providerType,
-          modelId: modelId,
-          requestText: requestText,
-          responseText: response.toString(),
-          startedAt: startedAt,
-          interactionStatus: AiInteractionStatus.failed,
-          workStatus: AiWorkStatus.failed,
-          taskId: taskId,
-          categoryId: categoryId,
-          errorCode: error.runtimeType.toString(),
-          usage: usage,
-          impact: impact?.call(),
-          interactionContext: interactionContext,
-          terminalize: terminalizeFailure,
-        );
-      } on Object {
-        rethrow;
-      }
-      rethrow;
-    } finally {
-      if (!streamCompleted && !interactionRecorded) {
-        await _finish(
-          pending: pending,
-          interactionKind: interactionKind,
-          responseType: responseType,
-          providerType: providerType,
-          modelId: modelId,
-          requestText: requestText,
-          responseText: response.toString(),
-          startedAt: startedAt,
-          interactionStatus: AiInteractionStatus.cancelled,
-          workStatus: AiWorkStatus.cancelled,
-          taskId: taskId,
-          categoryId: categoryId,
-          errorCode: 'cancelled',
-          usage: usage,
-          impact: impact?.call(),
-          interactionContext: interactionContext,
-          terminalize: terminalizeFailure,
-        );
-      }
+  }) {
+    var cancelled = false;
+    StreamSubscription<T>? providerSubscription;
+    StreamController<T>? providerController;
+    StreamSubscription<T>? capturedSubscription;
+    late final StreamController<T> output;
+
+    // Keep direct ownership of the provider subscription. Cancelling an
+    // async generator alone can wait for its pending await-for to emit.
+    Stream<T> providerStream() {
+      final stream = invoke();
+      late final StreamController<T> bridge;
+      bridge = StreamController<T>(
+        onListen: () {
+          try {
+            providerSubscription = stream.listen(
+              bridge.add,
+              onError: bridge.addError,
+              onDone: () => unawaited(bridge.close()),
+            );
+          } catch (error, stack) {
+            bridge.addError(error, stack);
+            unawaited(bridge.close());
+          }
+        },
+        onPause: () => providerSubscription?.pause(),
+        onResume: () => providerSubscription?.resume(),
+        onCancel: () => providerSubscription?.cancel(),
+      );
+      providerController = bridge;
+      return bridge.stream;
     }
-    await _finish(
-      pending: pending,
-      interactionKind: interactionKind,
-      responseType: responseType,
-      providerType: providerType,
-      modelId: modelId,
-      requestText: requestText,
-      responseText: response.toString(),
-      startedAt: startedAt,
-      interactionStatus: AiInteractionStatus.succeeded,
-      workStatus: AiWorkStatus.partial,
-      taskId: taskId,
-      categoryId: categoryId,
-      errorCode: 'output_carrier_unavailable',
-      usage: usage,
-      impact: impact?.call(),
-      interactionContext: interactionContext,
-      terminalize: terminalizeSuccess,
+
+    Stream<T> captured() async* {
+      final startedAt = clock.now().toUtc();
+      final pending =
+          existingSession ??
+          await beginSession(
+            workType: workType,
+            trigger: AiTriggerSnapshot(type: triggerType),
+            initiator: initiator,
+            automationId: automationId,
+            automationDisplayName: automationDisplayName,
+            attributionId: attributionId,
+            intendedOutputs: intendedOutputs,
+            taskId: taskId,
+            categoryId: categoryId,
+          );
+      final response = StringBuffer();
+      AiCapturedUsage? usage;
+      var streamCompleted = false;
+      var interactionRecorded = false;
+      try {
+        if (cancelled) return;
+        await for (final chunk in providerStream()) {
+          response.write(responseText(chunk));
+          usage = usageForChunk?.call(chunk) ?? usage;
+          yield chunk;
+        }
+        if (cancelled) return;
+        streamCompleted = true;
+      } on Object catch (error) {
+        interactionRecorded = true;
+        try {
+          await _finish(
+            pending: pending,
+            interactionKind: interactionKind,
+            responseType: responseType,
+            providerType: providerType,
+            modelId: modelId,
+            requestText: requestText,
+            responseText: response.toString(),
+            startedAt: startedAt,
+            interactionStatus: AiInteractionStatus.failed,
+            workStatus: AiWorkStatus.failed,
+            taskId: taskId,
+            categoryId: categoryId,
+            errorCode: error.runtimeType.toString(),
+            usage: usage,
+            impact: impact?.call(),
+            interactionContext: interactionContext,
+            terminalize: terminalizeFailure,
+          );
+        } on Object {
+          rethrow;
+        }
+        rethrow;
+      } finally {
+        if (!streamCompleted && !interactionRecorded) {
+          await _finish(
+            pending: pending,
+            interactionKind: interactionKind,
+            responseType: responseType,
+            providerType: providerType,
+            modelId: modelId,
+            requestText: requestText,
+            responseText: response.toString(),
+            startedAt: startedAt,
+            interactionStatus: AiInteractionStatus.cancelled,
+            workStatus: AiWorkStatus.cancelled,
+            taskId: taskId,
+            categoryId: categoryId,
+            errorCode: 'cancelled',
+            usage: usage,
+            impact: impact?.call(),
+            interactionContext: interactionContext,
+            terminalize: terminalizeFailure,
+          );
+        }
+      }
+      await _finish(
+        pending: pending,
+        interactionKind: interactionKind,
+        responseType: responseType,
+        providerType: providerType,
+        modelId: modelId,
+        requestText: requestText,
+        responseText: response.toString(),
+        startedAt: startedAt,
+        interactionStatus: AiInteractionStatus.succeeded,
+        workStatus: AiWorkStatus.partial,
+        taskId: taskId,
+        categoryId: categoryId,
+        errorCode: 'output_carrier_unavailable',
+        usage: usage,
+        impact: impact?.call(),
+        interactionContext: interactionContext,
+        terminalize: terminalizeSuccess,
+      );
+    }
+
+    output = StreamController<T>(
+      onListen: () {
+        capturedSubscription = captured().listen(
+          output.add,
+          onError: output.addError,
+          onDone: () => unawaited(output.close()),
+        );
+      },
+      onPause: () => capturedSubscription?.pause(),
+      onResume: () => capturedSubscription?.resume(),
+      onCancel: () {
+        cancelled = true;
+        unawaited(providerSubscription?.cancel());
+        unawaited(providerController?.close());
+        return capturedSubscription?.cancel();
+      },
     );
+    return output.stream;
   }
 
   Future<T> captureUnary<T>({
