@@ -3237,9 +3237,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInSpeakButton => 'Dictați contactul';
 
   @override
-  String get checkInSpeakInstead => 'Vorbiți în schimb';
-
-  @override
   String get checkInStartedLabel => 'Început';
 
   @override

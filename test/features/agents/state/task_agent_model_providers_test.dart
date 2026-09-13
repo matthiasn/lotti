@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -167,6 +168,30 @@ void main() {
       expect(
         container.read(taskAgentSetupOptionsProvider).value?.models,
         [capable, added],
+      );
+    },
+  );
+
+  test(
+    'relationship setup delegates without requiring a task template',
+    () async {
+      final identity = makeTestIdentity(kind: AgentKinds.relationshipAgent);
+      const expected = ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.disabled,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith((ref, id) async => identity),
+          relationshipAgentResolvedSetupProvider.overrideWith(
+            (ref, id) async => expected,
+          ),
+          templateForAgentProvider.overrideWith((ref, id) async => null),
+        ],
+      );
+      addTearDown(container.dispose);
+      expect(
+        await container.read(taskAgentResolvedSetupProvider('agent').future),
+        same(expected),
       );
     },
   );

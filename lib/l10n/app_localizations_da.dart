@@ -3185,9 +3185,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInSpeakButton => 'Indtal check-in';
 
   @override
-  String get checkInSpeakInstead => 'Sig det i stedet';
-
-  @override
   String get checkInStartedLabel => 'Startet';
 
   @override

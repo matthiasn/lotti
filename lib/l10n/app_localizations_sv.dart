@@ -3193,9 +3193,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInSpeakButton => 'Tala in avstämning';
 
   @override
-  String get checkInSpeakInstead => 'Säg det i stället';
-
-  @override
   String get checkInStartedLabel => 'Startade';
 
   @override

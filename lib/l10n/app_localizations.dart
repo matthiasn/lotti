@@ -5388,12 +5388,6 @@ abstract class AppLocalizations {
   /// **'Speak check-in'**
   String get checkInSpeakButton;
 
-  /// No description provided for @checkInSpeakInstead.
-  ///
-  /// In en, this message translates to:
-  /// **'Speak instead'**
-  String get checkInSpeakInstead;
-
   /// No description provided for @checkInStartedLabel.
   ///
   /// In en, this message translates to:

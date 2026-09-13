@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -544,6 +545,13 @@ void main() {
       contains('difficult calls'),
     );
     expect(report.provenance['relationshipId'], relationshipId);
+    final inference = ReportInferenceProvenance.tryRead(report.provenance);
+    expect(inference, isNotNull);
+    expect(inference!.executor.providerModelId, glmModel.providerModelId);
+    expect(inference.executor.modelConfigId, glmModel.id);
+    expect(inference.executor.servingProviderName, meliousProvider.name);
+    expect(inference.finalContentAuthor, ReportContentAuthor.executor);
+
     expect(upserts.whereType<AgentReportHeadEntity>(), hasLength(1));
 
     final banner = upserts.whereType<RelationshipNudgeEntity>().single;
@@ -1727,6 +1735,63 @@ void main() {
         );
         expect(resolved?.modelId, 'claude-x');
         expect(resolved?.profileId, 'profile-cat');
+      },
+    );
+
+    test(
+      'briefing recovers after selecting a usable default and records its author',
+      () async {
+        var selectedId = 'missing-profile';
+        when(
+          aiConfigRepository.getDefaultProfileId,
+        ).thenAnswer((_) async => selectedId);
+        stubCategoryProfileOnClaude();
+        final failed = await run(
+          tokens: {relationshipReportRefreshTriggerToken},
+        );
+        expect(failed.success, isFalse);
+        expect(conversationRepository.sendMessageDelegateCallCount, 0);
+        expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+        selectedId = 'profile-cat';
+        conversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              expect(model, claudeModel.providerModelId);
+              expect(provider.id, anthropicProvider.id);
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.updateRelationshipReport,
+                    briefingArgs(),
+                  ),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+        final recovered = await run(
+          tokens: {relationshipReportRefreshTriggerToken},
+        );
+        expect(recovered.success, isTrue);
+        expect(recovered.reportUpdated, isTrue);
+        final report = upserts.whereType<AgentReportEntity>().single;
+        expect(report.content, contains('Full briefing'));
+        final provenance = ReportInferenceProvenance.tryRead(report.provenance);
+        expect(provenance?.profileId, selectedId);
+        expect(
+          provenance?.executor.servingProviderConfigId,
+          anthropicProvider.id,
+        );
+        expect(provenance?.executor.modelConfigId, claudeModel.id);
       },
     );
 

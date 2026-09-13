@@ -1386,7 +1386,6 @@
   "checkInSourceMessage": "Din mesajul pe care l-ați trimis de pe această pagină. Totul se poate edita.",
   "checkInSourceMeta": "{type} · început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",
   "checkInSpeakButton": "Dictați contactul",
-  "checkInSpeakInstead": "Vorbiți în schimb",
   "checkInStartedLabel": "Început",
   "checkInTopicsHint": "Separate prin virgulă, de ex. muncă, călătorii",
   "checkInTopicsLabel": "Subiecte",

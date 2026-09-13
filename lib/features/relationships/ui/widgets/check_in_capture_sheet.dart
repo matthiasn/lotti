@@ -13,7 +13,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
-import 'package:lotti/features/design_system/components/time_pickers/design_system_time_picker.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -336,12 +336,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   bool _isSaving = false;
   bool _isTranscribing = false;
 
-  /// Set synchronously the moment a spoken check-in starts and cleared once
-  /// the whole flow has ended, so the page's mic (`startSpeaking`) and a
-  /// press on *Speak* during the pre-flight awaits cannot open the recorder
-  /// twice. [_isTranscribing] only covers the wait that follows a recording.
-  bool _isSpeaking = false;
-
   /// The in-flight transcript wait, so dismissing the sheet stops it instead
   /// of leaving a database listener running out the timeout.
   CheckInTranscriptWait? _transcriptWait;
@@ -395,7 +389,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         _avoidController.text.isNotEmpty;
     if (widget.startSpeaking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_handleSpeak());
+        if (mounted) unawaited(_speak());
       });
     }
   }
@@ -492,10 +486,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     return ModalUtils.showSinglePageModal<TimeOfDay>(
       context: context,
       title: context.messages.checkInStartedLabel,
-      builder: (modalContext) => DesignSystemTimePicker(
+      builder: (modalContext) => DesignSystemTimeWheel(
         key: const ValueKey('check-in-time-picker'),
-        initialTime: chosen,
-        onTimeChanged: (time) => chosen = time,
+        initialDateTime: _interactionTime,
+        use24hFormat: MediaQuery.alwaysUse24HourFormatOf(modalContext),
+        semanticsLabel: modalContext.messages.checkInStartedLabel,
+        onDateTimeChanged: (time) => chosen = TimeOfDay.fromDateTime(time),
       ),
       stickyActionBarBuilder: (modalContext) => DesignSystemModalActionBar(
         glass: true,
@@ -538,18 +534,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// user's words and a five-minute spinner. Note the check is not the
   /// automatic-inference switch: this is a gesture, so it only needs a model,
   /// not the consent gate that governs unattended runs.
-  Future<void> _handleSpeak() async {
-    if (_isSaving || _isTranscribing || _isSpeaking) return;
-    setState(() => _isSpeaking = true);
-    try {
-      await _speak();
-    } finally {
-      // Whatever ended the flow — a refused pre-flight, a cancelled
-      // recording, a transcript, an error — the button comes back.
-      if (mounted) setState(() => _isSpeaking = false);
-    }
-  }
-
   Future<void> _speak() async {
     // Every provider is read up front: each `await` below can outlive this
     // widget, and reading through `ref` after that throws.
@@ -871,22 +855,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           maxLines: 4,
           textCapitalization: TextCapitalization.sentences,
         ),
-        SizedBox(height: tokens.spacing.step3),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: DesignSystemButton(
-            key: const Key('check_in_speak_button'),
-            label: _isTranscribing
-                ? messages.checkInTranscribingLabel
-                : messages.checkInSpeakInstead,
-            variant: DesignSystemButtonVariant.outlined,
-            leadingIcon: LottiIcons.mic,
-            isLoading: _isTranscribing,
-            onPressed: _isSaving || _isTranscribing || _isSpeaking
-                ? null
-                : _handleSpeak,
+        if (_isTranscribing) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Semantics(
+            liveRegion: true,
+            child: caption(messages.checkInTranscribingLabel),
           ),
-        ),
+        ],
         SizedBox(height: tokens.spacing.step6),
         sectionLabel(messages.checkInWhenAndHowLong),
         Wrap(

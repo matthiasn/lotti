@@ -208,6 +208,7 @@ void main() {
     bool modelResolved = true,
     int totalTokens = 0,
     String? disclosureProviderName,
+    bool setupUnavailable = false,
     Set<ContactAction> launchable = const {ContactAction.call},
   }) async {
     final launcher = _FakeContactLauncher(launchable: launchable);
@@ -257,7 +258,12 @@ void main() {
             relationshipAgentServiceProvider.overrideWithValue(agentService),
             relationshipBriefingDisclosureProvider(
               relationshipId,
-            ).overrideWith((ref) async => disclosureProviderName),
+            ).overrideWith((ref) async {
+              if (setupUnavailable) {
+                throw const RelationshipInferenceSetupUnavailable();
+              }
+              return disclosureProviderName;
+            }),
             relationshipRepositoryProvider.overrideWithValue(repository),
             contactLauncherProvider.overrideWithValue(launcher),
             pendingInteractionStoreProvider.overrideWithValue(store),
@@ -624,6 +630,20 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       verify(() => agentService.requestBriefing(any())).called(1);
+    });
+
+    testWidgets('unavailable setup explains recovery and opens configuration', (
+      tester,
+    ) async {
+      await pump(tester, checkIns: onTrackCheckIns, setupUnavailable: true);
+      await tester.tap(briefMe);
+      await tester.pumpAndSettle();
+      verifyNever(() => agentService.requestBriefing(any()));
+      expect(find.text('Could not request the briefing.'), findsNothing);
+      expect(find.text('Selected AI setup is unavailable'), findsOneWidget);
+      await tester.tap(find.text('Choose a model'));
+      await tester.pumpAndSettle();
+      expect(find.text('Agent setup'), findsOneWidget);
     });
 
     testWidgets('a failed request surfaces the error toast', (tester) async {

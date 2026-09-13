@@ -1564,7 +1564,6 @@
   "checkInSourceMessage": "Dal messaggio che hai inviato da questa pagina. Tutto è modificabile.",
   "checkInSourceMeta": "{type} · inizio: {time} · {minutes, plural, =0{meno di un minuto} =1{circa 1 min} other{circa {minutes} min}}",
   "checkInSpeakButton": "Detta il contatto",
-  "checkInSpeakInstead": "Meglio a voce",
   "checkInStartedLabel": "Inizio",
   "checkInTopicsHint": "Separati da virgole, ad es. lavoro, viaggi",
   "checkInTopicsLabel": "Argomenti",

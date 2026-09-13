@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T12:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -680,7 +680,7 @@ removed:
   completion stream (shutdown, runtime teardown) fails the turn rather than
   leaving the caller on a future that can no longer complete, which would
   strand the composer disabled.
-- **One resolution chain for runtime and disclosure.**
+- **One resolution chain for runtime, status and disclosure.**
   `resolveRelationshipAgentModel` honors the typed setup saved by the shared
   model picker, including direct thinking-model overrides. Disabled or broken
   typed setups do not fall through. Legacy agents try the person's profile,
@@ -688,6 +688,12 @@ removed:
   validated GLM built-in is used only if no Settings default was selected.
   A selected Settings default that cannot resolve is an error. The generic
   fallback contract is in [profile resolution](ai/profile-resolution.md).
+  `relationshipAgentResolvedSetupProvider` follows the agent's relationship
+  link and uses this same resolver. The shared setup provider dispatches
+  relationship identities there before asking for a task template. The card
+  and configuration sheet therefore show the route that will actually run,
+  including the Settings default, and refresh on identity, default-profile,
+  catalog, relationship and category changes.
 - **Missing configuration backs off without orphaning the episode.**
   Escalation retries keep their original workspace and trigger tokens, with
   delays of 1, 2, 4, 8, 16, then 24 hours based on the failure streak. Transient
@@ -716,8 +722,12 @@ removed:
   treated as cloud. The relationship read is unfiltered — Phase B resolves
   through the person's own profile whatever this device's private-entry
   display preference, so the dialog must see the same row — and a route that
-  resolves to nothing at all throws (the card surfaces the failure and logs
-  the reason) rather than reading as "local, proceed silently". A direct model
+  resolves to nothing throws `RelationshipInferenceSetupUnavailable`. Automatic
+  provider retries are disabled for this preflight: the card immediately shows
+  the unavailable setup, recovery guidance and a button opening `AgentModelSheet`.
+  Every explicit briefing attempt refreshes disclosure so a repaired setup is
+  reread before consent. The existing unavailable-status link opens the same
+  sheet. A direct model
   override checks its own provider locality, not its optional base profile.
 
 ## The briefing wears the shared AI panel
@@ -739,9 +749,17 @@ rather than from any relationship-specific code:
 * Retuning the wash, border or radius happens once in `ai_card_chrome.dart`
   and lands on all three surfaces together.
 
-What the briefing does NOT borrow is the task footer's settings zone. Its
-band carries only the two things this panel can do — the per-person chat and
-"Brief me".
+The footer includes the shared model identity row and a link to
+`AgentModelSheet`, alongside the relationship-specific briefing and check-in
+controls. Report freshness ("Up to date") describes the stored report; model
+availability describes the current configuration and is a separate signal.
+
+New relationship reports carry `ReportInferenceProvenance`, captured from the
+resolved route used by the wake, alongside health and consumption metadata.
+Model and provider names remain attributable after configuration changes.
+Older reports without that snapshot honestly retain "Attribution unavailable"
+until a new briefing is generated; changing the current setup cannot identify
+which model authored historical text.
 
 The health band pill (`DsPill`, tinted with the band colour) sits in the card
 **body**, above the prose it qualifies — deliberately not in the header's
@@ -925,8 +943,8 @@ tool does not create Daily OS blocks or OS reminders.
 `showCheckInCaptureSheet` and `showCheckInEditSheet` ([check_in_capture_sheet.dart](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart))
 open one form (design 2026-09-06 §5) in the responsive modal — a bottom sheet
 on a phone, a dialog on desktop — in the order the design argued for: how it
-felt (the sentiment chips, optional) → what you talked about (the narrative,
-with *Speak instead* beside it) → when and how long (the type chips, a
+felt (the sentiment chips, optional) → what you talked about (the narrative)
+→ when and how long (the type chips, a
 *Started* tile and a *Duration* tile) → *More*, folded, for the topics and the
 two next-time fields; it opens unfolded when the check-in being edited already
 carries any of them. Save is pinned. The form has no actions of its own: after
@@ -946,7 +964,11 @@ sequenceDiagram
   H->>F: the published callback runs
 ```
 
-*Started* opens the date picker, then the time picker; the tile reads
+*Started* opens the date picker, then `DesignSystemTimeWheel`, the same control
+used by the journal date/time editor. It inherits the device's 12/24-hour
+preference and labels its semantics with the localized Started label. The
+chosen time preserves the selected day and is clamped to the current minute
+on today's date. The tile reads
 `Now · HH:mm` while the value is the current minute and the relative day plus
 the time otherwise. *Duration* opens `showCheckInDurationPicker`
 ([check_in_duration_picker.dart](../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart)):
@@ -1043,9 +1065,12 @@ need.
 
 # Voice check-ins (plan v2 phase 6)
 
-The capture sheet's "Speak check-in" records through the shared recording
-sheet and hands the transcript back to the user to edit. The hard part is not
-the UI: it is that **automated transcription used to be task-shaped**.
+The person page's microphone opens the capture sheet with `startSpeaking`,
+which launches the shared recorder after the first frame and hands the
+transcript back to the user to edit. The narrative has no duplicate microphone;
+a live-region caption announces transcription while Save remains disabled.
+Automated transcription used to be task-shaped; the shared pipeline now
+resolves the relationship as its subject.
 
 `ProfileAutomationService.tryTranscribe` and `ProfileAutomationResolver` took
 a `taskId`, resolved the agent through `TaskAgentService.getTaskAgentForTask`,
@@ -1176,8 +1201,8 @@ Two invariants hold regardless of what comes back:
   the check-in exists only once the user presses save. This is the same rule
   that keeps `CheckInSentiment` user-set (ADR 0038).
 * **Speaking never destroys typing.** `mergeCheckInNarrative` appends below
-  existing text, blank-line separated, so a second recording adds to the
-  account rather than replacing it.
+  existing text, blank-line separated, including text entered while the
+  transcript was still arriving.
 
 Name accuracy comes from the **category's `speechDictionary`**, not from
 anything relationship-specific: the recording is created with the person's

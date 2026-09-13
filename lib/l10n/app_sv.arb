@@ -1564,7 +1564,6 @@
   "checkInSourceMessage": "Från meddelandet du skickade från den här sidan. Allt går att ändra.",
   "checkInSourceMeta": "{type} · började kl. {time} · {minutes, plural, =0{under en minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "checkInSpeakButton": "Tala in avstämning",
-  "checkInSpeakInstead": "Säg det i stället",
   "checkInStartedLabel": "Startade",
   "checkInTopicsHint": "Kommaseparerade, t.ex. jobb, resor",
   "checkInTopicsLabel": "Ämnen",

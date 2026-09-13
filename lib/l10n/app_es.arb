@@ -1386,7 +1386,6 @@
   "checkInSourceMessage": "Del mensaje que enviaste desde esta página. Todo se puede editar.",
   "checkInSourceMeta": "{type} · empezó a las {time} · {minutes, plural, =0{menos de un minuto} =1{alrededor de 1 min} other{unos {minutes} min}}",
   "checkInSpeakButton": "Dictar el contacto",
-  "checkInSpeakInstead": "Mejor hablar",
   "checkInStartedLabel": "Empezó",
   "checkInTopicsHint": "Separados por comas, p. ej. trabajo, viajes",
   "checkInTopicsLabel": "Temas",

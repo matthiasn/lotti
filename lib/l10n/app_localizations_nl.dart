@@ -3195,9 +3195,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInSpeakButton => 'Check-in inspreken';
 
   @override
-  String get checkInSpeakInstead => 'Liever inspreken';
-
-  @override
   String get checkInStartedLabel => 'Begonnen';
 
   @override

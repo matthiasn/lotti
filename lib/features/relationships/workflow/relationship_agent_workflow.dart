@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
@@ -72,12 +73,13 @@ String relationshipAdId(String agentId, String runKey) => const Uuid().v5(
 /// default model or a direct thinking-model override routes.
 typedef RelationshipModelResolution = ({
   String modelId,
+  ResolvedAgentSetup setup,
   AiConfigInferenceProvider provider,
   GeminiThinkingMode? geminiThinkingMode,
   String? profileId,
 });
 
-/// Shared by Phase B and briefing disclosure so consent names the route used.
+/// Shared by Phase B, setup status and disclosure so each names the same route.
 /// An explicit typed setup is authoritative (including disabled/broken).
 /// Legacy agents try person profile, agent profile, category default, Settings
 /// default, then the validated built-in model. Explicit/category lookups are
@@ -99,6 +101,7 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
     final profile = details.profile;
     if (profile == null) return null;
     return (
+      setup: details,
       modelId: profile.thinkingModelId,
       provider: profile.thinkingProvider,
       geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
@@ -113,6 +116,11 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
     final profile = await profileResolver.resolveByProfileId(profileId);
     if (profile == null) return null;
     return (
+      setup: ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+        profile: profile,
+        source: AgentSetupResolutionSource.baseProfile,
+      ),
       modelId: profile.thinkingModelId,
       provider: profile.thinkingProvider,
       geminiThinkingMode: profile.thinkingModel?.geminiThinkingMode,
@@ -150,6 +158,15 @@ Future<RelationshipModelResolution?> resolveRelationshipAgentModel({
   );
   if (direct == null) return null;
   return (
+    setup: ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.resolved,
+      source: AgentSetupResolutionSource.legacyModel,
+      profile: ResolvedProfile(
+        thinkingModelId: direct.model.providerModelId,
+        thinkingModel: direct.model,
+        thinkingProvider: direct.provider,
+      ),
+    ),
     modelId: direct.model.providerModelId,
     provider: direct.provider,
     geminiThinkingMode: direct.model.geminiThinkingMode,
@@ -574,6 +591,16 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           runKey: runKey,
           threadId: threadId,
           strategy: strategy,
+          inferenceSnapshot: InferenceRunSnapshot(
+            runKey: runKey,
+            threadId: threadId,
+            executor: InferenceRouteSnapshot.fromResolvedProfile(
+              resolved.setup.profile!,
+            ),
+            setupSource: resolved.setup.source,
+            setupOrigin: resolved.setup.setupOrigin,
+            profileId: resolved.profileId,
+          ),
           derivation: derivation,
           now: now,
           replyToUser: interactive,
@@ -679,6 +706,9 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   /// persistOutputs shape): the interactive reply carrier, the briefing
   /// report + head, snoozes onto their rows, and at most one new banner.
   ///
+  /// [inferenceSnapshot] preserves the authoring route on each new report;
+  /// changing the selected setup later must not rewrite historical attribution.
+  ///
   /// [enforceEligibility] extends the in-transaction fence to revoked
   /// consent: an automatic wake whose relationship was un-marked
   /// `important` or archived while the model ran publishes NOTHING.
@@ -691,6 +721,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     required RelationshipAgentStrategy strategy,
     required RelationshipCadenceDerivation derivation,
     required DateTime now,
+    InferenceRunSnapshot? inferenceSnapshot,
     bool replyToUser = false,
     bool enforceEligibility = false,
   }) async {
@@ -879,6 +910,11 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               if (briefing.confidence != null)
                 RelationshipReportProvenanceKeys.healthConfidence:
                     briefing.confidence,
+              if (inferenceSnapshot != null)
+                taskAgentInferenceProvenanceKey:
+                    ReportInferenceProvenance.executorOnly(
+                      inferenceSnapshot,
+                    ).toJson(),
               'relationshipId': relationshipId,
               'dueDayKey': derivation.dueDayKey,
               if (attributionEnvelope != null)

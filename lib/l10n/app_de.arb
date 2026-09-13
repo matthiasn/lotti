@@ -1386,7 +1386,6 @@
   "checkInSourceMessage": "Aus der Nachricht, die du von dieser Seite aus geschickt hast. Alles lässt sich ändern.",
   "checkInSourceMeta": "{type} · begonnen um {time} · {minutes, plural, =0{unter einer Minute} =1{etwa 1 Min.} other{etwa {minutes} Min.}}",
   "checkInSpeakButton": "Check-in sprechen",
-  "checkInSpeakInstead": "Lieber sprechen",
   "checkInStartedLabel": "Begonnen",
   "checkInTopicsHint": "Kommagetrennt, z. B. Arbeit, Reisen",
   "checkInTopicsLabel": "Themen",

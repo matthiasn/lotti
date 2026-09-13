@@ -1393,7 +1393,6 @@
   "checkInSourceMessage": "Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.",
   "checkInSourceMeta": "{type} · začátek v {time} · {minutes, plural, =0{necelá minuta} =1{asi 1 min} other{asi {minutes} min}}",
   "checkInSpeakButton": "Namluvit kontakt",
-  "checkInSpeakInstead": "Raději namluvit",
   "checkInStartedLabel": "Začátek",
   "checkInTopicsHint": "Oddělená čárkami, např. práce, cestování",
   "checkInTopicsLabel": "Témata",

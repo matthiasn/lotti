@@ -3226,9 +3226,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInSpeakButton => 'Namluvit kontakt';
 
   @override
-  String get checkInSpeakInstead => 'Raději namluvit';
-
-  @override
   String get checkInStartedLabel => 'Začátek';
 
   @override
