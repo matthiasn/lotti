@@ -383,17 +383,25 @@ class CheckInStickyActions extends StatelessWidget {
     TextScaler scaler, {
     required bool dialog,
   }) {
-    double line(TextStyle style) =>
-        scaler.scale(style.fontSize! * (style.height ?? 1)).ceilToDouble();
     final stacked = scaler.scale(1) > TextScales.large;
     final button =
-        line(tokens.typography.styles.subtitle.subtitle1) +
+        _line(tokens.typography.styles.subtitle.subtitle1, scaler) +
         tokens.spacing.step4 * 2;
     final actions = stacked ? button * 2 + tokens.spacing.step3 : button;
-    final reason = line(tokens.typography.styles.others.caption);
+    final reason = reasonLineHeight(tokens, scaler);
     final reasonRow = dialog && !stacked ? 0 : reason + tokens.spacing.step3;
     return tokens.spacing.step5 * 2 + actions + reasonRow;
   }
+
+  /// The reason slot's fixed height: one caption line as the text engine
+  /// lays it out. Fixed, because an empty line and a worded one can differ
+  /// by a pixel under a real font, and the buttons above must never jump
+  /// as Save goes from held to free.
+  static double reasonLineHeight(DsTokens tokens, TextScaler scaler) =>
+      _line(tokens.typography.styles.others.caption, scaler);
+
+  static double _line(TextStyle style, TextScaler scaler) =>
+      scaler.scale(style.fontSize! * (style.height ?? 1)).ceilToDouble();
 
   /// The reason Save is held, or null when it is not.
   static String? blockLabel(
@@ -502,10 +510,18 @@ class CheckInStickyActions extends StatelessWidget {
           // the header speaks for the recorder and the transcript wait.
           final reasonText = Semantics(
             liveRegion: handle.block == CheckInSaveBlock.emptyNarrative,
-            child: Text(
-              reason ?? '',
-              key: const ValueKey('check-in-save-reason'),
-              style: reasonStyle,
+            child: SizedBox(
+              height: reasonLineHeight(
+                tokens,
+                MediaQuery.textScalerOf(context),
+              ),
+              child: Text(
+                reason ?? '',
+                key: const ValueKey('check-in-save-reason'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: reasonStyle,
+              ),
             ),
           );
 

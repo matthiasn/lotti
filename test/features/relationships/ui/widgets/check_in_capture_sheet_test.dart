@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
 
@@ -153,6 +154,9 @@ void main() {
     data: data,
   );
 
+  // Pinned fonts: the bar's rects are asserted to the pixel, and the CI
+  // bundle shares fonts loaded by any earlier file (test/README.md).
+  setUpAll(loadAppFonts);
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
