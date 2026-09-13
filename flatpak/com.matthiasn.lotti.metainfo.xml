@@ -40,6 +40,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.12" date="2026-09-13">
+      <description>
+        <p>Added: task chat can propose changes for review. Ask it to add checklist items, record time, or propose other task changes. Accept or dismiss the changes directly in chat before anything is applied.</p>
+        <p>Changed: project and category chats keep their details in place. Chat opens beside the detail on wide screens or in an expandable sheet on smaller screens. Category edits stay intact, and the project list returns after closing chat.</p>
+        <p>Fixed: chat now receives the current local date and time. Questions about today, yesterday or tomorrow get a fresh device timestamp with its UTC offset, rather than leaving the model to infer today from old reports or messages.</p>
+        <p>Fixed: relationship briefings now show the AI setup they actually use. The status and configuration sheet recognize the default profile from Settings. Unavailable setups explain how to choose a working model, and new briefings identify the model and provider that wrote them.</p>
+        <p>Fixed: check-in time selection now matches the journal editor. It follows your 12/24-hour preference. Audio check-ins use the person page's recorder; the duplicate microphone beside the text field has been removed.</p>
+      </description>
+    </release>
     <release version="1.1.11" date="2026-09-13">
       <description>
         <p>Added: choose a separate model for chat in an inference profile. The optional Chat model setting lets task, project and category conversations use a different model from background agent work. Leave it unset to keep using the profile's resolved Thinking model.</p>
