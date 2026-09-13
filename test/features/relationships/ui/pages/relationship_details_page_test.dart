@@ -8,9 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -30,7 +28,6 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
@@ -67,10 +64,7 @@ void main() {
   late MockRelationshipReminderService mockReminders;
   late MockUpdateNotifications mockNotifications;
   late MockEntitiesCacheService mockCache;
-  // The post-interaction prompt mounted on this page reads the device-local
-  // marker, which lives in settings. A real in-memory db is simpler than a
-  // mock here and keeps the prompt's "no marker → renders nothing" default.
-  late SettingsDb settingsDb;
+  late TestGetItMocks testServices;
 
   Metadata meta(String id, {String? categoryId, bool? private}) => Metadata(
     id: id,
@@ -149,7 +143,8 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
+    testServices = await setUpTestGetIt();
     // The page is a full scroll — hero, header, cards, then the log — and
     // the default 800x600 surface leaves the Tasks card and most check-in
     // rows unbuilt, where a tap lands on nothing. Tall enough for every
@@ -158,17 +153,13 @@ void main() {
       ..physicalSize = const Size(1000, 2400)
       ..devicePixelRatio = 1;
     mockRepository = MockRelationshipRepository();
-    mockNotifications = MockUpdateNotifications();
-    settingsDb = SettingsDb(inMemoryDatabase: true);
+    mockNotifications = testServices.updateNotifications;
     // The header's eyebrow and the form's CategoryField resolve the category
     // name through the cache; the picker reads its sorted categories.
     mockCache = MockEntitiesCacheService();
     when(() => mockCache.getCategoryById(any())).thenReturn(null);
     when(() => mockCache.sortedCategories).thenReturn([]);
-    getIt
-      ..registerSingleton<UpdateNotifications>(mockNotifications)
-      ..registerSingleton<SettingsDb>(settingsDb)
-      ..registerSingleton<EntitiesCacheService>(mockCache);
+    getIt.registerSingleton<EntitiesCacheService>(mockCache);
     // Most tests exercise other sections; linked tasks default to empty.
     when(
       () => mockRepository.getLinkedTasks('rel-1'),
@@ -183,10 +174,7 @@ void main() {
 
   tearDown(() async {
     TestWidgetsFlutterBinding.instance.platformDispatcher.views.single.reset();
-    await getIt.unregister<UpdateNotifications>();
-    await getIt.unregister<SettingsDb>();
-    await getIt.unregister<EntitiesCacheService>();
-    await settingsDb.close();
+    await tearDownTestGetIt();
   });
 
   Widget buildPage({
@@ -1223,7 +1211,7 @@ void main() {
     late MockFts5Db mockFts5Db;
 
     setUp(() {
-      mockDb = MockJournalDb();
+      mockDb = testServices.journalDb;
       mockFts5Db = MockFts5Db();
       when(
         () => mockDb.getTasks(
@@ -1237,9 +1225,7 @@ void main() {
         () => mockFts5Db.watchFullTextMatches(any()),
       ).thenAnswer((_) => Stream.value(const <String>[]));
 
-      getIt
-        ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<Fts5Db>(mockFts5Db);
+      getIt.registerSingleton<Fts5Db>(mockFts5Db);
 
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
         (_) async => relationship(),
@@ -1250,7 +1236,6 @@ void main() {
     });
 
     tearDown(() async {
-      await getIt.unregister<JournalDb>();
       await getIt.unregister<Fts5Db>();
     });
 
