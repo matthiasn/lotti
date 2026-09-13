@@ -3256,7 +3256,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'La transcripción no está configurada para esta persona. Añade un modelo de transcripción en los ajustes de IA o escribe tu registro.';
+      'Elige un perfil de inferencia predeterminado con un modelo de transcripción en los ajustes de IA, o escribe tu registro de contacto.';
 
   @override
   String get checkInWhenAndHowLong => 'Cuándo y cuánto tiempo';

@@ -94,7 +94,7 @@ Future<String?> showCheckInRecorder({
   context,
   linkedId: relationshipId,
   categoryId: categoryId,
-  transcribeOnSave: true,
+  transcriptionHandledByCaller: true,
 );
 
 final checkInRecorderLauncherProvider = Provider<CheckInRecorderLauncher>(
@@ -553,20 +553,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   /// Records a spoken check-in and prefills the narrative with its transcript.
   ///
-  /// The recording is linked to the person, so the generalized automation path
-  /// resolves *their* profile (or their category's) rather than declining for
-  /// want of a task. The audio entry is a journal entry like any other — the
-  /// spoken words survive even when the user abandons this sheet.
-  ///
-  /// Nothing here saves: the transcript lands in the text field for the user
-  /// to edit and confirm, matching the sentiment rule that a check-in is
-  /// authored by the person, never by inference.
-  ///
-  /// Refuses **before** recording when no transcription model is configured
-  /// at all — recording for a transcript that can never arrive wastes the
-  /// user's words and a five-minute spinner. Note the check is not the
-  /// automatic-inference switch: this is a gesture, so it only needs a model,
-  /// not the consent gate that governs unattended runs.
+  /// Audio is linked to the person, while transcription uses only the
+  /// system's selected default inference profile. The recorder's automatic
+  /// path is suppressed, so this explicit request runs once. Words remain
+  /// editable and are only saved as a check-in when the user presses Save.
+  /// Preflight refuses recording if the default has no transcription slot.
   Future<void> _speak() async {
     if (_isOpeningRecorder || _isTranscribing || _isSaving) return;
     setState(() {
@@ -607,7 +598,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     // them in series doubled the delay before the recorder appeared.
     final (relationship, canTranscribe) = await (
       repository.getRelationshipById(widget.relationshipId),
-      transcription.canTranscribe(widget.relationshipId),
+      transcription.canTranscribe(),
     ).wait.timeout(const Duration(seconds: 15));
     if (!mounted) return;
     if (!canTranscribe) {
@@ -628,19 +619,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     // narrative exactly as the user left it.
     if (!mounted || audioEntryId == null) return;
 
-    // This flow is an explicit request to transcribe. The recorder forces
-    // speech recognition for this recording, independent of a prior opt-out.
+    // The recorder suppresses automatic inference for this capture. This
+    // service owns the explicit request through the system default profile.
     setState(() => _isTranscribing = true);
     final wait = _transcriptWait = transcription.transcribe(
       audioEntryId: audioEntryId,
-      subjectId: widget.relationshipId,
     );
-    // A failed run writes no transcript, so the wait alone cannot tell a
-    // provider outage from a slow model — it would hold "Transcribing…" for
-    // the full five minutes and then blame nothing in particular. The error
-    // controller is set by whichever path ran (the service's own request, or
-    // the recorder's automatic one), so watching it covers both and carries
-    // the provider's verbatim reason into the toast.
+    // Preserve the provider's error detail in the recovery toast, including
+    // a failure that arrived before this subscription was attached.
     String? failureDetail;
     _closeTranscriptFailureSubscription();
     _transcriptFailureSubscription = ref.listenManual<String?>(

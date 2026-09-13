@@ -3269,7 +3269,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Transcrierea nu este configurată pentru această persoană. Adăugați un model de transcriere în setările AI sau scrieți înregistrarea contactului.';
+      'Selectați un profil de inferență implicit cu un model de transcriere în setările AI sau scrieți înregistrarea de contact.';
 
   @override
   String get checkInWhenAndHowLong => 'Când și cât timp';

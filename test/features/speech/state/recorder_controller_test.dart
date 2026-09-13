@@ -1530,7 +1530,7 @@ void main() {
   group('AudioRecorderController - Additional Coverage', () {
     group('stop() triggers automatic prompts (lines 276, 282-283)', () {
       test(
-        'stop with valid audioNote and linkedId triggers automaticPrompts',
+        'caller-owned recording skips automation after dismissal, next recording uses it',
         () async {
           final mockPersistence = MockPersistenceLogic();
           if (!getIt.isRegistered<PersistenceLogic>()) {
@@ -1609,6 +1609,28 @@ void main() {
 
           final controller = localContainer.read(
             audioRecorderControllerProvider.notifier,
+          );
+
+          // ignore: cascade_invocations
+          controller.setEnableSpeechRecognition(enable: true);
+          await controller.record(
+            linkedId: 'relationship-id',
+            transcriptionHandledByCaller: true,
+          );
+          controller.setModalVisible(modalVisible: false);
+          expect(await controller.stop(), 'stop-entry-id');
+          verifyNever(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              any(),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
+            ),
+          );
+          expect(
+            localContainer
+                .read(audioRecorderControllerProvider)
+                .enableSpeechRecognition,
+            isTrue,
           );
 
           // Start recording with a linkedId so _linkedId is set

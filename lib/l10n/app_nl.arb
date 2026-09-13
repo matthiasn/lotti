@@ -1572,7 +1572,7 @@
   "checkInTranscribingLabel": "Bezig met transcriberen…",
   "checkInTranscriptFailed": "Er kwam geen transcriptie terug. Je kunt het zelf typen.",
   "checkInTranscriptReady": "Transcriptie klaar. Controleer deze voordat je opslaat.",
-  "checkInTranscriptUnavailable": "Transcriptie is niet ingesteld voor deze persoon. Voeg een transcriptiemodel toe in de AI-instellingen of schrijf je check-in.",
+  "checkInTranscriptUnavailable": "Kies in de AI-instellingen een standaard inferentieprofiel met een transcriptiemodel, of schrijf je contactmoment op.",
   "checkInWhenAndHowLong": "Wanneer en hoe lang",
   "checkInWriteButton": "Een check-in schrijven",
   "checklistAddItem": "Een nieuw item toevoegen",

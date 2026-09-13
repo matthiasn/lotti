@@ -5445,7 +5445,7 @@ abstract class AppLocalizations {
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
   ///
   /// In en, this message translates to:
-  /// **'Transcription is not set up for this person. Add a transcription model in AI settings, or write your check-in.'**
+  /// **'Choose a default inference profile with a transcription model in AI settings, or write your check-in.'**
   String get checkInTranscriptUnavailable;
 
   /// No description provided for @checkInWhenAndHowLong.

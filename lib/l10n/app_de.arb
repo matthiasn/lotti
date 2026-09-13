@@ -1395,7 +1395,7 @@
   "checkInTranscribingLabel": "Wird transkribiert…",
   "checkInTranscriptFailed": "Es kam keine Transkription zurück. Du kannst es auch tippen.",
   "checkInTranscriptReady": "Transkript bereit. Prüfe es vor dem Speichern.",
-  "checkInTranscriptUnavailable": "Für diese Person ist keine Transkription eingerichtet. Füge in den KI-Einstellungen ein Transkriptionsmodell hinzu oder schreibe deinen Check-in.",
+  "checkInTranscriptUnavailable": "Wähle in den KI-Einstellungen ein Standard-Inferenzprofil mit einem Transkriptionsmodell oder schreibe deinen Check-in.",
   "checkInWhenAndHowLong": "Wann und wie lange",
   "checkInWriteButton": "Check-in schreiben",
   "checklistAddItem": "Neues Element hinzufügen",

@@ -43,12 +43,11 @@ import '../../../categories/test_utils.dart';
 /// prove the form opened in speaking mode without a recorder on screen.
 class _NoTranscription implements CheckInTranscriptionService {
   @override
-  Future<bool> canTranscribe(String subjectId) async => false;
+  Future<bool> canTranscribe() async => false;
 
   @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
-    required String subjectId,
     Duration timeout = checkInTranscriptTimeout,
   }) => throw UnimplementedError();
 }

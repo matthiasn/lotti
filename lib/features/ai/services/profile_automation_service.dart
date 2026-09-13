@@ -517,9 +517,8 @@ class ProfileAutomationService {
   /// Declines out loud. The profile walk's own decline only reports that no
   /// profile automates transcription, which is the less interesting half when
   /// the user *has* configured a speech-to-text model and it was rejected for
-  /// a missing provider/API key or an unsupported/unavailable native model.
-  /// Native readiness is checked only when no server candidate is available;
-  /// verification errors reject the candidate rather than aborting discovery.
+  /// a missing provider or API key — so the tallies below name that instead of
+  /// leaving the fallback's failure invisible.
   Future<AutomationResult> _tryDirectTranscriptionFallback(
     _CallIntent intent,
   ) async {
@@ -532,9 +531,6 @@ class ProfileAutomationService {
       AiConfigType.model,
     );
     final candidates = <_TranscriptionFallbackCandidate>[];
-    final nativeCandidates = <_TranscriptionFallbackCandidate>[];
-    var unsupportedNative = 0;
-    var unavailableNative = 0;
     var speechModelCount = 0;
     var withoutProvider = 0;
     var withoutApiKey = 0;
@@ -556,42 +552,12 @@ class ProfileAutomationService {
       }
 
       if (providerConfig.inferenceProviderType ==
-          InferenceProviderType.sherpa) {
-        // Automatic discovery must never load a multi-gigabyte native model
-        // just because its display name sorts first. Larger models remain
-        // available through an explicitly selected inference profile.
-        if (!const {'tiny', 'base'}.contains(model.providerModelId)) {
-          unsupportedNative++;
-        } else {
-          nativeCandidates.add((model: model, provider: providerConfig));
-        }
-      } else {
-        candidates.add((model: model, provider: providerConfig));
+              InferenceProviderType.sherpa &&
+          !(await isEmbeddedModelInstalled?.call(model.providerModelId) ??
+              false)) {
+        continue;
       }
-    }
-
-    // Even tiny/base readiness can perform expensive file verification.
-    // A configured server must never wait on the local model store.
-    if (candidates.isEmpty) {
-      nativeCandidates.sort(_compareFallbackCandidates);
-      for (final candidate in nativeCandidates) {
-        var available = false;
-        try {
-          available =
-              await isEmbeddedModelInstalled?.call(
-                candidate.model.providerModelId,
-              ) ??
-              false;
-        } catch (_) {
-          // Files may disappear or become unreadable during verification.
-          // Count the rejection without leaking a private filesystem path.
-        }
-        if (available) {
-          candidates.add(candidate);
-          break;
-        }
-        unavailableNative++;
-      }
+      candidates.add((model: model, provider: providerConfig));
     }
 
     if (candidates.isEmpty) {
@@ -601,9 +567,7 @@ class ProfileAutomationService {
                   'transcription fallback has nothing to run'
             : 'all $speechModelCount configured speech-to-text model(s) were '
                   'rejected: $withoutProvider without a resolvable provider, '
-                  '$withoutApiKey missing an API key, '
-                  '$unsupportedNative unsupported native model(s), '
-                  '$unavailableNative unavailable native model(s)',
+                  '$withoutApiKey missing an API key',
         subDomain: 'directFallback',
         intent: intent,
       );
@@ -660,36 +624,17 @@ class ProfileAutomationService {
       left,
     ).compareTo(_fallbackCandidateRank(right));
     if (rankComparison != 0) return rankComparison;
-    if (left.provider.inferenceProviderType == InferenceProviderType.melious &&
-        right.provider.inferenceProviderType == InferenceProviderType.melious) {
-      // Melious also exposes audio chat models. Prefer its dedicated Whisper
-      // route rather than selecting an arbitrary audio model by display name.
-      final leftWhisper = left.model.providerModelId.toLowerCase().contains(
-        'whisper',
-      );
-      final rightWhisper = right.model.providerModelId.toLowerCase().contains(
-        'whisper',
-      );
-      if (leftWhisper != rightWhisper) return leftWhisper ? -1 : 1;
-    }
-    final nameComparison = left.model.name.compareTo(right.model.name);
-    return nameComparison != 0
-        ? nameComparison
-        : left.model.id.compareTo(right.model.id);
+    return left.model.name.compareTo(right.model.name);
   }
 
   int _fallbackCandidateRank(_TranscriptionFallbackCandidate candidate) {
     final type = candidate.provider.inferenceProviderType;
 
-    // Prefer configured cloud speech services; native inference is a last
-    // resort when no server model is configured, never a retry on HTTP error.
-    if (type == InferenceProviderType.melious) return 0;
-    if (type == InferenceProviderType.whisper) return 1;
+    if (type == InferenceProviderType.sherpa) return 0;
     if (type == InferenceProviderType.mistral) return 3;
+    if (type == InferenceProviderType.melious) return 4;
     if (type == InferenceProviderType.openAi) return 5;
-    if (type == InferenceProviderType.sherpa) {
-      return candidate.model.providerModelId == 'tiny' ? 20 : 21;
-    }
+    if (type == InferenceProviderType.whisper) return 6;
     if (type == InferenceProviderType.voxtral) return 7;
     return 10;
   }

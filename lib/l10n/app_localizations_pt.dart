@@ -3245,7 +3245,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'A transcrição não está configurada para esta pessoa. Adiciona um modelo de transcrição nas definições de IA ou escreve o teu registo.';
+      'Escolha um perfil de inferência padrão com um modelo de transcrição nas configurações de IA, ou escreva seu registro de contato.';
 
   @override
   String get checkInWhenAndHowLong => 'Quando e quanto tempo';

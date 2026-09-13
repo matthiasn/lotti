@@ -547,7 +547,7 @@ void main() {
     Future<List<String?>> pumpShowModalCapturingResult(
       WidgetTester tester, {
       String? linkedId,
-      bool transcribeOnSave = false,
+      bool transcriptionHandledByCaller = false,
       List<Override> extraOverrides = const [],
     }) async {
       final results = <String?>[];
@@ -570,7 +570,8 @@ void main() {
                       await AudioRecordingModal.show(
                         context,
                         linkedId: linkedId,
-                        transcribeOnSave: transcribeOnSave,
+                        transcriptionHandledByCaller:
+                            transcriptionHandledByCaller,
                       ),
                     );
                   },
@@ -588,7 +589,7 @@ void main() {
       WidgetTester tester, {
       String? categoryId,
       String? linkedId,
-      bool transcribeOnSave = false,
+      bool transcriptionHandledByCaller = false,
       List<Override> extraOverrides = const [],
     }) async {
       await tester.pumpWidget(
@@ -611,7 +612,8 @@ void main() {
                         context,
                         categoryId: categoryId,
                         linkedId: linkedId,
-                        transcribeOnSave: transcribeOnSave,
+                        transcriptionHandledByCaller:
+                            transcriptionHandledByCaller,
                       );
                     },
                     child: const Text('Show Modal'),
@@ -679,59 +681,39 @@ void main() {
         expect(results, ['audio-entry-42']);
       });
 
-      testWidgets(
-        'saving hands transcription consent to stop before restoring it',
-        (
+      testWidgets('caller owns transcription from recording start', (
+        tester,
+      ) async {
+        sizeViewport(tester);
+        final ownership = <bool>[];
+        await pumpShowModalCapturingResult(
           tester,
-        ) async {
-          sizeViewport(tester);
-          final stoppedPreferences = <bool?>[];
-          late ProviderContainer container;
-          final results = await pumpShowModalCapturingResult(
-            tester,
-            linkedId: 'relationship-1',
-            transcribeOnSave: true,
-            extraOverrides: [
-              audioRecorderControllerProvider.overrideWith(
-                () => _CallbackTrackingController(
-                  fixedState: AudioRecorderState(
-                    status: AudioRecorderStatus.recording,
-                    progress: const Duration(seconds: 3),
-                    vu: 1,
-                    dBFS: -24,
-                    showIndicator: false,
-                    modalVisible: true,
-                    enableSpeechRecognition: false,
-                  ),
-                  createdId: 'audio-entry-42',
-                  onStopCalled: () => stoppedPreferences.add(
-                    container
-                        .read(audioRecorderControllerProvider)
-                        .enableSpeechRecognition,
-                  ),
+          linkedId: 'relationship-1',
+          transcriptionHandledByCaller: true,
+          extraOverrides: [
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: AudioRecorderState(
+                  status: AudioRecorderStatus.stopped,
+                  progress: Duration.zero,
+                  vu: 1,
+                  dBFS: -24,
+                  showIndicator: false,
+                  modalVisible: false,
+                  enableSpeechRecognition: true,
                 ),
+                onRecordingOwnership: ownership.add,
               ),
-            ],
-          );
-          container = ProviderScope.containerOf(
-            tester.element(find.byType(ElevatedButton)),
-          );
-          await tester.tap(find.text('Show Modal'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-          await tester.tap(find.text('Stop'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-          expect(results, ['audio-entry-42']);
-          expect(stoppedPreferences, [true]);
-          expect(
-            container
-                .read(audioRecorderControllerProvider)
-                .enableSpeechRecognition,
-            isFalse,
-          );
-        },
-      );
+            ),
+          ],
+        );
+        await tester.tap(find.text('Show Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byKey(const ValueKey('record')));
+        await tester.pump();
+        expect(ownership, [true]);
+      });
 
       testWidgets('failed save keeps the recording sheet open with an error', (
         tester,
@@ -912,14 +894,15 @@ void main() {
         },
       );
 
-      for (final (explicitTranscription, priorPreference) in [
+      for (final (handledByCaller, priorPreference) in [
         (false, false),
+        (false, true),
         (true, false),
         (true, true),
         (true, null),
       ]) {
         testWidgets(
-          'explicit transcription=$explicitTranscription scopes the '
+          'caller transcription=$handledByCaller scopes the '
           '$priorPreference preference to the recording sheet',
           (tester) async {
             stubCategory();
@@ -927,7 +910,7 @@ void main() {
               tester,
               categoryId: 'test-category',
               linkedId: 'relationship-1',
-              transcribeOnSave: explicitTranscription,
+              transcriptionHandledByCaller: handledByCaller,
               extraOverrides: [
                 checkboxVisibilityProvider((
                   categoryId: 'test-category',
@@ -953,11 +936,11 @@ void main() {
               container
                   .read(audioRecorderControllerProvider)
                   .enableSpeechRecognition,
-              explicitTranscription,
+              priorPreference,
             );
             expect(
               find.byKey(const Key('speech_recognition_checkbox')),
-              explicitTranscription ? findsNothing : findsOneWidget,
+              handledByCaller ? findsNothing : findsOneWidget,
             );
 
             await tester.tapAt(const Offset(10, 10));
@@ -2446,6 +2429,7 @@ class _CallbackTrackingController extends AudioRecorderController {
     this.onPauseCalled,
     this.onResumeCalled,
     this.onRecord,
+    this.onRecordingOwnership,
   });
 
   final AudioRecorderState fixedState;
@@ -2455,6 +2439,8 @@ class _CallbackTrackingController extends AudioRecorderController {
   final VoidCallback? onPauseCalled;
   final VoidCallback? onResumeCalled;
   final Future<AudioRecordingFailure?> Function()? onRecord;
+  // ignore: avoid_positional_boolean_parameters
+  final void Function(bool)? onRecordingOwnership;
 
   @override
   AudioRecorderState build() => fixedState;
@@ -2472,8 +2458,13 @@ class _CallbackTrackingController extends AudioRecorderController {
   }
 
   @override
-  Future<AudioRecordingFailure?> record({String? linkedId}) async =>
-      onRecord?.call();
+  Future<AudioRecordingFailure?> record({
+    String? linkedId,
+    bool transcriptionHandledByCaller = false,
+  }) async {
+    onRecordingOwnership?.call(transcriptionHandledByCaller);
+    return onRecord?.call();
+  }
 
   @override
   Future<String?> stop() async {

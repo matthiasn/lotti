@@ -42,6 +42,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   String? _linkedId;
   String? _categoryId;
   AudioNote? _audioNote;
+  bool _transcriptionHandledByCaller = false;
   bool _terminalActionInProgress = false;
   bool _startInProgress = false;
 
@@ -116,9 +117,12 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   ///
   /// Returns null after a successful action, or a typed failure the caller
   /// can display. Overlapping starts are refused before changing the subject.
+  /// [transcriptionHandledByCaller] suppresses automation for this recording,
+  /// including when it is stopped after its original sheet is dismissed.
   /// [linkedId] Optional ID to link this recording to an existing journal entry.
   Future<AudioRecordingFailure?> record({
     String? linkedId,
+    bool transcriptionHandledByCaller = false,
   }) async {
     if (_startInProgress || _terminalActionInProgress) {
       return AudioRecordingFailure.busy;
@@ -137,6 +141,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         } else {
           _audioNote = await _recorderRepository.startRecording();
           if (_audioNote == null) return AudioRecordingFailure.startFailed;
+          _transcriptionHandledByCaller = transcriptionHandledByCaller;
           if (ref.mounted) {
             // Update state to recording while keeping existing inference preferences
             state = state.copyWith(
@@ -182,10 +187,12 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     _terminalActionInProgress = true;
     final note = _audioNote;
     final linkedSubjectId = _linkedId;
+    final transcriptionHandledByCaller = _transcriptionHandledByCaller;
     final categoryId = _categoryId;
     final duration = state.progress;
     _audioNote = null;
     _linkedId = null;
+    _transcriptionHandledByCaller = false;
 
     try {
       await _recorderRepository.stopRecording();
@@ -214,7 +221,9 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
         final entryId = journalAudio?.meta.id;
 
         // Trigger automatic prompts in the background via profile-driven automation
-        if (entryId != null && linkedSubjectId != null) {
+        if (entryId != null &&
+            linkedSubjectId != null &&
+            !transcriptionHandledByCaller) {
           // Don't await - let it run in the background so the modal can close immediately
           unawaited(
             _triggerAutomaticPrompts(
@@ -273,6 +282,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
     // clear immediately rather than lingering through the async file deletion.
     _audioNote = null;
     _linkedId = null;
+    _transcriptionHandledByCaller = false;
     _vuMeter.reset();
 
     // Preserve the inference preferences before resetting state.

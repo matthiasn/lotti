@@ -1573,7 +1573,7 @@
   "checkInTranscribingLabel": "Trascrizione in corso…",
   "checkInTranscriptFailed": "Non è arrivata nessuna trascrizione. Puoi scriverlo tu.",
   "checkInTranscriptReady": "Trascrizione pronta. Rileggila prima di salvare.",
-  "checkInTranscriptUnavailable": "La trascrizione non è configurata per questa persona. Aggiungi un modello di trascrizione nelle impostazioni IA oppure scrivi il tuo resoconto.",
+  "checkInTranscriptUnavailable": "Scegli un profilo di inferenza predefinito con un modello di trascrizione nelle impostazioni IA, oppure scrivi il tuo check-in.",
   "checkInWhenAndHowLong": "Quando e per quanto",
   "checkInWriteButton": "Scrivi un resoconto",
   "checklistAddItem": "Aggiungi un nuovo articolo",

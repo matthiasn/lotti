@@ -3260,7 +3260,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'La transcription n’est pas configurée pour cette personne. Ajoute un modèle de transcription dans les réglages IA ou écris ton compte rendu.';
+      'Choisis un profil d’inférence par défaut avec un modèle de transcription dans les réglages IA, ou écris ton suivi de contact.';
 
   @override
   String get checkInWhenAndHowLong => 'Quand et combien de temps';

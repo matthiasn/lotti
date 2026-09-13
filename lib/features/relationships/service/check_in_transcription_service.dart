@@ -5,10 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
@@ -53,12 +55,10 @@ class CheckInTranscriptWait {
 /// Two jobs, because they are one decision: whether anything *can* transcribe
 /// for a person, and getting the words once they have spoken.
 ///
-/// The recorder fires the automatic transcription path on stop, so when that
-/// path is live this only has to wait for it. When it is not — the common
-/// case, since the automatic path is gated on a category switch that exists
-/// for *unattended* inference — the request the user just made is run
-/// explicitly instead. Either way exactly one run happens, so a spoken
-/// check-in is never billed twice.
+/// Uses only the system's selected default inference profile and its
+/// transcription slot. The recording sheet disables its automatic trigger for
+/// this capture, so this explicit request owns the one transcription run.
+/// There is no subject/category resolution or model-discovery fallback.
 ///
 /// The check-in stays user-authored (ADR 0038): this only *offers* the words.
 /// Nothing it returns is saved without the user pressing save.
@@ -66,91 +66,66 @@ class CheckInTranscriptionService {
   const CheckInTranscriptionService(
     this._journalDb,
     this._updateNotifications,
-    this._automation,
+    this._profileResolver,
     this._runner,
   );
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;
-  final ProfileAutomationService _automation;
+  final ProfileResolver _profileResolver;
   final SkillInferenceRunner _runner;
 
-  /// Whether a spoken check-in can produce a transcript for [subjectId].
-  ///
-  /// True when the automatic path will run on its own, or when an explicit
-  /// request can resolve a transcription model. False means no model is
-  /// configured at all — the only case worth refusing the gesture for.
-  Future<bool> canTranscribe(String subjectId) async {
-    final automatic = await _automation.hasAutomatedSkillType(
-      subjectId: subjectId,
-      skillType: SkillType.transcription,
-    );
-    if (automatic) return true;
-    return _automation.canTranscribeOnRequest(subjectId: subjectId);
+  /// Whether the selected system default has a usable transcription slot.
+  Future<bool> canTranscribe() async => await _resolveProfile() != null;
+
+  Future<ResolvedProfile?> _resolveProfile() async {
+    final profile = await _profileResolver.resolveDefaultProfile();
+    if (profile?.transcriptionModelId == null ||
+        profile?.transcriptionProvider == null) {
+      return null;
+    }
+    return profile;
   }
 
-  /// The transcript for [audioEntryId], running one explicitly when the
-  /// recorder's automatic path will not.
+  /// Waits for [audioEntryId]'s transcript and starts one explicit request.
   ///
-  /// The wait is started *before* the run so a transcript written between the
-  /// two is not missed. A run that resolves no model, or that fails, cancels
-  /// the wait rather than leaving the caller on a spinner until the timeout.
-  ///
-  /// The failure signal only covers the run this service starts. When the
-  /// recorder's automatic path owns the run instead, nothing here observes
-  /// its outcome — the UI watches `inferenceErrorControllerProvider` for the
-  /// audio entry to close that gap, because that controller is set by
-  /// whichever path ran.
+  /// Listening starts before inference so a fast result cannot be missed.
+  /// Missing default configuration and inference errors end the wait promptly.
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
-    required String subjectId,
     Duration timeout = checkInTranscriptTimeout,
   }) {
     final wait = _awaitTranscript(audioEntryId, timeout: timeout);
     unawaited(
-      _runWhenAutomationWillNot(
+      _runTranscription(
         audioEntryId: audioEntryId,
-        subjectId: subjectId,
-        onNothingToRun: wait.cancel,
+        onFailure: wait.cancel,
       ),
     );
     return wait;
   }
 
-  /// Runs transcription explicitly unless the recorder's automatic path is
-  /// already going to. Never throws: every way this can fail ends the wait
-  /// through [onNothingToRun], and the caller's answer is "type it yourself"
-  /// either way.
-  ///
-  /// The failure hook is not optional decoration. `runTranscription` reports
-  /// an inference failure through its status controllers and returns
-  /// normally, so the `catch` below never sees a provider error — without
-  /// `onError` an HTTP 503 leaves the caller waiting out the full timeout.
-  Future<void> _runWhenAutomationWillNot({
+  /// Runs the system default's transcription slot without any fallback.
+  Future<void> _runTranscription({
     required String audioEntryId,
-    required String subjectId,
-    required void Function() onNothingToRun,
+    required void Function() onFailure,
   }) async {
     try {
-      final automatic = await _automation.hasAutomatedSkillType(
-        subjectId: subjectId,
-        skillType: SkillType.transcription,
-      );
-      if (automatic) return;
-
-      final result = await _automation.requestTranscription(
-        subjectId: subjectId,
-      );
-      if (!result.handled) {
-        onNothingToRun();
+      final profile = await _resolveProfile();
+      if (profile == null) {
+        onFailure();
         return;
       }
-      // No `linkedTaskId`: a person is not a task, and that parameter feeds
-      // the consumption record's task field as well as the prompt context.
+      // This is a manual request: no automated skill assignment or task id.
+      // In particular, it must not start a profile's automatic summary skill.
       await _runner.runTranscription(
         audioEntryId: audioEntryId,
-        automationResult: result,
-        onError: (_) => onNothingToRun(),
+        automationResult: AutomationResult(
+          handled: true,
+          resolvedProfile: profile,
+          skill: findBuiltInSkill(skillTranscribeContextId),
+        ),
+        onError: (_) => onFailure(),
       );
     } catch (exception, stackTrace) {
       developer.log(
@@ -159,7 +134,7 @@ class CheckInTranscriptionService {
         error: exception,
         stackTrace: stackTrace,
       );
-      onNothingToRun();
+      onFailure();
     }
   }
 
@@ -245,6 +220,6 @@ CheckInTranscriptionService checkInTranscriptionService(Ref ref) =>
     CheckInTranscriptionService(
       ref.watch(journalDbProvider),
       getIt<UpdateNotifications>(),
-      ref.watch(profileAutomationServiceProvider),
+      ref.watch(profileResolverProvider),
       ref.watch(skillInferenceRunnerProvider),
     );

@@ -3256,7 +3256,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Pro tuto osobu není nastaven přepis. Přidej model přepisu v nastavení AI nebo záznam kontaktu napiš.';
+      'V nastavení AI vyber výchozí inferenční profil s modelem pro přepis, nebo svůj kontakt zapiš.';
 
   @override
   String get checkInWhenAndHowLong => 'Kdy a jak dlouho';

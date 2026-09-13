@@ -46,7 +46,7 @@ class _StubTranscriptionService implements CheckInTranscriptionService {
   int cancelCount = 0;
 
   @override
-  Future<bool> canTranscribe(String subjectId) async {
+  Future<bool> canTranscribe() async {
     await preflightGate?.future;
     return canTranscribeResult;
   }
@@ -54,7 +54,6 @@ class _StubTranscriptionService implements CheckInTranscriptionService {
   @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
-    required String subjectId,
     Duration timeout = checkInTranscriptTimeout,
   }) {
     final completer = gate ?? (Completer<String?>()..complete(transcript));
@@ -999,7 +998,7 @@ void main() {
       expect(launches, 0, reason: 'no recording should be wasted');
       expect(find.text('Transcribing…'), findsNothing);
       expect(
-        find.textContaining('Transcription is not set up'),
+        find.textContaining('Choose a default inference profile'),
         findsOne,
       );
     });
@@ -1163,9 +1162,8 @@ void main() {
     // The HTTP 503 case. A failed run writes no transcript, so the wait alone
     // cannot tell a provider outage from a slow model, and `runTranscription`
     // reports the failure through its status controllers rather than
-    // throwing. When the recorder's automatic path owns the run the service's
-    // own failure hook never fires either — the error controller is the one
-    // signal set by whichever path ran, which is why the sheet watches it.
+    // throwing. The form also observes the error controller so it can display
+    // the provider's specific failure detail.
     testWidgets('a reported inference failure ends the wait and names it', (
       tester,
     ) async {
@@ -1192,7 +1190,7 @@ void main() {
               aiResponseType: AiResponseType.audioTranscription,
             )).notifier,
           )
-          .setError('HTTP 503 · Melious · All Voxtral providers failed');
+          .setError('HTTP 503 · Transcription service unavailable');
       await tester.pumpAndSettle();
 
       expect(
@@ -1206,7 +1204,7 @@ void main() {
         findsOne,
       );
       expect(
-        find.text('HTTP 503 · Melious · All Voxtral providers failed'),
+        find.text('HTTP 503 · Transcription service unavailable'),
         findsOne,
         reason: "the provider's own reason, not a generic failure",
       );
@@ -1600,7 +1598,7 @@ void main() {
         ProviderScope.containerOf(
           tester.element(find.byType(AudioRecordingModalContent)),
         ).read(audioRecorderControllerProvider).enableSpeechRecognition,
-        isTrue,
+        isNull,
       );
     });
   });

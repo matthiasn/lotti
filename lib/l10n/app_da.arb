@@ -1573,7 +1573,7 @@
   "checkInTranscribingLabel": "Transskriberer…",
   "checkInTranscriptFailed": "Der kom ingen udskrift. Du kan skrive den selv.",
   "checkInTranscriptReady": "Transskriptionen er klar. Gennemgå den, før du gemmer.",
-  "checkInTranscriptUnavailable": "Transskription er ikke sat op for denne person. Tilføj en transskriptionsmodel i AI-indstillingerne, eller skriv din kontaktlog.",
+  "checkInTranscriptUnavailable": "Vælg en standardprofil til inferens med en transskriptionsmodel i AI-indstillinger, eller skriv din kontaktregistrering.",
   "checkInWhenAndHowLong": "Hvornår og hvor længe",
   "checkInWriteButton": "Skriv en kontaktlog",
   "checklistAddItem": "Tilføj en ny genstand",

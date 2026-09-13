@@ -3216,7 +3216,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Transskription er ikke sat op for denne person. Tilføj en transskriptionsmodel i AI-indstillingerne, eller skriv din kontaktlog.';
+      'Vælg en standardprofil til inferens med en transskriptionsmodel i AI-indstillinger, eller skriv din kontaktregistrering.';
 
   @override
   String get checkInWhenAndHowLong => 'Hvornår og hvor længe';

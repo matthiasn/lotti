@@ -3242,7 +3242,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Für diese Person ist keine Transkription eingerichtet. Füge in den KI-Einstellungen ein Transkriptionsmodell hinzu oder schreibe deinen Check-in.';
+      'Wähle in den KI-Einstellungen ein Standard-Inferenzprofil mit einem Transkriptionsmodell oder schreibe deinen Check-in.';
 
   @override
   String get checkInWhenAndHowLong => 'Wann und wie lange';

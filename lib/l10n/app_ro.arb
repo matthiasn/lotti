@@ -1395,7 +1395,7 @@
   "checkInTranscribingLabel": "Se transcrie…",
   "checkInTranscriptFailed": "Nu a venit nicio transcriere. O puteți scrie dvs.",
   "checkInTranscriptReady": "Transcrierea este gata. Verificați-o înainte de salvare.",
-  "checkInTranscriptUnavailable": "Transcrierea nu este configurată pentru această persoană. Adăugați un model de transcriere în setările AI sau scrieți înregistrarea contactului.",
+  "checkInTranscriptUnavailable": "Selectați un profil de inferență implicit cu un model de transcriere în setările AI sau scrieți înregistrarea de contact.",
   "checkInWhenAndHowLong": "Când și cât timp",
   "checkInWriteButton": "Scrieți o înregistrare de contact",
   "checklistAddItem": "Adăugați un element nou",

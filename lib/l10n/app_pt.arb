@@ -1572,7 +1572,7 @@
   "checkInTranscribingLabel": "Transcrevendo…",
   "checkInTranscriptFailed": "Nenhuma transcrição voltou. Você pode escrever você mesmo.",
   "checkInTranscriptReady": "Transcrição pronta. Revê-a antes de guardar.",
-  "checkInTranscriptUnavailable": "A transcrição não está configurada para esta pessoa. Adiciona um modelo de transcrição nas definições de IA ou escreve o teu registo.",
+  "checkInTranscriptUnavailable": "Escolha um perfil de inferência padrão com um modelo de transcrição nas configurações de IA, ou escreva seu registro de contato.",
   "checkInWhenAndHowLong": "Quando e quanto tempo",
   "checkInWriteButton": "Escrever um registo",
   "checklistAddItem": "Adicionar um novo item",

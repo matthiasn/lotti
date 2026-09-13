@@ -107,15 +107,15 @@ the linked subject. Permission denial and failed starts return typed failures
 for localized UI feedback rather than silently swallowing the tap. The modal
 also disables Record while initialization is pending. A null stop/save result
 keeps the modal open with an error instead of dismissing as though it succeeded.
-`transcribeOnSave` lets a spoken check-in explicitly enable transcription and
-hide unrelated automation controls for that sheet. Dismissal restores the prior
-preference; a completed stop hands its recording state to automation before
-restoration. Opening a new recording clears a previous category even when its
-new category is null.
+`transcriptionHandledByCaller` hides automation controls and suppresses the
+recorder's automatic trigger for that recording. The flag survives dismissal
+and resets on stop/cancel; it never changes shared preferences. The caller owns
+the explicit request after save. Opening a new recording clears a previous
+category even when its new category is null.
 
 
 **Both `stop()` and `cancel()` land in `Stopped`, but only `stop()` persists.**
-`stop()` creates a `JournalAudio` and fires automatic prompts; `cancel()` stops
+`stop()` creates a `JournalAudio` and normally fires automatic prompts; `cancel()` stops
 the recorder, **deletes the partial file** and creates no entry — nothing is
 transcribed and no task agent is woken. The modal's discard control asks for
 confirmation first, so the page returns to exactly how it looked before.
@@ -137,9 +137,10 @@ the check *is* the permission request. The app shell watches
 frame of any route — a probe in `build()` popped the OS microphone dialog over
 the task list on a fresh install. Permission is requested lazily, in `record()`.
 
-## Every stop runs the automation, and a goal gets its own gate
+## Ordinary recordings run automation, and a goal gets its own gate
 
-`stop()` hands every created entry to `AutomaticPromptTrigger`, whichever
+Unless transcription is handled by its caller, `stop()` hands each linked
+created entry to `AutomaticPromptTrigger`, whichever
 control stopped it — the sheet's stop button, the sidebar's, or the floating
 indicator's. That is why the post-recording decision lives here and not in
 the surface that opened the recorder: a surface only learns of a recording it

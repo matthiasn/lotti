@@ -241,6 +241,8 @@ void main() {
             ),
           );
           await tester.pump();
+          scroll.jumpTo(100);
+          await tester.pump();
           final center = tester.getCenter(viewport);
           if (trackpad) {
             await tester.sendEventToBinding(
@@ -269,7 +271,7 @@ void main() {
           }
           await tester.pump();
           expect(handle.value.y, greaterThan(0.7));
-          expect(scroll.offset, 0);
+          expect(scroll.offset, 100);
           expect(handle.value.scale, 2);
         },
       );

@@ -1573,7 +1573,7 @@
   "checkInTranscribingLabel": "Transkriberar…",
   "checkInTranscriptFailed": "Ingen transkription kom tillbaka. Du kan skriva den själv.",
   "checkInTranscriptReady": "Transkriptionen är klar. Läs igenom den innan du sparar.",
-  "checkInTranscriptUnavailable": "Transkription är inte inställd för den här personen. Lägg till en transkriptionsmodell i AI-inställningarna eller skriv din avstämning.",
+  "checkInTranscriptUnavailable": "Välj en standardprofil för inferens med en transkriptionsmodell i AI-inställningarna, eller skriv din kontaktanteckning.",
   "checkInWhenAndHowLong": "När och hur länge",
   "checkInWriteButton": "Skriv en avstämning",
   "checklistAddItem": "Lägg till ett nytt föremål",

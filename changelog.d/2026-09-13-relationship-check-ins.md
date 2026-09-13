@@ -2,8 +2,8 @@
 - **Spoken check-ins now report recording and transcription failures.**
   Permission errors are visible, repeated taps cannot start overlapping
   recordings, and fast transcription failures no longer leave the form waiting.
-  Automatic model discovery prefers configured cloud speech services and limits
-  on-device fallback to installed Whisper tiny/base models.
+  Transcription uses your default inference profile without choosing another
+  model or falling back to a different provider.
 - **Person photos can be dragged vertically while zoomed.** The crop surface
   keeps the surrounding sheet from stealing the pan gesture.
 

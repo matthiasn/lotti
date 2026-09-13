@@ -3200,7 +3200,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Transcription is not set up for this person. Add a transcription model in AI settings, or write your check-in.';
+      'Choose a default inference profile with a transcription model in AI settings, or write your check-in.';
 
   @override
   String get checkInWhenAndHowLong => 'When and how long';

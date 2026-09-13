@@ -1395,7 +1395,7 @@
   "checkInTranscribingLabel": "Transcribiendo…",
   "checkInTranscriptFailed": "No llegó ninguna transcripción. Puedes escribirlo tú.",
   "checkInTranscriptReady": "Transcripción lista. Revísala antes de guardar.",
-  "checkInTranscriptUnavailable": "La transcripción no está configurada para esta persona. Añade un modelo de transcripción en los ajustes de IA o escribe tu registro.",
+  "checkInTranscriptUnavailable": "Elige un perfil de inferencia predeterminado con un modelo de transcripción en los ajustes de IA, o escribe tu registro de contacto.",
   "checkInWhenAndHowLong": "Cuándo y cuánto tiempo",
   "checkInWriteButton": "Escribir un registro",
   "checklistAddItem": "Agregar un nuevo elemento",

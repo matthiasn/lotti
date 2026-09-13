@@ -171,10 +171,7 @@ class _GeneratedFallbackRankScenario {
 
   String modelIdAt(int index) => 'rank-model-$index';
 
-  String providerModelIdAt(int index) =>
-      providerTypes[index] == InferenceProviderType.sherpa
-      ? 'tiny'
-      : 'synthetic-stt-model-$index';
+  String providerModelIdAt(int index) => 'synthetic-stt-model-$index';
 
   @override
   String toString() {
@@ -426,144 +423,6 @@ void main() {
         as AiConfigModel;
   }
 
-  for (final cloudAvailable in [true, false]) {
-    test('automatic fallback prefers cloud and bounds local size '
-        '(cloud=$cloudAvailable)', () async {
-      final cloud = makeProvider(
-        id: 'cloud',
-        type: InferenceProviderType.melious,
-        apiKey: 'test-key',
-      );
-      final local = makeProvider(
-        id: 'local',
-        type: InferenceProviderType.sherpa,
-      );
-      final models = [
-        makeModel(
-          id: 'large',
-          name: 'A large',
-          providerId: local.id,
-          providerModelId: 'large-v3',
-        ),
-        makeModel(
-          id: 'tiny',
-          name: 'Z tiny',
-          providerId: local.id,
-          providerModelId: 'tiny',
-        ),
-        if (cloudAvailable) makeModel(id: 'cloud-model', providerId: cloud.id),
-      ];
-      when(
-        () => mockResolver.resolveForSubject('task-1'),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockAiConfig.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => models);
-      for (final provider in [cloud, local]) {
-        when(
-          () => mockAiConfig.getConfigById(provider.id),
-        ).thenAnswer((_) async => provider);
-      }
-      var readinessChecks = 0;
-      final subject = ProfileAutomationService(
-        resolver: mockResolver,
-        aiConfigRepository: mockAiConfig,
-        categoryAutomationLookup: (_) async => true,
-        isEmbeddedModelInstalled: (_) async {
-          readinessChecks++;
-          return true;
-        },
-      );
-      final result = await subject.tryTranscribe(subjectId: 'task-1');
-      expect(
-        result.resolvedProfile?.transcriptionModel?.id,
-        cloudAvailable ? 'cloud-model' : 'tiny',
-      );
-      expect(readinessChecks, cloudAvailable ? 0 : 1);
-    });
-  }
-
-  test(
-    'cloud fallback chooses Whisper before an alphabetically earlier audio model',
-    () async {
-      final provider = makeProvider(
-        id: 'cloud',
-        type: InferenceProviderType.melious,
-        apiKey: 'test-key',
-      );
-      when(
-        () => mockResolver.resolveForSubject('task-1'),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockAiConfig.getConfigById(provider.id),
-      ).thenAnswer((_) async => provider);
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
-        (_) async => [
-          makeModel(
-            id: 'chat',
-            name: 'A Voxtral',
-            providerId: provider.id,
-            providerModelId: 'voxtral-small',
-          ),
-          makeModel(
-            id: 'whisper',
-            name: 'Z Whisper',
-            providerId: provider.id,
-            providerModelId: 'whisper-large-v3',
-          ),
-        ],
-      );
-      final result = await service.tryTranscribe(subjectId: 'task-1');
-      expect(result.resolvedProfile?.transcriptionModel?.id, 'whisper');
-    },
-  );
-
-  for (final modelId in [
-    'tiny',
-    'base',
-    'small',
-    'medium',
-    'large-v3',
-    'unknown',
-  ]) {
-    test(
-      'native fallback bounds admission before readiness checks ($modelId)',
-      () async {
-        final provider = makeProvider(
-          id: 'embedded',
-          type: InferenceProviderType.sherpa,
-        );
-        when(
-          () => mockResolver.resolveForSubject('task-1'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAiConfig.getConfigById(provider.id),
-        ).thenAnswer((_) async => provider);
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer(
-          (_) async => [
-            makeModel(providerId: provider.id, providerModelId: modelId),
-          ],
-        );
-        var readinessChecks = 0;
-        final subject = ProfileAutomationService(
-          resolver: mockResolver,
-          aiConfigRepository: mockAiConfig,
-          categoryAutomationLookup: (_) async => true,
-          isEmbeddedModelInstalled: (_) async {
-            readinessChecks++;
-            return true;
-          },
-        );
-        final result = await subject.tryTranscribe(subjectId: 'task-1');
-        final allowed = modelId == 'tiny' || modelId == 'base';
-        expect(result.handled, allowed);
-        expect(readinessChecks, allowed ? 1 : 0);
-      },
-    );
-  }
-
   for (final installed in [true, false, null]) {
     test(
       'embedded fallback requires device-local availability ($installed)',
@@ -600,57 +459,6 @@ void main() {
         expect(result.handled, installed ?? false);
         if (installed ?? false) {
           expect(result.resolvedProfile?.transcriptionProvider, embedded);
-        }
-      },
-    );
-  }
-
-  for (final baseAvailable in [false, true]) {
-    test(
-      'native readiness errors reject a candidate (base=$baseAvailable)',
-      () async {
-        final local = makeProvider(
-          id: 'local',
-          type: InferenceProviderType.sherpa,
-        );
-        when(
-          () => mockAiConfig.getConfigById(local.id),
-        ).thenAnswer((_) async => local);
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer(
-          (_) async => [
-            for (final id in ['large-v3', 'tiny', 'base'])
-              makeModel(id: id, providerId: local.id, providerModelId: id),
-          ],
-        );
-        final checked = <String>[];
-        final subject = ProfileAutomationService(
-          resolver: mockResolver,
-          aiConfigRepository: mockAiConfig,
-          domainLogger: mockDomainLogger,
-          isEmbeddedModelInstalled: (id) async {
-            checked.add(id);
-            if (id == 'tiny') throw StateError('model files inaccessible');
-            return baseAvailable;
-          },
-        );
-        final result = await subject.resolveDirectTranscription();
-        expect(result.handled, baseAvailable);
-        expect(checked, ['tiny', 'base']);
-        if (baseAvailable) {
-          expect(result.resolvedProfile!.transcriptionModelId, 'base');
-        } else {
-          expect(
-            loggedLines(),
-            contains(
-              allOf(
-                startsWith('directFallback:'),
-                contains('1 unsupported native model'),
-                contains('2 unavailable native model'),
-              ),
-            ),
-          );
         }
       },
     );
@@ -1040,42 +848,40 @@ void main() {
         },
       );
 
-      for (final sameName in [false, true]) {
-        test(
-          'sorts same-rank fallbacks by name, then id (sameName=$sameName)',
-          () async {
-            final provider = makeProvider();
-            final betaModel = makeModel(
-              id: 'model-beta',
-              name: sameName ? 'Whisper model' : 'Beta Whisper model',
-              providerModelId: 'whisper-small',
-            );
-            final alphaModel = makeModel(
-              id: 'model-alpha',
-              name: sameName ? 'Whisper model' : 'Alpha Whisper model',
-              providerModelId: 'whisper-large',
-            );
+      test(
+        'sorts same-rank direct transcription fallbacks by model name',
+        () async {
+          final provider = makeProvider();
+          final betaModel = makeModel(
+            id: 'model-beta',
+            name: 'Beta Whisper model',
+            providerModelId: 'whisper-small',
+          );
+          final alphaModel = makeModel(
+            id: 'model-alpha',
+            name: 'Alpha Whisper model',
+            providerModelId: 'whisper-large',
+          );
 
-            when(
-              () => mockResolver.resolveForSubject('task-1'),
-            ).thenAnswer((_) async => null);
-            when(
-              () => mockAiConfig.getConfigsByType(AiConfigType.model),
-            ).thenAnswer((_) async => [betaModel, alphaModel]);
-            when(
-              () => mockAiConfig.getConfigById(provider.id),
-            ).thenAnswer((_) async => provider);
+          when(
+            () => mockResolver.resolveForSubject('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [betaModel, alphaModel]);
+          when(
+            () => mockAiConfig.getConfigById(provider.id),
+          ).thenAnswer((_) async => provider);
 
-            final result = await service.tryTranscribe(subjectId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
-            expect(result.handled, isTrue);
-            expect(
-              result.resolvedProfile!.transcriptionModelId,
-              'whisper-large',
-            );
-          },
-        );
-      }
+          expect(result.handled, isTrue);
+          expect(
+            result.resolvedProfile!.transcriptionModelId,
+            'whisper-large',
+          );
+        },
+      );
 
       test('returns not-handled when no matching skill type', () async {
         const assignment = SkillAssignment(
@@ -2224,20 +2030,8 @@ void main() {
         final winnerProvider = result.resolvedProfile!.transcriptionProvider!;
         final winnerType = winnerProvider.inferenceProviderType;
 
-        if (scenario.providerTypes.contains(InferenceProviderType.melious)) {
-          expect(
-            winnerType,
-            InferenceProviderType.melious,
-            reason: '$scenario',
-          );
-        } else if (scenario.providerTypes.contains(
-          InferenceProviderType.whisper,
-        )) {
-          expect(
-            winnerType,
-            InferenceProviderType.whisper,
-            reason: '$scenario',
-          );
+        if (scenario.providerTypes.contains(InferenceProviderType.sherpa)) {
+          expect(winnerType, InferenceProviderType.sherpa, reason: '$scenario');
         } else if (scenario.providerTypes.contains(
           InferenceProviderType.mistral,
         )) {
@@ -2246,12 +2040,12 @@ void main() {
             InferenceProviderType.mistral,
             reason: '$scenario',
           );
-        } else if (scenario.providerTypes.any(
-          (type) => type != InferenceProviderType.sherpa,
+        } else if (scenario.providerTypes.contains(
+          InferenceProviderType.melious,
         )) {
           expect(
             winnerType,
-            isNot(InferenceProviderType.sherpa),
+            InferenceProviderType.melious,
             reason: '$scenario',
           );
         }

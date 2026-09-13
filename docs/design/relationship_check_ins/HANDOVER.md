@@ -21,10 +21,10 @@ followed by interaction type/time/duration and More for sentiment and notes.
 Preparation, processing and transcript readiness are announced; failures offer
 recovery. Existing populated optional details remain expanded when editing.
 
-The seeded Melious profile already targets cloud Whisper Large v3. The corrected
-direct fallback also prefers Melious Whisper over other Melious audio models,
-and never discovers a large native model automatically. The exact identity of
-“Mirius” still needs confirmation before a device routing claim is possible.
+Audio check-ins use the system's selected default inference profile and its
+transcription slot. The check-in implementation has no provider-specific
+selection or fallback. A missing or unusable default shows a configuration error;
+a failed request ends with an error instead of trying another model.
 
 ## Surface inventory
 
@@ -70,8 +70,7 @@ decision, not an assumption that the current schema already supports it.
 The runtime contract and lifecycle diagrams are maintained in
 [Relationships](../../../knowledge/features/relationships.md); transcription
 resolution is documented in
-[AI execution paths](../../../knowledge/features/ai/execution-paths.md) and
-[embedded speech](../../../knowledge/features/ai/embedded-speech.md).
+[profile resolution](../../../knowledge/features/ai/profile-resolution.md).
 
 ## Data available to design
 
@@ -91,20 +90,18 @@ privacy inheritance; they are intentionally absent from the main journal list.
 
 | Finding | Evidence / disposition |
 |---|---|
-| Large native model selected ahead of configured cloud | Reproduced in `profile_automation_service_test.dart`: original fallback chooses `large-v3` over cloud and tiny. Corrected discovery prefers cloud and restricts native fallback to installed Whisper tiny/base. Explicit profile assignments remain deliberate choices. |
+| Check-in selected models outside the system default | Check-ins now resolve only `ProfileResolver.resolveDefaultProfile()`. Service tests verify the exact resolved profile reaches the runner and missing configuration invokes no inference. Recorder tests verify automation stays suppressed after modal dismissal. |
 | Recording tap appears inert | Permission denial and failed start were logged but not shown. Corrected recorder returns a typed failure and recording UI displays localized recovery guidance. |
 | Repeated taps overlap initialization | Reproduced while permission is pending. Start is now serialized so a second tap cannot replace the intended person. |
 | Unhandled transcript database error | Reproduced in `check_in_transcription_service_test.dart`. Read/notification failures now end the wait safely. |
 | Fast cloud failure missed | The error is keyed by the new audio entry, but the listener ignored its initial value. It now observes an error that arrived while the recorder modal was closing. |
 | Vertical photo pan lost to sheet scrolling | Reproduced with the crop inside a scroll view. The crop now owns gestures beginning inside its viewport and preserves geometric clamping. |
-| Exact phone crash and actual server | Not verified: no phone crash report, runtime connection or provider configuration was supplied. “Mirius” is not a provider name in source; Melious and generic Whisper servers are separate supported routes. Do not label screenshots or release notes as proof of Mirius reachability. |
+| Exact phone crash and actual server | Not verified: no phone crash report, runtime connection or provider configuration was supplied. The selected profile determines the actual provider; screenshots do not prove server reachability. |
 
-Cloud HTTP failures do not trigger a retry through a local model in this check-in
-path. Native fallback describes model discovery when a configured profile does
-not own transcription, not failover after a cloud request fails. A native OS
-memory kill cannot be caught by Dart exception handling; avoiding accidental
-large-model selection reduces that risk but does not establish the reported
-crash's cause.
+The user deliberately chooses the default profile, including whether its model
+runs on a server or locally. Check-ins never discover another model or retry a
+failed request through a fallback. Device logs are still needed to establish
+the reported crash's exact cause.
 
 ## Review priorities
 

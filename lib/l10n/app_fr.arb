@@ -1395,7 +1395,7 @@
   "checkInTranscribingLabel": "Transcription en cours…",
   "checkInTranscriptFailed": "Aucune transcription n'est revenue. Tu peux l'écrire toi-même.",
   "checkInTranscriptReady": "Transcription prête. Relis-la avant de l’enregistrer.",
-  "checkInTranscriptUnavailable": "La transcription n’est pas configurée pour cette personne. Ajoute un modèle de transcription dans les réglages IA ou écris ton compte rendu.",
+  "checkInTranscriptUnavailable": "Choisis un profil d’inférence par défaut avec un modèle de transcription dans les réglages IA, ou écris ton suivi de contact.",
   "checkInWhenAndHowLong": "Quand et combien de temps",
   "checkInWriteButton": "Écrire un compte rendu",
   "checklistAddItem": "Ajouter un nouvel élément",

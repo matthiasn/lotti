@@ -3225,7 +3225,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Transcriptie is niet ingesteld voor deze persoon. Voeg een transcriptiemodel toe in de AI-instellingen of schrijf je check-in.';
+      'Kies in de AI-instellingen een standaard inferentieprofiel met een transcriptiemodel, of schrijf je contactmoment op.';
 
   @override
   String get checkInWhenAndHowLong => 'Wanneer en hoe lang';

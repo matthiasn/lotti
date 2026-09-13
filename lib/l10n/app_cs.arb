@@ -1402,7 +1402,7 @@
   "checkInTranscribingLabel": "Přepisuje se…",
   "checkInTranscriptFailed": "Přepis nedorazil. Můžeš text napsat sám.",
   "checkInTranscriptReady": "Přepis je připravený. Před uložením ho zkontroluj.",
-  "checkInTranscriptUnavailable": "Pro tuto osobu není nastaven přepis. Přidej model přepisu v nastavení AI nebo záznam kontaktu napiš.",
+  "checkInTranscriptUnavailable": "V nastavení AI vyber výchozí inferenční profil s modelem pro přepis, nebo svůj kontakt zapiš.",
   "checkInWhenAndHowLong": "Kdy a jak dlouho",
   "checkInWriteButton": "Napsat záznam kontaktu",
   "checklistAddItem": "Přidat novou položku",

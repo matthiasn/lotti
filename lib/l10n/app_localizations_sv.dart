@@ -3223,7 +3223,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Transkription är inte inställd för den här personen. Lägg till en transkriptionsmodell i AI-inställningarna eller skriv din avstämning.';
+      'Välj en standardprofil för inferens med en transkriptionsmodell i AI-inställningarna, eller skriv din kontaktanteckning.';
 
   @override
   String get checkInWhenAndHowLong => 'När och hur länge';
