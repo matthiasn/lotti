@@ -3,32 +3,43 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
-import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
-import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/shortcut_label_formatter.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_context_chips.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:permission_handler/permission_handler.dart' as permissions;
 
 /// The localized label for an interaction type — shared by the capture sheet
 /// and the detail page's check-in rows.
@@ -68,65 +79,94 @@ String checkInSentimentLabel(
   CheckInSentiment.difficult => context.messages.checkInSentimentDifficult,
 };
 
-/// Opens the recording sheet for a spoken check-in and resolves to the audio
-/// entry it created, or `null` when the user backed out.
-///
-/// A seam rather than a direct call so the capture sheet's own behaviour —
-/// what it does with a transcript, a refusal, or a dismissal — is testable
-/// without standing up the recorder, the microphone permission and the
-/// inference stack behind it.
-typedef CheckInRecorderLauncher =
-    Future<String?> Function({
-      required BuildContext context,
-      required String relationshipId,
-      String? categoryId,
-    });
+/// Opens the OS's settings for this app, where a refused microphone
+/// permission is turned back on. A seam, so the composer's *Open settings*
+/// is testable without the platform channel behind it.
+typedef CheckInSettingsOpener = Future<bool> Function();
 
-/// The real launcher: the shared recording sheet, with the person as the
-/// recording's linked entity so the generalized automation resolves *their*
-/// profile, and their category so the sheet offers the same speech options a
-/// recording made anywhere else in that category would.
-Future<String?> showCheckInRecorder({
-  required BuildContext context,
-  required String relationshipId,
-  String? categoryId,
-}) => AudioRecordingModal.show(
-  context,
-  linkedId: relationshipId,
-  categoryId: categoryId,
-  transcriptionHandledByCaller: true,
+final checkInSettingsOpenerProvider = Provider<CheckInSettingsOpener>(
+  (ref) => permissions.openAppSettings,
+  name: 'checkInSettingsOpenerProvider',
 );
 
-final checkInRecorderLauncherProvider = Provider<CheckInRecorderLauncher>(
-  (ref) => showCheckInRecorder,
-  name: 'checkInRecorderLauncherProvider',
-);
-
-/// What the modal's pinned action bar needs from the form inside it: the
-/// save and delete intents and whether they are currently allowed. The form
-/// publishes after every state change; the bar listens. The form still
-/// draws its own action row when it has no handle, so it stays usable on a
-/// plain page and in a plain test.
+/// What the composer's chrome needs from the form inside it — the pinned
+/// action bar's save and delete intents and why Save is held, the header's
+/// status line, the keyboard bar's one-line summary — published after every
+/// state change; the chrome listens. The form still works on a plain page
+/// and in a plain test: it publishes whether or not anyone is listening.
 class CheckInFormHandle extends ChangeNotifier {
   Future<void> Function()? _save;
   Future<void> Function()? _delete;
-  bool _canSave = false;
+  VoidCallback? _unfocus;
+  AudioRecorderController? _recorder;
+  CheckInSaveBlock _block = CheckInSaveBlock.emptyNarrative;
+  CheckInComposerStatus _status = CheckInComposerStatus.idle;
+  String _summary = '';
+  bool _fieldFocused = false;
 
-  bool get canSave => _canSave;
+  bool get canSave => _block == CheckInSaveBlock.none;
   bool get canDelete => _delete != null;
+
+  /// Why Save is held, for the bar to say so.
+  CheckInSaveBlock get block => _block;
+
+  /// What the field is doing, for the header's status line.
+  CheckInComposerStatus get status => _status;
+
+  /// `Call · Now · no duration`, for the slim bar above the keyboard.
+  String get summary => _summary;
+
+  /// Whether the narrative field has focus — on a phone, whether the
+  /// keyboard is up. The sheet removes the keyboard inset from what its
+  /// pinned bar can see, so focus is the signal the bar slims on.
+  bool get fieldFocused => _fieldFocused;
 
   Future<void> save() => _save?.call() ?? Future.value();
   Future<void> delete() => _delete?.call() ?? Future.value();
 
+  /// Drops the keyboard, so the chips the summary stands for come back.
+  void unfocus() => _unfocus?.call();
+
+  /// The form hands over the app-wide recorder the moment it starts a
+  /// recording, so the sheet can put the floating indicator back once it
+  /// has closed — and only then, and only if a recording was ever started:
+  /// a composer that never dictated never touches the recorder at all.
+  set recorder(AudioRecorderController recorder) => _recorder = recorder;
+
+  /// The recorder a recording was started on, until the sheet releases it.
+  AudioRecorderController? get recorder => _recorder;
+
+  /// Shows the floating indicator again for a recording the sheet left
+  /// running; a no-op when nothing was recorded.
+  void releaseRecorder() {
+    _recorder?.setModalVisible(modalVisible: false);
+    _recorder = null;
+  }
+
   void publish({
     required Future<void> Function()? save,
     required Future<void> Function()? delete,
-    required bool canSave,
+    required VoidCallback? unfocus,
+    required CheckInSaveBlock block,
+    required CheckInComposerStatus status,
+    required String summary,
+    bool fieldFocused = false,
   }) {
     _save = save;
     _delete = delete;
-    _canSave = canSave;
-    notifyListeners();
+    _unfocus = unfocus;
+    // The callbacks are rebound on every publish; the chrome only needs a
+    // frame when something it draws has changed — not on every keystroke.
+    final changed =
+        _block != block ||
+        _status != status ||
+        _summary != summary ||
+        _fieldFocused != fieldFocused;
+    _block = block;
+    _status = status;
+    _summary = summary;
+    _fieldFocused = fieldFocused;
+    if (changed) notifyListeners();
   }
 }
 
@@ -148,68 +188,112 @@ String mergeCheckInNarrative({
   return '$kept\n\n$addition';
 }
 
-/// Offers Write or Record audio, then opens the responsive check-in form.
-/// Explicit [startSpeaking] skips the choice for direct entry points.
+/// The inverse of [mergeCheckInNarrative] for *Re-record*: gives back
+/// [textBefore] when [existing] is still exactly what merging [transcript]
+/// into it produced — and leaves the text alone the moment the user has
+/// changed anything, because an edit is theirs to keep. A suffix match
+/// would not do: `Actually Spoken.` still ends with `Spoken.`.
+String removeCheckInTranscript({
+  required String existing,
+  required String textBefore,
+  required String transcript,
+}) =>
+    existing ==
+        mergeCheckInNarrative(existing: textBefore, transcript: transcript)
+    ? textBefore
+    : existing;
+
+/// Opens the check-in composer for a person (design 2026-09-13): one
+/// surface that opens on the narrative, with *Dictate* inside the field.
 /// Resolves to the created [CheckInEntry], or `null` when dismissed.
 ///
-/// [prefilledInteractionType] and [prefilledTime] let a caller open the form
-/// already describing an interaction that just happened — the post-call
-/// prompt passes what it recorded when the user left to make the call
-/// (plan v2 phase 7 item 5). They are starting values only: everything stays
-/// editable, and nothing is saved until the user says so.
+/// [prefilledInteractionType], [prefilledTime] and [prefilledDuration] let a
+/// caller open the composer already describing an interaction that just
+/// happened — the post-call prompt passes what it recorded when the user
+/// left to make the call (plan v2 phase 7 item 5). They are starting values
+/// only: everything stays editable, and nothing is saved until the user
+/// says so. [startSpeaking] starts the recorder after the first frame —
+/// the page's mic doorway, which means "say it" rather than "show me the
+/// form".
 Future<CheckInEntry?> showCheckInCaptureSheet({
   required BuildContext context,
   required String relationshipId,
   CheckInInteractionType? prefilledInteractionType,
   DateTime? prefilledTime,
   Duration? prefilledDuration,
-  bool? startSpeaking,
+  bool startSpeaking = false,
+}) => _showComposer(
+  context: context,
+  relationshipId: relationshipId,
+  title: context.messages.relationshipLogCheckIn,
+  form: (handle) => CheckInCaptureForm(
+    relationshipId: relationshipId,
+    prefilledInteractionType: prefilledInteractionType,
+    prefilledTime: prefilledTime,
+    prefilledDuration: prefilledDuration,
+    startSpeaking: startSpeaking,
+    handle: handle,
+  ),
+);
+
+/// Opens the same composer prefilled from [checkIn] for editing. Resolves
+/// to the updated [CheckInEntry], or `null` when dismissed or deleted.
+Future<CheckInEntry?> showCheckInEditSheet({
+  required BuildContext context,
+  required CheckInEntry checkIn,
+}) => _showComposer(
+  context: context,
+  relationshipId: checkIn.data.relationshipId,
+  title: context.messages.checkInEditTitle,
+  form: (handle) => CheckInCaptureForm(
+    relationshipId: checkIn.data.relationshipId,
+    initial: checkIn,
+    handle: handle,
+  ),
+);
+
+Future<CheckInEntry?> _showComposer({
+  required BuildContext context,
+  required String relationshipId,
+  required String title,
+  required CheckInCaptureForm Function(CheckInFormHandle handle) form,
 }) async {
-  final speak =
-      startSpeaking ??
-      await DsActionModal.show<bool>(
-        context: context,
-        title: context.messages.checkInCaptureChoiceTitle,
-        builder: (sheetContext) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DsActionRow(
-              key: const ValueKey('check-in-write-choice'),
-              title: sheetContext.messages.checkInWriteButton,
-              icon: LottiIcons.edit,
-              trailing: DsActionRowTrailing.chevron,
-              onTap: () => Navigator.of(sheetContext).pop(false),
-            ),
-            DsActionRow(
-              key: const ValueKey('check-in-audio-choice'),
-              title: sheetContext.messages.checkInAudioButton,
-              icon: LottiIcons.mic,
-              trailing: DsActionRowTrailing.chevron,
-              onTap: () => Navigator.of(sheetContext).pop(true),
-            ),
-          ],
-        ),
-      );
-  if (speak == null || !context.mounted) return null;
   final handle = CheckInFormHandle();
-  return ModalUtils.showSinglePageModal<CheckInEntry>(
-    context: context,
-    title: context.messages.relationshipLogCheckIn,
-    padding: _formPadding(context),
-    stickyActionBarBuilder: (_) => CheckInStickyActions(handle: handle),
-    builder: (modalContext) => CheckInCaptureForm(
-      relationshipId: relationshipId,
-      prefilledInteractionType: prefilledInteractionType,
-      prefilledTime: prefilledTime,
-      prefilledDuration: prefilledDuration,
-      startSpeaking: speak,
-      handle: handle,
-    ),
-  );
+  final tokens = context.designTokens;
+  // The same width rule the modal picks its shape by, decided here on the
+  // caller's window — inside the sheet the media query is the sheet's own.
+  final dialog =
+      MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
+  try {
+    return await ModalUtils.showSinglePageModal<CheckInEntry>(
+      context: context,
+      hasTopBarLayer: false,
+      showCloseButton: false,
+      navBarHeight: CheckInComposerHeader.height(
+        tokens,
+        MediaQuery.textScalerOf(context),
+      ),
+      leadingNavBarWidget: CheckInComposerHeader(
+        relationshipId: relationshipId,
+        handle: handle,
+        title: title,
+      ),
+      padding: _formPadding(context),
+      stickyActionBarBuilder: (_) =>
+          CheckInStickyActions(handle: handle, dialog: dialog),
+      builder: (modalContext) => form(handle),
+    );
+  } finally {
+    // The inline recorder hides the floating indicator while it is up. A
+    // sheet dismissed mid-recording leaves the recording running — the
+    // recording sheet's own rule — so the indicator has to come back here,
+    // once the sheet is gone, for the user to stop it from.
+    handle.releaseRecorder();
+  }
 }
 
-/// Room under the form for the pinned action bar, so the last field can
-/// scroll fully above it.
+/// Air between the pinned header and the field, and room under the form
+/// for the pinned action bar, so the last field can scroll fully above it.
 EdgeInsets _formPadding(BuildContext context) {
   final tokens = context.designTokens;
   return EdgeInsets.fromLTRB(
@@ -220,82 +304,181 @@ EdgeInsets _formPadding(BuildContext context) {
   );
 }
 
-/// Opens the capture overlay prefilled from [checkIn] for editing. Resolves
-/// to the updated [CheckInEntry], or `null` when dismissed or deleted.
-Future<CheckInEntry?> showCheckInEditSheet({
-  required BuildContext context,
-  required CheckInEntry checkIn,
-}) {
-  final handle = CheckInFormHandle();
-  return ModalUtils.showSinglePageModal<CheckInEntry>(
-    context: context,
-    title: context.messages.checkInEditTitle,
-    padding: _formPadding(context),
-    stickyActionBarBuilder: (_) => CheckInStickyActions(handle: handle),
-    builder: (modalContext) => CheckInCaptureForm(
-      relationshipId: checkIn.data.relationshipId,
-      initial: checkIn,
-      handle: handle,
-    ),
-  );
-}
-
-/// The modal's pinned actions (design 2026-09-06 §5): *Save check-in*
-/// reachable without scrolling, Cancel beside it, and — while editing —
-/// delete at the bottom-left, the desktop dialog's corner. Reads the form
+/// The composer's pinned actions (design 2026-09-13): *Save check-in* is
+/// always visible, and when it is held the bar says why. Cancel beside it —
+/// and, while editing, delete on the leading edge. On a phone with the
+/// keyboard up the bar slims to the context summary and a short *Save*, so
+/// the words the user is typing keep the room (option 1g). Reads the form
 /// through its [handle].
 class CheckInStickyActions extends StatelessWidget {
-  const CheckInStickyActions({required this.handle, super.key});
+  const CheckInStickyActions({
+    required this.handle,
+    this.dialog = false,
+    super.key,
+  });
 
   final CheckInFormHandle handle;
+
+  /// Whether the composer is the desktop dialog rather than the phone
+  /// sheet: the reason then sits on the leading edge with the two actions
+  /// together on the trailing edge, and the bar never slims for a keyboard.
+  final bool dialog;
+
+  /// The reason Save is held, or null when it is not.
+  static String? blockLabel(
+    AppLocalizations messages,
+    CheckInSaveBlock block,
+  ) => switch (block) {
+    CheckInSaveBlock.none || CheckInSaveBlock.saving => null,
+    CheckInSaveBlock.preparing => messages.checkInPreparingLabel,
+    CheckInSaveBlock.recording => messages.checkInSaveBlockedRecording,
+    CheckInSaveBlock.transcribing => messages.checkInSaveBlockedTranscribing,
+    CheckInSaveBlock.emptyNarrative => messages.checkInSaveBlockedEmpty,
+    CheckInSaveBlock.typeOrRetry => messages.checkInSaveBlockedRetry,
+  };
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final wide = dialog;
+    final padding = EdgeInsets.all(tokens.spacing.step5);
+
     return ListenableBuilder(
       listenable: handle,
-      builder: (context, _) => DesignSystemModalActionBar(
-        glass: true,
-        padding: EdgeInsets.all(tokens.spacing.step5),
-        secondary: [
-          if (handle.canDelete)
-            IconButton(
-              key: const ValueKey('check-in-delete'),
-              tooltip: messages.deleteButton,
-              onPressed: handle.delete,
-              icon: Icon(
-                LottiIcons.delete,
-                color: tokens.colors.alert.error.ink,
+      builder: (context, _) {
+        final keyboardUp =
+            !wide &&
+            (handle.fieldFocused ||
+                MediaQuery.viewInsetsOf(context).bottom > 0);
+        final reason = blockLabel(messages, handle.block);
+        final reasonStyle = tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.lowEmphasis,
+        );
+
+        if (keyboardUp) {
+          return DesignSystemGlassStrip(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step5,
+                vertical: tokens.spacing.step3,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: DesignSystemChip(
+                        key: const ValueKey('check-in-context-summary'),
+                        label: handle.summary,
+                        trailing: const Icon(
+                          LottiIcons.chevronUp,
+                          size: IconSizes.s,
+                        ),
+                        size: DesignSystemChipSize.compactPillTouch,
+                        onPressed: handle.unfocus,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  DesignSystemButton(
+                    key: const ValueKey('check-in-save'),
+                    label: messages.checkInSaveShortButton,
+                    size: DesignSystemButtonSize.large,
+                    onPressed: handle.canSave ? handle.save : null,
+                  ),
+                ],
               ),
             ),
-          DesignSystemButton(
-            key: const ValueKey('check-in-cancel'),
-            label: messages.cancelButton,
-            variant: DesignSystemButtonVariant.secondary,
-            size: DesignSystemButtonSize.large,
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-        primary: DesignSystemButton(
+          );
+        }
+
+        final delete = handle.canDelete
+            ? IconButton(
+                key: const ValueKey('check-in-delete'),
+                tooltip: messages.deleteButton,
+                onPressed: handle.delete,
+                icon: Icon(
+                  LottiIcons.delete,
+                  color: tokens.colors.alert.error.ink,
+                ),
+              )
+            : null;
+        final cancel = DesignSystemButton(
+          key: const ValueKey('check-in-cancel'),
+          label: messages.cancelButton,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
+          onPressed: () => Navigator.of(context).pop(),
+        );
+        final save = DesignSystemButton(
           key: const ValueKey('check-in-save'),
           label: messages.checkInSaveButton,
           size: DesignSystemButtonSize.large,
-          fullWidth: true,
+          fullWidth: !wide,
           onPressed: handle.canSave ? handle.save : null,
-        ),
-      ),
+        );
+        final reasonText = reason == null
+            ? null
+            : Text(
+                reason,
+                key: const ValueKey('check-in-save-reason'),
+                style: reasonStyle,
+              );
+
+        if (wide) {
+          // The dialog's footer: the reason on the leading edge where the
+          // eye lands after the field, the two actions together on the
+          // trailing edge.
+          return DesignSystemModalActionBar(
+            glass: true,
+            padding: padding,
+            layout: DesignSystemModalActionBarLayout.compactPrimary,
+            secondary: [?delete, ?reasonText],
+            primary: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                cancel,
+                SizedBox(width: tokens.spacing.step3),
+                save,
+              ],
+            ),
+          );
+        }
+
+        return DesignSystemGlassStrip(
+          child: Padding(
+            padding: padding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DesignSystemModalActionBar(
+                  secondary: [?delete, cancel],
+                  primary: save,
+                ),
+                if (reasonText != null) ...[
+                  SizedBox(height: tokens.spacing.step3),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: reasonText,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-/// The check-in capture form (design 2026-09-06 §5), in the order the
-/// design argued for: how it felt (optional sentiment — explicit user
-/// judgment, never pre-filled), what you talked about (narrative, or *Speak
-/// instead*), when and how long (type · started · duration), then topics and
-/// the "next time" guidance folded under *More*. Persists through
-/// [RelationshipRepository].
-/// With [initial] set it edits that check-in instead, and offers deletion.
+/// The check-in composer (design 2026-09-13): the narrative field first,
+/// with *Dictate* inside it and every speech phase rendered in place of the
+/// text; then type · started · duration as one chip row; then sentiment,
+/// topics and the "next time" guidance folded under *More*. Persists
+/// through [RelationshipRepository]. With [initial] set it edits that
+/// check-in instead, and offers deletion.
 class CheckInCaptureForm extends ConsumerStatefulWidget {
   const CheckInCaptureForm({
     required this.relationshipId,
@@ -329,16 +512,13 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
   /// editing, where the existing check-in's own length is kept.
   final Duration? prefilledDuration;
 
-  /// Opens straight into a spoken check-in: the page's mic doorway, which
-  /// means "say it" rather than "show me the form". The recording sheet is
-  /// launched after the first frame; everything else about the form is
-  /// unchanged, and cancelling the recording leaves the form as it was.
+  /// Opens straight into a spoken check-in: the recorder replaces the field
+  /// after the first frame. Everything else about the form is unchanged,
+  /// and discarding the recording leaves the form as it was.
   final bool startSpeaking;
 
-  /// When set, the form's actions live in the modal's pinned bar and the
-  /// form publishes to it instead of drawing its own action row.
-  /// The pinned bar's view of this form — its only way out: the form has
-  /// no inline actions.
+  /// The chrome's view of this form — its only way out: the form has no
+  /// inline actions.
   final CheckInFormHandle handle;
 
   @override
@@ -350,6 +530,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   late final TextEditingController _narrativeController;
   late final TextEditingController _payAttentionController;
   late final TextEditingController _avoidController;
+  final FocusNode _narrativeFocus = FocusNode(debugLabel: 'check-in-narrative');
   late CheckInInteractionType _interactionType;
   late CheckInSentiment? _sentiment;
   late DateTime _interactionTime;
@@ -363,10 +544,22 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// open from the start when a check-in being edited already has any of it.
   late bool _moreOpen;
   bool _isSaving = false;
-  bool _isOpeningRecorder = false;
-  bool _transcriptReady = false;
-  bool _speechFailed = false;
-  bool _isTranscribing = false;
+
+  CheckInSpeechPhase _phase = const CheckInSpeechIdle();
+
+  /// The person's category, read during the preflight, so the recording
+  /// files where their other entries do.
+  String? _categoryId;
+
+  /// Whether the recorder attaches to this person's recording already
+  /// running — a sheet dismissed mid-take and reopened — instead of
+  /// starting one.
+  bool _adoptRunning = false;
+
+  /// The take *Re-record* will take back out of the field — once the new
+  /// take exists, not before, so a discarded or failed retake leaves the
+  /// words the user had.
+  CheckInSpeechReady? _transcriptToReplace;
 
   /// The in-flight transcript wait, so dismissing the sheet stops it instead
   /// of leaving a database listener running out the timeout.
@@ -397,11 +590,12 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     );
     _narrativeController = TextEditingController(
       text: initial?.entryText?.plainText ?? '',
-    );
+    )..addListener(_onNarrativeChanged);
     _payAttentionController = TextEditingController(
       text: data?.payAttentionTo ?? '',
     );
     _avoidController = TextEditingController(text: data?.avoid ?? '');
+    _narrativeFocus.addListener(_onNarrativeChanged);
     _interactionType =
         data?.interactionType ??
         widget.prefilledInteractionType ??
@@ -422,7 +616,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         _avoidController.text.isNotEmpty;
     if (widget.startSpeaking) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_speak());
+        if (mounted) unawaited(_dictate());
       });
     }
   }
@@ -431,11 +625,23 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   void dispose() {
     _transcriptWait?.cancel();
     _closeTranscriptFailureSubscription();
+    _narrativeController
+      ..removeListener(_onNarrativeChanged)
+      ..dispose();
+    _narrativeFocus
+      ..removeListener(_onNarrativeChanged)
+      ..dispose();
     _topicsController.dispose();
-    _narrativeController.dispose();
     _payAttentionController.dispose();
     _avoidController.dispose();
     super.dispose();
+  }
+
+  /// The word count and the save rule both read the field, and the pinned
+  /// bar reads its focus, so every keystroke and focus change is a state
+  /// change here.
+  void _onNarrativeChanged() {
+    if (mounted) setState(() {});
   }
 
   List<String> get _topics => _topicsController.text
@@ -444,15 +650,40 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       .where((topic) => topic.isNotEmpty)
       .toList();
 
-  /// The pinned bar reads the form through its handle; publish after the
-  /// frame so a listener never rebuilds while this widget is still building.
-  void _publish() {
+  bool get _hasWords => checkInWordCount(_narrativeController.text) > 0;
+
+  CheckInSaveBlock get _block => checkInSaveBlockOf(
+    phase: _phase,
+    hasWords: _hasWords,
+    saving: _isSaving,
+  );
+
+  /// The chrome reads the form through its handle; publish after the frame
+  /// so a listener never rebuilds while this widget is still building.
+  void _publish(BuildContext context, {required bool recorderPaused}) {
+    final messages = context.messages;
+    final block = _block;
+    final status = checkInComposerStatusOf(
+      _phase,
+      recorderPaused: recorderPaused,
+    );
+    final summary = messages.checkInContextSummary(
+      checkInInteractionLabel(context, _interactionType),
+      _startedLabel(context),
+      _duration == Duration.zero
+          ? messages.checkInNoDuration
+          : checkInDurationLabel(context, _duration),
+    );
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       widget.handle.publish(
         save: _handleSave,
         delete: _isEditing ? _handleDelete : null,
-        canSave: !_isSaving && !_isTranscribing && !_isOpeningRecorder,
+        unfocus: _narrativeFocus.unfocus,
+        block: block,
+        status: status,
+        summary: summary,
+        fieldFocused: _narrativeFocus.hasFocus,
       );
     });
   }
@@ -541,7 +772,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     );
   }
 
-  /// *Duration*: the wheel behind the tile. Zero is "no duration".
+  /// *Duration*: the wheel behind the chip. Zero is "no duration".
   Future<void> _pickDuration() async {
     final picked = await showCheckInDurationPicker(
       context: context,
@@ -551,81 +782,165 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     setState(() => _duration = picked);
   }
 
-  /// Records a spoken check-in and prefills the narrative with its transcript.
+  Future<void> _pickType() async {
+    final picked = await showCheckInTypePicker(
+      context: context,
+      current: _interactionType,
+    );
+    if (!mounted || picked == null) return;
+    setState(() => _interactionType = picked);
+  }
+
+  bool get _speechIdle => switch (_phase) {
+    CheckInSpeechIdle() ||
+    CheckInSpeechReady() ||
+    CheckInSpeechFailed() => true,
+    _ => false,
+  };
+
+  /// *Dictate* / *Add more*: the preflight, then the recorder in place of
+  /// the text.
   ///
   /// Audio is linked to the person, while transcription uses only the
   /// system's selected default inference profile. The recorder's automatic
   /// path is suppressed, so this explicit request runs once. Words remain
   /// editable and are only saved as a check-in when the user presses Save.
   /// Preflight refuses recording if the default has no transcription slot.
-  Future<void> _speak() async {
-    if (_isOpeningRecorder || _isTranscribing || _isSaving) return;
-    setState(() {
-      _isOpeningRecorder = true;
-      _speechFailed = false;
-      _transcriptReady = false;
-    });
+  Future<void> _dictate() async {
+    if (!_speechIdle || _isSaving) return;
+    // The keyboard goes first: the recorder is about to take the field.
+    _narrativeFocus.unfocus();
+    setState(() => _phase = const CheckInSpeechPreparing());
+    // Every provider is read up front: each `await` below can outlive this
+    // widget, and reading through `ref` after that throws.
+    final repository = ref.read(relationshipRepositoryProvider);
+    final transcription = ref.read(checkInTranscriptionServiceProvider);
     try {
-      await _captureSpeech();
+      // Both reads hit the database and neither depends on the other;
+      // running them in series doubled the delay before the recorder
+      // appeared.
+      final (relationship, canTranscribe) = await (
+        repository.getRelationshipById(widget.relationshipId),
+        transcription.canTranscribe(),
+      ).wait.timeout(const Duration(seconds: 15));
+      if (!mounted) return;
+      if (!canTranscribe) {
+        setState(
+          () => _phase = const CheckInSpeechFailed(
+            CheckInSpeechFailure(
+              CheckInSpeechFailureKind.transcriptionUnavailable,
+            ),
+          ),
+        );
+        return;
+      }
+      _categoryId = relationship?.meta.categoryId;
+      // The app-wide recorder may already be running: this person's take,
+      // left running when the sheet was dismissed, is adopted; anyone
+      // else's is left alone, because `record()` on a running recorder
+      // toggles it OFF — the earlier take would be saved wordless and the
+      // new one would never start.
+      final running = ref.read(audioRecorderControllerProvider);
+      final busy = running.status != AudioRecorderStatus.stopped;
+      if (busy && running.linkedId != widget.relationshipId) {
+        _transcriptToReplace = null;
+        setState(
+          () => _phase = const CheckInSpeechFailed(
+            CheckInSpeechFailure(CheckInSpeechFailureKind.recorderBusy),
+          ),
+        );
+        return;
+      }
+      _adoptRunning = busy;
+      widget.handle.recorder = ref.read(
+        audioRecorderControllerProvider.notifier,
+      );
+      setState(() => _phase = const CheckInSpeechRecording());
     } catch (exception, stackTrace) {
       developer.log(
-        'Spoken check-in failed',
+        'Spoken check-in failed to start',
         name: 'CheckInCaptureForm',
         error: exception,
         stackTrace: stackTrace,
       );
-      if (mounted) {
-        setState(() => _speechFailed = true);
-        context.showToast(
-          tone: DesignSystemToastTone.warning,
-          title: context.messages.checkInTranscriptFailed,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isOpeningRecorder = false);
+      if (!mounted) return;
+      _transcriptToReplace = null;
+      setState(
+        () => _phase = const CheckInSpeechFailed(
+          CheckInSpeechFailure(CheckInSpeechFailureKind.recordingFailed),
+        ),
+      );
     }
   }
 
-  Future<void> _captureSpeech() async {
-    // Every provider is read up front: each `await` below can outlive this
-    // widget, and reading through `ref` after that throws.
-    final messages = context.messages;
-    final repository = ref.read(relationshipRepositoryProvider);
-    final launchRecorder = ref.read(checkInRecorderLauncherProvider);
-    final transcription = ref.read(checkInTranscriptionServiceProvider);
-
-    // Both reads hit the database and neither depends on the other; running
-    // them in series doubled the delay before the recorder appeared.
-    final (relationship, canTranscribe) = await (
-      repository.getRelationshipById(widget.relationshipId),
-      transcription.canTranscribe(),
-    ).wait.timeout(const Duration(seconds: 15));
-    if (!mounted) return;
-    if (!canTranscribe) {
-      setState(() => _speechFailed = true);
-      context.showToast(
-        tone: DesignSystemToastTone.warning,
-        title: messages.checkInTranscriptUnavailable,
-      );
-      return;
+  /// *Re-record*: the recorder returns, and the last transcript comes back
+  /// out of the field the moment the new take exists.
+  Future<void> _reRecord() async {
+    if (_phase case final CheckInSpeechReady ready) {
+      _transcriptToReplace = ready;
     }
+    await _dictate();
+  }
 
-    final audioEntryId = await launchRecorder(
-      context: context,
-      relationshipId: widget.relationshipId,
-      categoryId: relationship?.meta.categoryId,
+  void _onRecorded(String audioEntryId, Duration length) {
+    if (_transcriptToReplace case final take?) {
+      _transcriptToReplace = null;
+      _narrativeController.text = removeCheckInTranscript(
+        existing: _narrativeController.text,
+        textBefore: take.textBefore,
+        transcript: take.transcript,
+      );
+    }
+    unawaited(_transcribe(audioEntryId: audioEntryId, length: length));
+  }
+
+  void _onRecordingDiscarded() {
+    if (!mounted) return;
+    _transcriptToReplace = null;
+    setState(() => _phase = const CheckInSpeechIdle());
+  }
+
+  void _onRecordingFailed(CheckInSpeechFailureKind failure) {
+    if (!mounted) return;
+    _transcriptToReplace = null;
+    // The recorder hid the floating indicator on the way in; a start that
+    // never happened has nothing for it to point at, but a stop that could
+    // not save may leave the app-wide recorder as it was — either way the
+    // indicator is the user's again, now rather than when the sheet closes.
+    widget.handle.releaseRecorder();
+    setState(() => _phase = CheckInSpeechFailed(CheckInSpeechFailure(failure)));
+  }
+
+  /// Asks for the words of [audioEntryId] and folds them into the field
+  /// when they land. The recorder suppressed automatic inference for this
+  /// capture; the transcription service owns the one explicit request.
+  Future<void> _transcribe({
+    required String audioEntryId,
+    required Duration length,
+  }) async {
+    final transcription = ref.read(checkInTranscriptionServiceProvider);
+    final messages = context.messages;
+    setState(
+      () => _phase = CheckInSpeechTranscribing(
+        audioEntryId: audioEntryId,
+        length: length,
+      ),
     );
-    // A cancelled or dismissed recording creates no entry and leaves the
-    // narrative exactly as the user left it.
-    if (!mounted || audioEntryId == null) return;
+    // The route is a courtesy on the saved-audio line: a slow read must
+    // never hold the transcript, and a failed one must never fail it.
+    unawaited(
+      _labelRoute(
+        transcription,
+        audioEntryId: audioEntryId,
+        length: length,
+        via: messages.taskAgentRouteVia,
+      ),
+    );
 
-    // The recorder suppresses automatic inference for this capture. This
-    // service owns the explicit request through the system default profile.
-    setState(() => _isTranscribing = true);
     final wait = _transcriptWait = transcription.transcribe(
       audioEntryId: audioEntryId,
     );
-    // Preserve the provider's error detail in the recovery toast, including
+    // Preserve the provider's error detail for the failure card, including
     // a failure that arrived before this subscription was attached.
     String? failureDetail;
     _closeTranscriptFailureSubscription();
@@ -645,28 +960,101 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     try {
       final transcript = await wait.result;
       if (!mounted) return;
+      // The wait was abandoned by *Type instead*; the field is theirs.
+      if (_phase is! CheckInSpeechTranscribing) return;
       if (transcript == null) {
-        setState(() => _speechFailed = true);
-        context.showToast(
-          tone: DesignSystemToastTone.warning,
-          title: messages.checkInTranscriptFailed,
-          description: failureDetail,
+        setState(
+          () => _phase = CheckInSpeechFailed(
+            CheckInSpeechFailure(
+              CheckInSpeechFailureKind.transcriptMissing,
+              audioEntryId: audioEntryId,
+              length: length,
+              detail: failureDetail,
+            ),
+          ),
         );
         return;
       }
-      setState(() => _transcriptReady = true);
+      final textBefore = _narrativeController.text;
       _narrativeController.text = mergeCheckInNarrative(
-        existing: _narrativeController.text,
+        existing: textBefore,
         transcript: transcript,
       );
+      setState(
+        () => _phase = CheckInSpeechReady(
+          transcript: transcript,
+          textBefore: textBefore,
+          length: length,
+        ),
+      );
     } finally {
-      _transcriptWait = null;
+      if (identical(_transcriptWait, wait)) _transcriptWait = null;
       _closeTranscriptFailureSubscription();
-      if (mounted) {
-        setState(() => _isTranscribing = false);
-      }
     }
   }
+
+  Future<void> _labelRoute(
+    CheckInTranscriptionService transcription, {
+    required String audioEntryId,
+    required Duration length,
+    required String via,
+  }) async {
+    final CheckInTranscriptionRoute? route;
+    try {
+      route = await transcription.route();
+    } catch (exception, stackTrace) {
+      developer.log(
+        'Could not name the transcription route',
+        name: 'CheckInCaptureForm',
+        error: exception,
+        stackTrace: stackTrace,
+      );
+      return;
+    }
+    if (!mounted || route == null) return;
+    final label = '${route.model} · $via ${route.provider}';
+    if (_phase case CheckInSpeechTranscribing(
+      audioEntryId: final current,
+    ) when current == audioEntryId) {
+      setState(
+        () => _phase = CheckInSpeechTranscribing(
+          audioEntryId: audioEntryId,
+          length: length,
+          route: label,
+        ),
+      );
+    }
+  }
+
+  /// *Try again* on a missing transcript: the same recording, asked for
+  /// once more — never a second recording.
+  Future<void> _retryTranscript() async {
+    if (_phase case CheckInSpeechFailed(
+      failure: CheckInSpeechFailure(
+        kind: CheckInSpeechFailureKind.transcriptMissing,
+        audioEntryId: final audioEntryId?,
+        :final length,
+      ),
+    )) {
+      await _transcribe(
+        audioEntryId: audioEntryId,
+        length: length ?? Duration.zero,
+      );
+    }
+  }
+
+  /// *Type instead* / *Dismiss*: the field comes back as plain text. A
+  /// transcript still in flight is abandoned; the audio stays in the
+  /// journal either way.
+  void _typeInstead() {
+    _transcriptWait?.cancel();
+    _transcriptWait = null;
+    _closeTranscriptFailureSubscription();
+    setState(() => _phase = const CheckInSpeechIdle());
+    _narrativeFocus.requestFocus();
+  }
+
+  Future<void> _openSettings() => ref.read(checkInSettingsOpenerProvider)();
 
   void _closeTranscriptFailureSubscription() {
     _transcriptFailureSubscription?.close();
@@ -674,7 +1062,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   }
 
   Future<void> _handleSave() async {
-    if (_isSaving) return;
+    if (_block != CheckInSaveBlock.none) return;
     setState(() => _isSaving = true);
 
     final repository = ref.read(relationshipRepositoryProvider);
@@ -689,9 +1077,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       payAttentionTo: payAttentionTo.isEmpty ? null : payAttentionTo,
       avoid: avoid.isEmpty ? null : avoid,
     );
-    final entryText = narrative.isEmpty
-        ? null
-        : EntryText(plainText: narrative);
+    final entryText = EntryText(plainText: narrative);
 
     try {
       if (_isEditing) {
@@ -797,7 +1183,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   }
 
   /// `Now · 12:46` while the start is this very minute, otherwise the day
-  /// and the time — what the *Started* tile reads.
+  /// and the time — what the *Started* chip reads.
   String _startedLabel(BuildContext context) {
     final now = clock.now();
     final sameMinute =
@@ -812,11 +1198,41 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     return '$day · ${relationshipTimeLabel(_interactionTime)}';
   }
 
+  /// The save shortcut and its label — desktop only, where a keyboard is a
+  /// given and the field's footer has room to say so.
+  ({SingleActivator activator, String label})? _saveShortcut(
+    BuildContext context,
+  ) {
+    if (!isDesktop) return null;
+    final platform = Theme.of(context).platform;
+    final activator = platform == TargetPlatform.macOS
+        ? const SingleActivator(LogicalKeyboardKey.enter, meta: true)
+        : const SingleActivator(LogicalKeyboardKey.enter, control: true);
+    return (
+      activator: activator,
+      label: ShortcutLabelFormatter.activatorLabel(
+        context.messages,
+        activator,
+        platform,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final tokens = context.designTokens;
-    _publish();
+    final recording = _phase is CheckInSpeechRecording;
+    // Watched only while the recorder is up, so an idle form never
+    // rebuilds on the app-wide recorder's level ticks.
+    final recorderPaused =
+        recording &&
+        ref.watch(
+          audioRecorderControllerProvider.select(
+            (state) => state.status == AudioRecorderStatus.paused,
+          ),
+        );
+    _publish(context, recorderPaused: recorderPaused);
 
     Widget sectionLabel(String text) => Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
@@ -841,6 +1257,8 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             widget.prefilledDuration != null
         ? widget.prefilledInteractionType
         : null;
+    final shortcut = _saveShortcut(context);
+    final speechIdle = _speechIdle && !_isSaving;
 
     // One scrollable, not two. The modal page already scrolls its child and
     // adds a top bar, padding and the bottom safe area on top of it, so a
@@ -848,109 +1266,62 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     // overflowed the page — and because the inner `SingleChildScrollView`
     // consumed the drag, the outer one never moved and the action row below
     // it could not be reached at all. Let the page own the scrolling.
-    return Column(
+    final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Where the numbers came from (design §5): the offer's channel, start
-        // and elapsed time, and that every one of them is editable.
-        if (prefilledFrom != null) ...[
-          _SourceStrip(
-            type: prefilledFrom,
-            startedAt: widget.prefilledTime!,
-            duration: widget.prefilledDuration!,
-          ),
-          SizedBox(height: tokens.spacing.step5),
-        ],
-        sectionLabel(messages.checkInNarrativeLabel),
-        LottiTextField(
-          key: const ValueKey('check-in-narrative'),
+        CheckInNarrativeField(
           controller: _narrativeController,
-          hintText: messages.checkInNarrativeHint,
-          maxLines: 4,
-          textCapitalization: TextCapitalization.sentences,
+          focusNode: _narrativeFocus,
+          phase: _phase,
+          wordCount: checkInWordCount(_narrativeController.text),
+          shortcutHint: shortcut?.label,
+          recorder: recording
+              ? CheckInInlineRecorder(
+                  linkedId: widget.relationshipId,
+                  categoryId: _categoryId,
+                  adoptRunning: _adoptRunning,
+                  onRecorded: _onRecorded,
+                  onDiscarded: _onRecordingDiscarded,
+                  onFailed: _onRecordingFailed,
+                )
+              : null,
+          onDictate: speechIdle ? _dictate : null,
+          onAddMore: speechIdle ? _dictate : null,
+          onReRecord: speechIdle ? _reRecord : null,
+          onTypeInstead: _typeInstead,
+          onRetryTranscript: _retryTranscript,
+          onOpenSettings: _openSettings,
+          onDismissFailure: _typeInstead,
         ),
-        if (_isOpeningRecorder && !_isTranscribing) ...[
-          SizedBox(height: tokens.spacing.step3),
-          Semantics(
-            liveRegion: true,
-            child: caption(messages.checkInPreparingLabel),
-          ),
-        ],
-        if (_transcriptReady) ...[
-          SizedBox(height: tokens.spacing.step3),
-          Semantics(
-            liveRegion: true,
-            child: caption(messages.checkInTranscriptReady),
-          ),
-        ],
-        if (_speechFailed && !_isOpeningRecorder && !_isTranscribing) ...[
-          SizedBox(height: tokens.spacing.step3),
-          DesignSystemButton(
-            key: const ValueKey('check-in-retry-audio'),
-            label: messages.relationshipImportRetry,
-            leadingIcon: LottiIcons.mic,
-            variant: DesignSystemButtonVariant.secondary,
-            onPressed: _speak,
-          ),
-        ],
-        if (_isTranscribing) ...[
-          SizedBox(height: tokens.spacing.step3),
-          Semantics(
-            liveRegion: true,
-            child: caption(messages.checkInTranscribingLabel),
-          ),
-        ],
-        SizedBox(height: tokens.spacing.step6),
-        sectionLabel(messages.checkInWhenAndHowLong),
-        Wrap(
-          spacing: tokens.spacing.step3,
-          runSpacing: tokens.spacing.step3,
-          children: [
-            for (final type in CheckInInteractionType.values)
-              DesignSystemChip(
-                key: ValueKey('check-in-type-${type.name}'),
-                label: checkInInteractionLabel(context, type),
-                selected: _interactionType == type,
-                size: DesignSystemChipSize.touch,
-                onPressed: () => setState(() => _interactionType = type),
-              ),
-          ],
+        SizedBox(height: tokens.spacing.step5),
+        CheckInContextChips(
+          type: _interactionType,
+          startedLabel: _startedLabel(context),
+          durationLabel: _duration == Duration.zero
+              ? messages.checkInDurationChip
+              : checkInDurationLabel(context, _duration),
+          hasDuration: _duration != Duration.zero,
+          enabled: speechIdle,
+          onPickType: _pickType,
+          onPickStart: _pickStart,
+          onPickDuration: _pickDuration,
         ),
-        SizedBox(height: tokens.spacing.step4),
-        // IntrinsicHeight, so the two tiles match heights inside the modal's
-        // unbounded scroll view — a stretch there has no height to take.
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: _ValueTile(
-                  key: const ValueKey('check-in-started'),
-                  label: messages.checkInStartedLabel,
-                  value: _startedLabel(context),
-                  onTap: _pickStart,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: _ValueTile(
-                  key: const ValueKey('check-in-duration'),
-                  label: messages.journalDurationLabel,
-                  value: checkInDurationLabel(context, _duration),
-                  muted: _duration == Duration.zero,
-                  trailing: LottiIcons.chevronDown,
-                  onTap: _pickDuration,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (_duration == Duration.zero) ...[
+        // Where the numbers came from (design §5): the offer's channel,
+        // start and elapsed time, and that every one of them is editable.
+        if (prefilledFrom != null) ...[
           SizedBox(height: tokens.spacing.step3),
-          caption(messages.checkInDurationHint),
+          Text(
+            prefilledFrom == CheckInInteractionType.call
+                ? messages.checkInSourceCall
+                : messages.checkInSourceMessage,
+            key: const ValueKey('check-in-source-strip'),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
         ],
-        SizedBox(height: tokens.spacing.step6),
+        SizedBox(height: tokens.spacing.step5),
         _MoreHeader(
           open: _moreOpen,
           onToggle: () => setState(() => _moreOpen = !_moreOpen),
@@ -1004,143 +1375,15 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         ],
       ],
     );
-  }
-}
 
-/// The prefilled sheet's first line: which channel, when it started and how
-/// long it has been, then the sentence that says where those came from.
-class _SourceStrip extends StatelessWidget {
-  const _SourceStrip({
-    required this.type,
-    required this.startedAt,
-    required this.duration,
-  });
-
-  final CheckInInteractionType type;
-  final DateTime startedAt;
-  final Duration duration;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final accent = tokens.colors.interactive.enabled;
-    return Container(
-      key: const ValueKey('check-in-source-strip'),
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(
-          accent.withValues(alpha: SurfaceAlphas.tint),
-          tokens.colors.background.level02,
-        ),
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(
-          color: accent.withValues(alpha: SurfaceAlphas.washChip),
-        ),
-      ),
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(checkInInteractionIcon(type), size: IconSizes.s, color: accent),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  messages.checkInSourceMeta(
-                    checkInInteractionLabel(context, type),
-                    relationshipTimeLabel(startedAt),
-                    duration.inMinutes,
-                  ),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step1),
-                Text(
-                  type == CheckInInteractionType.call
-                      ? messages.checkInSourceCall
-                      : messages.checkInSourceMessage,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A tappable tile with a caption over a mono value — *Started* and
-/// *Duration*.
-class _ValueTile extends StatelessWidget {
-  const _ValueTile({
-    required this.label,
-    required this.value,
-    required this.onTap,
-    this.trailing,
-    this.muted = false,
-    super.key,
-  });
-
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-  final IconData? trailing;
-  final bool muted;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Material(
-      color: tokens.colors.background.level03,
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.step4),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    ),
-                    SizedBox(height: tokens.spacing.step2),
-                    Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: relationshipTimestampStyle(
-                        tokens,
-                        color: muted
-                            ? tokens.colors.text.lowEmphasis
-                            : tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (trailing case final trailing?)
-                Icon(
-                  trailing,
-                  size: IconSizes.s,
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-            ],
-          ),
-        ),
-      ),
+    if (shortcut == null) return body;
+    return CallbackShortcuts(
+      bindings: {
+        shortcut.activator: () {
+          if (_block == CheckInSaveBlock.none) unawaited(_handleSave());
+        },
+      },
+      child: body,
     );
   }
 }

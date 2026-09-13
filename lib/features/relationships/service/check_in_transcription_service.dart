@@ -50,6 +50,10 @@ class CheckInTranscriptWait {
   void cancel() => _cancel();
 }
 
+/// Where a spoken check-in's words come from, as the two names the user
+/// can recognise from AI settings.
+typedef CheckInTranscriptionRoute = ({String model, String provider});
+
 /// Gets a transcript for a spoken check-in.
 ///
 /// Two jobs, because they are one decision: whether anything *can* transcribe
@@ -77,6 +81,17 @@ class CheckInTranscriptionService {
 
   /// Whether the selected system default has a usable transcription slot.
   Future<bool> canTranscribe() async => await _resolveProfile() != null;
+
+  /// The names of the model and the provider a transcript would come
+  /// from, for the composer's saved-audio line — or null when nothing can
+  /// transcribe. Names only: never a key, an endpoint or a channel.
+  Future<CheckInTranscriptionRoute?> route() async {
+    final profile = await _resolveProfile();
+    final model = profile?.transcriptionModel;
+    final provider = profile?.transcriptionProvider;
+    if (profile == null || model == null || provider == null) return null;
+    return (model: model.name, provider: provider.name);
+  }
 
   Future<ResolvedProfile?> _resolveProfile() async {
     final profile = await _profileResolver.resolveDefaultProfile();

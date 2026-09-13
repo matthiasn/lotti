@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions_band.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -72,6 +74,7 @@ void main() {
     String? runKey,
     bool showHistory = false,
     List<CheckInEntry> checkIns = const [],
+    List<Override> overrides = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -88,6 +91,7 @@ void main() {
           relationshipSuggestionListProvider(
             'person',
           ).overrideWith((ref) async => snapshot()),
+          ...overrides,
         ],
       ),
     );
@@ -265,6 +269,15 @@ void main() {
       item: item,
       fingerprint: ChangeItem.fingerprint(item),
     );
+    // The composer's header reads the person through the repository.
+    final repository = MockRelationshipRepository();
+    when(
+      () => repository.getRelationshipById(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getCheckInsForRelationship(any()),
+    ).thenAnswer((_) async => [source]);
+    when(() => repository.getLinkedTasks(any())).thenAnswer((_) async => []);
     await pump(
       tester,
       () => RelationshipProposalSnapshot(
@@ -274,6 +287,7 @@ void main() {
         ),
       ),
       checkIns: [source],
+      overrides: [relationshipRepositoryProvider.overrideWithValue(repository)],
     );
     await tester.tap(find.textContaining('From the check-in on'));
     await tester.pumpAndSettle();

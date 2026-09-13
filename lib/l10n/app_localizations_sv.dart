@@ -3076,24 +3076,64 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
-  String get checkInAudioButton => 'Spela in en ljudavstämning';
+  String get checkInAddMoreButton => 'Lägg till mer';
+
+  @override
+  String get checkInAudioKeptNote =>
+      'Ljudet finns kvar i dagboken även om du avbryter den här avstämningen';
+
+  @override
+  String checkInAudioSaved(String length) {
+    return '$length ljud sparat';
+  }
+
+  @override
+  String get checkInAudioSavedAsYouGo =>
+      'Ljudet sparas på den här enheten medan du spelar in';
+
+  @override
+  String checkInAudioSavedRoute(String length, String route) {
+    return '$length ljud sparat · $route';
+  }
 
   @override
   String get checkInAvoidLabel => 'Bäst att undvika';
 
   @override
-  String get checkInCaptureChoiceTitle => 'Hur vill du registrera kontakten?';
+  String checkInComposerSubtitle(String name, String day) {
+    return 'med $name · senast $day';
+  }
 
   @override
-  String get checkInDateLabel => 'När?';
+  String checkInComposerSubtitleNoContact(String name) {
+    return 'med $name · ingen avstämning än';
+  }
+
+  @override
+  String checkInContextSummary(String type, String time, String duration) {
+    return '$type · $time · $duration';
+  }
 
   @override
   String get checkInDeleteConfirmMessage =>
       'Ta bort den här avstämningen? Det går inte att ångra.';
 
   @override
-  String get checkInDurationHint =>
-      'Tryck på längden för att öppna hjulet. Ett meddelande har oftast ingen.';
+  String get checkInDictateButton => 'Diktera';
+
+  @override
+  String get checkInDiscardRecording => 'Släng';
+
+  @override
+  String get checkInDismissButton => 'Stäng';
+
+  @override
+  String get checkInDurationChip => 'Längd';
+
+  @override
+  String checkInDurationChipSemantics(String duration) {
+    return 'Längd: $duration. Ändra';
+  }
 
   @override
   String get checkInDurationQuickPickHint =>
@@ -3134,19 +3174,30 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videosamtal';
 
   @override
+  String get checkInMicrophoneDeniedBody =>
+      'Tillåt mikrofonåtkomst för Lotti i systeminställningarna och försök igen. Inget spelades in.';
+
+  @override
+  String get checkInMicrophoneDeniedTitle =>
+      'Lotti kan inte använda mikrofonen';
+
+  @override
   String get checkInMoreCaption => 'Känsla · ämnen · nästa gång';
 
   @override
   String get checkInMoreSection => 'Mer';
 
   @override
-  String get checkInNarrativeHint => 'En rad räcker…';
-
-  @override
-  String get checkInNarrativeLabel => 'Vad pratade ni om?';
+  String get checkInNarrativeHint => 'Vad pratade ni om? En rad räcker.';
 
   @override
   String get checkInNoDuration => 'Ingen längd';
+
+  @override
+  String get checkInOpenSettingsButton => 'Öppna inställningar';
+
+  @override
+  String get checkInOrTypeHint => 'Eller skriv här…';
 
   @override
   String get checkInPayAttentionLabel => 'Nästa gång: var uppmärksam på';
@@ -3155,7 +3206,55 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInPreparingLabel => 'Förbereder ljud…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Stoppa den först från inspelningsindikatorn och försök igen. Inget nytt spelades in.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'En inspelning pågår redan';
+
+  @override
+  String get checkInRecordingFailedBody =>
+      'Mikrofonen kunde inte startas. Försök igen eller skriv avstämningen. Inget spelades in.';
+
+  @override
+  String get checkInRecordingFailedTitle => 'Inspelningen startade inte';
+
+  @override
+  String get checkInRecordingHint =>
+      'Prata som vanligt. Orden dyker upp här när du stoppar.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'Inspelningen kunde inte sparas. Försök igen eller skriv avstämningen.';
+
+  @override
+  String get checkInRecordingNotSavedTitle => 'Inspelningen kunde inte sparas';
+
+  @override
+  String get checkInReRecordButton => 'Spela in igen';
+
+  @override
+  String get checkInSaveBlockedEmpty => 'Lägg till några ord för att spara';
+
+  @override
+  String get checkInSaveBlockedRecording => 'Stoppa inspelningen för att spara';
+
+  @override
+  String get checkInSaveBlockedRetry => 'Skriv eller försök igen för att spara';
+
+  @override
+  String get checkInSaveBlockedTranscribing => 'Väntar på transkriptionen';
+
+  @override
   String get checkInSaveButton => 'Spara avstämning';
+
+  @override
+  String get checkInSaveShortButton => 'Spara';
+
+  @override
+  String checkInSaveShortcutHint(String shortcut) {
+    return '$shortcut för att spara';
+  }
 
   @override
   String get checkInSentimentDelightful => 'Underbart';
@@ -3187,22 +3286,40 @@ class AppLocalizationsSv extends AppLocalizations {
       'Från meddelandet du skickade från den här sidan. Allt går att ändra.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'cirka $minutes min',
-      one: 'cirka 1 min',
-      zero: 'under en minut',
-    );
-    return '$type · började kl. $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Tala in avstämning';
 
   @override
   String get checkInStartedLabel => 'Startade';
+
+  @override
+  String get checkInStatusMicrophoneDenied => 'Mikrofonen är inte tillgänglig';
+
+  @override
+  String get checkInStatusPaused => 'Pausad';
+
+  @override
+  String get checkInStatusRecorderBusy => 'Inspelaren är upptagen';
+
+  @override
+  String get checkInStatusRecording => 'Spelar in';
+
+  @override
+  String get checkInStatusRecordingFailed => 'Inspelningen startade inte';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Inspelningen sparades inte';
+
+  @override
+  String get checkInStatusTranscriptionUnavailable =>
+      'Ingen transkriptionsmodell';
+
+  @override
+  String get checkInStatusTranscriptMissing => 'Ingen transkription mottagen';
+
+  @override
+  String checkInTimeChipSemantics(String time) {
+    return 'Start: $time. Ändra';
+  }
 
   @override
   String get checkInTopicsHint => 'Kommaseparerade, t.ex. jobb, resor';
@@ -3214,22 +3331,44 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInTranscribingLabel => 'Transkriberar…';
 
   @override
-  String get checkInTranscriptFailed =>
-      'Ingen transkription kom tillbaka. Du kan skriva den själv.';
+  String get checkInTranscriptAdded =>
+      'Transkription tillagd · läs igenom, allt går att ändra';
 
   @override
-  String get checkInTranscriptReady =>
-      'Transkriptionen är klar. Läs igenom den innan du sparar.';
+  String get checkInTranscriptionUnavailableTitle =>
+      'Ingen transkriptionsmodell inställd';
+
+  @override
+  String checkInTranscriptMissingBody(String length) {
+    return 'Din inspelning på $length finns sparad på den här enheten. Försök igen när du är online igen, eller skriv avstämningen nu.';
+  }
+
+  @override
+  String get checkInTranscriptMissingTitle =>
+      'Kunde inte nå transkriptionsservern';
 
   @override
   String get checkInTranscriptUnavailable =>
       'Välj en standardprofil för inferens med en transkriptionsmodell i AI-inställningarna, eller skriv din kontaktanteckning.';
 
   @override
-  String get checkInWhenAndHowLong => 'När och hur länge';
+  String checkInTypeChipSemantics(String type) {
+    return 'Typ: $type. Ändra';
+  }
 
   @override
-  String get checkInWriteButton => 'Skriv en avstämning';
+  String get checkInTypeInstead => 'Skriv istället';
+
+  @override
+  String checkInWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ord',
+      one: '1 ord',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checklistAddItem => 'Lägg till ett nytt föremål';
@@ -11551,6 +11690,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipAddChannelFromContacts => 'eller från kontakter';
 
   @override
+  String relationshipAgentAsOfBand(String age, String band) {
+    return 'uppdaterad $age · $band';
+  }
+
+  @override
   String get relationshipAgentBriefNow => 'Briefa nu';
 
   @override
@@ -11559,36 +11703,26 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentFailed(String time) {
-    return 'Misslyckades · $time';
-  }
-
-  @override
   String get relationshipAgentFailedBody =>
-      'Den senaste briefing-körningen misslyckades. Detaljer finns under fliken Aktivitet.';
+      'Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.';
 
   @override
   String get relationshipAgentFailedNoModel =>
       'Ingen modell är inställd för briefingar. Välj en under AI-inställningar › Agenter. Detaljer finns under fliken Aktivitet.';
 
   @override
-  String get relationshipAgentFailedPlain => 'Misslyckades';
+  String get relationshipAgentFailedPlain => 'Senaste körningen misslyckades';
 
   @override
   String relationshipAgentLastRunFailed(String time) {
-    return 'senaste körningen misslyckades · $time';
+    return 'Senaste körningen misslyckades · $time';
   }
 
   @override
   String get relationshipAgentMarkImportant => 'Markera som viktig';
 
   @override
-  String relationshipAgentNextLook(String day) {
-    return 'Nästa titt $day';
-  }
-
-  @override
-  String get relationshipAgentNoAgent => 'ingen agent för den här personen';
+  String get relationshipAgentNoAgent => 'Ingen agent för den här personen';
 
   @override
   String relationshipAgentNoBriefingBody(int count) {
@@ -11611,6 +11745,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipAgentOnlyYourStartsUseAi =>
+      'Bara det du själv startar använder AI';
+
+  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Inaktuell · ny avstämning $day';
   }
@@ -11620,37 +11758,70 @@ class AppLocalizationsSv extends AppLocalizations {
       'Briefingar pausas så länge personen är vilande eller arkiverad.';
 
   @override
-  String relationshipAgentReading(int count) {
+  String relationshipAgentProposedCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Läser $count avstämningar…',
-      one: 'Läser 1 avstämning…',
-      zero: 'Läser personen…',
+      other: '$count förslag',
+      one: '1 förslag',
     );
     return '$_temp0';
   }
 
   @override
-  String get relationshipAgentRunning => 'Kör';
+  String relationshipAgentReadingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Läser $count avstämningar. Tar oftast under en minut.',
+      one: 'Läser 1 avstämning. Tar oftast under en minut.',
+      zero: 'Förbereder briefingen. Tar oftast under en minut.',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String relationshipAgentRunningSince(String time) {
-    return 'Kör · startad $time';
+  String get relationshipAgentSeeActivity => 'Visa aktivitet';
+
+  @override
+  String relationshipAgentSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count avstämningar',
+      one: '1 avstämning',
+    );
+    return 'Källor: $_temp0 · inga kontaktkanaler';
   }
 
   @override
   String get relationshipAgentTryAgain => 'Försök igen';
 
   @override
-  String get relationshipAgentWatching => 'agenten bevakar · ingen körning än';
+  String get relationshipAgentWatching => 'Agenten håller koll';
 
   @override
-  String get relationshipAgentWriting => 'skriver briefingen…';
+  String relationshipAgentWatchingNextLook(String day) {
+    return 'Agenten håller koll · nästa titt $day';
+  }
+
+  @override
+  String get relationshipAgentWriting => 'Skriver briefingen…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Relationsbanner för $personName';
+  }
+
+  @override
+  String relationshipBriefingAge(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days dagar gammal',
+      one: '1 dag gammal',
+    );
+    return '$_temp0';
   }
 
   @override

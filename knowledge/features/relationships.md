@@ -5,7 +5,7 @@ description: A personal CRM carried by two journal variants — why check-ins ar
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T12:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-09-13T18:00:00Z }
 stale_after: 2027-03-01
 sources:
   - id: sync-runtime
@@ -50,8 +50,28 @@ sources:
     last_modified: 2026-09-06
   - id: capture-sheet
     resource: ../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart
-    title: The check-in capture sheet, its form handle and pinned actions
-    last_modified: 2026-09-06
+    title: The check-in composer, its form handle and pinned actions
+    last_modified: 2026-09-13
+  - id: speech-state
+    resource: ../../lib/features/relationships/ui/widgets/check_in_speech_state.dart
+    title: CheckInSpeechPhase — the composer's speech phases and the save rule
+    last_modified: 2026-09-13
+  - id: narrative-field
+    resource: ../../lib/features/relationships/ui/widgets/check_in_narrative_field.dart
+    title: CheckInNarrativeField — every phase rendered in place of the text
+    last_modified: 2026-09-13
+  - id: inline-recorder
+    resource: ../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart
+    title: CheckInInlineRecorder — the recorder embedded in the field
+    last_modified: 2026-09-13
+  - id: composer-header
+    resource: ../../lib/features/relationships/ui/widgets/check_in_composer_header.dart
+    title: CheckInComposerHeader — the pinned heading with its status line
+    last_modified: 2026-09-13
+  - id: context-chips
+    resource: ../../lib/features/relationships/ui/widgets/check_in_context_chips.dart
+    title: CheckInContextChips — type · started · duration as one row
+    last_modified: 2026-09-13
   - id: duration-picker
     resource: ../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart
     title: The check-in duration picker — ranked chips over the shared wheel
@@ -99,7 +119,7 @@ sources:
   - id: briefing-card
     resource: ../../lib/features/relationships/ui/widgets/relationship_briefing_card.dart
     title: RelationshipBriefingCard — the briefing on the shared AI panel
-    last_modified: 2026-09-06
+    last_modified: 2026-09-13
   - id: ai-card-chrome
     resource: ../../lib/features/agents/ui/widgets/ai_card_chrome.dart
     title: aiCardDecoration — the chrome every agent report card shares
@@ -107,7 +127,7 @@ sources:
   - id: transcript-wait
     resource: ../../lib/features/relationships/service/check_in_transcription_service.dart
     title: CheckInTranscriptionService — waiting for a spoken check-in's transcript
-    last_modified: 2026-08-19
+    last_modified: 2026-09-13
   - id: runner
     resource: ../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner — why a failed transcription never throws
@@ -761,10 +781,12 @@ rather than from any relationship-specific code:
 * Retuning the wash, border or radius happens once in `ai_card_chrome.dart`
   and lands on all three surfaces together.
 
-The footer includes the shared model identity row and a link to
-`AgentModelSheet`, alongside the relationship-specific briefing and check-in
-controls. Report freshness ("Up to date") describes the stored report; model
-availability describes the current configuration and is a separate signal.
+The footer includes the shared model identity row — with the agent's token
+cost riding it as `trailingMeta`, so `model · via provider · 18.4K tokens`
+is one line — and a link to `AgentModelSheet`, alongside the
+relationship-specific check-in and briefing controls. Report freshness
+describes the stored report; model availability describes the current
+configuration and is a separate signal.
 
 New relationship reports carry `ReportInferenceProvenance`, captured from the
 resolved route used by the wake, alongside health and consumption metadata.
@@ -773,24 +795,25 @@ Older reports without that snapshot honestly retain "Attribution unavailable"
 until a new briefing is generated; changing the current setup cannot identify
 which model authored historical text.
 
-The health band pill (`DsPill`, tinted with the band colour) sits in the card
-**body**, above the prose it qualifies — deliberately not in the header's
-trailing rail where the goal card keeps freshness and cost. That rail is
-capped at half the header width and its child ellipsizes: measured against
-real font metrics, "Braucht Aufmerksamkeit" already truncates on a 320 px
-phone at 1.0x text scale, and English "Needs attention" truncates at 1.6x.
-Truncating the card's headline judgement to make room for its own title is
-the wrong trade, so the pill takes the full content width instead. A widget
-test pins both halves: the label is whole at 320 px / German / 1.3x, *and*
-the pill is wider than the rail cap would have allowed — so the assertion
-cannot pass by the label happening to be short.
+The health band no longer has a pill on the card (design 2026-09-13): it is
+a word on the header's status line — `as of 3 h ago · Thriving` — and the
+person header directly above the card already carries the tinted band pill
+and the cadence pill, so the card repeats neither. The header's trailing
+rail holds only a short count or age (`2 proposed`, `6 days old`), which is
+what that rail — capped at half the header width, ellipsizing — can carry
+without truncating a judgement.
 
-Two small seams made the reuse possible rather than a fork:
+Three small seams made the reuse possible rather than a fork:
 
 * `TldrHeader` grew an optional `title` — the briefing is the same panel
   wearing a different noun, not a second header widget — and its trailing
   slot is named `trailing`, since two of its three hosts put meta there
   rather than a TTS control.
+* `TldrHeader` also takes a `subtitle` widget in place of the agent-name
+  caption, and an `icon` for the badge: the briefing's status line carries a
+  glyph or a spinner and a semantic colour the plain caption cannot, and the
+  unenrolled person's plain card wears the people glyph rather than the
+  sparkle. The `agentName` string is then only what the semantics announce.
 * `resolveReportTldr` / `resolveReportAdditional` live beside `TldrBody` and
   answer "what is the summary" and "what goes behind Read more" once, for
   every report card. They were duplicated per card before, and the copies had
@@ -806,22 +829,33 @@ the app bar does not.
 
 ## The relationship agent card
 
-The card on the person page (design 2026-09-06 §4) is the same AI panel as
-the task agent's section and the goal agent's read — `aiCardDecoration`,
-`TldrHeader` (tapping it opens the internals), `TldrBody` for the prose — in
-one of seven faces. The face is a pure function of the runtime's own signals,
+The card on the person page (design 2026-09-06 §4, rebuilt to the
+2026-09-13 state matrix) is the same AI panel as the task agent's section
+and the goal agent's read — `aiCardDecoration`, `TldrHeader` (tapping it
+opens the internals), `TldrBody` for the prose — in one of seven faces, on
+one skeleton: header with **one status line** under the title and an
+optional pill on the trailing rail, body, the proposals band, then a footer
+with one quiet text action on the leading edge, one primary on the trailing
+edge, and the meta lines beneath (model · provider · tokens; sources where
+there is a briefing). The face is a pure function of the runtime's own
+signals,
 [`relationshipAgentCardStateOf`](../../lib/features/relationships/ui/widgets/relationship_briefing_card.dart),
 so the decision is a table rather than a widget tree:
 
-| Face | When | Header meta · body · footer |
+| Face | When | Status line · body · footer |
 |---|---|---|
-| Not enrolled | not `important`, or dormant/archived | plain section card, no sparkle · what *important* turns on · **Mark important** (or the status word while paused) |
-| No briefing | enrolled, no current report | `agent watching · no run yet` · how many check-ins *Brief now* would read, and that it never sees a channel · `Next look {day}` · **Brief now** |
-| Running | `agentIsRunningProvider` | `writing the briefing…` · `Reading N check-ins…` · `Running · started HH:mm` |
-| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `last run failed · HH:mm` · the reason, with the fix as the action: **Choose a model** when no route resolves, **Try again** otherwise |
-| Current | report, not stale | `as of {ago} · {tokens} tokens` · TL;DR + Read more · `Up to date` · **Update now** |
-| Out of date | `AgentStateEntity.isReportStale` | same meta · body · `Out of date · new check-in {day}` in warning · **Update now** |
-| Due | any briefing face while the cadence is lapsed | the cadence pill turns warning · footer becomes *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's) |
+| Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what *important* turns on · **Mark important** · meta `Only what you start yourself uses AI` |
+| No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · **Brief now** |
+| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · `Reading N check-ins. Usually under a minute.` · no action |
+| Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · HH:mm` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
+| Current | report, not stale | `as of {ago} · {band}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line |
+| Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
+| Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
+
+Open task proposals count in the header's pill (`2 proposed`) on the two
+briefing faces, ahead of the age pill: they are the thing to act on. The
+card reads `relationshipSuggestionListProvider` for the count, the same
+provider the band below renders from, so the two cannot disagree.
 
 ```mermaid
 stateDiagram-v2
@@ -857,10 +891,11 @@ and above the footer, including when a later wake fails. Their scope and
 confirmation path are described below.
 
 The pills are the header block's own: [`relationshipCadencePill`](../../lib/features/relationships/ui/widgets/person_header.dart)
-renders the list model's cadence fact under a per-host key prefix, and the
-health band pill shares `relationshipHealthBandColor`. The cost pill sums
-`agentTokenUsageSummariesProvider`; the "as of" meta uses the shared
-[`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
+renders the list model's cadence fact, and the health band pill shares
+`relationshipHealthBandColor`; the card names the band on its status line
+and draws neither pill. The token cost sums
+`agentTokenUsageSummariesProvider` onto the model row; the "as of" status
+uses the shared [`relativeAgoLabel`](../../lib/utils/relative_age_label.dart).
 
 ## Deferred task suggestions
 
@@ -950,38 +985,83 @@ run, including its handled history. Card and chat act on the same decisions.
 Call scheduling and task-note proposals remain separate follow-up work; this
 tool does not create Daily OS blocks or OS reminders.
 
-## The check-in capture sheet
+## The check-in composer
 
 `showCheckInCaptureSheet` and `showCheckInEditSheet` ([check_in_capture_sheet.dart](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart))
-open one form in a responsive modal — a bottom sheet on a phone, a dialog
-on desktop. New check-ins first offer Write or Record audio; an explicit
-`startSpeaking` bypasses that choice for a direct doorway. The chooser closes
-before the form opens. Editing goes directly to the prefilled form.
-The order is narrative → when and how long (interaction type, Started and
-Duration) → More (optional sentiment, topics and next-time guidance). More
-opens unfolded when the edited check-in already contains sentiment, topics or
-guidance. Save is pinned. The form has no actions of its own: after
-each frame it publishes `save`, `delete` and `canSave` through a
-`CheckInFormHandle` (a `ChangeNotifier`), and `CheckInStickyActions` in the
-modal's sticky bar renders from it — Save held while recording preparation,
-save or transcription is in flight, Delete only while editing, bottom-left on the desktop dialog.
+open **one composer** (design 2026-09-13) in a responsive modal — a bottom
+sheet on a phone, a dialog on desktop — straight onto the narrative. There
+is no Write-or-Record choice first: *Dictate* is a button inside the field,
+so audio stays an explicit choice without a detour, and `startSpeaking` (the
+page's microphone) presses it after the first frame. Editing is the same
+composer prefilled.
+
+The composer's parts, top to bottom:
+
+* [`CheckInComposerHeader`](../../lib/features/relationships/ui/widgets/check_in_composer_header.dart)
+  in the sheet's pinned toolbar slot: the person's avatar, the title and one
+  status line — `with Pip · last spoke Sat 1 Aug` at rest, read through
+  `relationshipDetailControllerProvider`, and while speech is in flight what
+  the field is doing (`● Recording`, `Paused`, `Transcribing…`, `Transcript
+  not received`, `Microphone unavailable`) in that phase's colour.
+* [`CheckInNarrativeField`](../../lib/features/relationships/ui/widgets/check_in_narrative_field.dart):
+  the text with the word count and *Dictate* in its footer. Every speech
+  phase renders **in place of the text** — the recorder, the transcript
+  skeleton with the saved-audio line and *Type instead*, the landed
+  transcript with its provenance line and *Re-record* · *Add more*, and
+  the failure cards above a field that still says *Or type it here…*.
+* [`CheckInContextChips`](../../lib/features/relationships/ui/widgets/check_in_context_chips.dart):
+  type · started · duration as one wrapping chip row, each chip opening its
+  picker (the type through a `DsActionModal`), quiet while the recorder or
+  the transcript owns the field. Opened from the post-call offer the chips
+  are prefilled and a caption beneath says where the numbers came from.
+* *More*: optional sentiment, topics and next-time guidance, folded unless
+  the edited check-in already carries any of them.
+* [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
+  in the modal's sticky bar: *Save check-in* always visible, and when it is
+  held, why. On a phone the reason sits under the bar; on the desktop dialog
+  it takes the leading edge with Cancel and Save together on the trailing
+  edge. With the field focused on a phone — the keyboard up; the sheet
+  removes the keyboard inset from what the bar can see, so focus is the
+  signal — the bar slims to the context summary chip (`Call · Now · no
+  duration`, tapping it drops the keyboard) and a short *Save*. On desktop
+  ⌘↩ / Ctrl+↩ saves, and the field's footer says so.
+
+The form has no actions of its own: after each frame it publishes the save
+and delete intents, the save block, the header status, the summary and the
+field's focus through a `CheckInFormHandle` (a `ChangeNotifier`), and the
+header and the bar render from it. The handle also carries the recorder a
+recording was started on, so the sheet can put the floating indicator back
+once it has closed — and only then, and only if a recording was ever
+started.
 
 ```mermaid
 sequenceDiagram
   participant F as CheckInCaptureForm
   participant H as CheckInFormHandle
+  participant Hd as CheckInComposerHeader
   participant B as CheckInStickyActions
-  F->>H: publish(save, delete, canSave) — post-frame
-  H-->>B: notifyListeners
-  B->>H: save() / delete() on tap
+  F->>H: publish(save, delete, block, status, summary, fieldFocused) — post-frame
+  H-->>Hd: notifyListeners → status line
+  H-->>B: notifyListeners → Save, its reason, the keyboard bar
+  B->>H: save() / delete() / unfocus() on tap
   H->>F: the published callback runs
 ```
+
+**Save waits for words, and only words.** The rule is one pure function,
+`checkInSaveBlockOf` in
+[check_in_speech_state.dart](../../lib/features/relationships/ui/widgets/check_in_speech_state.dart):
+held while the preflight, the recorder or the transcript wait is up, held
+with *Add a few words to save* while the narrative is blank, held with *Type
+or retry to save* when a transcript went missing and nothing was typed, and
+free otherwise. A check-in is user-authored (ADR 0038), and the composer's
+premise is that one line is enough — so a type or a duration alone never
+saves, in create or edit mode.
 
 *Started* opens the date picker, then `DesignSystemTimeWheel`, the same control
 used by the journal date/time editor. It inherits the device's 12/24-hour
 preference and labels its semantics with the localized Started label. The
 chosen time preserves the selected day and is clamped to the current minute
-on today's date. The tile reads
+on today's date. The chip reads
 `Now · HH:mm` while the value is the current minute and the relative day plus
 the time otherwise. *Duration* opens `showCheckInDurationPicker`
 ([check_in_duration_picker.dart](../../lib/features/relationships/ui/widgets/check_in_duration_picker.dart)):
@@ -993,11 +1073,9 @@ hidden, most-used first and ties shortest first — tops a thin ranking up from
 the design's positions (5 · 10 · 15 · 20 · 30 · 45 min · 1 h · 1 h 30 · 2 h ·
 3 h) without repeating a value, and sorts the six chips shortest-first; the
 wheel is the design's *Custom*. The length persists as the end time (no
-schema change), which is what the log row shows. Opened from the post-call
-offer, the sheet is prefilled with the type, the start time and the elapsed
-minutes, and a source strip above the sentiment row names them —
-`Call · 12:33 · about 11 min` — followed by the sentence saying where they
-came from.
+schema change), which is what the log row shows. A dictated note's length
+never fills the duration: it is how long the note took, not how long the
+call did.
 
 The picker is design-system property: [`showDurationPicker`](../../lib/features/design_system/components/time_pickers/duration_picker_modal.dart)
 and [`DurationQuickPickChips`](../../lib/features/design_system/components/chips/duration_quick_pick_chips.dart)
@@ -1078,13 +1156,65 @@ need.
 
 # Voice check-ins (plan v2 phase 6)
 
-The person page's microphone opens the capture sheet with `startSpeaking`,
-which launches the shared recorder after the first frame and hands the
-transcript back to the user to edit. The narrative has no duplicate microphone;
-live-region captions announce preparation, transcription and readiness while
-Save remains disabled until capture/processing ends. Failed preparation or
-transcription offers a retry. Preparation reads have a 15-second deadline and
-are caught by the same error boundary as recorder launch and transcript waits.
+The person page's microphone opens the composer with `startSpeaking`, which
+presses *Dictate* after the first frame. From there the composer is a small
+state machine, `CheckInSpeechPhase` in
+[check_in_speech_state.dart](../../lib/features/relationships/ui/widgets/check_in_speech_state.dart),
+and every phase is drawn in place of the narrative text:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Preparing: Dictate / Add more / Re-record / startSpeaking
+  Preparing --> Recording: person read, default profile can transcribe — adopting this person's take if one is still running
+  Preparing --> Failed: no transcription slot (transcriptionUnavailable), the reads threw (recordingFailed), or someone else's recording is running (recorderBusy)
+  Recording --> Transcribing: Stop → audio entry saved
+  Recording --> Idle: Discard (confirmed)
+  Recording --> Failed: microphone refused (microphoneDenied), start failed (recordingFailed), stop could not save (recordingNotSaved)
+  Transcribing --> Ready: transcript landed, merged below any typed text
+  Transcribing --> Failed: no transcript (transcriptMissing, keeps the audio entry id)
+  Transcribing --> Idle: Type instead — the wait is abandoned
+  Failed --> Transcribing: Try again on a missing transcript — the same recording, never a second one
+  Failed --> Idle: Type instead / Dismiss
+  Failed --> Preparing: Dictate again
+  Ready --> Preparing: Add more (appends) / Re-record (removes the old transcript once the new take exists)
+```
+
+The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart),
+embedded in the field rather than pushed as a sheet: a live level strip,
+the running time in tabular mono figures on a fixed `h:mm:ss` shape (so the
+tick never moves the controls beneath it), the line saying audio is on disk
+as it goes, and Discard · Pause · Stop. It drives the app-wide
+`AudioRecorderController` the way the recording sheet does — `record` on
+mount with the person as `linkedId` and `transcriptionHandledByCaller`,
+`stop` handing back the entry id and the length the clock stood at — and
+hides the floating recording indicator while it is up. Being dismissed with
+the sheet does not stop the recording (the recording sheet's own rule): the
+composer's sheet brings the indicator back once it has closed, and the user
+can stop it from there, the audio landing in the journal linked to the
+person without a transcript. Reopening the composer while that take is
+still running **adopts** it — the recorder attaches without calling
+`record()`, which on a running recorder toggles it *off* — and a take
+running for anyone else is refused with the *recorder busy* card, because
+stopping it here would save someone else's audio wordless.
+
+The recorder's typed refusal (`AudioRecordingFailure`) maps onto the
+composer's own vocabulary, `CheckInSpeechFailure.fromRecorder`: a denied
+microphone is the error card with *Open settings* (through
+`checkInSettingsOpenerProvider`, the seam over `openAppSettings`) and
+*Dismiss*; a failed start is the same card with *Try again*. A transcript
+that never came is the warning card quoting the saved length — *Your 0:23
+recording is saved on this device* — with *Try again* asking
+`CheckInTranscriptionService.transcribe` for the **same** entry's words
+again and a note that the audio stays in the journal even if the check-in
+is cancelled. The provider's own error detail, when it left any, replaces
+the generic body. Preparation reads have a 15-second deadline and land in
+the same failed phase as everything else.
+
+The saved-audio line during the wait names the route — `Whisper large v3 ·
+via Groq` — from `CheckInTranscriptionService.route()`, model and provider
+names only, resolved after the wait has started so a slow read never holds
+the transcript.
 Spoken check-ins use only the system's selected default inference profile.
 `CheckInTranscriptionService` calls `ProfileResolver.resolveDefaultProfile`,
 which reads the device's selected profile id and resolves that profile. The
@@ -1095,7 +1225,7 @@ Preflight refuses recording when the default cannot transcribe.
 ```mermaid
 sequenceDiagram
   participant Sheet as CheckInCaptureForm
-  participant Modal as AudioRecordingModal
+  participant Inline as CheckInInlineRecorder
   participant Rec as AudioRecorderController
   participant Svc as CheckInTranscriptionService
   participant Profile as ProfileResolver
@@ -1104,10 +1234,10 @@ sequenceDiagram
   Svc->>Profile: resolveDefaultProfile()
   Profile-->>Svc: selected profile or null
   Svc-->>Sheet: transcription slot available
-  Sheet->>Modal: show(transcriptionHandledByCaller: true)
-  Modal->>Rec: record(transcriptionHandledByCaller: true)
-  Rec-->>Modal: stop() saves audio without automation
-  Modal-->>Sheet: audio entry id
+  Sheet->>Inline: mounted in place of the text
+  Inline->>Rec: record(linkedId: person, transcriptionHandledByCaller: true)
+  Rec-->>Inline: stop() saves audio without automation
+  Inline-->>Sheet: audio entry id, length
   Sheet->>Svc: transcribe(audioEntryId)
   Note over Svc: subscribe to transcript notifications first
   Svc->>Profile: resolveDefaultProfile()
@@ -1138,7 +1268,7 @@ promptly; the form also observes `inferenceErrorControllerProvider` with
 published before the listener was installed. A thrown resolution error is also
 caught and ends the wait. No failure retries with another model or provider.
 
-Two invariants hold regardless of what comes back:
+Three invariants hold regardless of what comes back:
 
 * **Nothing auto-saves.** The transcript populates the text field;
   the check-in exists only once the user presses save. This is the same rule
@@ -1146,6 +1276,12 @@ Two invariants hold regardless of what comes back:
 * **Speaking never destroys typing.** `mergeCheckInNarrative` appends below
   existing text, blank-line separated, including text entered while the
   transcript was still arriving.
+* **Re-record takes back only what it added.** `removeCheckInTranscript`
+  gives back the text the field held before the last merge, and only when
+  the field is still exactly that merge — not a suffix match, which would
+  strip `Spoken.` out of `Actually Spoken.` — so an edited field is left
+  alone: an edit is the user's. And it does so once the new take exists,
+  never on the way in, so a discarded or failed retake keeps the words.
 
 Name accuracy comes from the **category's `speechDictionary`**, not from
 anything relationship-specific: the recording is created with the person's

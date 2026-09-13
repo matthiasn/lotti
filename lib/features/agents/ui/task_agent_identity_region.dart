@@ -22,21 +22,32 @@ class TaskAgentIdentityRegion extends StatelessWidget {
   const TaskAgentIdentityRegion({
     required this.data,
     required this.onSetupTap,
+    this.trailingMeta,
     super.key,
   });
 
   final TaskAgentModelIdentityViewData data;
   final VoidCallback onSetupTap;
 
+  /// A fact that rides the setup row after the route — the relationship
+  /// briefing's token count — so `model · via provider · 18.4K tokens` is
+  /// one line rather than two. Appended to every wording tier, and dropped
+  /// from none, because it is the reader's cost rather than decoration.
+  final String? trailingMeta;
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final currentTiers = data.currentRoute == null
+    final routeTiers = data.currentRoute == null
         ? null
         : inferenceRouteIdentityTiers(
             data.currentRoute!,
             viaLabel: messages.taskAgentRouteVia,
           );
+    final meta = trailingMeta;
+    final currentTiers = routeTiers == null || meta == null
+        ? routeTiers
+        : [for (final tier in routeTiers) '$tier · $meta'];
     final currentIdentity = currentTiers?.first;
     final combined =
         data.presentation == TaskAgentIdentityPresentation.combined;

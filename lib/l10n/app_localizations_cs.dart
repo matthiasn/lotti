@@ -3108,24 +3108,64 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
 
   @override
-  String get checkInAudioButton => 'Nahrát zvukový záznam kontaktu';
+  String get checkInAddMoreButton => 'Přidat další';
+
+  @override
+  String get checkInAudioKeptNote =>
+      'Zvuk zůstane v deníku, i když tento check-in zrušíš';
+
+  @override
+  String checkInAudioSaved(String length) {
+    return '$length zvuku uloženo';
+  }
+
+  @override
+  String get checkInAudioSavedAsYouGo =>
+      'Zvuk se průběžně ukládá na toto zařízení';
+
+  @override
+  String checkInAudioSavedRoute(String length, String route) {
+    return '$length zvuku uloženo · $route';
+  }
 
   @override
   String get checkInAvoidLabel => 'Raději se vyhnout';
 
   @override
-  String get checkInCaptureChoiceTitle => 'Jak chceš zaznamenat kontakt?';
+  String checkInComposerSubtitle(String name, String day) {
+    return 's $name · naposledy $day';
+  }
 
   @override
-  String get checkInDateLabel => 'Kdy?';
+  String checkInComposerSubtitleNoContact(String name) {
+    return 's $name · zatím žádný check-in';
+  }
+
+  @override
+  String checkInContextSummary(String type, String time, String duration) {
+    return '$type · $time · $duration';
+  }
 
   @override
   String get checkInDeleteConfirmMessage =>
       'Smazat tento záznam? Tohle nelze vrátit zpět.';
 
   @override
-  String get checkInDurationHint =>
-      'Klepni na délku a otevře se kolečko. Zpráva obvykle žádnou nemá.';
+  String get checkInDictateButton => 'Diktovat';
+
+  @override
+  String get checkInDiscardRecording => 'Zahodit';
+
+  @override
+  String get checkInDismissButton => 'Zavřít';
+
+  @override
+  String get checkInDurationChip => 'Délka';
+
+  @override
+  String checkInDurationChipSemantics(String duration) {
+    return 'Délka: $duration. Změnit';
+  }
 
   @override
   String get checkInDurationQuickPickHint =>
@@ -3166,19 +3206,29 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videohovor';
 
   @override
+  String get checkInMicrophoneDeniedBody =>
+      'Povol Lotti přístup k mikrofonu v nastavení systému a zkus to znovu. Nic se nenahrálo.';
+
+  @override
+  String get checkInMicrophoneDeniedTitle => 'Lotti nemůže použít mikrofon';
+
+  @override
   String get checkInMoreCaption => 'Pocit · témata · příště';
 
   @override
   String get checkInMoreSection => 'Více';
 
   @override
-  String get checkInNarrativeHint => 'Stačí jeden řádek…';
-
-  @override
-  String get checkInNarrativeLabel => 'O čem jste mluvili?';
+  String get checkInNarrativeHint => 'O čem jste mluvili? Stačí jeden řádek.';
 
   @override
   String get checkInNoDuration => 'Bez délky';
+
+  @override
+  String get checkInOpenSettingsButton => 'Otevřít nastavení';
+
+  @override
+  String get checkInOrTypeHint => 'Nebo to napiš sem…';
 
   @override
   String get checkInPayAttentionLabel => 'Příště se zaměřit na';
@@ -3187,7 +3237,56 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInPreparingLabel => 'Příprava zvuku…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Nejdřív ji zastav v indikátoru nahrávání a pak to zkus znovu. Nic nového se nenahrálo.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'Už běží jiná nahrávka';
+
+  @override
+  String get checkInRecordingFailedBody =>
+      'Mikrofon se nepodařilo spustit. Zkus to znovu, nebo check-in napiš. Nic se nenahrálo.';
+
+  @override
+  String get checkInRecordingFailedTitle => 'Nahrávání se nespustilo';
+
+  @override
+  String get checkInRecordingHint =>
+      'Mluv normálně. Slova se tu objeví, jakmile zastavíš.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'Nahrávku se nepodařilo uložit. Zkus to znovu, nebo check-in napiš.';
+
+  @override
+  String get checkInRecordingNotSavedTitle => 'Nahrávku se nepodařilo uložit';
+
+  @override
+  String get checkInReRecordButton => 'Nahrát znovu';
+
+  @override
+  String get checkInSaveBlockedEmpty => 'Napiš pár slov, aby šlo uložit';
+
+  @override
+  String get checkInSaveBlockedRecording => 'Pro uložení zastav nahrávání';
+
+  @override
+  String get checkInSaveBlockedRetry =>
+      'Napiš to nebo to zkus znovu, pak můžeš uložit';
+
+  @override
+  String get checkInSaveBlockedTranscribing => 'Čeká se na přepis';
+
+  @override
   String get checkInSaveButton => 'Uložit check-in';
+
+  @override
+  String get checkInSaveShortButton => 'Uložit';
+
+  @override
+  String checkInSaveShortcutHint(String shortcut) {
+    return '$shortcut pro uložení';
+  }
 
   @override
   String get checkInSentimentDelightful => 'Skvělé';
@@ -3220,22 +3319,39 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'asi $minutes min',
-      one: 'asi 1 min',
-      zero: 'necelá minuta',
-    );
-    return '$type · začátek v $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Namluvit kontakt';
 
   @override
   String get checkInStartedLabel => 'Začátek';
+
+  @override
+  String get checkInStatusMicrophoneDenied => 'Mikrofon není k dispozici';
+
+  @override
+  String get checkInStatusPaused => 'Pozastaveno';
+
+  @override
+  String get checkInStatusRecorderBusy => 'Rekordér je obsazený';
+
+  @override
+  String get checkInStatusRecording => 'Nahrává se';
+
+  @override
+  String get checkInStatusRecordingFailed => 'Nahrávání se nespustilo';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Nahrávka neuložena';
+
+  @override
+  String get checkInStatusTranscriptionUnavailable => 'Žádný model pro přepis';
+
+  @override
+  String get checkInStatusTranscriptMissing => 'Přepis nedorazil';
+
+  @override
+  String checkInTimeChipSemantics(String time) {
+    return 'Začátek: $time. Změnit';
+  }
 
   @override
   String get checkInTopicsHint => 'Oddělená čárkami, např. práce, cestování';
@@ -3247,22 +3363,44 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInTranscribingLabel => 'Přepisuje se…';
 
   @override
-  String get checkInTranscriptFailed =>
-      'Přepis nedorazil. Můžeš text napsat sám.';
+  String get checkInTranscriptAdded =>
+      'Přepis přidán · přečti si ho, všechno jde upravit';
 
   @override
-  String get checkInTranscriptReady =>
-      'Přepis je připravený. Před uložením ho zkontroluj.';
+  String get checkInTranscriptionUnavailableTitle =>
+      'Není nastavený žádný model pro přepis';
+
+  @override
+  String checkInTranscriptMissingBody(String length) {
+    return 'Tvoje nahrávka ($length) je uložená na tomto zařízení. Zkus to znovu, až budeš zase online, nebo check-in napiš hned.';
+  }
+
+  @override
+  String get checkInTranscriptMissingTitle => 'Server pro přepis je nedostupný';
 
   @override
   String get checkInTranscriptUnavailable =>
       'V nastavení AI vyber výchozí inferenční profil s modelem pro přepis, nebo svůj kontakt zapiš.';
 
   @override
-  String get checkInWhenAndHowLong => 'Kdy a jak dlouho';
+  String checkInTypeChipSemantics(String type) {
+    return 'Typ: $type. Změnit';
+  }
 
   @override
-  String get checkInWriteButton => 'Napsat záznam kontaktu';
+  String get checkInTypeInstead => 'Raději napsat';
+
+  @override
+  String checkInWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count slov',
+      few: '$count slova',
+      one: '1 slovo',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checklistAddItem => 'Přidat novou položku';
@@ -11710,6 +11848,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipAddChannelFromContacts => 'nebo z kontaktů';
 
   @override
+  String relationshipAgentAsOfBand(String age, String band) {
+    return 'aktualizováno $age · $band';
+  }
+
+  @override
   String get relationshipAgentBriefNow => 'Vytvořit briefing teď';
 
   @override
@@ -11718,36 +11861,26 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentFailed(String time) {
-    return 'Selhalo · $time';
-  }
-
-  @override
   String get relationshipAgentFailedBody =>
-      'Poslední běh briefingu selhal. Podrobnosti najdeš na kartě Aktivita.';
+      'Poskytovatel vrátil chybu dřív, než se briefing napsal. Tvoje check-iny zůstaly beze změny.';
 
   @override
   String get relationshipAgentFailedNoModel =>
       'Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.';
 
   @override
-  String get relationshipAgentFailedPlain => 'Selhalo';
+  String get relationshipAgentFailedPlain => 'Poslední běh selhal';
 
   @override
   String relationshipAgentLastRunFailed(String time) {
-    return 'poslední běh selhal · $time';
+    return 'Poslední běh selhal · $time';
   }
 
   @override
   String get relationshipAgentMarkImportant => 'Označit jako důležité';
 
   @override
-  String relationshipAgentNextLook(String day) {
-    return 'Další pohled $day';
-  }
-
-  @override
-  String get relationshipAgentNoAgent => 'žádný agent pro tuto osobu';
+  String get relationshipAgentNoAgent => 'Pro tuto osobu není žádný agent';
 
   @override
   String relationshipAgentNoBriefingBody(int count) {
@@ -11772,6 +11905,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipAgentOnlyYourStartsUseAi =>
+      'AI používá jen to, co spustíš sám';
+
+  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Zastaralé · nový check-in $day';
   }
@@ -11781,38 +11918,74 @@ class AppLocalizationsCs extends AppLocalizations {
       'Briefingy se pozastaví, dokud je tato osoba neaktivní nebo archivovaná.';
 
   @override
-  String relationshipAgentReading(int count) {
+  String relationshipAgentProposedCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Čte $count check-inů…',
-      few: 'Čte $count check-iny…',
-      one: 'Čte 1 check-in…',
-      zero: 'Čte osobu…',
+      other: '$count návrhů',
+      few: '$count návrhy',
+      one: '1 návrh',
     );
     return '$_temp0';
   }
 
   @override
-  String get relationshipAgentRunning => 'Běží';
+  String relationshipAgentReadingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Čte $count check-inů. Obvykle do minuty.',
+      few: 'Čte $count check-iny. Obvykle do minuty.',
+      one: 'Čte 1 check-in. Obvykle do minuty.',
+      zero: 'Připravuje briefing. Obvykle do minuty.',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String relationshipAgentRunningSince(String time) {
-    return 'Běží · spuštěno $time';
+  String get relationshipAgentSeeActivity => 'Zobrazit aktivitu';
+
+  @override
+  String relationshipAgentSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count check-inů',
+      few: '$count check-iny',
+      one: '1 check-in',
+    );
+    return 'Zdroje: $_temp0 · žádné kontaktní kanály';
   }
 
   @override
   String get relationshipAgentTryAgain => 'Zkusit znovu';
 
   @override
-  String get relationshipAgentWatching => 'agent sleduje · zatím žádný běh';
+  String get relationshipAgentWatching => 'Agent sleduje';
 
   @override
-  String get relationshipAgentWriting => 'píše briefing…';
+  String relationshipAgentWatchingNextLook(String day) {
+    return 'Agent sleduje · příště $day';
+  }
+
+  @override
+  String get relationshipAgentWriting => 'Píše se briefing…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Banner vztahu s $personName';
+  }
+
+  @override
+  String relationshipBriefingAge(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days dní starý',
+      few: '$days dny starý',
+      one: '1 den starý',
+    );
+    return '$_temp0';
   }
 
   @override

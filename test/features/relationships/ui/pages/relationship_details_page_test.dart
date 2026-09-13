@@ -46,6 +46,9 @@ class _NoTranscription implements CheckInTranscriptionService {
   Future<bool> canTranscribe() async => false;
 
   @override
+  Future<CheckInTranscriptionRoute?> route() async => null;
+
+  @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
     Duration timeout = checkInTranscriptTimeout,
@@ -873,15 +876,18 @@ void main() {
     await tester.tap(find.text('Log check-in'));
     await tester.pumpAndSettle();
 
-    // Create mode, titled for logging rather than editing.
-    expect(find.text('Record an audio check-in'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('When and how long'), findsOneWidget);
+    // Create mode, titled for logging rather than editing — straight onto
+    // the composer, no choice sheet first.
+    expect(find.byKey(const ValueKey('check-in-narrative')), findsOneWidget);
     expect(find.text('Edit check-in'), findsNothing);
 
-    // The pinned bar: reachable without scrolling.
+    // A few words, then the pinned bar: reachable without scrolling.
+    await tester.enterText(
+      find.byKey(const ValueKey('check-in-narrative')),
+      'Words.',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('check-in-save')));
     await tester.pumpAndSettle();
 

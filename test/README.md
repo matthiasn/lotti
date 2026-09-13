@@ -127,6 +127,20 @@ callbacks, `whenComplete` futures and status listeners have not fired, and a
 start frame, then the duration, then a little past it — or sample in small steps
 until the state you are waiting for appears, and assert you saw it.
 
+## A focus change lands a frame late; a pulsing placeholder never settles
+
+`FocusNode.requestFocus()` applies in a microtask, and the listeners that
+rebuild on it (`ListenableBuilder(listenable: focusNode)`) mark their element
+dirty only then — so after `requestFocus()` the first `pump()` shows the old
+frame and the second shows the focused one. Pump twice before asserting on
+anything focus-driven (the check-in composer's field border, its keyboard bar).
+
+A widget that breathes for as long as a state lasts — the transcript skeleton,
+the running briefing's spinner, a `DesignSystemButton` wearing `isLoading` —
+keeps an `AnimationController` repeating, so `pumpAndSettle()` times out on
+it. Pump by hand through such a phase (`pump(const Duration(milliseconds:
+100))` a few times) and settle only once it has ended.
+
 ## Image decoding never completes inside `testWidgets`
 
 `testWidgets` runs the body under FakeAsync, and the engine's completions —

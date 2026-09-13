@@ -1877,12 +1877,75 @@
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
-  "checkInAudioButton": "Record an audio check-in",
+  "checkInAddMoreButton": "Add more",
+  "checkInAudioKeptNote": "Audio is kept in the journal even if you cancel this check-in",
+  "checkInAudioSaved": "{length} of audio saved",
+  "@checkInAudioSaved": {
+    "placeholders": {
+      "length": {
+        "type": "String"
+      }
+    }
+  },
+  "checkInAudioSavedAsYouGo": "Audio saved to this device as you go",
+  "checkInAudioSavedRoute": "{length} of audio saved · {route}",
+  "@checkInAudioSavedRoute": {
+    "placeholders": {
+      "length": {
+        "type": "String"
+      },
+      "route": {
+        "type": "String"
+      }
+    }
+  },
   "checkInAvoidLabel": "Better to avoid",
-  "checkInCaptureChoiceTitle": "How would you like to check in?",
-  "checkInDateLabel": "When?",
+  "checkInComposerSubtitle": "with {name} · last spoke {day}",
+  "@checkInComposerSubtitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "checkInComposerSubtitleNoContact": "with {name} · no check-in yet",
+  "@checkInComposerSubtitleNoContact": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "checkInContextSummary": "{type} · {time} · {duration}",
+  "@checkInContextSummary": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
-  "checkInDurationHint": "Tap duration to open the wheel. A message usually has none.",
+  "checkInDictateButton": "Dictate",
+  "checkInDiscardRecording": "Discard",
+  "checkInDismissButton": "Dismiss",
+  "checkInDurationChip": "Duration",
+  "checkInDurationChipSemantics": "Duration: {duration}. Change",
+  "@checkInDurationChipSemantics": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "checkInDurationQuickPickHint": "Tap a length to save it, or spin the wheel.",
   "checkInDurationSemanticsLabel": "Set duration to {label}",
   "@checkInDurationSemanticsLabel": {
@@ -1901,14 +1964,38 @@
   "checkInInteractionMessage": "Message",
   "checkInInteractionOther": "Other",
   "checkInInteractionVideoCall": "Video call",
+  "checkInMicrophoneDeniedBody": "Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.",
+  "checkInMicrophoneDeniedTitle": "Lotti can't use the microphone",
   "checkInMoreCaption": "Feeling · topics · next time",
   "checkInMoreSection": "More",
-  "checkInNarrativeHint": "One line is enough…",
-  "checkInNarrativeLabel": "What did you talk about?",
+  "checkInNarrativeHint": "What did you talk about? One line is enough.",
   "checkInNoDuration": "No duration",
+  "checkInOpenSettingsButton": "Open settings",
+  "checkInOrTypeHint": "Or type it here…",
   "checkInPayAttentionLabel": "Next time, pay attention to",
   "checkInPreparingLabel": "Preparing audio…",
+  "checkInRecorderBusyBody": "Stop it from the recording indicator first, then try again. Nothing new was recorded.",
+  "checkInRecorderBusyTitle": "A recording is already running",
+  "checkInRecordingFailedBody": "The microphone could not be started. Try again, or type the check-in. Nothing was recorded.",
+  "checkInRecordingFailedTitle": "Recording didn't start",
+  "checkInRecordingHint": "Speak normally. Words appear here when you stop.",
+  "checkInRecordingNotSavedBody": "The recording could not be saved. Try again, or type the check-in.",
+  "checkInRecordingNotSavedTitle": "Recording couldn't be saved",
+  "checkInReRecordButton": "Re-record",
+  "checkInSaveBlockedEmpty": "Add a few words to save",
+  "checkInSaveBlockedRecording": "Stop recording to save",
+  "checkInSaveBlockedRetry": "Type or retry to save",
+  "checkInSaveBlockedTranscribing": "Waiting for the transcript",
   "checkInSaveButton": "Save check-in",
+  "checkInSaveShortButton": "Save",
+  "checkInSaveShortcutHint": "{shortcut} to save",
+  "@checkInSaveShortcutHint": {
+    "placeholders": {
+      "shortcut": {
+        "type": "String"
+      }
+    }
+  },
   "checkInSentimentDelightful": "Delightful",
   "checkInSentimentDifficult": "Difficult",
   "checkInSentimentGood": "Good",
@@ -1918,42 +2005,65 @@
   "checkInSentimentStrained": "Strained",
   "checkInSourceCall": "From the call you placed from this page. Everything is editable.",
   "checkInSourceMessage": "From the message you sent from this page. Everything is editable.",
-  "checkInSourceMeta": "{type} · started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}",
-  "@checkInSourceMeta": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
   "checkInSpeakButton": "Speak check-in",
   "@checkInSpeakButton": {
     "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
   },
   "checkInStartedLabel": "Started",
+  "checkInStatusMicrophoneDenied": "Microphone unavailable",
+  "checkInStatusPaused": "Paused",
+  "checkInStatusRecorderBusy": "Recorder busy",
+  "checkInStatusRecording": "Recording",
+  "checkInStatusRecordingFailed": "Recording didn't start",
+  "checkInStatusRecordingNotSaved": "Recording not saved",
+  "checkInStatusTranscriptionUnavailable": "No transcription model",
+  "checkInStatusTranscriptMissing": "Transcript not received",
+  "checkInTimeChipSemantics": "Started: {time}. Change",
+  "@checkInTimeChipSemantics": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
   "checkInTranscribingLabel": "Transcribing…",
   "@checkInTranscribingLabel": {
     "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."
   },
-  "checkInTranscriptFailed": "No transcript came back. You can type it instead.",
-  "@checkInTranscriptFailed": {
-    "description": "Message shown when a spoken check-in produced no transcript and the user has to type the narrative."
+  "checkInTranscriptAdded": "Transcript added · read it once, edit anything",
+  "checkInTranscriptionUnavailableTitle": "No transcription model set up",
+  "checkInTranscriptMissingBody": "Your {length} recording is saved on this device. Try again when you're back online, or type the check-in now.",
+  "@checkInTranscriptMissingBody": {
+    "placeholders": {
+      "length": {
+        "type": "String"
+      }
+    }
   },
-  "checkInTranscriptReady": "Transcript ready. Review it before saving.",
+  "checkInTranscriptMissingTitle": "Couldn't reach the transcription server",
   "checkInTranscriptUnavailable": "Choose a default inference profile with a transcription model in AI settings, or write your check-in.",
   "@checkInTranscriptUnavailable": {
     "description": "Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category."
   },
-  "checkInWhenAndHowLong": "When and how long",
-  "checkInWriteButton": "Write a check-in",
+  "checkInTypeChipSemantics": "Interaction: {type}. Change",
+  "@checkInTypeChipSemantics": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "checkInTypeInstead": "Type instead",
+  "checkInWordCount": "{count, plural, =1{1 word} other{{count} words}}",
+  "@checkInWordCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "checklistAddItem": "Add a new item",
   "checklistAiConfidenceLabel": "Confidence: {level}",
   "@checklistAiConfidenceLabel": {
@@ -6668,6 +6778,17 @@
   },
   "relationshipAddChannelButton": "Add channel",
   "relationshipAddChannelFromContacts": "or from contacts",
+  "relationshipAgentAsOfBand": "as of {age} · {band}",
+  "@relationshipAgentAsOfBand": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      },
+      "band": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipAgentBriefNow": "Brief now",
   "relationshipAgentCall": "Call {name}",
   "@relationshipAgentCall": {
@@ -6677,18 +6798,10 @@
       }
     }
   },
-  "relationshipAgentFailed": "Failed · {time}",
-  "@relationshipAgentFailed": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipAgentFailedBody": "The last briefing run failed. Details are in the Activity tab.",
+  "relationshipAgentFailedBody": "The provider returned an error before the briefing was written. Your check-ins are unchanged.",
   "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
-  "relationshipAgentFailedPlain": "Failed",
-  "relationshipAgentLastRunFailed": "last run failed · {time}",
+  "relationshipAgentFailedPlain": "Last run failed",
+  "relationshipAgentLastRunFailed": "Last run failed · {time}",
   "@relationshipAgentLastRunFailed": {
     "placeholders": {
       "time": {
@@ -6697,15 +6810,7 @@
     }
   },
   "relationshipAgentMarkImportant": "Mark important",
-  "relationshipAgentNextLook": "Next look {day}",
-  "@relationshipAgentNextLook": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipAgentNoAgent": "no agent for this person",
+  "relationshipAgentNoAgent": "No agent for this person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}",
   "@relationshipAgentNoBriefingBody": {
     "placeholders": {
@@ -6722,6 +6827,7 @@
       }
     }
   },
+  "relationshipAgentOnlyYourStartsUseAi": "Only what you start yourself uses AI",
   "relationshipAgentOutOfDateNewCheckIn": "Out of date · new check-in {day}",
   "@relationshipAgentOutOfDateNewCheckIn": {
     "placeholders": {
@@ -6731,32 +6837,56 @@
     }
   },
   "relationshipAgentPausedBody": "Briefings pause while this person is dormant or archived.",
-  "relationshipAgentReading": "{count, plural, =0{Reading the person…} =1{Reading 1 check-in…} other{Reading {count} check-ins…}}",
-  "@relationshipAgentReading": {
+  "relationshipAgentProposedCount": "{count, plural, =1{1 proposed} other{{count} proposed}}",
+  "@relationshipAgentProposedCount": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "relationshipAgentRunning": "Running",
-  "relationshipAgentRunningSince": "Running · started {time}",
-  "@relationshipAgentRunningSince": {
+  "relationshipAgentReadingBody": "{count, plural, =0{Preparing the briefing. Usually under a minute.} =1{Reading 1 check-in. Usually under a minute.} other{Reading {count} check-ins. Usually under a minute.}}",
+  "@relationshipAgentReadingBody": {
     "placeholders": {
-      "time": {
-        "type": "String"
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipAgentSeeActivity": "See activity",
+  "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · no contact channels",
+  "@relationshipAgentSources": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },
   "relationshipAgentTryAgain": "Try again",
-  "relationshipAgentWatching": "agent watching · no run yet",
-  "relationshipAgentWriting": "writing the briefing…",
+  "relationshipAgentWatching": "Agent watching",
+  "relationshipAgentWatchingNextLook": "Agent watching · next look {day}",
+  "@relationshipAgentWatchingNextLook": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAgentWriting": "Writing the briefing…",
   "relationshipBannerSemanticLabel": "Relationship banner for {personName}",
   "@relationshipBannerSemanticLabel": {
     "description": "Accessibility label of one relationship nudge banner; personName is the person's name.",
     "placeholders": {
       "personName": {
         "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingAge": "{days, plural, =1{1 day old} other{{days} days old}}",
+  "@relationshipBriefingAge": {
+    "placeholders": {
+      "days": {
+        "type": "int"
       }
     }
   },

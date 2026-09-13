@@ -3052,24 +3052,63 @@ class AppLocalizationsEn extends AppLocalizations {
       'The recording was captured, but transcribing it failed. Please try again.';
 
   @override
-  String get checkInAudioButton => 'Record an audio check-in';
+  String get checkInAddMoreButton => 'Add more';
+
+  @override
+  String get checkInAudioKeptNote =>
+      'Audio is kept in the journal even if you cancel this check-in';
+
+  @override
+  String checkInAudioSaved(String length) {
+    return '$length of audio saved';
+  }
+
+  @override
+  String get checkInAudioSavedAsYouGo => 'Audio saved to this device as you go';
+
+  @override
+  String checkInAudioSavedRoute(String length, String route) {
+    return '$length of audio saved · $route';
+  }
 
   @override
   String get checkInAvoidLabel => 'Better to avoid';
 
   @override
-  String get checkInCaptureChoiceTitle => 'How would you like to check in?';
+  String checkInComposerSubtitle(String name, String day) {
+    return 'with $name · last spoke $day';
+  }
 
   @override
-  String get checkInDateLabel => 'When?';
+  String checkInComposerSubtitleNoContact(String name) {
+    return 'with $name · no check-in yet';
+  }
+
+  @override
+  String checkInContextSummary(String type, String time, String duration) {
+    return '$type · $time · $duration';
+  }
 
   @override
   String get checkInDeleteConfirmMessage =>
       'Delete this check-in? This cannot be undone.';
 
   @override
-  String get checkInDurationHint =>
-      'Tap duration to open the wheel. A message usually has none.';
+  String get checkInDictateButton => 'Dictate';
+
+  @override
+  String get checkInDiscardRecording => 'Discard';
+
+  @override
+  String get checkInDismissButton => 'Dismiss';
+
+  @override
+  String get checkInDurationChip => 'Duration';
+
+  @override
+  String checkInDurationChipSemantics(String duration) {
+    return 'Duration: $duration. Change';
+  }
 
   @override
   String get checkInDurationQuickPickHint =>
@@ -3110,19 +3149,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Video call';
 
   @override
+  String get checkInMicrophoneDeniedBody =>
+      'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.';
+
+  @override
+  String get checkInMicrophoneDeniedTitle => 'Lotti can\'t use the microphone';
+
+  @override
   String get checkInMoreCaption => 'Feeling · topics · next time';
 
   @override
   String get checkInMoreSection => 'More';
 
   @override
-  String get checkInNarrativeHint => 'One line is enough…';
-
-  @override
-  String get checkInNarrativeLabel => 'What did you talk about?';
+  String get checkInNarrativeHint =>
+      'What did you talk about? One line is enough.';
 
   @override
   String get checkInNoDuration => 'No duration';
+
+  @override
+  String get checkInOpenSettingsButton => 'Open settings';
+
+  @override
+  String get checkInOrTypeHint => 'Or type it here…';
 
   @override
   String get checkInPayAttentionLabel => 'Next time, pay attention to';
@@ -3131,7 +3181,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInPreparingLabel => 'Preparing audio…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Stop it from the recording indicator first, then try again. Nothing new was recorded.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'A recording is already running';
+
+  @override
+  String get checkInRecordingFailedBody =>
+      'The microphone could not be started. Try again, or type the check-in. Nothing was recorded.';
+
+  @override
+  String get checkInRecordingFailedTitle => 'Recording didn\'t start';
+
+  @override
+  String get checkInRecordingHint =>
+      'Speak normally. Words appear here when you stop.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'The recording could not be saved. Try again, or type the check-in.';
+
+  @override
+  String get checkInRecordingNotSavedTitle => 'Recording couldn\'t be saved';
+
+  @override
+  String get checkInReRecordButton => 'Re-record';
+
+  @override
+  String get checkInSaveBlockedEmpty => 'Add a few words to save';
+
+  @override
+  String get checkInSaveBlockedRecording => 'Stop recording to save';
+
+  @override
+  String get checkInSaveBlockedRetry => 'Type or retry to save';
+
+  @override
+  String get checkInSaveBlockedTranscribing => 'Waiting for the transcript';
+
+  @override
   String get checkInSaveButton => 'Save check-in';
+
+  @override
+  String get checkInSaveShortButton => 'Save';
+
+  @override
+  String checkInSaveShortcutHint(String shortcut) {
+    return '$shortcut to save';
+  }
 
   @override
   String get checkInSentimentDelightful => 'Delightful';
@@ -3164,22 +3262,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'From the message you sent from this page. Everything is editable.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'about $minutes min',
-      one: 'about 1 min',
-      zero: 'under a minute',
-    );
-    return '$type · started $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Speak check-in';
 
   @override
   String get checkInStartedLabel => 'Started';
+
+  @override
+  String get checkInStatusMicrophoneDenied => 'Microphone unavailable';
+
+  @override
+  String get checkInStatusPaused => 'Paused';
+
+  @override
+  String get checkInStatusRecorderBusy => 'Recorder busy';
+
+  @override
+  String get checkInStatusRecording => 'Recording';
+
+  @override
+  String get checkInStatusRecordingFailed => 'Recording didn\'t start';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Recording not saved';
+
+  @override
+  String get checkInStatusTranscriptionUnavailable => 'No transcription model';
+
+  @override
+  String get checkInStatusTranscriptMissing => 'Transcript not received';
+
+  @override
+  String checkInTimeChipSemantics(String time) {
+    return 'Started: $time. Change';
+  }
 
   @override
   String get checkInTopicsHint => 'Comma-separated, e.g. work, travel';
@@ -3191,22 +3306,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInTranscribingLabel => 'Transcribing…';
 
   @override
-  String get checkInTranscriptFailed =>
-      'No transcript came back. You can type it instead.';
+  String get checkInTranscriptAdded =>
+      'Transcript added · read it once, edit anything';
 
   @override
-  String get checkInTranscriptReady =>
-      'Transcript ready. Review it before saving.';
+  String get checkInTranscriptionUnavailableTitle =>
+      'No transcription model set up';
+
+  @override
+  String checkInTranscriptMissingBody(String length) {
+    return 'Your $length recording is saved on this device. Try again when you\'re back online, or type the check-in now.';
+  }
+
+  @override
+  String get checkInTranscriptMissingTitle =>
+      'Couldn\'t reach the transcription server';
 
   @override
   String get checkInTranscriptUnavailable =>
       'Choose a default inference profile with a transcription model in AI settings, or write your check-in.';
 
   @override
-  String get checkInWhenAndHowLong => 'When and how long';
+  String checkInTypeChipSemantics(String type) {
+    return 'Interaction: $type. Change';
+  }
 
   @override
-  String get checkInWriteButton => 'Write a check-in';
+  String get checkInTypeInstead => 'Type instead';
+
+  @override
+  String checkInWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count words',
+      one: '1 word',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checklistAddItem => 'Add a new item';
@@ -11488,6 +11625,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipAddChannelFromContacts => 'or from contacts';
 
   @override
+  String relationshipAgentAsOfBand(String age, String band) {
+    return 'as of $age · $band';
+  }
+
+  @override
   String get relationshipAgentBriefNow => 'Brief now';
 
   @override
@@ -11496,36 +11638,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentFailed(String time) {
-    return 'Failed · $time';
-  }
-
-  @override
   String get relationshipAgentFailedBody =>
-      'The last briefing run failed. Details are in the Activity tab.';
+      'The provider returned an error before the briefing was written. Your check-ins are unchanged.';
 
   @override
   String get relationshipAgentFailedNoModel =>
       'No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.';
 
   @override
-  String get relationshipAgentFailedPlain => 'Failed';
+  String get relationshipAgentFailedPlain => 'Last run failed';
 
   @override
   String relationshipAgentLastRunFailed(String time) {
-    return 'last run failed · $time';
+    return 'Last run failed · $time';
   }
 
   @override
   String get relationshipAgentMarkImportant => 'Mark important';
 
   @override
-  String relationshipAgentNextLook(String day) {
-    return 'Next look $day';
-  }
-
-  @override
-  String get relationshipAgentNoAgent => 'no agent for this person';
+  String get relationshipAgentNoAgent => 'No agent for this person';
 
   @override
   String relationshipAgentNoBriefingBody(int count) {
@@ -11548,6 +11680,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get relationshipAgentOnlyYourStartsUseAi =>
+      'Only what you start yourself uses AI';
+
+  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Out of date · new check-in $day';
   }
@@ -11557,37 +11693,70 @@ class AppLocalizationsEn extends AppLocalizations {
       'Briefings pause while this person is dormant or archived.';
 
   @override
-  String relationshipAgentReading(int count) {
+  String relationshipAgentProposedCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Reading $count check-ins…',
-      one: 'Reading 1 check-in…',
-      zero: 'Reading the person…',
+      other: '$count proposed',
+      one: '1 proposed',
     );
     return '$_temp0';
   }
 
   @override
-  String get relationshipAgentRunning => 'Running';
+  String relationshipAgentReadingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Reading $count check-ins. Usually under a minute.',
+      one: 'Reading 1 check-in. Usually under a minute.',
+      zero: 'Preparing the briefing. Usually under a minute.',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String relationshipAgentRunningSince(String time) {
-    return 'Running · started $time';
+  String get relationshipAgentSeeActivity => 'See activity';
+
+  @override
+  String relationshipAgentSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count check-ins',
+      one: '1 check-in',
+    );
+    return 'Sources: $_temp0 · no contact channels';
   }
 
   @override
   String get relationshipAgentTryAgain => 'Try again';
 
   @override
-  String get relationshipAgentWatching => 'agent watching · no run yet';
+  String get relationshipAgentWatching => 'Agent watching';
 
   @override
-  String get relationshipAgentWriting => 'writing the briefing…';
+  String relationshipAgentWatchingNextLook(String day) {
+    return 'Agent watching · next look $day';
+  }
+
+  @override
+  String get relationshipAgentWriting => 'Writing the briefing…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Relationship banner for $personName';
+  }
+
+  @override
+  String relationshipBriefingAge(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days old',
+      one: '1 day old',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -103,6 +103,30 @@ void main() {
   });
 
   group('TldrHeader', () {
+    testWidgets('a subtitle widget stands in for the name caption, and the '
+        'badge can wear another glyph', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Only for semantics',
+            title: 'Briefing',
+            subtitle: const Text('as of 3 h ago', key: ValueKey('subtitle')),
+            icon: LottiIcons.people,
+            onAgentTap: () {},
+          ),
+        ),
+      );
+
+      expect(find.byKey(const ValueKey('subtitle')), findsOneWidget);
+      expect(find.text('Only for semantics'), findsNothing);
+      expect(find.byIcon(LottiIcons.people), findsOneWidget);
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+      expect(
+        find.bySemanticsLabel('Briefing. Only for semantics'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('keeps identity primary and exposes optional playback', (
       tester,
     ) async {

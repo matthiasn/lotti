@@ -1,90 +1,33 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/check_in_duration_suggestions_controller.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
-import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:record/record.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
-
-/// Stands in for the transcription service: answers the pre-flight probe and
-/// hands back a wait the test drives directly.
-class _StubTranscriptionService implements CheckInTranscriptionService {
-  _StubTranscriptionService({
-    required this.canTranscribeResult,
-    required this.transcript,
-    this.gate,
-    this.preflightGate,
-  });
-
-  final bool canTranscribeResult;
-  final String? transcript;
-  final Completer<String?>? gate;
-  final Completer<void>? preflightGate;
-  int cancelCount = 0;
-
-  @override
-  Future<bool> canTranscribe() async {
-    await preflightGate?.future;
-    return canTranscribeResult;
-  }
-
-  @override
-  CheckInTranscriptWait transcribe({
-    required String audioEntryId,
-    Duration timeout = checkInTranscriptTimeout,
-  }) {
-    final completer = gate ?? (Completer<String?>()..complete(transcript));
-    return CheckInTranscriptWait.forTesting(
-      result: completer.future,
-      onCancel: () {
-        cancelCount++;
-        if (!completer.isCompleted) completer.complete(null);
-      },
-    );
-  }
-}
-
-/// Holds a fixed recorder state so the sheet can read the per-recording
-/// speech-recognition choice the real modal would have left behind.
-class _FixedRecorderController extends AudioRecorderController {
-  _FixedRecorderController({this.enableSpeechRecognition});
-
-  final bool? enableSpeechRecognition;
-
-  @override
-  AudioRecorderState build() => AudioRecorderState(
-    status: AudioRecorderStatus.stopped,
-    progress: Duration.zero,
-    vu: 0,
-    dBFS: -160,
-    showIndicator: false,
-    modalVisible: false,
-    enableSpeechRecognition: enableSpeechRecognition,
-  );
-}
+import '../../helpers/check_in_speech_fakes.dart';
 
 /// Serves a fixed duration ranking, so a sheet test names the chip it taps
 /// instead of standing up a database.
@@ -150,18 +93,54 @@ void main() {
     });
   });
 
+  group('removeCheckInTranscript', () {
+    test('gives back what the field held before an unedited merge', () {
+      expect(
+        removeCheckInTranscript(
+          existing: 'Typed.\n\nSpoken.',
+          textBefore: 'Typed.',
+          transcript: 'Spoken.',
+        ),
+        'Typed.',
+      );
+      expect(
+        removeCheckInTranscript(
+          existing: 'Spoken.',
+          textBefore: '',
+          transcript: 'Spoken.',
+        ),
+        '',
+      );
+    });
+
+    test("leaves an edited field alone — the edit is the user's", () {
+      expect(
+        removeCheckInTranscript(
+          existing: 'Typed.\n\nSpoken, then edited.',
+          textBefore: 'Typed.',
+          transcript: 'Spoken.',
+        ),
+        'Typed.\n\nSpoken, then edited.',
+      );
+      // A prefix edit still ends with the transcript; a suffix match would
+      // have stripped it and left "Actually".
+      expect(
+        removeCheckInTranscript(
+          existing: 'Actually Spoken.',
+          textBefore: '',
+          transcript: 'Spoken.',
+        ),
+        'Actually Spoken.',
+      );
+    });
+  });
+
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockRelationshipRepository mockRepository;
-  late _StubTranscriptionService stubTranscription;
-  late Completer<void> voiceStartGate;
-
-  // Release the top-level recorder preflight after the test has arranged
-  // any typing or pending inference state. No inner recording button exists.
-  Future<void> startRecording(WidgetTester tester) async {
-    voiceStartGate.complete();
-    await tester.pump();
-  }
+  late StubCheckInTranscriptionService stubTranscription;
+  late FakeAudioRecorderController recorder;
+  final openedSettings = <int>[];
 
   CheckInEntry createdEntry(CheckInData data) => CheckInEntry(
     meta: Metadata(
@@ -177,15 +156,16 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
-    // The redesigned form is a full scroll — sentiment, narrative, when and
-    // how long, More — and the default 800x600 surface leaves its lower half
-    // unbuilt, where a tap lands on nothing.
+    // The redesigned form is a full scroll — the field, the chips, More —
+    // and the default 800x600 surface leaves its lower half unbuilt, where
+    // a tap lands on nothing.
     TestWidgetsFlutterBinding.instance.platformDispatcher.views.single
       ..physicalSize = const Size(1000, 2400)
       ..devicePixelRatio = 1;
     addTearDown(
       TestWidgetsFlutterBinding.instance.platformDispatcher.views.single.reset,
     );
+    openedSettings.clear();
     mockRepository = MockRelationshipRepository();
     // The speak flow reads the person to scope the recording to their
     // category; every other flow ignores it.
@@ -204,6 +184,10 @@ void main() {
         invocation.namedArguments[#data] as CheckInData,
       ),
     );
+    stubTranscription = StubCheckInTranscriptionService(
+      transcript: 'Spoken.',
+    );
+    recorder = FakeAudioRecorderController();
   });
 
   /// The tracked person, filed under [categoryId] — the category whose
@@ -223,6 +207,39 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  final narrative = find.byKey(const ValueKey('check-in-narrative'));
+  final save = find.byKey(const ValueKey('check-in-save'));
+  final dictate = find.byKey(const ValueKey('check-in-dictate'));
+  final inlineRecorder = find.byKey(const ValueKey('check-in-inline-recorder'));
+  final stop = find.byKey(const ValueKey('check-in-recorder-stop'));
+
+  String narrativeText(WidgetTester tester) =>
+      tester.widget<TextField>(narrative).controller!.text;
+
+  /// Types into the narrative and drops the keyboard again, the way a
+  /// phone user does before reaching for the bar — focus slims the bar to
+  /// the summary and a short Save, and these tests read the full one.
+  Future<void> type(WidgetTester tester, String text) async {
+    await tester.enterText(narrative, text);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapSave(WidgetTester tester) async {
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+  }
+
+  bool saveEnabled(WidgetTester tester) =>
+      tester.widget<DesignSystemButton>(save).onPressed != null;
+
+  String? saveReason(WidgetTester tester) {
+    final reason = find.byKey(const ValueKey('check-in-save-reason'));
+    if (reason.evaluate().isEmpty) return null;
+    return tester.widget<Text>(reason).data;
+  }
+
   /// The form the way the modal hosts it: scrolling, with the pinned bar it
   /// publishes to underneath — the form itself carries no actions.
   Widget withBar(CheckInCaptureForm Function(CheckInFormHandle handle) form) {
@@ -237,65 +254,61 @@ void main() {
     );
   }
 
-  Widget buildForm() => makeTestableWidgetWithScaffold(
-    withBar(
-      (handle) => CheckInCaptureForm(relationshipId: 'rel-001', handle: handle),
-    ),
-    mediaQueryData: tallForm,
-    overrides: [
-      relationshipRepositoryProvider.overrideWithValue(mockRepository),
-    ],
-  );
+  List<Override> speechOverrides() => [
+    relationshipRepositoryProvider.overrideWithValue(mockRepository),
+    audioRecorderControllerProvider.overrideWith(() => recorder),
+    checkInTranscriptionServiceProvider.overrideWithValue(stubTranscription),
+    checkInSettingsOpenerProvider.overrideWithValue(() async {
+      openedSettings.add(1);
+      return true;
+    }),
+  ];
 
-  /// The form with both voice seams stubbed: [recordedEntryId] is what the
-  /// recorder sheet resolves to, [transcript] what the wait yields.
-  Widget buildSpeakableForm({
-    required String? recordedEntryId,
-    required String? transcript,
-    Completer<String?>? transcriptGate,
-    void Function(String? categoryId)? onLaunch,
-    bool canTranscribe = true,
-    bool? enableSpeechRecognition,
-    bool startSpeaking = true,
-    bool startImmediately = false,
+  Widget buildForm({
+    bool startSpeaking = false,
+    CheckInInteractionType? prefilledInteractionType,
+    DateTime? prefilledTime,
+    Duration? prefilledDuration,
+    List<Override> overrides = const [],
   }) => makeTestableWidgetWithScaffold(
     withBar(
       (handle) => CheckInCaptureForm(
         relationshipId: 'rel-001',
-        startSpeaking: startSpeaking,
         handle: handle,
+        startSpeaking: startSpeaking,
+        prefilledInteractionType: prefilledInteractionType,
+        prefilledTime: prefilledTime,
+        prefilledDuration: prefilledDuration,
       ),
     ),
     mediaQueryData: tallForm,
-    overrides: [
-      relationshipRepositoryProvider.overrideWithValue(mockRepository),
+    overrides: [...speechOverrides(), ...overrides],
+  );
 
-      checkInRecorderLauncherProvider.overrideWithValue(
-        ({
-          required BuildContext context,
-          required String relationshipId,
-          String? categoryId,
-        }) async {
-          onLaunch?.call(categoryId);
-          return recordedEntryId;
-        },
+  ({CheckInData data, EntryText? entryText, DateTime? dateFrom})
+  capturedSave() {
+    final captured = verify(
+      () => mockRepository.createCheckIn(
+        data: captureAny(named: 'data'),
+        entryText: captureAny(named: 'entryText'),
+        dateFrom: captureAny(named: 'dateFrom'),
+        dateTo: any(named: 'dateTo'),
       ),
-      audioRecorderControllerProvider.overrideWith(
-        () => _FixedRecorderController(
-          enableSpeechRecognition: enableSpeechRecognition,
-        ),
-      ),
-      checkInTranscriptionServiceProvider.overrideWithValue(
-        stubTranscription = _StubTranscriptionService(
-          canTranscribeResult: canTranscribe,
-          preflightGate: startImmediately
-              ? null
-              : (voiceStartGate = Completer<void>()),
-          transcript: transcript,
-          gate: transcriptGate,
-        ),
-      ),
-    ],
+    ).captured;
+    return (
+      data: captured[0] as CheckInData,
+      entryText: captured[1] as EntryText?,
+      dateFrom: captured[2] as DateTime?,
+    );
+  }
+
+  void verifyNoSave() => verifyNever(
+    () => mockRepository.createCheckIn(
+      data: any(named: 'data'),
+      entryText: any(named: 'entryText'),
+      dateFrom: any(named: 'dateFrom'),
+      dateTo: any(named: 'dateTo'),
+    ),
   );
 
   final interactionTime = DateTime(2026, 8, 10, 19, 45);
@@ -318,92 +331,101 @@ void main() {
     entryText: const EntryText(plainText: 'Planned the trip.'),
   );
 
-  Widget buildEditForm() => makeTestableWidgetWithScaffold(
+  Widget buildEditForm({CheckInEntry? entry}) => makeTestableWidgetWithScaffold(
     withBar(
       (handle) => CheckInCaptureForm(
         relationshipId: 'rel-001',
-        initial: existing(),
+        initial: entry ?? existing(),
         handle: handle,
       ),
     ),
     mediaQueryData: tallForm,
-    overrides: [
-      relationshipRepositoryProvider.overrideWithValue(mockRepository),
-    ],
+    overrides: speechOverrides(),
   );
 
-  ({CheckInData data, EntryText? entryText, DateTime? dateFrom})
-  capturedSave() {
-    final captured = verify(
-      () => mockRepository.createCheckIn(
-        data: captureAny(named: 'data'),
-        entryText: captureAny(named: 'entryText'),
-        dateFrom: captureAny(named: 'dateFrom'),
-        dateTo: any(named: 'dateTo'),
-      ),
-    ).captured;
-    return (
-      data: captured[0] as CheckInData,
-      entryText: captured[1] as EntryText?,
-      dateFrom: captured[2] as DateTime?,
-    );
+  /// Presses *Dictate* and settles the preflight: the recorder is up.
+  Future<void> startDictation(WidgetTester tester) async {
+    await tester.ensureVisible(dictate);
+    await tester.tap(dictate);
+    await tester.pumpAndSettle();
   }
 
-  testWidgets('the narrative leads and optional sentiment starts folded', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
-    expect(
-      tester.getTopLeft(find.byKey(const ValueKey('check-in-narrative'))).dy,
-      lessThan(
-        tester.getTopLeft(find.byKey(const ValueKey('check-in-started'))).dy,
-      ),
-    );
-    expect(find.text('Delightful'), findsNothing);
-    await openMore(tester);
-    expect(find.text('Delightful'), findsOne);
-    expect(find.text('Optional. Never filled in by the agent.'), findsOne);
-  });
+  /// Presses *Stop* on the inline recorder and pumps what follows by hand:
+  /// the transcript skeleton breathes for as long as the wait is open, so
+  /// nothing "settles" until the words land.
+  Future<void> stopRecording(WidgetTester tester) async {
+    await tester.tap(stop);
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
 
-  testWidgets(
-    'saves interaction type, sentiment, parsed topics, and narrative',
-    (tester) async {
+  group('the composer at rest', () {
+    testWidgets('the narrative leads, the chips follow, More starts folded, '
+        'and Save waits for words and says so', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Call'));
-      await tester.tap(find.text('Call'));
+      expect(
+        tester.getTopLeft(narrative).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const ValueKey('check-in-type'))).dy,
+        ),
+      );
+      expect(find.text('Delightful'), findsNothing);
+      expect(saveEnabled(tester), isFalse);
+      expect(saveReason(tester), 'Add a few words to save');
+      expect(find.text('0 words · Ctrl+Enter to save'), findsOneWidget);
+
+      await type(tester, 'One line.');
+      expect(saveEnabled(tester), isTrue);
+      expect(saveReason(tester), isNull);
+      expect(find.text('2 words · Ctrl+Enter to save'), findsOneWidget);
+
+      await openMore(tester);
+      expect(find.text('Delightful'), findsOne);
+      expect(find.text('Optional. Never filled in by the agent.'), findsOne);
+    });
+
+    testWidgets('saves type, sentiment, parsed topics and narrative', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('check-in-type')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DesignSystemChip>(
+              find.byKey(const ValueKey('check-in-type')),
+            )
+            .label,
+        'Call',
+      );
+
       await openMore(tester);
       await tester.ensureVisible(find.text('Good'));
       await tester.tap(find.text('Good'));
       await tester.pumpAndSettle();
 
-      // Field order: narrative, topics, pay attention, avoid.
-      await tester.enterText(
-        find.byKey(const ValueKey('check-in-narrative')),
-        'Talked about the interview.',
-      );
+      await type(tester, 'Talked about the interview.');
       await openMore(tester);
       await tester.enterText(
         find.byKey(const ValueKey('check-in-topics')),
         ' job search ,vacation , ',
       );
-      await openMore(tester);
       await tester.enterText(
         find.byKey(const ValueKey('check-in-pay-attention')),
         'Interview result',
       );
-      await openMore(tester);
       await tester.enterText(
         find.byKey(const ValueKey('check-in-avoid')),
         'Inheritance',
       );
-
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
 
       final saved = capturedSave();
       expect(saved.data.relationshipId, 'rel-001');
@@ -413,141 +435,163 @@ void main() {
       expect(saved.data.payAttentionTo, 'Interview result');
       expect(saved.data.avoid, 'Inheritance');
       expect(saved.entryText?.plainText, 'Talked about the interview.');
-    },
-  );
+    });
 
-  testWidgets('sentiment stays unset unless the user picks one', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
+    testWidgets('dismissing the type picker keeps the type', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-type')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DesignSystemChip>(
+              find.byKey(const ValueKey('check-in-type')),
+            )
+            .label,
+        'In person',
+      );
+    });
 
-    await tester.ensureVisible(find.text('Save check-in'));
-    await tester.tap(find.text('Save check-in'));
-    await tester.pumpAndSettle();
+    testWidgets('sentiment stays unset unless the user picks one, and '
+        'tapping the chosen one clears it again', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await type(tester, 'Words.');
 
-    final saved = capturedSave();
-    expect(saved.data.sentiment, isNull);
-    expect(saved.data.interactionType, CheckInInteractionType.inPerson);
-    expect(saved.data.topics, isEmpty);
-    expect(saved.entryText, isNull);
-  });
+      await openMore(tester);
+      await tester.ensureVisible(find.text('Good'));
+      await tester.tap(find.text('Good'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Good'));
+      await tester.pumpAndSettle();
+      await tapSave(tester);
 
-  testWidgets('tapping the selected sentiment clears it again', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
+      final saved = capturedSave();
+      expect(saved.data.sentiment, isNull);
+      expect(saved.data.interactionType, CheckInInteractionType.inPerson);
+      expect(saved.data.topics, isEmpty);
+    });
 
-    await openMore(tester);
-    await tester.ensureVisible(find.text('Good'));
-    await tester.tap(find.text('Good'));
-    await tester.pumpAndSettle();
-    await openMore(tester);
-    await tester.ensureVisible(find.text('Good'));
-    await tester.tap(find.text('Good'));
-    await tester.pumpAndSettle();
+    testWidgets('create mode defaults the interaction time to NOW, to the '
+        'minute — not midnight, not createdAt', (tester) async {
+      final fixedNow = DateTime(2026, 8, 13, 10, 30);
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(buildForm());
+        await tester.pumpAndSettle();
+        expect(find.text('Now · 10:30'), findsOneWidget);
+        await type(tester, 'Words.');
+        await tapSave(tester);
+      });
 
-    await tester.ensureVisible(find.text('Save check-in'));
-    await tester.tap(find.text('Save check-in'));
-    await tester.pumpAndSettle();
+      expect(capturedSave().dateFrom, fixedNow);
+    });
 
-    expect(capturedSave().data.sentiment, isNull);
-  });
+    testWidgets('a refused save keeps the sheet open and reports it', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+        ),
+      ).thenAnswer((_) async => null);
 
-  testWidgets('create mode defaults the interaction time to NOW, to the '
-      'minute — not midnight, not createdAt', (tester) async {
-    final fixedNow = DateTime(2026, 8, 13, 10, 30);
-    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await type(tester, 'Words.');
+      await tapSave(tester);
+
+      expect(
+        find.text('Could not save the check-in. Please try again.'),
+        findsOneWidget,
+      );
+      // Still editable, and Save is armed again — a retry does not need the
+      // sheet reopened.
+      expect(narrativeText(tester), 'Words.');
+      expect(saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('a save that throws reports the failure too', (tester) async {
+      when(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+        ),
+      ).thenThrow(Exception('db gone'));
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await type(tester, 'Words.');
+      await tapSave(tester);
+
+      expect(
+        find.text('Could not save the check-in. Please try again.'),
+        findsOneWidget,
+      );
+      expect(saveEnabled(tester), isTrue);
+    });
+
+    testWidgets('Cancel closes without saving anything', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
+      await type(tester, 'Typed but discarded');
+      await tester.ensureVisible(find.text('Cancel'));
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
+
+      verifyNoSave();
     });
 
-    expect(capturedSave().dateFrom, fixedNow);
-  });
+    testWidgets('the save shortcut saves once there are words, and not '
+        'before', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.tap(narrative);
+      await tester.pump();
 
-  testWidgets('a refused save keeps the sheet open and reports it', (
-    tester,
-  ) async {
-    when(
-      () => mockRepository.createCheckIn(
-        data: any(named: 'data'),
-        entryText: any(named: 'entryText'),
-        dateFrom: any(named: 'dateFrom'),
-        dateTo: any(named: 'dateTo'),
-      ),
-    ).thenAnswer((_) async => null);
+      Future<void> press() async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pumpAndSettle();
+      }
 
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Save check-in'));
-    await tester.tap(find.text('Save check-in'));
-    await tester.pumpAndSettle();
+      await press();
+      verifyNoSave();
 
-    expect(
-      find.text('Could not save the check-in. Please try again.'),
-      findsOneWidget,
-    );
-    // Still editable, and Save is armed again — a retry does not need the
-    // sheet reopened.
-    expect(find.text('When and how long'), findsOneWidget);
-    expect(
-      tester
-          .widget<DesignSystemButton>(
-            find.widgetWithText(DesignSystemButton, 'Save check-in'),
-          )
-          .onPressed,
-      isNotNull,
-    );
-  });
+      await type(tester, 'Words.');
+      await tester.tap(narrative);
+      await tester.pump();
+      await press();
+      expect(capturedSave().entryText?.plainText, 'Words.');
+    });
 
-  testWidgets('a save that throws reports the failure too', (tester) async {
-    when(
-      () => mockRepository.createCheckIn(
-        data: any(named: 'data'),
-        entryText: any(named: 'entryText'),
-        dateFrom: any(named: 'dateFrom'),
-        dateTo: any(named: 'dateTo'),
-      ),
-    ).thenThrow(Exception('db gone'));
-
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Save check-in'));
-    await tester.tap(find.text('Save check-in'));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('Could not save the check-in. Please try again.'),
-      findsOneWidget,
-    );
-    expect(find.text('When and how long'), findsOneWidget);
-  });
-
-  testWidgets('Cancel closes without saving anything', (tester) async {
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
-
-    await tester.enterText(
-      find.byKey(const ValueKey('check-in-narrative')),
-      'Typed but discarded',
-    );
-    await tester.ensureVisible(find.text('Cancel'));
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-
-    verifyNever(
-      () => mockRepository.createCheckIn(
-        data: any(named: 'data'),
-        entryText: any(named: 'entryText'),
-        dateFrom: any(named: 'dateFrom'),
-        dateTo: any(named: 'dateTo'),
-      ),
-    );
+    testWidgets('a prefilled post-call check-in says where the chips came '
+        'from', (tester) async {
+      await tester.pumpWidget(
+        buildForm(
+          prefilledInteractionType: CheckInInteractionType.call,
+          prefilledTime: DateTime(2026, 8, 13, 12, 33),
+          prefilledDuration: const Duration(minutes: 11),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'From the call you placed from this page. Everything is editable.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('11 min'), findsOneWidget);
+      expect(find.text('Call'), findsOneWidget);
+    });
   });
 
   group('edit mode', () {
@@ -557,47 +601,45 @@ void main() {
       ).thenAnswer((_) async => true);
     });
 
-    testWidgets(
-      'prefills every field and preserves the interaction time on save',
-      (tester) async {
-        await tester.pumpWidget(buildEditForm());
-        await tester.pumpAndSettle();
+    testWidgets('prefills every field and preserves the interaction time on '
+        'save', (tester) async {
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
 
-        // Prefilled: narrative, joined topics, guidance, and the date field.
-        expect(
-          find.widgetWithText(TextField, 'Planned the trip.'),
-          findsOneWidget,
-        );
-        expect(find.widgetWithText(TextField, 'travel, work'), findsOneWidget);
-        expect(
-          find.widgetWithText(TextField, 'Job interview'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('10 Aug'), findsOneWidget);
+      expect(narrativeText(tester), 'Planned the trip.');
+      expect(find.widgetWithText(TextField, 'travel, work'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Job interview'), findsOneWidget);
+      expect(find.textContaining('10 Aug'), findsOneWidget);
+      expect(saveEnabled(tester), isTrue);
 
-        await openMore(tester);
-        await tester.ensureVisible(find.text('Neutral'));
-        await tester.tap(find.text('Neutral'));
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Save check-in'));
-        await tester.tap(find.text('Save check-in'));
-        await tester.pumpAndSettle();
+      await openMore(tester);
+      await tester.ensureVisible(find.text('Neutral'));
+      await tester.tap(find.text('Neutral'));
+      await tester.pumpAndSettle();
+      await tapSave(tester);
 
-        final updated =
-            verify(
-                  () => mockRepository.updateCheckIn(captureAny()),
-                ).captured.single
-                as CheckInEntry;
-        expect(updated.id, 'check-1');
-        expect(updated.data.sentiment, CheckInSentiment.neutral);
-        expect(updated.data.topics, ['travel', 'work']);
-        // Untouched date: the original interaction time survives, to the
-        // minute.
-        expect(updated.meta.dateFrom, interactionTime);
-        expect(updated.meta.dateTo, interactionTime);
-        expect(updated.entryText?.plainText, 'Planned the trip.');
-      },
-    );
+      final updated =
+          verify(
+                () => mockRepository.updateCheckIn(captureAny()),
+              ).captured.single
+              as CheckInEntry;
+      expect(updated.id, 'check-1');
+      expect(updated.data.sentiment, CheckInSentiment.neutral);
+      expect(updated.data.topics, ['travel', 'work']);
+      // Untouched date: the original interaction time survives, to the
+      // minute.
+      expect(updated.meta.dateFrom, interactionTime);
+      expect(updated.meta.dateTo, interactionTime);
+      expect(updated.entryText?.plainText, 'Planned the trip.');
+    });
+
+    testWidgets('clearing the narrative holds Save again', (tester) async {
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+      await type(tester, '   ');
+      expect(saveEnabled(tester), isFalse);
+      expect(saveReason(tester), 'Add a few words to save');
+    });
 
     testWidgets('the time picker moves the time of day and keeps the day', (
       tester,
@@ -622,19 +664,12 @@ void main() {
         isFalse,
         reason: 'follows the same device preference as the journal editor',
       );
-      tester
-          .widget<DesignSystemTimeWheel>(
-            find.byKey(const ValueKey('check-in-time-picker')),
-          )
-          .onDateTimeChanged(DateTime(2026, 8, 10, 8, 15));
+      wheel.onDateTimeChanged(DateTime(2026, 8, 10, 8, 15));
       await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('08:15'), findsOneWidget);
-
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
 
       final updated =
           verify(
@@ -654,9 +689,6 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.textContaining('10:30'), findsOneWidget);
 
-        await tester.ensureVisible(
-          find.byKey(const ValueKey('check-in-started')),
-        );
         await tester.tap(find.byKey(const ValueKey('check-in-started')));
         await tester.pumpAndSettle();
         // Keep today; then ask for a quarter to midnight.
@@ -673,30 +705,23 @@ void main() {
         expect(find.textContaining('23:45'), findsNothing);
         expect(find.textContaining('10:30'), findsOneWidget);
 
-        await tester.ensureVisible(find.text('Save check-in'));
-        await tester.tap(find.text('Save check-in'));
-        await tester.pumpAndSettle();
+        await type(tester, 'Words.');
+        await tapSave(tester);
       });
 
       expect(capturedSave().dateFrom, fixedNow);
     });
 
-    testWidgets('tapping the Started tile opens the date picker', (
+    testWidgets('tapping the Started chip opens the date picker', (
       tester,
     ) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      // One 'Started' before (the tile's caption)…
-      expect(find.text('Started'), findsOneWidget);
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('check-in-started')),
-      );
+      expect(find.text('Started'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-started')));
       await tester.pumpAndSettle();
-
-      // …and a second one as the picker modal's title once it is open.
-      expect(find.text('Started'), findsNWidgets(2));
+      expect(find.text('Started'), findsOneWidget);
     });
 
     testWidgets('delete asks for confirmation, then deletes and closes', (
@@ -719,7 +744,6 @@ void main() {
       );
       verifyNever(() => mockRepository.deleteCheckIn(any()));
 
-      await tester.ensureVisible(find.text('Delete'));
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
 
@@ -733,16 +757,14 @@ void main() {
       expect(find.byIcon(LottiIcons.delete), findsNothing);
     });
 
-    testWidgets('a refused delete keeps the check-in and reports it', (
-      tester,
-    ) async {
+    testWidgets('a refused delete, or one that throws, keeps the check-in '
+        'and reports it', (tester) async {
       when(
         () => mockRepository.deleteCheckIn('check-1'),
       ).thenAnswer((_) async => false);
 
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
       await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
@@ -752,21 +774,13 @@ void main() {
         find.text('Could not delete the check-in. Please try again.'),
         findsOneWidget,
       );
-      // The sheet stays up on its still-live check-in.
-      expect(
-        find.widgetWithText(TextField, 'Planned the trip.'),
-        findsOneWidget,
-      );
-    });
+      expect(narrativeText(tester), 'Planned the trip.');
 
-    testWidgets('a delete that throws reports the failure too', (tester) async {
       when(
         () => mockRepository.deleteCheckIn('check-1'),
       ).thenThrow(Exception('db gone'));
-
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
       await tester.tap(find.byIcon(LottiIcons.delete));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
@@ -776,10 +790,7 @@ void main() {
         find.text('Could not delete the check-in. Please try again.'),
         findsOneWidget,
       );
-      expect(
-        find.widgetWithText(TextField, 'Planned the trip.'),
-        findsOneWidget,
-      );
+      expect(narrativeText(tester), 'Planned the trip.');
     });
 
     testWidgets('a refused update reports it and keeps the edits', (
@@ -791,22 +802,14 @@ void main() {
 
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const ValueKey('check-in-narrative')),
-        'Edited narrative',
-      );
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      await type(tester, 'Edited narrative');
+      await tapSave(tester);
 
       expect(
         find.text('Could not save the check-in. Please try again.'),
         findsOneWidget,
       );
-      expect(
-        find.widgetWithText(TextField, 'Edited narrative'),
-        findsOneWidget,
-      );
+      expect(narrativeText(tester), 'Edited narrative');
     });
 
     testWidgets('the date picker moves the day and keeps the time of day', (
@@ -815,7 +818,6 @@ void main() {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.textContaining('10 Aug'));
       await tester.tap(find.textContaining('10 Aug'));
       await tester.pumpAndSettle();
 
@@ -829,10 +831,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('6 Aug'), findsOneWidget);
-
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      await tapSave(tester);
 
       final updated =
           verify(
@@ -843,345 +842,383 @@ void main() {
       expect(updated.meta.dateFrom, DateTime(2026, 8, 6, 19, 45));
       expect(updated.meta.dateTo, DateTime(2026, 8, 6, 19, 45));
     });
-  });
 
-  group('error toasts', () {
-    testWidgets('shows a toast when create returns null', (tester) async {
-      when(
-        () => mockRepository.createCheckIn(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          dateFrom: any(named: 'dateFrom'),
-          dateTo: any(named: 'dateTo'),
-        ),
-      ).thenAnswer((_) async => null);
-
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not save the check-in. Please try again.'),
-        findsOne,
-      );
-    });
-
-    testWidgets('shows a toast when create throws', (tester) async {
-      when(
-        () => mockRepository.createCheckIn(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          dateFrom: any(named: 'dateFrom'),
-          dateTo: any(named: 'dateTo'),
-        ),
-      ).thenThrow(Exception('db locked'));
-
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not save the check-in. Please try again.'),
-        findsOne,
-      );
-    });
-
-    testWidgets('shows a toast when update returns false', (tester) async {
-      when(() => mockRepository.updateCheckIn(any())).thenAnswer(
-        (_) async => false,
-      );
-
+    testWidgets('editing offers Dictate too', (tester) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not save the check-in. Please try again.'),
-        findsOne,
-      );
-    });
-
-    testWidgets('shows a toast when delete returns false', (tester) async {
-      when(
-        () => mockRepository.deleteCheckIn('check-1'),
-      ).thenAnswer((_) async => false);
-
-      await tester.pumpWidget(buildEditForm());
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
-      await tester.tap(find.byIcon(LottiIcons.delete));
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Delete'));
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not delete the check-in. Please try again.'),
-        findsOne,
-      );
-    });
-
-    testWidgets('shows a toast when delete throws', (tester) async {
-      when(
-        () => mockRepository.deleteCheckIn('check-1'),
-      ).thenThrow(Exception('db locked'));
-
-      await tester.pumpWidget(buildEditForm());
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.byIcon(LottiIcons.delete));
-      await tester.tap(find.byIcon(LottiIcons.delete));
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Delete'));
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not delete the check-in. Please try again.'),
-        findsOne,
-      );
+      expect(dictate, findsOneWidget);
     });
   });
 
-  group('speak check-in', () {
-    Finder speakButton() => find.byKey(const Key('check_in_speak_button'));
-    Finder narrativeField() => find.descendant(
-      of: find.byKey(const ValueKey('check-in-narrative')),
-      matching: find.byType(TextField),
-    );
-
-    String narrativeText(WidgetTester tester) =>
-        tester.widget<TextField>(narrativeField()).controller!.text;
-
-    testWidgets('text check-in has no duplicate microphone', (tester) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      expect(speakButton(), findsNothing);
-      expect(find.byIcon(LottiIcons.mic), findsNothing);
-      expect(find.text('Speak instead'), findsNothing);
-    });
-
+  group('dictation', () {
     // The bug this guards: with no audio model — or a person filed under no
-    // category, which can never pass the automatic-inference gate — the sheet
-    // used to record and then sit on "Transcribing…" for the full five-minute
-    // timeout before admitting no run was ever started.
+    // category, which can never pass the automatic-inference gate — the
+    // sheet used to record and then sit on "Transcribing…" for the full
+    // five-minute timeout before admitting no run was ever started.
     testWidgets('refuses before recording when nothing can transcribe', (
       tester,
     ) async {
-      var launches = 0;
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: 'never reached',
-          canTranscribe: false,
-          onLaunch: (_) => launches++,
-        ),
+      stubTranscription = StubCheckInTranscriptionService(
+        canTranscribeResult: false,
       );
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
+      await startDictation(tester);
 
-      await startRecording(tester);
-      await tester.pumpAndSettle();
-
-      expect(launches, 0, reason: 'no recording should be wasted');
-      expect(find.text('Transcribing…'), findsNothing);
+      expect(recorder.recordCalls, isEmpty, reason: 'no recording wasted');
+      expect(inlineRecorder, findsNothing);
+      expect(find.text('No transcription model set up'), findsOneWidget);
       expect(
         find.textContaining('Choose a default inference profile'),
-        findsOne,
+        findsOneWidget,
       );
+      // The field is still there to type into, and Save follows the words.
+      await type(tester, 'Typed instead.');
+      expect(saveEnabled(tester), isTrue);
     });
 
-    testWidgets('failed preparation surfaces an error and releases Save', (
+    testWidgets('a preflight that throws is a failed start, not a hang', (
       tester,
     ) async {
       when(
         () => mockRepository.getRelationshipById('rel-001'),
       ).thenAnswer((_) async => throw StateError('database unavailable'));
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'unused',
-          transcript: null,
-        ),
-      );
-      await startRecording(tester);
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      expect(
-        find.text('No transcript came back. You can type it instead.'),
-        findsOne,
-      );
-      expect(
-        tester
-            .widget<DesignSystemButton>(
-              find.byKey(const ValueKey('check-in-save')),
-            )
-            .onPressed,
-        isNotNull,
-      );
+      await startDictation(tester);
+
+      expect(find.text("Recording didn't start"), findsOneWidget);
+      expect(inlineRecorder, findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('prefills the empty narrative with the transcript', (
+    testWidgets('Dictate puts the recorder in the field, linked to the '
+        'person and filed under their category, with the chips quiet', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: 'She got the job.',
-        ),
+      when(() => mockRepository.getRelationshipById('rel-001')).thenAnswer(
+        (_) async => relationshipIn('category-7'),
       );
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
+      await startDictation(tester);
 
-      await startRecording(tester);
+      expect(inlineRecorder, findsOneWidget);
+      expect(narrative, findsNothing);
+      expect(recorder.recordCalls, [
+        (linkedId: 'rel-001', handledByCaller: true),
+      ]);
+      expect(recorder.categoryIds, ['category-7']);
+      expect(saveEnabled(tester), isFalse);
+      expect(saveReason(tester), 'Stop recording to save');
+      expect(
+        tester
+            .widget<DesignSystemChip>(
+              find.byKey(const ValueKey('check-in-type')),
+            )
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('startSpeaking opens the recorder after the first frame '
+        'without a tap', (tester) async {
+      await tester.pumpWidget(buildForm(startSpeaking: true));
+      await tester.pumpAndSettle();
+      expect(inlineRecorder, findsOneWidget);
+      expect(recorder.recordCalls, hasLength(1));
+    });
+
+    testWidgets('a form opened the ordinary way launches nothing on its own', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      expect(inlineRecorder, findsNothing);
+      expect(recorder.recordCalls, isEmpty);
+    });
+
+    testWidgets('Stop → transcribing in place, then the words land as '
+        'editable text with their provenance, and Save is released', (
+      tester,
+    ) async {
+      final gate = Completer<String?>();
+      stubTranscription = StubCheckInTranscriptionService(gate: gate);
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      recorder.tick(progress: const Duration(seconds: 23));
+      await tester.pump();
+      await stopRecording(tester);
+
+      expect(
+        find.byKey(const ValueKey('check-in-transcript-skeleton')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('0:23 of audio saved · Whisper large v3 · via Groq'),
+        findsOneWidget,
+      );
+      expect(saveReason(tester), 'Waiting for the transcript');
+      expect(stubTranscription.transcribeCalls, ['audio-1']);
+
+      gate.complete('She got the job.');
       await tester.pumpAndSettle();
 
       expect(narrativeText(tester), 'She got the job.');
+      expect(
+        find.byKey(const ValueKey('check-in-transcript-added')),
+        findsOneWidget,
+      );
+      expect(saveEnabled(tester), isTrue);
+      // The recording's length is the note's, not the call's: the
+      // duration chip is untouched.
+      expect(find.text('Duration'), findsOneWidget);
     });
 
     // Speaking never destroys typing — the account grows, it is not replaced.
     testWidgets('appends below text the user already typed', (tester) async {
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: 'She got the job.',
-        ),
-      );
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
+      await type(tester, 'Called on the way home.');
+      await startDictation(tester);
+      await stopRecording(tester);
 
-      await tester.enterText(narrativeField(), 'Called on the way home.');
-      await startRecording(tester);
+      expect(narrativeText(tester), 'Called on the way home.\n\nSpoken.');
+    });
+
+    testWidgets('Add more records again and appends; Re-record takes the '
+        'transcript back out first', (tester) async {
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
+      await type(tester, 'Typed.');
+      await startDictation(tester);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Typed.\n\nSpoken.');
 
+      await tester.tap(find.byKey(const ValueKey('check-in-add-more')));
+      await tester.pumpAndSettle();
+      expect(inlineRecorder, findsOneWidget);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Typed.\n\nSpoken.\n\nSpoken.');
+
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
+      expect(inlineRecorder, findsOneWidget);
+      await stopRecording(tester);
       expect(
         narrativeText(tester),
-        'Called on the way home.\n\nShe got the job.',
+        'Typed.\n\nSpoken.\n\nSpoken.',
+        reason: 'the last take came out, and the new one went in',
+      );
+      expect(recorder.recordCalls, hasLength(3));
+
+      // An edit in front of the last take keeps it: nothing is stripped.
+      await type(tester, 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
+      await stopRecording(tester);
+      expect(
+        narrativeText(tester),
+        'Edited. Typed.\n\nSpoken.\n\nSpoken.\n\nSpoken.',
       );
     });
 
-    testWidgets('scopes the recording to the person and their category', (
+    testWidgets('a discarded recording leaves the narrative alone', (
       tester,
     ) async {
-      String? launchedCategoryId;
-      var launches = 0;
-      when(() => mockRepository.getRelationshipById('rel-001')).thenAnswer(
-        (_) async => relationshipIn('category-7'),
-      );
-
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: 'Spoken.',
-          onLaunch: (categoryId) {
-            launches++;
-            launchedCategoryId = categoryId;
-          },
-        ),
-      );
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await type(tester, 'Typed only.');
+      await startDictation(tester);
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Discard').last);
       await tester.pumpAndSettle();
 
-      await startRecording(tester);
-      await tester.pumpAndSettle();
-
-      expect(launches, 1);
-      expect(launchedCategoryId, 'category-7');
+      expect(inlineRecorder, findsNothing);
+      expect(narrativeText(tester), 'Typed only.');
+      expect(stubTranscription.transcribeCalls, isEmpty);
+      expect(saveEnabled(tester), isTrue);
     });
 
-    testWidgets('shows the transcribing state while the wait is open', (
+    testWidgets('a denied microphone: the card in the field, Open settings '
+        'through the seam, and Dismiss hands the field back', (tester) async {
+      recorder.recordFailure = AudioRecordingFailure.permissionDenied;
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+
+      expect(inlineRecorder, findsNothing);
+      expect(find.text("Lotti can't use the microphone"), findsOneWidget);
+      expect(saveReason(tester), 'Add a few words to save');
+      expect(
+        recorder.modalVisibleLog,
+        [true, false],
+        reason: 'the floating indicator is given back on a failed start',
+      );
+
+      await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
+      await tester.pump();
+      expect(openedSettings, hasLength(1));
+
+      await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
+      await tester.pumpAndSettle();
+      expect(find.text("Lotti can't use the microphone"), findsNothing);
+      expect(dictate, findsOneWidget);
+    });
+
+    testWidgets('a stop that saves nothing is a recording not saved', (
+      tester,
+    ) async {
+      recorder.stopResult = null;
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+
+      expect(find.text("Recording couldn't be saved"), findsOneWidget);
+      expect(stubTranscription.transcribeCalls, isEmpty);
+    });
+
+    // A sheet dismissed mid-take leaves the recording running; reopening
+    // and pressing Dictate must attach to it — `record()` would toggle it
+    // off, saving the take wordless and never starting a new one.
+    testWidgets("this person's recording still running is adopted, not "
+        'toggled off', (tester) async {
+      recorder = FakeAudioRecorderController(runningFor: 'rel-001');
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+
+      expect(inlineRecorder, findsOneWidget);
+      expect(recorder.recordCalls, isEmpty);
+      expect(recorder.modalVisibleLog, [true]);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Spoken.');
+    });
+
+    testWidgets("someone else's recording running is refused with the busy "
+        'card, and nothing is touched', (tester) async {
+      recorder = FakeAudioRecorderController(runningFor: 'task-9');
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+
+      expect(inlineRecorder, findsNothing);
+      expect(find.text('A recording is already running'), findsOneWidget);
+      expect(recorder.recordCalls, isEmpty);
+      expect(recorder.stopCalls, 0);
+      expect(recorder.modalVisibleLog, isEmpty);
+    });
+
+    testWidgets('Re-record keeps the words until the new take exists: a '
+        'discarded retake leaves them', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Spoken.');
+
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Discard').last);
+      await tester.pumpAndSettle();
+      expect(narrativeText(tester), 'Spoken.');
+      expect(saveEnabled(tester), isTrue);
+
+      // And a retake that fails to start keeps them too.
+      recorder.recordFailure = AudioRecordingFailure.permissionDenied;
+      await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+      await tester.pumpAndSettle();
+      expect(narrativeText(tester), 'Spoken.');
+    });
+
+    testWidgets('a route lookup that throws never touches the wait', (
       tester,
     ) async {
       final gate = Completer<String?>();
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-        ),
+      stubTranscription = StubCheckInTranscriptionService(
+        gate: gate,
+        routeThrows: true,
       );
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-
-      await startRecording(tester);
+      await startDictation(tester);
+      recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
+      await stopRecording(tester);
+      expect(find.text('0:05 of audio saved'), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
-      expect(find.text('Transcribing…'), findsOne);
-      expect(find.text('Speak instead'), findsNothing);
-
-      gate.complete('Arrived at last.');
+      gate.complete('Landed anyway.');
       await tester.pumpAndSettle();
-
-      expect(find.text('Speak instead'), findsNothing);
-      expect(narrativeText(tester), 'Arrived at last.');
-    });
-
-    testWidgets('a dismissed recording leaves the narrative alone', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSpeakableForm(recordedEntryId: null, transcript: 'never used'),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(narrativeField(), 'Typed only.');
-      await startRecording(tester);
-      await tester.pumpAndSettle();
-
-      expect(narrativeText(tester), 'Typed only.');
-      expect(find.text('Transcribing…'), findsNothing);
+      expect(narrativeText(tester), 'Landed anyway.');
     });
 
     // No profile, no model, or a run that never finished: the user is told
     // once and keeps a usable field rather than an empty spinner.
-    testWidgets('says so when no transcript came back', (tester) async {
-      await tester.pumpWidget(
-        buildSpeakableForm(recordedEntryId: 'audio-1', transcript: null),
-      );
+    testWidgets('no transcript: the card quotes the saved length, Try again '
+        "asks for the same recording's words, and typing releases Save", (
+      tester,
+    ) async {
+      stubTranscription = StubCheckInTranscriptionService();
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-
-      await tester.enterText(narrativeField(), 'Typed only.');
-      await startRecording(tester);
-      await tester.pumpAndSettle();
+      await startDictation(tester);
+      recorder.tick(progress: const Duration(seconds: 23));
+      await tester.pump();
+      await stopRecording(tester);
 
       expect(
-        find.text('No transcript came back. You can type it instead.'),
-        findsOne,
+        find.text("Couldn't reach the transcription server"),
+        findsOneWidget,
       );
-      expect(narrativeText(tester), 'Typed only.');
-      expect(find.text('Speak instead'), findsNothing);
+      expect(
+        find.textContaining('Your 0:23 recording is saved'),
+        findsOneWidget,
+      );
+      expect(saveReason(tester), 'Type or retry to save');
+      expect(find.byKey(const ValueKey('check-in-audio-kept')), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('check-in-retry-transcript')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        stubTranscription.transcribeCalls,
+        ['audio-1', 'audio-1'],
+        reason: 'the same recording, asked for again',
+      );
+      expect(recorder.recordCalls, hasLength(1), reason: 'never re-records');
+
+      await type(tester, 'Typed after all.');
+      expect(saveEnabled(tester), isTrue);
+      expect(saveReason(tester), isNull);
     });
 
-    // The HTTP 503 case. A failed run writes no transcript, so the wait alone
-    // cannot tell a provider outage from a slow model, and `runTranscription`
-    // reports the failure through its status controllers rather than
-    // throwing. The form also observes the error controller so it can display
-    // the provider's specific failure detail.
+    // The HTTP 503 case. A failed run writes no transcript, so the wait
+    // alone cannot tell a provider outage from a slow model, and
+    // `runTranscription` reports the failure through its status controllers
+    // rather than throwing. The form also observes the error controller so
+    // it can display the provider's specific failure detail.
     testWidgets('a reported inference failure ends the wait and names it', (
       tester,
     ) async {
       final gate = Completer<String?>();
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-        ),
-      );
+      stubTranscription = StubCheckInTranscriptionService(gate: gate);
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-
-      await tester.enterText(narrativeField(), 'Typed only.');
-      await startRecording(tester);
-      await tester.pump();
-
-      expect(find.text('Transcribing…'), findsOne, reason: 'wait is open');
+      await type(tester, 'Typed only.');
+      await startDictation(tester);
+      await stopRecording(tester);
+      expect(
+        find.byKey(const ValueKey('check-in-transcript-skeleton')),
+        findsOneWidget,
+        reason: 'wait is open',
+      );
 
       ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
           .read(
@@ -1194,36 +1231,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Transcribing…'),
+        find.byKey(const ValueKey('check-in-transcript-skeleton')),
         findsNothing,
         reason: 'must not run out the five-minute timeout',
       );
       expect(stubTranscription.cancelCount, 1);
       expect(
-        find.text('No transcript came back. You can type it instead.'),
-        findsOne,
-      );
-      expect(
         find.text('HTTP 503 · Transcription service unavailable'),
-        findsOne,
+        findsOneWidget,
         reason: "the provider's own reason, not a generic failure",
       );
       expect(narrativeText(tester), 'Typed only.');
     });
 
     // The error is keyed by the newly created audio entry. Automatic
-    // inference can fail before the recording modal finishes closing.
+    // inference can fail before the recorder has handed the entry back.
     testWidgets('a failure recorded before the wait opened ends processing', (
       tester,
     ) async {
       final gate = Completer<String?>();
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-        ),
-      );
+      stubTranscription = StubCheckInTranscriptionService(gate: gate);
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
       ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
@@ -1235,137 +1263,77 @@ void main() {
           )
           .setError('cloud request failed while recorder closed');
 
-      await startRecording(tester);
-      await tester.pump();
+      await startDictation(tester);
+      await stopRecording(tester);
 
-      await tester.pumpAndSettle();
-      expect(find.text('Transcribing…'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('check-in-transcript-skeleton')),
+        findsNothing,
+      );
       expect(stubTranscription.cancelCount, 1);
-
-      expect(find.text('cloud request failed while recorder closed'), findsOne);
+      expect(
+        find.text('cloud request failed while recorder closed'),
+        findsOneWidget,
+      );
       expect(narrativeText(tester), isEmpty);
     });
 
-    testWidgets('offers no duplicate recording action while transcribing', (
-      tester,
-    ) async {
+    testWidgets('Type instead abandons the wait, focuses the field, and a '
+        'late transcript is ignored', (tester) async {
       final gate = Completer<String?>();
-      var launches = 0;
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-          onLaunch: (_) => launches++,
-        ),
-      );
+      stubTranscription = StubCheckInTranscriptionService(gate: gate);
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-type-instead')));
       await tester.pumpAndSettle();
 
-      await startRecording(tester);
-      await tester.pump();
-      expect(speakButton(), findsNothing);
-      await tester.pump();
-
-      expect(launches, 1);
-
-      gate.complete('Done.');
-      await tester.pumpAndSettle();
-    });
-
-    // Saving mid-wait used to pop the sheet and silently drop the words the
-    // user was still waiting for, leaving the check-in with no narrative.
-
-    testWidgets(
-      'explicit audio choice transcribes despite an earlier opt-out',
-      (tester) async {
-        await tester.pumpWidget(
-          buildSpeakableForm(
-            recordedEntryId: 'audio-1',
-            transcript: 'Requested explicitly.',
-            enableSpeechRecognition: false,
-          ),
-        );
-        await tester.pumpAndSettle();
-        await startRecording(tester);
-        await tester.pumpAndSettle();
-        expect(narrativeText(tester), 'Requested explicitly.');
-        expect(
-          find.text('Transcript ready. Review it before saving.'),
-          findsOne,
-        );
-      },
-    );
-
-    // The default (never touched) must still transcribe.
-    testWidgets('waits normally when the opt-out was left alone', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: 'Spoken.',
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await startRecording(tester);
-      await tester.pumpAndSettle();
-
-      expect(narrativeText(tester), 'Spoken.');
-    });
-
-    testWidgets('holds Save while a transcript is in flight', (tester) async {
-      final gate = Completer<String?>();
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final saveButton = find.widgetWithText(
-        DesignSystemButton,
-        'Save check-in',
-      );
+      expect(stubTranscription.cancelCount, 1);
+      expect(narrative, findsOneWidget);
       expect(
-        tester.widget<DesignSystemButton>(saveButton).onPressed,
-        isNull,
-        reason: 'disabled while preparing the recorder',
+        tester.widget<TextField>(narrative).focusNode!.hasFocus,
+        isTrue,
       );
 
-      await startRecording(tester);
-      // One frame for the form to publish, one for the pinned bar to read it.
-      await tester.pump();
-      await tester.pump();
-
-      expect(tester.widget<DesignSystemButton>(saveButton).onPressed, isNull);
-
-      gate.complete('Arrived.');
+      // The abandoned wait was completed by its own cancel; whatever the
+      // provider still sends lands nowhere.
       await tester.pumpAndSettle();
-
-      expect(
-        tester.widget<DesignSystemButton>(saveButton).onPressed,
-        isNotNull,
-      );
+      expect(narrativeText(tester), isEmpty);
+      expect(gate.isCompleted, isTrue);
     });
 
-    // A dismissed sheet must stop the wait rather than leave it re-reading the
-    // database on every write until the timeout expires.
+    testWidgets('the preflight holds Save and says so', (tester) async {
+      final preflight = Completer<void>();
+      stubTranscription = StubCheckInTranscriptionService(
+        preflightGate: preflight,
+      );
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await type(tester, 'Words.');
+      await tester.tap(dictate);
+      await tester.pump();
+      await tester.pump();
+
+      expect(saveEnabled(tester), isFalse);
+      expect(saveReason(tester), 'Preparing audio…');
+      expect(find.byKey(const ValueKey('check-in-preparing')), findsOneWidget);
+
+      preflight.complete();
+      await tester.pumpAndSettle();
+      expect(inlineRecorder, findsOneWidget);
+    });
+
+    // A dismissed sheet must stop the wait rather than leave it re-reading
+    // the database on every write until the timeout expires.
     testWidgets('cancels the wait when the sheet goes away', (tester) async {
       final gate = Completer<String?>();
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-        ),
-      );
+      stubTranscription = StubCheckInTranscriptionService(gate: gate);
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-
-      await startRecording(tester);
-      await tester.pump();
+      await startDictation(tester);
+      await stopRecording(tester);
       expect(stubTranscription.cancelCount, 0);
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -1374,32 +1342,45 @@ void main() {
       expect(stubTranscription.cancelCount, 1);
     });
 
-    testWidgets('editing a check-in has no duplicate microphone', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildEditForm());
+    testWidgets('the route is a courtesy: a transcription with no route '
+        'still shows the saved length', (tester) async {
+      final gate = Completer<String?>();
+      stubTranscription = StubCheckInTranscriptionService(
+        gate: gate,
+        routeResult: null,
+      );
+      await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-
-      expect(speakButton(), findsNothing);
-      expect(find.byIcon(LottiIcons.mic), findsNothing);
+      await startDictation(tester);
+      recorder.tick(progress: const Duration(seconds: 5));
+      await tester.pump();
+      await stopRecording(tester);
+      expect(find.text('0:05 of audio saved'), findsOneWidget);
+      gate.complete('x');
+      await tester.pumpAndSettle();
     });
   });
 
   // Every other test in this file pumps `CheckInCaptureForm` bare, which is
-  // why the defect below survived: the form is fine, and the modal it lives
-  // in was not. These open the real sheet at a phone's size.
+  // why an earlier defect survived: the form was fine, and the modal it
+  // lives in was not. These open the real sheet.
   group('inside the real modal', () {
     Future<void> openSheet(
       WidgetTester tester, {
-      bool audio = false,
-      VoidCallback? onRecord,
+      Size physicalSize = const Size(1206, 2622),
+      double devicePixelRatio = 3,
     }) async {
-      // iPhone-class viewport: tall content, little room to spare.
       tester.view
-        ..physicalSize = const Size(1206, 2622)
-        ..devicePixelRatio = 3;
+        ..physicalSize = physicalSize
+        ..devicePixelRatio = devicePixelRatio;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      when(
+        () => mockRepository.getCheckInsForRelationship(any()),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => mockRepository.getLinkedTasks(any()),
+      ).thenAnswer((_) async => const []);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -1412,75 +1393,41 @@ void main() {
               child: const Text('Open'),
             ),
           ),
-          overrides: [
-            relationshipRepositoryProvider.overrideWithValue(mockRepository),
-            checkInTranscriptionServiceProvider.overrideWithValue(
-              _StubTranscriptionService(
-                canTranscribeResult: true,
-                transcript: 'Reviewed the habitat launch.',
-              ),
-            ),
-            checkInRecorderLauncherProvider.overrideWithValue(({
-              required BuildContext context,
-              required String relationshipId,
-              String? categoryId,
-            }) async {
-              onRecord?.call();
-              return 'fixture-audio';
-            }),
-          ],
+          // The window the modal picks its shape by — the same size the
+          // view was given, or the phone default would hide the dialog.
+          mediaQueryData: MediaQueryData(
+            size: physicalSize / devicePixelRatio,
+          ),
+          overrides: speechOverrides(),
         ),
       );
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
-      expect(find.text('Write a check-in'), findsOne);
-      expect(find.text('Record an audio check-in'), findsOne);
-      expect(find.byType(CheckInCaptureForm), findsNothing);
-      await tester.tap(
-        find.byKey(
-          ValueKey(audio ? 'check-in-audio-choice' : 'check-in-write-choice'),
-        ),
-      );
-      await tester.pumpAndSettle();
     }
 
-    testWidgets(
-      'the audio choice records and opens an editable transcript without saving',
-      (tester) async {
-        var recordings = 0;
-        await openSheet(tester, audio: true, onRecord: () => recordings++);
-        expect(recordings, 1);
-        final field = tester.widget<TextField>(
-          find.descendant(
-            of: find.byKey(const ValueKey('check-in-narrative')),
-            matching: find.byType(TextField),
-          ),
-        );
-        expect(field.controller!.text, 'Reviewed the habitat launch.');
-        expect(
-          find.text('Transcript ready. Review it before saving.'),
-          findsOne,
-        );
-        verifyNever(
-          () => mockRepository.createCheckIn(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-          ),
-        );
-      },
-    );
+    setUp(() async {
+      await setUpTestGetIt();
+    });
 
-    // The design pins Save (2026-09-06 §5): it lives in the modal's sticky
-    // action bar, reachable before any scrolling — and an earlier bug, a form
-    // capping itself at 90% of the screen so the action row sat below the
-    // fold with no way to reach it, cannot come back through this path.
-    testWidgets('Save is pinned and reachable without scrolling', (
-      tester,
-    ) async {
+    tearDown(tearDownTestGetIt);
+
+    testWidgets('opens straight onto the composer under its own header — '
+        'no choice sheet first', (tester) async {
       await openSheet(tester);
-      final save = find.byKey(const ValueKey('check-in-save'));
+      expect(find.byType(CheckInComposerHeader), findsOneWidget);
+      expect(find.text('Log check-in'), findsOneWidget);
+      expect(find.text('with Anna · no check-in yet'), findsOneWidget);
+      expect(narrative, findsOneWidget);
+      expect(dictate, findsOneWidget);
+    });
+
+    // The design pins Save: it lives in the modal's sticky action bar,
+    // reachable before any scrolling — and an earlier bug, a form capping
+    // itself at 90% of the screen so the action row sat below the fold
+    // with no way to reach it, cannot come back through this path.
+    testWidgets('Save is pinned, reachable without scrolling, and says why '
+        'it waits', (tester) async {
+      await openSheet(tester);
       final viewportBottom =
           tester.view.physicalSize.height / tester.view.devicePixelRatio;
       expect(save, findsOneWidget);
@@ -1489,35 +1436,38 @@ void main() {
         lessThanOrEqualTo(viewportBottom),
         reason: 'the pinned bar sits inside the viewport from the start',
       );
+      expect(find.text('Add a few words to save'), findsOneWidget);
+
+      await type(tester, 'Words.');
       await tester.tap(save);
       await tester.pumpAndSettle();
-      verify(
-        () => mockRepository.createCheckIn(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          dateFrom: any(named: 'dateFrom'),
-          dateTo: any(named: 'dateTo'),
-        ),
-      ).called(1);
+      expect(capturedSave().entryText?.plainText, 'Words.');
+      expect(find.byType(CheckInCaptureForm), findsNothing);
     });
 
-    testWidgets('Cancel in the pinned bar closes without saving', (
+    testWidgets('the header follows the recorder', (tester) async {
+      await openSheet(tester);
+      await startDictation(tester);
+      expect(find.text('Recording'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-pause')));
+      await tester.pumpAndSettle();
+      expect(find.text('Paused'), findsOneWidget);
+    });
+
+    testWidgets("Cancel, and the header's close, dismiss without saving", (
       tester,
     ) async {
       await openSheet(tester);
-
       await tester.tap(find.byKey(const ValueKey('check-in-cancel')));
       await tester.pumpAndSettle();
-
       expect(find.byType(CheckInCaptureForm), findsNothing);
-      verifyNever(
-        () => mockRepository.createCheckIn(
-          data: any(named: 'data'),
-          entryText: any(named: 'entryText'),
-          dateFrom: any(named: 'dateFrom'),
-          dateTo: any(named: 'dateTo'),
-        ),
-      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      verifyNoSave();
     });
 
     // The shape that caused it: the form adding a second scroll view inside
@@ -1525,7 +1475,6 @@ void main() {
     // scrolled to whatever the form put below it.
     testWidgets('the form adds no scroll view of its own', (tester) async {
       await openSheet(tester);
-
       expect(
         find.descendant(
           of: find.byType(CheckInCaptureForm),
@@ -1534,150 +1483,86 @@ void main() {
         findsNothing,
       );
     });
-  });
 
-  // The default launcher, exercised for real: the whole phase depends on the
-  // recording being linked to the *person*, since that is what makes the
-  // generalized automation resolve their profile and wake their agent.
-  group('showCheckInRecorder', () {
-    testWidgets('opens the recording sheet linked to the person', (
-      tester,
-    ) async {
-      tester.view
-        ..physicalSize = const Size(1000, 800)
-        ..devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      // The recorder controller resolves its logger from GetIt.
-      await setUpTestGetIt();
-      addTearDown(tearDownTestGetIt);
+    testWidgets('dismissed mid-recording, the sheet leaves the recording '
+        'running and brings the floating indicator back', (tester) async {
+      await openSheet(tester);
+      await startDictation(tester);
+      expect(recorder.modalVisibleLog, [true]);
 
-      final recorderRepository = MockAudioRecorderRepository();
-      when(
-        () => recorderRepository.amplitudeStream,
-      ).thenAnswer((_) => const Stream<Amplitude>.empty());
-      final categoryRepository = MockCategoryRepository();
-      when(
-        () => categoryRepository.watchCategory(any()),
-      ).thenAnswer((_) => const Stream.empty());
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(
-            builder: (context) => Consumer(
-              builder: (context, ref, _) => ElevatedButton(
-                onPressed: () => ref.read(checkInRecorderLauncherProvider)(
-                  context: context,
-                  relationshipId: 'rel-001',
-                  categoryId: 'category-7',
-                ),
-                child: const Text('Speak'),
-              ),
-            ),
-          ),
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              recorderRepository,
-            ),
-            categoryRepositoryProvider.overrideWithValue(categoryRepository),
-          ],
-        ),
-      );
-      await tester.pump();
+      expect(recorder.modalVisibleLog, [true, false]);
+      expect(recorder.stopCalls, 0);
+      expect(recorder.cancelCalls, 0);
+    });
 
-      await tester.tap(find.text('Speak'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      final content = tester.widget<AudioRecordingModalContent>(
-        find.byType(AudioRecordingModalContent),
-      );
-      expect(content.linkedId, 'rel-001');
-      expect(content.categoryId, 'category-7');
-      expect(content.showTranscriptionOptions, isFalse);
+    // The sheet removes the keyboard inset from what the pinned bar can
+    // see, so the field's focus — which on a phone is the keyboard — is
+    // what slims the bar.
+    testWidgets('with the keyboard up the bar slims to the summary and a '
+        'short Save; the summary drops the keyboard', (tester) async {
+      await openSheet(tester);
+      final summary = find.byKey(const ValueKey('check-in-context-summary'));
+      expect(summary, findsNothing);
+      expect(find.text('Save check-in'), findsOneWidget);
+
+      await tester.tap(narrative);
+      await tester.pumpAndSettle();
+
+      expect(summary, findsOneWidget);
       expect(
-        ProviderScope.containerOf(
-          tester.element(find.byType(AudioRecordingModalContent)),
-        ).read(audioRecorderControllerProvider).enableSpeechRecognition,
-        isNull,
+        tester.widget<DesignSystemChip>(summary).label,
+        'In person · Now · ${clock.now().hour.toString().padLeft(2, '0')}:'
+        '${clock.now().minute.toString().padLeft(2, '0')} · No duration',
       );
-    });
-  });
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.text('Save check-in'), findsNothing);
+      expect(
+        tester.widget<TextField>(narrative).focusNode!.hasFocus,
+        isTrue,
+      );
 
-  group('startSpeaking', () {
-    testWidgets('opens the recorder after the first frame without a tap — '
-        'the page mic means "say it", not "show me the form"', (tester) async {
-      final launches = <String?>[];
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: null,
-          transcript: null,
-          onLaunch: launches.add,
-          startImmediately: true,
-        ),
-      );
+      await tester.tap(summary);
       await tester.pumpAndSettle();
-
-      expect(launches, hasLength(1));
-      // A cancelled recording leaves the form as it was.
-      expect(find.text('When and how long'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(narrative).focusNode!.hasFocus,
+        isFalse,
+      );
+      expect(summary, findsNothing);
+      expect(find.text('Save check-in'), findsOneWidget);
     });
 
-    testWidgets(
-      'rebuilding during pre-flight does not open a second recorder',
-      (tester) async {
-        final launches = <String?>[];
-        // Hold the pre-flight open while additional frames rebuild the form.
-        final gate = Completer<RelationshipEntry?>();
-        when(
-          () => mockRepository.getRelationshipById(any()),
-        ).thenAnswer((_) => gate.future);
-        await tester.pumpWidget(
-          buildSpeakableForm(
-            recordedEntryId: null,
-            transcript: null,
-            onLaunch: launches.add,
-            startImmediately: true,
-          ),
-        );
-        await tester.pump();
-
-        expect(find.byKey(const Key('check_in_speak_button')), findsNothing);
-        await tester.pump();
-        gate.complete(testRelationship);
-        await tester.pumpAndSettle();
-
-        expect(launches, hasLength(1));
-      },
-    );
-
-    testWidgets('a form opened the ordinary way launches nothing on its own', (
-      tester,
-    ) async {
-      final launches = <String?>[];
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: null,
-          transcript: null,
-          onLaunch: launches.add,
-          startSpeaking: false,
-          startImmediately: true,
-        ),
+    testWidgets('on a desktop-wide window the footer puts the reason on the '
+        'leading edge and Cancel beside Save', (tester) async {
+      await openSheet(
+        tester,
+        physicalSize: const Size(2880, 1800),
+        devicePixelRatio: 2,
       );
-      await tester.pumpAndSettle();
-
-      expect(launches, isEmpty);
+      final reason = find.byKey(const ValueKey('check-in-save-reason'));
+      final cancel = find.byKey(const ValueKey('check-in-cancel'));
+      expect(reason, findsOneWidget);
+      expect(
+        tester.getCenter(reason).dx,
+        lessThan(tester.getCenter(cancel).dx),
+      );
+      expect(
+        tester.getCenter(cancel).dx,
+        lessThan(tester.getCenter(save).dx),
+      );
+      expect(
+        (tester.getCenter(cancel).dy - tester.getCenter(save).dy).abs(),
+        lessThan(1),
+        reason: 'one row',
+      );
     });
   });
 
   group('duration', () {
-    Widget buildFormWithRanking() => makeTestableWidgetWithScaffold(
-      withBar(
-        (handle) =>
-            CheckInCaptureForm(relationshipId: 'rel-001', handle: handle),
-      ),
-      mediaQueryData: tallForm,
+    Widget buildFormWithRanking() => buildForm(
       overrides: [
-        relationshipRepositoryProvider.overrideWithValue(mockRepository),
         checkInDurationSuggestionsControllerProvider.overrideWith(
           () => _FixedDurationSuggestions(const [
             Duration(minutes: 11),
@@ -1687,16 +1572,12 @@ void main() {
       ],
     );
 
-    testWidgets('the Duration tile opens the picker, and a chip sets the '
+    testWidgets('the Duration chip opens the picker, and a pick sets the '
         'length that is then persisted as the end time', (tester) async {
-      setTestSurfaceSize(tester, const Size(1000, 1400));
       await tester.pumpWidget(buildFormWithRanking());
       await tester.pumpAndSettle();
-      expect(find.text('No duration'), findsOneWidget);
+      expect(find.text('Duration'), findsOneWidget);
 
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('check-in-duration')),
-      );
       await tester.tap(find.byKey(const ValueKey('check-in-duration')));
       await tester.pumpAndSettle();
       await tester.tap(
@@ -1705,11 +1586,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('45 min'), findsOneWidget);
-      expect(find.text('No duration'), findsNothing);
+      expect(find.text('Duration'), findsNothing);
 
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      await type(tester, 'Words.');
+      await tapSave(tester);
 
       final captured = verify(
         () => mockRepository.createCheckIn(
@@ -1727,45 +1607,29 @@ void main() {
 
     testWidgets('backing out of the picker with Done keeps the length as it '
         'was', (tester) async {
-      setTestSurfaceSize(tester, const Size(1000, 1400));
       await tester.pumpWidget(buildFormWithRanking());
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('check-in-duration')),
-      );
       await tester.tap(find.byKey(const ValueKey('check-in-duration')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
-      expect(find.text('No duration'), findsOneWidget);
+      expect(find.text('Duration'), findsOneWidget);
     });
 
     testWidgets('a prefilled duration is persisted as the end time, so the '
         'log shows what the post-call offer promised', (tester) async {
-      setTestSurfaceSize(tester, const Size(1000, 1400));
       final startedAt = DateTime(2026, 8, 13, 12, 33);
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          withBar(
-            (handle) => CheckInCaptureForm(
-              relationshipId: 'rel-001',
-              prefilledTime: startedAt,
-              prefilledDuration: const Duration(minutes: 11),
-              handle: handle,
-            ),
-          ),
-          mediaQueryData: tallForm,
-          overrides: [
-            relationshipRepositoryProvider.overrideWithValue(mockRepository),
-          ],
+        buildForm(
+          prefilledTime: startedAt,
+          prefilledDuration: const Duration(minutes: 11),
         ),
       );
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      await type(tester, 'Words.');
+      await tapSave(tester);
 
       final captured = verify(
         () => mockRepository.createCheckIn(
@@ -1782,12 +1646,10 @@ void main() {
     testWidgets('a check-in with no known duration saves a zero-length one', (
       tester,
     ) async {
-      setTestSurfaceSize(tester, const Size(1000, 1400));
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      await type(tester, 'Words.');
+      await tapSave(tester);
 
       final captured = verify(
         () => mockRepository.createCheckIn(
@@ -1802,9 +1664,8 @@ void main() {
 
     testWidgets('editing keeps the existing length when nothing about the '
         'time changes', (tester) async {
-      setTestSurfaceSize(tester, const Size(1000, 1400));
       final from = DateTime(2026, 8, 13, 12, 33);
-      final existing = CheckInEntry(
+      final entry = CheckInEntry(
         meta: Metadata(
           id: 'check-1',
           createdAt: from,
@@ -1816,29 +1677,15 @@ void main() {
           relationshipId: 'rel-001',
           interactionType: CheckInInteractionType.videoCall,
         ),
+        entryText: const EntryText(plainText: 'Kept.'),
       );
       when(
         () => mockRepository.updateCheckIn(any()),
       ).thenAnswer((_) async => true);
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          withBar(
-            (handle) => CheckInCaptureForm(
-              relationshipId: 'rel-001',
-              initial: existing,
-              handle: handle,
-            ),
-          ),
-          mediaQueryData: tallForm,
-          overrides: [
-            relationshipRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-        ),
-      );
+      await tester.pumpWidget(buildEditForm(entry: entry));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save check-in'));
-      await tester.tap(find.text('Save check-in'));
-      await tester.pumpAndSettle();
+      expect(find.text('35 min'), findsOneWidget);
+      await tapSave(tester);
 
       final updated =
           verify(
