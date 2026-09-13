@@ -144,8 +144,8 @@ class QueryActionEvalCase {
     if (expected.isEmpty &&
         RegExp(
           r"\bI(?:['’]ve| have)? (?:just |now |already |successfully )*"
-          r'(?:added|created|recorded|updated|changed|marked|deleted|set|linked|'
-          r'archived|restored|removed|assigned|migrated|renamed|started|stopped|'
+          '(?:added|created|recorded|updated|changed|marked|deleted|set|linked|'
+          'archived|restored|removed|assigned|migrated|renamed|started|stopped|'
           r'logged|saved|moved|checked|unchecked|edited)\b',
           caseSensitive: false,
         ).hasMatch(answer.text)) {
