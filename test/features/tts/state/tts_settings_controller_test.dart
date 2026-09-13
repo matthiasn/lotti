@@ -31,6 +31,7 @@ void main() {
         ttsVoiceIdKey: 'M3',
         ttsModelIdKey: 'supertonic-3',
         ttsSpeedKey: '1.5',
+        ttsAutoPrepareChatAudioKey: 'true',
       },
     );
 
@@ -43,6 +44,7 @@ void main() {
     expect(settings.voiceId, 'M3');
     expect(settings.modelId, 'supertonic-3');
     expect(settings.speed, 1.5);
+    expect(settings.autoPrepareChatAudio, isTrue);
   });
 
   test('clamps an out-of-range persisted speed on load', () async {
@@ -59,6 +61,36 @@ void main() {
     await pumpEventQueue();
 
     expect(container.read(ttsSettingsControllerProvider).speed, kMaxTtsSpeed);
+  });
+
+  test('automatic preparation persists both opt-in and opt-out', () async {
+    final container = makeContainer();
+    final controller = container.read(ttsSettingsControllerProvider.notifier);
+    expect(
+      container.read(ttsSettingsControllerProvider).autoPrepareChatAudio,
+      isFalse,
+    );
+    controller.setAutoPrepareChatAudio(enabled: true);
+    await pumpEventQueue();
+    expect(
+      container.read(ttsSettingsControllerProvider).autoPrepareChatAudio,
+      isTrue,
+    );
+    verify(
+      () =>
+          mocks.settingsDb.saveSettingsItem(ttsAutoPrepareChatAudioKey, 'true'),
+    ).called(1);
+    controller.setAutoPrepareChatAudio(enabled: false);
+    expect(
+      container.read(ttsSettingsControllerProvider).autoPrepareChatAudio,
+      isFalse,
+    );
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(
+        ttsAutoPrepareChatAudioKey,
+        'false',
+      ),
+    ).called(1);
   });
 
   test('setVoice updates state and persists', () {

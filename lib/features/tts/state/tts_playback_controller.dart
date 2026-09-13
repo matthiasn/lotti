@@ -13,6 +13,24 @@ import 'package:lotti/services/domain_logging.dart';
 /// Language-agnostic synthesis mode; Supertonic infers from the text.
 const String kDefaultTtsLanguage = 'na';
 
+/// One disposable, device-local result. Its key includes every synthesis input;
+/// playback speed is applied by the player and does not change the WAV.
+class _PreparedSpeech {
+  _PreparedSpeech(this.key);
+
+  final ({
+    String sourceId,
+    String text,
+    String voice,
+    String model,
+    String language,
+  })
+  key;
+  final done = Completer<void>();
+  File? file;
+  bool cancelled = false;
+}
+
 /// Orchestrates a single TTS utterance — ensure model → synthesize → play —
 /// and exposes the [TtsPlaybackState] that the AI-card header's play button
 /// binds to.
@@ -35,6 +53,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   StreamSubscription<Duration>? _durationSub;
   int _generation = 0;
   Future<void> _preparation = Future<void>.value();
+  _PreparedSpeech? _prepared;
   File? _file;
   TtsAudioPlayer? _player;
   // Cleanup can finish after provider disposal, when ref is no longer usable.
@@ -44,12 +63,82 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   TtsPlaybackState build() {
     ref.onDispose(() {
       _generation++;
+      discardPrepared();
       _cancelPlayerSubscriptions();
       final file = _file;
       _file = null;
       unawaited(_stopAndDelete(_player, file));
     });
     return const TtsPlaybackState();
+  }
+
+  /// Silently prepares one utterance without taking playback ownership. A
+  /// matching [speak] joins this work. Replacements and cancellation discard
+  /// native results, and all synthesis shares the same serialized queue.
+  Future<void> prepare({
+    required String sourceId,
+    required String text,
+    required Future<bool> Function() canPrepare,
+    String language = kDefaultTtsLanguage,
+  }) async {
+    if (!ref.mounted || state.isBusy) return;
+    final settings = ref.read(ttsSettingsControllerProvider);
+    final key = (
+      sourceId: sourceId,
+      text: text,
+      voice: settings.voiceId,
+      model: settings.modelId,
+      language: language,
+    );
+    final existing = _prepared;
+    if (existing != null && existing.key == key) return existing.done.future;
+    discardPrepared();
+    final engine = ref.read(ttsEngineProvider);
+    if (!engine.isSupported) return;
+    final repo = ref.read(ttsModelRepositoryProvider);
+    final job = _prepared = _PreparedSpeech(key);
+    final previous = _preparation;
+    _preparation = job.done.future;
+    bool current() => ref.mounted && !job.cancelled;
+    File? file;
+    try {
+      await previous;
+      if (!current() || !await canPrepare() || !current()) return;
+      final directory = await repo.ensureInstalled(settings.modelId);
+      if (!current() || !await canPrepare() || !current()) return;
+      file = await engine.synthesizeToFile(
+        text: text,
+        voiceId: settings.voiceId,
+        modelDirectory: directory,
+        language: language,
+      );
+      if (!current() || !await canPrepare() || !current()) return;
+      job.file = file;
+      file = null;
+    } on Object {
+      // Speculative failure must not surface an error or disable explicit
+      // playback: a later tap can retry through the normal visible path.
+    } finally {
+      try {
+        await _deleteFile(file);
+      } finally {
+        job.done.complete();
+      }
+    }
+  }
+
+  /// Invalidates prepared audio synchronously, including in-flight work.
+  /// Does not interrupt explicit playback, which owns its own file.
+  void discardPrepared({String? sourceId}) {
+    final job = _prepared;
+    if (job == null || (sourceId != null && job.key.sourceId != sourceId)) {
+      return;
+    }
+    _prepared = null;
+    job.cancelled = true;
+    final file = job.file;
+    job.file = null;
+    unawaited(_deleteFile(file));
   }
 
   /// Speaks [text], attributing the utterance to [sourceId]. A no-op while a
@@ -75,6 +164,17 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     }
 
     final settings = ref.read(ttsSettingsControllerProvider);
+    final prepared = _prepared;
+    final matches =
+        prepared?.key ==
+        (
+          sourceId: sourceId,
+          text: text,
+          voice: settings.voiceId,
+          model: settings.modelId,
+          language: language,
+        );
+    if (!matches) discardPrepared();
     final repo = ref.read(ttsModelRepositoryProvider);
     final previous = _preparation;
     final finished = Completer<void>();
@@ -90,24 +190,32 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       // synthesis to finish instead of running two jobs through one session.
       await previous;
       if (!current()) return;
-      final modelDir = await _ensureModel(
-        repo,
-        settings.modelId,
-        sourceId,
-        current,
-      );
-      if (!current()) return;
+      File? file;
+      if (matches && identical(_prepared, prepared) && !prepared!.cancelled) {
+        file = prepared.file;
+        prepared.file = null;
+        _prepared = null;
+      }
+      if (file == null) {
+        final modelDir = await _ensureModel(
+          repo,
+          settings.modelId,
+          sourceId,
+          current,
+        );
+        if (!current()) return;
 
-      state = state.copyWith(
-        status: TtsPlaybackStatus.synthesizing,
-        sourceId: sourceId,
-      );
-      final file = await engine.synthesizeToFile(
-        text: text,
-        voiceId: settings.voiceId,
-        modelDirectory: modelDir,
-        language: language,
-      );
+        state = state.copyWith(
+          status: TtsPlaybackStatus.synthesizing,
+          sourceId: sourceId,
+        );
+        file = await engine.synthesizeToFile(
+          text: text,
+          voiceId: settings.voiceId,
+          modelDirectory: modelDir,
+          language: language,
+        );
+      }
       if (!current()) {
         await _deleteFile(file);
         return;

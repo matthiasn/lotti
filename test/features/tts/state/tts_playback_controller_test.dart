@@ -8,6 +8,7 @@ import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -50,6 +51,267 @@ void main() {
 
   TtsPlaybackController controllerOf(ProviderContainer c) =>
       c.read(ttsPlaybackControllerProvider.notifier);
+
+  MockIoFile preparedFile() {
+    final file = MockIoFile();
+    when(file.existsSync).thenReturn(true);
+    when(file.delete).thenAnswer((_) async => file);
+    return file;
+  }
+
+  for (final pending in [false, true]) {
+    test(
+      'play reuses ${pending ? 'pending' : 'finished'} automatic preparation without autoplay',
+      () async {
+        final file = preparedFile();
+        final ready = Completer<File>();
+        final started = Completer<void>();
+        final engine = FakeTtsEngine(
+          output: file,
+          pendingSynthesis: pending ? ready.future : null,
+          onSynthesize: started.complete,
+        );
+        final player = FakeTtsAudioPlayer();
+        addTearDown(player.dispose);
+        final h = harness(engine: engine, player: player);
+        final controller = controllerOf(h.container);
+        final preparing = controller.prepare(
+          sourceId: 'chat',
+          text: 'Done.',
+          canPrepare: () async => true,
+        );
+        await started.future;
+        if (!pending) await preparing;
+        expect(h.container.read(ttsPlaybackControllerProvider).isBusy, isFalse);
+        expect(player.playCount, 0);
+        // Query playback stops any previous utterance before claiming the cache.
+        await controller.stop();
+        final speaking = controller.speak(sourceId: 'chat', text: 'Done.');
+        if (pending) ready.complete(file);
+        await preparing;
+        await speaking;
+        expect(engine.calls, hasLength(1));
+        expect(player.playCount, 1);
+        await controller.stop();
+        verify(file.delete).called(1);
+      },
+    );
+  }
+
+  test(
+    'discarding in-flight preparation deletes its late result without playback',
+    () async {
+      final file = preparedFile();
+      final ready = Completer<File>();
+      final started = Completer<void>();
+      final engine = FakeTtsEngine(
+        pendingSynthesis: ready.future,
+        onSynthesize: started.complete,
+      );
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(engine: engine, player: player);
+      final controller = controllerOf(h.container);
+      final preparing = controller.prepare(
+        sourceId: 'chat',
+        text: 'Answer',
+        canPrepare: () async => true,
+      );
+      await started.future;
+      controller
+        ..discardPrepared(sourceId: 'another-chat')
+        ..discardPrepared(sourceId: 'chat');
+      ready.complete(file);
+      await preparing;
+      expect(engine.calls, hasLength(1));
+      expect(player.playCount, 0);
+      verify(file.delete).called(1);
+    },
+  );
+
+  for (final change in ['text', 'voice', 'model', 'language', 'source']) {
+    test('a changed $change never plays a stale prepared result', () async {
+      final file = preparedFile();
+      final engine = FakeTtsEngine(output: file);
+      final h = harness(engine: engine);
+      final controller = controllerOf(h.container);
+      await controller.prepare(
+        sourceId: 'chat',
+        text: 'First',
+        canPrepare: () async => true,
+      );
+      final settings = h.container.read(ttsSettingsControllerProvider.notifier);
+      if (change == 'voice') settings.setVoice('M2');
+      if (change == 'model') settings.setModel('other');
+      await controller.speak(
+        sourceId: change == 'source' ? 'other' : 'chat',
+        text: change == 'text' ? 'Second' : 'First',
+        language: change == 'language' ? 'en' : kDefaultTtsLanguage,
+      );
+      expect(engine.calls, hasLength(2));
+      verify(file.delete).called(1);
+    });
+  }
+
+  test('prepared playback still checks live permission', () async {
+    final file = preparedFile();
+    final engine = FakeTtsEngine(output: file);
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(engine: engine, player: player);
+    final controller = controllerOf(h.container);
+    await controller.prepare(
+      sourceId: 'chat',
+      text: 'Answer',
+      canPrepare: () async => true,
+    );
+    await controller.speak(
+      sourceId: 'chat',
+      text: 'Answer',
+      canPlay: () async => false,
+    );
+    expect(engine.calls, hasLength(1));
+    expect(player.playCount, 0);
+    verify(file.delete).called(1);
+  });
+
+  test('denied preparation never invokes the engine', () async {
+    final engine = FakeTtsEngine();
+    final h = harness(engine: engine);
+    await controllerOf(
+      h.container,
+    ).prepare(sourceId: 'chat', text: 'Answer', canPrepare: () async => false);
+    expect(engine.calls, isEmpty);
+    expect(h.container.read(ttsPlaybackControllerProvider).isBusy, isFalse);
+  });
+
+  test(
+    'duplicate preparations share one synthesis and speed changes reuse it',
+    () async {
+      final engine = FakeTtsEngine();
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(engine: engine, player: player);
+      final controller = controllerOf(h.container);
+      await Future.wait([
+        controller.prepare(
+          sourceId: 'chat',
+          text: 'Answer',
+          canPrepare: () async => true,
+        ),
+        controller.prepare(
+          sourceId: 'chat',
+          text: 'Answer',
+          canPrepare: () async => true,
+        ),
+      ]);
+      h.container.read(ttsSettingsControllerProvider.notifier).setSpeed(1.5);
+      await controller.speak(sourceId: 'chat', text: 'Answer');
+      expect(engine.calls, hasLength(1));
+      expect(player.lastSpeed, 1.5);
+    },
+  );
+
+  test(
+    'replacing preparation serializes native work and deletes the superseded WAV',
+    () async {
+      final file = preparedFile();
+      final pending = Completer<File>();
+      final started = Completer<void>();
+      final engine = FakeTtsEngine(
+        pendingSynthesis: pending.future,
+        onSynthesize: () {
+          if (!started.isCompleted) started.complete();
+        },
+      );
+      final h = harness(engine: engine);
+      final controller = controllerOf(h.container);
+      final first = controller.prepare(
+        sourceId: 'old-chat',
+        text: 'First',
+        canPrepare: () async => true,
+      );
+      await started.future;
+      final second = controller.prepare(
+        sourceId: 'new-chat',
+        text: 'Second',
+        canPrepare: () async => true,
+      );
+      await pumpEventQueue();
+      expect(engine.calls, hasLength(1));
+      pending.complete(file);
+      await Future.wait([first, second]);
+      expect(engine.calls.map((e) => e.text), ['First', 'Second']);
+      verify(file.delete).called(1);
+    },
+  );
+
+  for (final throws in [false, true]) {
+    test(
+      'lost permission after synthesis ${throws ? 'throwing' : 'denied'} discards prepared speech',
+      () async {
+        final file = preparedFile();
+        var allowed = true;
+        final engine = FakeTtsEngine(
+          output: file,
+          onSynthesize: () => allowed = false,
+        );
+        final h = harness(engine: engine);
+        await controllerOf(h.container).prepare(
+          sourceId: 'chat',
+          text: 'Answer',
+          canPrepare: () async {
+            if (!allowed && throws) throw StateError('Revoked');
+            return allowed;
+          },
+        );
+        expect(engine.calls, hasLength(1));
+        verify(file.delete).called(1);
+        expect(h.container.read(ttsPlaybackControllerProvider).isBusy, isFalse);
+      },
+    );
+  }
+
+  test(
+    'silent preparation failure leaves explicit play available to retry',
+    () async {
+      var authorized = false;
+      final engine = FakeTtsEngine();
+      final h = harness(engine: engine);
+      final controller = controllerOf(h.container);
+      await controller.prepare(
+        sourceId: 'chat',
+        text: 'Answer',
+        canPrepare: () async {
+          if (!authorized) throw StateError('Storage temporarily unavailable');
+          return true;
+        },
+      );
+      expect(h.container.read(ttsPlaybackControllerProvider).isBusy, isFalse);
+      authorized = true;
+      await controller.speak(
+        sourceId: 'chat',
+        text: 'Answer',
+        canPlay: () async => authorized,
+      );
+      expect(engine.calls, hasLength(1));
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.playing,
+      );
+    },
+  );
+
+  test('disposing the controller removes its prepared file', () async {
+    final file = preparedFile();
+    final h = harness(engine: FakeTtsEngine(output: file));
+    await controllerOf(
+      h.container,
+    ).prepare(sourceId: 'chat', text: 'Answer', canPrepare: () async => true);
+    h.container.dispose();
+    await pumpEventQueue();
+    verify(file.delete).called(1);
+  });
 
   for (final throws in [false, true]) {
     test(

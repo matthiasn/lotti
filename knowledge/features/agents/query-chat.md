@@ -798,10 +798,24 @@ content. Existing journal audio and query playback stop each other from
 speaking simultaneously.
 
 Read answer aloud uses the existing on-device [TTS engine](../tts.md), including
-its settings and `enable_ai_summary_tts` gate. It reads a saved answer, is always
-user-triggered, and rechecks chat visibility after synthesis before playing.
-The shared TTS controller invalidates cancelled preparation, serializes native
-synthesis and removes its temporary WAV on completion or cancellation.
+its settings and `enable_ai_summary_tts` gate. Playback is always user-triggered
+and rechecks live chat visibility before starting. With the device-local
+**Prepare chat audio automatically** preference enabled, the selected chat's
+`QueryAudioController` schedules the latest published answer as soon as the
+saved projection or preference becomes available. It does not synthesize the
+whole history, streamed provisional text, questions or action proposals.
+
+Preparation checks current access and saved answer identity/text before and
+after native synthesis. Chat/source visibility loss, deletion, recording,
+navigation, disabling TTS or opting out cancel the job and discard its temporary
+WAV. Voice/model changes replace preparation. Duplicate projection refreshes do
+not resynthesize the same reply. A reply deferred during playback is prepared
+after completion; Stop invalidates queued preparation and does not restart it.
+Tapping Play reuses a matching result or joins
+its pending synthesis, with another fresh access check; it never autoplays.
+The shared TTS controller serializes native synthesis and owns temporary-file
+cleanup, including late results from cancelled work. No prepared audio enters
+chat persistence or sync.
 
 An agent face/avatar remains outside this implementation. Exporting audio clips,
 realtime conversational turn-taking and additional timestamp-provider adapters

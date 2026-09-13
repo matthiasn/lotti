@@ -6,6 +6,7 @@ import 'package:lotti/features/tts/model/tts_voice.dart';
 const String ttsVoiceIdKey = 'TTS_VOICE_ID';
 const String ttsModelIdKey = 'TTS_MODEL_ID';
 const String ttsSpeedKey = 'TTS_SPEED';
+const String ttsAutoPrepareChatAudioKey = 'TTS_AUTO_PREPARE_CHAT_AUDIO';
 
 /// Playback speed bounds and default, matching the recordings audio player's
 /// range so the two players feel consistent.
@@ -32,6 +33,7 @@ class TtsSettings {
     this.voiceId = kDefaultTtsVoiceId,
     this.modelId = kDefaultTtsModelId,
     this.speed = kDefaultTtsSpeed,
+    this.autoPrepareChatAudio = false,
   });
 
   /// Selected Supertonic voice id (e.g. `F1`).
@@ -44,6 +46,9 @@ class TtsSettings {
   /// natural). [copyWith] clamps on assignment.
   final double speed;
 
+  /// Opt-in preparation of published chat replies; never starts playback.
+  final bool autoPrepareChatAudio;
+
   /// Clamps an arbitrary speed into the supported range.
   static double clampSpeed(double value) =>
       value.clamp(kMinTtsSpeed, kMaxTtsSpeed);
@@ -52,8 +57,10 @@ class TtsSettings {
     String? voiceId,
     String? modelId,
     double? speed,
+    bool? autoPrepareChatAudio,
   }) {
     return TtsSettings(
+      autoPrepareChatAudio: autoPrepareChatAudio ?? this.autoPrepareChatAudio,
       voiceId: voiceId ?? this.voiceId,
       modelId: modelId ?? this.modelId,
       speed: speed == null ? this.speed : clampSpeed(speed),
@@ -65,12 +72,15 @@ class TtsSettings {
       other is TtsSettings &&
       other.voiceId == voiceId &&
       other.modelId == modelId &&
-      other.speed == speed;
+      other.speed == speed &&
+      other.autoPrepareChatAudio == autoPrepareChatAudio;
 
   @override
-  int get hashCode => Object.hash(voiceId, modelId, speed);
+  int get hashCode =>
+      Object.hash(voiceId, modelId, speed, autoPrepareChatAudio);
 
   @override
   String toString() =>
-      'TtsSettings(voiceId: $voiceId, modelId: $modelId, speed: $speed)';
+      'TtsSettings(voiceId: $voiceId, modelId: $modelId, speed: $speed, '
+      'autoPrepareChatAudio: $autoPrepareChatAudio)';
 }

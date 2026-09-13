@@ -9,6 +9,17 @@ class AppLocalizationsCs extends AppLocalizations {
   AppLocalizationsCs([String locale = 'cs']) : super(locale);
 
   @override
+  String get speechSettingsChatAudioLabel => 'Zvuk chatu';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Připrav nové odpovědi chatu v tomto zařízení, aby přehrávání začalo dříve. Zvuk se přehraje až po klepnutí na přehrát.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Automaticky připravovat zvuk chatu';
+
+  @override
   String get activeLabel => 'Aktivní';
 
   @override

@@ -24,7 +24,7 @@ stack.
 weights are not bundled. `TtsModelRepository` checks the model directory for the
 six files in `kSupertonicModelFiles` (four `.onnx` graphs plus `tts.json` and
 `unicode_indexer.json`) and downloads whichever are missing from
-`https://huggingface.co/<repo>/resolve/main/onnx/<file>`. So the first speak on a
+`https://huggingface.co/<repo>/resolve/main/onnx/<file>`. So the first synthesis on a
 fresh install needs the network; every one after it does not, and no text or audio
 is ever sent anywhere.
 
@@ -66,6 +66,41 @@ cancellation or disposal; model weights remain installed. Cleanup reports
 native shutdown failures and still attempts file deletion. It ignores only a
 confirmed missing-file error; other filesystem failures are reported through
 the speech logging domain without including the temporary file path or content.
+
+Speech settings also expose **Prepare chat audio automatically**, off by default.
+`TtsSettingsController` persists this device-local opt-in under
+`TTS_AUTO_PREPARE_CHAT_AUDIO`; the existing TTS feature flag still applies.
+It enables synthesis, never autoplay. It can download missing model weights on
+first use, just like explicit playback.
+
+`prepare` keeps at most one disposable result outside playback state, sharing
+`_preparation` with explicit speech so the ONNX session is never used concurrently.
+Its key includes source ID, exact answer text, voice, model and language. Speed
+is applied at playback and does not invalidate the WAV. `speak` waits for a
+matching job and takes ownership of its file instead of synthesizing again;
+`canPlay` still rechecks live access. A speculative failure remains silent and a
+later tap retries normally. `discardPrepared` invalidates a pending job and
+removes a completed result, without interrupting an explicitly playing utterance.
+A plain playback `stop` leaves this separate cache available for the query
+controller's stop-before-play handoff; the chat owner explicitly discards it on
+cancellation and navigation.
+
+```mermaid
+stateDiagram-v2
+  [*] --> empty
+  empty --> preparing: permitted published reply and opt-in
+  preparing --> ready: synthesis and fresh access check succeed
+  preparing --> discarded: cancel or replacement or failed check
+  ready --> discarded: navigation or revocation or settings change
+  ready --> consumed: explicit Play takes WAV
+  preparing --> consumed: explicit Play waits for matching WAV
+  discarded --> empty: delete any late result
+  consumed --> empty: playback owns cleanup
+```
+
+The selected query chat owns scheduling and access checks; see its
+[audio lifecycle](agents/query-chat.md#audio-evidence-and-spoken-answers).
+Model weights remain installed when prepared answer audio is discarded.
 
 ```mermaid
 stateDiagram-v2

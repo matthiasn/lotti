@@ -16,6 +16,7 @@ import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -59,6 +60,186 @@ void main() {
     await bench.close();
     await tearDownTestGetIt();
   });
+  void enablePreparation() => container
+      .read(ttsSettingsControllerProvider.notifier)
+      .setAutoPrepareChatAudio(enabled: true);
+
+  test(
+    'chat audio stays opt-in, then prepares a published answer without autoplay',
+    () async {
+      await pumpEventQueue();
+      expect(bench.engine.calls, isEmpty);
+      enablePreparation();
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(1));
+      expect(bench.engine.calls.single.text, 'Keep the feeder latch.');
+      expect(bench.speechPlayer.playCount, 0);
+      expect(container.read(provider).status, QueryAudioStatus.idle);
+      // An unrelated projection refresh must not synthesize the same reply again.
+      bench.history.add(bench.snapshot());
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(1));
+      await controller.speakAnswer(answerId: 'answer');
+      expect(bench.engine.calls, hasLength(1));
+      expect(bench.speechPlayer.playCount, 1);
+    },
+  );
+
+  test(
+    'only a newly published answer triggers preparation, never a question',
+    () async {
+      bench.events.removeWhere((e) => e.data is QueryChatAnswer);
+      bench.history.add(bench.snapshot());
+      enablePreparation();
+      await pumpEventQueue();
+      expect(bench.engine.calls, isEmpty);
+      bench.addEvent(
+        'question-next',
+        const QueryChatEventData.question(text: 'And now?'),
+      );
+      bench.history.add(bench.snapshot());
+      await pumpEventQueue();
+      expect(bench.engine.calls, isEmpty);
+      bench.addEvent(
+        'answer-next',
+        const QueryChatEventData.answer(
+          questionId: 'question-next',
+          text: 'The feeder is ready.',
+          coverage: QueryCoverage(),
+        ),
+      );
+      bench.history.add(bench.snapshot());
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(1));
+      expect(bench.engine.calls.single.text, 'The feeder is ready.');
+      expect(bench.speechPlayer.playCount, 0);
+    },
+  );
+
+  test(
+    'stop invalidates automatic preparation queued for the next microtask',
+    () async {
+      enablePreparation();
+      await controller.stop();
+      await pumpEventQueue();
+      expect(bench.engine.calls, isEmpty);
+      expect(bench.speechPlayer.playCount, 0);
+    },
+  );
+
+  test('stopping speech does not restart automatic preparation', () async {
+    enablePreparation();
+    await pumpEventQueue();
+    await controller.speakAnswer(answerId: 'answer');
+    expect(bench.engine.calls, hasLength(1));
+    await controller.stop();
+    await pumpEventQueue();
+    expect(bench.engine.calls, hasLength(1));
+    expect(bench.speechPlayer.playCount, 1);
+    expect(container.read(provider).status, QueryAudioStatus.idle);
+  });
+
+  test(
+    'a new reply deferred during playback is prepared after completion',
+    () async {
+      enablePreparation();
+      await pumpEventQueue();
+      await controller.speakAnswer(answerId: 'answer');
+      bench
+        ..addEvent(
+          'question-next',
+          const QueryChatEventData.question(text: 'And now?'),
+        )
+        ..addEvent(
+          'answer-next',
+          const QueryChatEventData.answer(
+            questionId: 'question-next',
+            text: 'The feeder is ready.',
+            coverage: QueryCoverage(),
+          ),
+        );
+      bench.history.add(bench.snapshot());
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(1));
+      bench.speechPlayer.complete();
+      await pumpEventQueue();
+      expect(bench.engine.calls.map((e) => e.text), [
+        'Keep the feeder latch.',
+        'The feeder is ready.',
+      ]);
+      expect(bench.speechPlayer.playCount, 1);
+    },
+  );
+
+  test('play joins preparation already running for the saved answer', () async {
+    final pending = Completer<File>();
+    final started = Completer<void>();
+    bench.engine = FakeTtsEngine(
+      pendingSynthesis: pending.future,
+      onSynthesize: started.complete,
+    );
+    enablePreparation();
+    await started.future;
+    final speaking = controller.speakAnswer(answerId: 'answer');
+    await pumpEventQueue();
+    expect(bench.speechPlayer.playCount, 0);
+    pending.complete(File('/tmp/absent-prepared-query.wav'));
+    await speaking;
+    expect(bench.engine.calls, hasLength(1));
+    expect(bench.speechPlayer.playCount, 1);
+  });
+
+  for (final reason in [
+    'opt-out',
+    'feature-disabled',
+    'navigation',
+    'deleted-chat',
+    'hidden-source',
+    'lockdown',
+  ]) {
+    test('$reason discards late automatic audio without playing it', () async {
+      final pending = Completer<File>();
+      final started = Completer<void>();
+      final file = MockIoFile();
+      when(file.existsSync).thenReturn(true);
+      when(file.delete).thenAnswer((_) async => file);
+      bench.engine = FakeTtsEngine(
+        pendingSynthesis: pending.future,
+        onSynthesize: started.complete,
+      );
+      enablePreparation();
+      await started.future;
+      switch (reason) {
+        case 'opt-out':
+          container
+              .read(ttsSettingsControllerProvider.notifier)
+              .setAutoPrepareChatAudio(enabled: false);
+        case 'feature-disabled':
+          bench.ttsEnabled.add(false);
+        case 'navigation':
+          subscription.close();
+        case 'deleted-chat':
+          bench.events.clear();
+          bench.history.add(bench.snapshot());
+        case 'hidden-source':
+          bench.audio = bench.audio.copyWith(
+            meta: bench.audio.meta.copyWith(private: true),
+          );
+          bench.history.add(bench.snapshot());
+        case 'lockdown':
+          container
+              .read(lockdownControllerProvider.notifier)
+              .lockToCategory('other');
+      }
+      await container.pump();
+      pending.complete(file);
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(1));
+      expect(bench.speechPlayer.playCount, 0);
+      verify(file.delete).called(1);
+    });
+  }
+
   Future<void> play({bool generate = false}) => controller.playEvidence(
     actionId: 'answer:0',
     evidence: bench.evidence,
@@ -569,6 +750,32 @@ void main() {
       verifyNever(bench.file.openRead);
     },
   );
+
+  test('starting voice input discards automatic preparation', () async {
+    final file = MockIoFile();
+    when(file.existsSync).thenReturn(true);
+    when(file.delete).thenAnswer((_) async => file);
+    bench.engine = FakeTtsEngine(output: file);
+    final recorder = TranscriptEmittingController();
+    final recording = ProviderContainer(
+      overrides: [
+        ...bench.overrides,
+        chatRecorderControllerProvider.overrideWith(() => recorder),
+      ],
+    );
+    addTearDown(recording.dispose);
+    final listener = recording.listen(provider, (_, _) {});
+    addTearDown(listener.close);
+    recording
+        .read(ttsSettingsControllerProvider.notifier)
+        .setAutoPrepareChatAudio(enabled: true);
+    await pumpEventQueue();
+    expect(bench.engine.calls, hasLength(1));
+    recorder.emitRecording();
+    await recording.pump();
+    verify(file.delete).called(1);
+    expect(bench.speechPlayer.playCount, 0);
+  });
 
   test('synthesis failure becomes a recoverable query audio error', () async {
     bench.engine = FakeTtsEngine(throwOnSynthesize: true);

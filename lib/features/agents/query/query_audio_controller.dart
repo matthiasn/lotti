@@ -22,6 +22,7 @@ import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -88,6 +89,10 @@ class QueryAudioController extends Notifier<QueryAudioState> {
   TtsPlaybackController? _tts;
   String? _ttsSourceId;
   int _intent = 0;
+  bool _attached = true;
+  bool _preparationDeferred = false;
+  QueryCancellation? _preparationRun;
+  ({String sourceId, String text, String voice, String model})? _preparationKey;
   late DomainLogger _logger;
 
   @override
@@ -103,16 +108,34 @@ class QueryAudioController extends Notifier<QueryAudioState> {
         _,
         status,
       ) {
-        if (status == ChatRecorderStatus.recording) unawaited(stop());
+        if (status == ChatRecorderStatus.recording) {
+          unawaited(stop());
+        } else {
+          _schedulePreparation();
+        }
       })
       ..listen(configFlagProvider(enableAiSummaryTtsFlag), (_, next) {
-        if (next.value != true && _ttsSourceId != null) unawaited(stop());
+        if (next.value != true) {
+          _discardPreparation();
+          if (_ttsSourceId != null) unawaited(stop());
+        } else {
+          _schedulePreparation();
+        }
+      })
+      ..listen(ttsSettingsControllerProvider, (previous, next) {
+        if (!next.autoPrepareChatAudio ||
+            previous?.voiceId != next.voiceId ||
+            previous?.modelId != next.modelId) {
+          _discardPreparation();
+        }
+        _schedulePreparation();
       })
       ..listen(queryChatDataProvider(key.home), (_, next) {
         final data = next.value;
-        if (_run != null &&
-            (next.hasError || data == null || !_visible(data))) {
+        if (next.hasError || data == null || !_visible(data)) {
           unawaited(stop());
+        } else {
+          _schedulePreparation();
         }
       })
       ..listen(audioPlayerControllerProvider.select((s) => s.status), (
@@ -121,7 +144,10 @@ class QueryAudioController extends Notifier<QueryAudioState> {
       ) {
         if (status == AudioPlayerStatus.playing) unawaited(stop());
       })
-      ..listen(ttsPlaybackControllerProvider, (_, next) {
+      ..listen(ttsPlaybackControllerProvider, (previous, next) {
+        if (_preparationDeferred && previous?.isBusy == true && !next.isBusy) {
+          _schedulePreparation();
+        }
         if (_ttsSourceId == null && _player != null && next.isBusy) {
           unawaited(stop());
         }
@@ -139,9 +165,104 @@ class QueryAudioController extends Notifier<QueryAudioState> {
           state = const QueryAudioState();
         }
       })
+      ..onResume(() {
+        _attached = true;
+        _schedulePreparation();
+      })
       ..onCancel(_detach)
       ..onDispose(_detach);
+    _schedulePreparation();
     return const QueryAudioState();
+  }
+
+  String _answerSourceId(String answerId) =>
+      'query:${key.home.agentId}:${key.chatId}:$answerId';
+
+  void _schedulePreparation() {
+    final intent = _intent;
+    scheduleMicrotask(() {
+      if (ref.mounted && _attached && intent == _intent) {
+        _prepareLatestAnswer();
+      }
+    });
+  }
+
+  /// Only saved answers enter speech preparation. Streamed drafts and tool
+  /// proposals never pass through this projection. Keep only the latest reply
+  /// in the selected chat rather than synthesizing its entire history.
+  void _prepareLatestAnswer() {
+    final settings = ref.read(ttsSettingsControllerProvider);
+    final data = ref.read(queryChatDataProvider(key.home));
+    if (!settings.autoPrepareChatAudio ||
+        ref.read(configFlagProvider(enableAiSummaryTtsFlag)).value != true ||
+        ref.read(chatRecorderControllerProvider).status ==
+            ChatRecorderStatus.recording ||
+        data.hasError ||
+        data.value == null ||
+        !_visible(data.value!)) {
+      _discardPreparation();
+      return;
+    }
+    final chat = data.value!.projection.chats
+        .where((c) => c.id == key.chatId)
+        .firstOrNull;
+    final row = chat?.events.reversed
+        .where((e) => e.data is QueryChatAnswer)
+        .firstOrNull;
+    if (row == null) {
+      _discardPreparation();
+      return;
+    }
+    final answer = row.data as QueryChatAnswer;
+    final preparationKey = (
+      sourceId: _answerSourceId(row.id),
+      text: answer.text,
+      voice: settings.voiceId,
+      model: settings.modelId,
+    );
+    if (_preparationKey == preparationKey) return;
+    if (state.busy || ref.read(ttsPlaybackControllerProvider).isBusy) {
+      _preparationDeferred = true;
+      return;
+    }
+    _discardPreparation();
+    _preparationKey = preparationKey;
+    final run = _preparationRun = QueryCancellation();
+    unawaited(
+      _tts!.prepare(
+        sourceId: preparationKey.sourceId,
+        text: answer.text,
+        canPrepare: () async {
+          try {
+            if (!ref.mounted ||
+                !_attached ||
+                !ref.read(ttsSettingsControllerProvider).autoPrepareChatAudio ||
+                ref.read(configFlagProvider(enableAiSummaryTtsFlag)).value !=
+                    true) {
+              return false;
+            }
+            final current = await _authorize(run);
+            return current.chat.events.any(
+              (e) =>
+                  e.id == row.id &&
+                  e.data is QueryChatAnswer &&
+                  (e.data as QueryChatAnswer).text == answer.text,
+            );
+          } on Object {
+            return false;
+          }
+        },
+      ),
+    );
+  }
+
+  void _discardPreparation() {
+    _preparationDeferred = false;
+    _preparationRun?.cancel();
+    _preparationRun = null;
+    final source = _preparationKey?.sourceId;
+    _preparationKey = null;
+    if (source != null) _tts?.discardPrepared(sourceId: source);
   }
 
   bool _visible(QueryChatData data) {
@@ -363,7 +484,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
         await _tts!.stop();
         await _authorize(run);
         run.check();
-        _ttsSourceId = 'query:${key.home.agentId}:${key.chatId}:$answerId';
+        _ttsSourceId = _answerSourceId(answerId);
         await _tts!.speak(
           sourceId: _ttsSourceId!,
           text: answer.text,
@@ -395,6 +516,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
 
   Future<void> stop() {
     _intent++;
+    _discardPreparation();
     return _cancelCurrent();
   }
 
@@ -422,6 +544,8 @@ class QueryAudioController extends Notifier<QueryAudioState> {
   /// owned work immediately, then stop shared speech and reset surviving state
   /// outside that callback. A resumed/new request supersedes the reset.
   void _detach() {
+    _attached = false;
+    _discardPreparation();
     final intent = ++_intent;
     _run?.cancel();
     _run = null;
