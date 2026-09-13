@@ -112,7 +112,7 @@ void _registerRefreshTriggers(JournalControllerTestSetup setup) {
 
   group('Update Notifications', () {
     test(
-      'visible controller refreshes when update affects displayed items',
+      'visible journal ignores updates when no items are displayed',
       () {
         fakeAsync((async) {
           final queryCalls = stubCountingQuery(setup.mockJournalDb, result: []);
@@ -139,9 +139,8 @@ void _registerRefreshTriggers(JournalControllerTestSetup setup) {
           async.elapse(const Duration(milliseconds: 600));
           async.flushMicrotasks();
 
-          // Query count may increase depending on implementation details
-          // At minimum, the subscription should be active
-          expect(queryCalls.count, greaterThanOrEqualTo(countAfterVisible));
+          // No displayed entry is affected, so a visible journal stays idle.
+          expect(queryCalls.count, countAfterVisible);
         });
       },
     );

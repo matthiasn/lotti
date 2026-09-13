@@ -1074,11 +1074,16 @@ void _registerRefreshScheduling(JournalControllerTestSetup setup) {
     );
 
     test(
-      'refreshQuery with preserveVisibleItems falls back to full refresh '
-      'when no visible page keys exist',
+      'refreshQuery repopulates an empty page from offset zero',
       () {
         fakeAsync((async) {
-          var getTasksCallCount = 0;
+          final offsets = <int?>[];
+          final nextTask = _buildTestTaskRefresh(
+            id: 'new-task',
+            title: 'Newly available task',
+            createdAt: _testDateRefresh,
+          );
+          var result = <JournalEntity>[];
 
           when(
             () => setup.mockJournalDb.getTasks(
@@ -1092,9 +1097,9 @@ void _registerRefreshScheduling(JournalControllerTestSetup setup) {
               limit: any(named: 'limit'),
               offset: any(named: 'offset'),
             ),
-          ).thenAnswer((_) async {
-            getTasksCallCount++;
-            return <JournalEntity>[];
+          ).thenAnswer((invocation) async {
+            offsets.add(invocation.namedArguments[#offset] as int?);
+            return result;
           });
 
           final state = setup.container.read(
@@ -1106,9 +1111,8 @@ void _registerRefreshScheduling(JournalControllerTestSetup setup) {
 
           async.flushMicrotasks();
 
-          // Manually set paging state with an empty page so that
-          // hasVisibleItems is false — refreshQuery should fall through
-          // to the full refresh path.
+          // Keep the exhausted empty page: a newly available task must still
+          // be discovered when a preserving refresh is requested.
           state.pagingController!.value = PagingState<int, JournalEntity>(
             pages: const [[]],
             keys: const [0],
@@ -1116,17 +1120,18 @@ void _registerRefreshScheduling(JournalControllerTestSetup setup) {
           );
 
           clearInteractions(setup.mockJournalDb);
-          getTasksCallCount = 0;
+          offsets.clear();
+          result = [nextTask];
 
-          // preserveVisibleItems=true but no visible items →
-          // hasVisibleItems is false, so it should do a full refresh.
+          // Assert the observable query and result, without coupling the test
+          // to which equivalent paging-controller refresh method is selected.
           unawaited(
             controller.refreshQuery(preserveVisibleItems: true),
           );
           async.flushMicrotasks();
 
-          // A full refresh re-fetches page 0
-          expect(getTasksCallCount, greaterThan(0));
+          expect(offsets, [0]);
+          expect(state.pagingController!.value.items, [nextTask]);
         });
       },
     );
