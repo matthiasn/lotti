@@ -495,25 +495,12 @@ void main() {
     });
 
     tearDown(() async {
-      TestWidgetsFlutterBinding
-          .instance
-          .platformDispatcher
-          .views
-          .first
-          .physicalSize = const Size(
-        800,
-        600,
-      );
-      TestWidgetsFlutterBinding
-              .instance
-              .platformDispatcher
-              .views
-              .first
-              .devicePixelRatio =
-          1.0;
-      if (getIt.isRegistered<NavService>()) {
-        getIt.unregister<NavService>();
-      }
+      // Give the view back as it was found, and clear every service this
+      // group registered — ensureThemingServicesRegistered adds
+      // UpdateNotifications and SettingsDb too, and the CI bundle runs the
+      // next file in this same isolate.
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+      await getIt.reset();
     });
 
     testWidgets('renders labels with usage stats', (tester) async {
