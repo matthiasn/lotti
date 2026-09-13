@@ -1186,6 +1186,49 @@ void main() {
         verify(() => mockAudioRecorderRepository.startRecording()).called(1);
       });
 
+      testWidgets(
+        'unexpected start errors leave the recording action retryable',
+        (
+          tester,
+        ) async {
+          var attempts = 0;
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              audioRecorderControllerProvider.overrideWith(
+                () => _CallbackTrackingController(
+                  fixedState: AudioRecorderState(
+                    status: AudioRecorderStatus.stopped,
+                    progress: Duration.zero,
+                    vu: -20,
+                    dBFS: -160,
+                    showIndicator: false,
+                    modalVisible: true,
+                  ),
+                  onRecord: () async {
+                    attempts++;
+                    if (attempts == 1) throw StateError('recorder unavailable');
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          );
+          await tester.tap(find.byKey(const ValueKey('record')));
+          await tester.pump();
+          final messages = AppLocalizations.of(
+            tester.element(find.byType(AudioRecordingModalContent)),
+          )!;
+          expect(find.text(messages.chatInputRecordingFailed), findsOneWidget);
+          expect(attempts, 1);
+          await tester.tap(find.byKey(const ValueKey('record')));
+          await tester.pump();
+          expect(attempts, 2);
+          expect(find.text(messages.chatInputRecordingFailed), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
       testWidgets('localizes the record action', (tester) async {
         stubCategory();
 
@@ -2402,6 +2445,7 @@ class _CallbackTrackingController extends AudioRecorderController {
     this.createdId,
     this.onPauseCalled,
     this.onResumeCalled,
+    this.onRecord,
   });
 
   final AudioRecorderState fixedState;
@@ -2410,6 +2454,7 @@ class _CallbackTrackingController extends AudioRecorderController {
   final String? createdId;
   final VoidCallback? onPauseCalled;
   final VoidCallback? onResumeCalled;
+  final Future<AudioRecordingFailure?> Function()? onRecord;
 
   @override
   AudioRecorderState build() => fixedState;
@@ -2427,7 +2472,8 @@ class _CallbackTrackingController extends AudioRecorderController {
   }
 
   @override
-  Future<AudioRecordingFailure?> record({String? linkedId}) async => null;
+  Future<AudioRecordingFailure?> record({String? linkedId}) async =>
+      onRecord?.call();
 
   @override
   Future<String?> stop() async {

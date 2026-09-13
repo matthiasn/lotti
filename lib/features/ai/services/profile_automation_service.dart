@@ -517,8 +517,9 @@ class ProfileAutomationService {
   /// Declines out loud. The profile walk's own decline only reports that no
   /// profile automates transcription, which is the less interesting half when
   /// the user *has* configured a speech-to-text model and it was rejected for
-  /// a missing provider or API key — so the tallies below name that instead of
-  /// leaving the fallback's failure invisible.
+  /// a missing provider/API key or an unsupported/unavailable native model.
+  /// Native readiness is checked only when no server candidate is available;
+  /// verification errors reject the candidate rather than aborting discovery.
   Future<AutomationResult> _tryDirectTranscriptionFallback(
     _CallIntent intent,
   ) async {
@@ -531,6 +532,9 @@ class ProfileAutomationService {
       AiConfigType.model,
     );
     final candidates = <_TranscriptionFallbackCandidate>[];
+    final nativeCandidates = <_TranscriptionFallbackCandidate>[];
+    var unsupportedNative = 0;
+    var unavailableNative = 0;
     var speechModelCount = 0;
     var withoutProvider = 0;
     var withoutApiKey = 0;
@@ -556,13 +560,38 @@ class ProfileAutomationService {
         // Automatic discovery must never load a multi-gigabyte native model
         // just because its display name sorts first. Larger models remain
         // available through an explicitly selected inference profile.
-        if (!const {'tiny', 'base'}.contains(model.providerModelId) ||
-            !(await isEmbeddedModelInstalled?.call(model.providerModelId) ??
-                false)) {
-          continue;
+        if (!const {'tiny', 'base'}.contains(model.providerModelId)) {
+          unsupportedNative++;
+        } else {
+          nativeCandidates.add((model: model, provider: providerConfig));
         }
+      } else {
+        candidates.add((model: model, provider: providerConfig));
       }
-      candidates.add((model: model, provider: providerConfig));
+    }
+
+    // Even tiny/base readiness can perform expensive file verification.
+    // A configured server must never wait on the local model store.
+    if (candidates.isEmpty) {
+      nativeCandidates.sort(_compareFallbackCandidates);
+      for (final candidate in nativeCandidates) {
+        var available = false;
+        try {
+          available =
+              await isEmbeddedModelInstalled?.call(
+                candidate.model.providerModelId,
+              ) ??
+              false;
+        } catch (_) {
+          // Files may disappear or become unreadable during verification.
+          // Count the rejection without leaking a private filesystem path.
+        }
+        if (available) {
+          candidates.add(candidate);
+          break;
+        }
+        unavailableNative++;
+      }
     }
 
     if (candidates.isEmpty) {
@@ -572,7 +601,9 @@ class ProfileAutomationService {
                   'transcription fallback has nothing to run'
             : 'all $speechModelCount configured speech-to-text model(s) were '
                   'rejected: $withoutProvider without a resolvable provider, '
-                  '$withoutApiKey missing an API key',
+                  '$withoutApiKey missing an API key, '
+                  '$unsupportedNative unsupported native model(s), '
+                  '$unavailableNative unavailable native model(s)',
         subDomain: 'directFallback',
         intent: intent,
       );

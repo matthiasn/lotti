@@ -3096,7 +3096,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'A gravação foi captada, mas a transcrição falhou. Tenta de novo.';
 
   @override
-  String get checkInAudioButton => 'Gravar um registo áudio';
+  String get checkInAudioButton => 'Gravar um registo de áudio';
 
   @override
   String get checkInAvoidLabel => 'Melhor evitar';

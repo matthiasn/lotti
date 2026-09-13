@@ -3076,7 +3076,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
-  String get checkInAudioButton => 'Spela in en ljudkontaktlogg';
+  String get checkInAudioButton => 'Spela in en ljudavstämning';
 
   @override
   String get checkInAvoidLabel => 'Bäst att undvika';
@@ -3223,13 +3223,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInTranscriptUnavailable =>
-      'Transkription är inte inställd för den här personen. Lägg till en transkriptionsmodell i AI-inställningarna eller skriv din kontaktlogg.';
+      'Transkription är inte inställd för den här personen. Lägg till en transkriptionsmodell i AI-inställningarna eller skriv din avstämning.';
 
   @override
   String get checkInWhenAndHowLong => 'När och hur länge';
 
   @override
-  String get checkInWriteButton => 'Skriv en kontaktlogg';
+  String get checkInWriteButton => 'Skriv en avstämning';
 
   @override
   String get checklistAddItem => 'Lägg till ett nytt föremål';

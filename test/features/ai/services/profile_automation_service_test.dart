@@ -464,17 +464,22 @@ void main() {
           () => mockAiConfig.getConfigById(provider.id),
         ).thenAnswer((_) async => provider);
       }
+      var readinessChecks = 0;
       final subject = ProfileAutomationService(
         resolver: mockResolver,
         aiConfigRepository: mockAiConfig,
         categoryAutomationLookup: (_) async => true,
-        isEmbeddedModelInstalled: (_) async => true,
+        isEmbeddedModelInstalled: (_) async {
+          readinessChecks++;
+          return true;
+        },
       );
       final result = await subject.tryTranscribe(subjectId: 'task-1');
       expect(
         result.resolvedProfile?.transcriptionModel?.id,
         cloudAvailable ? 'cloud-model' : 'tiny',
       );
+      expect(readinessChecks, cloudAvailable ? 0 : 1);
     });
   }
 
@@ -595,6 +600,57 @@ void main() {
         expect(result.handled, installed ?? false);
         if (installed ?? false) {
           expect(result.resolvedProfile?.transcriptionProvider, embedded);
+        }
+      },
+    );
+  }
+
+  for (final baseAvailable in [false, true]) {
+    test(
+      'native readiness errors reject a candidate (base=$baseAvailable)',
+      () async {
+        final local = makeProvider(
+          id: 'local',
+          type: InferenceProviderType.sherpa,
+        );
+        when(
+          () => mockAiConfig.getConfigById(local.id),
+        ).thenAnswer((_) async => local);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            for (final id in ['large-v3', 'tiny', 'base'])
+              makeModel(id: id, providerId: local.id, providerModelId: id),
+          ],
+        );
+        final checked = <String>[];
+        final subject = ProfileAutomationService(
+          resolver: mockResolver,
+          aiConfigRepository: mockAiConfig,
+          domainLogger: mockDomainLogger,
+          isEmbeddedModelInstalled: (id) async {
+            checked.add(id);
+            if (id == 'tiny') throw StateError('model files inaccessible');
+            return baseAvailable;
+          },
+        );
+        final result = await subject.resolveDirectTranscription();
+        expect(result.handled, baseAvailable);
+        expect(checked, ['tiny', 'base']);
+        if (baseAvailable) {
+          expect(result.resolvedProfile!.transcriptionModelId, 'base');
+        } else {
+          expect(
+            loggedLines(),
+            contains(
+              allOf(
+                startsWith('directFallback:'),
+                contains('1 unsupported native model'),
+                contains('2 unavailable native model'),
+              ),
+            ),
+          );
         }
       },
     );

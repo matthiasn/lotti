@@ -1530,7 +1530,7 @@
   "chatInputStopRealtime": "Interromper a transcrição ao vivo",
   "chatInputStopTranscribe": "Pare e transcreva",
   "chatInputTranscriptionFailed": "A gravação foi captada, mas a transcrição falhou. Tenta de novo.",
-  "checkInAudioButton": "Gravar um registo áudio",
+  "checkInAudioButton": "Gravar um registo de áudio",
   "checkInAvoidLabel": "Melhor evitar",
   "checkInCaptureChoiceTitle": "Como queres registar o contacto?",
   "checkInDateLabel": "Quando?",

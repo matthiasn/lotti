@@ -167,8 +167,10 @@ exactly the behaviour the switch is meant to make explicit.
 Direct discovery prefers Melious, then a configured Whisper server, followed
 by other server providers. Within Melious, Whisper models precede audio chat
 models. Installed native Whisper tiny/base models are last;
-larger or unknown native ids are excluded before readiness checks. Tiny wins
-over base, then display name and config id make ties deterministic. Explicit
+larger or unknown native ids are excluded before readiness checks. Readiness
+verification runs only if no server candidate exists, in ranked order until a
+usable native model is found; file errors reject that candidate. Tiny wins over
+base, then display name and config id make ties deterministic. Explicit
 profile assignments retain their selected model. This is configuration fallback,
 not failover: a cloud request error never silently retries on-device.
 
@@ -201,7 +203,7 @@ rejected a recording or an image:
 | `categoryGate` | the category's `automaticInferenceEnabled` is off, or no lookup is wired |
 | `profileResolution` | no profile resolved, or the whole walk finished without a match (reports how many profiles it tried) |
 | `skillMatch` | an assignment's skill config is missing, the profile's model slot for that type is empty or unresolvable, or two skills of the same type made it ambiguous |
-| `directFallback` | the profile walk found nothing **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider vs. missing API key) |
+| `directFallback` | the profile walk found nothing **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider, missing API key, unsupported native model, or unavailable native model) |
 | `resolved` | it *did* run — names the skill and whether it came from the task-linked or an inherited profile |
 
 `resolved` is not decoration: a run against the wrong profile is as opaque as no
