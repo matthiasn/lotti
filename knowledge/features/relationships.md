@@ -733,6 +733,8 @@ removed:
   generic request-failed toast before any inference is queued. Disclosure
   captures its repository and category-lookup dependencies before awaiting
   reads, so a superseded resolution never reads a disposed `Ref`.
+  The click captures one relationship snapshot for disclosure, the queued
+  request and setup recovery; a card rebuild cannot retarget an in-flight action.
   The existing unavailable-status link opens the same
   sheet. A direct model
   override checks its own provider locality, not its optional base profile.

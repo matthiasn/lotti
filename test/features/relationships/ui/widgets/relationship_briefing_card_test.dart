@@ -206,6 +206,7 @@ void main() {
   Future<_FakeContactLauncher> pump(
     WidgetTester tester, {
     RelationshipEntry? entry,
+    ValueNotifier<RelationshipEntry>? entryNotifier,
     List<CheckInEntry> checkIns = const [],
     AgentReportEntity? current,
     AgentStateEntity? state,
@@ -227,32 +228,40 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          RelationshipBriefingCard(
-            relationship: entry ?? relationship(),
-            checkIns: checkIns,
-          ),
+          entryNotifier == null
+              ? RelationshipBriefingCard(
+                  relationship: entry ?? relationship(),
+                  checkIns: checkIns,
+                )
+              : ValueListenableBuilder<RelationshipEntry>(
+                  valueListenable: entryNotifier,
+                  builder: (context, value, child) => RelationshipBriefingCard(
+                    relationship: value,
+                    checkIns: checkIns,
+                  ),
+                ),
           overrides: [
-            agentReportProvider(agentId).overrideWith((ref) async => current),
-            agentStateProvider(agentId).overrideWith((ref) async => state),
-            agentIsRunningProvider(
-              agentId,
-            ).overrideWith((ref) => Stream.value(running)),
-            agentIdentityProvider(agentId).overrideWith(
-              (ref) async => makeTestIdentity(
-                agentId: agentId,
+            agentReportProvider.overrideWith((ref, id) async => current),
+            agentStateProvider.overrideWith((ref, id) async => state),
+            agentIsRunningProvider.overrideWith(
+              (ref, id) => Stream.value(running),
+            ),
+            agentIdentityProvider.overrideWith(
+              (ref, id) async => makeTestIdentity(
+                agentId: id,
                 kind: AgentKinds.relationshipAgent,
                 displayName: 'Commander Pip Frostbeak',
               ),
             ),
-            taskAgentResolvedSetupProvider(agentId).overrideWith(
-              (ref) async => modelResolved
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, id) async => modelResolved
                   ? resolvedSetup()
                   : const ResolvedAgentSetup(
                       status: AgentSetupResolutionStatus.disabled,
                     ),
             ),
-            agentTokenUsageSummariesProvider(agentId).overrideWith(
-              (ref) async => [
+            agentTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => [
                 if (totalTokens > 0)
                   AgentTokenUsageSummary(
                     modelId: 'model-1',
@@ -728,6 +737,44 @@ void main() {
         },
       );
     }
+
+    testWidgets('a card replacement during disclosure cannot retarget '
+        'the briefing request', (tester) async {
+      final original = relationship();
+      final replacement = original.copyWith(
+        meta: original.meta.copyWith(id: 'person-2'),
+        data: original.data.copyWith(title: 'Another person'),
+      );
+      final entry = ValueNotifier(original);
+      addTearDown(entry.dispose);
+      final disclosure = Completer<String?>();
+      final disclosedIds = <String>[];
+      await pump(
+        tester,
+        entryNotifier: entry,
+        checkIns: onTrackCheckIns,
+        realDisclosure: true,
+        additionalOverrides: [
+          relationshipBriefingDisclosureProvider.overrideWith((ref, id) async {
+            disclosedIds.add(id);
+            return disclosure.future;
+          }),
+        ],
+      );
+      await tester.tap(briefMe);
+      await tester.pump();
+      entry.value = replacement;
+      await tester.pump();
+      disclosure.complete('Original provider');
+      await tester.pumpAndSettle();
+      expect(disclosedIds, [original.meta.id]);
+      expect(find.text('Send to Original provider?'), findsOneWidget);
+      verifyNever(() => agentService.requestBriefing(any()));
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      verify(() => agentService.requestBriefing(original)).called(1);
+      verifyNever(() => agentService.requestBriefing(replacement));
+    });
 
     testWidgets('unavailable setup explains recovery and opens configuration', (
       tester,
