@@ -1564,7 +1564,6 @@
   "checkInSourceMessage": "Fra den besked, du sendte fra denne side. Alt kan redigeres.",
   "checkInSourceMeta": "{type} · startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "checkInSpeakButton": "Indtal check-in",
-  "checkInSpeakInstead": "Sig det i stedet",
   "checkInStartedLabel": "Startet",
   "checkInTopicsHint": "Kommasepareret, f.eks. arbejde, rejser",
   "checkInTopicsLabel": "Emner",

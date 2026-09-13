@@ -1563,7 +1563,6 @@
   "checkInSourceMessage": "Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.",
   "checkInSourceMeta": "{type} · begonnen om {time} · {minutes, plural, =0{minder dan een minuut} =1{ongeveer 1 min} other{ongeveer {minutes} min}}",
   "checkInSpeakButton": "Check-in inspreken",
-  "checkInSpeakInstead": "Liever inspreken",
   "checkInStartedLabel": "Begonnen",
   "checkInTopicsHint": "Kommagescheiden, bijv. werk, reizen",
   "checkInTopicsLabel": "Onderwerpen",

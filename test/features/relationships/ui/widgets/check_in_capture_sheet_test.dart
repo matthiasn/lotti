@@ -10,7 +10,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/time_pickers/design_system_time_picker.dart';
+import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
@@ -36,15 +36,20 @@ class _StubTranscriptionService implements CheckInTranscriptionService {
     required this.canTranscribeResult,
     required this.transcript,
     this.gate,
+    this.preflightGate,
   });
 
   final bool canTranscribeResult;
   final String? transcript;
   final Completer<String?>? gate;
+  final Completer<void>? preflightGate;
   int cancelCount = 0;
 
   @override
-  Future<bool> canTranscribe(String subjectId) async => canTranscribeResult;
+  Future<bool> canTranscribe(String subjectId) async {
+    await preflightGate?.future;
+    return canTranscribeResult;
+  }
 
   @override
   CheckInTranscriptWait transcribe({
@@ -150,6 +155,14 @@ void main() {
 
   late MockRelationshipRepository mockRepository;
   late _StubTranscriptionService stubTranscription;
+  late Completer<void> voiceStartGate;
+
+  // Release the top-level recorder preflight after the test has arranged
+  // any typing or pending inference state. No inner recording button exists.
+  Future<void> startRecording(WidgetTester tester) async {
+    voiceStartGate.complete();
+    await tester.pump();
+  }
 
   CheckInEntry createdEntry(CheckInData data) => CheckInEntry(
     meta: Metadata(
@@ -244,7 +257,8 @@ void main() {
     void Function(String? categoryId)? onLaunch,
     bool canTranscribe = true,
     bool? enableSpeechRecognition,
-    bool startSpeaking = false,
+    bool startSpeaking = true,
+    bool startImmediately = false,
   }) => makeTestableWidgetWithScaffold(
     withBar(
       (handle) => CheckInCaptureForm(
@@ -275,6 +289,9 @@ void main() {
       checkInTranscriptionServiceProvider.overrideWithValue(
         stubTranscription = _StubTranscriptionService(
           canTranscribeResult: canTranscribe,
+          preflightGate: startImmediately
+              ? null
+              : (voiceStartGate = Completer<void>()),
           transcript: transcript,
           gate: transcriptGate,
         ),
@@ -575,11 +592,21 @@ void main() {
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
 
+      final wheel = tester.widget<DesignSystemTimeWheel>(
+        find.byKey(const ValueKey('check-in-time-picker')),
+      );
+      expect(wheel.initialDateTime, interactionTime);
+      expect(wheel.semanticsLabel, 'Started');
+      expect(
+        wheel.use24hFormat,
+        isFalse,
+        reason: 'follows the same device preference as the journal editor',
+      );
       tester
-          .widget<DesignSystemTimePicker>(
+          .widget<DesignSystemTimeWheel>(
             find.byKey(const ValueKey('check-in-time-picker')),
           )
-          .onTimeChanged(const TimeOfDay(hour: 8, minute: 15));
+          .onDateTimeChanged(DateTime(2026, 8, 10, 8, 15));
       await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
       await tester.pumpAndSettle();
 
@@ -616,10 +643,10 @@ void main() {
         await tester.tap(find.text('Done'));
         await tester.pumpAndSettle();
         tester
-            .widget<DesignSystemTimePicker>(
+            .widget<DesignSystemTimeWheel>(
               find.byKey(const ValueKey('check-in-time-picker')),
             )
-            .onTimeChanged(const TimeOfDay(hour: 23, minute: 45));
+            .onDateTimeChanged(DateTime(2026, 8, 13, 23, 45));
         await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
         await tester.pumpAndSettle();
 
@@ -918,12 +945,13 @@ void main() {
     String narrativeText(WidgetTester tester) =>
         tester.widget<TextField>(narrativeField()).controller!.text;
 
-    testWidgets('offers the button on a fresh check-in', (tester) async {
+    testWidgets('text check-in has no duplicate microphone', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      expect(speakButton(), findsOne);
-      expect(find.text('Speak instead'), findsOne);
+      expect(speakButton(), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsNothing);
+      expect(find.text('Speak instead'), findsNothing);
     });
 
     // The bug this guards: with no audio model — or a person filed under no
@@ -944,8 +972,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(launches, 0, reason: 'no recording should be wasted');
@@ -967,8 +994,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(narrativeText(tester), 'She got the job.');
@@ -985,8 +1011,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(narrativeField(), 'Called on the way home.');
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(
@@ -1016,8 +1041,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(launches, 1);
@@ -1037,8 +1061,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pump();
 
       expect(find.text('Transcribing…'), findsOne);
@@ -1047,7 +1070,7 @@ void main() {
       gate.complete('Arrived at last.');
       await tester.pumpAndSettle();
 
-      expect(find.text('Speak instead'), findsOne);
+      expect(find.text('Speak instead'), findsNothing);
       expect(narrativeText(tester), 'Arrived at last.');
     });
 
@@ -1060,8 +1083,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(narrativeField(), 'Typed only.');
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(narrativeText(tester), 'Typed only.');
@@ -1077,8 +1099,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(narrativeField(), 'Typed only.');
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(
@@ -1086,7 +1107,7 @@ void main() {
         findsOne,
       );
       expect(narrativeText(tester), 'Typed only.');
-      expect(find.text('Speak instead'), findsOne);
+      expect(find.text('Speak instead'), findsNothing);
     });
 
     // The HTTP 503 case. A failed run writes no transcript, so the wait alone
@@ -1109,8 +1130,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(narrativeField(), 'Typed only.');
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pump();
 
       expect(find.text('Transcribing…'), findsOne, reason: 'wait is open');
@@ -1168,8 +1188,7 @@ void main() {
           )
           .setError('a failure from the previous take');
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pump();
 
       expect(find.text('Transcribing…'), findsOne);
@@ -1181,7 +1200,7 @@ void main() {
       expect(narrativeText(tester), 'Arrived at last.');
     });
 
-    testWidgets('ignores a second tap while a transcript is in flight', (
+    testWidgets('offers no duplicate recording action while transcribing', (
       tester,
     ) async {
       final gate = Completer<String?>();
@@ -1196,10 +1215,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pump();
-      await tester.tap(speakButton(), warnIfMissed: false);
+      expect(speakButton(), findsNothing);
       await tester.pump();
 
       expect(launches, 1);
@@ -1228,8 +1246,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(find.text('Transcribing…'), findsNothing);
@@ -1252,8 +1269,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pumpAndSettle();
 
       expect(narrativeText(tester), 'Spoken.');
@@ -1280,8 +1296,7 @@ void main() {
         reason: 'enabled before speaking',
       );
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       // One frame for the form to publish, one for the pinned bar to read it.
       await tester.pump();
       await tester.pump();
@@ -1310,8 +1325,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
+      await startRecording(tester);
       await tester.pump();
       expect(stubTranscription.cancelCount, 0);
 
@@ -1321,13 +1335,14 @@ void main() {
       expect(stubTranscription.cancelCount, 1);
     });
 
-    testWidgets('is offered when editing an existing check-in too', (
+    testWidgets('editing a check-in has no duplicate microphone', (
       tester,
     ) async {
       await tester.pumpWidget(buildEditForm());
       await tester.pumpAndSettle();
 
-      expect(speakButton(), findsOne);
+      expect(speakButton(), findsNothing);
+      expect(find.byIcon(LottiIcons.mic), findsNothing);
     });
   });
 
@@ -1496,7 +1511,7 @@ void main() {
           recordedEntryId: null,
           transcript: null,
           onLaunch: launches.add,
-          startSpeaking: true,
+          startImmediately: true,
         ),
       );
       await tester.pumpAndSettle();
@@ -1506,42 +1521,33 @@ void main() {
       expect(find.text('When and how long'), findsOneWidget);
     });
 
-    testWidgets("a Speak press during the automatic launch's pre-flight does "
-        'not open a second recorder', (tester) async {
-      final launches = <String?>[];
-      // Hold the pre-flight open: the automatic launch is mid-await when the
-      // user presses Speak.
-      final gate = Completer<RelationshipEntry?>();
-      when(
-        () => mockRepository.getRelationshipById(any()),
-      ).thenAnswer((_) => gate.future);
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: null,
-          transcript: null,
-          onLaunch: launches.add,
-          startSpeaking: true,
-        ),
-      );
-      await tester.pump();
+    testWidgets(
+      'rebuilding during pre-flight does not open a second recorder',
+      (tester) async {
+        final launches = <String?>[];
+        // Hold the pre-flight open while additional frames rebuild the form.
+        final gate = Completer<RelationshipEntry?>();
+        when(
+          () => mockRepository.getRelationshipById(any()),
+        ).thenAnswer((_) => gate.future);
+        await tester.pumpWidget(
+          buildSpeakableForm(
+            recordedEntryId: null,
+            transcript: null,
+            onLaunch: launches.add,
+            startImmediately: true,
+          ),
+        );
+        await tester.pump();
 
-      final speak = find.widgetWithText(DesignSystemButton, 'Speak instead');
-      expect(
-        tester.widget<DesignSystemButton>(speak).onPressed,
-        isNull,
-        reason: 'the button is out while a spoken check-in is in flight',
-      );
-      await tester.tap(speak, warnIfMissed: false);
-      gate.complete(testRelationship);
-      await tester.pumpAndSettle();
+        expect(find.byKey(const Key('check_in_speak_button')), findsNothing);
+        await tester.pump();
+        gate.complete(testRelationship);
+        await tester.pumpAndSettle();
 
-      expect(launches, hasLength(1));
-      expect(
-        tester.widget<DesignSystemButton>(speak).onPressed,
-        isNotNull,
-        reason: 'a cancelled recording hands the button back',
-      );
-    });
+        expect(launches, hasLength(1));
+      },
+    );
 
     testWidgets('a form opened the ordinary way launches nothing on its own', (
       tester,
@@ -1552,6 +1558,8 @@ void main() {
           recordedEntryId: null,
           transcript: null,
           onLaunch: launches.add,
+          startSpeaking: false,
+          startImmediately: true,
         ),
       );
       await tester.pumpAndSettle();

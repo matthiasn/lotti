@@ -3225,9 +3225,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInSpeakButton => 'Dictar el contacto';
 
   @override
-  String get checkInSpeakInstead => 'Mejor hablar';
-
-  @override
   String get checkInStartedLabel => 'Empezó';
 
   @override

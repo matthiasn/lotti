@@ -3211,9 +3211,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInSpeakButton => 'Check-in sprechen';
 
   @override
-  String get checkInSpeakInstead => 'Lieber sprechen';
-
-  @override
   String get checkInStartedLabel => 'Begonnen';
 
   @override

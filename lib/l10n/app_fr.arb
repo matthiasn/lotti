@@ -1386,7 +1386,6 @@
   "checkInSourceMessage": "D’après le message que tu as envoyé depuis cette page. Tout est modifiable.",
   "checkInSourceMeta": "{type} · commencé à {time} · {minutes, plural, =0{moins d’une minute} =1{environ 1 min} other{environ {minutes} min}}",
   "checkInSpeakButton": "Dicter l'échange",
-  "checkInSpeakInstead": "Plutôt le dire",
   "checkInStartedLabel": "Commencé",
   "checkInTopicsHint": "Séparés par des virgules, p. ex. travail, voyages",
   "checkInTopicsLabel": "Sujets",

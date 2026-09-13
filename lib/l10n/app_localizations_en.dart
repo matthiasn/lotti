@@ -3170,9 +3170,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInSpeakButton => 'Speak check-in';
 
   @override
-  String get checkInSpeakInstead => 'Speak instead';
-
-  @override
   String get checkInStartedLabel => 'Started';
 
   @override

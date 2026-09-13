@@ -241,7 +241,7 @@ class _RelationshipBriefingCardState
     try {
       // Name the provider BEFORE any cloud-bound trigger (ADR 0037): the
       // locality check fails closed, so an unresolvable profile discloses.
-      final providerName = await ref.read(
+      final providerName = await ref.refresh(
         relationshipBriefingDisclosureProvider(
           widget.relationship.meta.id,
         ).future,
@@ -280,6 +280,21 @@ class _RelationshipBriefingCardState
       context.showToast(
         tone: DesignSystemToastTone.success,
         title: messages.relationshipBriefingRequested,
+      );
+    } on RelationshipInferenceSetupUnavailable {
+      if (!mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: messages.taskAgentSetupBroken,
+        description: messages.relationshipAgentFailedNoModel,
+        action: ToastAction(
+          label: messages.inferenceProfileChooseModelTitle,
+          onPressed: () => AgentModelSheet.show(
+            context: context,
+            agentId: _agentId,
+            entityId: widget.relationship.meta.id,
+          ),
+        ),
       );
     } catch (error, stackTrace) {
       // Only what fails before the wake is queued lands here — disclosure,

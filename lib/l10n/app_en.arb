@@ -1933,7 +1933,6 @@
   "@checkInSpeakButton": {
     "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
   },
-  "checkInSpeakInstead": "Speak instead",
   "checkInStartedLabel": "Started",
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",

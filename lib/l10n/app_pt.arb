@@ -1563,7 +1563,6 @@
   "checkInSourceMessage": "Da mensagem que enviaste a partir desta página. Tudo é editável.",
   "checkInSourceMeta": "{type} · começou às {time} · {minutes, plural, =0{menos de um minuto} =1{cerca de 1 min} other{cerca de {minutes} min}}",
   "checkInSpeakButton": "Ditar o contato",
-  "checkInSpeakInstead": "Prefiro falar",
   "checkInStartedLabel": "Começou",
   "checkInTopicsHint": "Separados por vírgulas, ex.: trabalho, viagens",
   "checkInTopicsLabel": "Assuntos",

@@ -1380,6 +1380,19 @@ void main() {
         'check_in_capture_${viewport}_dark',
         subdir: _subdir,
       );
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('check-in-started')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-started')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      await captureScreenshot(
+        tester,
+        'check_in_time_${viewport}_dark',
+        subdir: _subdir,
+      );
     });
 
     testWidgets('$viewport check-in edit sheet — dark', (tester) async {
