@@ -1051,6 +1051,23 @@ void main() {
       });
     });
 
+    testWidgets('with nothing to expand, the sources line is not hidden '
+        'behind a Read more that does not exist', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(tldr: null),
+      );
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-expand')),
+        findsNothing,
+      );
+      expect(
+        find.text('Sources: 2 check-ins · contact details never sent'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('no cost on the model row without usage', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
 

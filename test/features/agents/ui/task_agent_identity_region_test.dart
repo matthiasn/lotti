@@ -47,6 +47,7 @@ void main() {
     VoidCallback? onSetupTap,
     String? trailingMeta,
     double? width,
+    TextScaler textScaler = TextScaler.noScaling,
   }) {
     if (width != null) {
       // MediaQuery alone does not resize the surface — the render view does,
@@ -64,9 +65,31 @@ void main() {
           onSetupTap: onSetupTap ?? () {},
           trailingMeta: trailingMeta,
         ),
+        mediaQueryData: MediaQueryData.fromView(
+          tester.view,
+        ).copyWith(textScaler: textScaler),
       ),
     );
   }
+
+  testWidgets('at large text the attribution route drops under its label, on '
+      "the label's own column", (tester) async {
+    await pumpRegion(
+      tester,
+      data: const TaskAgentModelIdentityViewData(
+        presentation: TaskAgentIdentityPresentation.split,
+        currentRoute: route,
+        reportRoute: priorRoute,
+      ),
+      width: 600,
+      textScaler: const TextScaler.linear(1.6),
+    );
+    final label = tester.getRect(find.text('This report'));
+    final routeText = tester.getRect(find.textContaining('GLM 5.2'));
+    expect(routeText.top, greaterThanOrEqualTo(label.bottom));
+    expect(routeText.left, closeTo(label.left, 1));
+    expect(tester.takeException(), isNull);
+  });
 
   Finder setupRowInk() => find.descendant(
     of: find.byType(TaskAgentIdentityRegion),

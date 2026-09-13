@@ -858,8 +858,13 @@ class _AgentCard extends StatelessWidget {
     // out-of-date one the count already includes the check-in it missed.
     // And only once the reader has opened it — collapsed, the summary
     // outweighs its provenance, which is the point of a summary.
+    // The sources line is part of the expanded reading — unless there is
+    // nothing to expand (no report beyond the summary), when it would
+    // otherwise be unreachable.
+    final hasMore =
+        resolveReportAdditional(current)?.trim().isNotEmpty ?? false;
     final showsSources =
-        state == RelationshipAgentCardState.current && expanded;
+        state == RelationshipAgentCardState.current && (expanded || !hasMore);
 
     return AgentSummaryCardSurface(
       key: const ValueKey('relationship-briefing-card'),

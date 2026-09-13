@@ -1062,10 +1062,14 @@ The composer's parts, top to bottom:
   the one bright shape in the bar is Save's even while Save is held. On a
   phone the reason sits under the bar; on the desktop dialog it takes the
   leading edge with Cancel and Save together on the trailing edge. The form
-  reserves exactly the bar's height for its layout
+  reserves the bar's predicted height for its layout
   (`CheckInStickyActions.height`, the actions row — stacked above
   `TextScales.large` — plus, on the phone, the reason line), so the dialog
-  carries no blank band above its footer. With the field focused on a phone — the keyboard up; the sheet
+  carries no blank band above its footer; the bar reports its rendered
+  height back through the handle (`reportBarHeight`) and the form adds only
+  the slack a taller-than-predicted bar needs — a long-label locale stacking
+  Cancel and Save on a narrow phone — so the last field always clears it.
+  With the field focused on a phone — the keyboard up; the sheet
   removes the keyboard inset from what the bar can see, so focus is the
   signal — the bar slims to the context summary chip (`Call · Now · no
   duration`, tapping it drops the keyboard) and a short *Save*. On desktop
@@ -1073,13 +1077,16 @@ The composer's parts, top to bottom:
 
 **Leaving asks only when it would lose something.** Cancel, the header's
 close and the back gesture all go through the form's `_dismiss`: when the
-draft is clean — the narrative and every detail match what the composer
-opened with, and no take is in flight — it simply pops; when it is dirty it
+draft is clean — the narrative, the type · started · duration chips and
+every detail match what the composer opened with, and no take is in flight
+— it simply pops; when it is dirty it
 asks first, with a wording that names a running recording — and confirming
 cancels the take through the handle's recorder, because a button labelled
 Discard must discard rather than leave a recorder running behind a closed
 sheet. The back gesture is caught by a `PopScope` whose `canPop` is the same
-`_isDirty` rule, so no path around the question exists. (A take can still
+`_isDirty` rule, read at build time — which is why the detail fields under
+*More* rebuild the form as they change — so no path around the question
+exists. (A take can still
 outlive its sheet when a route change pops the composer around the guard,
 which is why *Dictate* adopts a running take for this person rather than
 toggling it off.)

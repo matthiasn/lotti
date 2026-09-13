@@ -360,6 +360,23 @@ void main() {
     }
   }
 
+  group('CheckInFormHandle.reportBarHeight', () {
+    test('exposes the measured height and notifies once per change', () {
+      final handle = CheckInFormHandle();
+      var notified = 0;
+      handle.addListener(() => notified++);
+      expect(handle.barHeight, isNull);
+      handle.reportBarHeight(124);
+      expect(handle.barHeight, 124);
+      expect(notified, 1);
+      handle.reportBarHeight(124);
+      expect(notified, 1, reason: 'the same height is not news');
+      handle.reportBarHeight(161);
+      expect(handle.barHeight, 161);
+      expect(notified, 2);
+    });
+  });
+
   group('CheckInStickyActions.height', () {
     const tokens = dsTokensDark;
     double line(TextStyle style, double scale) =>
@@ -1622,6 +1639,71 @@ void main() {
     testWidgets('the back gesture is guarded the same way', (tester) async {
       await openSheet(tester);
       await type(tester, 'Half a thought');
+      final navigator = tester.state<NavigatorState>(
+        find.byType(Navigator).first,
+      );
+      await navigator.maybePop();
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Discard this check-in? Nothing has been saved.'),
+        findsOneWidget,
+      );
+      expect(find.byType(CheckInCaptureForm), findsOneWidget);
+    });
+
+    testWidgets('a changed chip alone is a draft: the type picked, the '
+        'close asks', (tester) async {
+      await openSheet(tester);
+      await tester.tap(find.byKey(const ValueKey('check-in-type')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-type-call')));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<DesignSystemChip>(
+              find.byKey(const ValueKey('check-in-type')),
+            )
+            .label,
+        'Call',
+      );
+
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Discard this check-in? Nothing has been saved.'),
+        findsOneWidget,
+      );
+      expect(find.byType(CheckInCaptureForm), findsOneWidget);
+    });
+
+    testWidgets('a detail edited under More re-arms the back gesture on its '
+        'own', (tester) async {
+      await openSheet(tester);
+      final more = find.byKey(const ValueKey('check-in-more'));
+      expect(more, findsOneWidget, reason: 'More row built');
+      // The pinned bar overlays the sheet's scroll, and under the wide test
+      // font it stacks Cancel and Save — taller than predicted. The form
+      // learns the measured height and reserves the slack, so scrolled to
+      // the end the fold row clears the bar and takes the tap.
+      await tester.dragFrom(tester.getCenter(narrative), const Offset(0, -600));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(more).bottom,
+        lessThanOrEqualTo(
+          tester.getRect(find.byType(CheckInStickyActions)).top,
+        ),
+      );
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      final topics = find.byKey(const ValueKey('check-in-topics'));
+      expect(topics, findsOneWidget, reason: 'More unfolded');
+      await tester.ensureVisible(topics);
+      await tester.pumpAndSettle();
+      await tester.enterText(topics, 'krill');
+      await tester.pumpAndSettle();
+
+      // Nothing else changed, so only the detail field's own listener can
+      // have told the pop guard.
       final navigator = tester.state<NavigatorState>(
         find.byType(Navigator).first,
       );
