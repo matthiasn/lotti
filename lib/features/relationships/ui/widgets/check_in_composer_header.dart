@@ -37,14 +37,17 @@ class CheckInComposerHeader extends ConsumerWidget {
   /// The toolbar height Wolt reserves: between the header's paddings, the
   /// avatar or the two text lines, whichever is taller at the reader's
   /// text scale — a large-text setting must not clip the status line.
-  /// Spelled out as its parts so it moves with the tokens, and taken from
-  /// the same [scaler] by the sheet and the header so they never disagree.
+  /// The top padding is the deeper one: on a phone the sheet draws its drag
+  /// handle across the top of this slot, and the title has to sit clear of
+  /// it. Spelled out as its parts so it moves with the tokens, and taken
+  /// from the same [scaler] by the sheet and the header so they never
+  /// disagree.
   static double height(DsTokens tokens, TextScaler scaler) {
     final lines = scaler.scale(
       tokens.typography.lineHeight.heading3 +
           tokens.typography.lineHeight.bodySmall,
     );
-    return tokens.spacing.step4 +
+    return tokens.spacing.step6 +
         math.max(tokens.spacing.step8, lines) +
         tokens.spacing.step4;
   }
@@ -63,7 +66,12 @@ class CheckInComposerHeader extends ConsumerWidget {
     return Container(
       width: double.infinity,
       height: height(tokens, MediaQuery.textScalerOf(context)),
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step6,
+        tokens.spacing.step5,
+        tokens.spacing.step4,
+      ),
       alignment: Alignment.center,
       child: Row(
         children: [

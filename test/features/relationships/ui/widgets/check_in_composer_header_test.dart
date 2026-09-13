@@ -185,7 +185,8 @@ void main() {
     final lines =
         tokens.typography.lineHeight.heading3 +
         tokens.typography.lineHeight.bodySmall;
-    final atRest = 12 + (lines > 40 ? lines : 40) + 12;
+    // step6 above (clear of the sheet's drag handle), step4 below.
+    final atRest = 24 + (lines > 40 ? lines : 40) + 12;
     expect(tester.getSize(find.byType(CheckInComposerHeader)).height, atRest);
     expect(CheckInComposerHeader.height(tokens, TextScaler.noScaling), atRest);
 
@@ -193,7 +194,7 @@ void main() {
     // the lines rather than clipping the status line.
     expect(
       CheckInComposerHeader.height(tokens, const TextScaler.linear(2)),
-      12 + lines * 2 + 12,
+      24 + lines * 2 + 12,
     );
   });
 }

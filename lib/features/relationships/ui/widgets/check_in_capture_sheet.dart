@@ -292,13 +292,13 @@ Future<CheckInEntry?> _showComposer({
   }
 }
 
-/// Room under the form for the pinned action bar, so the last field can
-/// scroll fully above it.
+/// Air between the pinned header and the field, and room under the form
+/// for the pinned action bar, so the last field can scroll fully above it.
 EdgeInsets _formPadding(BuildContext context) {
   final tokens = context.designTokens;
   return EdgeInsets.fromLTRB(
     tokens.spacing.step5,
-    tokens.spacing.step2,
+    tokens.spacing.step4,
     tokens.spacing.step5,
     tokens.spacing.step11 + tokens.spacing.step6,
   );
