@@ -174,8 +174,9 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Named, not live: the header's status line announces recording
+        // and paused, so a reader hears each transition once.
         Semantics(
-          liveRegion: true,
           label: live
               ? messages.audioRecordingLive
               : paused
@@ -214,7 +215,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              LottiIcons.confirm,
+              LottiIcons.confirmCircled,
               size: IconSizes.s,
               color: tokens.colors.text.mediumEmphasis,
             ),
@@ -242,7 +243,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
               key: const ValueKey('check-in-recorder-discard'),
               label: messages.checkInDiscardRecording,
               variant: DesignSystemButtonVariant.dangerTertiary,
-              size: DesignSystemButtonSize.large,
+              size: DesignSystemButtonSize.medium,
               onPressed: _busy ? null : _discard,
             ),
             DesignSystemButton(
@@ -252,14 +253,14 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
                   : messages.audioRecordingPause,
               leadingIcon: paused ? LottiIcons.play : LottiIcons.pause,
               variant: DesignSystemButtonVariant.outlined,
-              size: DesignSystemButtonSize.large,
+              size: DesignSystemButtonSize.medium,
               onPressed: _busy ? null : () => _togglePause(state.status),
             ),
             DesignSystemButton(
               key: const ValueKey('check-in-recorder-stop'),
               label: messages.audioRecordingStop,
               leadingIcon: LottiIcons.stop,
-              size: DesignSystemButtonSize.large,
+              size: DesignSystemButtonSize.medium,
               isLoading: _busy,
               onPressed: _busy ? null : _stop,
             ),

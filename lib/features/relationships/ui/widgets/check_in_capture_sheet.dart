@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -350,7 +351,7 @@ EdgeInsets _formPadding(BuildContext context) {
           MediaQuery.textScalerOf(context),
           dialog: dialog,
         ) +
-        tokens.spacing.step5,
+        tokens.spacing.step3,
   );
 }
 
@@ -500,11 +501,7 @@ class CheckInStickyActions extends StatelessWidget {
           // Live only for the blocks the header does not already announce —
           // the header speaks for the recorder and the transcript wait.
           final reasonText = Semantics(
-            liveRegion: switch (handle.block) {
-              CheckInSaveBlock.emptyNarrative ||
-              CheckInSaveBlock.typeOrRetry => true,
-              _ => false,
-            },
+            liveRegion: handle.block == CheckInSaveBlock.emptyNarrative,
             child: Text(
               reason ?? '',
               key: const ValueKey('check-in-save-reason'),
@@ -882,10 +879,15 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final text = _narrativeController.text;
     final typed = text != _lastNarrative;
     _lastNarrative = text;
+    // Typing under a failure card is choosing to type instead: the card
+    // goes — folding into its retry row when a recording is waiting.
     if (_phase case CheckInSpeechFailed(
       :final failure,
-    ) when typed && !failure.hasRecording && text.trim().isNotEmpty) {
-      _phase = const CheckInSpeechIdle();
+      :final cardDismissed,
+    ) when typed && !cardDismissed && text.trim().isNotEmpty) {
+      _phase = failure.hasRecording
+          ? CheckInSpeechFailed(failure, cardDismissed: true)
+          : const CheckInSpeechIdle();
     }
     setState(() {});
   }
@@ -1466,7 +1468,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final day = sameMinute
         ? context.messages.journalDateNowButton
         : relationshipDayLabelOf(context, _interactionTime);
-    return '$day · ${relationshipTimeLabel(_interactionTime)}';
+    return '$day · ${relationshipTimeLabelOf(context, _interactionTime)}';
   }
 
   /// The save shortcut and its label — desktop only, where a keyboard is a
@@ -1591,7 +1593,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
             ),
           ),
         ],
-        SizedBox(height: tokens.spacing.step5),
+        SizedBox(height: tokens.spacing.step3),
         _MoreHeader(
           open: _moreOpen,
           onToggle: () => setState(() => _moreOpen = !_moreOpen),
@@ -1676,6 +1678,15 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 }
 
 /// The *More* row: the section name, what it holds, and the chevron.
+/// `a · b · c` → `[a · b · c, a · b, a]`: the caption's own separators are
+/// its rungs, whatever the language.
+List<String> _captionLadder(String caption) {
+  final parts = caption.split(' · ');
+  return [
+    for (var n = parts.length; n >= 1; n--) parts.take(n).join(' · '),
+  ];
+}
+
 class _MoreHeader extends StatelessWidget {
   const _MoreHeader({required this.open, required this.onToggle});
 
@@ -1710,13 +1721,13 @@ class _MoreHeader extends StatelessWidget {
               // rather than pushing the chevron off the row.
               if (!open)
                 Expanded(
-                  child: Text(
-                    messages.checkInMoreCaption,
+                  child: DsTieredText(
+                    // `Feeling · topics · next time` sheds a segment at a
+                    // time, so large text never slices a word in half.
+                    tiers: _captionLadder(messages.checkInMoreCaption),
                     textAlign: TextAlign.end,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
+                      color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
                 )

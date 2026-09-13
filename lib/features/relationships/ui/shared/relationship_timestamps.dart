@@ -83,9 +83,16 @@ String relationshipTimestampLabelOf(
 DateTime _dayBefore(DateTime anchor) =>
     DateTime(anchor.year, anchor.month, anchor.day - 1);
 
-/// A mono time-only label (`14:20`), used in the detail beat header where
-/// the date is already implied by the beat's position.
-String relationshipTimeLabel(DateTime at) => _hhMm(at);
+/// A time-only label in the device's own clock format — `14:20`, or
+/// `2:20 PM` where the system prefers twelve hours — for a time whose date
+/// is implied: the composer's started chip, the post-call offer, the card's
+/// last failed run. Resolved the way `DesignSystemTimeWheel` resolves it, so
+/// a chip and the wheel that edits it never disagree.
+String relationshipTimeLabelOf(BuildContext context, DateTime at) =>
+    MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay.fromDateTime(at),
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
 
 /// A mono day label without a time (`Thu 23 Jul`), for a date that is a
 /// deadline rather than an event — the summary card's next due day, the

@@ -11,6 +11,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../widget_test_utils.dart';
+
 void main() {
   final now = DateTime(2026, 8, 18, 14, 20);
 
@@ -117,10 +119,39 @@ void main() {
     });
   });
 
-  group('relationshipTimeLabel', () {
-    test('renders HH:MM with leading zeros', () {
-      expect(relationshipTimeLabel(DateTime(2026, 8, 18, 7, 9)), '07:09');
-      expect(relationshipTimeLabel(DateTime(2026, 8, 18, 14, 20)), '14:20');
+  group('relationshipTimeLabelOf', () {
+    Future<String> labelUnder(
+      WidgetTester tester, {
+      required bool alwaysUse24HourFormat,
+    }) async {
+      late String label;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              label = relationshipTimeLabelOf(
+                context,
+                DateTime(2026, 8, 18, 14, 5),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+          mediaQueryData: MediaQueryData(
+            alwaysUse24HourFormat: alwaysUse24HourFormat,
+          ),
+        ),
+      );
+      return label;
+    }
+
+    testWidgets("follows the device's clock format, as the time wheel does", (
+      tester,
+    ) async {
+      expect(await labelUnder(tester, alwaysUse24HourFormat: true), '14:05');
+      expect(
+        await labelUnder(tester, alwaysUse24HourFormat: false),
+        '2:05 PM',
+      );
     });
   });
 

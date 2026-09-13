@@ -408,11 +408,13 @@ class _QuietDisclosureLink extends StatelessWidget {
           builder: (context, highlighted) {
             final ink = highlighted ? ai.bodyText : ai.metaText;
             return ConstrainedBox(
-              constraints: BoxConstraints(minHeight: tokens.spacing.step8),
+              constraints: const BoxConstraints(
+                minHeight: TapTargets.minimum,
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: tokens.spacing.step5, color: ink),
+                  Icon(icon, size: IconSizes.s, color: ink),
                   SizedBox(width: tokens.spacing.step2),
                   Text(
                     label,
