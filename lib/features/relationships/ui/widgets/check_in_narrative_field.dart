@@ -267,6 +267,7 @@ class CheckInNarrativeField extends StatelessWidget {
                   leadingIcon: LottiIcons.refresh,
                   variant: DesignSystemButtonVariant.quiet,
                   size: DesignSystemButtonSize.medium,
+                  tapTargetSize: MaterialTapTargetSize.padded,
                   onPressed: onReRecord,
                 ),
               DesignSystemButton(
@@ -275,6 +276,7 @@ class CheckInNarrativeField extends StatelessWidget {
                 leadingIcon: LottiIcons.mic,
                 variant: DesignSystemButtonVariant.outlined,
                 size: DesignSystemButtonSize.medium,
+                tapTargetSize: MaterialTapTargetSize.padded,
                 onPressed: onAddMore,
               ),
             ] else if (collapsed)
@@ -284,6 +286,7 @@ class CheckInNarrativeField extends StatelessWidget {
                 leadingIcon: LottiIcons.refresh,
                 variant: DesignSystemButtonVariant.tertiary,
                 size: DesignSystemButtonSize.medium,
+                tapTargetSize: MaterialTapTargetSize.padded,
                 onPressed: onRetryTranscript,
               )
             // A take waiting for *Try again*, or a microphone the OS refused,
@@ -399,6 +402,7 @@ class CheckInNarrativeField extends StatelessWidget {
               label: messages.checkInTypeInstead,
               variant: DesignSystemButtonVariant.tertiary,
               size: DesignSystemButtonSize.medium,
+              tapTargetSize: MaterialTapTargetSize.padded,
               onPressed: onTypeInstead,
             ),
           ],
@@ -628,6 +632,7 @@ class _FailureCard extends StatelessWidget {
           label: secondary.label,
           variant: DesignSystemButtonVariant.tertiary,
           size: DesignSystemButtonSize.medium,
+          tapTargetSize: MaterialTapTargetSize.padded,
           onPressed: secondary.onPressed,
         ),
         if (primary != null)
@@ -636,6 +641,7 @@ class _FailureCard extends StatelessWidget {
             label: primary.label,
             leadingIcon: primary.icon,
             size: DesignSystemButtonSize.medium,
+            tapTargetSize: MaterialTapTargetSize.padded,
             onPressed: primary.onPressed,
           ),
       ],

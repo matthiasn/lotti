@@ -817,6 +817,7 @@ class _AgentCard extends StatelessWidget {
         leading: logCheckIn,
         action: DesignSystemButton(
           key: const ValueKey('relationship-brief-me'),
+          tapTargetSize: MaterialTapTargetSize.padded,
           label: messages.relationshipAgentBriefNow,
           leadingIcon: LottiIcons.aiSpark,
           onPressed: onBrief,

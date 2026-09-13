@@ -244,6 +244,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
               label: messages.checkInDiscardRecording,
               variant: DesignSystemButtonVariant.dangerTertiary,
               size: DesignSystemButtonSize.medium,
+              tapTargetSize: MaterialTapTargetSize.padded,
               onPressed: _busy ? null : _discard,
             ),
             DesignSystemButton(
@@ -254,6 +255,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
               leadingIcon: paused ? LottiIcons.play : LottiIcons.pause,
               variant: DesignSystemButtonVariant.outlined,
               size: DesignSystemButtonSize.medium,
+              tapTargetSize: MaterialTapTargetSize.padded,
               onPressed: _busy ? null : () => _togglePause(state.status),
             ),
             DesignSystemButton(
@@ -261,6 +263,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
               label: messages.audioRecordingStop,
               leadingIcon: LottiIcons.stop,
               size: DesignSystemButtonSize.medium,
+              tapTargetSize: MaterialTapTargetSize.padded,
               isLoading: _busy,
               onPressed: _busy ? null : _stop,
             ),
