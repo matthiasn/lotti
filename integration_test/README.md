@@ -6,68 +6,54 @@ Integration tests verify end-to-end functionality that cannot be adequately test
 
 ### 1. Matrix Sync Tests (`matrix_service_test.dart`)
 
-This suite contains four tests:
+The suite exercises the real Dendrite homeserver, encrypted Matrix transport,
+and per-device stores:
 
-**`Create room & join (sync v2)`** — the baseline two-device flow:
-- Two-device sync flow with real Matrix homeserver (Dendrite)
-- Room creation and encrypted room join
-- Device discovery and SAS emoji verification
-- Bidirectional message exchange (100 messages each direction, or 10 in slow network mode)
-- Self-event suppression (devices don't re-apply their own messages)
-- Message persistence to local database
+- Room creation, joining, SAS verification and bidirectional journal exchange
+  (100 entries per direction, or 10 in slow-network mode).
+- Image transfer to Bob and audio transfer to Alice, checking metadata and exact
+  media bytes in the receiver's own directory.
+- A withheld Megolm key followed by a complete Bob restart. The durable resume
+  floor survives the restart; the late key must restore the image and clear it.
+- A cold restart after Alice drains 1000 entries through the production outbox
+  (250 in slow-network mode), exercising bundled transfer and persisted markers.
+- Bob rejoining during a 600-entry outbox drain (150 in slow-network mode),
+  overlapping startup catch-up with new bundles and checking deduplication.
+- Peer repair of missing image and audio files after metadata has already
+  converged, checking both requests and the restored bytes.
 
-**`Late Megolm key survives Bob restart and clears the durable floor`** —
-Alice deliberately withholds a Megolm session from Bob, sends through the
-production outbox, and verifies that Bob records a durable resume floor without
-applying ciphertext. Bob is fully restarted on the same Matrix SDK, journal,
-settings, and sync databases, and a startup bridge proves the unresolved floor
-is retained. Alice then sends the real encrypted room key after Bob becomes
-eligible again. The restarted production queue must recover the event exactly
-once through its one-shot bootstrap re-decryption and clear the floor.
-
-**`Large-volume convergence: Bob catches up 1000 messages after cold restart`**
-(250 in slow network mode, 30-minute test timeout with a 15-minute internal
-convergence-wait budget) — Alice sends a large burst while Bob's
-client is closed; Bob then reopens with a fresh client/pipeline but the same
-persisted Matrix SDK database, journal, settings, and queue database. The
-surviving queue marker makes this a production-faithful reconnect rather than
-an artificial fresh-client bootstrap.
-
-**`Mid-burst rejoin`** — Alice pauses 40% into a 600-message burst while Bob comes online
-(150 in slow network mode, 30-minute test timeout with a 15-minute internal
-convergence-wait budget). Once Bob's startup bridge is in flight, Alice resumes the burst. This
-deterministically overlaps bridge pagination with new sends. After the startup bridge reaches the
-server's then-current end, the test runs the production full-history sweep to collect messages sent
-later without relying on a second forward walk. The `event_id UNIQUE` constraint on
-`inbound_event_queue` deduplicates events visited by both passes near the bridge boundary.
-
-**Problems this catches:**
-- Regressions in Matrix SDK integration
-- Encryption/decryption failures
-- Device verification protocol issues
-- Message ordering and deduplication bugs
-- Database persistence failures during sync
-- Race conditions in concurrent message processing
+The ordinary Matrix suite includes explicit history/retry actions in some
+convergence helpers. Use the resilience suite below to check recovery without
+those test-driven actions.
 
 ### 2. Sync Resilience Tests (`sync_resilience_test.dart`)
 
-Tests sync behavior under adverse network conditions using Toxiproxy.
+Tests automatic sync recovery under adverse network conditions using Toxiproxy.
+Alice and Bob have separate documents directories, Matrix stores, journal,
+settings and sync databases. Fixtures go through the real outbox, which records
+sender sequence history; both devices run the production backfill request and
+response services. Device host IDs match their vector-clock keys. Receiver assertions poll database state only;
+there are no calls to `forceRescan()` or `retryNow()` to make delivery succeed.
+Each scenario compares exact entries (including text, timestamps and vector
+clocks) and the JSON attachment bytes downloaded into Bob's directory against
+Alice's originals. Neither device may find attachments in the global directory.
+These real-network tests use bounded wall-clock waits under the real-I/O
+exception in [the fake-time policy](../test/README.md#fake-time-policy).
 
 #### Test Cases:
 
 | Test | Scenario | What It Verifies |
 |------|----------|------------------|
 | Network interruption during sync | Alice sends messages, network is cut mid-way, then restored | Messages sent while offline eventually sync after reconnection |
-| High latency | 2000ms latency added to all network calls | Sync completes correctly despite slow responses |
-| Bandwidth throttling | Network limited to 50 KB/s | Large payloads sync without data loss or corruption |
+| High latency | 2000ms added to Bob’s downstream traffic | Sync completes correctly despite slow responses |
+| Bandwidth throttling | Network limited to 50 KB/s | Large, poorly compressible JSON attachments sync without data loss or corruption |
 | Multiple network interruptions | Network toggled on/off multiple times during sync | Eventual consistency after repeated disruptions |
 
 **Problems this catches:**
-- Sync failures after device wake from sleep/standby
-- Message loss during network transitions (WiFi ↔ cellular)
-- Retry logic failures
-- Catch-up mechanism bugs after extended offline periods
-- Circuit breaker misbehavior
+- Entries missed while the receiver is offline
+- Recovery that depends on a manual rescan or retry
+- Stalled delivery under latency or bandwidth limits
+- Corrupted payloads and accidental sharing of device files
 
 ### 3. Home Integration Test (`home_integration_test.dart`)
 
@@ -165,6 +151,9 @@ project root.
    ```
    This script creates four temporary user pairs in docker and runs
    `sync_resilience_test.dart` with `TEST_USER1` through `TEST_USER8`.
+   MCP/IDE runners can supply the same names as process environment variables;
+   Dart defines take precedence. All eight users are required, so a missing
+   pair cannot silently reuse shared fallback accounts.
 
 4. **Run with simulated bad network:**
    ```shell
@@ -184,29 +173,24 @@ The run scripts create dedicated test users on the Dendrite server. Each resilie
 - `run_matrix_tests.sh` independently provisions its own freshly-created users and passes
   them as `TEST_USER1`/`TEST_USER2` for the standalone Matrix sync test.
 
-### Performance Expectations
+### Runtime budgets
 
-The individual figures below describe the baseline `Create room & join` test
-(which itself carries a 15-minute timeout). The complete degraded Matrix suite,
-including its Linux rebuild, is expected to stay below five minutes; the
-production-faithful persisted-marker run measured 4m40s locally. The
-`Large-volume convergence` (1000-message cold restart) and `Mid-burst rejoin`
-(600-message) tests each retain a 30-minute test timeout with a 15-minute
-internal per-wait convergence budget so a real regression still has room to
-produce useful diagnostics.
+Runtime depends on native build caching, host load and the injected network
+fault. The resilience cases allow five minutes each, except repeated outages
+(eight minutes); their final delivery observation allows three minutes.
 
-| Mode | Matrix Sync Test (baseline) | Resilience Tests |
-|------|-----------------------------|------------------|
-| Normal network | ~50s | ~2-3 min per test |
-| Degraded network | ~1m 25s | ~5-8 min per test |
+The Matrix baseline, late-key restart and peer-repair cases allow 15 minutes.
+The individual image/audio cases allow five minutes. Cold-restart and mid-drain
+convergence allow 30 minutes, with 15-minute internal convergence waits.
+These are failure bounds, not expected runtimes.
 
 ## Test Helpers
 
 Shared test utilities live in `integration_test/helpers/`:
 
 - **`sync_test_helpers.dart`** - Common utilities for Matrix sync tests:
-  - `createMatrixService()` - Factory for test MatrixService instances
-  - `sendTestMessage()` - Send a test journal entry via Matrix
+  - `createSyncTestDevice()` - Real Matrix, queue, outbox and backfill wiring
+  - `sendTestMessage()` - Persist a fixture, enqueue it and observe outbox completion
   - `createTestEntry()` - Create a test journal entry
   - `extractEmojiString()` - Extract emojis from verification flow
   - `waitUntil()` / `waitUntilAsync()` - Polling helpers with timeout
@@ -217,15 +201,12 @@ Shared test utilities live in `integration_test/helpers/`:
   - `limitBandwidth()` - Throttle throughput
   - `disconnect()` / `reconnect()` - Toggle connectivity
 
-## Confidence Gained
+## Scope
 
-These integration tests provide confidence that:
-
-1. **Multi-device sync works end-to-end** - Real Matrix protocol, real encryption, real database writes
-2. **Sync is resilient to real-world network conditions** - Handles the messy reality of mobile networks
-3. **Device verification is functional** - The security-critical emoji SAS flow works correctly
-4. **Recovery mechanisms work** - Catch-up, retry, and circuit breaker logic behaves correctly
-5. **No message loss under stress** - All messages eventually sync, even under adverse conditions
+These suites exercise encrypted transport, persistence, attachment transfer
+and selected recovery paths. Toxiproxy faults simulate network conditions;
+they do not simulate operating-system sleep or prove every network failure
+mode. The explicit assertions in each scenario define its guarantee.
 
 ## See Also
 

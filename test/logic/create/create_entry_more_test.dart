@@ -28,6 +28,7 @@ import '../../features/agents/test_utils.dart';
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
+import '../../test_data/test_data.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
@@ -125,92 +126,67 @@ void main() {
       clearInteractions(mockTimeService);
       clearInteractions(mockOutboxService);
       clearInteractions(mockNavService);
+      clearInteractions(mockGeolocationService);
       await tearDownTestGetIt();
       await journalDb.close();
       await settingsDb.close();
     });
 
-    test('createScreenshot creates image entry with geolocation', () async {
-      // This test may skip on platforms without screenshot capabilities
-      try {
-        final entry = await createScreenshot();
-
-        expect(entry, isNotNull);
-        expect(entry, isA<JournalImage>());
-
-        final imageEntry = entry!;
-        expect((imageEntry as JournalImage).data.imageId, isNotEmpty);
-        expect(imageEntry.data.imageFile, isNotEmpty);
-      } catch (e) {
-        // Screenshot functionality may not be available in test environment
-        // This is acceptable - the important thing is the function doesn't crash
-        expect(
-          e.toString(),
-          anyOf(
-            contains('Unsupported'),
-            contains('screenshot'),
-            contains('command'),
-            contains('portal'),
-            contains('MissingPluginException'),
-          ),
+    test(
+      'createScreenshot persists captured data and requests geolocation',
+      () async {
+        final entry = await createScreenshot(
+          capture: () async => testImageEntry.data,
         );
-      }
-    });
+        expect(entry, isA<JournalImage>());
+        final image = entry! as JournalImage;
+        expect(image.data, testImageEntry.data);
+        expect(image.meta.dateFrom, testImageEntry.data.capturedAt);
+        expect(image.meta.dateTo, testImageEntry.data.capturedAt);
+        expect(await journalDb.journalEntityById(image.meta.id), image);
+        verify(
+          () => mockGeolocationService.addGeolocation(
+            image.meta.id,
+            getIt<PersistenceLogic>().updateDbEntity,
+          ),
+        ).called(1);
+      },
+    );
 
-    test('createScreenshot with linkedId creates linked image entry', () async {
+    test('createScreenshot persists the link to its parent', () async {
       final parent = await createTextEntry();
       expect(parent, isNotNull);
-
-      try {
-        final screenshot = await createScreenshot(linkedId: parent!.meta.id);
-
-        expect(screenshot, isNotNull);
-        expect(screenshot, isA<JournalImage>());
-
-        // Verify link exists
-        final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
-          parent.meta.id,
-        );
-        expect(
-          linkedEntities.any((e) => e.meta.id == screenshot!.meta.id),
-          true,
-        );
-      } catch (e) {
-        // Screenshot functionality may not be available in test environment
-        expect(
-          e.toString(),
-          anyOf(
-            contains('Unsupported'),
-            contains('screenshot'),
-            contains('command'),
-            contains('portal'),
-            contains('MissingPluginException'),
-          ),
-        );
-      }
+      final screenshot = await createScreenshot(
+        linkedId: parent!.meta.id,
+        capture: () async => testImageEntry.data,
+      );
+      expect(screenshot, isA<JournalImage>());
+      final linked = await journalDb.getLinkedEntities(parent.meta.id);
+      expect(linked.map((e) => e.meta.id), [screenshot!.meta.id]);
+      expect((linked.single as JournalImage).data, testImageEntry.data);
     });
 
-    test('createScreenshot with categoryId sets category', () async {
-      const testCategoryId = 'screenshot-category-123';
+    test('createScreenshot persists the selected category', () async {
+      const categoryId = 'screenshot-category-123';
+      final screenshot = await createScreenshot(
+        categoryId: categoryId,
+        capture: () async => testImageEntry.data,
+      );
+      expect(screenshot?.categoryId, categoryId);
+      final saved = await journalDb.journalEntityById(screenshot!.meta.id);
+      expect(saved?.categoryId, categoryId);
+      expect((saved! as JournalImage).data, testImageEntry.data);
+    });
 
-      try {
-        final screenshot = await createScreenshot(categoryId: testCategoryId);
-
-        expect(screenshot, isNotNull);
-        expect(screenshot?.categoryId, testCategoryId);
-      } catch (e) {
-        // Screenshot functionality may not be available in test environment
-        expect(
-          e.toString(),
-          anyOf(
-            contains('Unsupported'),
-            contains('screenshot'),
-            contains('command'),
-            contains('portal'),
-            contains('MissingPluginException'),
-          ),
-        );
-      }
+    test('a capture failure creates no entry or geolocation request', () async {
+      final error = StateError('capture failed');
+      final before = await journalDb.select(journalDb.journal).get();
+      await expectLater(
+        createScreenshot(capture: () async => throw error),
+        throwsA(same(error)),
+      );
+      expect(await journalDb.select(journalDb.journal).get(), before);
+      verifyZeroInteractions(mockGeolocationService);
     });
 
     test('createTask inherits defaultProfileId from category', () async {

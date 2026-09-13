@@ -216,6 +216,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
+import 'package:lotti/utils/screenshots.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
@@ -1650,3 +1651,9 @@ class MockRelationshipProposalService extends Mock
     implements RelationshipProposalService {}
 
 class MockPlazaRepository extends Mock implements PlazaRepository {}
+
+class MockScreenshotHost extends Mock implements ScreenshotHost {}
+
+class MockProcess extends Mock implements io.Process {}
+
+class MockStdout extends Mock implements io.Stdout {}

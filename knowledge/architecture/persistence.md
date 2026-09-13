@@ -5,9 +5,13 @@ description: The eleven Drift/SQLite databases, attachment storage, how connecti
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T19:28:47Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T12:25:00Z }
 stale_after: 2027-03-05
 sources:
+  - id: screenshot-capture
+    resource: ../../lib/utils/screenshots.dart
+    title: Screenshot capture and process timeout
+    last_modified: 2026-09-13
   - id: sync-db
     resource: ../../lib/database/sync_db.dart
     title: SyncDatabase
@@ -602,6 +606,14 @@ separators, for example `/images/2026-08-15/`. It is not an absolute filesystem
 path. Writers strip the metadata-only leading separator and construct physical
 paths with `path.join`; AI image readers resolve only this canonical location
 inside the documents directory.
+
+`takeScreenshot` uses `ScreenshotHost` for commands, portal access and window
+operations, with `clock.now()` supplying the capture date. The command timeout
+covers output draining and process exit together; timeout kills the process,
+and a `finally` block restores the window. A restoration error is logged without
+replacing the capture result or original error. `createScreenshot` accepts an
+optional capture callback and persists the returned metadata through
+`JournalRepository.createImageEntry` before requesting geolocation.
 
 A legacy screenshot writer persisted `images/...` and concatenated it directly
 to the documents path. A profile rooted at `Documents` therefore wrote the file

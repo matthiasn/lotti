@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
@@ -12,10 +13,57 @@ import 'package:lotti/utils/screenshot_consts.dart';
 import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
+/// Operating-system boundary for screenshot capture.
+///
+/// Keeping these effects together lets callers exercise capture and recovery
+/// without launching desktop tools or changing the real application window.
+class ScreenshotHost {
+  const ScreenshotHost();
+
+  String get operatingSystem => Platform.operatingSystem;
+  bool get shouldUsePortal => PortalService.shouldUsePortal;
+
+  Future<bool> isPortalAvailable() => ScreenshotPortalService.isAvailable();
+
+  Future<String?> captureWithPortal({
+    required String directory,
+    required String filename,
+  }) => ScreenshotPortalService().takeScreenshot(
+    directory: directory,
+    filename: filename,
+    interactive: true,
+  );
+
+  Future<String> createDirectory(String relativePath) =>
+      createAssetDirectory(relativePath);
+
+  Future<void> minimizeWindow() => windowManager.minimize();
+  Future<void> showWindow() => windowManager.show();
+
+  Future<ProcessResult> run(String command, List<String> arguments) =>
+      Process.run(command, arguments);
+
+  Future<Process> start(
+    String command,
+    List<String> arguments, {
+    required String workingDirectory,
+  }) => Process.start(command, arguments, workingDirectory: workingDirectory);
+
+  Future<void> forwardOutput(Process process) async {
+    await Future.wait<void>([
+      stdout.addStream(process.stdout),
+      stderr.addStream(process.stderr),
+    ]);
+  }
+}
+
 /// Checks if a command is available on the system
-Future<bool> isCommandAvailable(String command) async {
+Future<bool> isCommandAvailable(
+  String command, {
+  ScreenshotHost host = const ScreenshotHost(),
+}) async {
   try {
-    final result = await Process.run(whichCommand, [command]);
+    final result = await host.run(whichCommand, [command]);
     return result.exitCode == successExitCode;
   } catch (e) {
     return false;
@@ -23,9 +71,11 @@ Future<bool> isCommandAvailable(String command) async {
 }
 
 /// Finds the first available screenshot tool on Linux
-Future<String?> findAvailableScreenshotTool() async {
+Future<String?> findAvailableScreenshotTool({
+  ScreenshotHost host = const ScreenshotHost(),
+}) async {
   for (final tool in linuxScreenshotTools) {
-    if (await isCommandAvailable(tool)) {
+    if (await isCommandAvailable(tool, host: host)) {
       return tool;
     }
   }
@@ -36,8 +86,9 @@ Future<String?> findAvailableScreenshotTool() async {
 Future<void> takeLinuxScreenshot(
   String tool,
   String filename,
-  String directory,
-) async {
+  String directory, {
+  ScreenshotHost host = const ScreenshotHost(),
+}) async {
   final config = screenshotToolConfigs[tool];
   if (config == null) {
     throw Exception('$unsupportedToolMessage$tool');
@@ -45,23 +96,16 @@ Future<void> takeLinuxScreenshot(
 
   final arguments = [...config.arguments, filename];
 
-  final process = await Process.start(
+  final process = await host.start(
     tool,
     arguments,
     workingDirectory: directory,
   );
 
-  await stdout.addStream(process.stdout);
-  await stderr.addStream(process.stderr);
-
-  final exitCode = await process.exitCode.timeout(
-    const Duration(seconds: screenshotProcessTimeoutSeconds),
-    onTimeout: () {
-      process.kill();
-      throw Exception(
-        '$toolFailedMessage$tool timed out after ${screenshotProcessTimeoutSeconds}s',
-      );
-    },
+  final exitCode = await _waitForCaptureProcess(
+    process,
+    host,
+    '$toolFailedMessage$tool timed out after ${screenshotProcessTimeoutSeconds}s',
   );
 
   if (exitCode != successExitCode) {
@@ -77,24 +121,24 @@ String screenshotRelativePath(DateTime created) {
   return '${p.posix.join(screenshotDirectoryPath, day)}/';
 }
 
-Future<ImageData> takeScreenshot() async {
+/// Captures an image and restores the window even if capture fails.
+Future<ImageData> takeScreenshot({
+  ScreenshotHost host = const ScreenshotHost(),
+}) async {
   try {
     final id = uuid.v1();
     final filename = '$id$screenshotFileExtension';
-    final created = DateTime.now();
+    final created = clock.now();
     final relativePath = screenshotRelativePath(created);
-    final directory = await createAssetDirectory(relativePath);
+    final directory = await host.createDirectory(relativePath);
 
     // Check if we should use portal (Flatpak environment)
-    if (Platform.isLinux && PortalService.shouldUsePortal) {
-      final portalService = ScreenshotPortalService();
-
+    if (host.operatingSystem == 'linux' && host.shouldUsePortal) {
       // Check if portal is available
-      if (await ScreenshotPortalService.isAvailable()) {
-        final screenshotPath = await portalService.takeScreenshot(
+      if (await host.isPortalAvailable()) {
+        final screenshotPath = await host.captureWithPortal(
           directory: directory,
           filename: filename,
-          interactive: true,
         );
 
         if (screenshotPath != null) {
@@ -118,34 +162,27 @@ Future<ImageData> takeScreenshot() async {
       );
     }
 
-    await windowManager.minimize();
+    await host.minimizeWindow();
     await Future<void>.delayed(const Duration(seconds: screenshotDelaySeconds));
 
-    if (Platform.isMacOS) {
-      final process = await Process.start(
+    if (host.operatingSystem == 'macos') {
+      final process = await host.start(
         screencaptureTool,
         [...screencaptureArguments, filename],
         workingDirectory: directory,
       );
 
-      await stdout.addStream(process.stdout);
-      await stderr.addStream(process.stderr);
-
-      final exitCode = await process.exitCode.timeout(
-        const Duration(seconds: screenshotProcessTimeoutSeconds),
-        onTimeout: () {
-          process.kill();
-          throw Exception(
-            'macOS screencapture timed out after ${screenshotProcessTimeoutSeconds}s',
-          );
-        },
+      final exitCode = await _waitForCaptureProcess(
+        process,
+        host,
+        'macOS screencapture timed out after ${screenshotProcessTimeoutSeconds}s',
       );
 
       if (exitCode != successExitCode) {
         throw Exception('$screencaptureFailedMessage$exitCode');
       }
-    } else if (Platform.isLinux) {
-      final availableTool = await findAvailableScreenshotTool();
+    } else if (host.operatingSystem == 'linux') {
+      final availableTool = await findAvailableScreenshotTool(host: host);
 
       if (availableTool == null) {
         final availableTools = linuxScreenshotTools.join(', ');
@@ -155,10 +192,10 @@ Future<ImageData> takeScreenshot() async {
         );
       }
 
-      await takeLinuxScreenshot(availableTool, filename, directory);
+      await takeLinuxScreenshot(availableTool, filename, directory, host: host);
     } else {
       throw UnsupportedError(
-        '$unsupportedPlatformMessage${Platform.operatingSystem}',
+        '$unsupportedPlatformMessage${host.operatingSystem}',
       );
     }
 
@@ -180,7 +217,7 @@ Future<ImageData> takeScreenshot() async {
   } finally {
     // Always restore the window, regardless of success or failure
     try {
-      await windowManager.show();
+      await host.showWindow();
     } catch (e) {
       // Log but don't rethrow window restoration errors
       getIt<DomainLogger>().error(
@@ -190,4 +227,24 @@ Future<ImageData> takeScreenshot() async {
       );
     }
   }
+}
+
+/// Bounds the whole process wait, including streams a hung process leaves open.
+Future<int> _waitForCaptureProcess(
+  Process process,
+  ScreenshotHost host,
+  String timeoutMessage,
+) async {
+  final exitCode = process.exitCode;
+  await Future.wait<Object?>([
+    host.forwardOutput(process),
+    exitCode,
+  ]).timeout(
+    const Duration(seconds: screenshotProcessTimeoutSeconds),
+    onTimeout: () {
+      process.kill();
+      throw Exception(timeoutMessage);
+    },
+  );
+  return exitCode;
 }
