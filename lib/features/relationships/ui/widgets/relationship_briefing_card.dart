@@ -798,10 +798,13 @@ class _AgentCard extends StatelessWidget {
       // coverage:ignore-end
     };
 
+    // The quiet text actions start the footer's row: their label sits on
+    // the card's content column, not a button inset in from it.
     final logCheckIn = DesignSystemButton(
       key: const ValueKey('relationship-agent-log-check-in'),
       label: messages.relationshipLogCheckIn,
       variant: DesignSystemButtonVariant.tertiary,
+      alignsLabelToLeadingEdge: true,
       onPressed: onLogCheckIn,
     );
     final updateNow = DesignSystemButton(
@@ -829,6 +832,7 @@ class _AgentCard extends StatelessWidget {
           key: const ValueKey('relationship-agent-see-activity'),
           label: messages.relationshipAgentSeeActivity,
           variant: DesignSystemButtonVariant.tertiary,
+          alignsLabelToLeadingEdge: true,
           onPressed: onOpenInternals,
         ),
         action: modelMissing

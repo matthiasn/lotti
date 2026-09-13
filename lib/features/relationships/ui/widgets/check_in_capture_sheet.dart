@@ -1294,7 +1294,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           onOpenSettings: _openSettings,
           onDismissFailure: _typeInstead,
         ),
-        SizedBox(height: tokens.spacing.step4),
+        SizedBox(height: tokens.spacing.step5),
         CheckInContextChips(
           type: _interactionType,
           startedLabel: _startedLabel(context),

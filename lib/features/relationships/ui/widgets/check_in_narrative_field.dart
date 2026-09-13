@@ -562,7 +562,9 @@ class _FailureCard extends StatelessWidget {
 
     return Container(
       key: const ValueKey('check-in-speech-failure'),
-      padding: EdgeInsets.all(tokens.spacing.step5),
+      // One step lighter than the field's own inset around it, so the card
+      // reads as a note inside the field rather than a second field.
+      padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(
         color: Color.alphaBlend(
           tone.withValues(alpha: SurfaceAlphas.tint),
