@@ -14,9 +14,13 @@ import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  // Phone-width geometry must use the shipped fonts in standalone and bundled
+  // runs; the default test font gives the labels different widths.
+  setUpAll(loadAppFonts);
   const entryId = 'task-id-bar-test';
 
   Future<void> pumpBar(

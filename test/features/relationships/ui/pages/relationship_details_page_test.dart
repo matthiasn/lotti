@@ -743,6 +743,7 @@ void main() {
             ),
           ),
         ),
+        mediaQueryData: phoneMediaQueryData,
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
           relationshipAgentServiceProvider.overrideWithValue(mockAgentService),

@@ -42,6 +42,34 @@ to a generic tree-build check.
 Theme and localization wiring is documented in
 [design tokens and theming](../knowledge/features/design_system/tokens-and-theming.md#standalone-material-and-legacy-dependencies).
 
+## Shared widget hosts and large suites
+
+Import `widget_test_utils.dart` for the stable shared API. Its implementations
+live in `helpers/test_app.dart` (app hosts and themes), `test_get_it.dart`
+(services), `test_view.dart` (surface size), `paint_position_recorder.dart`
+(paint offsets), and `widget_assertions.dart` (style assertions).
+
+App hosts derive MediaQuery from the actual rendered constraints by default,
+including the binding’s legacy `setSurfaceSize` override. Prefer
+`setTestSurfaceSize` or an explicit device fixture; do not combine conflicting
+viewport overrides. To exercise
+phone layout, pass `phoneMediaQueryData` or an explicit device fixture:
+`mediaQueryData` with a nonzero size configures both logical MediaQuery size and
+physical render dimensions, including device pixel ratio. View overrides reset
+in teardown. Flags-only fixtures such as reduced motion inherit the current
+viewport. Scaffold hosts bound nested pages and lists by the available viewport, without
+an additional 800-pixel cap.
+Caller-supplied theme extensions survive automatic design-token installation.
+The harness contracts live in `widget_test_utils_test.dart`.
+
+Large suites can keep one discoverable `_test.dart` entry point while moving
+scenario registration into named Dart `part` files. The journal controller
+suite demonstrates this under `features/journal/state/journal_page_controller_cases/`:
+the entry point owns imports, shared fixtures, setup and group boundaries; each
+part registers a related set of scenarios. Parts are not independently
+executable and must not use the `_test.dart` suffix. Compare discovered test
+names before and after a move to catch omissions or duplicate registration.
+
 ## Shared process state
 
 The optimized CI runner executes many test files in one isolate.

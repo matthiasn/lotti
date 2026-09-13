@@ -5,6 +5,21 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../../widget_test_utils.dart';
 
+RRect _track(double width) => RRect.fromRectAndRadius(
+  Rect.fromLTWH(0, 15.5, width, 5),
+  const Radius.circular(2.5),
+);
+
+void Function(Canvas) _paintBar(WidgetTester tester) {
+  final finder = find.descendant(
+    of: find.byType(AudioProgressBar),
+    matching: find.byType(CustomPaint),
+  );
+  final painter = tester.widget<CustomPaint>(finder).painter!;
+  final size = tester.getSize(finder);
+  return (canvas) => painter.paint(canvas, size);
+}
+
 void main() {
   group('AudioProgressBar widget', () {
     late List<Duration> seekCalls;
@@ -46,8 +61,13 @@ void main() {
 
     testWidgets('renders with zero progress', (WidgetTester tester) async {
       await pumpProgressBar(tester);
-      expect(find.byType(AudioProgressBar), findsOneWidget);
-      expect(find.byType(RepaintBoundary), findsWidgets);
+      expect(_paintBar(tester), paintsExactlyCountTimes(#drawRRect, 1));
+      expect(
+        _paintBar(tester),
+        paints
+          ..circle()
+          ..circle(x: 9, y: 18, radius: 9),
+      );
     });
 
     testWidgets('renders compact variant', (WidgetTester tester) async {
@@ -87,7 +107,13 @@ void main() {
         buffered: const Duration(minutes: 2),
       );
 
-      expect(find.byType(AudioProgressBar), findsOneWidget);
+      expect(
+        _paintBar(tester),
+        paints
+          ..rrect(rrect: _track(400))
+          ..rrect(rrect: _track(160))
+          ..rrect(rrect: _track(40)),
+      );
     });
 
     testWidgets('tapping seeks to position', (WidgetTester tester) async {
@@ -198,29 +224,36 @@ void main() {
       expect(seekCalls.isNotEmpty, true);
     });
 
-    testWidgets('drag end flushes pending seek', (WidgetTester tester) async {
-      await pumpProgressBar(
-        tester,
-        total: const Duration(seconds: 100),
+    for (final cancel in [false, true]) {
+      testWidgets(
+        'drag ${cancel ? 'cancel' : 'end'} flushes exactly the pending seek',
+        (
+          tester,
+        ) async {
+          await pumpProgressBar(tester, total: const Duration(seconds: 100));
+          final rect = tester.getRect(find.byType(AudioProgressBar));
+          final gesture = await tester.startGesture(rect.centerLeft);
+          await gesture.moveBy(const Offset(40, 0));
+          expect(seekCalls, [const Duration(seconds: 10)]);
+          await gesture.moveTo(Offset(rect.left + 320, rect.center.dy));
+          expect(seekCalls, [const Duration(seconds: 10)]);
+          if (cancel) {
+            await gesture.cancel();
+          } else {
+            await gesture.up();
+          }
+          expect(seekCalls, [
+            const Duration(seconds: 10),
+            const Duration(seconds: 80),
+          ]);
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(seekCalls, [
+            const Duration(seconds: 10),
+            const Duration(seconds: 80),
+          ], reason: 'ending the gesture must cancel the pending timer');
+        },
       );
-
-      final progressBar = find.byType(AudioProgressBar);
-      final rect = tester.getRect(progressBar);
-
-      final gesture = await tester.startGesture(rect.centerLeft);
-      await tester.pump(const Duration(milliseconds: 10));
-
-      await gesture.moveBy(Offset(rect.width / 4, 0));
-      await tester.pump(const Duration(milliseconds: 10));
-
-      final seekCountBeforeEnd = seekCalls.length;
-
-      await gesture.up();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Should have flushed any pending seek on drag end
-      expect(seekCalls.length, greaterThanOrEqualTo(seekCountBeforeEnd));
-    });
+    }
 
     testWidgets('uses default semantic label', (WidgetTester tester) async {
       await pumpProgressBar(
@@ -360,8 +393,12 @@ void main() {
         total: const Duration(seconds: 100),
       );
 
-      // Should render without errors
-      expect(find.byType(AudioProgressBar), findsOneWidget);
+      expect(
+        _paintBar(tester),
+        paints
+          ..rrect(rrect: _track(400))
+          ..rrect(rrect: _track(400)),
+      );
     });
 
     testWidgets('clamps buffered ratio between 0 and 1', (
@@ -374,8 +411,12 @@ void main() {
         total: const Duration(seconds: 100),
       );
 
-      // Should render without errors
-      expect(find.byType(AudioProgressBar), findsOneWidget);
+      expect(
+        _paintBar(tester),
+        paints
+          ..rrect(rrect: _track(400))
+          ..rrect(rrect: _track(400)),
+      );
     });
 
     testWidgets('handles zero width gracefully', (WidgetTester tester) async {
@@ -397,14 +438,18 @@ void main() {
         ),
       );
 
-      // Tap should not crash, should return Duration.zero
       final progressBar = find.byType(AudioProgressBar);
-      await tester.tap(progressBar, warnIfMissed: false);
-      await tester.pump();
-
-      if (seekCalls.isNotEmpty) {
-        expect(seekCalls.first, Duration.zero);
-      }
+      expect(tester.getSize(progressBar).width, 0);
+      // A zero-width target cannot be hit by a pointer. Exercise the installed
+      // callback directly to prove its degenerate-coordinate contract.
+      final detector = tester.widget<GestureDetector>(
+        find.descendant(
+          of: progressBar,
+          matching: find.byType(GestureDetector),
+        ),
+      );
+      detector.onTapDown!(TapDownDetails(localPosition: Offset.zero));
+      expect(seekCalls, [Duration.zero]);
     });
 
     testWidgets('gesture detector not present when disabled', (
@@ -439,25 +484,23 @@ void main() {
       expect(gestures, findsNothing);
     });
 
-    testWidgets('drag cancel cleans up state', (WidgetTester tester) async {
-      await pumpProgressBar(
-        tester,
-        total: const Duration(seconds: 100),
-      );
-
-      final progressBar = find.byType(AudioProgressBar);
-      final rect = tester.getRect(progressBar);
-
+    testWidgets('a seek after the throttle deadline emits immediately', (
+      tester,
+    ) async {
+      await pumpProgressBar(tester, total: const Duration(seconds: 100));
+      final rect = tester.getRect(find.byType(AudioProgressBar));
       final gesture = await tester.startGesture(rect.centerLeft);
-      await gesture.moveBy(Offset(rect.width / 4, 0));
-      await tester.pump(const Duration(milliseconds: 10));
-
-      // Cancel the gesture
-      await gesture.cancel();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Should not crash
-      expect(find.byType(AudioProgressBar), findsOneWidget);
+      await gesture.moveBy(const Offset(40, 0));
+      expect(seekCalls, [const Duration(seconds: 10)]);
+      await tester.pump(const Duration(milliseconds: 60));
+      await gesture.moveTo(Offset(rect.left + 80, rect.center.dy));
+      final beforeEnd = List<Duration>.of(seekCalls);
+      await gesture.up();
+      await tester.pump();
+      expect(beforeEnd, [
+        const Duration(seconds: 10),
+        const Duration(seconds: 20),
+      ]);
     });
 
     testWidgets(

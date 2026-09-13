@@ -557,11 +557,12 @@ void main() {
       final purgeButton = find.text('Purge deleted items').first;
       expect(purgeButton, findsOneWidget);
       await tester.ensureVisible(purgeButton);
+      await tester.pump();
       await tester.tap(purgeButton);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Purge deleted items'), findsAtLeastNWidgets(1));
+      expect(find.text('Yes, purge all'), findsOneWidget);
     });
 
     testWidgets('recreate fts5 button opens fts5 recreate modal', (
@@ -576,6 +577,7 @@ void main() {
       final recreateButton = find.text('Recreate full-text index').first;
       expect(recreateButton, findsOneWidget);
       await tester.ensureVisible(recreateButton);
+      await tester.pump();
       await tester.tap(recreateButton);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

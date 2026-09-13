@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -248,40 +249,58 @@ void main() {
       },
     );
 
-    test(
-      'verify() against a request that times out lands on failedNetwork — '
-      'no HTTP status to report, just the timeout message',
-      () async {
+    test('timeout occurs at the deadline and ignores a late response', () {
+      fakeAsync((async) {
+        final response = Completer<http.Response>();
         final container = _makeContainer(
-          client: MockClient((req) async {
-            // Never resolve — the verifier's timeout fires first.
-            await Future<void>.delayed(const Duration(seconds: 5));
-            return http.Response('', 200);
-          }),
+          client: MockClient((_) => response.future),
           timeout: const Duration(milliseconds: 50),
         );
-        addTearDown(container.dispose);
-        addTearDown(_keepAlive(container, InferenceProviderType.gemini));
-        await container
-            .read(
-              connectionVerifierControllerProvider(
-                InferenceProviderType.gemini,
-              ).notifier,
-            )
-            .verify(
-              baseUrl: 'https://generativelanguage.googleapis.com',
-              apiKey: 'AIza-test',
-            );
-        final state = _readState(container, InferenceProviderType.gemini);
-        expect(state, isA<ConnectionCheckFailedNetwork>());
-        // The UI maps `timeout` to a localized "Request timed out" detail,
-        // so the service must surface the code for the dispatch to work.
-        expect(
-          (state as ConnectionCheckFailedNetwork).code,
-          ConnectionFailureCode.timeout,
-        );
-      },
-    );
+        final release = _keepAlive(container, InferenceProviderType.gemini);
+        try {
+          var completed = false;
+          unawaited(
+            container
+                .read(
+                  connectionVerifierControllerProvider(
+                    InferenceProviderType.gemini,
+                  ).notifier,
+                )
+                .verify(
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  apiKey: 'AIza-test',
+                )
+                .then((_) => completed = true),
+          );
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 49));
+          expect(completed, isFalse);
+          expect(
+            _readState(container, InferenceProviderType.gemini),
+            isA<ConnectionCheckChecking>(),
+          );
+          async.elapse(const Duration(milliseconds: 1));
+          expect(completed, isTrue);
+          final failed = _readState(container, InferenceProviderType.gemini);
+          expect(failed, isA<ConnectionCheckFailedNetwork>());
+          expect(
+            (failed as ConnectionCheckFailedNetwork).code,
+            ConnectionFailureCode.timeout,
+          );
+          response.complete(http.Response('{"data": []}', 200));
+          async.flushMicrotasks();
+          expect(
+            _readState(container, InferenceProviderType.gemini),
+            same(failed),
+          );
+        } finally {
+          release();
+          container.dispose();
+          async.flushMicrotasks();
+        }
+      });
+    });
 
     test(
       'verify() against a malformed JSON body lands on failedNetwork — '

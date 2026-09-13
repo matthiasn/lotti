@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/file_uploads/design_system_file_upload.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_file_upload_widgetbook.dart';
+import 'package:material_ui/material_ui.dart';
 
+import '../../../widget_test_utils.dart';
 import 'widgetbook_test_helpers.dart';
 
 void main() {
@@ -9,6 +11,8 @@ void main() {
     testWidgets('renders the overview page with all variants', (
       tester,
     ) async {
+      // This catalogue contract inspects both sections in the same viewport.
+      setTestSurfaceSize(tester, const Size(800, 1000));
       await pumpWidgetbookOverview(
         tester,
         buildDesignSystemFileUploadWidgetbookComponent(),

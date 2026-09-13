@@ -88,6 +88,7 @@ void main() {
             onOpenPlaza: () => requests++,
             isSaving: saving,
           ),
+          size: const Size(800, 900),
         );
         await tester.pumpWidget(content());
         await tester.tap(find.text('Explore project'));
@@ -392,7 +393,7 @@ void main() {
             onAddTask: () async => addRequests++,
             isSaving: true,
           ),
-          size: const Size(430, 1200),
+          size: const Size(800, 1200),
         ),
       );
       await tester.pump();
@@ -527,7 +528,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        wrap(content(isSaving: false), size: const Size(430, 1200)),
+        wrap(content(isSaving: false), size: const Size(800, 1200)),
       );
       await tester.pump();
       final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
@@ -537,7 +538,7 @@ void main() {
           .onPressed!;
 
       await tester.pumpWidget(
-        wrap(content(isSaving: true), size: const Size(430, 1200)),
+        wrap(content(isSaving: true), size: const Size(800, 1200)),
       );
       staleCallback();
       await tester.pump();
@@ -710,7 +711,7 @@ void main() {
               return pending.future;
             },
           ),
-          size: const Size(430, 1200),
+          size: const Size(800, 1200),
         ),
       );
       await tester.pump();
@@ -753,7 +754,7 @@ void main() {
             onTargetDateTap: () {},
             onStatusTap: () {},
           ),
-          size: const Size(430, 1200),
+          size: const Size(800, 1200),
         ),
       );
       await tester.pump();
@@ -799,7 +800,7 @@ void main() {
             onTaskTap: (_) => openedTasks++,
             onAddTask: () => pending.future,
           ),
-          size: const Size(430, 1200),
+          size: const Size(800, 1200),
         ),
       );
       await tester.pump();
@@ -884,7 +885,7 @@ void main() {
             onRefreshReport: () {},
             onCancelScheduledReportWake: () {},
           ),
-          size: const Size(430, 1200),
+          size: const Size(800, 1200),
         ),
       );
       await tester.pump();

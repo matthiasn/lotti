@@ -408,6 +408,7 @@ void main() {
       Widget sliver, {
       double width = 400,
       double? screenWidth,
+      double height = 900,
       double textScale = 1,
     }) {
       return makeTestableWidget2(
@@ -423,7 +424,7 @@ void main() {
           ),
         ),
         mediaQueryData: MediaQueryData(
-          size: Size(screenWidth ?? width, 900),
+          size: Size(screenWidth ?? width, height),
           textScaler: TextScaler.linear(textScale),
         ),
       );
@@ -919,7 +920,10 @@ void main() {
           ],
         );
         await tester.pumpWidget(
-          wrapSliver(ProjectTasksSliverPanel(record: many, now: now)),
+          wrapSliver(
+            ProjectTasksSliverPanel(record: many, now: now),
+            height: 600,
+          ),
         );
         await tester.pump();
         final viewportTop = tester.getRect(find.byType(CustomScrollView)).top;

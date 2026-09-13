@@ -23,6 +23,7 @@ import 'package:url_launcher_platform_interface/url_launcher_platform_interface.
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -54,7 +55,9 @@ void main() {
     ),
   );
 
-  setUpAll(() {
+  setUpAll(() async {
+    // Pin confirmation geometry instead of inheriting fonts from earlier suites.
+    await loadAppFonts();
     registerAllFallbackValues();
     // Not part of the shared inventory: a real instance of a config class
     // only sync tests stub with `any()`.
