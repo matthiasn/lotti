@@ -119,10 +119,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// can display. Overlapping starts are refused before changing the subject.
   /// [transcriptionHandledByCaller] suppresses automation for this recording,
   /// including when it is stopped after its original sheet is dismissed.
+  /// [shouldCancel] lets a dismissed caller abort pending startup; any file
+  /// returned by a late platform start is stopped and discarded.
   /// [linkedId] Optional ID to link this recording to an existing journal entry.
   Future<AudioRecordingFailure?> record({
     String? linkedId,
     bool transcriptionHandledByCaller = false,
+    bool Function()? shouldCancel,
   }) async {
     if (_startInProgress || _terminalActionInProgress) {
       return AudioRecordingFailure.busy;
@@ -132,15 +135,24 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     try {
       await _pauseAudioPlayer();
+      if (shouldCancel?.call() ?? false) return null;
 
       if (await _recorderRepository.hasPermission()) {
-        if (await _recorderRepository.isPaused()) {
+        final isPaused = await _recorderRepository.isPaused();
+        final isRecording =
+            !isPaused && await _recorderRepository.isRecording();
+        if (shouldCancel?.call() ?? false) return null;
+        if (isPaused) {
           await resume();
-        } else if (await _recorderRepository.isRecording()) {
+        } else if (isRecording) {
           await stop();
         } else {
           _audioNote = await _recorderRepository.startRecording();
           if (_audioNote == null) return AudioRecordingFailure.startFailed;
+          if (shouldCancel?.call() ?? false) {
+            await cancel();
+            return null;
+          }
           _transcriptionHandledByCaller = transcriptionHandledByCaller;
           if (ref.mounted) {
             // Update state to recording while keeping existing inference preferences

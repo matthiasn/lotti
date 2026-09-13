@@ -129,6 +129,7 @@ class _AudioRecordingModalContentState
           .record(
             linkedId: widget.linkedId,
             transcriptionHandledByCaller: !widget.showTranscriptionOptions,
+            shouldCancel: () => !mounted,
           );
       if (!mounted) return;
       setState(
