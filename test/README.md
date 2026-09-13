@@ -54,7 +54,8 @@ phone layout, pass `phoneMediaQueryData` or an explicit device fixture:
 `mediaQueryData` with a nonzero size configures both logical MediaQuery size and
 physical render dimensions, including device pixel ratio. View overrides reset
 in teardown. Flags-only fixtures such as reduced motion inherit the current
-viewport. Scaffold hosts use the viewport without an additional 800-pixel cap.
+viewport. Scaffold hosts bound nested pages and lists by the available viewport, without
+an additional 800-pixel cap.
 Caller-supplied theme extensions survive automatic design-token installation.
 The harness contracts live in `widget_test_utils_test.dart`.
 

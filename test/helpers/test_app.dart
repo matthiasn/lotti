@@ -112,7 +112,19 @@ Widget makeTestableWidgetWithScaffold(
   MediaQueryData? mediaQueryData,
   Locale? locale,
 }) => makeTestableWidgetNoScroll(
-  Scaffold(body: SingleChildScrollView(child: child)),
+  Scaffold(
+    body: LayoutBuilder(
+      builder: (_, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: constraints.maxWidth,
+            maxHeight: constraints.maxHeight,
+          ),
+          child: child,
+        ),
+      ),
+    ),
+  ),
   mediaQueryData: mediaQueryData,
   overrides: overrides,
   theme: theme,

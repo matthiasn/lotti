@@ -95,6 +95,27 @@ void main() {
     expect(tester.getSize(find.byKey(childKey)), const Size(1000, 900));
   });
 
+  testWidgets('scaffold gives scrolling content the available viewport', (
+    tester,
+  ) async {
+    setTestSurfaceSize(tester, const Size(1200, 1000));
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        ListView.builder(
+          itemExtent: 100,
+          itemCount: 20,
+          itemBuilder: (_, index) => Text('Item $index'),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(ListView)), const Size(1200, 1000));
+    expect(find.text('Item 0'), findsOneWidget);
+    expect(find.text('Item 19'), findsNothing);
+    await tester.drag(find.byType(ListView), const Offset(0, -1100));
+    await tester.pump();
+    expect(find.text('Item 19'), findsOneWidget);
+  });
+
   testWidgets('explicit media settings reach the child and reset the view', (
     tester,
   ) async {

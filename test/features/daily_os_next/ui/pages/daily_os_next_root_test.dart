@@ -655,15 +655,17 @@ void main() {
       (tester) async {
         // The desktop sidebar is resizable, so the window can be "desktop"
         // while this pane is not: MediaQuery reports 1280, the render tree
-        // gets 344. The strip must follow the pane.
-        setTestSurfaceSize(tester, const Size(344, 900));
+        // gives the sidebar 344. The strip must follow the pane.
+        setTestSurfaceSize(tester, const Size(1280, 900));
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
-              const DailyOsNextRoot(),
-              // Spelled out even though it matches the default: the contrast
-              // between a desktop-sized MediaQuery and the narrow surface set
-              // above is what this test is about.
+              const Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(width: 344, child: DailyOsNextRoot()),
+              ),
+              // The window is desktop-sized; the SizedBox gives its sidebar
+              // genuine narrow constraints within that window.
               // ignore: avoid_redundant_argument_values
               mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
               overrides: [
@@ -697,7 +699,7 @@ void main() {
     testWidgets(
       'a pane too narrow for the year drops it, desktop window or not',
       (tester) async {
-        setTestSurfaceSize(tester, const Size(280, 900));
+        setTestSurfaceSize(tester, const Size(1280, 900));
 
         // In production metrics the compact tier only engages below the width
         // at which the rest of the day surface still has a layout — which is
@@ -717,10 +719,12 @@ void main() {
         await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
           await tester.pumpWidget(
             _wrap(
-              const DailyOsNextRoot(),
-              // Spelled out even though it matches the default: the contrast
-              // between a desktop-sized MediaQuery and the narrow surface set
-              // above is what this test is about.
+              const Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(width: 280, child: DailyOsNextRoot()),
+              ),
+              // The window is desktop-sized; the SizedBox gives its sidebar
+              // genuine narrow constraints within that window.
               // ignore: avoid_redundant_argument_values
               mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
               overrides: [

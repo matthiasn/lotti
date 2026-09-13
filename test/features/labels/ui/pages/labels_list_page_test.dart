@@ -604,6 +604,7 @@ void main() {
     });
 
     testWidgets('FAB navigates to create label page', (tester) async {
+      setTestSurfaceSize(tester, phoneMediaQueryData.size);
       final mockNav = getIt<NavService>() as MockNavService;
       await tester.pumpWidget(
         _buildPage(labels: [testLabelDefinition1]),

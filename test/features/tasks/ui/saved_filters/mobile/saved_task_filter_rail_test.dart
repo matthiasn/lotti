@@ -264,6 +264,7 @@ void main() {
   ) async {
     await _pumpRail(
       tester,
+      mq: _wideMq,
       pageState: const JournalPageState(selectedPriorities: {'P0'}),
     );
 

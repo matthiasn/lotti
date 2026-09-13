@@ -338,14 +338,12 @@ void main() {
       // which reads as a typo, not as shortening. One line and an ellipsis at
       // least tells the reader something was left out.
       Future<void> pumpAt(double width) {
-        tester.view
-          ..physicalSize = Size(width, 400)
-          ..devicePixelRatio = 1;
         return tester.pumpWidget(
           makeTestableWidget(
             TldrHeader(agentName: 'Task Laura', onAgentTap: () {}),
             locale: const Locale('de'),
             mediaQueryData: phoneMediaQueryData.copyWith(
+              size: Size(width, 400),
               textScaler: const TextScaler.linear(1.3),
             ),
           ),

@@ -6231,8 +6231,12 @@ void main() {
             widget.title.startsWith('At least'),
       ),
     );
+    final atLeastLabel = find.descendant(
+      of: atLeastRow,
+      matching: find.textContaining('At least'),
+    );
     await tester.scrollUntilVisible(
-      atLeastRow,
+      atLeastLabel,
       50,
       scrollable: find
           .descendant(
@@ -6241,7 +6245,7 @@ void main() {
           )
           .first,
     );
-    await tester.tap(atLeastRow);
+    await tester.tap(atLeastLabel);
     await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('goal-form-composite-decrease')),

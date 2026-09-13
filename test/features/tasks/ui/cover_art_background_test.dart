@@ -181,7 +181,10 @@ void main() {
             ),
           ),
           overrides: [createEntryControllerOverride(image)],
-          mediaQueryData: phoneMediaQueryData.copyWith(devicePixelRatio: 3),
+          mediaQueryData: const MediaQueryData(
+            size: Size(800, 600),
+            devicePixelRatio: 3,
+          ),
         );
       }
 
@@ -246,6 +249,7 @@ void main() {
             buildSubject(image, height: 240, width: 360),
           );
           await tester.pump();
+          expect(tester.getSize(find.byType(CoverArtBackground)).width, 360);
           final before = tester.widget<Image>(find.byType(Image)).image;
           final beforeKey = await before.obtainKey(ImageConfiguration.empty);
 
@@ -311,6 +315,7 @@ void main() {
             buildSubject(image, height: 240, width: 360),
           );
           await tester.pump();
+          expect(tester.getSize(find.byType(CoverArtBackground)).width, 360);
           final before = tester.widget<Image>(find.byType(Image)).image;
           final beforeKey = await before.obtainKey(ImageConfiguration.empty);
 
@@ -339,6 +344,7 @@ void main() {
             buildSubject(image, height: 240, width: 360),
           );
           await tester.pump();
+          expect(tester.getSize(find.byType(CoverArtBackground)).width, 360);
           final before = tester.widget<Image>(find.byType(Image)).image;
           final beforeKey = await before.obtainKey(ImageConfiguration.empty);
 
@@ -346,6 +352,7 @@ void main() {
             buildSubject(image, height: 240, width: 480),
           );
           await tester.pump();
+          expect(tester.getSize(find.byType(CoverArtBackground)).width, 480);
           final after = tester.widget<Image>(find.byType(Image)).image;
           final afterKey = await after.obtainKey(ImageConfiguration.empty);
 
