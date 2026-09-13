@@ -1,13 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_action_service.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:lotti/features/agents/query/query_task_action_context.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
+import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -216,6 +223,125 @@ void main() {
     expect(calls, ['add_checklist_item']);
     expect(results.map((r) => r.success), [true, false]);
   });
+
+  for (final hideCreatedTask in [false, true]) {
+    test(
+      'approval resolves follow-up IDs before live validation: hidden=$hideCreatedTask',
+      () async {
+        final home = bench.entries['task']! as Task;
+        bench.entries['task'] = home.copyWith(
+          data: home.data.copyWith(checklistIds: ['list']),
+        );
+        bench.entries['list'] = Checklist(
+          meta: home.meta.copyWith(id: 'list'),
+          data: const ChecklistData(
+            title: 'Preflight',
+            linkedChecklistItems: ['feeder'],
+            linkedTasks: ['task'],
+          ),
+        );
+        bench.entries['feeder'] = ChecklistItem(
+          meta: home.meta.copyWith(id: 'feeder'),
+          data: const ChecklistItemData(
+            title: 'Inspect feeder',
+            isChecked: false,
+            linkedChecklists: ['list'],
+          ),
+        );
+        when(bench.db.getAllLabelDefinitions).thenAnswer((_) async => []);
+        final loader = QueryTaskActionContextLoader(access: bench.store.access);
+        final context = await loader.load('task');
+        final planned =
+            await QueryTaskActionPlanner(
+              inference: QueryTextInference(
+                generate: (_, _) => Stream.value(
+                  jsonEncode({
+                    'answer': 'Review the follow-up and migration.',
+                    'actions': [
+                      {
+                        'name': 'create_follow_up_task',
+                        'arguments': {'title': 'Feeder repair'},
+                        'summary': 'Create repair',
+                      },
+                      {
+                        'name': 'migrate_checklist_items',
+                        'arguments': {
+                          'targetTaskId': 'new-task',
+                          'items': [
+                            {'id': 'feeder', 'title': 'Inspect feeder'},
+                          ],
+                        },
+                        'summary': 'Move feeder check',
+                      },
+                    ],
+                  }),
+                ),
+              ),
+            ).plan(
+              context: context,
+              question: 'Create a repair task and move the feeder check.',
+              conversation: [],
+              cancellation: QueryCancellation(),
+            );
+        final asked = await bench.store.ask(
+          'agent',
+          chat,
+          'Create a repair task and move the feeder check.',
+        );
+        question = asked.id;
+        await bench.store.publish(
+          'agent',
+          chat,
+          QueryBuiltAnswer(
+            answer: QueryChatAnswer(
+              questionId: question,
+              text: planned.text,
+              coverage: const QueryCoverage(),
+              proposedActions: planned.items,
+              dependencies: context.dependencies,
+            ),
+          ),
+        );
+        final placeholder = planned.items.first.args['_placeholderTaskId'];
+        expect(planned.items.last.args['targetTaskId'], placeholder);
+        service = QueryChatActionService(
+          store: bench.store,
+          enabled: () => true,
+          labels: MockLabelsRepository(),
+          readContext: (taskId, ids) => loader.load(taskId, relatedIds: ids),
+          dispatch: (name, args, taskId) async {
+            calls.add(name);
+            if (name == 'create_follow_up_task') {
+              // Model the journal mutation/ID returned by FollowUpTaskHandler.
+              bench.entries['created-task'] = home.copyWith(
+                meta: home.meta.copyWith(
+                  id: 'created-task',
+                  private: hideCreatedTask,
+                ),
+              );
+              bench.link('task', 'created-task');
+              return const ToolExecutionResult(
+                success: true,
+                output: 'Created',
+                mutatedEntityId: 'created-task',
+              );
+            }
+            expect(args['targetTaskId'], 'created-task');
+            expect(args['targetTaskId'], isNot(placeholder));
+            expect(args['id'], 'feeder');
+            return const ToolExecutionResult(success: true, output: 'Migrated');
+          },
+        );
+        expect(calls, isEmpty);
+        final results = await resolve();
+        expect(results.map((r) => r.success), [true, !hideCreatedTask]);
+        expect(calls, [
+          'create_follow_up_task',
+          if (!hideCreatedTask) 'migrate_checklist_item',
+        ]);
+      },
+    );
+  }
 
   test('repeated Accept while applying does not dispatch twice', () async {
     hold = Completer<void>();
