@@ -381,6 +381,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
           registry.register(r'$self-echo');
 
           timelineCtl.add(echoed);
+          await pumpEventQueue();
 
           // Neither the queue nor the attachment ingestor should see the
           // event — it's ours and already on disk.
@@ -494,6 +495,7 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
             ..add(pending)
             ..add(optimistic)
             ..add(errored);
+          await pumpEventQueue();
 
           // None of these should reach the queue — they are
           // SDK-generated fake-sync emissions, not real inbound events.

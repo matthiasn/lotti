@@ -243,11 +243,13 @@ extension _GapRecoveryCases on _QueueCoordinatorTestSetup {
           when(() => room.id).thenReturn(roomId);
           // Forward walk: the anchor context fetch throws, producing
           // totalPages == 0 + error == _BootstrapOutcome.errorNoProgress.
+          final anchorFailure = Exception('anchor context fetch failed');
           when(
             () => room.getTimeline(
               eventContextId: any(named: 'eventContextId'),
+              limit: any(named: 'limit'),
             ),
-          ).thenThrow(Exception('anchor context fetch failed'));
+          ).thenThrow(anchorFailure);
           // Backward walk: empty, exhausted timeline -> completes cleanly.
           final timeline = stubTimeline(
             events: <Event>[],
@@ -266,6 +268,14 @@ extension _GapRecoveryCases on _QueueCoordinatorTestSetup {
 
           // The fallback chain completed via the backward walk.
           expect(completed, isTrue);
+          verify(
+            () => logging.error(
+              LogDomain.sync,
+              anchorFailure,
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'bootstrap.forward.getTimeline',
+            ),
+          ).called(1);
           verify(
             () => logging.log(
               LogDomain.sync,
