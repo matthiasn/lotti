@@ -726,7 +726,14 @@ removed:
   provider retries are disabled for this preflight: the card immediately shows
   the unavailable setup, recovery guidance and a button opening `AgentModelSheet`.
   Every explicit briefing attempt refreshes disclosure so a repaired setup is
-  reread before consent. The existing unavailable-status link opens the same
+  reread before consent. The card holds a manual provider subscription until
+  that preflight settles, releasing it on success, failure or widget disposal.
+  Awaiting an auto-disposed provider's future alone does not retain it across
+  database reads or a default-profile reload; losing it mid-read causes the
+  generic request-failed toast before any inference is queued. Disclosure
+  captures its repository and category-lookup dependencies before awaiting
+  reads, so a superseded resolution never reads a disposed `Ref`.
+  The existing unavailable-status link opens the same
   sheet. A direct model
   override checks its own provider locality, not its optional base profile.
 
