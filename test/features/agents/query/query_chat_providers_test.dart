@@ -9,7 +9,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
@@ -21,8 +23,14 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -38,6 +46,71 @@ import 'query_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
+
+  test(
+    'chat action state streams local writes without wake notifications',
+    () async {
+      final bench = QueryPersistenceBench();
+      addTearDown(bench.close);
+      final container = ProviderContainer(
+        overrides: [agentDatabaseProvider.overrideWithValue(bench.agentDb)],
+      );
+      addTearDown(container.dispose);
+      final provider = queryActionChangeSetProvider((
+        agentId: 'agent',
+        questionId: 'q',
+      ));
+      final values = <ChangeSetEntity?>[];
+      final subscription = container.listen(provider, (_, value) {
+        if (value.hasValue) values.add(value.value);
+      });
+      addTearDown(subscription.close);
+      expect(await container.read(provider.future), isNull);
+      final set = ChangeSetEntity(
+        id: 'query-chat:q:actions',
+        agentId: 'agent',
+        taskId: 'task',
+        threadId: 'chat',
+        runKey: 'query-chat:q',
+        status: ChangeSetStatus.pending,
+        items: const [
+          ChangeItem(
+            toolName: 'add_checklist_item',
+            args: {'title': 'Feeder'},
+            humanSummary: 'Feeder',
+          ),
+        ],
+        createdAt: DateTime(2026, 9, 13),
+        vectorClock: null,
+      );
+      final changed = Completer<void>();
+      final changeSubscription = container.listen(provider, (_, value) {
+        if (value.value?.items.single.status == ChangeItemStatus.confirmed &&
+            !changed.isCompleted) {
+          changed.complete();
+        }
+      });
+      addTearDown(changeSubscription.close);
+      await bench.store.sync.upsertEntity(set);
+      await bench.store.sync.upsertEntity(
+        set.copyWith(
+          status: ChangeSetStatus.resolved,
+          items: [
+            set.items.single.copyWith(status: ChangeItemStatus.confirmed),
+          ],
+        ),
+      );
+      await changed.future;
+      expect(values.last!.items.single.status, ChangeItemStatus.confirmed);
+      final wrongAgent = queryActionChangeSetProvider((
+        agentId: 'foreign',
+        questionId: 'q',
+      ));
+      final other = container.listen(wrongAgent, (_, _) {});
+      addTearDown(other.close);
+      expect(await container.read(wrongAgent.future), isNull);
+    },
+  );
 
   for (final destroyed in [false, true]) {
     test(
@@ -130,6 +203,72 @@ void main() {
       await setUpTestGetIt();
     });
     tearDown(tearDownTestGetIt);
+    test(
+      'action providers use live timer context and enforce the live feature flag',
+      () async {
+        final bench = QueryPersistenceBench();
+        addTearDown(bench.close);
+        bench.entries['task'] = testTask.copyWith(
+          meta: testTask.meta.copyWith(
+            id: 'task',
+            private: false,
+            categoryId: null,
+          ),
+          data: testTask.data.copyWith(checklistIds: []),
+        );
+        bench
+          ..add('timer')
+          ..link('task', 'timer');
+        final time = MockTimeService();
+        when(time.getCurrent).thenAnswer((_) => bench.entries['timer']);
+        when(bench.db.getAllLabelDefinitions).thenAnswer((_) async => []);
+        getIt
+          ..registerSingleton<TimeService>(time)
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+        var enabled = true;
+        final container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(bench.db),
+            querySourceAccessProvider.overrideWithValue(bench.crawler.access),
+            queryChatStoreProvider.overrideWithValue(bench.store),
+            agentRepositoryProvider.overrideWithValue(bench.repository),
+            agentSyncServiceProvider.overrideWithValue(bench.store.sync),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            projectRepositoryProvider.overrideWithValue(
+              MockProjectRepository(),
+            ),
+            journalRepositoryProvider.overrideWithValue(
+              MockJournalRepository(),
+            ),
+            checklistRepositoryProvider.overrideWithValue(
+              MockChecklistRepository(),
+            ),
+            labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
+            queryChatEnabledProvider.overrideWith((_) => enabled),
+          ],
+        );
+        addTearDown(container.dispose);
+        final service = container.read(queryChatActionServiceProvider);
+        final context = await service.readContext('task', []);
+        expect(context.runningTimerId, 'timer');
+        expect(context.timeEntryIds, isEmpty);
+        expect(service.enabled(), isTrue);
+        enabled = false;
+        container.invalidate(queryChatEnabledProvider);
+        expect(service.enabled(), isFalse);
+        await expectLater(
+          service.resolve(
+            agentId: 'agent',
+            chatId: 'chat',
+            questionId: 'q',
+            approved: true,
+          ),
+          throwsA(isA<QueryScopeUnavailable>()),
+        );
+        verify(time.getCurrent).called(1);
+      },
+    );
+
     test('unavailable chat slot uses the setup recovery path', () async {
       final bench = QueryPersistenceBench()
         ..add('task', category: categoryMindfulness.id);

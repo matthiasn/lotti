@@ -378,6 +378,25 @@ void main() {
       expect(await store.freshChangeSet(fallback), same(fresh));
     });
 
+    test(
+      'deleted chat action sets never recover executable fallback items',
+      () async {
+        final fallback = makeTestChangeSet(id: 'query-chat:question:actions');
+        final fresh = await store.freshChangeSet(fallback);
+        expect(fresh.items, isEmpty);
+        expect(fresh.deletedAt, isNotNull);
+        expect(
+          await store.updateChangeSetItemStatus(
+            fallback,
+            0,
+            ChangeItemStatus.pending,
+          ),
+          isNull,
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
     test('falls back when the entity is missing', () async {
       final fallback = makeTestChangeSet();
 

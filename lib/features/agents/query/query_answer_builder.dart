@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
@@ -5,6 +7,7 @@ import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_summary_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_summary_reader.dart';
+import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 
 typedef QueryProgress = void Function(int checked, {required bool expanded});
@@ -44,6 +47,7 @@ class QueryAnswerBuilder {
     required this.access,
     required this.inference,
     this.summaryReader,
+    this.readActionContext,
     this.maxSourceCalls = 90,
     this.maxBatchBytes = defaultBatchInputBytes,
   });
@@ -54,6 +58,8 @@ class QueryAnswerBuilder {
   final QuerySourceAccess access;
   final QueryTextInference inference;
   final QuerySummaryReader? summaryReader;
+  final Future<QueryTaskActionContext> Function(String, Iterable<String>)?
+  readActionContext;
   final int maxSourceCalls;
 
   /// Encoded input budget for complete-source inspection. Larger inputs retain
@@ -131,7 +137,23 @@ class QueryAnswerBuilder {
         .map(
           (event) => switch (event.data) {
             QueryChatQuestion(:final text) => {'role': 'user', 'text': text},
-            QueryChatAnswer(:final text) => {'role': 'agent', 'text': text},
+            QueryChatAnswer(:final text, :final proposedActions) => {
+              'role': 'agent',
+              'text': proposedActions.isEmpty
+                  ? text
+                  : jsonEncode({
+                      'proposedActions': proposedActions
+                          .map(
+                            (item) => {
+                              'toolName': item.toolName,
+                              'args': item.args,
+                            },
+                          )
+                          .toList(),
+                      'executionStatus':
+                          'Not established by a proposal. Check current task state.',
+                    }),
+            },
             _ => <String, String>{},
           },
         )
@@ -143,13 +165,60 @@ class QueryAnswerBuilder {
     };
     final summaries = summaryReader;
     if (summaries != null &&
-        (kind == null || chat.scope.kind != QueryScopeKind.task)) {
+        (kind == null ||
+            readActionContext != null ||
+            chat.scope.kind != QueryScopeKind.task)) {
       final summaryAnswer =
           await QuerySummaryAnswerBuilder(
             reader: summaries,
             access: access,
             inference: inference,
             maxInputBytes: maxBatchBytes,
+            onActionRequest: readActionContext == null
+                ? null
+                : (dependencies) async {
+                    final actionContext = await readActionContext!(
+                      chat.scope.id,
+                      dependencies.map((s) => s.id),
+                    );
+                    cancellation.check();
+                    final planned =
+                        await QueryTaskActionPlanner(inference: inference).plan(
+                          context: actionContext,
+                          question: asked.text,
+                          conversation: context,
+                          cancellation: cancellation,
+                        );
+                    final refs = <String, QuerySourceRef>{
+                      for (final source in [
+                        ...dependencies,
+                        ...actionContext.dependencies,
+                      ])
+                        source.id: source,
+                    };
+                    final live = await access.load(refs.keys);
+                    cancellation.check();
+                    if (!live.allowsContent(
+                          refs.values,
+                          private: initial.showPrivate,
+                        ) ||
+                        refs.values.any(
+                          (s) =>
+                              live.entries[s.id]?.meta.deletedAt != null ||
+                              live.entries[s.id]?.meta.categoryId !=
+                                  s.categoryId,
+                        )) {
+                      throw const QueryScopeUnavailable();
+                    }
+                    return QueryChatAnswer(
+                      questionId: question.id,
+                      text: planned.text,
+                      coverage: const QueryCoverage(),
+                      dependencies: refs.values.toList(),
+                      private: initial.showPrivate,
+                      proposedActions: planned.items,
+                    );
+                  },
           ).build(
             scope: chat.scope,
             questionId: question.id,

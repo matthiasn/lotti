@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 
 part 'query_chat_models.freezed.dart';
 part 'query_chat_models.g.dart';
@@ -127,7 +128,15 @@ sealed class QueryChatEventData with _$QueryChatEventData {
     @Default([]) List<QueryEvidence> evidence,
     @Default([]) List<QuerySourceRef> dependencies,
     @Default([]) List<String> recalledMemoryIds,
+    // Draft tool arguments belong to this chat; no executable change set
+    // exists until the user accepts the inline review.
+    @Default([]) List<ChangeItem> proposedActions,
   }) = QueryChatAnswer;
+
+  const factory QueryChatEventData.actionDecision({
+    required String questionId,
+    required bool approved,
+  }) = QueryChatActionDecision;
 
   const factory QueryChatEventData.failed({required String questionId}) =
       QueryChatFailed;

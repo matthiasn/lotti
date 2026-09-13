@@ -876,6 +876,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Assign label: \"$label\"';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Check: \"$title\"';
   }
@@ -10886,6 +10891,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provisionedSyncTitle => 'Devices';
+
+  @override
+  String get queryActionsAccept => 'Accept';
+
+  @override
+  String get queryActionsDismiss => 'Dismiss';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Some changes could not be applied. Applied changes will not be repeated when you retry.';
+
+  @override
+  String get queryActionsReview => 'Proposed changes';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'For: $target';
+  }
 
   @override
   String get queryAllSources => 'All';

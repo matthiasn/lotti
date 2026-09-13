@@ -4893,7 +4893,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     int limit,
   ) {
     return customSelect(
-      'SELECT * FROM agent_entities WHERE agent_id = ?1 AND type = \'changeSet\' AND subtype IN (\'pending\', \'partiallyResolved\') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
+      'SELECT * FROM agent_entities WHERE id NOT LIKE \'query-chat:%\' AND agent_id = ?1 AND type = \'changeSet\' AND subtype IN (\'pending\', \'partiallyResolved\') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT ?2',
       variables: [Variable<String>(agentId), Variable<int>(limit)],
       readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);
@@ -4905,7 +4905,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     int limit,
   ) {
     return customSelect(
-      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'changeDecision\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?3',
+      'SELECT ae.* FROM agent_entities AS ae INNER JOIN agent_links AS al ON al.to_id = ae.agent_id AND al.type = \'template_assignment\' WHERE al.from_id = ?1 AND ae.type = \'changeDecision\' AND COALESCE(json_extract(ae.serialized, \'\$.changeSetId\'), \'\') NOT LIKE \'query-chat:%\' AND ae.created_at >= ?2 AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT ?3',
       variables: [
         Variable<String>(templateId),
         Variable<DateTime>(since),

@@ -884,6 +884,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Přiřadit štítek: „$label“';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Odškrtnout: „$title“';
   }
@@ -11084,6 +11089,24 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get provisionedSyncTitle => 'Zařízení';
+
+  @override
+  String get queryActionsAccept => 'Přijmout';
+
+  @override
+  String get queryActionsDismiss => 'Zamítnout';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Některé změny se nepodařilo provést. Při dalším pokusu se již provedené změny nebudou opakovat.';
+
+  @override
+  String get queryActionsReview => 'Navržené změny';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'Pro: $target';
+  }
 
   @override
   String get queryAllSources => 'Vše';

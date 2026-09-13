@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
@@ -208,6 +209,15 @@ class QueryChatStore {
         'Summary answer cannot publish exact evidence or memory',
       );
     }
+    if (result.answer.proposedActions.isNotEmpty &&
+        (chat.scope.kind != QueryScopeKind.task ||
+            result.memory != null ||
+            result.answer.evidence.isNotEmpty ||
+            result.answer.proposedActions.any(
+              (item) => item.status != ChangeItemStatus.pending,
+            ))) {
+      throw const FormatException('Invalid chat action proposal');
+    }
     // Recall may have been forgotten on another device while inference ran.
     final liveMemoryIds = projection.memories.map((e) => e.id).toSet();
     if (!liveMemoryIds.containsAll(result.answer.recalledMemoryIds)) {
@@ -250,6 +260,63 @@ class QueryChatStore {
     );
   });
 
+  /// Records the explicit inline verdict. Only acceptance materializes an
+  /// executable change set; preview arguments otherwise stay inside the chat.
+  /// Stable IDs make retries reuse the same reviewed items and their statuses.
+  Future<ChangeSetEntity?> decideActions(
+    String agentId,
+    String chatId,
+    String questionId, {
+    required bool approved,
+  }) => sync.runInTransaction(() async {
+    final chat = await _chat(agentId, chatId);
+    final answer = chat.answerFor(questionId)?.data;
+    if (chat.archived ||
+        chat.scope.kind != QueryScopeKind.task ||
+        answer is! QueryChatAnswer ||
+        answer.proposedActions.isEmpty) {
+      throw const QueryScopeUnavailable();
+    }
+    await _checkHome(chat.scope);
+    final current = await access.load(answer.dependencies.map((s) => s.id));
+    if (!current.allowsEvent(answer)) throw const QueryScopeUnavailable();
+    final decision = chat.events
+        .map((event) => event.data)
+        .whereType<QueryChatActionDecision>()
+        .where((event) => event.questionId == questionId)
+        .firstOrNull;
+    if (decision != null) {
+      if (!decision.approved || !approved) return null;
+      final existing = await sync.repository.getEntity(
+        'query-chat:$questionId:actions',
+      );
+      return existing is ChangeSetEntity ? existing : null;
+    }
+    await _append(
+      agentId,
+      chatId,
+      QueryChatActionDecision(
+        questionId: questionId,
+        approved: approved,
+      ),
+      id: '$questionId:action-decision',
+    );
+    if (!approved) return null;
+    final changeSet = ChangeSetEntity(
+      id: 'query-chat:$questionId:actions',
+      agentId: agentId,
+      taskId: chat.scope.id,
+      threadId: chatId,
+      runKey: 'query-chat:$questionId',
+      status: ChangeSetStatus.pending,
+      items: answer.proposedActions,
+      createdAt: clock.now(),
+      vectorClock: null,
+    );
+    await sync.upsertEntity(changeSet);
+    return changeSet;
+  });
+
   Future<void> delete(String agentId, String chatId, {required bool forget}) =>
       sync.runInTransaction(() async {
         final rows = (await sync.repository.getEntitiesByAgentIdAndSubtype(
@@ -266,6 +333,14 @@ class QueryChatStore {
           if (row.data is QueryChatDeleted ||
               (!forget && row.data is QueryChatMemory)) {
             continue;
+          }
+          if (row.data case QueryChatAnswer(:final questionId)) {
+            final actions = await sync.repository.getEntity(
+              'query-chat:$questionId:actions',
+            );
+            if (actions is ChangeSetEntity) {
+              await sync.upsertEntity(actions.copyWith(deletedAt: clock.now()));
+            }
           }
           await sync.upsertEntity(row.copyWith(deletedAt: clock.now()));
         }

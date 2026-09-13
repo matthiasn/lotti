@@ -888,6 +888,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Tilldela etikett: ”$label”';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Markera: ”$title”';
   }
@@ -10948,6 +10953,24 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get provisionedSyncTitle => 'Enheter';
+
+  @override
+  String get queryActionsAccept => 'Godkänn';
+
+  @override
+  String get queryActionsDismiss => 'Avfärda';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Vissa ändringar kunde inte tillämpas. Redan tillämpade ändringar upprepas inte när du försöker igen.';
+
+  @override
+  String get queryActionsReview => 'Föreslagna ändringar';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'För: $target';
+  }
 
   @override
   String get queryAllSources => 'Alla';

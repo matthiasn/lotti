@@ -6,19 +6,23 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
+import 'package:lotti/features/agents/query/query_chat_action_service.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_chat_store.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_summary_reader.dart';
+import 'package:lotti/features/agents/query/query_task_action_context.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -26,9 +30,11 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Experimental scoped chat is hidden until explicitly enabled.
@@ -49,6 +55,53 @@ final queryChatStoreProvider = Provider<QueryChatStore>(
     access: ref.watch(querySourceAccessProvider),
   ),
 );
+
+final queryActionContextReaderProvider = Provider<QueryActionContextReader>((
+  ref,
+) {
+  final loader = QueryTaskActionContextLoader(
+    access: ref.watch(querySourceAccessProvider),
+  );
+  return (taskId, relatedIds) => loader.load(
+    taskId,
+    relatedIds: relatedIds,
+    runningTimerId: getIt<TimeService>().getCurrent()?.meta.id,
+  );
+});
+
+final queryChatActionServiceProvider = Provider<QueryChatActionService>(
+  (ref) => QueryChatActionService(
+    store: ref.watch(queryChatStoreProvider),
+    readContext: ref.watch(queryActionContextReaderProvider),
+    dispatch: taskToolDispatcher(ref).dispatch,
+    labels: ref.watch(labelsRepositoryProvider),
+    enabled: () => ref.read(queryChatEnabledProvider),
+  ),
+);
+
+/// Tracks the actual persisted set, including local and synced approvals.
+/// Background wake notifications do not drive chat-owned action state.
+final StreamProviderFamily<
+  ChangeSetEntity?,
+  ({String agentId, String questionId})
+>
+queryActionChangeSetProvider = StreamProvider.autoDispose
+    .family<ChangeSetEntity?, ({String agentId, String questionId})>((
+      ref,
+      key,
+    ) {
+      final database = ref.watch(agentDatabaseProvider);
+      return database
+          .getAgentEntityById('query-chat:${key.questionId}:actions')
+          .watchSingleOrNull()
+          .map((row) {
+            if (row == null) return null;
+            final entity = AgentDbConversions.fromEntityRow(row);
+            return entity is ChangeSetEntity && entity.agentId == key.agentId
+                ? entity
+                : null;
+          });
+    });
 
 class QueryChatTarget {
   const QueryChatTarget({
@@ -184,6 +237,9 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
       throw const QueryInferenceUnavailable();
     }
     return QueryAnswerBuilder(
+      readActionContext: scope.kind == QueryScopeKind.task
+          ? ref.read(queryActionContextReaderProvider)
+          : null,
       summaryReader: QuerySummaryReader(
         journal: journal,
         access: access,

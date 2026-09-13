@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_summary_reader.dart';
+import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -108,6 +110,148 @@ void main() {
       expect(bench.categoryReads, 1);
     },
   );
+
+  for (final sourceKind in <QuerySourceKind?>[
+    null,
+    QuerySourceKind.recording,
+  ]) {
+    test(
+      'production builder prepares actions with source filter $sourceKind',
+      () async {
+        final bench = QueryTestBench();
+        bench.entries['task'] = testTask.copyWith(
+          meta: testTask.meta.copyWith(
+            id: 'task',
+            private: false,
+            categoryId: null,
+          ),
+        );
+        final repository = MockAgentRepository();
+        when(
+          () => repository.getLatestTaskReportsForTaskIds(any()),
+        ).thenAnswer((_) async => {});
+        final systems = <String>[];
+        final builder = QueryAnswerBuilder(
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          summaryReader: QuerySummaryReader(
+            journal: bench.db,
+            access: bench.crawler.access,
+            repository: repository,
+          ),
+          readActionContext: (taskId, ids) async {
+            expect(taskId, 'task');
+            final access = await bench.crawler.access.load([taskId]);
+            return QueryTaskActionContext(
+              taskId: taskId,
+              input: const {},
+              dependencies: [access.reference(bench.entries[taskId]!)],
+            );
+          },
+          inference: QueryTextInference(
+            generate: (system, prompt) {
+              systems.add(system);
+              final conversation =
+                  (jsonDecode(prompt) as Map<String, dynamic>)['conversation'];
+              expect(jsonEncode(conversation), contains('proposedActions'));
+              expect(
+                jsonEncode(conversation),
+                isNot(contains('Private stale label name')),
+              );
+              expect(
+                jsonEncode(conversation),
+                isNot(contains('I already modified everything')),
+              );
+              return Stream.value(
+                jsonEncode(
+                  system.startsWith('Task-summary orientation.')
+                      ? {
+                          'taskIds': <String>[],
+                          'useProject': false,
+                          'needsHomeEvidence': false,
+                          'actionRequest': true,
+                        }
+                      : {
+                          'answer': 'Review these changes.',
+                          'actions': [
+                            {
+                              'name': 'add_multiple_checklist_items',
+                              'arguments': {
+                                'items': [
+                                  {'title': 'Inspect feeder'},
+                                ],
+                              },
+                              'summary': 'Inspect feeder',
+                            },
+                          ],
+                        },
+                ),
+              );
+            },
+          ),
+        );
+        final result = await builder.build(
+          chat: QueryChatHistory(
+            id: chat.id,
+            scope: chat.scope,
+            title: chat.title,
+            private: false,
+            archived: false,
+            lastActivity: date,
+            unread: false,
+            events: [
+              question.copyWith(
+                id: 'previous-question',
+                createdAt: date.subtract(const Duration(minutes: 2)),
+                data: const QueryChatQuestion(
+                  text: 'Add an earlier review item.',
+                ),
+              ),
+              question.copyWith(
+                id: 'previous-answer',
+                createdAt: date.subtract(const Duration(minutes: 1)),
+                data: const QueryChatAnswer(
+                  questionId: 'previous-question',
+                  text: 'I already modified everything',
+                  coverage: QueryCoverage(),
+                  proposedActions: [
+                    ChangeItem(
+                      toolName: 'add_checklist_item',
+                      args: {'title': 'Earlier review item'},
+                      humanSummary: 'Private stale label name',
+                    ),
+                  ],
+                ),
+              ),
+              question,
+            ],
+          ),
+          question: question.copyWith(
+            data: const QueryChatQuestion(
+              text: 'Add a feeder inspection checklist item.',
+            ),
+          ),
+          memories: [],
+          kind: sourceKind,
+          cancellation: QueryCancellation(),
+          onProgress: (_, {required expanded}) {},
+        );
+        expect(systems.length, 2);
+        expect(systems.last, contains('Never execute'));
+        expect(
+          result.answer.proposedActions.single.toolName,
+          'add_checklist_item',
+        );
+        expect(result.answer.proposedActions.single.args, {
+          'title': 'Inspect feeder',
+        });
+        expect(result.answer.dependencies.map((s) => s.id), contains('task'));
+        expect(result.answer.evidence, isEmpty);
+        expect(result.memory, isNull);
+        expect(bench.searches, isEmpty);
+      },
+    );
+  }
 
   for (final questionPresent in [true, false]) {
     test(

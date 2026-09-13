@@ -896,6 +896,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Attribuer l’étiquette « $label »';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Cocher : « $title »';
   }
@@ -11133,6 +11138,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get provisionedSyncTitle => 'Appareils';
+
+  @override
+  String get queryActionsAccept => 'Accepter';
+
+  @override
+  String get queryActionsDismiss => 'Ignorer';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Certaines modifications n’ont pas pu être appliquées. Les modifications déjà appliquées ne seront pas répétées lors de ta nouvelle tentative.';
+
+  @override
+  String get queryActionsReview => 'Modifications proposées';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'Pour : $target';
+  }
 
   @override
   String get queryAllSources => 'Tous';

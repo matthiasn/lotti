@@ -894,6 +894,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Atribuiți eticheta „$label”';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Bifați: „$title”';
   }
@@ -11144,6 +11149,24 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get provisionedSyncTitle => 'Dispozitive';
+
+  @override
+  String get queryActionsAccept => 'Acceptați';
+
+  @override
+  String get queryActionsDismiss => 'Respingeți';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Unele modificări nu au putut fi aplicate. Modificările deja aplicate nu se vor repeta când încercați din nou.';
+
+  @override
+  String get queryActionsReview => 'Modificări propuse';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'Pentru: $target';
+  }
 
   @override
   String get queryAllSources => 'Toate';

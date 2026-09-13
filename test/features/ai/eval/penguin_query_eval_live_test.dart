@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:lotti/features/agents/query/query_task_action_context.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -189,6 +190,8 @@ void main() {
         'sourceHashes': {
           for (final file in [
             'lib/features/agents/query/query_answer_builder.dart',
+            'lib/features/agents/query/query_task_action_context.dart',
+            'lib/features/agents/query/query_task_action_planner.dart',
             'lib/features/agents/query/query_summary_answer_builder.dart',
             'lib/features/agents/query/query_summary_reader.dart',
             'lib/features/agents/query/query_journal_crawler.dart',
@@ -289,6 +292,11 @@ void main() {
                 access: database.access,
                 inference: measured,
                 summaryReader: summaryFirst ? database.summaryReader : null,
+                readActionContext: summaryFirst
+                    ? (taskId, ids) => QueryTaskActionContextLoader(
+                        access: database.access,
+                      ).load(taskId, relatedIds: ids)
+                    : null,
                 maxSourceCalls: 8,
                 maxBatchBytes: batchInputBytes,
               ).build(
