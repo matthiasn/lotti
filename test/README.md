@@ -70,6 +70,14 @@ part registers a related set of scenarios. Parts are not independently
 executable and must not use the `_test.dart` suffix. Compare discovered test
 names before and after a move to catch omissions or duplicate registration.
 
+The skill inference runner follows the same pattern in
+`features/ai/services/skill_inference_runner_cases/`. Its entry point preserves
+registration order, `test_setup.dart` owns the shared fixture lifecycle, and
+private extensions register each scenario against that fixture. Prompt property
+generators and their isolated bench live in `prompt_generation_scenarios.dart`.
+Run `features/ai/services/skill_inference_runner_test.dart` to execute the suite;
+the scenario parts are not separate test targets.
+
 ## Shared process state
 
 The optimized CI runner executes many test files in one isolate.
