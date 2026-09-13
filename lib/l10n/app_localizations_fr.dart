@@ -3406,7 +3406,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count mots',
       one: '1 mot',
-      zero: '0 mot',
+      zero: '0 mots',
     );
     return '$_temp0';
   }
@@ -11963,7 +11963,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count propositions',
       one: '1 proposition',
-      zero: '0 proposition',
+      zero: '0 propositions',
     );
     return '$_temp0';
   }
@@ -11990,7 +11990,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count points',
       one: '1 point',
-      zero: '0 point',
+      zero: '0 points',
     );
     return 'Sources : $_temp0 · aucun canal de contact';
   }

@@ -11943,7 +11943,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentMarkImportant => 'Marchează ca important';
+  String get relationshipAgentMarkImportant => 'Marcați persoana ca importantă';
 
   @override
   String get relationshipAgentNoAgent => 'Niciun agent pentru această persoană';
