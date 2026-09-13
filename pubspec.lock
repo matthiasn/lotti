@@ -1038,10 +1038,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_local_notifications
-      sha256: "1447ba911c60f2ba3f25dae1af151ec187162566b0f57e37771bf0b400f013ad"
+      sha256: "357be7ff996dc272e2037c69c1bdd5d1bd21172219d55f8bd2e11aeea602e6d3"
       url: "https://pub.dev"
     source: hosted
-    version: "22.3.0"
+    version: "22.3.1"
   flutter_local_notifications_linux:
     dependency: transitive
     description:
@@ -1186,10 +1186,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: "2670c2a81a032080e779c015f4f775373605c4a364643ed371e78dea7781822c"
+      sha256: "6a79c298171e6165823c41db058e10ad0e0d1f10af361a7e7c8d74f058435f50"
       url: "https://pub.dev"
     source: hosted
-    version: "10.3.2"
+    version: "10.3.3"
   flutter_secure_storage_darwin:
     dependency: transitive
     description:
@@ -1202,10 +1202,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_secure_storage_linux
-      sha256: "76fa9c841b3b1619fc5b5bc36efc7d158fa2356f223b6caeb1d0c80a54168546"
+      sha256: caa75bd78f017422912e3a904933113b2428eb79f981ac37acd2dd2a700458ea
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.2"
+    version: "3.0.3"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
@@ -1345,10 +1345,10 @@ packages:
     dependency: "direct main"
     description:
       name: genui
-      sha256: b6030eae45860224043a91a548e5458ef93a879604a9cfcb8aeec32cc6b39277
+      sha256: e5a744aa9dfb28326fa397a1e445767e69bf7a5b99bda1e640daf6482f46c37e
       url: "https://pub.dev"
     source: hosted
-    version: "0.10.2"
+    version: "0.10.3"
   get_it:
     dependency: "direct main"
     description:
@@ -2470,10 +2470,10 @@ packages:
     dependency: transitive
     description:
       name: record_android
-      sha256: "28f1108626a190e249b01ffa9f639070e31e5157474b64a5ae380bf36aec9559"
+      sha256: f5080279259c4ad769590f1c165762eaa4e414178adc2e2fab137103228e07ac
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.2"
+    version: "2.2.0"
   record_ios:
     dependency: transitive
     description:
@@ -2518,18 +2518,18 @@ packages:
     dependency: transitive
     description:
       name: record_web
-      sha256: f53d3da48de3618a331868aec73261d5a75eddd9c09409afd9ec6d66b25db532
+      sha256: "7f6950be87abacb05cf77eb6ca200b60f2c2a6af5d50236b5f4baf53f92e755e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.2"
+    version: "2.1.3"
   record_windows:
     dependency: transitive
     description:
       name: record_windows
-      sha256: e6884f91be4370f122111aca3c04291ae5fe6d8fd045f87afa967635a02dbbac
+      sha256: "8195489a47b5e8246985d6213ff65aae1b14e32a0ca45dc5f680e8d503296e1b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.3"
+    version: "2.3.0"
   research_package:
     dependency: "direct main"
     description:
