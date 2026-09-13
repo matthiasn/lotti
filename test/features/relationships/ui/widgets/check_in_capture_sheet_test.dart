@@ -257,12 +257,13 @@ void main() {
     void Function(String? categoryId)? onLaunch,
     bool canTranscribe = true,
     bool? enableSpeechRecognition,
+    bool startSpeaking = true,
     bool startImmediately = false,
   }) => makeTestableWidgetWithScaffold(
     withBar(
       (handle) => CheckInCaptureForm(
         relationshipId: 'rel-001',
-        startSpeaking: true,
+        startSpeaking: startSpeaking,
         handle: handle,
       ),
     ),
@@ -1524,8 +1525,7 @@ void main() {
       'rebuilding during pre-flight does not open a second recorder',
       (tester) async {
         final launches = <String?>[];
-        // Hold the pre-flight open: the automatic launch is mid-await when the
-        // user presses Speak.
+        // Hold the pre-flight open while additional frames rebuild the form.
         final gate = Completer<RelationshipEntry?>();
         when(
           () => mockRepository.getRelationshipById(any()),
@@ -1558,6 +1558,8 @@ void main() {
           recordedEntryId: null,
           transcript: null,
           onLaunch: launches.add,
+          startSpeaking: false,
+          startImmediately: true,
         ),
       );
       await tester.pumpAndSettle();
