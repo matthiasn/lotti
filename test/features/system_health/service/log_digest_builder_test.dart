@@ -217,6 +217,118 @@ void main() {
       expect(bucket.maxMs, 500);
     });
 
+    test('the same statement on two databases makes two buckets', () {
+      // A BEGIN on the agent database and one on the sync database queue
+      // behind different writer locks; merged, neither can be diagnosed.
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            for (var i = 0; i < 3; i++)
+              slowQuery(
+                timestamp: t0,
+                elapsedMs: 1000,
+                statement: 'BEGIN',
+                operation: 'transaction.open',
+                databaseName: 'agent.sqlite',
+              ),
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 15,
+              statement: 'BEGIN',
+              operation: 'transaction.open',
+              databaseName: 'sync.sqlite',
+            ),
+          ],
+        ),
+      );
+
+      expect(digest.slowQueries, hasLength(2));
+      final agent = digest.slowQueries.first;
+      expect(agent.databaseName, 'agent.sqlite');
+      expect(agent.count, 3);
+      expect(agent.p50Ms, 1000);
+      final sync = digest.slowQueries.last;
+      expect(sync.databaseName, 'sync.sqlite');
+      expect(sync.count, 1);
+      expect(sync.maxMs, 15);
+    });
+
+    test('the caller frame is the first below the transaction wrappers', () {
+      const wrapper =
+          '#8 AgentRepoCore.runInTransaction '
+          '(package:lotti/features/agents/database/agent_repo_core.dart:110:5)';
+      const scope =
+          '#9 VectorClockService.withVcScope '
+          '(package:lotti/services/vector_clock_service.dart:309:5)';
+      const caller =
+          '#10 DayAgentPlanWriter.persist '
+          '(package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart:44:7)';
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 300,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              stackFrames: const [wrapper, scope, caller],
+            ),
+            // A capture holding nothing but wrappers still names something.
+            slowQuery(
+              timestamp: t0.add(const Duration(minutes: 1)),
+              elapsedMs: 300,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              stackFrames: const [wrapper],
+            ),
+          ],
+        ),
+      );
+
+      expect(digest.slowQueries.single.topFrames, [caller, wrapper]);
+    });
+
+    test('queue depth at start is summarised when the entries carry it', () {
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 1000,
+              statement: 'BEGIN',
+              inFlightAtStart: 60,
+              openTransactionsAtStart: 3,
+            ),
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 900,
+              statement: 'BEGIN',
+              inFlightAtStart: 5,
+              openTransactionsAtStart: 1,
+            ),
+            // Timing without a TRANSACTION row: nothing was open.
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 15,
+              statement: 'BEGIN',
+              inFlightAtStart: 1,
+            ),
+            slowQuery(timestamp: t0, elapsedMs: 15, statement: 'SELECT 1'),
+          ],
+        ),
+      );
+
+      final begin = digest.slowQueries.first;
+      expect(begin.statement, 'BEGIN');
+      final queue = begin.queueDepth!;
+      expect(queue.inFlightP50, 5);
+      expect(queue.inFlightMax, 60);
+      expect(queue.openTransactionsP50, 1);
+      expect(queue.openTransactionsMax, 3);
+      // No entry with timing bookkeeping: nothing to summarise.
+      expect(digest.slowQueries.last.queueDepth, isNull);
+    });
+
     test('buckets are ordered by total time', () {
       final digest = builder.build(
         input(

@@ -34,7 +34,10 @@ void wireWakeExecutor(
       );
 
       if (!result.success) {
-        throw StateError(result.error ?? 'Improver agent wake failed');
+        throw WakeFailedException(
+          kind: 'improver',
+          reason: result.error ?? 'wake failed',
+        );
       }
 
       await _notifyWakeCompletion(
@@ -56,7 +59,10 @@ void wireWakeExecutor(
       );
 
       if (!result.success) {
-        throw StateError(result.error ?? 'Project agent wake failed');
+        throw WakeFailedException(
+          kind: 'project',
+          reason: result.error ?? 'wake failed',
+        );
       }
 
       await _notifyWakeCompletion(
@@ -78,7 +84,10 @@ void wireWakeExecutor(
       );
 
       if (!result.success) {
-        throw StateError(result.error ?? 'Event agent wake failed');
+        throw WakeFailedException(
+          kind: 'event',
+          reason: result.error ?? 'wake failed',
+        );
       }
 
       await _notifyWakeCompletion(
@@ -104,7 +113,10 @@ void wireWakeExecutor(
       );
 
       if (!result.success) {
-        throw StateError(result.error ?? '${identity.kind} wake failed');
+        throw WakeFailedException(
+          kind: identity.kind,
+          reason: result.error ?? 'wake failed',
+        );
       }
 
       await _notifyWakeCompletion(
@@ -140,7 +152,10 @@ void wireWakeExecutor(
     // WakeOrchestrator converts executor exceptions into failed wake-run
     // status, ensuring run-log accuracy.
     if (!result.success) {
-      throw StateError(result.error ?? 'Task agent wake failed');
+      throw WakeFailedException(
+        kind: 'task',
+        reason: result.error ?? 'wake failed',
+      );
     }
 
     final extraTokens = <String>{};

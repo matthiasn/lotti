@@ -191,7 +191,8 @@ class SystemHealthReportBuilder {
       for (final (index, query) in shownQueries.indexed) {
         buffer
           ..writeln(
-            '${index + 1}. **${query.operation}** ×${_count.format(query.count)} · '
+            '${index + 1}. **${query.operation}** on ${query.databaseName} '
+            '×${_count.format(query.count)} · '
             'p50 ${_ms(query.p50Ms)} · p95 ${_ms(query.p95Ms)} · '
             'max ${_ms(query.maxMs)} · total ${_ms(query.totalMs)} · '
             'super slow ×${_count.format(query.superSlowCount)} '
@@ -204,6 +205,14 @@ class SystemHealthReportBuilder {
         }
         for (final frame in query.topFrames) {
           buffer.writeln('   - from: ${_inline(frame)}');
+        }
+        final queue = query.queueDepth;
+        if (queue != null) {
+          buffer.writeln(
+            '   - queue at start: in flight p50 ${queue.inFlightP50} · '
+            'max ${queue.inFlightMax} · open transactions '
+            'p50 ${queue.openTransactionsP50} · max ${queue.openTransactionsMax}',
+          );
         }
       }
       if (hidden > 0) {

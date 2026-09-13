@@ -258,8 +258,14 @@ void main() {
       slow.first.statement,
       startsWith('SELECT * FROM journal WHERE deleted'),
     );
-    // TIMING continuation lines are not plan rows.
+    // TIMING continuation lines are not plan rows; they carry the queue
+    // depth. No TRANSACTION row with a TIMING row means nothing was open.
     expect(slow.first.planRows, isEmpty);
+    expect(slow.first.inFlightAtStart, 4);
+    expect(slow.first.openTransactionsAtStart, 0);
+    // An entry written without timing bookkeeping carries neither.
+    expect(slow[1].inFlightAtStart, isNull);
+    expect(slow[1].openTransactionsAtStart, isNull);
     expect(superSlow.first.planRows, hasLength(2));
     expect(superSlow.first.planRows.last, '84|0|USE TEMP B-TREE FOR ORDER BY');
     expect(superSlow.first.stackFrames, hasLength(2));
@@ -267,6 +273,34 @@ void main() {
       superSlow.first.stackFrames.first,
       startsWith('#10     JournalDb.getAllDashboards'),
     );
+  });
+
+  test('a BEGIN keeps the open-transaction count it waited behind', () async {
+    await writeLogFile(
+      logs,
+      'slow_queries',
+      fixtureDay,
+      transactionSlowQueriesFixture,
+    );
+
+    final result = await reader.read(
+      range: fixtureRange(),
+      domains: const {},
+      includeSlowQueries: true,
+    );
+
+    expect(result.slowQueries, hasLength(2));
+    final queued = result.slowQueries.first;
+    expect(queued.databaseName, 'agent.sqlite');
+    expect(queued.operation, 'transaction.open');
+    expect(queued.statement, 'BEGIN');
+    expect(queued.inFlightAtStart, 12);
+    expect(queued.openTransactionsAtStart, 2);
+    // The last entry of a file is flushed too, timing rows or not.
+    final plain = result.slowQueries.last;
+    expect(plain.elapsedMs, 20);
+    expect(plain.inFlightAtStart, isNull);
+    expect(plain.openTransactionsAtStart, isNull);
   });
 
   test('slow-query files are skipped unless requested', () async {

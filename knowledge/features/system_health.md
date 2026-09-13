@@ -150,13 +150,26 @@ from the ARB catalogs.
   replaced, cut at 200 characters. Each bucket keeps its count, first and last
   seen, the first redacted sample and up to six `package:lotti/` stack frames
   from that sample. Errors sort before warnings, then by count.
-- **Slow queries**: grouped by a normalised statement (quoted literals and
-  numbers to `?`, `IN (?, ?, ?)` to `(?...)`, whitespace collapsed), with
-  count, p50 / p95 / max / total elapsed, distinct `EXPLAIN QUERY PLAN` shapes
-  and distinct top app frames. A query above the super-slow cutoff is written
-  to *both* files, so statistics come from the slow file's series and the
-  super-slow file only contributes plans, frames and `superSlowCount`; a
-  statement seen only in the super-slow file falls back to that series.
+- **Slow queries**: grouped by database file *and* a normalised statement
+  (quoted literals and numbers to `?`, `IN (?, ?, ?)` to `(?...)`, whitespace
+  collapsed), with count, p50 / p95 / max / total elapsed, distinct `EXPLAIN
+  QUERY PLAN` shapes and distinct caller frames. The database is part of the
+  key because a `BEGIN` on the agent database and one on the sync database
+  queue behind different writer locks. The caller frame is the first app frame
+  below the transaction wrappers (`runInTransaction`, `withVcScope`,
+  `_markInTransaction`); the wrapper itself is every `BEGIN`'s first frame and
+  names nothing. A query above the super-slow cutoff is written to *both*
+  files, so statistics come from the slow file's series and the super-slow
+  file only contributes plans, frames and `superSlowCount`; a statement seen
+  only in the super-slow file falls back to that series.
+- **Queue depth**: the interceptor's `TIMING:` row carries `inFlightAtStart`
+  and its `TRANSACTION:` row the transactions open when the statement started.
+  Elapsed time is measured from the moment drift accepts a request, so a
+  statement that queued reports the wait as its own cost — for a `BEGIN`
+  (drift holds the writer lock for a transaction's whole lifetime) the wait
+  *is* the cost. Each bucket that carries the rows reports p50 and max of
+  both, which is what separates "one transaction held for seconds" from
+  "dozens opened at once".
 - **Domain counts** by level, and **error bursts**: minutes with at least ten
   errors and at least three times the lower median of error-carrying minutes.
 - Bucket caps (25 issues, 15 statements) set `truncated`, which the rendering

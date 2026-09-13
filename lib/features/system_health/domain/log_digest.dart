@@ -31,9 +31,32 @@ class LogIssueBucket {
   final List<String> sampleFrames;
 }
 
+/// Queue depth seen by the statements in a bucket when they started.
+///
+/// Elapsed time in the slow-query log is measured from the moment drift
+/// accepts a request, so a statement that queued behind others reports the
+/// wait as its own cost. These counters say how deep that queue was.
+class QueueDepthStats {
+  const QueueDepthStats({
+    required this.inFlightP50,
+    required this.inFlightMax,
+    required this.openTransactionsP50,
+    required this.openTransactionsMax,
+  });
+
+  /// Statements already awaiting the interceptor.
+  final int inFlightP50;
+  final int inFlightMax;
+
+  /// Transactions already open on the database — what a `BEGIN` waits behind.
+  final int openTransactionsP50;
+  final int openTransactionsMax;
+}
+
 /// Repeated slow queries collapsed to one normalised statement.
 class SlowQueryBucket {
   const SlowQueryBucket({
+    required this.databaseName,
     required this.statement,
     required this.operation,
     required this.count,
@@ -46,8 +69,13 @@ class SlowQueryBucket {
     required this.lastSeen,
     this.planShapes = const [],
     this.topFrames = const [],
+    this.queueDepth,
   });
 
+  /// The database file the statement ran against. Part of the grouping key:
+  /// a `BEGIN` on the agent database and one on the sync database queue
+  /// behind different writer locks and must not share a row.
+  final String databaseName;
   final String statement;
   final String operation;
   final int count;
@@ -62,8 +90,13 @@ class SlowQueryBucket {
   /// Distinct `EXPLAIN QUERY PLAN` shapes seen for the statement.
   final List<String> planShapes;
 
-  /// Distinct top application frames that issued the statement.
+  /// Distinct application frames that issued the statement — the first frame
+  /// below the transaction and vector-clock wrappers, so a `BEGIN` names the
+  /// code that opened the transaction rather than `runInTransaction`.
   final List<String> topFrames;
+
+  /// Null when no entry in the bucket carried timing bookkeeping.
+  final QueueDepthStats? queueDepth;
 }
 
 /// Per-domain line counts by level.
