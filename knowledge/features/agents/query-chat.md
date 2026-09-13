@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T04:00:59Z }
 stale_after: 2026-10-12
 sources:
   - id: controller

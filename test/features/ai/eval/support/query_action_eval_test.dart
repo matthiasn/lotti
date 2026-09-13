@@ -311,6 +311,26 @@ void main() {
         check.grade(answer([], text: 'I recorded it.')),
         contains('false_execution_claim'),
       );
+      for (final claim in [
+        "I've set the language.",
+        'I linked the task.',
+        'I archived it.',
+        'I restored it.',
+        'I removed it.',
+        'I assigned the label.',
+        'I migrated the item.',
+        'I renamed the task.',
+        'I started the timer.',
+        'I logged the session.',
+        'I have now checked the item.',
+        'I’ve already moved it.',
+      ]) {
+        expect(
+          check.grade(answer([], text: claim)),
+          contains('false_execution_claim'),
+          reason: claim,
+        );
+      }
       expect(check.grade(answer([], text: '')), contains('empty_answer'));
       expect(
         check.grade(
