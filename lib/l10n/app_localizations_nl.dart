@@ -9,17 +9,6 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
-  String get speechSettingsChatAudioLabel => 'Chataudio';
-
-  @override
-  String get speechSettingsChatAudioDescription =>
-      'Bereid nieuwe chatantwoorden op dit apparaat voor, zodat het afspelen sneller begint. Audio speelt pas af als je op afspelen tikt.';
-
-  @override
-  String get speechSettingsAutoPrepareChatAudio =>
-      'Chataudio automatisch voorbereiden';
-
-  @override
   String get activeLabel => 'Actief';
 
   @override
@@ -3088,7 +3077,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
 
   @override
+  String get checkInAudioButton => 'Een audiocheck-in opnemen';
+
+  @override
   String get checkInAvoidLabel => 'Beter vermijden';
+
+  @override
+  String get checkInCaptureChoiceTitle => 'Hoe wil je het contact vastleggen?';
 
   @override
   String get checkInDateLabel => 'Wanneer?';
@@ -3140,7 +3135,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videogesprek';
 
   @override
-  String get checkInMoreCaption => 'Onderwerpen · volgende keer · vermijden';
+  String get checkInMoreCaption => 'Gevoel · onderwerpen · volgende keer';
 
   @override
   String get checkInMoreSection => 'Meer';
@@ -3156,6 +3151,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Let de volgende keer op';
+
+  @override
+  String get checkInPreparingLabel => 'Audio voorbereiden…';
 
   @override
   String get checkInSaveButton => 'Check-in opslaan';
@@ -3222,11 +3220,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er kwam geen transcriptie terug. Je kunt het zelf typen.';
 
   @override
+  String get checkInTranscriptReady =>
+      'Transcriptie klaar. Controleer deze voordat je opslaat.';
+
+  @override
   String get checkInTranscriptUnavailable =>
-      'Transcriptie is niet ingesteld voor deze persoon. Voeg een audiomodel toe en zet automatische inferentie aan voor hun categorie, of typ de check-in.';
+      'Kies in de AI-instellingen een standaard inferentieprofiel met een transcriptiemodel, of schrijf je contactmoment op.';
 
   @override
   String get checkInWhenAndHowLong => 'Wanneer en hoe lang';
+
+  @override
+  String get checkInWriteButton => 'Een check-in schrijven';
 
   @override
   String get checklistAddItem => 'Een nieuw item toevoegen';
@@ -13757,6 +13762,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Chataudio automatisch voorbereiden';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Bereid nieuwe chatantwoorden op dit apparaat voor, zodat het afspelen sneller begint. Audio speelt pas af als je op afspelen tikt.';
+
+  @override
+  String get speechSettingsChatAudioLabel => 'Chataudio';
 
   @override
   String get speechSettingsModelDescription => 'Speechmodel voor het apparaat';

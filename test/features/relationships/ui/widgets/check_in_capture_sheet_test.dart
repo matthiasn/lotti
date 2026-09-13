@@ -46,7 +46,7 @@ class _StubTranscriptionService implements CheckInTranscriptionService {
   int cancelCount = 0;
 
   @override
-  Future<bool> canTranscribe(String subjectId) async {
+  Future<bool> canTranscribe() async {
     await preflightGate?.future;
     return canTranscribeResult;
   }
@@ -54,7 +54,6 @@ class _StubTranscriptionService implements CheckInTranscriptionService {
   @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
-    required String subjectId,
     Duration timeout = checkInTranscriptTimeout,
   }) {
     final completer = gate ?? (Completer<String?>()..complete(transcript));
@@ -350,6 +349,23 @@ void main() {
     );
   }
 
+  testWidgets('the narrative leads and optional sentiment starts folded', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('check-in-narrative'))).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(const ValueKey('check-in-started'))).dy,
+      ),
+    );
+    expect(find.text('Delightful'), findsNothing);
+    await openMore(tester);
+    expect(find.text('Delightful'), findsOne);
+    expect(find.text('Optional. Never filled in by the agent.'), findsOne);
+  });
+
   testWidgets(
     'saves interaction type, sentiment, parsed topics, and narrative',
     (tester) async {
@@ -359,6 +375,7 @@ void main() {
       await tester.ensureVisible(find.text('Call'));
       await tester.tap(find.text('Call'));
       await tester.pumpAndSettle();
+      await openMore(tester);
       await tester.ensureVisible(find.text('Good'));
       await tester.tap(find.text('Good'));
       await tester.pumpAndSettle();
@@ -422,9 +439,11 @@ void main() {
     await tester.pumpWidget(buildForm());
     await tester.pumpAndSettle();
 
+    await openMore(tester);
     await tester.ensureVisible(find.text('Good'));
     await tester.tap(find.text('Good'));
     await tester.pumpAndSettle();
+    await openMore(tester);
     await tester.ensureVisible(find.text('Good'));
     await tester.tap(find.text('Good'));
     await tester.pumpAndSettle();
@@ -556,6 +575,7 @@ void main() {
         );
         expect(find.textContaining('10 Aug'), findsOneWidget);
 
+        await openMore(tester);
         await tester.ensureVisible(find.text('Neutral'));
         await tester.tap(find.text('Neutral'));
         await tester.pumpAndSettle();
@@ -978,9 +998,38 @@ void main() {
       expect(launches, 0, reason: 'no recording should be wasted');
       expect(find.text('Transcribing…'), findsNothing);
       expect(
-        find.textContaining('Transcription is not set up'),
+        find.textContaining('Choose a default inference profile'),
         findsOne,
       );
+    });
+
+    testWidgets('failed preparation surfaces an error and releases Save', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.getRelationshipById('rel-001'),
+      ).thenAnswer((_) async => throw StateError('database unavailable'));
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'unused',
+          transcript: null,
+        ),
+      );
+      await startRecording(tester);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('No transcript came back. You can type it instead.'),
+        findsOne,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('check-in-save')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('prefills the empty narrative with the transcript', (
@@ -1113,9 +1162,8 @@ void main() {
     // The HTTP 503 case. A failed run writes no transcript, so the wait alone
     // cannot tell a provider outage from a slow model, and `runTranscription`
     // reports the failure through its status controllers rather than
-    // throwing. When the recorder's automatic path owns the run the service's
-    // own failure hook never fires either — the error controller is the one
-    // signal set by whichever path ran, which is why the sheet watches it.
+    // throwing. The form also observes the error controller so it can display
+    // the provider's specific failure detail.
     testWidgets('a reported inference failure ends the wait and names it', (
       tester,
     ) async {
@@ -1142,7 +1190,7 @@ void main() {
               aiResponseType: AiResponseType.audioTranscription,
             )).notifier,
           )
-          .setError('HTTP 503 · Melious · All Voxtral providers failed');
+          .setError('HTTP 503 · Transcription service unavailable');
       await tester.pumpAndSettle();
 
       expect(
@@ -1156,17 +1204,16 @@ void main() {
         findsOne,
       );
       expect(
-        find.text('HTTP 503 · Melious · All Voxtral providers failed'),
+        find.text('HTTP 503 · Transcription service unavailable'),
         findsOne,
         reason: "the provider's own reason, not a generic failure",
       );
       expect(narrativeText(tester), 'Typed only.');
     });
 
-    // A stale detail from an earlier recording must not abort the run the
-    // user just started: only a failure reported *after* the wait opens is
-    // this recording's.
-    testWidgets('a failure recorded before the wait opened is ignored', (
+    // The error is keyed by the newly created audio entry. Automatic
+    // inference can fail before the recording modal finishes closing.
+    testWidgets('a failure recorded before the wait opened ends processing', (
       tester,
     ) async {
       final gate = Completer<String?>();
@@ -1186,18 +1233,17 @@ void main() {
               aiResponseType: AiResponseType.audioTranscription,
             )).notifier,
           )
-          .setError('a failure from the previous take');
+          .setError('cloud request failed while recorder closed');
 
       await startRecording(tester);
       await tester.pump();
 
-      expect(find.text('Transcribing…'), findsOne);
-      expect(stubTranscription.cancelCount, 0);
-
-      gate.complete('Arrived at last.');
       await tester.pumpAndSettle();
+      expect(find.text('Transcribing…'), findsNothing);
+      expect(stubTranscription.cancelCount, 1);
 
-      expect(narrativeText(tester), 'Arrived at last.');
+      expect(find.text('cloud request failed while recorder closed'), findsOne);
+      expect(narrativeText(tester), isEmpty);
     });
 
     testWidgets('offers no duplicate recording action while transcribing', (
@@ -1229,33 +1275,26 @@ void main() {
     // Saving mid-wait used to pop the sheet and silently drop the words the
     // user was still waiting for, leaving the check-in with no narrative.
 
-    // The recording sheet has its own speech opt-out. Unchecking it means
-    // "not this one" — before this the sheet held "Transcribing…" for the
-    // whole five-minute timeout to arrive at exactly that answer.
-    testWidgets('does not wait when speech recognition was switched off', (
-      tester,
-    ) async {
-      final gate = Completer<String?>();
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-          enableSpeechRecognition: false,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await startRecording(tester);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Transcribing…'), findsNothing);
-      expect(
-        find.text('No transcript came back. You can type it instead.'),
-        findsOne,
-      );
-      expect(gate.isCompleted, isFalse, reason: 'the wait never started');
-    });
+    testWidgets(
+      'explicit audio choice transcribes despite an earlier opt-out',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSpeakableForm(
+            recordedEntryId: 'audio-1',
+            transcript: 'Requested explicitly.',
+            enableSpeechRecognition: false,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await startRecording(tester);
+        await tester.pumpAndSettle();
+        expect(narrativeText(tester), 'Requested explicitly.');
+        expect(
+          find.text('Transcript ready. Review it before saving.'),
+          findsOne,
+        );
+      },
+    );
 
     // The default (never touched) must still transcribe.
     testWidgets('waits normally when the opt-out was left alone', (
@@ -1292,8 +1331,8 @@ void main() {
       );
       expect(
         tester.widget<DesignSystemButton>(saveButton).onPressed,
-        isNotNull,
-        reason: 'enabled before speaking',
+        isNull,
+        reason: 'disabled while preparing the recorder',
       );
 
       await startRecording(tester);
@@ -1350,7 +1389,11 @@ void main() {
   // why the defect below survived: the form is fine, and the modal it lives
   // in was not. These open the real sheet at a phone's size.
   group('inside the real modal', () {
-    Future<void> openSheet(WidgetTester tester) async {
+    Future<void> openSheet(
+      WidgetTester tester, {
+      bool audio = false,
+      VoidCallback? onRecord,
+    }) async {
       // iPhone-class viewport: tall content, little room to spare.
       tester.view
         ..physicalSize = const Size(1206, 2622)
@@ -1371,12 +1414,63 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            checkInTranscriptionServiceProvider.overrideWithValue(
+              _StubTranscriptionService(
+                canTranscribeResult: true,
+                transcript: 'Reviewed the habitat launch.',
+              ),
+            ),
+            checkInRecorderLauncherProvider.overrideWithValue(({
+              required BuildContext context,
+              required String relationshipId,
+              String? categoryId,
+            }) async {
+              onRecord?.call();
+              return 'fixture-audio';
+            }),
           ],
         ),
       );
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
+      expect(find.text('Write a check-in'), findsOne);
+      expect(find.text('Record an audio check-in'), findsOne);
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      await tester.tap(
+        find.byKey(
+          ValueKey(audio ? 'check-in-audio-choice' : 'check-in-write-choice'),
+        ),
+      );
+      await tester.pumpAndSettle();
     }
+
+    testWidgets(
+      'the audio choice records and opens an editable transcript without saving',
+      (tester) async {
+        var recordings = 0;
+        await openSheet(tester, audio: true, onRecord: () => recordings++);
+        expect(recordings, 1);
+        final field = tester.widget<TextField>(
+          find.descendant(
+            of: find.byKey(const ValueKey('check-in-narrative')),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(field.controller!.text, 'Reviewed the habitat launch.');
+        expect(
+          find.text('Transcript ready. Review it before saving.'),
+          findsOne,
+        );
+        verifyNever(
+          () => mockRepository.createCheckIn(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+          ),
+        );
+      },
+    );
 
     // The design pins Save (2026-09-06 §5): it lives in the modal's sticky
     // action bar, reachable before any scrolling — and an earlier bug, a form
@@ -1499,6 +1593,13 @@ void main() {
       );
       expect(content.linkedId, 'rel-001');
       expect(content.categoryId, 'category-7');
+      expect(content.showTranscriptionOptions, isFalse);
+      expect(
+        ProviderScope.containerOf(
+          tester.element(find.byType(AudioRecordingModalContent)),
+        ).read(audioRecorderControllerProvider).enableSpeechRecognition,
+        isNull,
+      );
     });
   });
 

@@ -9,17 +9,6 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get speechSettingsChatAudioLabel => 'Audio del chat';
-
-  @override
-  String get speechSettingsChatAudioDescription =>
-      'Prepara las nuevas respuestas del chat en este dispositivo para que la reproducción empiece antes. El audio solo se reproduce cuando tocas reproducir.';
-
-  @override
-  String get speechSettingsAutoPrepareChatAudio =>
-      'Preparar el audio del chat automáticamente';
-
-  @override
   String get activeLabel => 'Activo';
 
   @override
@@ -3118,7 +3107,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'La grabación se guardó, pero la transcripción falló. Inténtalo de nuevo.';
 
   @override
+  String get checkInAudioButton => 'Grabar un registro de audio';
+
+  @override
   String get checkInAvoidLabel => 'Mejor evitar';
+
+  @override
+  String get checkInCaptureChoiceTitle =>
+      '¿Cómo quieres registrar el contacto?';
 
   @override
   String get checkInDateLabel => '¿Cuándo?';
@@ -3170,7 +3166,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videollamada';
 
   @override
-  String get checkInMoreCaption => 'Temas · próxima vez · evitar';
+  String get checkInMoreCaption => 'Sensación · temas · próxima vez';
 
   @override
   String get checkInMoreSection => 'Más';
@@ -3186,6 +3182,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'La próxima vez, presta atención a';
+
+  @override
+  String get checkInPreparingLabel => 'Preparando el audio…';
 
   @override
   String get checkInSaveButton => 'Guardar check-in';
@@ -3252,11 +3251,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'No llegó ninguna transcripción. Puedes escribirlo tú.';
 
   @override
+  String get checkInTranscriptReady =>
+      'Transcripción lista. Revísala antes de guardar.';
+
+  @override
   String get checkInTranscriptUnavailable =>
-      'La transcripción no está configurada para esta persona. Añade un modelo de audio y activa la inferencia automática en su categoría, o escribe el registro.';
+      'Elige un perfil de inferencia predeterminado con un modelo de transcripción en los ajustes de IA, o escribe tu registro de contacto.';
 
   @override
   String get checkInWhenAndHowLong => 'Cuándo y cuánto tiempo';
+
+  @override
+  String get checkInWriteButton => 'Escribir un registro';
 
   @override
   String get checklistAddItem => 'Agregar un nuevo elemento';
@@ -13909,6 +13915,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get speechNoAudioRecorded =>
       'No se ha grabado audio. Inténtalo de nuevo.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Preparar el audio del chat automáticamente';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Prepara las nuevas respuestas del chat en este dispositivo para que la reproducción empiece antes. El audio solo se reproduce cuando tocas reproducir.';
+
+  @override
+  String get speechSettingsChatAudioLabel => 'Audio del chat';
 
   @override
   String get speechSettingsModelDescription =>

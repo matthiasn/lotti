@@ -117,24 +117,6 @@ abstract class AppLocalizations {
     Locale('sv'),
   ];
 
-  /// No description provided for @speechSettingsChatAudioLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Chat audio'**
-  String get speechSettingsChatAudioLabel;
-
-  /// No description provided for @speechSettingsChatAudioDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.'**
-  String get speechSettingsChatAudioDescription;
-
-  /// No description provided for @speechSettingsAutoPrepareChatAudio.
-  ///
-  /// In en, this message translates to:
-  /// **'Prepare chat audio automatically'**
-  String get speechSettingsAutoPrepareChatAudio;
-
   /// No description provided for @activeLabel.
   ///
   /// In en, this message translates to:
@@ -5208,11 +5190,23 @@ abstract class AppLocalizations {
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
 
+  /// No description provided for @checkInAudioButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Record an audio check-in'**
+  String get checkInAudioButton;
+
   /// No description provided for @checkInAvoidLabel.
   ///
   /// In en, this message translates to:
   /// **'Better to avoid'**
   String get checkInAvoidLabel;
+
+  /// No description provided for @checkInCaptureChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to check in?'**
+  String get checkInCaptureChoiceTitle;
 
   /// No description provided for @checkInDateLabel.
   ///
@@ -5301,7 +5295,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkInMoreCaption.
   ///
   /// In en, this message translates to:
-  /// **'Topics · next time · avoid'**
+  /// **'Feeling · topics · next time'**
   String get checkInMoreCaption;
 
   /// No description provided for @checkInMoreSection.
@@ -5333,6 +5327,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next time, pay attention to'**
   String get checkInPayAttentionLabel;
+
+  /// No description provided for @checkInPreparingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing audio…'**
+  String get checkInPreparingLabel;
 
   /// No description provided for @checkInSaveButton.
   ///
@@ -5436,10 +5436,16 @@ abstract class AppLocalizations {
   /// **'No transcript came back. You can type it instead.'**
   String get checkInTranscriptFailed;
 
+  /// No description provided for @checkInTranscriptReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript ready. Review it before saving.'**
+  String get checkInTranscriptReady;
+
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
   ///
   /// In en, this message translates to:
-  /// **'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.'**
+  /// **'Choose a default inference profile with a transcription model in AI settings, or write your check-in.'**
   String get checkInTranscriptUnavailable;
 
   /// No description provided for @checkInWhenAndHowLong.
@@ -5447,6 +5453,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When and how long'**
   String get checkInWhenAndHowLong;
+
+  /// No description provided for @checkInWriteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a check-in'**
+  String get checkInWriteButton;
 
   /// No description provided for @checklistAddItem.
   ///
@@ -22906,6 +22918,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No audio was recorded. Try again.'**
   String get speechNoAudioRecorded;
+
+  /// No description provided for @speechSettingsAutoPrepareChatAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare chat audio automatically'**
+  String get speechSettingsAutoPrepareChatAudio;
+
+  /// No description provided for @speechSettingsChatAudioDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.'**
+  String get speechSettingsChatAudioDescription;
+
+  /// No description provided for @speechSettingsChatAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat audio'**
+  String get speechSettingsChatAudioLabel;
 
   /// No description provided for @speechSettingsModelDescription.
   ///

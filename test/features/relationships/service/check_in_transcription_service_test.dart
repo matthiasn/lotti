@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
@@ -16,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_utils.dart';
 
 /// One run of [CheckInTranscriptionService.transcribe] under fake time.
 ///
@@ -49,6 +52,16 @@ class _Run {
     settle();
   }
 
+  void failNotifications() {
+    _updates.addError(StateError('notification stream failed'));
+    settle();
+  }
+
+  void closeNotifications() {
+    _updates.close().ignore();
+    settle();
+  }
+
   void settle([Duration by = Duration.zero]) {
     _async
       ..elapse(by)
@@ -58,11 +71,11 @@ class _Run {
 
 void main() {
   late MockJournalDb journalDb;
-  late MockProfileAutomationService automation;
+  late MockProfileResolver resolver;
+  late ResolvedProfile defaultProfile;
   late MockSkillInferenceRunner runner;
 
   const audioEntryId = 'audio-1';
-  const subjectId = 'rel-1';
 
   JournalAudio audioWith(String? transcript) => testAudioEntry.copyWith(
     entryText: transcript == null ? null : EntryText(plainText: transcript),
@@ -86,13 +99,12 @@ void main() {
       final service = CheckInTranscriptionService(
         journalDb,
         notifications,
-        automation,
+        resolver,
         runner,
       );
 
       final wait = service.transcribe(
         audioEntryId: audioEntryId,
-        subjectId: subjectId,
       );
       final run = _Run(async, updates, wait)..settle();
       body(run);
@@ -107,36 +119,22 @@ void main() {
     registerFallbackValue(SkillType.transcription);
   });
 
-  /// The default world: no automatic path, and an explicit request resolves a
-  /// skill — the common configuration a spoken check-in runs in.
-  void stubAutomation({
-    bool automatic = false,
-    bool canRequest = true,
-    bool requestHandled = true,
-  }) {
-    when(
-      () => automation.hasAutomatedSkillType(
-        subjectId: any(named: 'subjectId'),
-        skillType: any(named: 'skillType'),
-      ),
-    ).thenAnswer((_) async => automatic);
-    when(
-      () => automation.canTranscribeOnRequest(
-        subjectId: any(named: 'subjectId'),
-      ),
-    ).thenAnswer((_) async => canRequest);
-    when(
-      () => automation.requestTranscription(subjectId: any(named: 'subjectId')),
-    ).thenAnswer(
-      (_) async => requestHandled
-          ? const AutomationResult(handled: true)
-          : AutomationResult.notHandled,
-    );
+  ResolvedProfile profile({bool model = true, bool provider = true}) =>
+      ResolvedProfile(
+        thinkingModelId: 'thinking-model',
+        thinkingProvider: testInferenceProvider(),
+        transcriptionModelId: model ? 'selected-transcription-model' : null,
+        transcriptionProvider: provider ? testInferenceProvider() : null,
+      );
+
+  void stubDefault(ResolvedProfile? value) {
+    when(() => resolver.resolveDefaultProfile()).thenAnswer((_) async => value);
   }
 
   setUp(() {
     journalDb = MockJournalDb();
-    automation = MockProfileAutomationService();
+    resolver = MockProfileResolver();
+    defaultProfile = profile();
     runner = MockSkillInferenceRunner();
     when(
       () => runner.runTranscription(
@@ -148,8 +146,37 @@ void main() {
         onError: any(named: 'onError'),
       ),
     ).thenAnswer((_) async {});
-    stubAutomation();
+    stubDefault(defaultProfile);
     stubEntity(audioWith(null));
+  });
+
+  test('notification stream failure ends the transcript wait', () {
+    withRun((run) {
+      run.failNotifications();
+      expect(run.isDone, isTrue);
+      expect(run.result, isNull);
+      expect(run.hasListener, isFalse);
+    });
+  });
+
+  test('closed notification stream ends the transcript wait', () {
+    withRun((run) {
+      run.closeNotifications();
+      expect(run.isDone, isTrue);
+      expect(run.result, isNull);
+      expect(run.hasListener, isFalse);
+    });
+  });
+
+  test('database read failure ends the wait without an unhandled error', () {
+    when(() => journalDb.journalEntityById(audioEntryId)).thenAnswer(
+      (_) async => throw StateError('database closed'),
+    );
+    withRun((run) {
+      expect(run.isDone, isTrue);
+      expect(run.result, isNull);
+      expect(run.hasListener, isFalse);
+    });
   });
 
   group('transcript already present', () {
@@ -271,64 +298,53 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           journalDbProvider.overrideWithValue(journalDb),
-          profileAutomationServiceProvider.overrideWithValue(automation),
+          profileResolverProvider.overrideWithValue(resolver),
           skillInferenceRunnerProvider.overrideWithValue(runner),
         ],
       );
       addTearDown(container.dispose);
 
       expect(
-        container.read(checkInTranscriptionServiceProvider),
-        isA<CheckInTranscriptionService>(),
+        await container
+            .read(checkInTranscriptionServiceProvider)
+            .canTranscribe(),
+        isTrue,
       );
     });
   });
 
-  // The blocker this branch shipped with: the sheet leaned on the recorder's
-  // automatic path, which is gated on a category switch that exists for
-  // *unattended* inference. A button press is a gesture, so a direct request
-  // must run even when that switch is off.
-  group('who runs the transcription', () {
-    test('requests one explicitly when the automatic path will not', () {
-      withRun((run) {
-        verify(
-          () => automation.requestTranscription(subjectId: subjectId),
-        ).called(1);
-        verify(
-          () => runner.runTranscription(
-            audioEntryId: audioEntryId,
-            automationResult: any(named: 'automationResult'),
-            // ignore: avoid_redundant_argument_values
-            linkedTaskId: null,
-            onError: any(named: 'onError'),
-          ),
-        ).called(1);
-      });
-    });
+  group('system default profile routing', () {
+    test(
+      'runs only the selected default transcription slot, as a manual request',
+      () {
+        withRun((run) {
+          verify(() => resolver.resolveDefaultProfile()).called(1);
+          verifyNoMoreInteractions(resolver);
+          final request =
+              verify(
+                    () => runner.runTranscription(
+                      audioEntryId: audioEntryId,
+                      automationResult: captureAny(named: 'automationResult'),
+                      onError: any(named: 'onError'),
+                    ),
+                  ).captured.single
+                  as AutomationResult;
+          expect(request.resolvedProfile, same(defaultProfile));
+          expect(request.skill!.id, skillTranscribeContextId);
+          expect(
+            request.skillAssignment,
+            isNull,
+            reason: 'A manual check-in must not start automated summary skills',
+          );
+          expect(
+            run.isDone,
+            isFalse,
+            reason: 'The saved transcript is still pending',
+          );
+        });
+      },
+    );
 
-    // Both running would transcribe the same recording twice and bill twice.
-    test('stands aside when the automatic path is already live', () {
-      stubAutomation(automatic: true);
-
-      withRun((run) {
-        verifyNever(
-          () => automation.requestTranscription(
-            subjectId: any(named: 'subjectId'),
-          ),
-        );
-        verifyNever(
-          () => runner.runTranscription(
-            audioEntryId: any(named: 'audioEntryId'),
-            automationResult: any(named: 'automationResult'),
-            linkedTaskId: any(named: 'linkedTaskId'),
-            onError: any(named: 'onError'),
-          ),
-        );
-      });
-    });
-
-    // A person is not a task: that parameter feeds the consumption record's
-    // task field, so a relationship id there misfiles the spend.
     test('never passes a task id for a person', () {
       withRun((run) {
         final captured = verify(
@@ -339,7 +355,6 @@ void main() {
             onError: any(named: 'onError'),
           ),
         ).captured;
-
         expect(captured.single, isNull);
       });
     });
@@ -349,7 +364,7 @@ void main() {
     // Without this the sheet spins for the full five minutes over a
     // configuration problem that was known in milliseconds.
     test('resolves immediately when no model can be resolved', () {
-      stubAutomation(requestHandled: false);
+      stubDefault(null);
 
       withRun((run) {
         expect(run.isDone, isTrue);
@@ -359,10 +374,9 @@ void main() {
     });
 
     test('resolves immediately when resolving the request throws', () {
-      when(
-        () =>
-            automation.requestTranscription(subjectId: any(named: 'subjectId')),
-      ).thenThrow(Exception('provider exploded'));
+      when(() => resolver.resolveDefaultProfile()).thenAnswer(
+        (_) async => throw Exception('profile unavailable'),
+      );
 
       withRun((run) {
         expect(run.isDone, isTrue);
@@ -435,30 +449,44 @@ void main() {
       service = CheckInTranscriptionService(
         journalDb,
         MockUpdateNotifications(),
-        automation,
+        resolver,
         runner,
       );
     });
 
-    test('true when the automatic path will run', () async {
-      stubAutomation(automatic: true, canRequest: false);
+    test(
+      'uses the selected default even without automated skill assignments',
+      () async {
+        expect(await service.canTranscribe(), isTrue);
+        verify(() => resolver.resolveDefaultProfile()).called(1);
+        verifyNoMoreInteractions(resolver);
+      },
+    );
 
-      expect(await service.canTranscribe(subjectId), isTrue);
-    });
-
-    // The case the category gate used to refuse: no automatic inference, but
-    // a perfectly usable model for a request the user made by hand.
-    test('true when only an explicit request can resolve a model', () async {
-      stubAutomation();
-
-      expect(await service.canTranscribe(subjectId), isTrue);
-    });
-
-    test('false when neither path resolves anything', () async {
-      stubAutomation(canRequest: false);
-
-      expect(await service.canTranscribe(subjectId), isFalse);
-    });
+    for (final missing in ['profile', 'model', 'provider']) {
+      test(
+        'missing default $missing refuses capture and never tries another route',
+        () async {
+          stubDefault(
+            missing == 'profile'
+                ? null
+                : profile(
+                    model: missing != 'model',
+                    provider: missing != 'provider',
+                  ),
+          );
+          expect(await service.canTranscribe(), isFalse);
+          withRun((run) {
+            expect(run.isDone, isTrue);
+            expect(run.result, isNull);
+            expect(run.hasListener, isFalse);
+          });
+          verifyZeroInteractions(runner);
+          verify(() => resolver.resolveDefaultProfile()).called(2);
+          verifyNoMoreInteractions(resolver);
+        },
+      );
+    }
   });
 
   group('cancellation', () {

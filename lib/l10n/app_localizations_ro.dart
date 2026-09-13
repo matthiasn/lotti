@@ -9,17 +9,6 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
-  String get speechSettingsChatAudioLabel => 'Audio pentru chat';
-
-  @override
-  String get speechSettingsChatAudioDescription =>
-      'Pregătiți noile răspunsuri din chat pe acest dispozitiv pentru ca redarea să înceapă mai repede. Sunetul este redat doar când apăsați pe redare.';
-
-  @override
-  String get speechSettingsAutoPrepareChatAudio =>
-      'Pregătiți automat sunetul pentru chat';
-
-  @override
   String get activeLabel => 'Activ';
 
   @override
@@ -3130,7 +3119,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
 
   @override
+  String get checkInAudioButton => 'Înregistrați un contact audio';
+
+  @override
   String get checkInAvoidLabel => 'De evitat';
+
+  @override
+  String get checkInCaptureChoiceTitle =>
+      'Cum doriți să înregistrați contactul?';
 
   @override
   String get checkInDateLabel => 'Când?';
@@ -3182,7 +3178,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Apel video';
 
   @override
-  String get checkInMoreCaption => 'Subiecte · data viitoare · de evitat';
+  String get checkInMoreCaption => 'Stare · subiecte · data viitoare';
 
   @override
   String get checkInMoreSection => 'Mai mult';
@@ -3198,6 +3194,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Data viitoare, acordați atenție la';
+
+  @override
+  String get checkInPreparingLabel => 'Se pregătește sunetul…';
 
   @override
   String get checkInSaveButton => 'Salvați check-in-ul';
@@ -3265,11 +3264,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu a venit nicio transcriere. O puteți scrie dvs.';
 
   @override
+  String get checkInTranscriptReady =>
+      'Transcrierea este gata. Verificați-o înainte de salvare.';
+
+  @override
   String get checkInTranscriptUnavailable =>
-      'Transcrierea nu este configurată pentru această persoană. Adăugați un model audio și activați inferența automată pentru categoria sa, sau scrieți contactul.';
+      'Selectați un profil de inferență implicit cu un model de transcriere în setările AI sau scrieți înregistrarea de contact.';
 
   @override
   String get checkInWhenAndHowLong => 'Când și cât timp';
+
+  @override
+  String get checkInWriteButton => 'Scrieți o înregistrare de contact';
 
   @override
   String get checklistAddItem => 'Adăugați un element nou';
@@ -14001,6 +14007,17 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get speechNoAudioRecorded =>
       'Nu s-a înregistrat niciun sunet. Încercați din nou.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Pregătiți automat sunetul pentru chat';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Pregătiți noile răspunsuri din chat pe acest dispozitiv pentru ca redarea să înceapă mai repede. Sunetul este redat doar când apăsați pe redare.';
+
+  @override
+  String get speechSettingsChatAudioLabel => 'Audio pentru chat';
 
   @override
   String get speechSettingsModelDescription => 'Model de voce pe dispozitiv';

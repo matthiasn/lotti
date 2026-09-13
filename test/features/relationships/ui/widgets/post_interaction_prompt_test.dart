@@ -120,6 +120,12 @@ void main() {
     return store;
   }
 
+  Future<void> chooseWrittenCheckIn(WidgetTester tester) async {
+    expect(find.text('Record an audio check-in'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
+    await tester.pumpAndSettle();
+  }
+
   final offer = find.byKey(const ValueKey('person-post-call-offer'));
 
   group('when the prompt appears', () {
@@ -323,6 +329,7 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
+      await chooseWrittenCheckIn(tester);
       final selected = tester
           .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
           .where((chip) => chip.selected)
@@ -347,6 +354,7 @@ void main() {
         await tester.pumpAndSettle();
       });
 
+      await chooseWrittenCheckIn(tester);
       final form = tester.widget<CheckInCaptureForm>(
         find.byType(CheckInCaptureForm),
       );
@@ -386,6 +394,7 @@ void main() {
         await tester.pumpAndSettle();
       });
 
+      await chooseWrittenCheckIn(tester);
       final form = tester.widget<CheckInCaptureForm>(
         find.byType(CheckInCaptureForm),
       );
@@ -404,6 +413,7 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
+      await chooseWrittenCheckIn(tester);
       final selected = tester
           .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
           .firstWhere((chip) => chip.selected);
@@ -413,9 +423,15 @@ void main() {
 
     testWidgets('leaves sentiment unset — the user judges how it felt, '
         'never the app (ADR 0038)', (tester) async {
+      setTestSurfaceSize(tester, const Size(1000, 1400));
       await pump(tester, pending: marker(), resolves: person());
 
       await tester.tap(find.text('Log check-in'));
+      await tester.pumpAndSettle();
+
+      await chooseWrittenCheckIn(tester);
+      await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
+      await tester.tap(find.byKey(const ValueKey('check-in-more')));
       await tester.pumpAndSettle();
 
       // Interaction and sentiment both render as DesignSystemChips, so the

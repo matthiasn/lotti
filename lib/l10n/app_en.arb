@@ -1877,7 +1877,9 @@
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
+  "checkInAudioButton": "Record an audio check-in",
   "checkInAvoidLabel": "Better to avoid",
+  "checkInCaptureChoiceTitle": "How would you like to check in?",
   "checkInDateLabel": "When?",
   "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
   "checkInDurationHint": "Tap duration to open the wheel. A message usually has none.",
@@ -1899,12 +1901,13 @@
   "checkInInteractionMessage": "Message",
   "checkInInteractionOther": "Other",
   "checkInInteractionVideoCall": "Video call",
-  "checkInMoreCaption": "Topics · next time · avoid",
+  "checkInMoreCaption": "Feeling · topics · next time",
   "checkInMoreSection": "More",
   "checkInNarrativeHint": "One line is enough…",
   "checkInNarrativeLabel": "What did you talk about?",
   "checkInNoDuration": "No duration",
   "checkInPayAttentionLabel": "Next time, pay attention to",
+  "checkInPreparingLabel": "Preparing audio…",
   "checkInSaveButton": "Save check-in",
   "checkInSentimentDelightful": "Delightful",
   "checkInSentimentDifficult": "Difficult",
@@ -1944,11 +1947,13 @@
   "@checkInTranscriptFailed": {
     "description": "Message shown when a spoken check-in produced no transcript and the user has to type the narrative."
   },
-  "checkInTranscriptUnavailable": "Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.",
+  "checkInTranscriptReady": "Transcript ready. Review it before saving.",
+  "checkInTranscriptUnavailable": "Choose a default inference profile with a transcription model in AI settings, or write your check-in.",
   "@checkInTranscriptUnavailable": {
     "description": "Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category."
   },
   "checkInWhenAndHowLong": "When and how long",
+  "checkInWriteButton": "Write a check-in",
   "checklistAddItem": "Add a new item",
   "checklistAiConfidenceLabel": "Confidence: {level}",
   "@checklistAiConfidenceLabel": {

@@ -43,12 +43,11 @@ import '../../../categories/test_utils.dart';
 /// prove the form opened in speaking mode without a recorder on screen.
 class _NoTranscription implements CheckInTranscriptionService {
   @override
-  Future<bool> canTranscribe(String subjectId) async => false;
+  Future<bool> canTranscribe() async => false;
 
   @override
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
-    required String subjectId,
     Duration timeout = checkInTranscriptTimeout,
   }) => throw UnimplementedError();
 }
@@ -874,6 +873,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Create mode, titled for logging rather than editing.
+    expect(find.text('Record an audio check-in'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
+    await tester.pumpAndSettle();
+
     expect(find.text('When and how long'), findsOneWidget);
     expect(find.text('Edit check-in'), findsNothing);
 

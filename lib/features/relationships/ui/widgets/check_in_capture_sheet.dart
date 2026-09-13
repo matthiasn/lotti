@@ -9,6 +9,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
@@ -21,7 +23,6 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
-import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -93,6 +94,7 @@ Future<String?> showCheckInRecorder({
   context,
   linkedId: relationshipId,
   categoryId: categoryId,
+  transcriptionHandledByCaller: true,
 );
 
 final checkInRecorderLauncherProvider = Provider<CheckInRecorderLauncher>(
@@ -146,7 +148,8 @@ String mergeCheckInNarrative({
   return '$kept\n\n$addition';
 }
 
-/// Opens the responsive check-in capture overlay for [relationshipId].
+/// Offers Write or Record audio, then opens the responsive check-in form.
+/// Explicit [startSpeaking] skips the choice for direct entry points.
 /// Resolves to the created [CheckInEntry], or `null` when dismissed.
 ///
 /// [prefilledInteractionType] and [prefilledTime] let a caller open the form
@@ -160,8 +163,34 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
   CheckInInteractionType? prefilledInteractionType,
   DateTime? prefilledTime,
   Duration? prefilledDuration,
-  bool startSpeaking = false,
-}) {
+  bool? startSpeaking,
+}) async {
+  final speak =
+      startSpeaking ??
+      await DsActionModal.show<bool>(
+        context: context,
+        title: context.messages.checkInCaptureChoiceTitle,
+        builder: (sheetContext) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DsActionRow(
+              key: const ValueKey('check-in-write-choice'),
+              title: sheetContext.messages.checkInWriteButton,
+              icon: LottiIcons.edit,
+              trailing: DsActionRowTrailing.chevron,
+              onTap: () => Navigator.of(sheetContext).pop(false),
+            ),
+            DsActionRow(
+              key: const ValueKey('check-in-audio-choice'),
+              title: sheetContext.messages.checkInAudioButton,
+              icon: LottiIcons.mic,
+              trailing: DsActionRowTrailing.chevron,
+              onTap: () => Navigator.of(sheetContext).pop(true),
+            ),
+          ],
+        ),
+      );
+  if (speak == null || !context.mounted) return null;
   final handle = CheckInFormHandle();
   return ModalUtils.showSinglePageModal<CheckInEntry>(
     context: context,
@@ -173,7 +202,7 @@ Future<CheckInEntry?> showCheckInCaptureSheet({
       prefilledInteractionType: prefilledInteractionType,
       prefilledTime: prefilledTime,
       prefilledDuration: prefilledDuration,
-      startSpeaking: startSpeaking,
+      startSpeaking: speak,
       handle: handle,
     ),
   );
@@ -330,10 +359,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// long it ran.
   late Duration _duration;
 
-  /// The *More* section (topics · next time · avoid), folded by default;
+  /// Optional sentiment, topics and next-time guidance, folded by default;
   /// open from the start when a check-in being edited already has any of it.
   late bool _moreOpen;
   bool _isSaving = false;
+  bool _isOpeningRecorder = false;
+  bool _transcriptReady = false;
+  bool _speechFailed = false;
   bool _isTranscribing = false;
 
   /// The in-flight transcript wait, so dismissing the sheet stops it instead
@@ -384,6 +416,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         _lengthOf(initial) ?? widget.prefilledDuration ?? Duration.zero;
     _duration = length.isNegative ? Duration.zero : length;
     _moreOpen =
+        _sentiment != null ||
         _topicsController.text.isNotEmpty ||
         _payAttentionController.text.isNotEmpty ||
         _avoidController.text.isNotEmpty;
@@ -419,7 +452,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       widget.handle.publish(
         save: _handleSave,
         delete: _isEditing ? _handleDelete : null,
-        canSave: !_isSaving && !_isTranscribing,
+        canSave: !_isSaving && !_isTranscribing && !_isOpeningRecorder,
       );
     });
   }
@@ -520,21 +553,40 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   /// Records a spoken check-in and prefills the narrative with its transcript.
   ///
-  /// The recording is linked to the person, so the generalized automation path
-  /// resolves *their* profile (or their category's) rather than declining for
-  /// want of a task. The audio entry is a journal entry like any other — the
-  /// spoken words survive even when the user abandons this sheet.
-  ///
-  /// Nothing here saves: the transcript lands in the text field for the user
-  /// to edit and confirm, matching the sentiment rule that a check-in is
-  /// authored by the person, never by inference.
-  ///
-  /// Refuses **before** recording when no transcription model is configured
-  /// at all — recording for a transcript that can never arrive wastes the
-  /// user's words and a five-minute spinner. Note the check is not the
-  /// automatic-inference switch: this is a gesture, so it only needs a model,
-  /// not the consent gate that governs unattended runs.
+  /// Audio is linked to the person, while transcription uses only the
+  /// system's selected default inference profile. The recorder's automatic
+  /// path is suppressed, so this explicit request runs once. Words remain
+  /// editable and are only saved as a check-in when the user presses Save.
+  /// Preflight refuses recording if the default has no transcription slot.
   Future<void> _speak() async {
+    if (_isOpeningRecorder || _isTranscribing || _isSaving) return;
+    setState(() {
+      _isOpeningRecorder = true;
+      _speechFailed = false;
+      _transcriptReady = false;
+    });
+    try {
+      await _captureSpeech();
+    } catch (exception, stackTrace) {
+      developer.log(
+        'Spoken check-in failed',
+        name: 'CheckInCaptureForm',
+        error: exception,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        setState(() => _speechFailed = true);
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.checkInTranscriptFailed,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isOpeningRecorder = false);
+    }
+  }
+
+  Future<void> _captureSpeech() async {
     // Every provider is read up front: each `await` below can outlive this
     // widget, and reading through `ref` after that throws.
     final messages = context.messages;
@@ -546,10 +598,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     // them in series doubled the delay before the recorder appeared.
     final (relationship, canTranscribe) = await (
       repository.getRelationshipById(widget.relationshipId),
-      transcription.canTranscribe(widget.relationshipId),
-    ).wait;
+      transcription.canTranscribe(),
+    ).wait.timeout(const Duration(seconds: 15));
     if (!mounted) return;
     if (!canTranscribe) {
+      setState(() => _speechFailed = true);
       context.showToast(
         tone: DesignSystemToastTone.warning,
         title: messages.checkInTranscriptUnavailable,
@@ -566,33 +619,14 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     // narrative exactly as the user left it.
     if (!mounted || audioEntryId == null) return;
 
-    // The recording sheet carries its own speech-recognition opt-out, and the
-    // recorder keeps that choice after stopping. Unchecking it means "do not
-    // transcribe this one" — so say so now rather than holding the sheet on
-    // "Transcribing…" for the whole timeout to reach the same answer. The
-    // audio entry still exists; only the transcript was declined.
-    final speechEnabled = ref
-        .read(audioRecorderControllerProvider)
-        .enableSpeechRecognition;
-    if (speechEnabled == false) {
-      context.showToast(
-        tone: DesignSystemToastTone.warning,
-        title: messages.checkInTranscriptFailed,
-      );
-      return;
-    }
-
+    // The recorder suppresses automatic inference for this capture. This
+    // service owns the explicit request through the system default profile.
     setState(() => _isTranscribing = true);
     final wait = _transcriptWait = transcription.transcribe(
       audioEntryId: audioEntryId,
-      subjectId: widget.relationshipId,
     );
-    // A failed run writes no transcript, so the wait alone cannot tell a
-    // provider outage from a slow model — it would hold "Transcribing…" for
-    // the full five minutes and then blame nothing in particular. The error
-    // controller is set by whichever path ran (the service's own request, or
-    // the recorder's automatic one), so watching it covers both and carries
-    // the provider's verbatim reason into the toast.
+    // Preserve the provider's error detail in the recovery toast, including
+    // a failure that arrived before this subscription was attached.
     String? failureDetail;
     _closeTranscriptFailureSubscription();
     _transcriptFailureSubscription = ref.listenManual<String?>(
@@ -606,11 +640,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         failureDetail = detail;
         wait.cancel();
       },
+      fireImmediately: true,
     );
     try {
       final transcript = await wait.result;
       if (!mounted) return;
       if (transcript == null) {
+        setState(() => _speechFailed = true);
         context.showToast(
           tone: DesignSystemToastTone.warning,
           title: messages.checkInTranscriptFailed,
@@ -618,6 +654,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         );
         return;
       }
+      setState(() => _transcriptReady = true);
       _narrativeController.text = mergeCheckInNarrative(
         existing: _narrativeController.text,
         transcript: transcript,
@@ -825,28 +862,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           ),
           SizedBox(height: tokens.spacing.step5),
         ],
-        sectionLabel(messages.checkInSentimentLabel),
-        Wrap(
-          spacing: tokens.spacing.step3,
-          runSpacing: tokens.spacing.step3,
-          children: [
-            for (final sentiment in CheckInSentiment.values)
-              DesignSystemChip(
-                key: ValueKey('check-in-sentiment-${sentiment.name}'),
-                label: checkInSentimentLabel(context, sentiment),
-                selected: _sentiment == sentiment,
-                size: DesignSystemChipSize.touch,
-                // Tapping the selected sentiment clears it again —
-                // sentiment is optional, never forced.
-                onPressed: () => setState(
-                  () => _sentiment = _sentiment == sentiment ? null : sentiment,
-                ),
-              ),
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step3),
-        caption(messages.checkInSentimentOptional),
-        SizedBox(height: tokens.spacing.step6),
         sectionLabel(messages.checkInNarrativeLabel),
         LottiTextField(
           key: const ValueKey('check-in-narrative'),
@@ -855,6 +870,30 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           maxLines: 4,
           textCapitalization: TextCapitalization.sentences,
         ),
+        if (_isOpeningRecorder && !_isTranscribing) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Semantics(
+            liveRegion: true,
+            child: caption(messages.checkInPreparingLabel),
+          ),
+        ],
+        if (_transcriptReady) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Semantics(
+            liveRegion: true,
+            child: caption(messages.checkInTranscriptReady),
+          ),
+        ],
+        if (_speechFailed && !_isOpeningRecorder && !_isTranscribing) ...[
+          SizedBox(height: tokens.spacing.step3),
+          DesignSystemButton(
+            key: const ValueKey('check-in-retry-audio'),
+            label: messages.relationshipImportRetry,
+            leadingIcon: LottiIcons.mic,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: _speak,
+          ),
+        ],
         if (_isTranscribing) ...[
           SizedBox(height: tokens.spacing.step3),
           Semantics(
@@ -918,6 +957,30 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         ),
         if (_moreOpen) ...[
           SizedBox(height: tokens.spacing.step4),
+          sectionLabel(messages.checkInSentimentLabel),
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              for (final sentiment in CheckInSentiment.values)
+                DesignSystemChip(
+                  key: ValueKey('check-in-sentiment-${sentiment.name}'),
+                  label: checkInSentimentLabel(context, sentiment),
+                  selected: _sentiment == sentiment,
+                  size: DesignSystemChipSize.touch,
+                  // Tapping the selected sentiment clears it again —
+                  // sentiment is optional, never forced.
+                  onPressed: () => setState(
+                    () =>
+                        _sentiment = _sentiment == sentiment ? null : sentiment,
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          caption(messages.checkInSentimentOptional),
+          SizedBox(height: tokens.spacing.step6),
+
           LottiTextField(
             key: const ValueKey('check-in-topics'),
             controller: _topicsController,

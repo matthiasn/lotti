@@ -547,6 +547,7 @@ void main() {
     Future<List<String?>> pumpShowModalCapturingResult(
       WidgetTester tester, {
       String? linkedId,
+      bool transcriptionHandledByCaller = false,
       List<Override> extraOverrides = const [],
     }) async {
       final results = <String?>[];
@@ -569,6 +570,8 @@ void main() {
                       await AudioRecordingModal.show(
                         context,
                         linkedId: linkedId,
+                        transcriptionHandledByCaller:
+                            transcriptionHandledByCaller,
                       ),
                     );
                   },
@@ -586,10 +589,12 @@ void main() {
       WidgetTester tester, {
       String? categoryId,
       String? linkedId,
+      bool transcriptionHandledByCaller = false,
+      List<Override> extraOverrides = const [],
     }) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: baseOverrides(),
+          overrides: [...baseOverrides(), ...extraOverrides],
           child: MaterialApp(
             builder: LegacyMaterialBridge.builder,
             theme: resolveTestTheme(),
@@ -607,6 +612,8 @@ void main() {
                         context,
                         categoryId: categoryId,
                         linkedId: linkedId,
+                        transcriptionHandledByCaller:
+                            transcriptionHandledByCaller,
                       );
                     },
                     child: const Text('Show Modal'),
@@ -672,6 +679,73 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(results, ['audio-entry-42']);
+      });
+
+      testWidgets('caller owns transcription from recording start', (
+        tester,
+      ) async {
+        sizeViewport(tester);
+        final ownership = <bool>[];
+        await pumpShowModalCapturingResult(
+          tester,
+          linkedId: 'relationship-1',
+          transcriptionHandledByCaller: true,
+          extraOverrides: [
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: AudioRecorderState(
+                  status: AudioRecorderStatus.stopped,
+                  progress: Duration.zero,
+                  vu: 1,
+                  dBFS: -24,
+                  showIndicator: false,
+                  modalVisible: false,
+                  enableSpeechRecognition: true,
+                ),
+                onRecordingOwnership: ownership.add,
+              ),
+            ),
+          ],
+        );
+        await tester.tap(find.text('Show Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byKey(const ValueKey('record')));
+        await tester.pump();
+        expect(ownership, [true]);
+      });
+
+      testWidgets('failed save keeps the recording sheet open with an error', (
+        tester,
+      ) async {
+        sizeViewport(tester);
+        final results = await pumpShowModalCapturingResult(
+          tester,
+          linkedId: 'relationship-1',
+          extraOverrides: [
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: AudioRecorderState(
+                  status: AudioRecorderStatus.recording,
+                  progress: const Duration(seconds: 3),
+                  vu: 1,
+                  dBFS: -24,
+                  showIndicator: false,
+                  modalVisible: true,
+                ),
+              ),
+            ),
+          ],
+        );
+        await tester.tap(find.text('Show Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Stop'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(results, isEmpty);
+        expect(find.text('Recording failed. Please try again.'), findsOne);
+        expect(find.byType(AudioRecordingModalContent), findsOne);
       });
 
       testWidgets('resolves to null when the sheet is dismissed', (
@@ -819,6 +893,69 @@ void main() {
           expect(find.byType(AudioRecordingModalContent), findsOneWidget);
         },
       );
+
+      for (final (handledByCaller, priorPreference) in [
+        (false, false),
+        (false, true),
+        (true, false),
+        (true, true),
+        (true, null),
+      ]) {
+        testWidgets(
+          'caller transcription=$handledByCaller scopes the '
+          '$priorPreference preference to the recording sheet',
+          (tester) async {
+            stubCategory();
+            await pumpShowModalTrigger(
+              tester,
+              categoryId: 'test-category',
+              linkedId: 'relationship-1',
+              transcriptionHandledByCaller: handledByCaller,
+              extraOverrides: [
+                checkboxVisibilityProvider((
+                  categoryId: 'test-category',
+                  linkedId: 'relationship-1',
+                )).overrideWithValue(
+                  const AutomaticPromptVisibility(speech: true),
+                ),
+              ],
+            );
+            final container = ProviderScope.containerOf(
+              tester.element(find.byType(ElevatedButton)),
+            );
+            container
+                .read(audioRecorderControllerProvider.notifier)
+                .setEnableSpeechRecognition(enable: priorPreference);
+
+            await tester.tap(find.text('Show Modal'));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+            await tester.pump();
+
+            expect(
+              container
+                  .read(audioRecorderControllerProvider)
+                  .enableSpeechRecognition,
+              priorPreference,
+            );
+            expect(
+              find.byKey(const Key('speech_recognition_checkbox')),
+              handledByCaller ? findsNothing : findsOneWidget,
+            );
+
+            await tester.tapAt(const Offset(10, 10));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+            expect(
+              container
+                  .read(audioRecorderControllerProvider)
+                  .enableSpeechRecognition,
+              priorPreference,
+              reason: 'A scoped check-in must not change ordinary recordings',
+            );
+          },
+        );
+      }
 
       testWidgets('should set modal invisible when modal is dismissed', (
         tester,
@@ -1010,6 +1147,70 @@ void main() {
           () => mockAudioRecorderRepository.startRecording(),
         ).called(1);
       });
+
+      testWidgets('permission denial is visible and recording can be retried', (
+        tester,
+      ) async {
+        stubCategory();
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => false);
+        await pumpModalContent(tester);
+        await tester.tap(find.byKey(const ValueKey('record')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining("Lotti can't use the microphone"), findsOne);
+        verifyNever(() => mockAudioRecorderRepository.startRecording());
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => true);
+        await tester.tap(find.byKey(const ValueKey('record')));
+        await tester.pump();
+        verify(() => mockAudioRecorderRepository.startRecording()).called(1);
+      });
+
+      testWidgets(
+        'unexpected start errors leave the recording action retryable',
+        (
+          tester,
+        ) async {
+          var attempts = 0;
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              audioRecorderControllerProvider.overrideWith(
+                () => _CallbackTrackingController(
+                  fixedState: AudioRecorderState(
+                    status: AudioRecorderStatus.stopped,
+                    progress: Duration.zero,
+                    vu: -20,
+                    dBFS: -160,
+                    showIndicator: false,
+                    modalVisible: true,
+                  ),
+                  onRecord: () async {
+                    attempts++;
+                    if (attempts == 1) throw StateError('recorder unavailable');
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          );
+          await tester.tap(find.byKey(const ValueKey('record')));
+          await tester.pump();
+          final messages = AppLocalizations.of(
+            tester.element(find.byType(AudioRecordingModalContent)),
+          )!;
+          expect(find.text(messages.chatInputRecordingFailed), findsOneWidget);
+          expect(attempts, 1);
+          await tester.tap(find.byKey(const ValueKey('record')));
+          await tester.pump();
+          expect(attempts, 2);
+          expect(find.text(messages.chatInputRecordingFailed), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
 
       testWidgets('localizes the record action', (tester) async {
         stubCategory();
@@ -2227,6 +2428,8 @@ class _CallbackTrackingController extends AudioRecorderController {
     this.createdId,
     this.onPauseCalled,
     this.onResumeCalled,
+    this.onRecord,
+    this.onRecordingOwnership,
   });
 
   final AudioRecorderState fixedState;
@@ -2235,6 +2438,9 @@ class _CallbackTrackingController extends AudioRecorderController {
   final String? createdId;
   final VoidCallback? onPauseCalled;
   final VoidCallback? onResumeCalled;
+  final Future<AudioRecordingFailure?> Function()? onRecord;
+  // ignore: avoid_positional_boolean_parameters
+  final void Function(bool)? onRecordingOwnership;
 
   @override
   AudioRecorderState build() => fixedState;
@@ -2252,7 +2458,13 @@ class _CallbackTrackingController extends AudioRecorderController {
   }
 
   @override
-  Future<void> record({String? linkedId}) async {}
+  Future<AudioRecordingFailure?> record({
+    String? linkedId,
+    bool transcriptionHandledByCaller = false,
+  }) async {
+    onRecordingOwnership?.call(transcriptionHandledByCaller);
+    return onRecord?.call();
+  }
 
   @override
   Future<String?> stop() async {

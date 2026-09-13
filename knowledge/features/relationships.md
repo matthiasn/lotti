@@ -249,7 +249,10 @@ load-bearing:
   drag moves against, comes from the file's header (`FileImageSize` over
   `readImageFileSize`), never from decoding the photograph; and the wheel
   registers with the pointer-signal resolver, so a notch over the picture
-  zooms it without also scrolling the sheet.
+  zooms it without also scrolling the sheet. The viewport's scale recognizer
+  claims touch and trackpad gestures on pointer-down so the surrounding sheet
+  cannot win a vertical drag before the photo starts panning. One-finger and
+  trackpad translation use the existing clamped crop geometry.
 - **Removing clears the reference and keeps the entry**, the task cover-art
   precedent (`setCoverArt(null)`): taking a picture off a person is not
   deleting it from the journal.
@@ -950,17 +953,18 @@ tool does not create Daily OS blocks or OS reminders.
 ## The check-in capture sheet
 
 `showCheckInCaptureSheet` and `showCheckInEditSheet` ([check_in_capture_sheet.dart](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart))
-open one form (design 2026-09-06 §5) in the responsive modal — a bottom sheet
-on a phone, a dialog on desktop — in the order the design argued for: how it
-felt (the sentiment chips, optional) → what you talked about (the narrative)
-→ when and how long (the type chips, a
-*Started* tile and a *Duration* tile) → *More*, folded, for the topics and the
-two next-time fields; it opens unfolded when the check-in being edited already
-carries any of them. Save is pinned. The form has no actions of its own: after
+open one form in a responsive modal — a bottom sheet on a phone, a dialog
+on desktop. New check-ins first offer Write or Record audio; an explicit
+`startSpeaking` bypasses that choice for a direct doorway. The chooser closes
+before the form opens. Editing goes directly to the prefilled form.
+The order is narrative → when and how long (interaction type, Started and
+Duration) → More (optional sentiment, topics and next-time guidance). More
+opens unfolded when the edited check-in already contains sentiment, topics or
+guidance. Save is pinned. The form has no actions of its own: after
 each frame it publishes `save`, `delete` and `canSave` through a
 `CheckInFormHandle` (a `ChangeNotifier`), and `CheckInStickyActions` in the
-modal's sticky bar renders from it — Save held while a save or a transcript is
-in flight, Delete only while editing, bottom-left on the desktop dialog.
+modal's sticky bar renders from it — Save held while recording preparation,
+save or transcription is in flight, Delete only while editing, bottom-left on the desktop dialog.
 
 ```mermaid
 sequenceDiagram
@@ -1077,132 +1081,62 @@ need.
 The person page's microphone opens the capture sheet with `startSpeaking`,
 which launches the shared recorder after the first frame and hands the
 transcript back to the user to edit. The narrative has no duplicate microphone;
-a live-region caption announces transcription while Save remains disabled.
-Automated transcription used to be task-shaped; the shared pipeline now
-resolves the relationship as its subject.
-
-`ProfileAutomationService.tryTranscribe` and `ProfileAutomationResolver` took
-a `taskId`, resolved the agent through `TaskAgentService.getTaskAgentForTask`,
-and read `profileId` only off `Task.data`. A recording linked to a person hit
-every one of those and declined silently — no profile, no transcription, no
-wake. Phase 6 replaces the task with a **subject**: any journal entity that
-can own an agent, a profile and a category.
-
-Three seams carry the generalization:
-
-* `SubjectAgentResolver` (`agents/service/subject_agent_lookup.dart`) walks
-  `subjectAgentLinkTypes` — task, project, event, relationship, in that order
-  — and returns the agent behind the first link type present. A link that
-  points at an unloadable agent yields `null` rather than falling through, so
-  a broken link can never attach a foreign agent to an entity. `agentDay` is
-  deliberately excluded: a day agent's subject is a date key, not something a
-  recording hangs off.
-* `subjectProfileIdOf` (`ai/state/profile_automation_providers.dart`) reads
-  the profile a subject stores in its own payload, per variant —
-  `Task.data.profileId`, `ProjectData.profileId`,
-  `RelationshipData.profileId`. Everything else in the resolver was already
-  kind-agnostic: the category lookup reads `meta.categoryId`, which every
-  variant has.
-* `AutomaticPromptTrigger` withholds `linkedTaskId` from non-task subjects.
-  That parameter feeds both `buildTaskDetailsJson` *and* the consumption
-  record's `taskId`, so passing a person's id there would file the spend
-  against a task that does not exist. The trigger resolves the entity once and
-  passes the id only when it really is a task.
+live-region captions announce preparation, transcription and readiness while
+Save remains disabled until capture/processing ends. Failed preparation or
+transcription offers a retry. Preparation reads have a 15-second deadline and
+are caught by the same error boundary as recorder launch and transcript waits.
+Spoken check-ins use only the system's selected default inference profile.
+`CheckInTranscriptionService` calls `ProfileResolver.resolveDefaultProfile`,
+which reads the device's selected profile id and resolves that profile. The
+transcription model and provider must both resolve. There is no person/category
+profile selection, provider ranking, model discovery, or fallback on failure.
+Preflight refuses recording when the default cannot transcribe.
 
 ```mermaid
 sequenceDiagram
   participant Sheet as CheckInCaptureForm
   participant Modal as AudioRecordingModal
   participant Rec as AudioRecorderController
-  participant Trig as AutomaticPromptTrigger
   participant Svc as CheckInTranscriptionService
-  participant Agent as relationship agent
-
-  Sheet->>Svc: canTranscribe(personId)
-  Svc-->>Sheet: false → refuse now, never record
-  Sheet->>Modal: show(linkedId: personId, categoryId: person's category)
-  Modal-->>Sheet: audio entry id (null if dismissed)
-  Sheet->>Svc: transcribe(entryId, subjectId: personId)
-  Note over Svc: starts watching updateStream first
-  alt automatic path is live
-    Rec->>Trig: triggerAutomaticPrompts(entryId, linkedSubjectId: personId)
-    Note over Trig: unawaited — the sheet never blocks on the recorder
-    Trig->>Trig: tryTranscribe → runTranscription(linkedTaskId: null)
-    Trig->>Agent: requestContentWake(transcriptionComplete)
-  else automatic path declines
-    Svc->>Svc: requestTranscription → runTranscription(linkedTaskId: null)
-  end
-  Svc-->>Sheet: transcript
+  participant Profile as ProfileResolver
+  participant Runner as SkillInferenceRunner
+  Sheet->>Svc: canTranscribe()
+  Svc->>Profile: resolveDefaultProfile()
+  Profile-->>Svc: selected profile or null
+  Svc-->>Sheet: transcription slot available
+  Sheet->>Modal: show(transcriptionHandledByCaller: true)
+  Modal->>Rec: record(transcriptionHandledByCaller: true)
+  Rec-->>Modal: stop() saves audio without automation
+  Modal-->>Sheet: audio entry id
+  Sheet->>Svc: transcribe(audioEntryId)
+  Note over Svc: subscribe to transcript notifications first
+  Svc->>Profile: resolveDefaultProfile()
+  Svc->>Runner: runTranscription(default profile, explicit skill)
+  Runner-->>Svc: onError cancels wait on failure
+  Svc-->>Sheet: transcript or null
   Sheet->>Sheet: mergeCheckInNarrative(existing, transcript)
 ```
 
-**Who runs the transcription is the subtle part.** The recorder fires
-`AutomaticPromptTrigger` on every stop, and that path is gated on
-`ProfileAutomationService._categoryAllowsAutomation` — the category's
-automatic-inference switch. That gate is documented as the consent for
-spending tokens *without a user gesture*, and pressing "Speak check-in" is a
-gesture. Leaning on it alone made the feature refuse for a reason unrelated to
-the request: a person filed under **no category** can never pass it, whatever
-models are configured, so their spoken check-in silently never ran.
+`transcriptionHandledByCaller` belongs to the recording, survives dismissal of
+its sheet, and resets on stop/cancel. It suppresses the recorder's automatic
+trigger without changing the shared speech-recognition preference. The service
+owns the single explicit transcription request and passes no automated skill
+assignment or linked task id, so it cannot start an automatic summary skill.
+Ordinary audio keeps its existing automation policy. A new recording also
+clears the previous category when its category is null.
 
-`CheckInTranscriptionService` therefore owns the decision. It asks
-`hasAutomatedSkillType` whether the automatic path will run; if it will, it
-stands aside and only waits, and if it will not, it calls
-`ProfileAutomationService.requestTranscription` — the same resolution minus
-the consent gate — and runs the skill itself. Exactly one run happens either
-way, so a spoken check-in is never billed twice. `canTranscribe` is the
-render-time counterpart: it answers "could *either* path produce words", and
-the sheet refuses **before** recording when neither can, rather than capturing
-audio for a transcript that can never arrive.
+The service subscribes to `UpdateNotifications.updateStream` before its first
+read and re-reads the audio entry on notifications carrying its id. Blank text
+means no transcript yet. The wait ends on text, missing configuration, inference
+failure, database/notification failure, stream closure, cancellation, or the
+five-minute `checkInTranscriptTimeout`. Disposing the form cancels the listener.
 
-The sheet and the run are **not** connected by a return value, so the service
-bridges the gap by subscribing to `UpdateNotifications.updateStream` *before*
-its first read (a transcript landing between the two is not missed) and
-re-reading the audio entry on every notification carrying its id. An empty
-`entryText` reads as "not yet", because the audio entry's own creation
-notification arrives long before any run finishes. The wait ends four ways:
-the transcript arrives; the run resolves no model, which cancels the wait
-immediately; the run *fails*; or `checkInTranscriptTimeout` (5 minutes)
-expires. `CheckInTranscriptWait.cancel` is the manual exit, called from the
-sheet's `dispose` so a dismissed sheet stops re-reading the database.
-
-**The failure exit needs two signals, because one run is not always ours.**
-`SkillInferenceRunner.runTranscription` wraps its whole body in
-`_withStatusTracking`, which catches every exception, logs it, publishes it
-on `inferenceStatusControllerProvider` / `inferenceErrorControllerProvider`
-and then **returns normally**. It does not throw, and a failed run writes no
-`entryText` — so to a waiting caller a provider outage is indistinguishable
-from a slow model. An HTTP 503 used to mean five minutes of "Transcribing…"
-followed by a generic "no transcript came back":
-
-* `runTranscription` takes an **`onError` hook**, threaded to the
-  `_withStatusTracking` parameter that already existed. The service passes
-  `onError: (_) => onNothingToRun()`, so the run *it* starts ends the wait the
-  moment it fails. This is the only signal available in pure Dart, and the
-  service's own `catch` is not it — that block only sees failures raised
-  *before* `_withStatusTracking` is entered.
-* When the recorder's automatic path owns the run instead, the service never
-  called it and no hook fires. `CheckInCaptureForm` therefore watches
-  `inferenceErrorControllerProvider` for the audio entry through
-  `ref.listenManual`, cancelling the wait on the first non-empty detail. That
-  controller is set by **whichever path ran**, so it covers both, and it
-  carries the provider's verbatim reason (`HTTP 503 · Melious · …`) into the
-  toast rather than a generic refusal. `listenManual` does not fire for the
-  current value, which is what keeps a stale detail from an earlier recording
-  from aborting the run the user just started.
-
-Task and journal audio never had this problem: `entry_details_page` and
-`task_details_page` mount `AiRunningDecoderBars`, which already listens to the
-same error controller and raises a toast. The check-in sheet is the surface
-that waits on the transcript itself, so it is the surface that has to.
-
-The recording sheet's own **speech-recognition opt-out** is one more exit.
-`tryTranscribe` checks it before anything else, so unchecking it means no run
-at all — and `hasAutomatedSkillType`, the pre-flight probe, cannot see it. The
-sheet therefore re-reads `AudioRecorderState.enableSpeechRecognition` after
-the recorder closes (the controller keeps the choice past `stop`) and skips
-the wait outright, rather than holding "Transcribing…" for five minutes to
-reach the answer the user already gave.
+`SkillInferenceRunner` catches provider failures and reports them through its
+`onError` callback and inference error controller. The callback ends the wait
+promptly; the form also observes `inferenceErrorControllerProvider` with
+`fireImmediately: true` to show the provider's error detail, including one
+published before the listener was installed. A thrown resolution error is also
+caught and ends the wait. No failure retries with another model or provider.
 
 Two invariants hold regardless of what comes back:
 

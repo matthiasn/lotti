@@ -9,16 +9,6 @@ class AppLocalizationsDa extends AppLocalizations {
   AppLocalizationsDa([String locale = 'da']) : super(locale);
 
   @override
-  String get speechSettingsChatAudioLabel => 'Chatlyd';
-
-  @override
-  String get speechSettingsChatAudioDescription =>
-      'Klargør nye chatsvar på denne enhed, så afspilningen starter hurtigere. Lyden afspilles først, når du trykker på afspil.';
-
-  @override
-  String get speechSettingsAutoPrepareChatAudio => 'Klargør chatlyd automatisk';
-
-  @override
   String get activeLabel => 'Aktiv';
 
   @override
@@ -3077,7 +3067,14 @@ class AppLocalizationsDa extends AppLocalizations {
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
 
   @override
+  String get checkInAudioButton => 'Optag en lydkontaktlog';
+
+  @override
   String get checkInAvoidLabel => 'Bedst at undgå';
+
+  @override
+  String get checkInCaptureChoiceTitle =>
+      'Hvordan vil du registrere kontakten?';
 
   @override
   String get checkInDateLabel => 'Hvornår?';
@@ -3129,7 +3126,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videoopkald';
 
   @override
-  String get checkInMoreCaption => 'Emner · næste gang · undgå';
+  String get checkInMoreCaption => 'Følelse · emner · næste gang';
 
   @override
   String get checkInMoreSection => 'Mere';
@@ -3145,6 +3142,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Næste gang: vær opmærksom på';
+
+  @override
+  String get checkInPreparingLabel => 'Forbereder lyd…';
 
   @override
   String get checkInSaveButton => 'Gem check-in';
@@ -3211,11 +3211,18 @@ class AppLocalizationsDa extends AppLocalizations {
       'Der kom ingen udskrift. Du kan skrive den selv.';
 
   @override
+  String get checkInTranscriptReady =>
+      'Transskriptionen er klar. Gennemgå den, før du gemmer.';
+
+  @override
   String get checkInTranscriptUnavailable =>
-      'Transskription er ikke sat op for denne person. Tilføj en lydmodel og slå automatisk inferens til for deres kategori, eller skriv check-in selv.';
+      'Vælg en standardprofil til inferens med en transskriptionsmodel i AI-indstillinger, eller skriv din kontaktregistrering.';
 
   @override
   String get checkInWhenAndHowLong => 'Hvornår og hvor længe';
+
+  @override
+  String get checkInWriteButton => 'Skriv en kontaktlog';
 
   @override
   String get checklistAddItem => 'Tilføj en ny genstand';
@@ -13728,6 +13735,16 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio => 'Klargør chatlyd automatisk';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Klargør nye chatsvar på denne enhed, så afspilningen starter hurtigere. Lyden afspilles først, når du trykker på afspil.';
+
+  @override
+  String get speechSettingsChatAudioLabel => 'Chatlyd';
 
   @override
   String get speechSettingsModelDescription => 'On-device talemodel';

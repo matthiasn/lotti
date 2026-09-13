@@ -1364,6 +1364,15 @@ void main() {
         overrides: personOverrides(),
       );
       await openModal(tester);
+      expect(find.text('Write a check-in'), findsOne);
+      expect(find.text('Record an audio check-in'), findsOne);
+      await captureScreenshot(
+        tester,
+        'check_in_choice_${viewport}_dark',
+        subdir: _subdir,
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
+      await tester.pumpAndSettle();
 
       expect(
         find.byKey(const ValueKey('check-in-save')),

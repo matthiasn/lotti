@@ -411,6 +411,36 @@ void main() {
 
   group('AudioRecorderController - Recording Control Methods', () {
     group('record', () {
+      test(
+        'repeated taps during permission request start only one recording',
+        () async {
+          when(() => mockAudioRecorderRepository.startRecording()).thenAnswer(
+            (_) async => AudioNote(
+              createdAt: DateTime(2026, 9, 13),
+              audioFile: 'test.m4a',
+              audioDirectory: '/audio/',
+              duration: Duration.zero,
+            ),
+          );
+          final permission = Completer<bool>();
+          when(
+            () => mockAudioRecorderRepository.hasPermission(),
+          ).thenAnswer((_) => permission.future);
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          final first = controller.record(linkedId: 'first-person');
+          final second = controller.record(linkedId: 'second-person');
+          permission.complete(true);
+          await Future.wait([first, second]);
+          verify(() => mockAudioRecorderRepository.startRecording()).called(1);
+          expect(
+            container.read(audioRecorderControllerProvider).linkedId,
+            'first-person',
+          );
+        },
+      );
+
       test('should log no permission event when permission denied', () async {
         // Arrange
         final controller = container.read(
@@ -1500,7 +1530,7 @@ void main() {
   group('AudioRecorderController - Additional Coverage', () {
     group('stop() triggers automatic prompts (lines 276, 282-283)', () {
       test(
-        'stop with valid audioNote and linkedId triggers automaticPrompts',
+        'caller-owned recording skips automation after dismissal, next recording uses it',
         () async {
           final mockPersistence = MockPersistenceLogic();
           if (!getIt.isRegistered<PersistenceLogic>()) {
@@ -1579,6 +1609,28 @@ void main() {
 
           final controller = localContainer.read(
             audioRecorderControllerProvider.notifier,
+          );
+
+          // ignore: cascade_invocations
+          controller.setEnableSpeechRecognition(enable: true);
+          await controller.record(
+            linkedId: 'relationship-id',
+            transcriptionHandledByCaller: true,
+          );
+          controller.setModalVisible(modalVisible: false);
+          expect(await controller.stop(), 'stop-entry-id');
+          verifyNever(
+            () => mockTrigger.triggerAutomaticPrompts(
+              any(),
+              any(),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
+            ),
+          );
+          expect(
+            localContainer
+                .read(audioRecorderControllerProvider)
+                .enableSpeechRecognition,
+            isTrue,
           );
 
           // Start recording with a linkedId so _linkedId is set

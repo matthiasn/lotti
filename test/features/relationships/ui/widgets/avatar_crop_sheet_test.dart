@@ -217,6 +217,66 @@ void main() {
       );
     });
 
+    for (final trackpad in [false, true]) {
+      testWidgets(
+        'vertical photo drag (trackpad=$trackpad) pans without scrolling the sheet',
+        (tester) async {
+          handle.value = const AvatarCrop(scale: 2);
+          final scroll = ScrollController();
+          addTearDown(scroll.dispose);
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Scaffold(
+                body: SingleChildScrollView(
+                  controller: scroll,
+                  child: Column(
+                    children: [
+                      SizedBox(width: 300, child: form()),
+                      const SizedBox(height: 1000),
+                    ],
+                  ),
+                ),
+              ),
+              overrides: [createEntryControllerOverride(image)],
+            ),
+          );
+          await tester.pump();
+          scroll.jumpTo(100);
+          await tester.pump();
+          final center = tester.getCenter(viewport);
+          if (trackpad) {
+            await tester.sendEventToBinding(
+              PointerPanZoomStartEvent(position: center),
+            );
+            for (var i = 1; i <= 10; i++) {
+              await tester.sendEventToBinding(
+                PointerPanZoomUpdateEvent(
+                  position: center,
+                  pan: Offset(0, -10.0 * i),
+                  panDelta: const Offset(0, -10),
+                ),
+              );
+              await tester.pump();
+            }
+            await tester.sendEventToBinding(
+              PointerPanZoomEndEvent(position: center),
+            );
+          } else {
+            final drag = await tester.startGesture(center);
+            for (var i = 0; i < 10; i++) {
+              await drag.moveBy(const Offset(0, -10));
+              await tester.pump();
+            }
+            await drag.up();
+          }
+          await tester.pump();
+          expect(handle.value.y, greaterThan(0.7));
+          expect(scroll.offset, 100);
+          expect(handle.value.scale, 2);
+        },
+      );
+    }
+
     testWidgets('a pinch zooms by the ratio of spans, and a second movement '
         'of the same fingers applies only the change since the last one — '
         'not the whole gesture again', (tester) async {
