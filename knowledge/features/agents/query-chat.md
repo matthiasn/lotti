@@ -810,7 +810,9 @@ after native synthesis. Chat/source visibility loss, deletion, recording,
 navigation, disabling TTS or opting out cancel the job and discard its temporary
 WAV. Voice/model changes replace preparation. Duplicate projection refreshes do
 not resynthesize the same reply. A reply deferred during playback is prepared
-after completion; Stop invalidates queued preparation and does not restart it.
+after completion. Playing another answer or task summary clears the evicted
+cache key and requeues the latest reply after playback. Stop invalidates queued
+preparation and does not restart it.
 Tapping Play reuses a matching result or joins
 its pending synthesis, with another fresh access check; it never autoplays.
 The shared TTS controller serializes native synthesis and owns temporary-file

@@ -127,6 +127,75 @@ void main() {
     },
   );
 
+  test(
+    'reattaching the selected chat prepares again after cancelling ownership',
+    () async {
+      enablePreparation();
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(1));
+      subscription.close();
+      // Reattach before auto-disposal, exercising the surviving controller's
+      // onResume path rather than creating a different controller.
+      subscription = container.listen(provider, (_, _) {});
+      expect(container.read(provider.notifier), same(controller));
+      await pumpEventQueue();
+      expect(bench.engine.calls, hasLength(2));
+      expect(bench.speechPlayer.playCount, 0);
+      await controller.speakAnswer(answerId: 'answer');
+      expect(bench.engine.calls, hasLength(2));
+      expect(bench.speechPlayer.playCount, 1);
+    },
+  );
+
+  for (final other in ['older answer', 'task summary']) {
+    test(
+      'requeues the latest reply after $other playback evicts prepared audio',
+      () async {
+        await pumpEventQueue();
+        bench
+          ..addEvent(
+            'question-latest',
+            const QueryChatEventData.question(text: 'And now?'),
+          )
+          ..addEvent(
+            'answer-latest',
+            const QueryChatEventData.answer(
+              questionId: 'question-latest',
+              text: 'The feeder is ready.',
+              coverage: QueryCoverage(),
+            ),
+          );
+        bench.history.add(bench.snapshot());
+        await pumpEventQueue();
+        enablePreparation();
+        await pumpEventQueue();
+        expect(bench.engine.calls.single.text, 'The feeder is ready.');
+        if (other == 'older answer') {
+          await controller.speakAnswer(answerId: 'answer');
+        } else {
+          await container
+              .read(ttsPlaybackControllerProvider.notifier)
+              .speak(
+                sourceId: 'task-summary',
+                text: 'A task summary.',
+              );
+        }
+        expect(bench.engine.calls, hasLength(2));
+        bench.history.add(bench.snapshot());
+        await pumpEventQueue();
+        expect(bench.engine.calls, hasLength(2));
+        bench.speechPlayer.complete();
+        await pumpEventQueue();
+        expect(bench.engine.calls, hasLength(3));
+        expect(bench.engine.calls.last.text, 'The feeder is ready.');
+        expect(bench.speechPlayer.playCount, 1);
+        await controller.speakAnswer(answerId: 'answer-latest');
+        expect(bench.engine.calls, hasLength(3));
+        expect(bench.speechPlayer.playCount, 2);
+      },
+    );
+  }
+
   test('stopping speech does not restart automatic preparation', () async {
     enablePreparation();
     await pumpEventQueue();

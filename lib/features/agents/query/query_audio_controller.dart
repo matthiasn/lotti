@@ -145,6 +145,15 @@ class QueryAudioController extends Notifier<QueryAudioState> {
         if (status == AudioPlayerStatus.playing) unawaited(stop());
       })
       ..listen(ttsPlaybackControllerProvider, (previous, next) {
+        final preparedSource = _preparationKey?.sourceId;
+        if (next.isBusy &&
+            preparedSource != null &&
+            next.sourceId != preparedSource) {
+          // Another utterance evicted the shared prepared WAV. Forget local
+          // deduplication too, then requeue the latest reply after playback.
+          _discardPreparation();
+          _preparationDeferred = true;
+        }
         if (_preparationDeferred && previous?.isBusy == true && !next.isBusy) {
           _schedulePreparation();
         }
