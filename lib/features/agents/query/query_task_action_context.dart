@@ -122,7 +122,7 @@ class QueryTaskActionContextLoader {
         },
         'checklistItems': [
           for (final entry in checklists)
-            {'id': entry.meta.id, ...entry.data.toJson()},
+            {...entry.data.toJson(), 'id': entry.meta.id},
         ],
         'timeEntries': [
           for (final entry in times)

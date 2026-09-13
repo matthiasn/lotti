@@ -120,6 +120,39 @@ void main() {
     );
   }
 
+  for (final legacyId in [null, 'stale-item-id']) {
+    test('checklist metadata ID wins over legacy data ID $legacyId', () async {
+      final task = bench.entries['task']! as Task;
+      bench.entries['task'] = task.copyWith(
+        data: task.data.copyWith(checklistIds: ['list']),
+      );
+      bench.entries['list'] = Checklist(
+        meta: task.meta.copyWith(id: 'list'),
+        data: const ChecklistData(
+          title: 'Preflight',
+          linkedChecklistItems: ['item'],
+          linkedTasks: ['task'],
+        ),
+      );
+      bench.entries['item'] = ChecklistItem(
+        meta: task.meta.copyWith(id: 'item'),
+        data: ChecklistItemData(
+          id: legacyId,
+          title: 'Inspect feeder',
+          isChecked: false,
+          linkedChecklists: ['list'],
+        ),
+      );
+      final context = await QueryTaskActionContextLoader(
+        access: bench.crawler.access,
+      ).load('task');
+      final item = (context.input['checklistItems']! as List).single as Map;
+      expect(item['id'], 'item');
+      expect(context.checklistIds, {item['id']});
+      expect(item['title'], 'Inspect feeder');
+    });
+  }
+
   test(
     'action context keeps current fields and bounded time-text previews',
     () async {

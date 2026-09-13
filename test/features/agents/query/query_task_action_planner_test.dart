@@ -395,6 +395,39 @@ void main() {
   );
 
   test(
+    'rejects language proposals when a task language is already set',
+    () async {
+      for (final language in ['en', 'de']) {
+        await expectLater(
+          QueryTaskActionPlanner.validate(
+            'set_task_language',
+            {'languageCode': 'de', 'confidence': 'high'},
+            QueryTaskActionContext(
+              taskId: 'habitat',
+              input: {
+                'task': {'languageCode': language},
+              },
+              dependencies: const [],
+            ),
+          ),
+          throwsFormatException,
+        );
+      }
+      await QueryTaskActionPlanner.validate(
+        'set_task_language',
+        {'languageCode': 'de', 'confidence': 'high'},
+        const QueryTaskActionContext(
+          taskId: 'habitat',
+          input: {
+            'task': {'languageCode': null},
+          },
+          dependencies: [],
+        ),
+      );
+    },
+  );
+
+  test(
     'keeps advice or missing-details clarification free of proposals',
     () async {
       final result = await plan([]);
@@ -430,6 +463,126 @@ void main() {
       );
     },
   );
+
+  for (final malformedJson in [true, false]) {
+    test(
+      'repairs once and discards the invalid attempt: JSON=$malformedJson',
+      () async {
+        var calls = 0;
+        final planner = QueryTaskActionPlanner(
+          inference: QueryTextInference(
+            generate: (_, prompt) {
+              calls++;
+              final input = jsonDecode(prompt) as Map;
+              if (calls == 1) {
+                return Stream.value(
+                  malformedJson
+                      ? 'provider-sensitive-invalid-output'
+                      : jsonEncode({
+                          'answer': 'Review.',
+                          'actions': [
+                            {
+                              'name': 'set_task_title',
+                              'arguments': {'title': 'Discard me'},
+                              'summary': 'Discard',
+                            },
+                            {
+                              'name': 'link_task',
+                              'arguments': {
+                                'targetTaskId': 'foreign',
+                                'relation': 'blocks',
+                              },
+                              'summary': 'Invalid',
+                            },
+                          ],
+                        }),
+                );
+              }
+              expect(input['repair'], isA<String>());
+              expect(
+                prompt,
+                isNot(contains('provider-sensitive-invalid-output')),
+              );
+              expect(prompt, isNot(contains('Discard me')));
+              return Stream.value(
+                jsonEncode({
+                  'answer': 'Review the corrected proposal.',
+                  'actions': [
+                    {
+                      'name': 'set_task_title',
+                      'arguments': {'title': 'Corrected'},
+                      'summary': 'Corrected',
+                    },
+                  ],
+                }),
+              );
+            },
+          ),
+        );
+        final result = await planner.plan(
+          context: context,
+          question: 'Rename.',
+          conversation: [],
+          cancellation: QueryCancellation(),
+        );
+        expect(calls, 2);
+        expect(result.items.single.args, {'title': 'Corrected'});
+      },
+    );
+  }
+
+  test(
+    'stops after one failed repair and never retries transport errors',
+    () async {
+      for (final formatError in [true, false]) {
+        var calls = 0;
+        final planner = QueryTaskActionPlanner(
+          inference: QueryTextInference(
+            generate: (_, _) {
+              calls++;
+              return formatError
+                  ? Stream.value('invalid')
+                  : Stream.error(StateError('transport'));
+            },
+          ),
+        );
+        await expectLater(
+          planner.plan(
+            context: context,
+            question: 'Rename.',
+            conversation: [],
+            cancellation: QueryCancellation(),
+          ),
+          formatError ? throwsFormatException : throwsStateError,
+        );
+        expect(calls, formatError ? 2 : 1);
+      }
+    },
+  );
+
+  test('cancellation prevents action repair', () async {
+    var calls = 0;
+    final cancellation = QueryCancellation();
+    final planner = QueryTaskActionPlanner(
+      inference: QueryTextInference(
+        generate: (_, _) {
+          calls++;
+          cancellation.cancel();
+          return Stream.value('invalid');
+        },
+      ),
+    );
+    await expectLater(
+      planner.plan(
+        context: context,
+        question: 'Rename.',
+        conversation: [],
+        cancellation: cancellation,
+      ),
+      throwsA(isA<QueryCancelled>()),
+    );
+    expect(calls, 1);
+  });
 
   test(
     'receives fresh local clock and replaces wake-only tool guidance',
