@@ -48,6 +48,26 @@ sources:
     resource: ../../../lib/features/agents/query/query_chat_store.dart
     title: Synced history and atomic publication
     last_modified: 2026-09-11
+  - id: action-planner
+    resource: ../../../lib/features/agents/query/query_task_action_planner.dart
+    title: Isolated task-tool proposal planning
+    last_modified: 2026-09-13
+  - id: action-context
+    resource: ../../../lib/features/agents/query/query_task_action_context.dart
+    title: Live task action targets
+    last_modified: 2026-09-13
+  - id: action-service
+    resource: ../../../lib/features/agents/query/query_chat_action_service.dart
+    title: Human approval and guarded task dispatch
+    last_modified: 2026-09-13
+  - id: action-review
+    resource: ../../../lib/features/agents/ui/query/query_action_review.dart
+    title: Inline action review and retry
+    last_modified: 2026-09-13
+  - id: action-eval
+    resource: ../../../test/features/ai/eval/query_actions_eval_live_test.dart
+    title: Synthetic live action routing and review latency eval
+    last_modified: 2026-09-13
   - id: audio-controller
     resource: ../../../lib/features/agents/query/query_audio_controller.dart
     title: Chat-owned audio and live authorization
@@ -330,8 +350,80 @@ input and replaces any stale top-level clock value.
 The changing clock follows the existing source/context payload, preserving the
 stable source prefix. `QueryTextInference.requestBytes` counts both the guidance
 and clock metadata in summary-selection, full-summary and home-batch budgets.
-No extra inference call is needed. This remains a read-only query pipeline:
-owning-agent mutation tools, including time recording, are not exposed here.
+No extra inference call is needed for clock context. Task chat can also prepare
+changes for inline human review; project and category chat remain query-only.
+
+## Task actions and inline approval
+
+The existing TLDR selection completion may set `actionRequest=true` for an
+explicit change requested in the current task chat. Ordinary unfiltered questions retain
+the summary route and call count. Source filters still allow explicit actions;
+non-action filtered task questions return to entry inspection after routing. Quoted text, reports and prior turns are
+untrusted context, never authorization. `QueryAnswerBuilder` routes that flag
+to an isolated `QueryTaskActionPlanner` request using the configured Chat model.
+The planner receives the registry schemas for deferred task tools and bounded
+live task metadata from `QueryTaskActionContextLoader`: owned checklist items,
+linked time entries, visible same-category task targets, eligible labels and
+the current timer when it belongs to the task. No neighbour raw entries are
+loaded. This supports checklist additions/updates, time recording and timer
+text, task fields, labels, follow-up tasks, relationships and migrations.
+Missing required details produce a clarification, with no proposed changes.
+
+The planner validates registry schemas, local timestamp syntax/ranges and ID
+allowlists, then uses `ChangeSetBuilder` to explode batches. Its output is a
+`QueryChatAnswer.proposedActions` list, with no evidence cards or durable
+conclusions. These inert arguments belong only to the chat until accepted;
+no task-agent change set exists merely because a model proposed an action.
+Proposal owners must remain live, visible and in their saved categories.
+
+`QueryActionReview` renders the actual structured changes inside the answer,
+including dates, time ranges and follow-up options, with Accept and Dismiss.
+There is no modal. The proposal's message heading is app-generated; a model's
+premature execution claim cannot appear as a completed action. Prior proposals
+enter later model context as structured proposals with execution unknown, not
+as that model's announcement of success. `QueryChatStore.decideActions` records
+the verdict once.
+Dismissal never dispatches anything. Acceptance creates the stable
+`query-chat:<questionId>:actions` set from the persisted proposal, not from
+arguments supplied by the UI. `QueryChatActionService` authorizes the chat and
+live targets before every dispatch through the shared task handlers and
+`ChangeSetConfirmationService`. Its in-flight guard prevents repeated local
+Accept taps; retries reuse item statuses and skip applied items. The existing
+confirmation service's persist-before-dispatch crash semantics still apply.
+Failures show content-free app copy, never provider or handler error strings.
+
+Chat action sets and their decisions are excluded before limits from wake
+pending queues, proposal ledgers and template-decision feedback. Thus a task
+wake cannot consolidate or withdraw an in-progress chat set. Deleting the
+chat tombstones its action set and blocks further dispatch; already created
+journal entries remain independent task data. Approval does not authorize
+later model proposals. Changing scope or source visibility requires a new
+live authorization, even after the initial click.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Proposed: validated planner output saved in chat
+    Proposed --> Dismissed: Dismiss
+    Proposed --> Applying: Accept and live authorization
+    Applying --> Applied: all handlers succeed
+    Applying --> Partial: a handler fails
+    Partial --> Applying: Retry pending items
+    Proposed --> Deleted: delete chat
+    Partial --> Deleted: delete chat
+    Dismissed --> [*]
+    Applied --> [*]
+    Deleted --> [*]
+```
+
+The opt-in `query_actions_eval_live_test.dart` uses the production builder and
+transport with the unmodified penguin corpus and a frozen report bundle. It
+records question-to-review time separately from each completion, and checks
+checklist/time/combined/status requests plus missing-detail, advice and quoted
+instruction controls. It never wires an approval service. Set
+`LOTTI_QUERY_ACTION_EVAL_LIVE=1`, explicit `QUERY_EVAL_MODEL`, an external
+`QUERY_EVAL_OUTPUT`, `QUERY_EVAL_SUMMARY_REPORTS`, and Melious connection values
+in the environment, then run that single test through Dart MCP. Generated
+responses and timing artifacts stay outside the repository.
 
 `QueryChatController` maintains separate drafts, narrowing choices, cancellation
 tokens and request status for each chat. Requests in different chats can run

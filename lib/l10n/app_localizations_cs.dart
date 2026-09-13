@@ -11086,6 +11086,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get provisionedSyncTitle => 'Zařízení';
 
   @override
+  String get queryActionsAccept => 'Přijmout';
+
+  @override
+  String get queryActionsDismiss => 'Zamítnout';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Některé změny se nepodařilo provést. Při dalším pokusu se již provedené změny nebudou opakovat.';
+
+  @override
+  String get queryActionsReview => 'Navržené změny';
+
+  @override
   String get queryAllSources => 'Vše';
 
   @override
@@ -15784,4 +15797,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'Pro: $target';
+  }
 }

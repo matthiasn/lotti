@@ -46,6 +46,9 @@ applied until the user confirms it.
   The [query conversation
   concept](../../../knowledge/features/agents/query-chat.md) defines the scope,
   evidence and privacy contract.
+- **Prepares task changes in chat.** Ask for checklist items, time recordings,
+  or other supported task changes, then accept or dismiss the proposed changes
+  directly inside the conversation. Nothing is applied before acceptance.
 - **Shows its work.** An internals panel exposes the agent's reports,
   conversations, observations, token usage and activity, so its behaviour is
   inspectable rather than opaque.

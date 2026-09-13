@@ -9,7 +9,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
@@ -38,6 +40,71 @@ import 'query_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
+
+  test(
+    'chat action state streams local writes without wake notifications',
+    () async {
+      final bench = QueryPersistenceBench();
+      addTearDown(bench.close);
+      final container = ProviderContainer(
+        overrides: [agentDatabaseProvider.overrideWithValue(bench.agentDb)],
+      );
+      addTearDown(container.dispose);
+      final provider = queryActionChangeSetProvider((
+        agentId: 'agent',
+        questionId: 'q',
+      ));
+      final values = <ChangeSetEntity?>[];
+      final subscription = container.listen(provider, (_, value) {
+        if (value.hasValue) values.add(value.value);
+      });
+      addTearDown(subscription.close);
+      expect(await container.read(provider.future), isNull);
+      final set = ChangeSetEntity(
+        id: 'query-chat:q:actions',
+        agentId: 'agent',
+        taskId: 'task',
+        threadId: 'chat',
+        runKey: 'query-chat:q',
+        status: ChangeSetStatus.pending,
+        items: const [
+          ChangeItem(
+            toolName: 'add_checklist_item',
+            args: {'title': 'Feeder'},
+            humanSummary: 'Feeder',
+          ),
+        ],
+        createdAt: DateTime(2026, 9, 13),
+        vectorClock: null,
+      );
+      final changed = Completer<void>();
+      final changeSubscription = container.listen(provider, (_, value) {
+        if (value.value?.items.single.status == ChangeItemStatus.confirmed &&
+            !changed.isCompleted) {
+          changed.complete();
+        }
+      });
+      addTearDown(changeSubscription.close);
+      await bench.store.sync.upsertEntity(set);
+      await bench.store.sync.upsertEntity(
+        set.copyWith(
+          status: ChangeSetStatus.resolved,
+          items: [
+            set.items.single.copyWith(status: ChangeItemStatus.confirmed),
+          ],
+        ),
+      );
+      await changed.future;
+      expect(values.last!.items.single.status, ChangeItemStatus.confirmed);
+      final wrongAgent = queryActionChangeSetProvider((
+        agentId: 'foreign',
+        questionId: 'q',
+      ));
+      final other = container.listen(wrongAgent, (_, _) {});
+      addTearDown(other.close);
+      expect(await container.read(wrongAgent.future), isNull);
+    },
+  );
 
   for (final destroyed in [false, true]) {
     test(

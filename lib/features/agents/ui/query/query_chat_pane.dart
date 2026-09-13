@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/agents/ui/query/query_audio_controls.dart';
 import 'package:lotti/features/agents/ui/query/query_evidence_card.dart';
 import 'package:lotti/features/agents/ui/query/query_summary_preview.dart';
@@ -547,13 +548,17 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
           :final text,
           :final evidence,
           :final summaryBased,
+          :final proposedActions,
         ))
           AgentChatMessage(
             id: event.id,
             role: AgentChatRole.agent,
             // Route answer-local citations to their saved evidence cards.
             // Existing Markdown links retain their original destination.
-            text: summaryBased
+            // A model cannot announce execution before human approval.
+            text: proposedActions.isNotEmpty
+                ? messages.queryActionsReview
+                : summaryBased
                 ? '**${messages.querySummaryBased}**\n\n$text'
                 : _linkEvidenceCitations(text, evidence.length),
             createdAt: event.createdAt,
@@ -742,6 +747,23 @@ class _QueryChatPaneState extends ConsumerState<QueryChatPane> {
                           );
                         }
                         if (row?.data case final QueryChatAnswer answer) {
+                          if (answer.proposedActions.isNotEmpty &&
+                              chat != null) {
+                            final decision = chat.events
+                                .map((e) => e.data)
+                                .whereType<QueryChatActionDecision>()
+                                .where((d) => d.questionId == answer.questionId)
+                                .firstOrNull;
+                            return QueryActionReview(
+                              key: ValueKey('actions-${answer.questionId}'),
+                              chatKey: audioKey.home,
+                              chatId: chat.id,
+                              answer: answer,
+                              approved: decision?.approved,
+                              access: access,
+                              canApply: !chat.archived,
+                            );
+                          }
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [

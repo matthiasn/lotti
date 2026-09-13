@@ -145,10 +145,17 @@ class ChangeSetResolutionStore {
 
   /// Re-reads the change set from the repository to get the latest persisted
   /// state. Falls back to [fallback] if the entity is not found or has an
-  /// unexpected type.
+  /// unexpected type. Chat-owned sets fail closed with an empty tombstone
+  /// instead: they cannot be recreated after chat deletion.
   Future<ChangeSetEntity> freshChangeSet(ChangeSetEntity fallback) async {
     final latest = await _syncService.repository.getEntity(fallback.id);
-    return latest is ChangeSetEntity ? latest : fallback;
+    if (latest is ChangeSetEntity) return latest;
+    // Chat sets are always persisted at human approval. Missing means the chat
+    // was deleted, never an invitation to recreate its executable snapshot.
+    if (fallback.id.startsWith('query-chat:')) {
+      return fallback.copyWith(items: const [], deletedAt: clock.now());
+    }
+    return fallback;
   }
 
   /// Persists a [ChangeDecisionEntity] recording the [verdict] for the item
@@ -200,6 +207,9 @@ class ChangeSetResolutionStore {
   ) async {
     // Re-read the latest entity to avoid overwriting concurrent updates.
     final latest = await _syncService.repository.getEntity(changeSet.id);
+    if (latest is! ChangeSetEntity && changeSet.id.startsWith('query-chat:')) {
+      return null;
+    }
     final current = latest is ChangeSetEntity ? latest : changeSet;
 
     if (itemIndex < 0 || itemIndex >= current.items.length) {

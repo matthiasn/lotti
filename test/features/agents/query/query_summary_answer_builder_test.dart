@@ -86,8 +86,10 @@ void main() {
     List<Map<String, String>> conversation = const [],
     void Function(String)? onText,
     void Function(QueryChatAnswer)? onReady,
+    Future<QueryChatAnswer> Function(List<QuerySourceRef>)? onActionRequest,
   }) =>
       QuerySummaryAnswerBuilder(
+        onActionRequest: onActionRequest,
         reader: reader,
         access: bench.crawler.access,
         maxInputBytes: maxBytes,
@@ -116,6 +118,84 @@ void main() {
         onAnswerText: onText,
         onSynthesisReady: onReady,
       );
+
+  test(
+    'explicit task action routes to isolated planner without summary synthesis',
+    () async {
+      plan = {
+        'taskIds': <String>[],
+        'useProject': false,
+        'needsHomeEvidence': false,
+        'actionRequest': true,
+      };
+      var requests = 0;
+      final result = await build(
+        onActionRequest: (dependencies) async {
+          requests++;
+          expect(dependencies.map((d) => d.id), contains('home'));
+          return const QueryChatAnswer(
+            questionId: 'question',
+            text: 'Review checklist change.',
+            coverage: QueryCoverage(),
+          );
+        },
+      );
+      expect(requests, 1);
+      expect(prompts.length, 1);
+      expect(result!.text, 'Review checklist change.');
+      expect(systems.single, contains('actionRequest'));
+      expect(bench.searches, isEmpty);
+    },
+  );
+
+  test(
+    'filtered non-action question returns to the original-entry route',
+    () async {
+      final result = await build(
+        kind: QuerySourceKind.recording,
+        onActionRequest: (_) async => throw StateError('Unexpected proposal'),
+      );
+      expect(result, isNull);
+      expect(prompts.length, 1);
+    },
+  );
+
+  test(
+    'ordinary question retains two-call summary path with actions enabled',
+    () async {
+      final result = await build(
+        onActionRequest: (_) async =>
+            throw StateError('Unexpected action request'),
+      );
+      expect(result!.summaryBased, isTrue);
+      expect(prompts.length, 2);
+    },
+  );
+
+  test('action routing rechecks visibility after planning', () async {
+    plan = {
+      'taskIds': <String>[],
+      'useProject': false,
+      'needsHomeEvidence': false,
+      'actionRequest': true,
+    };
+    await expectLater(
+      build(
+        onActionRequest: (_) async {
+          final home = bench.entries['home']!;
+          bench.entries['home'] = home.copyWith(
+            meta: home.meta.copyWith(private: true),
+          );
+          return const QueryChatAnswer(
+            questionId: 'question',
+            text: 'Review.',
+            coverage: QueryCoverage(),
+          );
+        },
+      ),
+      throwsA(isA<QueryScopeUnavailable>()),
+    );
+  });
 
   test('two calls use TLDRs then only the selected summary', () async {
     final result = await build();

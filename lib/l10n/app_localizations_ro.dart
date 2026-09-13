@@ -11146,6 +11146,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get provisionedSyncTitle => 'Dispozitive';
 
   @override
+  String get queryActionsAccept => 'Acceptați';
+
+  @override
+  String get queryActionsDismiss => 'Respingeți';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Unele modificări nu au putut fi aplicate. Modificările deja aplicate nu se vor repeta când încercați din nou.';
+
+  @override
+  String get queryActionsReview => 'Modificări propuse';
+
+  @override
   String get queryAllSources => 'Toate';
 
   @override
@@ -15893,4 +15906,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'Pentru: $target';
+  }
 }

@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/agents/service/change_set_confirmation_service.dart
     title: ChangeSetConfirmationService
     last_modified: 2026-06-13
+  - id: resolution-store
+    resource: ../../../lib/features/agents/service/change_set_resolution_store.dart
+    title: Shared confirmation state and chat-deletion fence
+    last_modified: 2026-09-13
   - id: directed-relation
     resource: ../../../lib/features/tasks/model/directed_relation.dart
     title: DirectedRelation
@@ -721,6 +725,10 @@ auto-retract deterministic failures the dispatcher marks non-retryable. This
 includes `update_running_timer` when the active timer changed before acceptance
 and version-fenced goal revisions whose base version is stale or whose legacy
 contract cannot be applied safely.
+
+For [chat-owned approvals](query-chat.md#task-actions-and-inline-approval), a
+missing persisted set is terminal: the resolution store returns an empty
+tombstone and refuses status writes instead of reviving the caller's snapshot.
 
 It also resolves follow-up-task placeholder ids across later migration items and
 suppresses rejected label assignments so the same label is not immediately

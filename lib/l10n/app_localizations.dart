@@ -18445,6 +18445,30 @@ abstract class AppLocalizations {
   /// **'Devices'**
   String get provisionedSyncTitle;
 
+  /// No description provided for @queryActionsAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get queryActionsAccept;
+
+  /// No description provided for @queryActionsDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get queryActionsDismiss;
+
+  /// No description provided for @queryActionsIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Some changes could not be applied. Applied changes will not be repeated when you retry.'**
+  String get queryActionsIncomplete;
+
+  /// No description provided for @queryActionsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed changes'**
+  String get queryActionsReview;
+
   /// No description provided for @queryAllSources.
   ///
   /// In en, this message translates to:
@@ -25996,6 +26020,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// Identifies the existing target of an inline chat action.
+  ///
+  /// In en, this message translates to:
+  /// **'For: {target}'**
+  String queryActionsTarget(String target);
 }
 
 class _AppLocalizationsDelegate

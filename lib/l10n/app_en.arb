@@ -6299,6 +6299,19 @@
   "provisionedSyncSummaryHomeserver": "Sync server",
   "provisionedSyncSummaryUser": "Sync account",
   "provisionedSyncTitle": "Devices",
+  "queryActionsAccept": "Accept",
+  "queryActionsDismiss": "Dismiss",
+  "queryActionsIncomplete": "Some changes could not be applied. Applied changes will not be repeated when you retry.",
+  "queryActionsReview": "Proposed changes",
+  "queryActionsTarget": "For: {target}",
+  "@queryActionsTarget": {
+    "description": "Identifies the existing target of an inline chat action.",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
   "queryAllSources": "All",
   "queryArchiveChat": "Archive chat",
   "queryArchiveConfirmation": "Chat archived. Its conclusions remain available.",

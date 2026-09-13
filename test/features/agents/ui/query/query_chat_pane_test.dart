@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_projection.dart';
@@ -253,6 +254,42 @@ void main() {
     await tester.pump();
     await tester.pump();
   }
+
+  testWidgets(
+    'action review shows pending app copy instead of model execution claims',
+    (tester) async {
+      events.addAll([
+        event(
+          'q',
+          'feeder',
+          const QueryChatQuestion(text: 'Add a feeder check.'),
+        ),
+        event(
+          'a',
+          'feeder',
+          const QueryChatAnswer(
+            questionId: 'q',
+            text: 'I already changed everything.',
+            coverage: QueryCoverage(),
+            proposedActions: [
+              ChangeItem(
+                toolName: 'add_checklist_item',
+                args: {'title': 'Inspect feeder'},
+                humanSummary: 'Inspect feeder',
+              ),
+            ],
+          ),
+        ),
+      ]);
+      await pump(tester, session: const QueryChatSession(selectedId: 'feeder'));
+      expect(find.textContaining('I already changed everything'), findsNothing);
+      expect(find.textContaining('Proposed changes'), findsOneWidget);
+      expect(find.textContaining('Inspect feeder'), findsOneWidget);
+      expect(find.text('Accept'), findsOneWidget);
+      expect(find.text('Dismiss'), findsOneWidget);
+      expect(inferenceCalls, 0);
+    },
+  );
 
   QueryEvidence addCitationAnswer(String suffix, {String? answerText}) {
     final sourceId = 'note-$suffix';

@@ -551,7 +551,9 @@ class AgentDatabase extends _$AgentDatabase {
     entityType: 'changeSet',
     taskId: taskId,
     limit: limit,
-    extraPredicate: "AND subtype IN ('pending', 'partiallyResolved')",
+    extraPredicate:
+        "AND subtype IN ('pending', 'partiallyResolved') "
+        "AND id NOT LIKE 'query-chat:%'",
   );
 
   /// The three task-scoped reads `AgentProposalLedger.getProposalLedger` needs,
@@ -594,6 +596,9 @@ class AgentDatabase extends _$AgentDatabase {
             AND json_valid(serialized)
             AND $_taskIdJsonExpression = ?2
             AND deleted_at IS NULL
+            AND id NOT LIKE 'query-chat:%'
+            AND COALESCE(json_extract(serialized, '\$.changeSetId'), '')
+                NOT LIKE 'query-chat:%'
             $extraPredicate
           ORDER BY created_at DESC
           LIMIT ${entityType == 'changeDecision' ? '?4' : '?3'}

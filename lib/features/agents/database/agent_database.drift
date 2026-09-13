@@ -296,9 +296,9 @@ countEntitiesChangedSinceForTemplate: SELECT COUNT(*) AS cnt FROM agent_entities
 
 getChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeSet' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
-getPendingChangeSetsForAgent: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'changeSet' AND subtype IN ('pending', 'partiallyResolved') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
+getPendingChangeSetsForAgent: SELECT * FROM agent_entities WHERE id NOT LIKE 'query-chat:%' AND agent_id = :agentId AND type = 'changeSet' AND subtype IN ('pending', 'partiallyResolved') AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 
-getRecentDecisionsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'changeDecision' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
+getRecentDecisionsByTemplate: SELECT ae.* FROM agent_entities ae INNER JOIN agent_links al ON al.to_id = ae.agent_id AND al.type = 'template_assignment' WHERE al.from_id = :templateId AND ae.type = 'changeDecision' AND COALESCE(json_extract(ae.serialized, '$.changeSetId'), '') NOT LIKE 'query-chat:%' AND ae.created_at >= :since AND ae.deleted_at IS NULL AND al.deleted_at IS NULL ORDER BY ae.created_at DESC LIMIT :limit;
 
 getTokenUsageByAgentId: SELECT * FROM agent_entities WHERE agent_id = :agentId AND type = 'wakeTokenUsage' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit;
 

@@ -172,6 +172,57 @@ void main() {
           .insert(AgentDbConversions.toEntityCompanion(entity));
     }
 
+    test(
+      'chat action sets cannot enter wake queues or consume ledger limits',
+      () async {
+        await insertChangeSet(id: 'wake', agentId: 'agent', taskId: 'task');
+        await insertChangeSet(
+          id: 'query-chat:q:actions',
+          agentId: 'agent',
+          taskId: 'task',
+          createdAt: testDate.add(const Duration(hours: 1)),
+        );
+        await insertDecision(
+          id: 'wake-decision',
+          agentId: 'agent',
+          taskId: 'task',
+          changeSetId: 'wake',
+        );
+        await insertDecision(
+          id: 'chat-decision',
+          agentId: 'agent',
+          taskId: 'task',
+          changeSetId: 'query-chat:q:actions',
+          createdAt: testDate.add(const Duration(hours: 1)),
+        );
+        expect(
+          (await db.getPendingChangeSetsForAgent('agent', 1).get()).map(
+            (e) => e.id,
+          ),
+          ['wake'],
+        );
+        expect(
+          (await db
+                  .getPendingChangeSetsForAgentAndTask('agent', 'task', 1)
+                  .get())
+              .map((e) => e.id),
+          ['wake'],
+        );
+        final rows = await db
+            .getProposalLedgerRowsForAgentAndTask(
+              agentId: 'agent',
+              taskId: 'task',
+              changeSetLimit: 1,
+              decisionLimit: 1,
+            )
+            .get();
+        expect(
+          rows.map((r) => r.read<String>('id')),
+          unorderedEquals(['wake', 'wake', 'wake-decision']),
+        );
+      },
+    );
+
     // The ledger used to issue three concurrent task-scoped queries. They are
     // now one UNION ALL with a per-row `bucket` marker, so these tests pin the
     // properties that collapsing could silently break: correct bucketing, and

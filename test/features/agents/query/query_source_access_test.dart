@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/lockdown/domain/lockdown_state.dart';
@@ -131,6 +132,38 @@ void main() {
       isFalse,
     );
   });
+
+  test(
+    'saved action proposals require live, visible owners in the saved category',
+    () {
+      final answer = QueryChatAnswer(
+        questionId: 'q',
+        text: 'Review.',
+        coverage: const QueryCoverage(),
+        dependencies: [ref],
+        proposedActions: const [
+          ChangeItem(
+            toolName: 'add_checklist_item',
+            args: {'title': 'Feeder'},
+            humanSummary: 'Feeder',
+          ),
+        ],
+      );
+      final saved = QueryChatEventData.fromJson(
+        jsonDecode(jsonEncode(answer)) as Map<String, dynamic>,
+      );
+      expect(snapshot().allowsEvent(saved), isTrue);
+      for (final source in [
+        note.copyWith(meta: note.meta.copyWith(private: true)),
+        note.copyWith(meta: note.meta.copyWith(categoryId: 'foreign')),
+        note.copyWith(
+          meta: note.meta.copyWith(deletedAt: DateTime(2026, 9, 13)),
+        ),
+      ]) {
+        expect(snapshot(source: source).allowsEvent(saved), isFalse);
+      }
+    },
+  );
 
   test('public deletion tombstones retain evidence, private ones hide it', () {
     final deleted = note.copyWith(

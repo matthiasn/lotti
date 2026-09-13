@@ -229,24 +229,27 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       : null;
   return ChangeSetConfirmationService(
     syncService: ref.watch(agentSyncServiceProvider),
-    toolDispatcher: TaskToolDispatcher(
-      journalDb: ref.watch(journalDbProvider),
-      journalRepository: ref.watch(journalRepositoryProvider),
-      checklistRepository: ref.watch(checklistRepositoryProvider),
-      labelsRepository: labelsRepository,
-      persistenceLogic: getIt<PersistenceLogic>(),
-      timeService: getIt<TimeService>(),
-      domainLogger: logger,
-      taskAgentService: ref.watch(taskAgentServiceProvider),
-      projectRepository: ref.watch(projectRepositoryProvider),
-      agentRepository: ref.watch(agentRepositoryProvider),
-      syncService: ref.watch(agentSyncServiceProvider),
-    ).dispatch,
+    toolDispatcher: taskToolDispatcher(ref).dispatch,
     labelsRepository: labelsRepository,
     domainLogger: logger,
     onChangeSetResolved: notificationService?.syncAfterUserDecision,
   );
 }
+
+/// Shared journal handlers for approved task-agent and task-chat proposals.
+TaskToolDispatcher taskToolDispatcher(Ref ref) => TaskToolDispatcher(
+  journalDb: ref.watch(journalDbProvider),
+  journalRepository: ref.watch(journalRepositoryProvider),
+  checklistRepository: ref.watch(checklistRepositoryProvider),
+  labelsRepository: ref.watch(labelsRepositoryProvider),
+  persistenceLogic: getIt<PersistenceLogic>(),
+  timeService: getIt<TimeService>(),
+  domainLogger: ref.watch(domainLoggerProvider),
+  taskAgentService: ref.watch(taskAgentServiceProvider),
+  projectRepository: ref.watch(projectRepositoryProvider),
+  agentRepository: ref.watch(agentRepositoryProvider),
+  syncService: ref.watch(agentSyncServiceProvider),
+);
 
 /// Project-scoped confirmation service for confirmed project-agent proposals.
 final projectChangeSetConfirmationServiceProvider =

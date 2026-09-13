@@ -227,6 +227,11 @@ QueryChatAnswer _$QueryChatAnswerFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      proposedActions:
+          (json['proposedActions'] as List<dynamic>?)
+              ?.map((e) => ChangeItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
       $type: json['runtimeType'] as String?,
     );
 
@@ -241,8 +246,25 @@ Map<String, dynamic> _$QueryChatAnswerToJson(QueryChatAnswer instance) =>
       'evidence': instance.evidence,
       'dependencies': instance.dependencies,
       'recalledMemoryIds': instance.recalledMemoryIds,
+      'proposedActions': instance.proposedActions,
       'runtimeType': instance.$type,
     };
+
+QueryChatActionDecision _$QueryChatActionDecisionFromJson(
+  Map<String, dynamic> json,
+) => QueryChatActionDecision(
+  questionId: json['questionId'] as String,
+  approved: json['approved'] as bool,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$QueryChatActionDecisionToJson(
+  QueryChatActionDecision instance,
+) => <String, dynamic>{
+  'questionId': instance.questionId,
+  'approved': instance.approved,
+  'runtimeType': instance.$type,
+};
 
 QueryChatFailed _$QueryChatFailedFromJson(Map<String, dynamic> json) =>
     QueryChatFailed(

@@ -10940,6 +10940,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String get provisionedSyncTitle => 'Enheder';
 
   @override
+  String get queryActionsAccept => 'Acceptér';
+
+  @override
+  String get queryActionsDismiss => 'Afvis';
+
+  @override
+  String get queryActionsIncomplete =>
+      'Nogle ændringer kunne ikke anvendes. Allerede anvendte ændringer gentages ikke, når du prøver igen.';
+
+  @override
+  String get queryActionsReview => 'Foreslåede ændringer';
+
+  @override
   String get queryAllSources => 'Alle';
 
   @override
@@ -15584,4 +15597,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String queryActionsTarget(String target) {
+    return 'For: $target';
+  }
 }
