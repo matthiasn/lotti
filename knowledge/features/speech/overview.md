@@ -106,7 +106,8 @@ Concurrent starts are rejected with `AudioRecordingFailure.busy` before changing
 the linked subject. Permission denial and failed starts return typed failures
 for localized UI feedback rather than silently swallowing the tap. The modal
 also disables Record while initialization is pending. Its startup cancellation
-callback prevents microphone startup after dismissal; a late platform start is
+callback checks route currency as well as mounting, preventing microphone
+startup as soon as dismissal begins, including the exit animation; a late platform start is
 stopped and its partial file discarded. A null stop/save result
 keeps the modal open with an error instead of dismissing as though it succeeded.
 `transcriptionHandledByCaller` hides automation controls and suppresses the
