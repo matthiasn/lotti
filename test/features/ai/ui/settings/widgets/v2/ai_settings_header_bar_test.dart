@@ -14,6 +14,7 @@ void main() {
     testWidgets(
       'default profile picker selects and clears the configured route',
       (tester) async {
+        setTestSurfaceSize(tester, const Size(900, 900));
         final controller = TextEditingController();
         addTearDown(controller.dispose);
         final choices = <String?>[];

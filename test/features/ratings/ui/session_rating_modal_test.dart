@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
+import 'package:lotti/features/ratings/ui/rating_input_widgets.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -408,13 +409,12 @@ void main() {
       );
       expect(saveButton.onPressed, isNull);
 
-      // Tap on each of the 3 LayoutBuilder tap bars (productivity, energy,
-      // focus)
-      final layoutBuilders = find.byType(LayoutBuilder);
-      expect(layoutBuilders, findsNWidgets(3));
+      // Interact with the rating controls, independent of host layout widgets.
+      final tapBars = find.byType(RatingTapBar);
+      expect(tapBars, findsNWidgets(3));
 
       for (var i = 0; i < 3; i++) {
-        await tester.tap(layoutBuilders.at(i));
+        await tester.tap(tapBars.at(i));
         await tester.pumpAndSettle();
       }
 

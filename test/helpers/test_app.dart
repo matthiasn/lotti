@@ -60,24 +60,33 @@ Widget _testApp(
   Locale? locale,
   List<NavigatorObserver> navigatorObservers = const [],
   GlobalKey<NavigatorState>? navigatorKey,
-}) => MediaQuery(
-  data: _resolveTestMediaQuery(mediaQueryData),
-  child: MaterialApp(
-    builder: LegacyMaterialBridge.builder,
-    debugShowCheckedModeBanner: false,
-    navigatorKey: navigatorKey,
-    navigatorObservers: navigatorObservers,
-    theme: resolveTestTheme(theme),
-    localizationsDelegates: const [
-      AppLocalizations.delegate,
-      FormBuilderLocalizations.delegate,
-      ...GlobalMaterialLocalizations.delegates,
-    ],
-    supportedLocales: AppLocalizations.supportedLocales,
-    locale: locale,
-    home: child,
-  ),
-);
+}) {
+  final media = _resolveTestMediaQuery(mediaQueryData);
+  return LayoutBuilder(
+    builder: (_, constraints) => MediaQuery(
+      // The binding's legacy setSurfaceSize override does not update FlutterView.
+      // Default and flags-only fixtures follow the constraints actually rendered.
+      data: mediaQueryData == null || mediaQueryData.size == Size.zero
+          ? media.copyWith(size: constraints.biggest)
+          : media,
+      child: MaterialApp(
+        builder: LegacyMaterialBridge.builder,
+        debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
+        navigatorObservers: navigatorObservers,
+        theme: resolveTestTheme(theme),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          FormBuilderLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
+        home: child,
+      ),
+    ),
+  );
+}
 
 Widget makeTestableWidget(
   Widget child, {

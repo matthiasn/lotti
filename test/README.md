@@ -49,7 +49,10 @@ live in `helpers/test_app.dart` (app hosts and themes), `test_get_it.dart`
 (services), `test_view.dart` (surface size), `paint_position_recorder.dart`
 (paint offsets), and `widget_assertions.dart` (style assertions).
 
-App hosts derive MediaQuery from the actual test view by default. To exercise
+App hosts derive MediaQuery from the actual rendered constraints by default,
+including the binding’s legacy `setSurfaceSize` override. Prefer
+`setTestSurfaceSize` or an explicit device fixture; do not combine conflicting
+viewport overrides. To exercise
 phone layout, pass `phoneMediaQueryData` or an explicit device fixture:
 `mediaQueryData` with a nonzero size configures both logical MediaQuery size and
 physical render dimensions, including device pixel ratio. View overrides reset

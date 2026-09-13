@@ -65,6 +65,28 @@ void main() {
     expect(tester.view.physicalSize, size);
   });
 
+  testWidgets('binding surface overrides reach MediaQuery and layout', (
+    tester,
+  ) async {
+    const size = Size(800, 1600);
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    late Size observed;
+    const childKey = ValueKey('binding-surface');
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) {
+            observed = MediaQuery.sizeOf(context);
+            return const SizedBox.expand(key: childKey);
+          },
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byKey(childKey)), size);
+    expect(observed, size);
+  });
+
   testWidgets('explicit media size also configures the render viewport', (
     tester,
   ) async {
