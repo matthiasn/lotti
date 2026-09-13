@@ -458,7 +458,7 @@ void _registerProjectQueriesAndBatches(JournalControllerTestSetup setup) {
       });
     });
 
-    test('vector search returns results and updates telemetry state', () {
+    test('persisted filters survive switching to vector search', () {
       fakeAsync((async) {
         // Persist filter state so the controller loads it on init
         const persistedJson =
