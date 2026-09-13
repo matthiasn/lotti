@@ -834,7 +834,7 @@ class DayAgentWorkflow {
           stackTrace: stackTrace,
         );
       }
-      return WakeResult(success: false, error: e.toString());
+      return WakeResult.failed(kind: 'Day agent', error: e);
     } finally {
       await inferenceRepo?.dispose();
       conversationRepository.deleteConversation(conversationId);

@@ -30,10 +30,10 @@ void main() {
         sampleFrames: const ['#0 Foo.bar (package:lotti/foo.dart:1:1)'],
       );
 
-  SlowQueryBucket query(int index, {QueueDepthStats? queueDepth}) =>
+  SlowQueryBucket query(int index, {ConcurrencyStats? concurrency}) =>
       SlowQueryBucket(
         databaseName: 'db.sqlite',
-        queueDepth: queueDepth,
+        concurrency: concurrency,
         statement: 'SELECT $index FROM journal',
         operation: 'select',
         count: 3,
@@ -188,16 +188,16 @@ void main() {
 
   group('renderDigest', () {
     test(
-      'a statement with queue-depth stats renders them on their own row',
+      'a statement with concurrency stats renders them on their own row',
       () {
         final text = builder.renderDigest(
           digest(
             slowQueries: [
               query(
                 1,
-                queueDepth: const QueueDepthStats(
-                  inFlightP50: 3,
-                  inFlightMax: 61,
+                concurrency: const ConcurrencyStats(
+                  othersInFlightP50: 3,
+                  othersInFlightMax: 61,
                   openTransactionsP50: 1,
                   openTransactionsMax: 4,
                 ),
@@ -210,12 +210,12 @@ void main() {
         expect(
           text,
           contains(
-            '   - queue at start: in flight p50 3 · max 61 · '
+            '   - at start: other statements in flight p50 3 · max 61 · '
             'open transactions p50 1 · max 4',
           ),
         );
         // Only the bucket that carries stats gets the row.
-        expect('queue at start'.allMatches(text), hasLength(1));
+        expect('at start:'.allMatches(text), hasLength(1));
       },
     );
 

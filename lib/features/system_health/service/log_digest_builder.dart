@@ -285,8 +285,13 @@ class _SlowQueryAccumulator {
   final List<(String key, double elapsedMs)> superEntries = [];
   final Set<String> planShapes = {};
   final Set<String> topFrames = {};
-  final List<int> inFlight = [];
-  final List<int> openTransactions = [];
+
+  /// Concurrency samples, keyed like the elapsed series so the super-slow
+  /// copy of an entry — which carries the same TIMING rows — is not counted
+  /// twice: slow-file samples by key, super-slow samples kept aside and used
+  /// only when their twin is missing.
+  final Map<String, (int inFlight, int open)> slowSamples = {};
+  final List<(String key, int inFlight, int open)> superSamples = [];
   DateTime? firstSeen;
   DateTime? lastSeen;
 
@@ -315,9 +320,15 @@ class _SlowQueryAccumulator {
       topFrames.add(redactor.redact(frame));
     }
     final inFlightAtStart = query.inFlightAtStart;
-    if (inFlightAtStart != null) inFlight.add(inFlightAtStart);
-    final openAtStart = query.openTransactionsAtStart;
-    if (openAtStart != null) openTransactions.add(openAtStart);
+    if (inFlightAtStart != null) {
+      // Entries without a TRANSACTION row had nothing open.
+      final sample = (inFlightAtStart, query.openTransactionsAtStart ?? 0);
+      if (query.isSuperSlow) {
+        superSamples.add((key, sample.$1, sample.$2));
+      } else {
+        slowSamples[key] = sample;
+      }
+    }
     final first = firstSeen;
     if (first == null || query.timestamp.isBefore(first)) {
       firstSeen = query.timestamp;
@@ -351,24 +362,25 @@ class _SlowQueryAccumulator {
       lastSeen: lastSeen!,
       planShapes: planShapes.take(maxPlanShapes).toList(growable: false),
       topFrames: topFrames.take(maxTopFrames).toList(growable: false),
-      queueDepth: _queueDepth(),
+      concurrency: _concurrency(),
     );
   }
 
-  QueueDepthStats? _queueDepth() {
-    if (inFlight.isEmpty) return null;
-    final inFlightSorted = [...inFlight]..sort();
-    // Entries without a TRANSACTION row predate the timing rows, or the
-    // interceptor had nothing to say: read as no open transaction.
-    final openSorted = [
-      ...openTransactions,
-      for (var i = openTransactions.length; i < inFlight.length; i++) 0,
-    ]..sort();
-    return QueueDepthStats(
-      inFlightP50: _percentileInt(inFlightSorted, 0.5),
-      inFlightMax: inFlightSorted.last,
-      openTransactionsP50: _percentileInt(openSorted, 0.5),
-      openTransactionsMax: openSorted.last,
+  ConcurrencyStats? _concurrency() {
+    final samples = [
+      ...slowSamples.values,
+      for (final (key, inFlight, open) in superSamples)
+        if (!slowSamples.containsKey(key)) (inFlight, open),
+    ];
+    if (samples.isEmpty) return null;
+    // `inFlightAtStart` counts the statement itself.
+    final others = [for (final (inFlight, _) in samples) inFlight - 1]..sort();
+    final open = [for (final (_, open) in samples) open]..sort();
+    return ConcurrencyStats(
+      othersInFlightP50: _percentileInt(others, 0.5),
+      othersInFlightMax: others.last,
+      openTransactionsP50: _percentileInt(open, 0.5),
+      openTransactionsMax: open.last,
     );
   }
 

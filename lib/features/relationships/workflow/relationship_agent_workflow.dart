@@ -694,7 +694,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           now,
         );
       }
-      return WakeResult(success: false, error: error.toString());
+      return WakeResult.failed(kind: 'Relationship Phase B', error: error);
     } finally {
       // Clean up the in-memory conversation to prevent resource leaks
       // (the task/project workflow discipline).

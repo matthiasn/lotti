@@ -288,7 +288,7 @@ void main() {
       expect(digest.slowQueries.single.topFrames, [caller, wrapper]);
     });
 
-    test('queue depth at start is summarised when the entries carry it', () {
+    test('concurrency at start is summarised when the entries carry it', () {
       final digest = builder.build(
         input(
           slowQueries: [
@@ -306,7 +306,8 @@ void main() {
               inFlightAtStart: 5,
               openTransactionsAtStart: 1,
             ),
-            // Timing without a TRANSACTION row: nothing was open.
+            // Timing without a TRANSACTION row: nothing was open, and an
+            // in-flight count of one is the statement itself.
             slowQuery(
               timestamp: t0,
               elapsedMs: 15,
@@ -320,13 +321,54 @@ void main() {
 
       final begin = digest.slowQueries.first;
       expect(begin.statement, 'BEGIN');
-      final queue = begin.queueDepth!;
-      expect(queue.inFlightP50, 5);
-      expect(queue.inFlightMax, 60);
-      expect(queue.openTransactionsP50, 1);
-      expect(queue.openTransactionsMax, 3);
+      final stats = begin.concurrency!;
+      expect(stats.othersInFlightP50, 4);
+      expect(stats.othersInFlightMax, 59);
+      expect(stats.openTransactionsP50, 1);
+      expect(stats.openTransactionsMax, 3);
       // No entry with timing bookkeeping: nothing to summarise.
-      expect(digest.slowQueries.last.queueDepth, isNull);
+      expect(digest.slowQueries.last.concurrency, isNull);
+    });
+
+    test('the super-slow copy of an entry does not double its sample', () {
+      // Both files carry the same TIMING rows for one query; counting both
+      // would pull the percentiles toward the slowest entries, which are
+      // exactly the ones that reach the super-slow file.
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            for (final (ms, inFlight) in [(15.0, 1), (20.0, 5), (300.0, 60)])
+              slowQuery(
+                timestamp: t0.add(Duration(milliseconds: ms.toInt())),
+                elapsedMs: ms,
+                statement: 'BEGIN',
+                inFlightAtStart: inFlight,
+              ),
+            slowQuery(
+              timestamp: t0.add(const Duration(milliseconds: 300)),
+              elapsedMs: 300,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              inFlightAtStart: 60,
+            ),
+            // A super-slow entry whose slow-file twin is gone still counts.
+            slowQuery(
+              timestamp: t0.add(const Duration(days: 1)),
+              elapsedMs: 400,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              inFlightAtStart: 2,
+              openTransactionsAtStart: 1,
+            ),
+          ],
+        ),
+      );
+
+      final stats = digest.slowQueries.single.concurrency!;
+      // Samples: others = [0, 4, 59, 1] → sorted [0, 1, 4, 59].
+      expect(stats.othersInFlightP50, 4);
+      expect(stats.othersInFlightMax, 59);
+      expect(stats.openTransactionsMax, 1);
     });
 
     test('buckets are ordered by total time', () {

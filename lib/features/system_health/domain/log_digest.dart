@@ -31,24 +31,31 @@ class LogIssueBucket {
   final List<String> sampleFrames;
 }
 
-/// Queue depth seen by the statements in a bucket when they started.
+/// What else the database was doing when the statements in a bucket started.
 ///
 /// Elapsed time in the slow-query log is measured from the moment drift
-/// accepts a request, so a statement that queued behind others reports the
-/// wait as its own cost. These counters say how deep that queue was.
-class QueueDepthStats {
-  const QueueDepthStats({
-    required this.inFlightP50,
-    required this.inFlightMax,
+/// accepts a request, so a statement that waited reports the wait as its own
+/// cost. Whether these counters *are* that wait depends on the statement: a
+/// `BEGIN` takes the writer lock and holds it for the transaction's lifetime,
+/// so for `transaction.open` the open transactions are what it queued
+/// behind; a read served by the pool overlaps a transaction without waiting
+/// for it, so for a select they only describe concurrency.
+class ConcurrencyStats {
+  const ConcurrencyStats({
+    required this.othersInFlightP50,
+    required this.othersInFlightMax,
     required this.openTransactionsP50,
     required this.openTransactionsMax,
   });
 
-  /// Statements already awaiting the interceptor.
-  final int inFlightP50;
-  final int inFlightMax;
+  /// Other statements already awaiting the interceptor (the interceptor's
+  /// `inFlightAtStart` counts the statement itself; that one is subtracted).
+  final int othersInFlightP50;
+  final int othersInFlightMax;
 
-  /// Transactions already open on the database — what a `BEGIN` waits behind.
+  /// Transactions open on the database, the statement's own included when
+  /// it ran inside one. For a `BEGIN` the list is taken before the
+  /// transaction opens, so it never counts itself.
   final int openTransactionsP50;
   final int openTransactionsMax;
 }
@@ -69,7 +76,7 @@ class SlowQueryBucket {
     required this.lastSeen,
     this.planShapes = const [],
     this.topFrames = const [],
-    this.queueDepth,
+    this.concurrency,
   });
 
   /// The database file the statement ran against. Part of the grouping key:
@@ -96,7 +103,7 @@ class SlowQueryBucket {
   final List<String> topFrames;
 
   /// Null when no entry in the bucket carried timing bookkeeping.
-  final QueueDepthStats? queueDepth;
+  final ConcurrencyStats? concurrency;
 }
 
 /// Per-domain line counts by level.

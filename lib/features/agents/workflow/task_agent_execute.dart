@@ -922,7 +922,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         );
       }
 
-      return WakeResult(success: false, error: e.toString());
+      return WakeResult.failed(kind: 'Task agent', error: e);
     } finally {
       preparationTimer.stop();
       conversationTimer.stop();

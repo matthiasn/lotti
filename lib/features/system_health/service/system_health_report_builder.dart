@@ -206,12 +206,14 @@ class SystemHealthReportBuilder {
         for (final frame in query.topFrames) {
           buffer.writeln('   - from: ${_inline(frame)}');
         }
-        final queue = query.queueDepth;
-        if (queue != null) {
+        final concurrency = query.concurrency;
+        if (concurrency != null) {
           buffer.writeln(
-            '   - queue at start: in flight p50 ${queue.inFlightP50} · '
-            'max ${queue.inFlightMax} · open transactions '
-            'p50 ${queue.openTransactionsP50} · max ${queue.openTransactionsMax}',
+            '   - at start: other statements in flight '
+            'p50 ${concurrency.othersInFlightP50} · '
+            'max ${concurrency.othersInFlightMax} · open transactions '
+            'p50 ${concurrency.openTransactionsP50} · '
+            'max ${concurrency.openTransactionsMax}',
           );
         }
       }

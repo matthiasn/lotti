@@ -865,7 +865,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           now,
         );
       }
-      return WakeResult(success: false, error: error.toString());
+      return WakeResult.failed(kind: 'Goal Phase B', error: error);
     }
   }
 

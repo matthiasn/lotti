@@ -162,14 +162,19 @@ from the ARB catalogs.
   files, so statistics come from the slow file's series and the super-slow
   file only contributes plans, frames and `superSlowCount`; a statement seen
   only in the super-slow file falls back to that series.
-- **Queue depth**: the interceptor's `TIMING:` row carries `inFlightAtStart`
-  and its `TRANSACTION:` row the transactions open when the statement started.
+- **Concurrency at start**: the interceptor's `TIMING:` row carries
+  `inFlightAtStart` (the statement itself included, so one is subtracted) and
+  its `TRANSACTION:` row the transactions open when the statement started.
+  Each bucket that carries the rows reports p50 and max of both, taken from
+  the slow file's entry only — the super-slow copy repeats the same rows.
   Elapsed time is measured from the moment drift accepts a request, so a
-  statement that queued reports the wait as its own cost — for a `BEGIN`
-  (drift holds the writer lock for a transaction's whole lifetime) the wait
-  *is* the cost. Each bucket that carries the rows reports p50 and max of
-  both, which is what separates "one transaction held for seconds" from
-  "dozens opened at once".
+  statement that waited reports the wait as its own cost; whether these
+  counters *are* that wait depends on the statement. For `transaction.open`
+  they are: drift holds the writer lock for a transaction's whole lifetime,
+  so the open transactions are what the `BEGIN` queued behind, and the row
+  separates "one transaction held for seconds" from "dozens opened at once".
+  A select served by the read pool overlaps a transaction without waiting for
+  it, so for reads the row describes concurrency, not a queue.
 - **Domain counts** by level, and **error bursts**: minutes with at least ten
   errors and at least three times the lower median of error-carrying minutes.
 - Bucket caps (25 issues, 15 statements) set `truncated`, which the rendering

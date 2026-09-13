@@ -1316,7 +1316,9 @@ void main() {
           });
 
           expect(result.success, isFalse);
-          expect(result.error, contains('Soul DB error'));
+          // The reason is bounded to the exception type: it reaches the PII-safe
+          // error log, the raw text only the full log at the catch site.
+          expect(result.error, 'Project agent workflow failed (_Exception)');
           final captured = verify(
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;

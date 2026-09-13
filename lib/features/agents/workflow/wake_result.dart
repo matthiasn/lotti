@@ -8,7 +8,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 /// `errorType=StateError` — indistinguishable from a genuine `StateError`
 /// (a closed database transaction, say) and silent about which of the
 /// workflows' reasons it was. [reason] is a workflow-authored string, never
-/// user content.
+/// user content — see the contract on [WakeResult.error].
 class WakeFailedException implements Exception {
   const WakeFailedException({required this.kind, required this.reason});
 
@@ -31,6 +31,22 @@ class WakeResult {
     this.error,
   });
 
+  /// A failed wake whose workflow caught [error], with a bounded [WakeResult.error].
+  ///
+  /// A [StateError] is the workflows' own abort signal (`No active project
+  /// ID`, `no visible reply`, drift's closed-transaction message) and its
+  /// message is kept; every other exception is reported by type only, since
+  /// provider and filesystem exceptions carry response bodies and paths that
+  /// must not reach the PII-safe error log. The catch site logs the raw
+  /// exception with its stack trace to the full log.
+  factory WakeResult.failed({required String kind, required Object error}) =>
+      WakeResult(
+        success: false,
+        error: error is StateError
+            ? '$kind workflow failed: ${error.message}'
+            : '$kind workflow failed (${error.runtimeType})',
+      );
+
   /// Whether the wake completed successfully.
   final bool success;
 
@@ -47,5 +63,12 @@ class WakeResult {
   final bool reportUpdated;
 
   /// Error description when [success] is false.
+  ///
+  /// Workflow-authored telemetry, never exception text or user content: the
+  /// wake wiring rethrows it as [WakeFailedException.reason] and the drain
+  /// engine writes that into its failure *message*, which the PII-safe error
+  /// log keeps verbatim. A caught exception is reported by type —
+  /// `'Task agent workflow failed (MeliousInferenceException)'` — and logged
+  /// in full, with its stack trace, at the catch site.
   final String? error;
 }
