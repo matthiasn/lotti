@@ -3206,6 +3206,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInPreparingLabel => 'Förbereder ljud…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Stoppa den först från inspelningsindikatorn och försök igen. Inget nytt spelades in.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'En inspelning pågår redan';
+
+  @override
   String get checkInRecordingFailedBody =>
       'Mikrofonen kunde inte startas. Försök igen eller skriv avstämningen. Inget spelades in.';
 
@@ -3215,6 +3222,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get checkInRecordingHint =>
       'Prata som vanligt. Orden dyker upp här när du stoppar.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'Inspelningen kunde inte sparas. Försök igen eller skriv avstämningen.';
+
+  @override
+  String get checkInRecordingNotSavedTitle => 'Inspelningen kunde inte sparas';
 
   @override
   String get checkInReRecordButton => 'Spela in igen';
@@ -3272,18 +3286,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Från meddelandet du skickade från den här sidan. Allt går att ändra.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'cirka $minutes min',
-      one: 'cirka 1 min',
-      zero: 'under en minut',
-    );
-    return '$type · började kl. $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Tala in avstämning';
 
   @override
@@ -3296,10 +3298,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInStatusPaused => 'Pausad';
 
   @override
+  String get checkInStatusRecorderBusy => 'Inspelaren är upptagen';
+
+  @override
   String get checkInStatusRecording => 'Spelar in';
 
   @override
   String get checkInStatusRecordingFailed => 'Inspelningen startade inte';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Inspelningen sparades inte';
 
   @override
   String get checkInStatusTranscriptionUnavailable =>
@@ -11712,11 +11720,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipAgentMarkImportant => 'Markera som viktig';
-
-  @override
-  String relationshipAgentNextLook(String day) {
-    return 'Nästa titt $day';
-  }
 
   @override
   String get relationshipAgentNoAgent => 'Ingen agent för den här personen';

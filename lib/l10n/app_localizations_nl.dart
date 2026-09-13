@@ -3208,6 +3208,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInPreparingLabel => 'Audio voorbereiden…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Stop die eerst via de opname-indicator en probeer het opnieuw. Er is niets nieuws opgenomen.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'Er loopt al een opname';
+
+  @override
   String get checkInRecordingFailedBody =>
       'De microfoon kon niet worden gestart. Probeer het opnieuw of typ de check-in. Er is niets opgenomen.';
 
@@ -3217,6 +3224,14 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get checkInRecordingHint =>
       'Praat gewoon. De woorden verschijnen hier zodra je stopt.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'De opname kon niet worden opgeslagen. Probeer het opnieuw of typ de check-in.';
+
+  @override
+  String get checkInRecordingNotSavedTitle =>
+      'Opname kon niet worden opgeslagen';
 
   @override
   String get checkInReRecordButton => 'Opnieuw opnemen';
@@ -3276,18 +3291,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Van het bericht dat je vanaf deze pagina stuurde. Alles is aan te passen.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'ongeveer $minutes min',
-      one: 'ongeveer 1 min',
-      zero: 'minder dan een minuut',
-    );
-    return '$type · begonnen om $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Check-in inspreken';
 
   @override
@@ -3300,10 +3303,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInStatusPaused => 'Gepauzeerd';
 
   @override
+  String get checkInStatusRecorderBusy => 'Recorder bezet';
+
+  @override
   String get checkInStatusRecording => 'Opname loopt';
 
   @override
   String get checkInStatusRecordingFailed => 'Opname niet gestart';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Opname niet opgeslagen';
 
   @override
   String get checkInStatusTranscriptionUnavailable => 'Geen transcriptiemodel';
@@ -11728,11 +11737,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipAgentMarkImportant => 'Als belangrijk markeren';
-
-  @override
-  String relationshipAgentNextLook(String day) {
-    return 'Volgende blik $day';
-  }
 
   @override
   String get relationshipAgentNoAgent => 'Geen agent voor deze persoon';

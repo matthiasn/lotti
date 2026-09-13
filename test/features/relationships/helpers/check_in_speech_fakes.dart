@@ -13,6 +13,7 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
     this.gate,
     this.preflightGate,
     this.routeResult = (model: 'Whisper large v3', provider: 'Groq'),
+    this.routeThrows = false,
   });
 
   final bool canTranscribeResult;
@@ -25,6 +26,9 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   final Completer<void>? preflightGate;
   final CheckInTranscriptionRoute? routeResult;
 
+  /// When set, `route()` throws — the profile read failing under the wait.
+  final bool routeThrows;
+
   int cancelCount = 0;
   final transcribeCalls = <String>[];
 
@@ -35,7 +39,10 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   }
 
   @override
-  Future<CheckInTranscriptionRoute?> route() async => routeResult;
+  Future<CheckInTranscriptionRoute?> route() async {
+    if (routeThrows) throw StateError('profile store closed');
+    return routeResult;
+  }
 
   @override
   CheckInTranscriptWait transcribe({
@@ -64,6 +71,7 @@ class FakeAudioRecorderController extends AudioRecorderController {
     this.stopResult = 'audio-1',
     this.stopThrows = false,
     this.enableSpeechRecognition,
+    this.runningFor,
   });
 
   /// What `record` answers; null is a successful start.
@@ -73,6 +81,10 @@ class FakeAudioRecorderController extends AudioRecorderController {
   String? stopResult;
   bool stopThrows;
   final bool? enableSpeechRecognition;
+
+  /// When set, the recorder starts out already recording for this entry —
+  /// a take left running when an earlier sheet was dismissed.
+  final String? runningFor;
 
   /// When set, `stop` waits for it before answering.
   Completer<void>? stopGate;
@@ -87,12 +99,15 @@ class FakeAudioRecorderController extends AudioRecorderController {
 
   @override
   AudioRecorderState build() => AudioRecorderState(
-    status: AudioRecorderStatus.stopped,
+    status: runningFor == null
+        ? AudioRecorderStatus.stopped
+        : AudioRecorderStatus.recording,
     progress: Duration.zero,
     vu: -20,
     dBFS: -160,
     showIndicator: false,
     modalVisible: false,
+    linkedId: runningFor,
     enableSpeechRecognition: enableSpeechRecognition,
   );
 

@@ -247,6 +247,7 @@ void main() {
       text: 'The words that landed.',
       phase: const CheckInSpeechReady(
         transcript: 'The words that landed.',
+        textBefore: '',
         length: Duration(seconds: 23),
       ),
       wordCount: 4,
@@ -298,6 +299,37 @@ void main() {
       expect(find.text("Recording didn't start"), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
       expect(calls, ['dictate']);
+    });
+
+    testWidgets('a take that could not be saved says so — not that it never '
+        'started — and offers to try again', (tester) async {
+      await pump(
+        tester,
+        phase: const CheckInSpeechFailed(
+          CheckInSpeechFailure(CheckInSpeechFailureKind.recordingNotSaved),
+        ),
+      );
+      expect(find.text("Recording couldn't be saved"), findsOneWidget);
+      expect(find.text("Recording didn't start"), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
+      expect(calls, ['dictate']);
+    });
+
+    testWidgets("someone else's recording running is a warning that says "
+        'where to stop it', (tester) async {
+      await pump(
+        tester,
+        phase: const CheckInSpeechFailed(
+          CheckInSpeechFailure(CheckInSpeechFailureKind.recorderBusy),
+        ),
+      );
+      expect(find.text('A recording is already running'), findsOneWidget);
+      expect(
+        find.textContaining('Stop it from the recording indicator first'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
+      expect(calls, ['dismiss']);
     });
 
     testWidgets('no transcription model: a warning with the settings hint '

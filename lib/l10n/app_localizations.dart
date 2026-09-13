@@ -5406,6 +5406,18 @@ abstract class AppLocalizations {
   /// **'Preparing audio…'**
   String get checkInPreparingLabel;
 
+  /// No description provided for @checkInRecorderBusyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop it from the recording indicator first, then try again. Nothing new was recorded.'**
+  String get checkInRecorderBusyBody;
+
+  /// No description provided for @checkInRecorderBusyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A recording is already running'**
+  String get checkInRecorderBusyTitle;
+
   /// No description provided for @checkInRecordingFailedBody.
   ///
   /// In en, this message translates to:
@@ -5423,6 +5435,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speak normally. Words appear here when you stop.'**
   String get checkInRecordingHint;
+
+  /// No description provided for @checkInRecordingNotSavedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording could not be saved. Try again, or type the check-in.'**
+  String get checkInRecordingNotSavedBody;
+
+  /// No description provided for @checkInRecordingNotSavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording couldn\'t be saved'**
+  String get checkInRecordingNotSavedTitle;
 
   /// No description provided for @checkInReRecordButton.
   ///
@@ -5526,12 +5550,6 @@ abstract class AppLocalizations {
   /// **'From the message you sent from this page. Everything is editable.'**
   String get checkInSourceMessage;
 
-  /// No description provided for @checkInSourceMeta.
-  ///
-  /// In en, this message translates to:
-  /// **'{type} · started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}'**
-  String checkInSourceMeta(String type, String time, int minutes);
-
   /// Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript.
   ///
   /// In en, this message translates to:
@@ -5556,6 +5574,12 @@ abstract class AppLocalizations {
   /// **'Paused'**
   String get checkInStatusPaused;
 
+  /// No description provided for @checkInStatusRecorderBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorder busy'**
+  String get checkInStatusRecorderBusy;
+
   /// No description provided for @checkInStatusRecording.
   ///
   /// In en, this message translates to:
@@ -5567,6 +5591,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recording didn\'t start'**
   String get checkInStatusRecordingFailed;
+
+  /// No description provided for @checkInStatusRecordingNotSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording not saved'**
+  String get checkInStatusRecordingNotSaved;
 
   /// No description provided for @checkInStatusTranscriptionUnavailable.
   ///
@@ -19596,12 +19626,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark important'**
   String get relationshipAgentMarkImportant;
-
-  /// No description provided for @relationshipAgentNextLook.
-  ///
-  /// In en, this message translates to:
-  /// **'Next look {day}'**
-  String relationshipAgentNextLook(String day);
 
   /// No description provided for @relationshipAgentNoAgent.
   ///

@@ -849,7 +849,7 @@ so the decision is a table rather than a widget tree:
 | Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · `Reading N check-ins. Usually under a minute.` · no action |
 | Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · HH:mm` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
 | Current | report, not stale | `as of {ago} · {band}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line |
-| Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) · sources line |
+| Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 | Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
 
 Open task proposals count in the header's pill (`2 proposed`) on the two
@@ -1166,18 +1166,18 @@ and every phase is drawn in place of the narrative text:
 stateDiagram-v2
   [*] --> Idle
   Idle --> Preparing: Dictate / Add more / Re-record / startSpeaking
-  Preparing --> Recording: person read, default profile can transcribe
-  Preparing --> Failed: no transcription slot (transcriptionUnavailable), or the reads threw (recordingFailed)
+  Preparing --> Recording: person read, default profile can transcribe — adopting this person's take if one is still running
+  Preparing --> Failed: no transcription slot (transcriptionUnavailable), the reads threw (recordingFailed), or someone else's recording is running (recorderBusy)
   Recording --> Transcribing: Stop → audio entry saved
   Recording --> Idle: Discard (confirmed)
-  Recording --> Failed: microphone refused (microphoneDenied), start or stop failed (recordingFailed)
+  Recording --> Failed: microphone refused (microphoneDenied), start failed (recordingFailed), stop could not save (recordingNotSaved)
   Transcribing --> Ready: transcript landed, merged below any typed text
   Transcribing --> Failed: no transcript (transcriptMissing, keeps the audio entry id)
   Transcribing --> Idle: Type instead — the wait is abandoned
   Failed --> Transcribing: Try again on a missing transcript — the same recording, never a second one
   Failed --> Idle: Type instead / Dismiss
   Failed --> Preparing: Dictate again
-  Ready --> Preparing: Add more (appends) / Re-record (removes the transcript first)
+  Ready --> Preparing: Add more (appends) / Re-record (removes the old transcript once the new take exists)
 ```
 
 The recorder is [`CheckInInlineRecorder`](../../lib/features/relationships/ui/widgets/check_in_inline_recorder.dart),
@@ -1192,7 +1192,11 @@ hides the floating recording indicator while it is up. Being dismissed with
 the sheet does not stop the recording (the recording sheet's own rule): the
 composer's sheet brings the indicator back once it has closed, and the user
 can stop it from there, the audio landing in the journal linked to the
-person without a transcript.
+person without a transcript. Reopening the composer while that take is
+still running **adopts** it — the recorder attaches without calling
+`record()`, which on a running recorder toggles it *off* — and a take
+running for anyone else is refused with the *recorder busy* card, because
+stopping it here would save someone else's audio wordless.
 
 The recorder's typed refusal (`AudioRecordingFailure`) maps onto the
 composer's own vocabulary, `CheckInSpeechFailure.fromRecorder`: a denied
@@ -1273,8 +1277,11 @@ Three invariants hold regardless of what comes back:
   existing text, blank-line separated, including text entered while the
   transcript was still arriving.
 * **Re-record takes back only what it added.** `removeCheckInTranscript`
-  strips the last transcript off the end of the field when it still sits
-  there unedited, and leaves an edited field alone — an edit is the user's.
+  gives back the text the field held before the last merge, and only when
+  the field is still exactly that merge — not a suffix match, which would
+  strip `Spoken.` out of `Actually Spoken.` — so an edited field is left
+  alone: an edit is the user's. And it does so once the new take exists,
+  never on the way in, so a discarded or failed retake keeps the words.
 
 Name accuracy comes from the **category's `speechDictionary`**, not from
 anything relationship-specific: the recording is created with the person's

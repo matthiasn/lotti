@@ -1974,9 +1974,13 @@
   "checkInOrTypeHint": "Or type it here…",
   "checkInPayAttentionLabel": "Next time, pay attention to",
   "checkInPreparingLabel": "Preparing audio…",
+  "checkInRecorderBusyBody": "Stop it from the recording indicator first, then try again. Nothing new was recorded.",
+  "checkInRecorderBusyTitle": "A recording is already running",
   "checkInRecordingFailedBody": "The microphone could not be started. Try again, or type the check-in. Nothing was recorded.",
   "checkInRecordingFailedTitle": "Recording didn't start",
   "checkInRecordingHint": "Speak normally. Words appear here when you stop.",
+  "checkInRecordingNotSavedBody": "The recording could not be saved. Try again, or type the check-in.",
+  "checkInRecordingNotSavedTitle": "Recording couldn't be saved",
   "checkInReRecordButton": "Re-record",
   "checkInSaveBlockedEmpty": "Add a few words to save",
   "checkInSaveBlockedRecording": "Stop recording to save",
@@ -2001,20 +2005,6 @@
   "checkInSentimentStrained": "Strained",
   "checkInSourceCall": "From the call you placed from this page. Everything is editable.",
   "checkInSourceMessage": "From the message you sent from this page. Everything is editable.",
-  "checkInSourceMeta": "{type} · started {time} · {minutes, plural, =0{under a minute} =1{about 1 min} other{about {minutes} min}}",
-  "@checkInSourceMeta": {
-    "placeholders": {
-      "type": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
   "checkInSpeakButton": "Speak check-in",
   "@checkInSpeakButton": {
     "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
@@ -2022,8 +2012,10 @@
   "checkInStartedLabel": "Started",
   "checkInStatusMicrophoneDenied": "Microphone unavailable",
   "checkInStatusPaused": "Paused",
+  "checkInStatusRecorderBusy": "Recorder busy",
   "checkInStatusRecording": "Recording",
   "checkInStatusRecordingFailed": "Recording didn't start",
+  "checkInStatusRecordingNotSaved": "Recording not saved",
   "checkInStatusTranscriptionUnavailable": "No transcription model",
   "checkInStatusTranscriptMissing": "Transcript not received",
   "checkInTimeChipSemantics": "Started: {time}. Change",
@@ -6818,14 +6810,6 @@
     }
   },
   "relationshipAgentMarkImportant": "Mark important",
-  "relationshipAgentNextLook": "Next look {day}",
-  "@relationshipAgentNextLook": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipAgentNoAgent": "No agent for this person",
   "relationshipAgentNoBriefingBody": "{count, plural, =0{No briefing yet. Brief now writes one once you have logged a check-in; it never sees the phone number or email.} =1{No briefing yet. Brief now writes one from your check-in; it never sees the phone number or email.} other{No briefing yet. Brief now writes one from your {count} check-ins; it never sees the phone number or email.}}",
   "@relationshipAgentNoBriefingBody": {

@@ -59,6 +59,7 @@ void main() {
         const CheckInSpeechIdle(),
         const CheckInSpeechReady(
           transcript: 'x',
+          textBefore: '',
           length: Duration(seconds: 1),
         ),
         const CheckInSpeechFailed(
@@ -213,7 +214,11 @@ void main() {
       );
       expect(
         checkInComposerStatusOf(
-          const CheckInSpeechReady(transcript: 'x', length: Duration.zero),
+          const CheckInSpeechReady(
+            transcript: 'x',
+            textBefore: '',
+            length: Duration.zero,
+          ),
           recorderPaused: false,
         ),
         CheckInComposerStatus.idle,
@@ -240,6 +245,10 @@ void main() {
             CheckInComposerStatus.microphoneDenied,
         CheckInSpeechFailureKind.recordingFailed:
             CheckInComposerStatus.recordingFailed,
+        CheckInSpeechFailureKind.recordingNotSaved:
+            CheckInComposerStatus.recordingNotSaved,
+        CheckInSpeechFailureKind.recorderBusy:
+            CheckInComposerStatus.recorderBusy,
         CheckInSpeechFailureKind.transcriptionUnavailable:
             CheckInComposerStatus.transcriptionUnavailable,
       };

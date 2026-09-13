@@ -22,8 +22,15 @@ import 'package:material_ui/material_ui.dart';
 /// - [onRecorded] with the audio entry the recording became and how long it
 ///   ran;
 /// - [onDiscarded] after a confirmed Discard, with nothing written;
-/// - [onFailed] with the recorder's typed refusal, so the composer can draw
-///   the microphone-denied card rather than a toast.
+/// - [onFailed] with the composer's own failure kind — a refused
+///   microphone, a start that failed, or a stop that could not save — so
+///   the composer can draw the right card rather than a toast.
+///
+/// With [adoptRunning] set the recorder does not start a new take: the
+/// app-wide recorder is already running this person's recording — a sheet
+/// dismissed mid-take and reopened — and the controls simply attach to it.
+/// Calling `record()` then would *toggle* the running take off, which is
+/// the recorder's contract for a second press.
 ///
 /// It drives the app-wide [AudioRecorderController] the way the recording
 /// sheet does, and hides the floating recording indicator while it is on
@@ -39,6 +46,7 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
     required this.onDiscarded,
     required this.onFailed,
     this.categoryId,
+    this.adoptRunning = false,
     super.key,
   });
 
@@ -50,7 +58,10 @@ class CheckInInlineRecorder extends ConsumerStatefulWidget {
 
   final void Function(String audioEntryId, Duration length) onRecorded;
   final VoidCallback onDiscarded;
-  final void Function(AudioRecordingFailure failure) onFailed;
+  final void Function(CheckInSpeechFailureKind failure) onFailed;
+
+  /// Attach to the recording already running rather than starting one.
+  final bool adoptRunning;
 
   /// How many level samples the strip keeps — enough to fill the widest
   /// composer at the painter's bar pitch.
@@ -78,16 +89,16 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
   }
 
   Future<void> _start() async {
-    _controller
-      ..setModalVisible(modalVisible: true)
-      ..setCategoryId(widget.categoryId);
+    _controller.setModalVisible(modalVisible: true);
+    if (widget.adoptRunning) return;
+    _controller.setCategoryId(widget.categoryId);
     final failure = await _controller.record(
       linkedId: widget.linkedId,
       transcriptionHandledByCaller: true,
       shouldCancel: () => !mounted,
     );
     if (!mounted || failure == null) return;
-    widget.onFailed(failure);
+    widget.onFailed(CheckInSpeechFailure.fromRecorder(failure).kind);
   }
 
   Future<void> _stop() async {
@@ -104,7 +115,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
     if (!mounted) return;
     if (createdId == null) {
       setState(() => _busy = false);
-      widget.onFailed(AudioRecordingFailure.startFailed);
+      widget.onFailed(CheckInSpeechFailureKind.recordingNotSaved);
       return;
     }
     widget.onRecorded(createdId, length);

@@ -3242,6 +3242,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInPreparingLabel => 'Préparation de l’audio…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Arrête-le d’abord depuis l’indicateur d’enregistrement, puis réessaie. Rien de nouveau n’a été enregistré.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'Un enregistrement est déjà en cours';
+
+  @override
   String get checkInRecordingFailedBody =>
       'Le micro n’a pas pu démarrer. Réessaie, ou écris le point. Rien n’a été enregistré.';
 
@@ -3251,6 +3258,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get checkInRecordingHint =>
       'Parle normalement. Les mots apparaîtront ici quand tu arrêteras.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'L’enregistrement n’a pas pu être sauvegardé. Réessaie, ou écris le point.';
+
+  @override
+  String get checkInRecordingNotSavedTitle =>
+      'L’enregistrement n’a pas pu être sauvegardé';
 
   @override
   String get checkInReRecordButton => 'Réenregistrer';
@@ -3311,18 +3326,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'D’après le message que tu as envoyé depuis cette page. Tout est modifiable.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'environ $minutes min',
-      one: 'environ 1 min',
-      zero: 'moins d’une minute',
-    );
-    return '$type · commencé à $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Dicter l\'échange';
 
   @override
@@ -3335,10 +3338,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInStatusPaused => 'En pause';
 
   @override
+  String get checkInStatusRecorderBusy => 'Enregistreur occupé';
+
+  @override
   String get checkInStatusRecording => 'Enregistrement';
 
   @override
   String get checkInStatusRecordingFailed => 'L’enregistrement n’a pas démarré';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Enregistrement non sauvegardé';
 
   @override
   String get checkInStatusTranscriptionUnavailable =>
@@ -11910,11 +11919,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get relationshipAgentMarkImportant => 'Marquer comme important';
-
-  @override
-  String relationshipAgentNextLook(String day) {
-    return 'Prochain regard $day';
-  }
 
   @override
   String get relationshipAgentNoAgent => 'Aucun agent pour cette personne';

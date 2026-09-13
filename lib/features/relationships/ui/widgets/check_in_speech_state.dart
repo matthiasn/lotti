@@ -49,11 +49,19 @@ class CheckInSpeechTranscribing extends CheckInSpeechPhase {
 }
 
 /// The words landed as ordinary editable text (option 1d). Remembers what
-/// was appended so *Re-record* can take exactly that back out again.
+/// was appended, and what the field held before, so *Re-record* can take
+/// exactly that back out again — and only if nothing has been edited.
 class CheckInSpeechReady extends CheckInSpeechPhase {
-  const CheckInSpeechReady({required this.transcript, required this.length});
+  const CheckInSpeechReady({
+    required this.transcript,
+    required this.textBefore,
+    required this.length,
+  });
 
   final String transcript;
+
+  /// The field's text before the transcript was merged in.
+  final String textBefore;
   final Duration length;
 }
 
@@ -72,9 +80,16 @@ enum CheckInSpeechFailureKind {
   /// The OS refused the microphone. Nothing was recorded.
   microphoneDenied,
 
-  /// The recorder could not start or could not stop cleanly. Nothing usable
-  /// was recorded.
+  /// The recorder could not start. Nothing was recorded.
   recordingFailed,
+
+  /// The recorder ran but could not be stopped and saved. The take is lost.
+  recordingNotSaved,
+
+  /// The app-wide recorder is busy with a recording that is not this
+  /// person's — started elsewhere, or for someone else. Nothing new was
+  /// recorded; it has to be stopped from the recording indicator first.
+  recorderBusy,
 
   /// No default inference profile carries a transcription slot. Nothing
   /// was recorded — the preflight stops before the microphone.
@@ -219,6 +234,8 @@ enum CheckInComposerStatus {
   transcriptionUnavailable,
   microphoneDenied,
   recordingFailed,
+  recordingNotSaved,
+  recorderBusy,
 }
 
 /// The header status for a [phase]; [recorderPaused] only matters while
@@ -239,6 +256,9 @@ CheckInComposerStatus checkInComposerStatusOf(
       CheckInComposerStatus.microphoneDenied,
     CheckInSpeechFailureKind.recordingFailed =>
       CheckInComposerStatus.recordingFailed,
+    CheckInSpeechFailureKind.recordingNotSaved =>
+      CheckInComposerStatus.recordingNotSaved,
+    CheckInSpeechFailureKind.recorderBusy => CheckInComposerStatus.recorderBusy,
     CheckInSpeechFailureKind.transcriptionUnavailable =>
       CheckInComposerStatus.transcriptionUnavailable,
     CheckInSpeechFailureKind.transcriptMissing =>

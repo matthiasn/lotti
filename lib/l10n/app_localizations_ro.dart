@@ -3249,6 +3249,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInPreparingLabel => 'Se pregătește sunetul…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Opriți-o mai întâi din indicatorul de înregistrare, apoi încercați din nou. Nu s-a înregistrat nimic nou.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'O înregistrare este deja în curs';
+
+  @override
   String get checkInRecordingFailedBody =>
       'Microfonul nu a putut fi pornit. Încercați din nou sau scrieți check-in-ul. Nu s-a înregistrat nimic.';
 
@@ -3258,6 +3265,14 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get checkInRecordingHint =>
       'Vorbiți normal. Cuvintele apar aici când opriți.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'Înregistrarea nu a putut fi salvată. Încercați din nou sau scrieți check-in-ul.';
+
+  @override
+  String get checkInRecordingNotSavedTitle =>
+      'Înregistrarea nu a putut fi salvată';
 
   @override
   String get checkInReRecordButton => 'Reînregistrați';
@@ -3319,18 +3334,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Din mesajul pe care l-ați trimis de pe această pagină. Totul se poate edita.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'circa $minutes min',
-      one: 'circa 1 min',
-      zero: 'sub un minut',
-    );
-    return '$type · început la $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Dictați contactul';
 
   @override
@@ -3343,10 +3346,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInStatusPaused => 'În pauză';
 
   @override
+  String get checkInStatusRecorderBusy => 'Reportofon ocupat';
+
+  @override
   String get checkInStatusRecording => 'Se înregistrează';
 
   @override
   String get checkInStatusRecordingFailed => 'Înregistrarea nu a pornit';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Înregistrare nesalvată';
 
   @override
   String get checkInStatusTranscriptionUnavailable =>
@@ -11935,11 +11944,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipAgentMarkImportant => 'Marchează ca important';
-
-  @override
-  String relationshipAgentNextLook(String day) {
-    return 'Următoarea privire $day';
-  }
 
   @override
   String get relationshipAgentNoAgent => 'Niciun agent pentru această persoană';

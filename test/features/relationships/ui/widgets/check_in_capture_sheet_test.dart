@@ -94,16 +94,21 @@ void main() {
   });
 
   group('removeCheckInTranscript', () {
-    test('takes an unedited transcript back off the end', () {
+    test('gives back what the field held before an unedited merge', () {
       expect(
         removeCheckInTranscript(
           existing: 'Typed.\n\nSpoken.',
+          textBefore: 'Typed.',
           transcript: 'Spoken.',
         ),
         'Typed.',
       );
       expect(
-        removeCheckInTranscript(existing: 'Spoken.', transcript: 'Spoken.'),
+        removeCheckInTranscript(
+          existing: 'Spoken.',
+          textBefore: '',
+          transcript: 'Spoken.',
+        ),
         '',
       );
     });
@@ -112,13 +117,20 @@ void main() {
       expect(
         removeCheckInTranscript(
           existing: 'Typed.\n\nSpoken, then edited.',
+          textBefore: 'Typed.',
           transcript: 'Spoken.',
         ),
         'Typed.\n\nSpoken, then edited.',
       );
+      // A prefix edit still ends with the transcript; a suffix match would
+      // have stripped it and left "Actually".
       expect(
-        removeCheckInTranscript(existing: 'Typed.', transcript: ''),
-        'Typed.',
+        removeCheckInTranscript(
+          existing: 'Actually Spoken.',
+          textBefore: '',
+          transcript: 'Spoken.',
+        ),
+        'Actually Spoken.',
       );
     });
   });
@@ -1000,6 +1012,16 @@ void main() {
         reason: 'the last take came out, and the new one went in',
       );
       expect(recorder.recordCalls, hasLength(3));
+
+      // An edit in front of the last take keeps it: nothing is stripped.
+      await type(tester, 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
+      await stopRecording(tester);
+      expect(
+        narrativeText(tester),
+        'Edited. Typed.\n\nSpoken.\n\nSpoken.\n\nSpoken.',
+      );
     });
 
     testWidgets('a discarded recording leaves the narrative alone', (
@@ -1041,7 +1063,7 @@ void main() {
       expect(dictate, findsOneWidget);
     });
 
-    testWidgets('a stop that saves nothing is a failed recording', (
+    testWidgets('a stop that saves nothing is a recording not saved', (
       tester,
     ) async {
       recorder.stopResult = null;
@@ -1050,8 +1072,85 @@ void main() {
       await startDictation(tester);
       await stopRecording(tester);
 
-      expect(find.text("Recording didn't start"), findsOneWidget);
+      expect(find.text("Recording couldn't be saved"), findsOneWidget);
       expect(stubTranscription.transcribeCalls, isEmpty);
+    });
+
+    // A sheet dismissed mid-take leaves the recording running; reopening
+    // and pressing Dictate must attach to it — `record()` would toggle it
+    // off, saving the take wordless and never starting a new one.
+    testWidgets("this person's recording still running is adopted, not "
+        'toggled off', (tester) async {
+      recorder = FakeAudioRecorderController(runningFor: 'rel-001');
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+
+      expect(inlineRecorder, findsOneWidget);
+      expect(recorder.recordCalls, isEmpty);
+      expect(recorder.modalVisibleLog, [true]);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Spoken.');
+    });
+
+    testWidgets("someone else's recording running is refused with the busy "
+        'card, and nothing is touched', (tester) async {
+      recorder = FakeAudioRecorderController(runningFor: 'task-9');
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+
+      expect(inlineRecorder, findsNothing);
+      expect(find.text('A recording is already running'), findsOneWidget);
+      expect(recorder.recordCalls, isEmpty);
+      expect(recorder.stopCalls, 0);
+      expect(recorder.modalVisibleLog, isEmpty);
+    });
+
+    testWidgets('Re-record keeps the words until the new take exists: a '
+        'discarded retake leaves them', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      await stopRecording(tester);
+      expect(narrativeText(tester), 'Spoken.');
+
+      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('check-in-recorder-discard')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Discard').last);
+      await tester.pumpAndSettle();
+      expect(narrativeText(tester), 'Spoken.');
+      expect(saveEnabled(tester), isTrue);
+
+      // And a retake that fails to start keeps them too.
+      recorder.recordFailure = AudioRecordingFailure.permissionDenied;
+      await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+      await tester.pumpAndSettle();
+      expect(narrativeText(tester), 'Spoken.');
+    });
+
+    testWidgets('a route lookup that throws never touches the wait', (
+      tester,
+    ) async {
+      final gate = Completer<String?>();
+      stubTranscription = StubCheckInTranscriptionService(
+        gate: gate,
+        routeThrows: true,
+      );
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      recorder.tick(progress: const Duration(seconds: 5));
+      await tester.pump();
+      await stopRecording(tester);
+      expect(find.text('0:05 of audio saved'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      gate.complete('Landed anyway.');
+      await tester.pumpAndSettle();
+      expect(narrativeText(tester), 'Landed anyway.');
     });
 
     // No profile, no model, or a run that never finished: the user is told

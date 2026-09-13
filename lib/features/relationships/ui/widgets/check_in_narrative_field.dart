@@ -495,6 +495,40 @@ class _FailureCard extends StatelessWidget {
           onPressed: onTypeInstead,
         ),
       ),
+      CheckInSpeechFailureKind.recordingNotSaved => (
+        alert.error.defaultColor,
+        LottiIcons.micIdle,
+        messages.checkInRecordingNotSavedTitle,
+        messages.checkInRecordingNotSavedBody,
+        (
+          key: const ValueKey('check-in-retry-audio'),
+          label: messages.relationshipAgentTryAgain,
+          icon: LottiIcons.refresh,
+          onPressed: onDictate,
+        ),
+        (
+          key: const ValueKey('check-in-dismiss-failure'),
+          label: messages.checkInTypeInstead,
+          onPressed: onTypeInstead,
+        ),
+      ),
+      CheckInSpeechFailureKind.recorderBusy => (
+        alert.warning.defaultColor,
+        LottiIcons.mic,
+        messages.checkInRecorderBusyTitle,
+        messages.checkInRecorderBusyBody,
+        (
+          key: const ValueKey('check-in-retry-audio'),
+          label: messages.relationshipAgentTryAgain,
+          icon: LottiIcons.refresh,
+          onPressed: onDictate,
+        ),
+        (
+          key: const ValueKey('check-in-dismiss-failure'),
+          label: messages.checkInTypeInstead,
+          onPressed: onTypeInstead,
+        ),
+      ),
       CheckInSpeechFailureKind.transcriptionUnavailable => (
         alert.warning.defaultColor,
         LottiIcons.transcribe,

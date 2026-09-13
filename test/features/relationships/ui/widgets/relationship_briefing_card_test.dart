@@ -1200,6 +1200,11 @@ void main() {
         findsNothing,
         reason: 'an hour-old briefing is not old enough to count in days',
       );
+      expect(
+        find.textContaining('Sources:'),
+        findsNothing,
+        reason: 'the count would include the check-in the briefing missed',
+      );
     });
 
     testWidgets('a briefing days old wears its age on the trailing rail', (

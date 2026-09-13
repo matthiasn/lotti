@@ -871,9 +871,9 @@ class _AgentCard extends StatelessWidget {
       // coverage:ignore-end
     };
 
-    final showsSources =
-        state == RelationshipAgentCardState.current ||
-        state == RelationshipAgentCardState.outOfDate;
+    // Only a current briefing can say what it was written from: on an
+    // out-of-date one the count already includes the check-in it missed.
+    final showsSources = state == RelationshipAgentCardState.current;
 
     return AgentSummaryCardSurface(
       key: const ValueKey('relationship-briefing-card'),

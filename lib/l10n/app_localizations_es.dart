@@ -3236,6 +3236,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInPreparingLabel => 'Preparando el audio…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Detenla primero desde el indicador de grabación y vuelve a intentarlo. No se grabó nada nuevo.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'Ya hay una grabación en curso';
+
+  @override
   String get checkInRecordingFailedBody =>
       'No se pudo iniciar el micrófono. Inténtalo de nuevo o escribe el check-in. No se grabó nada.';
 
@@ -3245,6 +3252,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get checkInRecordingHint =>
       'Habla con normalidad. Las palabras aparecerán aquí cuando pares.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'No se pudo guardar la grabación. Inténtalo de nuevo o escribe el check-in.';
+
+  @override
+  String get checkInRecordingNotSavedTitle => 'No se pudo guardar la grabación';
 
   @override
   String get checkInReRecordButton => 'Volver a grabar';
@@ -3303,18 +3317,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Del mensaje que enviaste desde esta página. Todo se puede editar.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'unos $minutes min',
-      one: 'alrededor de 1 min',
-      zero: 'menos de un minuto',
-    );
-    return '$type · empezó a las $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Dictar el contacto';
 
   @override
@@ -3327,10 +3329,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInStatusPaused => 'En pausa';
 
   @override
+  String get checkInStatusRecorderBusy => 'Grabadora ocupada';
+
+  @override
   String get checkInStatusRecording => 'Grabando';
 
   @override
   String get checkInStatusRecordingFailed => 'La grabación no se inició';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Grabación no guardada';
 
   @override
   String get checkInStatusTranscriptionUnavailable =>
@@ -11869,11 +11877,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipAgentMarkImportant => 'Marcar como importante';
-
-  @override
-  String relationshipAgentNextLook(String day) {
-    return 'Próximo vistazo $day';
-  }
 
   @override
   String get relationshipAgentNoAgent => 'Sin agente para esta persona';

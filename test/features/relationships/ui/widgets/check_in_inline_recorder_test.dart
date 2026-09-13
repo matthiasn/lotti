@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -13,7 +14,7 @@ import '../../helpers/check_in_speech_fakes.dart';
 void main() {
   late FakeAudioRecorderController recorder;
   final recorded = <(String, Duration)>[];
-  final failed = <AudioRecordingFailure>[];
+  final failed = <CheckInSpeechFailureKind>[];
   var discarded = 0;
 
   setUp(() {
@@ -28,17 +29,21 @@ void main() {
     String? stopResult = 'audio-1',
     bool stopThrows = false,
     Completer<void>? stopGate,
+    String? runningFor,
+    bool adoptRunning = false,
   }) async {
     recorder = FakeAudioRecorderController(
       recordFailure: recordFailure,
       stopResult: stopResult,
       stopThrows: stopThrows,
+      runningFor: runningFor,
     )..stopGate = stopGate;
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         CheckInInlineRecorder(
           linkedId: 'person-1',
           categoryId: 'category-7',
+          adoptRunning: adoptRunning,
           onRecorded: (id, length) => recorded.add((id, length)),
           onDiscarded: () => discarded++,
           onFailed: failed.add,
@@ -70,12 +75,32 @@ void main() {
     expect(find.text('Audio saved to this device as you go'), findsOneWidget);
   });
 
-  testWidgets('a refused start is reported as the typed failure', (
+  testWidgets("a refused start is reported in the composer's own terms", (
     tester,
   ) async {
     await pump(tester, recordFailure: AudioRecordingFailure.permissionDenied);
-    expect(failed, [AudioRecordingFailure.permissionDenied]);
+    expect(failed, [CheckInSpeechFailureKind.microphoneDenied]);
     expect(recorded, isEmpty);
+  });
+
+  testWidgets('a start the recorder refuses as busy or failed is a failed '
+      'start', (tester) async {
+    await pump(tester, recordFailure: AudioRecordingFailure.busy);
+    expect(failed, [CheckInSpeechFailureKind.recordingFailed]);
+  });
+
+  // `record()` on a running recorder toggles it off; adopting attaches to
+  // the take instead, and only hides the indicator.
+  testWidgets('adopting a running take never calls record', (tester) async {
+    await pump(tester, runningFor: 'person-1', adoptRunning: true);
+    expect(recorder.recordCalls, isEmpty);
+    expect(recorder.categoryIds, isEmpty);
+    expect(recorder.modalVisibleLog, [true]);
+    expect(find.text('Pause'), findsOneWidget);
+
+    await tester.tap(key('check-in-recorder-stop'));
+    await tester.pump();
+    expect(recorded, [('audio-1', Duration.zero)]);
   });
 
   testWidgets('Stop hands back the entry and the length the clock stood at', (
@@ -94,13 +119,12 @@ void main() {
     expect(recorded, [('audio-1', const Duration(seconds: 23))]);
   });
 
-  testWidgets('a stop that saves nothing, or throws, is a failed recording', (
-    tester,
-  ) async {
+  testWidgets('a stop that saves nothing, or throws, is a recording not '
+      'saved — never a start that failed', (tester) async {
     await pump(tester, stopResult: null);
     await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
-    expect(failed, [AudioRecordingFailure.startFailed]);
+    expect(failed, [CheckInSpeechFailureKind.recordingNotSaved]);
     expect(recorded, isEmpty);
     // The controls are usable again for another try.
     expect(
@@ -113,7 +137,7 @@ void main() {
     await pump(tester, stopThrows: true);
     await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
-    expect(failed.last, AudioRecordingFailure.startFailed);
+    expect(failed.last, CheckInSpeechFailureKind.recordingNotSaved);
   });
 
   testWidgets('the controls go quiet while a stop is in flight', (

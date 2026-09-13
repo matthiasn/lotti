@@ -3237,6 +3237,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInPreparingLabel => 'Příprava zvuku…';
 
   @override
+  String get checkInRecorderBusyBody =>
+      'Nejdřív ji zastav v indikátoru nahrávání a pak to zkus znovu. Nic nového se nenahrálo.';
+
+  @override
+  String get checkInRecorderBusyTitle => 'Už běží jiná nahrávka';
+
+  @override
   String get checkInRecordingFailedBody =>
       'Mikrofon se nepodařilo spustit. Zkus to znovu, nebo check-in napiš. Nic se nenahrálo.';
 
@@ -3246,6 +3253,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get checkInRecordingHint =>
       'Mluv normálně. Slova se tu objeví, jakmile zastavíš.';
+
+  @override
+  String get checkInRecordingNotSavedBody =>
+      'Nahrávku se nepodařilo uložit. Zkus to znovu, nebo check-in napiš.';
+
+  @override
+  String get checkInRecordingNotSavedTitle => 'Nahrávku se nepodařilo uložit';
 
   @override
   String get checkInReRecordButton => 'Nahrát znovu';
@@ -3305,18 +3319,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ze zprávy, kterou jsi poslal/a z této stránky. Vše jde upravit.';
 
   @override
-  String checkInSourceMeta(String type, String time, int minutes) {
-    String _temp0 = intl.Intl.pluralLogic(
-      minutes,
-      locale: localeName,
-      other: 'asi $minutes min',
-      one: 'asi 1 min',
-      zero: 'necelá minuta',
-    );
-    return '$type · začátek v $time · $_temp0';
-  }
-
-  @override
   String get checkInSpeakButton => 'Namluvit kontakt';
 
   @override
@@ -3329,10 +3331,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInStatusPaused => 'Pozastaveno';
 
   @override
+  String get checkInStatusRecorderBusy => 'Rekordér je obsazený';
+
+  @override
   String get checkInStatusRecording => 'Nahrává se';
 
   @override
   String get checkInStatusRecordingFailed => 'Nahrávání se nespustilo';
+
+  @override
+  String get checkInStatusRecordingNotSaved => 'Nahrávka neuložena';
 
   @override
   String get checkInStatusTranscriptionUnavailable => 'Žádný model pro přepis';
@@ -11870,11 +11878,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipAgentMarkImportant => 'Označit jako důležité';
-
-  @override
-  String relationshipAgentNextLook(String day) {
-    return 'Další pohled $day';
-  }
 
   @override
   String get relationshipAgentNoAgent => 'Pro tuto osobu není žádný agent';

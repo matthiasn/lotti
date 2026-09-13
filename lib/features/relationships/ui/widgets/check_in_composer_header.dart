@@ -206,6 +206,24 @@ class _StatusLine extends StatelessWidget {
         messages.checkInStatusRecordingFailed,
         tokens.colors.alert.error.ink,
       ),
+      CheckInComposerStatus.recordingNotSaved => (
+        Icon(
+          LottiIcons.micIdle,
+          size: IconSizes.s,
+          color: tokens.colors.alert.error.defaultColor,
+        ),
+        messages.checkInStatusRecordingNotSaved,
+        tokens.colors.alert.error.ink,
+      ),
+      CheckInComposerStatus.recorderBusy => (
+        Icon(
+          LottiIcons.mic,
+          size: IconSizes.s,
+          color: tokens.colors.alert.warning.defaultColor,
+        ),
+        messages.checkInStatusRecorderBusy,
+        tokens.colors.alert.warning.ink,
+      ),
     };
 
     return Semantics(

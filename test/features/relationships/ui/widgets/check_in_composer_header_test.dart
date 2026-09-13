@@ -154,6 +154,15 @@ void main() {
     await tester.pump();
     expect(status(tester), "Recording didn't start");
 
+    publish(CheckInComposerStatus.recordingNotSaved);
+    await tester.pump();
+    expect(status(tester), 'Recording not saved');
+
+    publish(CheckInComposerStatus.recorderBusy);
+    await tester.pump();
+    expect(status(tester), 'Recorder busy');
+    expect(statusColor(tester), tokens.colors.alert.warning.ink);
+
     publish(CheckInComposerStatus.idle);
     await tester.pump();
     expect(status(tester), 'with Anna · last spoke Sat 1 Aug');
