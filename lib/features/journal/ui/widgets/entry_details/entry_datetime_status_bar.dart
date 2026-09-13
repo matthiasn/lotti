@@ -81,14 +81,21 @@ class EntryDateTimeStatusBar extends StatelessWidget {
                         color: tokens.colors.interactive.enabled,
                       ),
                       SizedBox(width: tokens.spacing.step3),
-                      Text(
-                        context.messages.journalDurationLabel,
-                        style: tokens.typography.styles.body.bodyMedium
-                            .copyWith(
-                              color: tokens.colors.text.mediumEmphasis,
-                            ),
+                      // Flexible, so at a large text scale the label gives
+                      // way to the figure — the value this row exists for —
+                      // rather than pushing it off the edge.
+                      Expanded(
+                        child: Text(
+                          context.messages.journalDurationLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
                       ),
-                      const Spacer(),
+                      SizedBox(width: tokens.spacing.step3),
                       Text(
                         duration,
                         style: tokens.typography.styles.subtitle.subtitle2
