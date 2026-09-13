@@ -1878,7 +1878,6 @@
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
   "checkInAddMoreButton": "Add more",
-  "checkInAudioKeptNote": "Audio is kept in the journal even if you cancel this check-in",
   "checkInAudioSaved": "{length} of audio saved",
   "@checkInAudioSaved": {
     "placeholders": {
@@ -1919,6 +1918,15 @@
       }
     }
   },
+  "checkInComposerWithName": "with {name}",
+  "@checkInComposerWithName": {
+    "description": "The composer header's status line when only the person fits: the name is never shed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "checkInContextSummary": "{type} · {time} · {duration}",
   "@checkInContextSummary": {
     "placeholders": {
@@ -1935,6 +1943,12 @@
   },
   "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
   "checkInDictateButton": "Dictate",
+  "checkInDiscardDraftAudioKeptMessage": "Discard this check-in? The recording stays in the journal.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
+  "checkInDiscardDraftMessage": "Discard this check-in? Nothing has been saved.",
+  "checkInDiscardDraftRecordingMessage": "Discard this check-in and the recording? The recording will be deleted.",
   "checkInDiscardRecording": "Discard",
   "checkInDismissButton": "Dismiss",
   "checkInDurationChip": "Duration",
@@ -2032,9 +2046,9 @@
   "@checkInTranscribingLabel": {
     "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."
   },
-  "checkInTranscriptAdded": "Transcript added · read it once, edit anything",
+  "checkInTranscriptAdded": "Transcript added",
   "checkInTranscriptionUnavailableTitle": "No transcription model set up",
-  "checkInTranscriptMissingBody": "Your {length} recording is saved on this device. Try again when you're back online, or type the check-in now.",
+  "checkInTranscriptMissingBody": "Your {length} recording is saved in the journal, even if you cancel this check-in. Try again in a moment.",
   "@checkInTranscriptMissingBody": {
     "placeholders": {
       "length": {
@@ -2042,7 +2056,6 @@
       }
     }
   },
-  "checkInTranscriptMissingTitle": "Couldn't reach the transcription server",
   "checkInTranscriptUnavailable": "Choose a default inference profile with a transcription model in AI settings, or write your check-in.",
   "@checkInTranscriptUnavailable": {
     "description": "Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category."
@@ -3308,6 +3321,7 @@
   "designSystemTextareaWithCounterLabel": "With counter",
   "designSystemTextareaWithErrorLabel": "With error",
   "designSystemTextareaWithHelperLabel": "With helper text",
+  "designSystemTieredTextTitle": "Tiered text at three widths",
   "designSystemTimePickerFormatsTitle": "Time Formats",
   "designSystemTimePickerTwelveHourLabel": "12-hour",
   "designSystemTimePickerTwentyFourHourLabel": "24-hour",
@@ -6778,7 +6792,7 @@
   },
   "relationshipAddChannelButton": "Add channel",
   "relationshipAddChannelFromContacts": "or from contacts",
-  "relationshipAgentAsOfBand": "as of {age} · {band}",
+  "relationshipAgentAsOfBand": "{band} · as of {age}",
   "@relationshipAgentAsOfBand": {
     "placeholders": {
       "age": {
@@ -6819,7 +6833,7 @@
       }
     }
   },
-  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only what you start yourself, like a chat or a dictated check-in, uses AI.",
+  "relationshipAgentNotEnrolledBody": "Mark {name} as important to get a briefing, nudges when it has been a while, and a chat.",
   "@relationshipAgentNotEnrolledBody": {
     "placeholders": {
       "name": {
@@ -6835,6 +6849,10 @@
         "type": "String"
       }
     }
+  },
+  "relationshipAgentOutOfDateNewCheckInShort": "Out of date · new check-in",
+  "@relationshipAgentOutOfDateNewCheckInShort": {
+    "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefings pause while this person is dormant or archived.",
   "relationshipAgentProposedCount": "{count, plural, =1{1 proposed} other{{count} proposed}}",
@@ -6854,7 +6872,7 @@
     }
   },
   "relationshipAgentSeeActivity": "See activity",
-  "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · no contact channels",
+  "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact channels never sent",
   "@relationshipAgentSources": {
     "placeholders": {
       "count": {

@@ -3070,10 +3070,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInAddMoreButton => 'Tilføj mere';
 
   @override
-  String get checkInAudioKeptNote =>
-      'Lyden bliver i dagbogen, selv hvis du annullerer dette check-in';
-
-  @override
   String checkInAudioSaved(String length) {
     return '$length lyd gemt';
   }
@@ -3100,6 +3096,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String checkInComposerWithName(String name) {
+    return 'med $name';
+  }
+
+  @override
   String checkInContextSummary(String type, String time, String duration) {
     return '$type · $time · $duration';
   }
@@ -3110,6 +3111,18 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInDictateButton => 'Dikter';
+
+  @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Kassér dette check-in? Optagelsen bliver i journalen.';
+
+  @override
+  String get checkInDiscardDraftMessage =>
+      'Kassér dette check-in? Intet er gemt.';
+
+  @override
+  String get checkInDiscardDraftRecordingMessage =>
+      'Kassér dette check-in og optagelsen? Optagelsen bliver slettet.';
 
   @override
   String get checkInDiscardRecording => 'Kassér';
@@ -3321,8 +3334,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInTranscribingLabel => 'Transskriberer…';
 
   @override
-  String get checkInTranscriptAdded =>
-      'Transskription tilføjet · læs den igennem, alt kan redigeres';
+  String get checkInTranscriptAdded => 'Transskription tilføjet';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3330,12 +3342,8 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Din optagelse på $length er gemt på denne enhed. Prøv igen, når du er online igen, eller skriv check-in’et nu.';
+    return 'Din optagelse på $length er gemt i journalen, også hvis du kasserer dette check-in. Prøv igen om lidt.';
   }
-
-  @override
-  String get checkInTranscriptMissingTitle =>
-      'Kunne ikke nå transskriptionsserveren';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -5978,6 +5986,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get designSystemTextareaWithHelperLabel => 'Med hjælpetekst';
+
+  @override
+  String get designSystemTieredTextTitle => 'Trinvis tekst i tre bredder';
 
   @override
   String get designSystemTimePickerFormatsTitle => 'Tidsformater';
@@ -11681,7 +11692,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'opdateret $age · $band';
+    return '$band · opdateret $age';
   }
 
   @override
@@ -11731,7 +11742,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markér $name som vigtig for at få en briefing, påmindelser når der er gået et stykke tid, og en chat. Indtil da sker der intet af sig selv; kun det, du selv starter, som en chat eller et dikteret check-in, bruger AI.';
+    return 'Markér $name som vigtig for at få en briefing, påmindelser når der er gået et stykke tid, og en chat.';
   }
 
   @override
@@ -11742,6 +11753,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Forældet · nyt check-in $day';
   }
+
+  @override
+  String get relationshipAgentOutOfDateNewCheckInShort =>
+      'Forældet · nyt check-in';
 
   @override
   String get relationshipAgentPausedBody =>
@@ -11781,7 +11796,7 @@ class AppLocalizationsDa extends AppLocalizations {
       other: '$count check-ins',
       one: '1 check-in',
     );
-    return 'Kilder: $_temp0 · ingen kontaktkanaler';
+    return 'Kilder: $_temp0 · kontaktkanaler sendes aldrig';
   }
 
   @override

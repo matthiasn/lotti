@@ -301,8 +301,10 @@ class _ModalHost extends StatelessWidget {
 /// What the shell is pumped under. Its `devicePixelRatio` is the one the
 /// avatar reads when it caps its decode, so the warm-up must use it too — not
 /// the view's — or the cache keys will not match.
-MediaQueryData _mediaQueryFor(ScreenshotDevice device) =>
-    MediaQueryData(size: device.size);
+MediaQueryData _mediaQueryFor(
+  ScreenshotDevice device, {
+  TextScaler textScaler = TextScaler.noScaling,
+}) => MediaQueryData(size: device.size, textScaler: textScaler);
 
 /// The app shell every capture is rendered inside — the production theme,
 /// the production localization delegates and the keyboard command host, so
@@ -313,12 +315,14 @@ Widget _app({
   required ScreenshotDevice device,
   required List<Override> overrides,
   required TargetPlatform platform,
+  TextScaler textScaler = TextScaler.noScaling,
+  Locale? locale,
 }) => RepaintBoundary(
   key: screenshotBoundaryKey,
   child: ProviderScope(
     overrides: overrides,
     child: MediaQuery(
-      data: _mediaQueryFor(device),
+      data: _mediaQueryFor(device, textScaler: textScaler),
       child: MaterialApp(
         builder: LegacyMaterialBridge.builder,
         debugShowCheckedModeBanner: false,
@@ -330,7 +334,7 @@ Widget _app({
           ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        locale: manualScreenshotLocale,
+        locale: locale ?? manualScreenshotLocale,
         home: AppCommandHost(
           handlers: const {},
           platform: platform,
@@ -858,6 +862,8 @@ void main() {
     String? selectedId,
     bool desktopChat = false,
     bool settle = true,
+    TextScaler textScaler = TextScaler.noScaling,
+    Locale? locale,
   }) async {
     selectedRelationshipId.value = selectedId;
     chatOpen.value = desktopChat;
@@ -877,6 +883,8 @@ void main() {
           device: device,
           overrides: overrides,
           platform: device.isPhone ? TargetPlatform.iOS : TargetPlatform.macOS,
+          textScaler: textScaler,
+          locale: locale,
         ),
       );
       if (settle) {
@@ -1531,20 +1539,18 @@ void main() {
           subdir: _subdir,
         );
 
-        // The microphone allowed after all, and then the transcript never
-        // comes: the recording is kept, the retry asks for its words again.
-        await tester.tap(
-          find.byKey(const ValueKey('check-in-dismiss-failure')),
-        );
-        await tester.pumpAndSettle();
+        // The microphone allowed after all — the card's own Try again
+        // records again — and then the transcript never comes: the
+        // recording is kept, the retry asks for its words again.
         recorder.recordFailure = null;
-        await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+        await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
         await tester.pumpAndSettle();
         recorder.tick(progress: const Duration(seconds: 23));
         await tester.pump();
         await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         await tester.pumpAndSettle();
-        expect(find.text("Couldn't reach the transcription server"), findsOne);
+        // The header's status line and the card's title say the same thing.
+        expect(find.text('Transcript not received'), findsNWidgets(2));
         expect(find.text('Type or retry to save'), findsOne);
         await captureScreenshot(
           tester,
@@ -1553,6 +1559,88 @@ void main() {
         );
       });
     });
+
+    // Accessibility pair for the composer: the light theme, and the
+    // handover's option 1h — the largest text scale, in German, so the
+    // chips wrap, the actions stack and nothing truncates.
+    if (device.isPhone) {
+      testWidgets('mobile check-in capture sheet — light', (tester) async {
+        await pumpSurface(
+          tester,
+          home: _ModalHost(
+            open: (context) => showCheckInCaptureSheet(
+              context: context,
+              relationshipId: _pipId,
+            ),
+          ),
+          device: device,
+          brightness: Brightness.light,
+          overrides: personOverrides(),
+        );
+        await openModal(tester);
+        expect(find.byKey(const ValueKey('check-in-dictate')), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_capture_mobile_light',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('mobile check-in capture sheet — large text, German', (
+        tester,
+      ) async {
+        await pumpSurface(
+          tester,
+          home: _ModalHost(
+            open: (context) => showCheckInCaptureSheet(
+              context: context,
+              relationshipId: _pipId,
+            ),
+          ),
+          device: device,
+          brightness: Brightness.dark,
+          overrides: personOverrides(),
+          textScaler: const TextScaler.linear(1.6),
+          locale: const Locale('de'),
+        );
+        await openModal(tester);
+        expect(find.text('Check-in erfassen'), findsOne);
+        expect(find.byKey(const ValueKey('check-in-dictate')), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_capture_mobile_large_text_de',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('mobile agent card, current — large text', (tester) async {
+        await pumpSurface(
+          tester,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: RelationshipBriefingCard(
+                relationship: pip,
+                checkIns: pipCheckIns,
+              ),
+            ),
+          ),
+          device: device,
+          brightness: Brightness.dark,
+          overrides: personOverrides(
+            report: briefing(),
+            state: makeTestState(agentId: agentId),
+            totalTokens: 18432,
+          ),
+          textScaler: const TextScaler.linear(1.6),
+        );
+        await captureScreenshot(
+          tester,
+          'agent_card_current_mobile_large_text',
+          subdir: _subdir,
+        );
+      });
+    }
 
     testWidgets('$viewport check-in edit sheet — dark', (tester) async {
       await pumpSurface(

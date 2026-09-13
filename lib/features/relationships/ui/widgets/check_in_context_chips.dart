@@ -15,7 +15,6 @@ class CheckInContextChips extends StatelessWidget {
     required this.type,
     required this.startedLabel,
     required this.durationLabel,
-    required this.hasDuration,
     required this.onPickType,
     required this.onPickStart,
     required this.onPickDuration,
@@ -30,7 +29,6 @@ class CheckInContextChips extends StatelessWidget {
 
   /// `0:23` / `11 min`, or the *Duration* prompt when there is none yet.
   final String durationLabel;
-  final bool hasDuration;
   final VoidCallback onPickType;
   final VoidCallback onPickStart;
   final VoidCallback onPickDuration;
@@ -54,7 +52,9 @@ class CheckInContextChips extends StatelessWidget {
           label: typeLabel,
           leadingIcon: checkInInteractionIcon(type),
           trailing: const Icon(LottiIcons.chevronDown, size: IconSizes.s),
-          selected: true,
+          // Not `selected`: in the chip grammar that means "chosen among
+          // peers", which the sentiment row uses; here every chip holds a
+          // value, and the glyph says which.
           size: DesignSystemChipSize.touch,
           semanticsLabel: messages.checkInTypeChipSemantics(typeLabel),
           onPressed: enabled ? onPickType : null,

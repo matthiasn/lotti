@@ -219,6 +219,12 @@ no variant, so it cannot read as a surface's primary action; where a
 caption-tier *labelled* row is wanted, use `DesignSystemInlineAction` below
 instead.
 
+**Reduced motion is honoured at the component.** `DesignSystemSpinner` and
+`DesignSystemSkeleton` read `MediaQuery.disableAnimationsOf` in
+`didChangeDependencies` and stop their repeating controller under it, so
+every call site inherits the setting rather than each host remembering to
+guard its own `repeat()`.
+
 **Its busy state is the reason it is a component.** The spinner it swaps in is
 the same dimension as the glyph it replaces, so the control does not resize
 under the pointer that just pressed it. `isBusy` also makes it **inert**, the
@@ -305,6 +311,12 @@ accent on both border and label — for a demoted-but-*positive* action beside
 a danger primary, where the neutral outlined treatment reads as Cancel
 ("Verify" next to "Remove" must still look like a good idea).
 
+**`quiet`** is text-only in the neutral medium-emphasis ink — an exit or a
+dismissal beside a primary, which must never out-shout it, not even a held
+one. `tertiary` carries the interactive accent and reads as a way forward;
+Cancel is not one, and a teal Cancel beside a disabled Save was the brightest
+thing in the check-in composer's bar until this variant existed.
+
 ## Quieter than any tier: `DsQuietInk`
 
 Some targets must not look like buttons at all — breadcrumb crumbs, card-title
@@ -336,6 +348,22 @@ This is a different contract from `DesignSystemInlineAction`, which *is* a
 control that reads as one and keeps the shared hover fill. Reach for
 `DsQuietInk` only when a hover fill would manufacture a button shape the
 resting design deliberately does not have.
+
+## One line that sheds words, not letters: `DsTieredText`
+
+`DsTieredText`
+([captions/ds_tiered_text.dart](../../../lib/features/design_system/components/captions/ds_tiered_text.dart))
+takes a ladder of wordings, widest first, and renders the widest that fits
+its width on one line — `with Pip · last spoke Sat 1 Aug` → `with Pip`,
+`Qwen 3.5 Plus · Alibaba · via Melious.ai` → `Qwen 3.5 Plus`. Structured
+captions shed a whole segment and stay legible where an ellipsis would eat
+the one fact the line exists for. Only the narrowest tier may take
+`maxLines` (default one) before it ellipsizes, as the honest end of the
+ladder; every other tier is one line or not chosen. The rendered `Text`
+carries `semanticsLabel` — the full first tier unless given — so assistive
+technology hears what the screen shortened. Hosts: the check-in composer
+header, the briefing card's status line, and the agent identity region's
+model route and attribution rows.
 
 ## The floating readout: `DsTooltip`
 

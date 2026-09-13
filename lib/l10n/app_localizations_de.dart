@@ -3096,10 +3096,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInAddMoreButton => 'Mehr aufnehmen';
 
   @override
-  String get checkInAudioKeptNote =>
-      'Das Audio bleibt im Journal, auch wenn du diesen Check-in abbrichst';
-
-  @override
   String checkInAudioSaved(String length) {
     return '$length Audio gespeichert';
   }
@@ -3127,6 +3123,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String checkInComposerWithName(String name) {
+    return 'mit $name';
+  }
+
+  @override
   String checkInContextSummary(String type, String time, String duration) {
     return '$type · $time · $duration';
   }
@@ -3137,6 +3138,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInDictateButton => 'Diktieren';
+
+  @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Diesen Check-in verwerfen? Die Aufnahme bleibt im Journal.';
+
+  @override
+  String get checkInDiscardDraftMessage =>
+      'Diesen Check-in verwerfen? Es wurde nichts gespeichert.';
+
+  @override
+  String get checkInDiscardDraftRecordingMessage =>
+      'Diesen Check-in und die Aufnahme verwerfen? Die Aufnahme wird gelöscht.';
 
   @override
   String get checkInDiscardRecording => 'Verwerfen';
@@ -3352,8 +3365,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInTranscribingLabel => 'Wird transkribiert…';
 
   @override
-  String get checkInTranscriptAdded =>
-      'Transkript eingefügt · einmal lesen, alles ist editierbar';
+  String get checkInTranscriptAdded => 'Transkript eingefügt';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3361,12 +3373,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Deine Aufnahme ($length) ist auf diesem Gerät gespeichert. Versuch es erneut, sobald du wieder online bist, oder tippe den Check-in jetzt ein.';
+    return 'Deine Aufnahme ($length) bleibt im Journal gespeichert, auch wenn du diesen Check-in abbrichst. Versuch es gleich noch einmal.';
   }
-
-  @override
-  String get checkInTranscriptMissingTitle =>
-      'Transkriptionsserver nicht erreichbar';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -6023,6 +6031,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemTextareaWithHelperLabel => 'Mit Hilfstext';
+
+  @override
+  String get designSystemTieredTextTitle => 'Gestufter Text in drei Breiten';
 
   @override
   String get designSystemTimePickerFormatsTitle => 'Zeitformate';
@@ -11763,7 +11774,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'Stand $age · $band';
+    return '$band · Stand $age';
   }
 
   @override
@@ -11813,7 +11824,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markiere $name als wichtig, um ein Briefing, Erinnerungen nach längerer Funkstille und einen Chat zu bekommen. Bis dahin läuft nichts von selbst; KI nutzt nur, was du selbst anstößt, etwa ein Chat oder ein diktierter Check-in.';
+    return 'Markiere $name als wichtig, um ein Briefing, Erinnerungen nach längerer Funkstille und einen Chat zu bekommen.';
   }
 
   @override
@@ -11824,6 +11835,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Veraltet · neuer Check-in $day';
   }
+
+  @override
+  String get relationshipAgentOutOfDateNewCheckInShort =>
+      'Veraltet · neuer Check-in';
 
   @override
   String get relationshipAgentPausedBody =>
@@ -11863,7 +11878,7 @@ class AppLocalizationsDe extends AppLocalizations {
       other: '$count Check-ins',
       one: '1 Check-in',
     );
-    return 'Quellen: $_temp0 · keine Kontaktkanäle';
+    return 'Quellen: $_temp0 · Kontaktkanäle werden nie gesendet';
   }
 
   @override

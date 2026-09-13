@@ -68,9 +68,14 @@ class CheckInSpeechReady extends CheckInSpeechPhase {
 /// Something stopped the words from arriving; the card says what and
 /// offers the way out (options 1e / 1f).
 class CheckInSpeechFailed extends CheckInSpeechPhase {
-  const CheckInSpeechFailed(this.failure);
+  const CheckInSpeechFailed(this.failure, {this.cardDismissed = false});
 
   final CheckInSpeechFailure failure;
+
+  /// *Type instead* on a missing transcript folds the card away but keeps
+  /// the retry: the field shows one caption row — the recording's length
+  /// and *Try again* — rather than forgetting the take the user made.
+  final bool cardDismissed;
 }
 
 /// What went wrong, in the terms the user needs: whether anything was
@@ -207,18 +212,17 @@ CheckInSaveBlock checkInSaveBlockOf({
 int checkInWordCount(String text) =>
     text.trim().isEmpty ? 0 : RegExp(r'\S+').allMatches(text).length;
 
-/// `h:mm:ss` for a recording's running time and `m:ss` for a finished
-/// length under an hour — the tabular figures the recorder's timer and the
-/// duration chip both use, so `0:23` on the chip is the `0:00:23` the timer
-/// stopped on.
-String checkInClockLabel(Duration length, {bool alwaysHours = false}) {
+/// `m:ss` under an hour and `h:mm:ss` from there — one clock shape for the
+/// recorder's timer, the saved-audio line and the duration chip, so `0:23`
+/// on the chip is the `0:23` the timer stopped on.
+String checkInClockLabel(Duration length) {
   final total = length.inSeconds.clamp(0, 1 << 31);
   final hours = total ~/ 3600;
   final minutes = (total % 3600) ~/ 60;
   final seconds = total % 60;
   final mm = minutes.toString().padLeft(2, '0');
   final ss = seconds.toString().padLeft(2, '0');
-  if (hours > 0 || alwaysHours) return '$hours:$mm:$ss';
+  if (hours > 0) return '$hours:$mm:$ss';
   return '$minutes:$ss';
 }
 

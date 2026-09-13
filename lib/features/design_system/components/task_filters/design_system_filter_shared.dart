@@ -281,10 +281,14 @@ class _DesignSystemFilterChoicePillState
                   Flexible(
                     child: Text(
                       widget.label,
-                      maxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
+                      maxLines:
+                          MediaQuery.textScalerOf(context).scale(1) >
+                              TextScales.large
                           ? null
                           : 1,
-                      overflow: MediaQuery.textScalerOf(context).scale(1) > 1.3
+                      overflow:
+                          MediaQuery.textScalerOf(context).scale(1) >
+                              TextScales.large
                           ? TextOverflow.clip
                           : TextOverflow.ellipsis,
                       textAlign: TextAlign.center,

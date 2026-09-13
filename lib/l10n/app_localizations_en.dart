@@ -3055,10 +3055,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInAddMoreButton => 'Add more';
 
   @override
-  String get checkInAudioKeptNote =>
-      'Audio is kept in the journal even if you cancel this check-in';
-
-  @override
   String checkInAudioSaved(String length) {
     return '$length of audio saved';
   }
@@ -3085,6 +3081,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String checkInComposerWithName(String name) {
+    return 'with $name';
+  }
+
+  @override
   String checkInContextSummary(String type, String time, String duration) {
     return '$type · $time · $duration';
   }
@@ -3095,6 +3096,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkInDictateButton => 'Dictate';
+
+  @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Discard this check-in? The recording stays in the journal.';
+
+  @override
+  String get checkInDiscardDraftMessage =>
+      'Discard this check-in? Nothing has been saved.';
+
+  @override
+  String get checkInDiscardDraftRecordingMessage =>
+      'Discard this check-in and the recording? The recording will be deleted.';
 
   @override
   String get checkInDiscardRecording => 'Discard';
@@ -3306,8 +3319,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInTranscribingLabel => 'Transcribing…';
 
   @override
-  String get checkInTranscriptAdded =>
-      'Transcript added · read it once, edit anything';
+  String get checkInTranscriptAdded => 'Transcript added';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3315,12 +3327,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Your $length recording is saved on this device. Try again when you\'re back online, or type the check-in now.';
+    return 'Your $length recording is saved in the journal, even if you cancel this check-in. Try again in a moment.';
   }
-
-  @override
-  String get checkInTranscriptMissingTitle =>
-      'Couldn\'t reach the transcription server';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -5953,6 +5961,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designSystemTextareaWithHelperLabel => 'With helper text';
+
+  @override
+  String get designSystemTieredTextTitle => 'Tiered text at three widths';
 
   @override
   String get designSystemTimePickerFormatsTitle => 'Time Formats';
@@ -11626,7 +11637,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'as of $age · $band';
+    return '$band · as of $age';
   }
 
   @override
@@ -11676,7 +11687,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Mark $name as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only what you start yourself, like a chat or a dictated check-in, uses AI.';
+    return 'Mark $name as important to get a briefing, nudges when it has been a while, and a chat.';
   }
 
   @override
@@ -11687,6 +11698,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Out of date · new check-in $day';
   }
+
+  @override
+  String get relationshipAgentOutOfDateNewCheckInShort =>
+      'Out of date · new check-in';
 
   @override
   String get relationshipAgentPausedBody =>
@@ -11726,7 +11741,7 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$count check-ins',
       one: '1 check-in',
     );
-    return 'Sources: $_temp0 · no contact channels';
+    return 'Sources: $_temp0 · contact channels never sent';
   }
 
   @override

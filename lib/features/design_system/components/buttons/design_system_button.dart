@@ -6,6 +6,12 @@ enum DesignSystemButtonVariant {
   secondary,
   tertiary,
 
+  /// Text-only in the neutral medium-emphasis ink — an exit or a dismissal
+  /// beside a primary, which must never out-shout it, not even a held one.
+  /// [tertiary] carries the interactive accent and reads as a way forward;
+  /// Cancel is not one.
+  quiet,
+
   /// Transparent body with a neutral hairline border — a labeled action that
   /// must read as a button without spending a fill or the interactive accent.
   outlined,
@@ -436,6 +442,7 @@ class _ButtonVariantSpec {
         DesignSystemButtonVariant.danger ||
         DesignSystemButtonVariant.dangerSecondary => true,
         DesignSystemButtonVariant.tertiary ||
+        DesignSystemButtonVariant.quiet ||
         DesignSystemButtonVariant.outlined ||
         DesignSystemButtonVariant.constructiveOutlined ||
         DesignSystemButtonVariant.dangerTertiary => false,
@@ -488,6 +495,14 @@ class _ButtonVariantSpec {
       ),
       DesignSystemButtonVariant.tertiary => _ButtonVariantSpec(
         foregroundColor: interactiveColor,
+        backgroundColor:
+            suppressHoverFill ||
+                visualState == DesignSystemButtonVisualState.idle
+            ? null
+            : surfaceColor,
+      ),
+      DesignSystemButtonVariant.quiet => _ButtonVariantSpec(
+        foregroundColor: tokens.colors.text.mediumEmphasis,
         backgroundColor:
             suppressHoverFill ||
                 visualState == DesignSystemButtonVisualState.idle

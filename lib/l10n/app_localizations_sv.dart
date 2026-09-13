@@ -3079,10 +3079,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInAddMoreButton => 'Lägg till mer';
 
   @override
-  String get checkInAudioKeptNote =>
-      'Ljudet finns kvar i dagboken även om du avbryter den här avstämningen';
-
-  @override
   String checkInAudioSaved(String length) {
     return '$length ljud sparat';
   }
@@ -3110,6 +3106,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String checkInComposerWithName(String name) {
+    return 'med $name';
+  }
+
+  @override
   String checkInContextSummary(String type, String time, String duration) {
     return '$type · $time · $duration';
   }
@@ -3120,6 +3121,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInDictateButton => 'Diktera';
+
+  @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Släng den här avstämningen? Inspelningen finns kvar i journalen.';
+
+  @override
+  String get checkInDiscardDraftMessage =>
+      'Släng den här avstämningen? Inget har sparats.';
+
+  @override
+  String get checkInDiscardDraftRecordingMessage =>
+      'Släng den här avstämningen och inspelningen? Inspelningen tas bort.';
 
   @override
   String get checkInDiscardRecording => 'Släng';
@@ -3331,8 +3344,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInTranscribingLabel => 'Transkriberar…';
 
   @override
-  String get checkInTranscriptAdded =>
-      'Transkription tillagd · läs igenom, allt går att ändra';
+  String get checkInTranscriptAdded => 'Transkription tillagd';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3340,12 +3352,8 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Din inspelning på $length finns sparad på den här enheten. Försök igen när du är online igen, eller skriv avstämningen nu.';
+    return 'Din inspelning på $length finns kvar i journalen, även om du slänger den här avstämningen. Försök igen om en stund.';
   }
-
-  @override
-  String get checkInTranscriptMissingTitle =>
-      'Kunde inte nå transkriptionsservern';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -5984,6 +5992,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get designSystemTextareaWithHelperLabel => 'Med hjälptext';
+
+  @override
+  String get designSystemTieredTextTitle => 'Nivåtext i tre bredder';
 
   @override
   String get designSystemTimePickerFormatsTitle => 'Tidsformat';
@@ -11691,7 +11702,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'uppdaterad $age · $band';
+    return '$band · uppdaterad $age';
   }
 
   @override
@@ -11741,7 +11752,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Markera $name som viktig för att få en briefing, påminnelser när det gått ett tag och en chatt. Tills dess körs inget av sig självt; bara det du själv startar, som en chatt eller en dikterad avstämning, använder AI.';
+    return 'Markera $name som viktig för att få en briefing, påminnelser när det gått ett tag och en chatt.';
   }
 
   @override
@@ -11752,6 +11763,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Inaktuell · ny avstämning $day';
   }
+
+  @override
+  String get relationshipAgentOutOfDateNewCheckInShort =>
+      'Inaktuell · ny avstämning';
 
   @override
   String get relationshipAgentPausedBody =>
@@ -11791,7 +11806,7 @@ class AppLocalizationsSv extends AppLocalizations {
       other: '$count avstämningar',
       one: '1 avstämning',
     );
-    return 'Källor: $_temp0 · inga kontaktkanaler';
+    return 'Källor: $_temp0 · kontaktkanaler skickas aldrig';
   }
 
   @override

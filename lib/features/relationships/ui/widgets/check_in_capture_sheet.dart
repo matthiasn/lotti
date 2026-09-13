@@ -15,6 +15,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_mo
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -34,7 +35,6 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -97,14 +97,30 @@ final checkInSettingsOpenerProvider = Provider<CheckInSettingsOpener>(
 class CheckInFormHandle extends ChangeNotifier {
   Future<void> Function()? _save;
   Future<void> Function()? _delete;
+  Future<void> Function()? _dismiss;
   VoidCallback? _unfocus;
   AudioRecorderController? _recorder;
   CheckInSaveBlock _block = CheckInSaveBlock.emptyNarrative;
   CheckInComposerStatus _status = CheckInComposerStatus.idle;
   String _summary = '';
   bool _fieldFocused = false;
+  double? _barHeight;
 
   bool get canSave => _block == CheckInSaveBlock.none;
+
+  /// The pinned bar's rendered height, once it has laid out — what the form
+  /// reserves under its last field when the bar turns out taller than
+  /// [CheckInStickyActions.height] predicted (a long-label locale stacking
+  /// Cancel and Save on a narrow phone, say).
+  double? get barHeight => _barHeight;
+
+  /// Called by the bar after every layout that changed its height.
+  void reportBarHeight(double height) {
+    if (_barHeight == height) return;
+    _barHeight = height;
+    notifyListeners();
+  }
+
   bool get canDelete => _delete != null;
 
   /// Why Save is held, for the bar to say so.
@@ -123,6 +139,12 @@ class CheckInFormHandle extends ChangeNotifier {
 
   Future<void> save() => _save?.call() ?? Future.value();
   Future<void> delete() => _delete?.call() ?? Future.value();
+
+  /// Leaves the composer — asking first when there is something to lose.
+  /// Cancel, the header's close and the sheet's own back gesture all come
+  /// through here, so a draft is guarded the same way whichever way out is
+  /// taken.
+  Future<void> dismiss() => _dismiss?.call() ?? Future.value();
 
   /// Drops the keyboard, so the chips the summary stands for come back.
   void unfocus() => _unfocus?.call();
@@ -146,6 +168,7 @@ class CheckInFormHandle extends ChangeNotifier {
   void publish({
     required Future<void> Function()? save,
     required Future<void> Function()? delete,
+    required Future<void> Function()? dismiss,
     required VoidCallback? unfocus,
     required CheckInSaveBlock block,
     required CheckInComposerStatus status,
@@ -154,6 +177,7 @@ class CheckInFormHandle extends ChangeNotifier {
   }) {
     _save = save;
     _delete = delete;
+    _dismiss = dismiss;
     _unfocus = unfocus;
     // The callbacks are rebound on every publish; the chrome only needs a
     // frame when something it draws has changed — not on every keystroke.
@@ -264,6 +288,19 @@ Future<CheckInEntry?> _showComposer({
   // caller's window — inside the sheet the media query is the sheet's own.
   final dialog =
       MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
+  // The title is measured against the width the modal will actually have,
+  // so the toolbar reserves exactly the lines it takes at large text.
+  final scaler = MediaQuery.textScalerOf(context);
+  final titleLines = CheckInComposerHeader.titleLinesFor(
+    title: title,
+    style: ModalUtils.modalTitleStyle(context),
+    scaler: scaler,
+    tokens: tokens,
+    width: ModalUtils.modalTypeBuilder(
+      context,
+    ).layoutModal(MediaQuery.sizeOf(context)).maxWidth,
+    direction: Directionality.of(context),
+  );
   try {
     return await ModalUtils.showSinglePageModal<CheckInEntry>(
       context: context,
@@ -271,12 +308,14 @@ Future<CheckInEntry?> _showComposer({
       showCloseButton: false,
       navBarHeight: CheckInComposerHeader.height(
         tokens,
-        MediaQuery.textScalerOf(context),
+        scaler,
+        titleLines: titleLines,
       ),
       leadingNavBarWidget: CheckInComposerHeader(
         relationshipId: relationshipId,
         handle: handle,
         title: title,
+        titleLines: titleLines,
       ),
       padding: _formPadding(context),
       stickyActionBarBuilder: (_) =>
@@ -293,14 +332,25 @@ Future<CheckInEntry?> _showComposer({
 }
 
 /// Air between the pinned header and the field, and room under the form
-/// for the pinned action bar, so the last field can scroll fully above it.
+/// for the pinned action bar, so the last field can scroll fully above it
+/// with a step of air to spare. The reserve is the bar's predicted height
+/// for this layout, so the desktop dialog — whose bar has no reason line of
+/// its own — carries no blank band above its footer; the form adds any
+/// slack the *measured* bar turns out to need (see [_BarSlack]).
 EdgeInsets _formPadding(BuildContext context) {
   final tokens = context.designTokens;
+  final dialog =
+      MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
   return EdgeInsets.fromLTRB(
     tokens.spacing.step5,
     tokens.spacing.step4,
     tokens.spacing.step5,
-    tokens.spacing.step11 + tokens.spacing.step6,
+    CheckInStickyActions.height(
+          tokens,
+          MediaQuery.textScalerOf(context),
+          dialog: dialog,
+        ) +
+        tokens.spacing.step5,
   );
 }
 
@@ -324,6 +374,26 @@ class CheckInStickyActions extends StatelessWidget {
   /// together on the trailing edge, and the bar never slims for a keyboard.
   final bool dialog;
 
+  /// The bar's height per layout, so the form reserves exactly what the
+  /// bar covers and no more: the actions row (stacked above the large-text
+  /// bar), and on the phone the reason line beneath it.
+  static double height(
+    DsTokens tokens,
+    TextScaler scaler, {
+    required bool dialog,
+  }) {
+    double line(TextStyle style) =>
+        scaler.scale(style.fontSize! * (style.height ?? 1)).ceilToDouble();
+    final stacked = scaler.scale(1) > TextScales.large;
+    final button =
+        line(tokens.typography.styles.subtitle.subtitle1) +
+        tokens.spacing.step4 * 2;
+    final actions = stacked ? button * 2 + tokens.spacing.step3 : button;
+    final reason = line(tokens.typography.styles.others.caption);
+    final reasonRow = dialog && !stacked ? 0 : reason + tokens.spacing.step3;
+    return tokens.spacing.step5 * 2 + actions + reasonRow;
+  }
+
   /// The reason Save is held, or null when it is not.
   static String? blockLabel(
     AppLocalizations messages,
@@ -344,129 +414,214 @@ class CheckInStickyActions extends StatelessWidget {
     final wide = dialog;
     final padding = EdgeInsets.all(tokens.spacing.step5);
 
-    return ListenableBuilder(
-      listenable: handle,
-      builder: (context, _) {
-        final keyboardUp =
-            !wide &&
-            (handle.fieldFocused ||
-                MediaQuery.viewInsetsOf(context).bottom > 0);
-        final reason = blockLabel(messages, handle.block);
-        final reasonStyle = tokens.typography.styles.others.caption.copyWith(
-          color: tokens.colors.text.lowEmphasis,
-        );
+    return _BarHeightReporter(
+      onHeight: handle.reportBarHeight,
+      child: ListenableBuilder(
+        listenable: handle,
+        builder: (context, _) {
+          final keyboardUp =
+              !wide &&
+              (handle.fieldFocused ||
+                  MediaQuery.viewInsetsOf(context).bottom > 0);
+          final reason = blockLabel(messages, handle.block);
+          final reasonStyle = tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          );
 
-        if (keyboardUp) {
-          return DesignSystemGlassStrip(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-                vertical: tokens.spacing.step3,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: DesignSystemChip(
-                        key: const ValueKey('check-in-context-summary'),
-                        label: handle.summary,
-                        trailing: const Icon(
-                          LottiIcons.chevronUp,
-                          size: IconSizes.s,
+          if (keyboardUp) {
+            return DesignSystemGlassStrip(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                  vertical: tokens.spacing.step3,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: DesignSystemChip(
+                          key: const ValueKey('check-in-context-summary'),
+                          label: handle.summary,
+                          trailing: const Icon(
+                            LottiIcons.chevronUp,
+                            size: IconSizes.s,
+                          ),
+                          size: DesignSystemChipSize.compactPillTouch,
+                          onPressed: handle.unfocus,
                         ),
-                        size: DesignSystemChipSize.compactPillTouch,
-                        onPressed: handle.unfocus,
                       ),
                     ),
+                    SizedBox(width: tokens.spacing.step3),
+                    DesignSystemButton(
+                      key: const ValueKey('check-in-save'),
+                      label: messages.checkInSaveShortButton,
+                      size: DesignSystemButtonSize.large,
+                      onPressed: handle.canSave ? handle.save : null,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final delete = handle.canDelete
+              ? IconButton(
+                  key: const ValueKey('check-in-delete'),
+                  tooltip: messages.deleteButton,
+                  onPressed: handle.delete,
+                  icon: Icon(
+                    LottiIcons.delete,
+                    color: tokens.colors.alert.error.ink,
                   ),
+                )
+              : null;
+          // Cancel is quiet text on both viewports: the header's close
+          // already exits, and the one bright shape in the bar is Save's —
+          // even while Save is held.
+          final cancel = DesignSystemButton(
+            key: const ValueKey('check-in-cancel'),
+            label: messages.cancelButton,
+            variant: DesignSystemButtonVariant.quiet,
+            size: DesignSystemButtonSize.large,
+            onPressed: handle.dismiss,
+          );
+          final save = DesignSystemButton(
+            key: const ValueKey('check-in-save'),
+            label: messages.checkInSaveButton,
+            size: DesignSystemButtonSize.large,
+            fullWidth: !wide,
+            onPressed: handle.canSave ? handle.save : null,
+          );
+          // The slot is always laid out, even with nothing to say, so the
+          // bar keeps one height as Save goes from held to free and the
+          // buttons never jump; a live region announces the reason as it
+          // changes.
+          // Live only for the blocks the header does not already announce —
+          // the header speaks for the recorder and the transcript wait.
+          final reasonText = Semantics(
+            liveRegion: switch (handle.block) {
+              CheckInSaveBlock.emptyNarrative ||
+              CheckInSaveBlock.typeOrRetry => true,
+              _ => false,
+            },
+            child: Text(
+              reason ?? '',
+              key: const ValueKey('check-in-save-reason'),
+              style: reasonStyle,
+            ),
+          );
+
+          if (wide) {
+            // The dialog's footer: the reason on the leading edge where the
+            // eye lands after the field, the two actions together on the
+            // trailing edge.
+            return DesignSystemModalActionBar(
+              glass: true,
+              padding: padding,
+              layout: DesignSystemModalActionBarLayout.compactPrimary,
+              secondary: [?delete, reasonText],
+              primary: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  cancel,
                   SizedBox(width: tokens.spacing.step3),
-                  DesignSystemButton(
-                    key: const ValueKey('check-in-save'),
-                    label: messages.checkInSaveShortButton,
-                    size: DesignSystemButtonSize.large,
-                    onPressed: handle.canSave ? handle.save : null,
-                  ),
+                  save,
                 ],
               ),
-            ),
-          );
-        }
+            );
+          }
 
-        final delete = handle.canDelete
-            ? IconButton(
-                key: const ValueKey('check-in-delete'),
-                tooltip: messages.deleteButton,
-                onPressed: handle.delete,
-                icon: Icon(
-                  LottiIcons.delete,
-                  color: tokens.colors.alert.error.ink,
-                ),
-              )
-            : null;
-        final cancel = DesignSystemButton(
-          key: const ValueKey('check-in-cancel'),
-          label: messages.cancelButton,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.large,
-          onPressed: () => Navigator.of(context).pop(),
-        );
-        final save = DesignSystemButton(
-          key: const ValueKey('check-in-save'),
-          label: messages.checkInSaveButton,
-          size: DesignSystemButtonSize.large,
-          fullWidth: !wide,
-          onPressed: handle.canSave ? handle.save : null,
-        );
-        final reasonText = reason == null
-            ? null
-            : Text(
-                reason,
-                key: const ValueKey('check-in-save-reason'),
-                style: reasonStyle,
-              );
-
-        if (wide) {
-          // The dialog's footer: the reason on the leading edge where the
-          // eye lands after the field, the two actions together on the
-          // trailing edge.
-          return DesignSystemModalActionBar(
-            glass: true,
-            padding: padding,
-            layout: DesignSystemModalActionBarLayout.compactPrimary,
-            secondary: [?delete, ?reasonText],
-            primary: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                cancel,
-                SizedBox(width: tokens.spacing.step3),
-                save,
-              ],
-            ),
-          );
-        }
-
-        return DesignSystemGlassStrip(
-          child: Padding(
-            padding: padding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DesignSystemModalActionBar(
-                  secondary: [?delete, cancel],
-                  primary: save,
-                ),
-                if (reasonText != null) ...[
+          return DesignSystemGlassStrip(
+            child: Padding(
+              padding: padding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DesignSystemModalActionBar(
+                    secondary: [?delete, cancel],
+                    primary: save,
+                  ),
                   SizedBox(height: tokens.spacing.step3),
                   Align(
                     alignment: AlignmentDirectional.centerEnd,
                     child: reasonText,
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Reports the pinned bar's rendered height to the form, after its first
+/// layout and after every layout that changes it, so the reserve under the
+/// last field follows the bar that is actually there.
+class _BarHeightReporter extends StatefulWidget {
+  const _BarHeightReporter({required this.onHeight, required this.child});
+
+  final ValueChanged<double> onHeight;
+  final Widget child;
+
+  @override
+  State<_BarHeightReporter> createState() => _BarHeightReporterState();
+}
+
+class _BarHeightReporterState extends State<_BarHeightReporter> {
+  void _report() {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final box = context.findRenderObject();
+      if (box is RenderBox && box.hasSize) widget.onHeight(box.size.height);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _report();
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: (_) {
+        _report();
+        return true;
+      },
+      child: SizeChangedLayoutNotifier(child: widget.child),
+    );
+  }
+}
+
+/// The air the form adds under its last field when the pinned bar measured
+/// taller than [CheckInStickyActions.height] predicted — nothing in the
+/// common case, so the reserve never jumps, and exactly the difference when
+/// the bar stacked its actions on a narrow phone.
+class _BarSlack extends StatelessWidget {
+  const _BarSlack({required this.handle});
+
+  final CheckInFormHandle handle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final dialog =
+        MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
+    final predicted = CheckInStickyActions.height(
+      tokens,
+      MediaQuery.textScalerOf(context),
+      dialog: dialog,
+    );
+    return ListenableBuilder(
+      listenable: handle,
+      builder: (context, _) {
+        final measured = handle.barHeight;
+        if (measured == null || measured <= predicted) {
+          return const SizedBox.shrink();
+        }
+        return SizedBox(
+          key: const ValueKey('check-in-bar-slack'),
+          height: measured - predicted,
         );
       },
     );
@@ -540,10 +695,20 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// long it ran.
   late Duration _duration;
 
+  /// The context the composer opened with — the edited check-in's, the
+  /// post-call offer's or the defaults — so a changed chip counts as a draft
+  /// worth guarding just as changed words do.
+  late final CheckInInteractionType _openingType;
+  late final DateTime _openingTime;
+  late final Duration _openingDuration;
+
   /// Optional sentiment, topics and next-time guidance, folded by default;
   /// open from the start when a check-in being edited already has any of it.
   late bool _moreOpen;
   bool _isSaving = false;
+
+  /// The narrative as last seen, so a focus change is not mistaken for typing.
+  String _lastNarrative = '';
 
   CheckInSpeechPhase _phase = const CheckInSpeechIdle();
 
@@ -574,6 +739,64 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   bool get _isEditing => widget.initial != null;
 
+  /// Whether leaving now would lose something: text, details or context
+  /// that differ from what the composer opened with, or a take in flight.
+  bool get _isDirty {
+    final initial = widget.initial;
+    final data = initial?.data;
+    if (_narrativeController.text.trim() !=
+        (initial?.entryText?.plainText ?? '').trim()) {
+      return true;
+    }
+    if (_interactionType != _openingType ||
+        _interactionTime != _openingTime ||
+        _duration != _openingDuration) {
+      return true;
+    }
+    if (_topicsController.text.trim() != (data?.topics.join(', ') ?? '')) {
+      return true;
+    }
+    if (_payAttentionController.text.trim() != (data?.payAttentionTo ?? '')) {
+      return true;
+    }
+    if (_avoidController.text.trim() != (data?.avoid ?? '')) return true;
+    if (_sentiment != data?.sentiment) return true;
+    return _phase is! CheckInSpeechIdle;
+  }
+
+  /// Leaves the composer, asking first when [_isDirty]. The question names
+  /// a running recording, and confirming discards the take with the draft:
+  /// a button labelled Discard must discard, not leave a recorder running
+  /// behind a closed sheet.
+  Future<void> _dismiss() async {
+    if (!_isDirty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final messages = context.messages;
+    // The question says what discarding does to the audio: a live take is
+    // deleted with the draft; a recording already in the journal stays.
+    final confirmed = await showConfirmationModal(
+      context: context,
+      message: switch (_phase) {
+        CheckInSpeechRecording() =>
+          messages.checkInDiscardDraftRecordingMessage,
+        CheckInSpeechTranscribing() ||
+        CheckInSpeechReady() => messages.checkInDiscardDraftAudioKeptMessage,
+        CheckInSpeechFailed(:final failure) when failure.hasRecording =>
+          messages.checkInDiscardDraftAudioKeptMessage,
+        _ => messages.checkInDiscardDraftMessage,
+      },
+      confirmLabel: messages.audioRecordingDiscardDialogConfirm,
+    );
+    if (!confirmed || !mounted) return;
+    if (_phase is CheckInSpeechRecording) {
+      await widget.handle.recorder?.cancel();
+      if (!mounted) return;
+    }
+    Navigator.of(context).pop();
+  }
+
   /// An existing check-in's length, or null when there is none to keep.
   static Duration? _lengthOf(CheckInEntry? entry) {
     if (entry == null) return null;
@@ -585,16 +808,20 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     super.initState();
     final initial = widget.initial;
     final data = initial?.data;
+    // The detail fields rebuild the form as they change, so the pop guard's
+    // `canPop` — read at build time — never lags an edit made only there.
     _topicsController = TextEditingController(
       text: data?.topics.join(', ') ?? '',
-    );
+    )..addListener(_onDetailChanged);
     _narrativeController = TextEditingController(
       text: initial?.entryText?.plainText ?? '',
     )..addListener(_onNarrativeChanged);
+    _lastNarrative = _narrativeController.text;
     _payAttentionController = TextEditingController(
       text: data?.payAttentionTo ?? '',
-    );
-    _avoidController = TextEditingController(text: data?.avoid ?? '');
+    )..addListener(_onDetailChanged);
+    _avoidController = TextEditingController(text: data?.avoid ?? '')
+      ..addListener(_onDetailChanged);
     _narrativeFocus.addListener(_onNarrativeChanged);
     _interactionType =
         data?.interactionType ??
@@ -609,6 +836,9 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     final length =
         _lengthOf(initial) ?? widget.prefilledDuration ?? Duration.zero;
     _duration = length.isNegative ? Duration.zero : length;
+    _openingType = _interactionType;
+    _openingTime = _interactionTime;
+    _openingDuration = _duration;
     _moreOpen =
         _sentiment != null ||
         _topicsController.text.isNotEmpty ||
@@ -631,16 +861,38 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _narrativeFocus
       ..removeListener(_onNarrativeChanged)
       ..dispose();
-    _topicsController.dispose();
-    _payAttentionController.dispose();
-    _avoidController.dispose();
+    _topicsController
+      ..removeListener(_onDetailChanged)
+      ..dispose();
+    _payAttentionController
+      ..removeListener(_onDetailChanged)
+      ..dispose();
+    _avoidController
+      ..removeListener(_onDetailChanged)
+      ..dispose();
     super.dispose();
   }
 
   /// The word count and the save rule both read the field, and the pinned
   /// bar reads its focus, so every keystroke and focus change is a state
-  /// change here.
+  /// change here. Typing under a failure card that has no recording to
+  /// retry is the user choosing to type instead, so the card goes.
   void _onNarrativeChanged() {
+    if (!mounted) return;
+    final text = _narrativeController.text;
+    final typed = text != _lastNarrative;
+    _lastNarrative = text;
+    if (_phase case CheckInSpeechFailed(
+      :final failure,
+    ) when typed && !failure.hasRecording && text.trim().isNotEmpty) {
+      _phase = const CheckInSpeechIdle();
+    }
+    setState(() {});
+  }
+
+  /// A detail edit is a state change for the pop guard, which reads
+  /// [_isDirty] at build time.
+  void _onDetailChanged() {
     if (mounted) setState(() {});
   }
 
@@ -679,6 +931,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       widget.handle.publish(
         save: _handleSave,
         delete: _isEditing ? _handleDelete : null,
+        dismiss: _dismiss,
         unfocus: _narrativeFocus.unfocus,
         block: block,
         status: status,
@@ -795,6 +1048,16 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     CheckInSpeechIdle() ||
     CheckInSpeechReady() ||
     CheckInSpeechFailed() => true,
+    _ => false,
+  };
+
+  /// *Re-record* only while the transcript is exactly what landed: once it
+  /// has been edited, taking it back out would take the edits with it, and
+  /// a button that says one thing and does another is worse than none.
+  bool get _canReRecord => switch (_phase) {
+    CheckInSpeechReady(:final transcript, :final textBefore) =>
+      _narrativeController.text ==
+          mergeCheckInNarrative(existing: textBefore, transcript: transcript),
     _ => false,
   };
 
@@ -1045,12 +1308,20 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
   /// *Type instead* / *Dismiss*: the field comes back as plain text. A
   /// transcript still in flight is abandoned; the audio stays in the
-  /// journal either way.
+  /// journal either way. A transcript that went missing keeps its retry —
+  /// the card folds into a caption row rather than forgetting the take.
   void _typeInstead() {
     _transcriptWait?.cancel();
     _transcriptWait = null;
     _closeTranscriptFailureSubscription();
-    setState(() => _phase = const CheckInSpeechIdle());
+    setState(
+      () => _phase = switch (_phase) {
+        CheckInSpeechFailed(:final failure)
+            when failure.kind == CheckInSpeechFailureKind.transcriptMissing =>
+          CheckInSpeechFailed(failure, cardDismissed: true),
+        _ => const CheckInSpeechIdle(),
+      },
+    );
     _narrativeFocus.requestFocus();
   }
 
@@ -1288,7 +1559,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
               : null,
           onDictate: speechIdle ? _dictate : null,
           onAddMore: speechIdle ? _dictate : null,
-          onReRecord: speechIdle ? _reRecord : null,
+          onReRecord: _canReRecord ? _reRecord : null,
           onTypeInstead: _typeInstead,
           onRetryTranscript: _retryTranscript,
           onOpenSettings: _openSettings,
@@ -1301,7 +1572,6 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           durationLabel: _duration == Duration.zero
               ? messages.checkInDurationChip
               : checkInDurationLabel(context, _duration),
-          hasDuration: _duration != Duration.zero,
           enabled: speechIdle,
           onPickType: _pickType,
           onPickStart: _pickStart,
@@ -1337,6 +1607,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
                 DesignSystemChip(
                   key: ValueKey('check-in-sentiment-${sentiment.name}'),
                   label: checkInSentimentLabel(context, sentiment),
+                  // The chosen feeling carries a glyph as well as its fill,
+                  // so the choice reads without colour.
+                  leadingIcon: _sentiment == sentiment
+                      ? LottiIcons.confirm
+                      : null,
                   selected: _sentiment == sentiment,
                   size: DesignSystemChipSize.touch,
                   // Tapping the selected sentiment clears it again —
@@ -1352,38 +1627,50 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
           caption(messages.checkInSentimentOptional),
           SizedBox(height: tokens.spacing.step6),
 
-          LottiTextField(
+          // The design system's own input, so the folded details wear the
+          // same chrome as the rest of the sheet.
+          DesignSystemTextInput(
             key: const ValueKey('check-in-topics'),
             controller: _topicsController,
-            labelText: messages.checkInTopicsLabel,
+            label: messages.checkInTopicsLabel,
             hintText: messages.checkInTopicsHint,
           ),
           SizedBox(height: tokens.spacing.step5),
-          LottiTextField(
+          DesignSystemTextInput(
             key: const ValueKey('check-in-pay-attention'),
             controller: _payAttentionController,
-            labelText: messages.checkInPayAttentionLabel,
+            label: messages.checkInPayAttentionLabel,
             textCapitalization: TextCapitalization.sentences,
           ),
           SizedBox(height: tokens.spacing.step5),
-          LottiTextField(
+          DesignSystemTextInput(
             key: const ValueKey('check-in-avoid'),
             controller: _avoidController,
-            labelText: messages.checkInAvoidLabel,
+            label: messages.checkInAvoidLabel,
             textCapitalization: TextCapitalization.sentences,
           ),
         ],
+        _BarSlack(handle: widget.handle),
       ],
     );
 
-    if (shortcut == null) return body;
+    // The sheet's own ways out — the back gesture, the barrier — come
+    // through here too, so a draft is guarded however the user leaves.
+    final guarded = PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_dismiss());
+      },
+      child: body,
+    );
+    if (shortcut == null) return guarded;
     return CallbackShortcuts(
       bindings: {
         shortcut.activator: () {
           if (_block == CheckInSaveBlock.none) unawaited(_handleSave());
         },
       },
-      child: body,
+      child: guarded,
     );
   }
 }
@@ -1399,44 +1686,50 @@ class _MoreHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    return InkWell(
-      key: const ValueKey('check-in-more'),
-      onTap: onToggle,
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-        child: Row(
-          children: [
-            Text(
-              messages.checkInMoreSection,
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            // Flexible, so a narrow phone or large text trims the caption
-            // rather than pushing the chevron off the row.
-            if (!open)
-              Expanded(
-                child: Text(
-                  messages.checkInMoreCaption,
-                  textAlign: TextAlign.end,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
+    return Semantics(
+      button: true,
+      expanded: open,
+      label: messages.checkInMoreSection,
+      child: InkWell(
+        key: const ValueKey('check-in-more'),
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        // A full touch target on a row that is mostly caption.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+          child: Row(
+            children: [
+              Text(
+                messages.checkInMoreSection,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
-              )
-            else
-              const Spacer(),
-            SizedBox(width: tokens.spacing.step2),
-            Icon(
-              open ? LottiIcons.chevronUp : LottiIcons.chevronDown,
-              size: IconSizes.s,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ],
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              // Flexible, so a narrow phone or large text trims the caption
+              // rather than pushing the chevron off the row.
+              if (!open)
+                Expanded(
+                  child: Text(
+                    messages.checkInMoreCaption,
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
+              SizedBox(width: tokens.spacing.step2),
+              Icon(
+                open ? LottiIcons.chevronUp : LottiIcons.chevronDown,
+                size: IconSizes.s,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ],
+          ),
         ),
       ),
     );

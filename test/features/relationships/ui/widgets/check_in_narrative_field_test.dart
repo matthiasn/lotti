@@ -22,7 +22,9 @@ void main() {
     Widget? recorder,
     bool disableAnimations = false,
     bool dictateEnabled = true,
+    bool reRecordEnabled = true,
     String text = '',
+    double width = 600,
   }) async {
     controller = TextEditingController(text: text);
     focusNode = FocusNode();
@@ -40,7 +42,7 @@ void main() {
             shortcutHint: shortcutHint,
             onDictate: dictateEnabled ? () => calls.add('dictate') : null,
             onAddMore: () => calls.add('add-more'),
-            onReRecord: () => calls.add('re-record'),
+            onReRecord: reRecordEnabled ? () => calls.add('re-record') : null,
             onTypeInstead: () => calls.add('type-instead'),
             onRetryTranscript: () => calls.add('retry-transcript'),
             onOpenSettings: () => calls.add('open-settings'),
@@ -48,7 +50,7 @@ void main() {
           ),
         ),
         mediaQueryData: MediaQueryData(
-          size: const Size(600, 1200),
+          size: Size(width, 1200),
           disableAnimations: disableAnimations,
         ),
       ),
@@ -159,7 +161,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
-    expect(borderColor(tester), tokens(tester).colors.alert.error.defaultColor);
+    // The accent, not the error tone: a live take is not an error.
+    expect(borderColor(tester), tokens(tester).colors.interactive.enabled);
   });
 
   group('transcribing', () {
@@ -177,10 +180,23 @@ void main() {
         find.byKey(const ValueKey('check-in-transcript-skeleton')),
         findsOneWidget,
       );
-      expect(
-        find.text('0:23 of audio saved · Whisper · via Groq'),
-        findsOneWidget,
+      // The saved-audio line is tiered: the route is the segment that goes
+      // when the line is narrow, and assistive technology hears it either
+      // way.
+      final saved = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('check-in-audio-saved')),
+          matching: find.byType(Text),
+        ),
       );
+      expect(
+        saved.data,
+        anyOf(
+          '0:23 of audio saved · Whisper · via Groq',
+          '0:23 of audio saved',
+        ),
+      );
+      expect(saved.semanticsLabel, '0:23 of audio saved · Whisper · via Groq');
       expect(find.byKey(const ValueKey('check-in-narrative')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-type-instead')));
       expect(calls, ['type-instead']);
@@ -240,6 +256,58 @@ void main() {
     });
   });
 
+  testWidgets('Re-record is not offered once the transcript has been edited', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      text: 'The words that landed, edited.',
+      phase: const CheckInSpeechReady(
+        transcript: 'The words that landed.',
+        textBefore: '',
+        length: Duration(seconds: 23),
+      ),
+      wordCount: 5,
+      reRecordEnabled: false,
+    );
+    expect(find.byKey(const ValueKey('check-in-re-record')), findsNothing);
+    expect(find.byKey(const ValueKey('check-in-add-more')), findsOneWidget);
+  });
+
+  testWidgets('the actions keep one corner: beside the caption on a wide '
+      'field, on their own line at the trailing edge on a phone', (
+    tester,
+  ) async {
+    const phase = CheckInSpeechReady(
+      transcript: 'The words that landed.',
+      textBefore: '',
+      length: Duration(seconds: 23),
+    );
+    final addMore = find.byKey(const ValueKey('check-in-add-more'));
+    final count = find.byKey(const ValueKey('check-in-word-count'));
+    final field = find.byKey(const ValueKey('check-in-narrative-field'));
+
+    await pump(tester, phase: phase, wordCount: 4, width: 1200);
+    expect(
+      tester.getRect(addMore).top,
+      lessThan(tester.getRect(count).bottom),
+      reason: 'wide: caption and actions share a line',
+    );
+
+    await pump(tester, phase: phase, wordCount: 4, width: 402);
+    expect(
+      tester.getRect(addMore).top,
+      greaterThanOrEqualTo(tester.getRect(count).bottom),
+      reason: 'phone: the actions drop under the caption',
+    );
+    final inset = tokens(tester).spacing.step5;
+    expect(
+      tester.getRect(addMore).right,
+      closeTo(tester.getRect(field).right - inset, 1),
+      reason: 'and sit at the trailing edge, where Dictate sits when idle',
+    );
+  });
+
   testWidgets('ready keeps the text, names the transcript, and offers '
       'Re-record and Add more', (tester) async {
     await pump(
@@ -260,12 +328,13 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
     await tester.tap(find.byKey(const ValueKey('check-in-add-more')));
     expect(calls, ['re-record', 'add-more']);
-    expect(borderColor(tester), tokens(tester).colors.interactive.enabled);
+    // A landed transcript is ordinary text again: the field rests.
+    expect(borderColor(tester), tokens(tester).colors.decorative.level01);
   });
 
   group('failed', () {
-    testWidgets('a denied microphone: the error card, Open settings, Dismiss, '
-        'and the field still there to type into', (tester) async {
+    testWidgets('a denied microphone: the error card, Open settings, Try '
+        'again, and the field still there to type into', (tester) async {
       await pump(
         tester,
         phase: const CheckInSpeechFailed(
@@ -274,17 +343,15 @@ void main() {
       );
       expect(find.text("Lotti can't use the microphone"), findsOneWidget);
       expect(find.text('Or type it here…'), findsOneWidget);
-      expect(find.byKey(const ValueKey('check-in-audio-kept')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
-      await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
-      expect(calls, ['open-settings', 'dismiss']);
-      // Dictate stays, wearing the muted glyph, so a retry after the
-      // settings trip is one tap away.
-      final dictate = tester.widget<DesignSystemButton>(
-        find.byKey(const ValueKey('check-in-dictate')),
-      );
-      expect(dictate.leadingIcon, LottiIcons.micIdle);
-      expect(dictate.onPressed, isNotNull);
+      await tester.tap(find.byKey(const ValueKey('check-in-retry-audio')));
+      expect(calls, ['open-settings', 'dictate']);
+      // The card's Try again is the way to record again: the field does not
+      // offer a second, dead Dictate beside it.
+      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
+      // Nor a "0 words" count under a card that already says nothing was
+      // recorded.
+      expect(find.byKey(const ValueKey('check-in-word-count')), findsNothing);
     });
 
     testWidgets('a failed start offers Try again, which records again', (
@@ -366,21 +433,48 @@ void main() {
           ),
         ),
       );
+      // The title says what is known — no words came — not a cause the
+      // service cannot tell apart; the body folds in that the audio stays.
+      expect(find.text('Transcript not received'), findsOneWidget);
       expect(
-        find.text("Couldn't reach the transcription server"),
+        find.textContaining(
+          'Your 0:23 recording is saved in the journal, even if you cancel',
+        ),
         findsOneWidget,
       );
       expect(
-        find.textContaining('Your 0:23 recording is saved on this device'),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('check-in-audio-kept')),
-        findsOneWidget,
+        find.byKey(const ValueKey('check-in-dictate')),
+        findsNothing,
+        reason: 'the card holds the way forward; no fourth door',
       );
       await tester.tap(
         find.byKey(const ValueKey('check-in-retry-transcript')),
       );
+      expect(calls, ['retry-transcript']);
+    });
+
+    testWidgets('a dismissed missing-transcript card folds into one caption '
+        'row that keeps the retry', (tester) async {
+      await pump(
+        tester,
+        phase: const CheckInSpeechFailed(
+          CheckInSpeechFailure(
+            CheckInSpeechFailureKind.transcriptMissing,
+            audioEntryId: 'audio-1',
+            length: Duration(seconds: 23),
+          ),
+          cardDismissed: true,
+        ),
+      );
+      // No card, the ordinary hint — and the take is not forgotten.
+      expect(
+        find.byKey(const ValueKey('check-in-speech-failure')),
+        findsNothing,
+      );
+      expect(find.text('Or type it here…'), findsNothing);
+      expect(find.text('0:23 of audio saved'), findsOneWidget);
+      expect(find.byKey(const ValueKey('check-in-dictate')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('check-in-retry-transcript')));
       expect(calls, ['retry-transcript']);
     });
 

@@ -112,9 +112,15 @@ class EntryDateTimeMultiPageModal {
           color: tokens.colors.interactive.enabled,
         ),
         SizedBox(width: tokens.spacing.step3),
-        Text(
-          context.messages.journalDateTimeRangeTitle,
-          style: ModalUtils.modalTitleStyle(context),
+        // The nav-bar slot is one line high: at a large text scale the title
+        // ellipsizes rather than overflowing the row.
+        Flexible(
+          child: Text(
+            context.messages.journalDateTimeRangeTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: ModalUtils.modalTitleStyle(context),
+          ),
         ),
       ],
     );

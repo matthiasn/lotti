@@ -332,14 +332,13 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
-      final selected = tester
-          .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
-          .where((chip) => chip.selected)
-          .toList();
-
-      expect(selected, hasLength(1));
+      // The type chip reads the interaction; no chip is "selected" — that
+      // grammar belongs to the sentiment row.
+      final typeChip = tester.widget<DesignSystemChip>(
+        find.byKey(const ValueKey('check-in-type')),
+      );
       expect(
-        selected.single.label,
+        typeChip.label,
         'Call',
         reason:
             'the sheet must open on what actually happened, not on the '
@@ -413,11 +412,10 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
-      final selected = tester
-          .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
-          .firstWhere((chip) => chip.selected);
-
-      expect(selected.label, 'Message');
+      final typeChip = tester.widget<DesignSystemChip>(
+        find.byKey(const ValueKey('check-in-type')),
+      );
+      expect(typeChip.label, 'Message');
     });
 
     testWidgets('leaves sentiment unset — the user judges how it felt, '

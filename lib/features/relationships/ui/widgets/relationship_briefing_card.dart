@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
@@ -29,7 +30,6 @@ import 'package:lotti/features/relationships/model/relationship_health_metrics.d
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
-import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -39,6 +39,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_suggestions
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/relative_age_label.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The localized label of a health band — shared by the chip and any
@@ -262,30 +263,15 @@ class _RelationshipBriefingCardState
       );
       if (!mounted) return;
       if (providerName != null) {
-        final confirmed = await showDialog<bool>(
+        final confirmed = await showConfirmationModal(
           context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(
-              messages.relationshipBriefingDisclosureTitle(providerName),
-            ),
-            content: Text(
-              messages.relationshipBriefingDisclosureBody(providerName),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: Text(messages.cancelButton),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: Text(
-                  messages.relationshipBriefingDisclosureConfirm,
-                ),
-              ),
-            ],
-          ),
+          title: messages.relationshipBriefingDisclosureTitle(providerName),
+          message: messages.relationshipBriefingDisclosureBody(providerName),
+          confirmLabel: messages.relationshipBriefingDisclosureConfirm,
+          cancelLabel: messages.cancelButton,
+          isDestructive: false,
         );
-        if (confirmed != true || !mounted) return;
+        if (!confirmed || !mounted) return;
       }
       await ref
           .read(relationshipAgentServiceProvider)
@@ -464,17 +450,6 @@ class _RelationshipBriefingCardState
         : null;
     final overdue =
         peopleCadencePillOf(item).kind == PeopleCadencePillKind.overdue;
-    // The header's trailing pill counts what the band below is waiting on;
-    // the band reads the same provider, so the two cannot disagree.
-    final proposalCount =
-        ref
-            .watch(relationshipSuggestionListProvider(relationship.meta.id))
-            .value
-            ?.suggestions
-            .open
-            .length ??
-        0;
-
     return _AgentCard(
       state: cardState,
       item: item,
@@ -484,7 +459,6 @@ class _RelationshipBriefingCardState
       agentState: state,
       health: health,
       totalTokens: totalTokens,
-      proposalCount: proposalCount,
       identityData: identityData,
       modelMissing: modelMissing,
       overdue: overdue,
@@ -544,9 +518,12 @@ class _NotEnrolledCard extends StatelessWidget {
             icon: LottiIcons.people,
             plain: true,
             status: _StatusLine(
-              label: paused
-                  ? relationshipStatusLabel(context, data.status)
-                  : messages.relationshipAgentNoAgent,
+              tiers: [
+                if (paused)
+                  relationshipStatusLabel(context, data.status)
+                else
+                  messages.relationshipAgentNoAgent,
+              ],
               color: tokens.colors.text.lowEmphasis,
             ),
           ),
@@ -607,7 +584,6 @@ class _AgentCard extends StatelessWidget {
     required this.agentState,
     required this.health,
     required this.totalTokens,
-    required this.proposalCount,
     required this.identityData,
     required this.modelMissing,
     required this.overdue,
@@ -630,9 +606,6 @@ class _AgentCard extends StatelessWidget {
   final AgentStateEntity? agentState;
   final RelationshipHealthMetrics? health;
   final int totalTokens;
-
-  /// Open proposals the band below is waiting on; counted in the header.
-  final int proposalCount;
   final TaskAgentModelIdentityViewData identityData;
   final bool modelMissing;
   final bool overdue;
@@ -657,11 +630,13 @@ class _AgentCard extends StatelessWidget {
     return switch (state) {
       RelationshipAgentCardState.noBriefing => _StatusLine(
         icon: LottiIcons.timer,
-        label: due == null
-            ? messages.relationshipAgentWatching
-            : messages.relationshipAgentWatchingNextLook(
-                relationshipDayLabelOf(context, due),
-              ),
+        tiers: [
+          if (due != null)
+            messages.relationshipAgentWatchingNextLook(
+              relationshipDayLabelOf(context, due),
+            ),
+          messages.relationshipAgentWatching,
+        ],
         color: ai.metaText,
       ),
       RelationshipAgentCardState.running => _StatusLine(
@@ -670,42 +645,52 @@ class _AgentCard extends StatelessWidget {
           size: IconSizes.s,
           strokeWidth: tokens.spacing.step1,
         ),
-        label: messages.relationshipAgentWriting,
+        tiers: [messages.relationshipAgentWriting],
         color: ai.accent,
       ),
       RelationshipAgentCardState.failed => _StatusLine(
         icon: LottiIcons.error,
-        label: lastWake == null
-            ? messages.relationshipAgentFailedPlain
-            : messages.relationshipAgentLastRunFailed(
-                relationshipTimeLabel(lastWake),
-              ),
+        tiers: [
+          if (lastWake != null)
+            messages.relationshipAgentLastRunFailed(
+              relationshipTimeLabel(lastWake),
+            ),
+          messages.relationshipAgentFailedPlain,
+        ],
         color: tokens.colors.alert.error.ink,
       ),
       RelationshipAgentCardState.current => _StatusLine(
-        label: switch (health) {
-          null => messages.goalDetailReadAsOf(_age(messages)),
-          final health => messages.relationshipAgentAsOfBand(
-            _age(messages),
-            relationshipHealthBandLabel(context, health.band),
-          ),
-        },
+        tiers: [
+          switch (health) {
+            null => messages.goalDetailReadAsOf(_age(messages)),
+            final health => messages.relationshipAgentAsOfBand(
+              _age(messages),
+              relationshipHealthBandLabel(context, health.band),
+            ),
+          },
+        ],
         color: ai.metaText,
       ),
+      // One line beside the age pill: the date is the tier that goes, so
+      // the status never orphans a date under itself next to a pill.
       RelationshipAgentCardState.outOfDate => _StatusLine(
         icon: LottiIcons.warning,
-        label: latest == null
-            ? messages.taskAgentStatusOutOfDate
-            : messages.relationshipAgentOutOfDateNewCheckIn(
-                relationshipDayLabelOf(context, latest.meta.dateFrom),
-              ),
+        tiers: [
+          if (latest != null) ...[
+            messages.relationshipAgentOutOfDateNewCheckIn(
+              relationshipDayLabelOf(context, latest.meta.dateFrom),
+            ),
+            messages.relationshipAgentOutOfDateNewCheckInShort,
+          ],
+          messages.taskAgentStatusOutOfDate,
+        ],
         color: tokens.colors.alert.warning.ink,
       ),
       // Unreachable by construction: the card returns the plain
       // _NotEnrolledCard before this widget is ever built.
       // coverage:ignore-start
       RelationshipAgentCardState.notEnrolled => const _StatusLine(
-        label: '',
+        tiers: [''],
         color: Colors.transparent,
       ),
       // coverage:ignore-end
@@ -715,38 +700,21 @@ class _AgentCard extends StatelessWidget {
   String _age(AppLocalizations messages) =>
       relativeAgoLabel(messages, clock.now().difference(report!.createdAt));
 
-  /// The header's trailing pill: how many proposals wait below, or — on an
-  /// out-of-date briefing — how old it is. Proposals win when both apply:
-  /// they are the thing to act on.
+  /// The header's trailing pill: on an out-of-date briefing, how old it
+  /// is — a neutral tag, so the status line's warning ink is the one orange
+  /// thing on the face. Open proposals are not counted here: the band
+  /// beneath carries its own count, and a state said twice is a state said
+  /// badly.
   Widget? _pill(BuildContext context, AppLocalizations messages) {
-    final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
-    final showsBriefing =
-        state == RelationshipAgentCardState.current ||
-        state == RelationshipAgentCardState.outOfDate;
-    if (showsBriefing && proposalCount > 0) {
-      return DsPill(
-        key: const ValueKey('relationship-briefing-proposals'),
-        variant: DsPillVariant.tinted,
-        shape: DsPillShape.tag,
-        color: ai.accent,
-        labelColor: ai.accent,
-        label: messages.relationshipAgentProposedCount(proposalCount),
-      );
-    }
-    if (state == RelationshipAgentCardState.outOfDate) {
-      final days = clock.now().difference(report!.createdAt).inDays;
-      if (days < 1) return null;
-      return DsPill(
-        key: const ValueKey('relationship-briefing-age'),
-        variant: DsPillVariant.tinted,
-        shape: DsPillShape.tag,
-        color: tokens.colors.alert.warning.defaultColor,
-        labelColor: tokens.colors.text.highEmphasis,
-        label: messages.relationshipBriefingAge(days),
-      );
-    }
-    return null;
+    if (state != RelationshipAgentCardState.outOfDate) return null;
+    final days = clock.now().difference(report!.createdAt).inDays;
+    if (days < 1) return null;
+    return DsPill(
+      key: const ValueKey('relationship-briefing-age'),
+      variant: DsPillVariant.filled,
+      shape: DsPillShape.tag,
+      label: messages.relationshipBriefingAge(days),
+    );
   }
 
   @override
@@ -786,6 +754,9 @@ class _AgentCard extends StatelessWidget {
       RelationshipAgentCardState.outOfDate => TldrBody(
         key: const ValueKey('relationship-briefing-body'),
         disclosureKey: const ValueKey('relationship-briefing-expand'),
+        // The reading faces at the same size as the waiting faces' prose:
+        // one body tier across all seven.
+        bodyStyle: tokens.typography.styles.body.bodyMedium,
         tldr: resolveReportTldr(current),
         expanded: expanded,
         additionalReport: resolveReportAdditional(current),
@@ -805,7 +776,16 @@ class _AgentCard extends StatelessWidget {
       label: messages.relationshipLogCheckIn,
       variant: DesignSystemButtonVariant.tertiary,
       alignsLabelToLeadingEdge: true,
+      tapTargetSize: MaterialTapTargetSize.padded,
       onPressed: onLogCheckIn,
+    );
+    final seeActivity = DesignSystemButton(
+      key: const ValueKey('relationship-agent-see-activity'),
+      label: messages.relationshipAgentSeeActivity,
+      variant: DesignSystemButtonVariant.tertiary,
+      alignsLabelToLeadingEdge: true,
+      tapTargetSize: MaterialTapTargetSize.padded,
+      onPressed: onOpenInternals,
     );
     final updateNow = DesignSystemButton(
       key: const ValueKey('relationship-brief-me'),
@@ -817,8 +797,10 @@ class _AgentCard extends StatelessWidget {
       onPressed: onBrief,
     );
     final ({Widget? leading, Widget? action}) footer = switch (state) {
+      // Every face has its quiet door: a check-in before the first
+      // briefing, the activity log while one is being written.
       RelationshipAgentCardState.noBriefing => (
-        leading: null,
+        leading: logCheckIn,
         action: DesignSystemButton(
           key: const ValueKey('relationship-brief-me'),
           label: messages.relationshipAgentBriefNow,
@@ -826,15 +808,12 @@ class _AgentCard extends StatelessWidget {
           onPressed: onBrief,
         ),
       ),
-      RelationshipAgentCardState.running => (leading: null, action: null),
+      RelationshipAgentCardState.running => (
+        leading: seeActivity,
+        action: null,
+      ),
       RelationshipAgentCardState.failed => (
-        leading: DesignSystemButton(
-          key: const ValueKey('relationship-agent-see-activity'),
-          label: messages.relationshipAgentSeeActivity,
-          variant: DesignSystemButtonVariant.tertiary,
-          alignsLabelToLeadingEdge: true,
-          onPressed: onOpenInternals,
-        ),
+        leading: seeActivity,
         action: modelMissing
             ? DesignSystemButton(
                 key: const ValueKey('relationship-agent-choose-model'),
@@ -877,7 +856,15 @@ class _AgentCard extends StatelessWidget {
 
     // Only a current briefing can say what it was written from: on an
     // out-of-date one the count already includes the check-in it missed.
-    final showsSources = state == RelationshipAgentCardState.current;
+    // And only once the reader has opened it — collapsed, the summary
+    // outweighs its provenance, which is the point of a summary.
+    // The sources line is part of the expanded reading — unless there is
+    // nothing to expand (no report beyond the summary), when it would
+    // otherwise be unreachable.
+    final hasMore =
+        resolveReportAdditional(current)?.trim().isNotEmpty ?? false;
+    final showsSources =
+        state == RelationshipAgentCardState.current && (expanded || !hasMore);
 
     return AgentSummaryCardSurface(
       key: const ValueKey('relationship-briefing-card'),
@@ -956,7 +943,7 @@ class _BriefingHeader extends StatelessWidget {
     final messages = context.messages;
     return TldrHeader(
       title: messages.relationshipBriefingTitle,
-      agentName: status.label,
+      agentName: status.tiers.first,
       subtitle: status,
       trailing: trailing,
       icon: icon,
@@ -968,13 +955,15 @@ class _BriefingHeader extends StatelessWidget {
 /// One line under the title: an optional glyph or spinner, a label, a tone.
 class _StatusLine extends StatelessWidget {
   const _StatusLine({
-    required this.label,
+    required this.tiers,
     required this.color,
     this.icon,
     this.leading,
   });
 
-  final String label;
+  /// The state's wordings, widest first: the line sheds a date or a time
+  /// before it wraps, and a phone beside a pill is narrow.
+  final List<String> tiers;
   final Color color;
   final IconData? icon;
 
@@ -987,22 +976,37 @@ class _StatusLine extends StatelessWidget {
     final glyph =
         leading ??
         (icon == null ? null : Icon(icon, size: IconSizes.s, color: color));
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (glyph != null) ...[glyph, SizedBox(width: tokens.spacing.step2)],
-        Flexible(
-          child: Text(
-            label,
-            key: const ValueKey('relationship-agent-status'),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: color,
+    // A live region: running → current, or → failed, is the card's one
+    // sentence changing, and a reader who cannot see the colour hears it.
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        // Top-aligned, so a status that wraps keeps its glyph on the first
+        // line rather than floating between the two.
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (glyph != null) ...[
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step1),
+              child: glyph,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+          ],
+          Flexible(
+            child: DsTieredText(
+              textKey: const ValueKey('relationship-agent-status'),
+              tiers: tiers,
+              // The narrowest wording may still wrap once: this line is the
+              // state's non-colour carrier and must not clip.
+              maxLines: 2,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: color,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1026,7 +1030,7 @@ class _MetaLine extends StatelessWidget {
         child: Row(
           children: [
             if (icon case final icon?) ...[
-              Icon(icon, size: tokens.spacing.step5, color: color),
+              Icon(icon, size: IconSizes.s, color: color),
               SizedBox(width: tokens.spacing.step2),
             ],
             Flexible(
@@ -1095,9 +1099,13 @@ class _AgentCardFooter extends StatelessWidget {
           ),
         ),
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.cardPadding,
-        vertical: tokens.spacing.step2,
+      // A step more above than below: the action row sits off the divider,
+      // and the meta rows close the card without a matching band.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.cardPadding,
+        tokens.spacing.step3,
+        tokens.spacing.cardPadding,
+        tokens.spacing.step2,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

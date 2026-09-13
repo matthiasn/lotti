@@ -64,6 +64,15 @@ abstract final class TapTargets {
   static const double minimum = 48;
 }
 
+/// Where the system text scale stops being "a little bigger" and a layout
+/// re-flows: an avatar steps aside for its title, an action bar stacks, a
+/// one-line meta row may take two. One number, so the composer, the modal
+/// bar and the selection rows change shape on the same setting.
+abstract final class TextScales {
+  /// 1.3 — above it, a component is on its large-text layout.
+  static const double large = 1.3;
+}
+
 /// Icon dimensions, smallest to largest.
 ///
 /// Pick by role: [xs]/[s] ride inside caption and meta rows, [m] is the

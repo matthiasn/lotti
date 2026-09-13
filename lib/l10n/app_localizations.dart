@@ -5196,12 +5196,6 @@ abstract class AppLocalizations {
   /// **'Add more'**
   String get checkInAddMoreButton;
 
-  /// No description provided for @checkInAudioKeptNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio is kept in the journal even if you cancel this check-in'**
-  String get checkInAudioKeptNote;
-
   /// No description provided for @checkInAudioSaved.
   ///
   /// In en, this message translates to:
@@ -5238,6 +5232,12 @@ abstract class AppLocalizations {
   /// **'with {name} · no check-in yet'**
   String checkInComposerSubtitleNoContact(String name);
 
+  /// The composer header's status line when only the person fits: the name is never shed.
+  ///
+  /// In en, this message translates to:
+  /// **'with {name}'**
+  String checkInComposerWithName(String name);
+
   /// No description provided for @checkInContextSummary.
   ///
   /// In en, this message translates to:
@@ -5255,6 +5255,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dictate'**
   String get checkInDictateButton;
+
+  /// The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this check-in? The recording stays in the journal.'**
+  String get checkInDiscardDraftAudioKeptMessage;
+
+  /// No description provided for @checkInDiscardDraftMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this check-in? Nothing has been saved.'**
+  String get checkInDiscardDraftMessage;
+
+  /// No description provided for @checkInDiscardDraftRecordingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this check-in and the recording? The recording will be deleted.'**
+  String get checkInDiscardDraftRecordingMessage;
 
   /// No description provided for @checkInDiscardRecording.
   ///
@@ -5637,7 +5655,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkInTranscriptAdded.
   ///
   /// In en, this message translates to:
-  /// **'Transcript added · read it once, edit anything'**
+  /// **'Transcript added'**
   String get checkInTranscriptAdded;
 
   /// No description provided for @checkInTranscriptionUnavailableTitle.
@@ -5649,14 +5667,8 @@ abstract class AppLocalizations {
   /// No description provided for @checkInTranscriptMissingBody.
   ///
   /// In en, this message translates to:
-  /// **'Your {length} recording is saved on this device. Try again when you\'re back online, or type the check-in now.'**
+  /// **'Your {length} recording is saved in the journal, even if you cancel this check-in. Try again in a moment.'**
   String checkInTranscriptMissingBody(String length);
-
-  /// No description provided for @checkInTranscriptMissingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t reach the transcription server'**
-  String get checkInTranscriptMissingTitle;
 
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
   ///
@@ -10228,6 +10240,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'With helper text'**
   String get designSystemTextareaWithHelperLabel;
+
+  /// No description provided for @designSystemTieredTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tiered text at three widths'**
+  String get designSystemTieredTextTitle;
 
   /// No description provided for @designSystemTimePickerFormatsTitle.
   ///
@@ -19582,7 +19600,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentAsOfBand.
   ///
   /// In en, this message translates to:
-  /// **'as of {age} · {band}'**
+  /// **'{band} · as of {age}'**
   String relationshipAgentAsOfBand(String age, String band);
 
   /// No description provided for @relationshipAgentBriefNow.
@@ -19642,7 +19660,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNotEnrolledBody.
   ///
   /// In en, this message translates to:
-  /// **'Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only what you start yourself, like a chat or a dictated check-in, uses AI.'**
+  /// **'Mark {name} as important to get a briefing, nudges when it has been a while, and a chat.'**
   String relationshipAgentNotEnrolledBody(String name);
 
   /// No description provided for @relationshipAgentOnlyYourStartsUseAi.
@@ -19656,6 +19674,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Out of date · new check-in {day}'**
   String relationshipAgentOutOfDateNewCheckIn(String day);
+
+  /// The out-of-date status line's middle tier when the day does not fit beside the age pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of date · new check-in'**
+  String get relationshipAgentOutOfDateNewCheckInShort;
 
   /// No description provided for @relationshipAgentPausedBody.
   ///
@@ -19684,7 +19708,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentSources.
   ///
   /// In en, this message translates to:
-  /// **'Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · no contact channels'**
+  /// **'Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact channels never sent'**
   String relationshipAgentSources(int count);
 
   /// No description provided for @relationshipAgentTryAgain.

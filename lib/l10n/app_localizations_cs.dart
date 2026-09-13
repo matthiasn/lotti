@@ -3111,10 +3111,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInAddMoreButton => 'Přidat další';
 
   @override
-  String get checkInAudioKeptNote =>
-      'Zvuk zůstane v deníku, i když tento check-in zrušíš';
-
-  @override
   String checkInAudioSaved(String length) {
     return '$length zvuku uloženo';
   }
@@ -3142,6 +3138,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String checkInComposerWithName(String name) {
+    return 's $name';
+  }
+
+  @override
   String checkInContextSummary(String type, String time, String duration) {
     return '$type · $time · $duration';
   }
@@ -3152,6 +3153,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInDictateButton => 'Diktovat';
+
+  @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Zahodit tento check-in? Nahrávka zůstane v deníku.';
+
+  @override
+  String get checkInDiscardDraftMessage =>
+      'Zahodit tento check-in? Nic se neuložilo.';
+
+  @override
+  String get checkInDiscardDraftRecordingMessage =>
+      'Zahodit tento check-in i nahrávku? Nahrávka se smaže.';
 
   @override
   String get checkInDiscardRecording => 'Zahodit';
@@ -3363,8 +3376,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInTranscribingLabel => 'Přepisuje se…';
 
   @override
-  String get checkInTranscriptAdded =>
-      'Přepis přidán · přečti si ho, všechno jde upravit';
+  String get checkInTranscriptAdded => 'Přepis přidán';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3372,11 +3384,8 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Tvoje nahrávka ($length) je uložená na tomto zařízení. Zkus to znovu, až budeš zase online, nebo check-in napiš hned.';
+    return 'Tvoje nahrávka ($length) zůstane uložená v deníku, i když tento check-in zahodíš. Zkus to za chvíli znovu.';
   }
-
-  @override
-  String get checkInTranscriptMissingTitle => 'Server pro přepis je nedostupný';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -6042,6 +6051,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemTextareaWithHelperLabel => 'S nápovědou';
+
+  @override
+  String get designSystemTieredTextTitle => 'Stupňovitý text ve třech šířkách';
 
   @override
   String get designSystemTimePickerFormatsTitle => 'Formáty času';
@@ -11849,7 +11861,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'aktualizováno $age · $band';
+    return '$band · aktualizováno $age';
   }
 
   @override
@@ -11901,7 +11913,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat. Do té doby se nic neděje samo; AI použije jen to, co spustíš ty, třeba chat nebo nadiktovaný check-in.';
+    return 'Označ $name jako důležitou osobu a získáš briefing, připomínky po delší odmlce a chat.';
   }
 
   @override
@@ -11912,6 +11924,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Zastaralé · nový check-in $day';
   }
+
+  @override
+  String get relationshipAgentOutOfDateNewCheckInShort =>
+      'Zastaralé · nový check-in';
 
   @override
   String get relationshipAgentPausedBody =>
@@ -11954,7 +11970,7 @@ class AppLocalizationsCs extends AppLocalizations {
       few: '$count check-iny',
       one: '1 check-in',
     );
-    return 'Zdroje: $_temp0 · žádné kontaktní kanály';
+    return 'Zdroje: $_temp0 · kontaktní kanály se nikdy neposílají';
   }
 
   @override

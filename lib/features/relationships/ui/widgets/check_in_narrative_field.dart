@@ -1,7 +1,9 @@
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The composer's one field (design 2026-09-13): the narrative, with
@@ -69,9 +71,12 @@ class CheckInNarrativeField extends StatelessWidget {
     return ListenableBuilder(
       listenable: focusNode,
       builder: (context, _) {
+        // The recorder wears the accent: a live take is not an error, and
+        // red on the field stays reserved for one. A landed transcript is
+        // ordinary text again — the caption row says it landed, the filled
+        // Save says what is next — so it rests like any other field.
         final border = switch (phase) {
-          CheckInSpeechRecording() => tokens.colors.alert.error.defaultColor,
-          CheckInSpeechReady() => tokens.colors.interactive.enabled,
+          CheckInSpeechRecording() => tokens.colors.interactive.enabled,
           _ =>
             focusNode.hasFocus
                 ? tokens.colors.interactive.enabled
@@ -94,23 +99,29 @@ class CheckInNarrativeField extends StatelessWidget {
             CheckInSpeechTranscribing(:final length, :final route) =>
               _transcribing(context, length: length, route: route),
             CheckInSpeechReady() => _typing(context, ready: true),
-            CheckInSpeechFailed(:final failure) => _typing(
-              context,
-              failure: failure,
-            ),
+            CheckInSpeechFailed(:final failure, :final cardDismissed) =>
+              _typing(
+                context,
+                failure: failure,
+                cardDismissed: cardDismissed,
+              ),
           },
         );
       },
     );
   }
 
-  Widget _textField(BuildContext context, {required String hint}) {
+  Widget _textField(
+    BuildContext context, {
+    required String hint,
+    int minLines = 5,
+  }) {
     final tokens = context.designTokens;
     return TextField(
       key: const ValueKey('check-in-narrative'),
       controller: controller,
       focusNode: focusNode,
-      minLines: 5,
+      minLines: minLines,
       maxLines: null,
       textCapitalization: TextCapitalization.sentences,
       style: tokens.typography.styles.body.bodyLarge.copyWith(
@@ -133,22 +144,45 @@ class CheckInNarrativeField extends StatelessWidget {
     bool preparing = false,
     bool ready = false,
     CheckInSpeechFailure? failure,
+    bool cardDismissed = false,
   }) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final caption = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
-    final count = messages.checkInWordCount(wordCount);
-    final meta = shortcutHint == null
-        ? count
-        : '$count · ${messages.checkInSaveShortcutHint(shortcutHint!)}';
+    // *Type instead* on a missing transcript folds the card into one
+    // caption row that keeps the retry.
+    final collapsed = failure != null && cardDismissed;
+    // Under a failure card the field is the way out, not the thing to read:
+    // it starts short so the chips and More stay on a phone screen, and a
+    // "0 words" count says nothing the card and the held Save do not.
+    final underCard = failure != null && !collapsed;
+    // One caption row: what just landed, how much there is, how to save.
+    // A zero count adds nothing the empty field does not already say.
+    final meta = [
+      if (collapsed)
+        messages.checkInAudioSaved(checkInClockLabel(failure.length!))
+      else if (ready)
+        messages.checkInTranscriptAdded,
+      if (ready || wordCount > 0) messages.checkInWordCount(wordCount),
+      if (shortcutHint case final hint?) messages.checkInSaveShortcutHint(hint),
+    ].join(' · ');
+    // The actions sit in one corner across every phase: beside the caption
+    // when both fit a line, else on their own line at the trailing edge —
+    // always at large text, where even a lone button can crowd the caption.
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
+    final stacked =
+        largeText ||
+        (ready &&
+            MediaQuery.sizeOf(context).width < WoltModalConfig.pageBreakpoint);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (failure != null) ...[
+        if (underCard) ...[
           _FailureCard(
             failure: failure,
             onRetryTranscript: onRetryTranscript,
@@ -161,56 +195,12 @@ class CheckInNarrativeField extends StatelessWidget {
         ],
         _textField(
           context,
-          hint: failure == null
-              ? messages.checkInNarrativeHint
-              : messages.checkInOrTypeHint,
+          hint: underCard
+              ? messages.checkInOrTypeHint
+              : messages.checkInNarrativeHint,
+          // "One line is enough": the box says so by not asking for five.
+          minLines: underCard ? 2 : 3,
         ),
-        if (ready) ...[
-          SizedBox(height: tokens.spacing.step4),
-          Semantics(
-            liveRegion: true,
-            child: Row(
-              children: [
-                Icon(
-                  LottiIcons.confirmCircled,
-                  size: IconSizes.s,
-                  color: tokens.colors.interactive.enabled,
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                Expanded(
-                  child: Text(
-                    messages.checkInTranscriptAdded,
-                    key: const ValueKey('check-in-transcript-added'),
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        if (failure?.hasRecording ?? false) ...[
-          SizedBox(height: tokens.spacing.step4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                LottiIcons.info,
-                size: IconSizes.s,
-                color: tokens.colors.text.lowEmphasis,
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Expanded(
-                child: Text(
-                  messages.checkInAudioKeptNote,
-                  key: const ValueKey('check-in-audio-kept'),
-                  style: caption,
-                ),
-              ),
-            ],
-          ),
-        ],
         SizedBox(height: tokens.spacing.step4),
         if (preparing)
           Semantics(
@@ -221,48 +211,74 @@ class CheckInNarrativeField extends StatelessWidget {
               style: caption,
             ),
           ),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: tokens.spacing.step3,
-          runSpacing: tokens.spacing.step3,
-          children: [
-            Text(
-              meta,
-              key: const ValueKey('check-in-word-count'),
-              style: caption,
-            ),
-            if (ready)
-              Wrap(
-                spacing: tokens.spacing.step3,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  DesignSystemButton(
-                    key: const ValueKey('check-in-re-record'),
-                    label: messages.checkInReRecordButton,
-                    variant: DesignSystemButtonVariant.tertiary,
-                    size: DesignSystemButtonSize.medium,
-                    onPressed: onReRecord,
+        _CaptionAndActions(
+          stacked: stacked,
+          caption: meta.isEmpty
+              ? null
+              : Semantics(
+                  liveRegion: ready,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (ready || collapsed) ...[
+                        Icon(
+                          LottiIcons.confirmCircled,
+                          key: ready
+                              ? const ValueKey('check-in-transcript-added')
+                              : const ValueKey('check-in-audio-saved'),
+                          size: IconSizes.s,
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                        SizedBox(width: tokens.spacing.step2),
+                      ],
+                      Flexible(
+                        child: Text(
+                          meta,
+                          key: const ValueKey('check-in-word-count'),
+                          style: caption,
+                        ),
+                      ),
+                    ],
                   ),
-                  DesignSystemButton(
-                    key: const ValueKey('check-in-add-more'),
-                    label: messages.checkInAddMoreButton,
-                    leadingIcon: LottiIcons.mic,
-                    variant: DesignSystemButtonVariant.outlined,
-                    size: DesignSystemButtonSize.medium,
-                    onPressed: onAddMore,
-                  ),
-                ],
+                ),
+          actions: [
+            if (ready) ...[
+              // Only while the transcript is exactly what landed: once it is
+              // edited, taking it back out would take the edits with it.
+              if (onReRecord != null)
+                DesignSystemButton(
+                  key: const ValueKey('check-in-re-record'),
+                  label: messages.checkInReRecordButton,
+                  variant: DesignSystemButtonVariant.tertiary,
+                  size: DesignSystemButtonSize.medium,
+                  onPressed: onReRecord,
+                ),
+              DesignSystemButton(
+                key: const ValueKey('check-in-add-more'),
+                label: messages.checkInAddMoreButton,
+                leadingIcon: LottiIcons.mic,
+                variant: DesignSystemButtonVariant.outlined,
+                size: DesignSystemButtonSize.medium,
+                onPressed: onAddMore,
+              ),
+            ] else if (collapsed)
+              DesignSystemButton(
+                key: const ValueKey('check-in-retry-transcript'),
+                label: messages.relationshipAgentTryAgain,
+                leadingIcon: LottiIcons.refresh,
+                variant: DesignSystemButtonVariant.tertiary,
+                size: DesignSystemButtonSize.medium,
+                onPressed: onRetryTranscript,
               )
-            else
+            // A take waiting for *Try again*, or a microphone the OS refused,
+            // has its way forward on the card; a second recorder button in
+            // the field would be a dead door beside a live one.
+            else if (failure == null || _dictatesUnder(failure.kind))
               DesignSystemButton(
                 key: const ValueKey('check-in-dictate'),
                 label: messages.checkInDictateButton,
-                leadingIcon:
-                    failure?.kind == CheckInSpeechFailureKind.microphoneDenied
-                    ? LottiIcons.micIdle
-                    : LottiIcons.mic,
-                variant: DesignSystemButtonVariant.constructiveOutlined,
+                leadingIcon: LottiIcons.mic,
+                variant: DesignSystemButtonVariant.outlined,
                 size: DesignSystemButtonSize.medium,
                 isLoading: preparing,
                 onPressed: preparing ? null : onDictate,
@@ -272,6 +288,17 @@ class CheckInNarrativeField extends StatelessWidget {
       ],
     );
   }
+
+  /// Whether the field keeps its own *Dictate* under a failure card of
+  /// [kind]: not when the card's own retry is the way to record again.
+  static bool _dictatesUnder(CheckInSpeechFailureKind kind) => switch (kind) {
+    CheckInSpeechFailureKind.transcriptMissing ||
+    CheckInSpeechFailureKind.microphoneDenied => false,
+    CheckInSpeechFailureKind.recordingFailed ||
+    CheckInSpeechFailureKind.recordingNotSaved ||
+    CheckInSpeechFailureKind.recorderBusy ||
+    CheckInSpeechFailureKind.transcriptionUnavailable => true,
+  };
 
   /// The recorder in place of the text, under the line that says what
   /// happens next.
@@ -309,40 +336,39 @@ class CheckInNarrativeField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Named, not live: the header's status line is the one announcer
+        // of this phase, so a reader hears "Transcribing" once.
         Semantics(
-          liveRegion: true,
           label: messages.checkInTranscribingLabel,
           child: const ExcludeSemantics(child: _TranscriptSkeleton()),
         ),
         SizedBox(height: tokens.spacing.step6),
-        Container(
+        // A caption row, like the transcript-added line it precedes — not
+        // a second box inside the field.
+        // The recorder's own "audio saved" glyph and ink, one line: the
+        // route is the segment that goes on a narrow phone.
+        Row(
           key: const ValueKey('check-in-audio-saved'),
-          padding: EdgeInsets.all(tokens.spacing.step4),
-          decoration: BoxDecoration(
-            color: tokens.colors.background.level02,
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                LottiIcons.confirmCircled,
-                size: IconSizes.s,
-                color: tokens.colors.interactive.enabled,
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  route == null
-                      ? messages.checkInAudioSaved(clock)
-                      : messages.checkInAudioSavedRoute(clock, route),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
+          children: [
+            Icon(
+              LottiIcons.confirm,
+              size: IconSizes.s,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            Flexible(
+              child: DsTieredText(
+                tiers: [
+                  if (route != null)
+                    messages.checkInAudioSavedRoute(clock, route),
+                  messages.checkInAudioSaved(clock),
+                ],
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         SizedBox(height: tokens.spacing.step3),
         Align(
@@ -405,7 +431,8 @@ class _TranscriptSkeletonState extends State<_TranscriptSkeleton>
         key: const ValueKey('check-in-transcript-skeleton'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final width in const [0.85, 0.7, 0.55]) ...[
+          for (final (index, width) in const [0.85, 0.7, 0.55].indexed) ...[
+            if (index > 0) SizedBox(height: tokens.spacing.step4),
             FractionallySizedBox(
               widthFactor: width,
               child: Container(
@@ -416,7 +443,6 @@ class _TranscriptSkeletonState extends State<_TranscriptSkeleton>
                 ),
               ),
             ),
-            SizedBox(height: tokens.spacing.step4),
           ],
         ],
       ),
@@ -469,13 +495,15 @@ class _FailureCard extends StatelessWidget {
         (
           key: const ValueKey('check-in-open-settings'),
           label: messages.checkInOpenSettingsButton,
-          icon: null,
+          icon: LottiIcons.settings,
           onPressed: onOpenSettings,
         ),
+        // The body says "then try again", so the card offers exactly that;
+        // typing a word instead lets the card go on its own.
         (
-          key: const ValueKey('check-in-dismiss-failure'),
-          label: messages.checkInDismissButton,
-          onPressed: onDismiss,
+          key: const ValueKey('check-in-retry-audio'),
+          label: messages.relationshipAgentTryAgain,
+          onPressed: onDictate,
         ),
       ),
       CheckInSpeechFailureKind.recordingFailed => (
@@ -544,7 +572,10 @@ class _FailureCard extends StatelessWidget {
       CheckInSpeechFailureKind.transcriptMissing => (
         alert.warning.defaultColor,
         LottiIcons.cloudOff,
-        messages.checkInTranscriptMissingTitle,
+        // The title says what is known — no words came — not a cause the
+        // service cannot tell apart; the provider's own detail, when it
+        // left any, is the body.
+        messages.checkInStatusTranscriptMissing,
         failure.detail ?? messages.checkInTranscriptMissingBody(length ?? ''),
         (
           key: const ValueKey('check-in-retry-transcript'),
@@ -630,6 +661,57 @@ class _FailureCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The field's footer: a caption and its actions beside each other when
+/// they share a line, or — [stacked] — the caption above and the actions on
+/// their own line at the trailing edge, so Dictate, Try again and
+/// Re-record · Add more all live in the same corner across phases and text
+/// scales.
+class _CaptionAndActions extends StatelessWidget {
+  const _CaptionAndActions({
+    required this.stacked,
+    required this.caption,
+    required this.actions,
+  });
+
+  final bool stacked;
+  final Widget? caption;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final group = Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: tokens.spacing.step3,
+      runSpacing: tokens.spacing.step3,
+      children: actions,
+    );
+    if (stacked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (caption case final caption?) ...[
+            caption,
+            SizedBox(height: tokens.spacing.step3),
+          ],
+          Align(alignment: AlignmentDirectional.centerEnd, child: group),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: caption ?? const SizedBox.shrink()),
+        if (actions.isNotEmpty) ...[
+          SizedBox(width: tokens.spacing.step3),
+          group,
+        ],
+      ],
     );
   }
 }

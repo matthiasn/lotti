@@ -137,8 +137,8 @@ void main() {
         '1:00:02',
       );
       expect(
-        checkInClockLabel(const Duration(seconds: 23), alwaysHours: true),
-        '0:00:23',
+        checkInClockLabel(const Duration(hours: 1, seconds: 23)),
+        '1:00:23',
       );
     });
 

@@ -102,6 +102,45 @@ void main() {
     });
   });
 
+  group('TldrBody.bodyStyle', () {
+    testWidgets('reads at the compact summary size unless the host sets its '
+        'own tier', (tester) async {
+      Future<TextStyle?> styleFor(TextStyle? bodyStyle) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TldrBody(
+              tldr: 'Summary first.',
+              expanded: false,
+              additionalReport: null,
+              onToggle: () {},
+              disclosureKey: const ValueKey('disclosure'),
+              bodyStyle: bodyStyle,
+            ),
+          ),
+        );
+        return tester
+            .widget<AgentMarkdownView>(find.byType(AgentMarkdownView))
+            .style;
+      }
+
+      final compact = await styleFor(null);
+      final tokens = tester.element(find.byType(TldrBody)).designTokens;
+      expect(
+        compact?.fontSize,
+        tokens.typography.styles.body.bodySmall.fontSize,
+      );
+      expect(compact?.color, tokens.colors.aiCard.bodyText);
+
+      final medium = await styleFor(tokens.typography.styles.body.bodyMedium);
+      expect(
+        medium?.fontSize,
+        tokens.typography.styles.body.bodyMedium.fontSize,
+      );
+      // The host sets the tier; the card still owns the ink.
+      expect(medium?.color, tokens.colors.aiCard.bodyText);
+    });
+  });
+
   group('TldrHeader', () {
     testWidgets('a subtitle widget stands in for the name caption, and the '
         'badge can wear another glyph', (tester) async {

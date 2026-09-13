@@ -3122,10 +3122,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInAddMoreButton => 'Adăugați';
 
   @override
-  String get checkInAudioKeptNote =>
-      'Sunetul rămâne în jurnal chiar dacă anulați acest check-in';
-
-  @override
   String checkInAudioSaved(String length) {
     return '$length de sunet salvat';
   }
@@ -3153,6 +3149,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String checkInComposerWithName(String name) {
+    return 'cu $name';
+  }
+
+  @override
   String checkInContextSummary(String type, String time, String duration) {
     return '$type · $time · $duration';
   }
@@ -3163,6 +3164,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInDictateButton => 'Dictați';
+
+  @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Renunțați la acest check-in? Înregistrarea rămâne în jurnal.';
+
+  @override
+  String get checkInDiscardDraftMessage =>
+      'Renunțați la acest check-in? Nu s-a salvat nimic.';
+
+  @override
+  String get checkInDiscardDraftRecordingMessage =>
+      'Renunțați la acest check-in și la înregistrare? Înregistrarea va fi ștearsă.';
 
   @override
   String get checkInDiscardRecording => 'Renunțați';
@@ -3380,8 +3393,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInTranscribingLabel => 'Se transcrie…';
 
   @override
-  String get checkInTranscriptAdded =>
-      'Transcriere adăugată · recitiți-o, totul se poate edita';
+  String get checkInTranscriptAdded => 'Transcriere adăugată';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3389,12 +3401,8 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Înregistrarea dvs. de $length este salvată pe acest dispozitiv. Încercați din nou când sunteți iar online sau scrieți check-in-ul acum.';
+    return 'Înregistrarea dvs. de $length rămâne salvată în jurnal, chiar dacă renunțați la acest check-in. Încercați din nou în scurt timp.';
   }
-
-  @override
-  String get checkInTranscriptMissingTitle =>
-      'Serverul de transcriere nu poate fi contactat';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -6081,6 +6089,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemTextareaWithHelperLabel => 'Cu text ajutător';
+
+  @override
+  String get designSystemTieredTextTitle => 'Text pe niveluri la trei lățimi';
 
   @override
   String get designSystemTimePickerFormatsTitle => 'Formate de oră';
@@ -11915,7 +11926,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'actualizat $age · $band';
+    return '$band · actualizat $age';
   }
 
   @override
@@ -11967,7 +11978,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat. Până atunci nimic nu rulează de la sine; doar ceea ce porniți dumneavoastră, precum un chat sau un check-in dictat, folosește AI.';
+    return 'Marcați $name ca important(ă) pentru a primi un briefing, notificări când a trecut ceva timp și un chat.';
   }
 
   @override
@@ -11978,6 +11989,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Depășit · check-in nou $day';
   }
+
+  @override
+  String get relationshipAgentOutOfDateNewCheckInShort =>
+      'Depășit · check-in nou';
 
   @override
   String get relationshipAgentPausedBody =>
@@ -12020,7 +12035,7 @@ class AppLocalizationsRo extends AppLocalizations {
       few: '$count check-in-uri',
       one: '1 check-in',
     );
-    return 'Surse: $_temp0 · fără canale de contact';
+    return 'Surse: $_temp0 · canalele de contact nu sunt trimise niciodată';
   }
 
   @override

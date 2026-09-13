@@ -32,10 +32,11 @@ The agent card has six states: not enrolled, no briefing, running, failed,
 current and out of date. One status line under the title says which, in
 that state's colour; the footer offers one quiet action (log a check-in, or
 see the activity after a failure) and one primary: mark important, brief
-now, choose a model, retry, update, or call. The header counts open task
-proposals and an out-of-date briefing's age; the model row carries the
-inference cost, and a current briefing names its sources. A first cloud
-briefing names the provider before sending relationship context.
+now, choose a model, retry, update, or call. An out-of-date briefing shows
+its age in the header; open task proposals are counted by their own band
+under the body. The model row carries the inference cost, and a current
+briefing names its sources once it is expanded. A first cloud briefing
+names the provider before sending relationship context.
 
 The agent can propose tasks from explicit commitments in check-ins. The
 card and chat show the source check-in and any proposed due date before
@@ -64,7 +65,15 @@ never saves automatically or overwrites existing typed text, and a missing
 transcript can be asked for again without recording again. A missing
 transcription model is explained before recording. Category speech
 dictionaries can improve recognition of names. Save waits for a few words
-and says so while it waits.
+and says so while it waits. Closing the composer with unsaved words, or
+while a recording is running, asks first, and confirming discards the
+recording too; an untouched draft closes at once. A failure card offers
+its own Try again, and typing under one that has nothing to retry
+dismisses it; choosing to type instead of waiting for a missing
+transcript keeps its retry on one line. Re-record is offered only while
+the transcript is unedited. At a large text setting the header keeps its whole title and
+shortens its status line word by word, keeping the person's name, rather
+than cutting it off.
 
 On Android and iOS, contact import lets the user select contacts and set
 importance and cadence before creating people. Linking or refreshing a
