@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -11,6 +12,15 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+
+/// Dispatch with optional trusted chat approval metadata, outside tool JSON.
+typedef ApprovedTaskToolDispatch =
+    Future<ToolExecutionResult> Function(
+      String name,
+      Map<String, dynamic> args,
+      String taskId,
+      ChecklistItemProvenance? approval,
+    );
 
 typedef ConfirmedDecisionCallback =
     Future<void> Function({
@@ -51,10 +61,12 @@ class ChangeSetConfirmationService {
     this._domainLogger,
     this._onConfirmedDecision,
     this._onChangeSetResolved,
+    this.approvedToolDispatcher,
   });
 
   final AgentSyncService _syncService;
   final AgentToolDispatch _toolDispatcher;
+  final ApprovedTaskToolDispatch? approvedToolDispatcher;
   final LabelsRepository _labelsRepository;
   final DomainLogger? _domainLogger;
   final ConfirmedDecisionCallback? _onConfirmedDecision;
@@ -78,6 +90,12 @@ class ChangeSetConfirmationService {
   Future<ToolExecutionResult> confirmItem(
     ChangeSetEntity changeSet,
     int itemIndex,
+  ) => _confirmItem(changeSet, itemIndex, ChecklistApprovalMode.individual);
+
+  Future<ToolExecutionResult> _confirmItem(
+    ChangeSetEntity changeSet,
+    int itemIndex,
+    ChecklistApprovalMode approvalMode,
   ) async {
     // Re-read persisted state to guard against stale snapshots from the
     // caller (e.g. rapid repeated taps or concurrent clients).
@@ -129,6 +147,13 @@ class ChangeSetConfirmationService {
       subDomain: _sub,
     );
 
+    final isChat =
+        current.id == '${current.runKey}:actions' &&
+        current.runKey.startsWith('query-chat:');
+    final approvalHost = isChat && approvedToolDispatcher != null
+        ? await _syncService.localHost()
+        : null;
+
     // 1. Mark the item as confirmed and persist the decision BEFORE
     //    dispatching the tool. This ensures that if the process dies after
     //    a successful dispatch but before persistence, the item will not
@@ -160,11 +185,29 @@ class ChangeSetConfirmationService {
     late final ToolExecutionResult result;
     var dispatchThrew = false;
     try {
-      result = await _toolDispatcher(
-        item.toolName,
-        dispatchArgs,
-        current.taskId,
-      );
+      final approval = approvalHost == null
+          ? null
+          : ChecklistItemProvenance(
+              approvedBy: 'user',
+              approvalHost: approvalHost,
+              approvedAt: decision.createdAt,
+              approvalMode: approvalMode,
+              originatingMessageId: current.runKey.substring(
+                'query-chat:'.length,
+              ),
+              conversationId: current.threadId,
+              changeSetId: current.id,
+              decisionId: decision.id,
+              agentId: current.agentId,
+            );
+      result = approvedToolDispatcher == null
+          ? await _toolDispatcher(item.toolName, dispatchArgs, current.taskId)
+          : await approvedToolDispatcher!(
+              item.toolName,
+              dispatchArgs,
+              current.taskId,
+              approval,
+            );
     } catch (error, stackTrace) {
       dispatchThrew = true;
       _domainLogger?.error(
@@ -586,7 +629,11 @@ class ChangeSetConfirmationService {
 
     for (var i = 0; i < current.items.length; i++) {
       if (current.items[i].status == ChangeItemStatus.pending) {
-        final result = await confirmItem(current, i);
+        final result = await _confirmItem(
+          current,
+          i,
+          ChecklistApprovalMode.confirmAll,
+        );
         results.add(result);
 
         // Re-read the updated change set from the persisted state

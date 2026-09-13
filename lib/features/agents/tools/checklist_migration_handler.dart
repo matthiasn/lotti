@@ -1,3 +1,4 @@
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -16,9 +17,11 @@ class ChecklistMigrationHandler {
     required this._checklistRepository,
     required this._journalDb,
     this._domainLogger,
+    this.approval,
   });
 
   final ChecklistRepository _checklistRepository;
+  final ChecklistItemProvenance? approval;
   final JournalDb _journalDb;
   final DomainLogger? _domainLogger;
 
@@ -148,6 +151,15 @@ class ChecklistMigrationHandler {
       title: itemEntity.data.title,
       isChecked: itemEntity.data.isChecked,
       categoryId: targetTask.meta.categoryId,
+      checkedBy: approval == null
+          ? itemEntity.data.checkedBy
+          : ChangeSource.user,
+      checkedAt: approval?.approvedAt ?? itemEntity.data.checkedAt,
+      approvalHistory: [
+        ...itemEntity.data.approvalHistory,
+        if (approval case final receipt?)
+          receipt.copyWith(isChecked: itemEntity.data.isChecked),
+      ],
     );
 
     if (newItem == null) {
@@ -164,7 +176,13 @@ class ChecklistMigrationHandler {
     // inconsistency that beats duplicate target items.
     final archived = await _checklistRepository.updateChecklistItem(
       checklistItemId: itemId,
-      data: itemEntity.data.copyWith(isArchived: true),
+      data: itemEntity.data.copyWith(
+        isArchived: true,
+        approvalHistory: [
+          ...itemEntity.data.approvalHistory,
+          if (approval case final receipt?) receipt.copyWith(isChecked: null),
+        ],
+      ),
       taskId: sourceTaskId,
     );
 

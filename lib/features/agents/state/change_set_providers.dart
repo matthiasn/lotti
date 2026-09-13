@@ -230,6 +230,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
   return ChangeSetConfirmationService(
     syncService: ref.watch(agentSyncServiceProvider),
     toolDispatcher: taskToolDispatcher(ref).dispatch,
+    approvedToolDispatcher: taskToolDispatcher(ref).dispatchApproved,
     labelsRepository: labelsRepository,
     domainLogger: logger,
     onChangeSetResolved: notificationService?.syncAfterUserDecision,

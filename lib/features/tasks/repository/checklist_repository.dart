@@ -112,6 +112,7 @@ class ChecklistRepository {
             categoryId: newChecklist.meta.categoryId,
             checkedBy: item.checkedBy,
             checkedAt: item.checkedAt,
+            approvalHistory: item.approvalHistory,
           );
           if (checklistItem != null) {
             createdIds.add(checklistItem.id);
@@ -151,7 +152,8 @@ class ChecklistRepository {
   /// Does *not* add the item to the parent checklist's `linkedChecklistItems`;
   /// callers that need the bidirectional link should use [addItemToChecklist]
   /// (or update the checklist themselves). [checkedBy] defaults to
-  /// [ChangeSource.user]. Returns the created item, or `null` on failure.
+  /// [ChangeSource.user]. Approval history is persisted in the same write.
+  /// Returns the created item, or `null` on failure.
   Future<ChecklistItem?> createChecklistItem({
     required String checklistId,
     required String title,
@@ -159,6 +161,7 @@ class ChecklistRepository {
     required String? categoryId,
     ChangeSource? checkedBy,
     DateTime? checkedAt,
+    List<ChecklistItemProvenance> approvalHistory = const [],
   }) async {
     try {
       final meta = await _persistenceLogic.createMetadata();
@@ -170,6 +173,7 @@ class ChecklistRepository {
           linkedChecklists: [checklistId],
           checkedBy: checkedBy ?? ChangeSource.user,
           checkedAt: checkedAt,
+          approvalHistory: approvalHistory,
         ),
       );
 
@@ -286,6 +290,7 @@ class ChecklistRepository {
     required String? categoryId,
     ChangeSource? checkedBy,
     DateTime? checkedAt,
+    List<ChecklistItemProvenance> approvalHistory = const [],
   }) async {
     try {
       // Create the new checklist item first
@@ -296,6 +301,7 @@ class ChecklistRepository {
         categoryId: categoryId,
         checkedBy: checkedBy,
         checkedAt: checkedAt,
+        approvalHistory: approvalHistory,
       );
 
       if (newItem == null) {

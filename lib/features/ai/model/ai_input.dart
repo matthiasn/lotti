@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 
 part 'ai_input.freezed.dart';
 part 'ai_input.g.dart';
@@ -41,10 +42,25 @@ abstract class AiActionItem with _$AiActionItem {
     DateTime? completionDate,
     String? checkedBy,
     DateTime? checkedAt,
+    AiChecklistApproval? checkedStateApproval,
   }) = _AiActionItem;
 
   factory AiActionItem.fromJson(Map<String, dynamic> json) =>
       _$AiActionItemFromJson(json);
+}
+
+/// Minimal human intent for prompts. Audit identifiers stay on the journal
+/// receipt and cannot be serialized through this model-facing type.
+@freezed
+abstract class AiChecklistApproval with _$AiChecklistApproval {
+  const factory AiChecklistApproval({
+    required bool isChecked,
+    required DateTime approvedAt,
+    required ChecklistApprovalMode approvalMode,
+  }) = _AiChecklistApproval;
+
+  factory AiChecklistApproval.fromJson(Map<String, dynamic> json) =>
+      _$AiChecklistApprovalFromJson(json);
 }
 
 /// A single journal/log entry attached to a task, as seen by the model inside

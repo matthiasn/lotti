@@ -21,6 +21,7 @@ class QueryPersistenceBench extends QueryTestBench {
   QueryPersistenceBench() {
     repository = AgentRepository(agentDb);
     final vc = MockVectorClockService();
+    when(vc.getHost).thenAnswer((_) async => 'device');
     when(
       () => vc.getNextVectorClock(previous: any(named: 'previous')),
     ).thenAnswer((_) async => const VectorClock({'device': 1}));

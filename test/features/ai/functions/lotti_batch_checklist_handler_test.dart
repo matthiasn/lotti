@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
+import '../../agents/test_utils.dart' show makeTestChecklistApproval;
 import '../test_utils.dart' show ChecklistTestDataFactory;
 
 const _uuid = Uuid();
@@ -63,6 +64,8 @@ void main() {
         isChecked: any(named: 'isChecked'),
         categoryId: any(named: 'categoryId'),
         checkedBy: any(named: 'checkedBy'),
+        checkedAt: any(named: 'checkedAt'),
+        approvalHistory: any(named: 'approvalHistory'),
       ),
     ).thenAnswer((invocation) async {
       final title = invocation.namedArguments[#title] as String? ?? '';
@@ -111,6 +114,62 @@ void main() {
         error: null,
       );
     });
+  }
+
+  for (final existing in [false, true]) {
+    test(
+      'chat creation carries approval with existing checklist: $existing',
+      () async {
+        final approval = makeTestChecklistApproval();
+        testTask = ChecklistTestDataFactory.createTask(
+          checklistIds: existing ? ['checklist'] : [],
+        );
+        stubTaskById();
+        stubAddItemEcho();
+        stubAutoCreateChecklistEcho();
+        handler = LottiBatchChecklistHandler(
+          task: testTask,
+          autoChecklistService: mockAutoChecklistService,
+          checklistRepository: mockChecklistRepository,
+          approval: approval,
+        );
+        final count = await handler.createBatchItems(
+          const FunctionCallResult(
+            success: true,
+            data: {
+              'items': [
+                {'title': 'Inspect feeder', 'isChecked': true},
+              ],
+            },
+          ),
+        );
+        expect(count, 1);
+        if (existing) {
+          verify(
+            () => mockChecklistRepository.addItemToChecklist(
+              checklistId: 'checklist',
+              title: 'Inspect feeder',
+              isChecked: true,
+              categoryId: testTask.meta.categoryId,
+              checkedBy: ChangeSource.user,
+              checkedAt: approval.approvedAt,
+              approvalHistory: [approval],
+            ),
+          ).called(1);
+        } else {
+          final suggestions =
+              verify(
+                    () => mockAutoChecklistService.autoCreateChecklist(
+                      taskId: testTask.id,
+                      suggestions: captureAny(named: 'suggestions'),
+                      title: 'Todos',
+                    ),
+                  ).captured.single
+                  as List<ChecklistItemData>;
+          expect(suggestions.single.checkedStateApproval, approval);
+        }
+      },
+    );
   }
 
   group('LottiBatchChecklistHandler', () {

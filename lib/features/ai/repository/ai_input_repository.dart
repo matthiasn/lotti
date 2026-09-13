@@ -202,6 +202,14 @@ class AiInputRepository {
             id: item.id,
             checkedBy: item.checkedBy.name,
             checkedAt: item.checkedAt,
+            checkedStateApproval: switch (item.checkedStateApproval) {
+              final approval? => AiChecklistApproval(
+                isChecked: item.isChecked,
+                approvedAt: approval.approvedAt,
+                approvalMode: approval.approvalMode,
+              ),
+              null => null,
+            },
           ),
         )
         .toList();

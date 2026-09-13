@@ -194,6 +194,16 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
           }
         }
 
+        final protected = await _chatApprovalReversal(
+          singularToolName,
+          element,
+        );
+        if (protected != null) {
+          rejected++;
+          rejectedDetails.add(protected);
+          continue;
+        }
+
         // Check for redundant update_checklist_item proposals.
         final redundancyDetail = _checkRedundancy(
           singularToolName,

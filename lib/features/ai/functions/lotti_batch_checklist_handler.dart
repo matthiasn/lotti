@@ -18,7 +18,10 @@ class LottiBatchChecklistHandler extends FunctionHandler {
     required this.autoChecklistService,
     required this.checklistRepository,
     this.onTaskUpdated,
+    this.approval,
   });
+
+  final ChecklistItemProvenance? approval;
 
   Task task;
   final AutoChecklistService autoChecklistService;
@@ -197,7 +200,16 @@ Do NOT recreate the items that were already successful.''';
               title: item['title'] as String,
               isChecked: (item['isChecked'] as bool?) ?? false,
               linkedChecklists: [],
-              checkedBy: ChangeSource.agent,
+              checkedBy: approval == null
+                  ? ChangeSource.agent
+                  : ChangeSource.user,
+              checkedAt: approval?.approvedAt,
+              approvalHistory: [
+                if (approval case final receipt?)
+                  receipt.copyWith(
+                    isChecked: (item['isChecked'] as bool?) ?? false,
+                  ),
+              ],
             ),
         ];
 
@@ -252,7 +264,14 @@ Do NOT recreate the items that were already successful.''';
             title: title,
             isChecked: isChecked,
             categoryId: currentTask.meta.categoryId,
-            checkedBy: ChangeSource.agent,
+            checkedBy: approval == null
+                ? ChangeSource.agent
+                : ChangeSource.user,
+            checkedAt: approval?.approvedAt,
+            approvalHistory: [
+              if (approval case final receipt?)
+                receipt.copyWith(isChecked: isChecked),
+            ],
           );
 
           if (newItem != null) {

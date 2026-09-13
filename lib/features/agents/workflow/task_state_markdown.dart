@@ -17,7 +17,8 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 /// - `Due`, `Language`, `Labels` and the suppressed-label line are omitted
 ///   when empty;
 /// - a checklist item renders as `- [ ] title (id: …)` with `, due …`,
-///   `, checked by …` (when completed) and `, archived` tags as applicable.
+///   `, checked by …` (when completed), current chat approval and `, archived`
+///   tags as applicable.
 String renderTaskStateMarkdown(
   AiInputTaskObject task, {
   List<Map<String, String>> labels = const [],
@@ -81,6 +82,8 @@ String _renderActionItem(AiActionItem item) {
     if (item.deadline != null) 'due ${item.deadline!.toIso8601String()}',
     if (item.completed && item.checkedBy != null)
       'checked by ${item.checkedBy}',
+    if (item.checkedStateApproval case final approval?)
+      'user-approved chat state at ${approval.approvedAt.toIso8601String()} (approval: ${approval.approvalMode.name}; do not reverse)',
     if (item.isArchived) 'archived',
   ];
   final suffix = tags.isEmpty ? '' : ' (${tags.join(', ')})';

@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../test_utils.dart' show makeTestChecklistApproval;
 
 enum _GeneratedChecklistMigrationBranch {
   invalidItemId,
@@ -391,9 +392,57 @@ void main() {
         title: any(named: 'title'),
         isChecked: any(named: 'isChecked'),
         categoryId: any(named: 'categoryId'),
+        checkedBy: any(named: 'checkedBy'),
+        checkedAt: any(named: 'checkedAt'),
+        approvalHistory: any(named: 'approvalHistory'),
       ),
     ).thenAnswer((_) async => created);
   }
+
+  test('chat migration preserves history on both source and copy', () async {
+    final approval = makeTestChecklistApproval();
+    final item = makeChecklistItem(isChecked: true);
+    stubItemLookup(item);
+    stubSourceTask();
+    stubTargetTask();
+    stubArchiveUpdate();
+    stubAddItemToChecklist(item);
+    handler = ChecklistMigrationHandler(
+      checklistRepository: mockChecklistRepository,
+      journalDb: mockJournalDb,
+      approval: approval,
+    );
+    final result = await handler.handle(sourceTaskId, {
+      'id': item.id,
+      'targetTaskId': targetTaskId,
+    });
+    expect(result.success, isTrue);
+    final copied =
+        verify(
+              () => mockChecklistRepository.addItemToChecklist(
+                checklistId: any(named: 'checklistId'),
+                title: any(named: 'title'),
+                isChecked: any(named: 'isChecked'),
+                categoryId: any(named: 'categoryId'),
+                checkedBy: ChangeSource.user,
+                checkedAt: approval.approvedAt,
+                approvalHistory: captureAny(named: 'approvalHistory'),
+              ),
+            ).captured.single
+            as List<ChecklistItemProvenance>;
+    expect(copied.single, approval.copyWith(isChecked: item.data.isChecked));
+    final source =
+        verify(
+              () => mockChecklistRepository.updateChecklistItem(
+                checklistItemId: item.id,
+                data: captureAny(named: 'data'),
+                taskId: sourceTaskId,
+              ),
+            ).captured.single
+            as ChecklistItemData;
+    expect(source.isArchived, isTrue);
+    expect(source.approvalHistory.single, approval.copyWith(isChecked: null));
+  });
 
   group('ChecklistMigrationHandler', () {
     group('validation', () {
@@ -572,6 +621,9 @@ void main() {
             title: 'Buy milk',
             isChecked: false,
             categoryId: 'cat-002',
+            checkedBy: any(named: 'checkedBy'),
+            checkedAt: any(named: 'checkedAt'),
+            approvalHistory: any(named: 'approvalHistory'),
           ),
         ).called(1);
       });
@@ -612,6 +664,9 @@ void main() {
             title: 'Buy milk',
             isChecked: true,
             categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+            checkedAt: any(named: 'checkedAt'),
+            approvalHistory: any(named: 'approvalHistory'),
           ),
         ).called(1);
       });
@@ -692,6 +747,9 @@ void main() {
             title: 'Buy milk',
             isChecked: false,
             categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+            checkedAt: any(named: 'checkedAt'),
+            approvalHistory: any(named: 'approvalHistory'),
           ),
         ).called(1);
       });
@@ -894,6 +952,9 @@ void main() {
                 title: any(named: 'title'),
                 isChecked: any(named: 'isChecked'),
                 categoryId: any(named: 'categoryId'),
+                checkedBy: any(named: 'checkedBy'),
+                checkedAt: any(named: 'checkedAt'),
+                approvalHistory: any(named: 'approvalHistory'),
               ),
             ).thenAnswer((_) async {
               if (scenario.branch ==
@@ -1001,6 +1062,9 @@ void main() {
                 title: scenario.title,
                 isChecked: scenario.itemChecked,
                 categoryId: scenario.targetCategoryId,
+                checkedBy: any(named: 'checkedBy'),
+                checkedAt: any(named: 'checkedAt'),
+                approvalHistory: any(named: 'approvalHistory'),
               ),
             ).called(1);
           } else {
@@ -1010,6 +1074,9 @@ void main() {
                 title: any(named: 'title'),
                 isChecked: any(named: 'isChecked'),
                 categoryId: any(named: 'categoryId'),
+                checkedBy: any(named: 'checkedBy'),
+                checkedAt: any(named: 'checkedAt'),
+                approvalHistory: any(named: 'approvalHistory'),
               ),
             );
           }
@@ -1244,6 +1311,9 @@ void main() {
             title: any(named: 'title'),
             isChecked: any(named: 'isChecked'),
             categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+            checkedAt: any(named: 'checkedAt'),
+            approvalHistory: any(named: 'approvalHistory'),
           ),
         ).thenAnswer((_) async => null);
 

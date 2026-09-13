@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
+import '../../agents/test_utils.dart' show makeTestChecklistApproval;
 import '../test_utils.dart' show ChecklistTestDataFactory;
 
 // Mocks
@@ -993,6 +994,169 @@ void main() {
         ).thenAnswer((_) async => true);
       }
 
+      test(
+        'blocked chat reversal still applies title and archival edits',
+        () async {
+          final receipt = makeTestChecklistApproval();
+          final original = ChecklistTestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Inspect feeder',
+            isChecked: true,
+            checkedAt: receipt.approvedAt,
+          );
+          final item = original.copyWith(
+            data: original.data.copyWith(approvalHistory: [receipt]),
+          );
+          stubSingleItem(item);
+          final count = await handler.executeUpdates(
+            makeUpdateResult([
+              {
+                'id': item.id,
+                'isChecked': false,
+                'title': 'Inspect penguin feeder',
+                'isArchived': true,
+                'reason': 'There is no evidence of completion in the task log.',
+              },
+            ]),
+          );
+          expect(count, 1);
+          expect(
+            handler.skippedItems.single.reason,
+            LottiChecklistUpdateHandler.userApprovedStateReason,
+          );
+          final written =
+              verify(
+                    () => mockChecklistRepository.updateChecklistItem(
+                      checklistItemId: item.id,
+                      data: captureAny(named: 'data'),
+                      taskId: testTask.id,
+                    ),
+                  ).captured.single
+                  as ChecklistItemData;
+          expect(written.title, 'Inspect penguin feeder');
+          expect(written.isArchived, isTrue);
+          expect(written.isChecked, isTrue);
+          expect(written.checkedAt, receipt.approvedAt);
+          expect(written.checkedBy, ChangeSource.user);
+          expect(written.approvalHistory, [receipt]);
+          expect(written.checkedStateApproval, receipt);
+        },
+      );
+
+      for (final approved in [false, true]) {
+        test(
+          'chat receipt blocks reversal unless freshly approved: $approved',
+          () async {
+            final receipt = makeTestChecklistApproval();
+            final original = ChecklistTestDataFactory.createChecklistItem(
+              id: 'item-1',
+              title: 'Inspect feeder',
+              isChecked: true,
+              checkedAt: receipt.approvedAt,
+            );
+            final item = original.copyWith(
+              data: original.data.copyWith(
+                approvalHistory: [receipt],
+              ),
+            );
+            stubSingleItem(item);
+            final next = receipt.copyWith(
+              decisionId: 'next',
+              isChecked: null,
+              approvedAt: receipt.approvedAt.add(const Duration(minutes: 1)),
+            );
+            handler = LottiChecklistUpdateHandler(
+              task: testTask,
+              checklistRepository: mockChecklistRepository,
+              approval: approved ? next : null,
+            );
+            final count = await handler.executeUpdates(
+              makeUpdateResult([
+                {
+                  'id': item.id,
+                  'isChecked': false,
+                  'approval': next.toJson(),
+                  'reason':
+                      'There is no evidence of completion in the task log.',
+                },
+              ]),
+            );
+            expect(count, approved ? 1 : 0);
+            if (approved) {
+              final written =
+                  verify(
+                        () => mockChecklistRepository.updateChecklistItem(
+                          checklistItemId: item.id,
+                          data: captureAny(named: 'data'),
+                          taskId: testTask.id,
+                        ),
+                      ).captured.single
+                      as ChecklistItemData;
+              expect(written.isChecked, isFalse);
+              expect(written.checkedBy, ChangeSource.user);
+              expect(written.checkedAt, next.approvedAt);
+              expect(written.approvalHistory, [
+                receipt,
+                next.copyWith(isChecked: false),
+              ]);
+              expect(
+                written.checkedStateApproval,
+                next.copyWith(isChecked: false),
+              );
+            } else {
+              expect(
+                handler.skippedItems.single.reason,
+                contains('User-approved chat state'),
+              );
+              verifyNever(
+                () => mockChecklistRepository.updateChecklistItem(
+                  checklistItemId: any(named: 'checklistItemId'),
+                  data: any(named: 'data'),
+                  taskId: any(named: 'taskId'),
+                ),
+              );
+            }
+          },
+        );
+      }
+      test(
+        'chat approval of an unchanged check still records user intent',
+        () async {
+          final receipt = makeTestChecklistApproval();
+          final item = ChecklistTestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Inspect feeder',
+            isChecked: true,
+            checkedBy: ChangeSource.agent,
+          );
+          stubSingleItem(item);
+          handler = LottiChecklistUpdateHandler(
+            task: testTask,
+            checklistRepository: mockChecklistRepository,
+            approval: receipt,
+          );
+          expect(
+            await handler.executeUpdates(
+              makeUpdateResult([
+                {'id': item.id, 'isChecked': true},
+              ]),
+            ),
+            1,
+          );
+          final written =
+              verify(
+                    () => mockChecklistRepository.updateChecklistItem(
+                      checklistItemId: item.id,
+                      data: captureAny(named: 'data'),
+                      taskId: testTask.id,
+                    ),
+                  ).captured.single
+                  as ChecklistItemData;
+          expect(written.checkedStateApproval, receipt);
+          expect(written.checkedBy, ChangeSource.user);
+        },
+      );
+
       test('blocks isChecked change on user-set item without reason', () async {
         final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
@@ -1446,15 +1610,7 @@ JournalDbEntity _createDbEntity(ChecklistItem item) {
         'dateTo': item.meta.dateTo.toIso8601String(),
         'categoryId': item.meta.categoryId,
       },
-      'data': {
-        'title': item.data.title,
-        'isChecked': item.data.isChecked,
-        'isArchived': item.data.isArchived,
-        'linkedChecklists': item.data.linkedChecklists,
-        'checkedBy': item.data.checkedBy.name,
-        if (item.data.checkedAt != null)
-          'checkedAt': item.data.checkedAt!.toIso8601String(),
-      },
+      'data': item.data.toJson(),
     }),
     schemaVersion: 1,
     deleted: false,

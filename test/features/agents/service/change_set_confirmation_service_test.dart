@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -262,6 +263,85 @@ void main() {
   }
 
   group('ChangeSetConfirmationService', () {
+    for (final mode in ChecklistApprovalMode.values) {
+      test(
+        'chat confirmation dispatches trusted ${mode.name} approval',
+        () async {
+          final receipts = <ChecklistItemProvenance>[];
+          var current =
+              makeChangeSetWith(
+                items: const [
+                  ChangeItem(
+                    toolName: 'update_checklist_item',
+                    args: {'id': 'one', 'isChecked': true},
+                    humanSummary: 'Check feeder',
+                  ),
+                  ChangeItem(
+                    toolName: 'update_checklist_item',
+                    args: {'id': 'two', 'isChecked': true},
+                    humanSummary: 'Check sensor',
+                  ),
+                ],
+              ).copyWith(
+                id: 'query-chat:question:actions',
+                runKey: 'query-chat:question',
+                threadId: 'chat',
+              );
+          when(
+            () => mockRepository.getEntity(current.id),
+          ).thenAnswer((_) async => current);
+          when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+            call,
+          ) async {
+            final entity = call.positionalArguments.first;
+            if (entity is ChangeSetEntity) current = entity;
+          });
+          service = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            labelsRepository: mockLabelsRepository,
+            toolDispatcher: mockToolDispatcher.dispatch,
+            approvedToolDispatcher: (name, args, taskId, approval) async {
+              receipts.add(approval!);
+              expect(args.containsKey('approvalHistory'), isFalse);
+              return const ToolExecutionResult(
+                success: true,
+                output: 'Applied',
+              );
+            },
+          );
+          await withClock(testClock, () async {
+            if (mode == ChecklistApprovalMode.individual) {
+              await service.confirmItem(current, 0);
+            } else {
+              await service.confirmAll(current);
+            }
+          });
+          expect(receipts, isNotEmpty);
+          final decisions = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<ChangeDecisionEntity>().toList();
+          for (final receipt in receipts) {
+            expect(receipt.approvedBy, 'user');
+            expect(receipt.approvalHost, 'test-host');
+            expect(receipt.approvedAt, testClock.now());
+            expect(receipt.approvalMode, mode);
+            expect(receipt.originatingMessageId, 'question');
+            expect(receipt.conversationId, 'chat');
+            expect(receipt.changeSetId, current.id);
+            expect(
+              decisions.any(
+                (d) =>
+                    d.id == receipt.decisionId &&
+                    d.actor == DecisionActor.user &&
+                    d.createdAt == receipt.approvedAt,
+              ),
+              isTrue,
+            );
+          }
+        },
+      );
+    }
+
     group('confirmItem', () {
       test('persists decision before dispatch and returns result', () async {
         final changeSet = makeChangeSetWith();

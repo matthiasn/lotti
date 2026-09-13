@@ -4,7 +4,64 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_item_data.dart';
 
+import '../features/agents/test_utils.dart' show makeTestChecklistApproval;
+
 void main() {
+  test('chat approval survives JSON and a rename but not a later toggle', () {
+    final receipt = makeTestChecklistApproval();
+    final data = ChecklistItemData(
+      title: 'Inspect feeder',
+      isChecked: true,
+      linkedChecklists: ['checklist'],
+      checkedAt: receipt.approvedAt,
+      approvalHistory: [receipt],
+    );
+    final stored = ChecklistItemData.fromJson(
+      jsonDecode(jsonEncode(data)) as Map<String, dynamic>,
+    );
+    expect(stored.approvalHistory.single, receipt);
+    expect(stored.checkedStateApproval, receipt);
+    expect(
+      stored
+          .copyWith(
+            title: 'Inspect orbital feeder',
+            approvalHistory: [
+              receipt,
+              receipt.copyWith(isChecked: null, decisionId: 'rename'),
+            ],
+          )
+          .checkedStateApproval,
+      receipt,
+    );
+    expect(stored.copyWith(isChecked: false).checkedStateApproval, isNull);
+    expect(
+      stored
+          .copyWith(
+            checkedAt: receipt.approvedAt.add(
+              const Duration(minutes: 1),
+            ),
+          )
+          .checkedStateApproval,
+      isNull,
+    );
+    expect(
+      stored.copyWith(checkedBy: ChangeSource.agent).checkedStateApproval,
+      isNull,
+    );
+    expect(stored.copyWith(approvalHistory: []).checkedStateApproval, isNull);
+  });
+  for (final mode in ChecklistApprovalMode.values) {
+    test('approval JSON uses stable ${mode.name} wire mode', () {
+      final receipt = makeTestChecklistApproval(mode: mode);
+      final json = receipt.toJson();
+      expect(
+        json['approvalMode'],
+        mode == ChecklistApprovalMode.individual ? 'individual' : 'confirm_all',
+      );
+      expect(ChecklistItemProvenance.fromJson(json), receipt);
+    });
+  }
+
   group('ChecklistItemData serialization', () {
     test('round-trips with all fields', () {
       final data = ChecklistItemData(

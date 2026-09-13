@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -52,6 +53,14 @@ class TaskToolDispatcher {
   final AgentSyncService? syncService;
   final String? requestingAgentId;
 
+  /// Human confirmation supplies this receipt separately from untrusted args.
+  Future<ToolExecutionResult> dispatchApproved(
+    String name,
+    Map<String, dynamic> args,
+    String taskId,
+    ChecklistItemProvenance? approval,
+  ) => dispatch(name, args, taskId, approval: approval);
+
   /// Executes a tool handler by delegating to the appropriate existing
   /// journal-domain handler.
   ///
@@ -60,8 +69,9 @@ class TaskToolDispatcher {
   Future<ToolExecutionResult> dispatch(
     String toolName,
     Map<String, dynamic> args,
-    String taskId,
-  ) async {
+    String taskId, {
+    ChecklistItemProvenance? approval,
+  }) async {
     developer.log(
       'Dispatching tool handler: $toolName',
       name: 'TaskToolDispatcher',
@@ -126,6 +136,7 @@ class TaskToolDispatcher {
             'items': [normalizedArgs],
           },
           taskId,
+          approval: approval,
         );
 
       case TaskAgentToolNames.addMultipleChecklistItems:
@@ -134,6 +145,7 @@ class TaskToolDispatcher {
           resolvedName,
           normalizedArgs,
           taskId,
+          approval: approval,
         );
 
       case TaskAgentToolNames.updateChecklistItem:
@@ -144,6 +156,7 @@ class TaskToolDispatcher {
             'items': [normalizedArgs],
           },
           taskId,
+          approval: approval,
         );
 
       case TaskAgentToolNames.updateChecklistItems:
@@ -152,6 +165,7 @@ class TaskToolDispatcher {
           resolvedName,
           normalizedArgs,
           taskId,
+          approval: approval,
         );
 
       case TaskAgentToolNames.assignTaskLabel:
@@ -177,7 +191,11 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.migrateChecklistItem:
       case TaskAgentToolNames.migrateChecklistItems:
-        return handleMigrateChecklistItem(normalizedArgs, taskId);
+        return handleMigrateChecklistItem(
+          normalizedArgs,
+          taskId,
+          approval: approval,
+        );
 
       case TaskAgentToolNames.linkTask:
         return handleLinkTask(normalizedArgs, taskId);

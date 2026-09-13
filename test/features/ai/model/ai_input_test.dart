@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 
 /// Full JSON round-trip through encode/decode so nested freezed objects are
@@ -24,6 +25,28 @@ void main() {
     test('AiActionItem survives a JSON round-trip', () {
       expect(AiActionItem.fromJson(_roundTrip(actionItem)), actionItem);
     });
+
+    for (final mode in ChecklistApprovalMode.values) {
+      for (final checked in [true, false]) {
+        test('approval prompt round-trip keeps intent: $mode / $checked', () {
+          final approval = AiChecklistApproval(
+            isChecked: checked,
+            approvedAt: DateTime.utc(2026, 9, 13, 8),
+            approvalMode: mode,
+          );
+          final item = actionItem.copyWith(checkedStateApproval: approval);
+          final json = _roundTrip(item);
+          expect(json['checkedStateApproval'], {
+            'isChecked': checked,
+            'approvedAt': '2026-09-13T08:00:00.000Z',
+            'approvalMode': mode == ChecklistApprovalMode.individual
+                ? 'individual'
+                : 'confirm_all',
+          });
+          expect(AiActionItem.fromJson(json), item);
+        });
+      }
+    }
 
     test('AiInputLogEntryObject emits the prompt transport shape', () {
       final entry = AiInputLogEntryObject(
