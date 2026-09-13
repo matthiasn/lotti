@@ -260,6 +260,8 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackCheckInEntry);
   registerFallbackValue(fallbackCheckInData);
   registerFallbackValue(fallbackSyncMessage);
+  registerFallbackValue(MockEvent());
+  registerFallbackValue(MockPreparedSyncEvent());
   registerFallbackValue(fallbackAiConfig);
   registerFallbackValue(fallbackSavedTaskFilter);
   registerFallbackValue(fallbackNotificationEntity);

@@ -78,6 +78,12 @@ generators and their isolated bench live in `prompt_generation_scenarios.dart`.
 Run `features/ai/services/skill_inference_runner_test.dart` to execute the suite;
 the scenario parts are not separate test targets.
 
+The sync queue coordinator uses
+`features/sync/queue/queue_pipeline_coordinator_cases/` for lifecycle, ingress,
+history, recovery, and integration scenarios. Its shared fixture owns the stream
+and database lifecycle; all scenarios run through
+`features/sync/queue/queue_pipeline_coordinator_test.dart`.
+
 ## Shared process state
 
 The optimized CI runner executes many test files in one isolate.

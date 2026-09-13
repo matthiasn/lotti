@@ -177,6 +177,8 @@ import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/inbound_worker.dart';
+import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
@@ -1351,6 +1353,10 @@ class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
 class MockInboundQueue extends Mock implements InboundQueue {}
+
+class MockInboundWorker extends Mock implements InboundWorker {}
+
+class MockQueueMarkerSeeder extends Mock implements QueueMarkerSeeder {}
 
 class MockBridgeCoordinator extends Mock implements BridgeCoordinator {}
 
