@@ -288,9 +288,10 @@ class _SlowQueryAccumulator {
 
   /// Concurrency samples, keyed like the elapsed series so the super-slow
   /// copy of an entry — which carries the same TIMING rows — is not counted
-  /// twice: slow-file samples by key, super-slow samples kept aside and used
-  /// only when their twin is missing.
-  final Map<String, (int inFlight, int open)> slowSamples = {};
+  /// twice: slow-file samples per key (a key can repeat when two entries
+  /// share timestamp, elapsed and statement, so each key holds a list),
+  /// super-slow samples kept aside and consumed one per slow-file match.
+  final Map<String, List<(int inFlight, int open)>> slowSamples = {};
   final List<(String key, int inFlight, int open)> superSamples = [];
   DateTime? firstSeen;
   DateTime? lastSeen;
@@ -326,7 +327,7 @@ class _SlowQueryAccumulator {
       if (query.isSuperSlow) {
         superSamples.add((key, sample.$1, sample.$2));
       } else {
-        slowSamples[key] = sample;
+        slowSamples.putIfAbsent(key, () => []).add(sample);
       }
     }
     final first = firstSeen;
@@ -367,11 +368,18 @@ class _SlowQueryAccumulator {
   }
 
   ConcurrencyStats? _concurrency() {
-    final samples = [
-      ...slowSamples.values,
-      for (final (key, inFlight, open) in superSamples)
-        if (!slowSamples.containsKey(key)) (inFlight, open),
-    ];
+    // Each super-slow copy pairs with one slow-file entry of the same key;
+    // copies beyond that are entries whose slow file is gone.
+    final samples = [for (final list in slowSamples.values) ...list];
+    final matched = <String, int>{};
+    for (final (key, inFlight, open) in superSamples) {
+      final used = matched[key] ?? 0;
+      if (used < (slowSamples[key]?.length ?? 0)) {
+        matched[key] = used + 1;
+      } else {
+        samples.add((inFlight, open));
+      }
+    }
     if (samples.isEmpty) return null;
     // `inFlightAtStart` counts the statement itself.
     final others = [for (final (inFlight, _) in samples) inFlight - 1]..sort();

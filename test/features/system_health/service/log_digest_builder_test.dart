@@ -371,6 +371,38 @@ void main() {
       expect(stats.openTransactionsMax, 1);
     });
 
+    test('entries sharing a log key keep their own samples, and super-slow '
+        'copies pair with them one to one', () {
+      // Two slow entries can share timestamp, elapsed and statement — the
+      // key the super-slow twin is recognised by — while carrying different
+      // counters. Both count, each super-slow copy consumes one of them, and
+      // a copy beyond that is an entry whose slow file is gone.
+      SlowQueryRecord entry(int inFlight, {bool superSlow = false}) =>
+          slowQuery(
+            timestamp: t0,
+            elapsedMs: 300,
+            statement: 'BEGIN',
+            isSuperSlow: superSlow,
+            inFlightAtStart: inFlight,
+          );
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            entry(3),
+            entry(9),
+            entry(3, superSlow: true),
+            entry(9, superSlow: true),
+            entry(21, superSlow: true),
+          ],
+        ),
+      );
+
+      final stats = digest.slowQueries.single.concurrency!;
+      // others = [2, 8] from the slow file plus 20 from the unmatched copy.
+      expect(stats.othersInFlightP50, 8);
+      expect(stats.othersInFlightMax, 20);
+    });
+
     test('buckets are ordered by total time', () {
       final digest = builder.build(
         input(
