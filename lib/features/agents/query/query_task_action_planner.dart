@@ -205,17 +205,14 @@ class QueryTaskActionPlanner {
           humanSummary: summary,
         );
       } else if (AgentToolRegistry.explodedBatchTools.containsKey(name)) {
+        final migratesToNewTask =
+            name == TaskAgentToolNames.migrateChecklistItems &&
+            args['targetTaskId'] == 'new-task';
         await builder.addBatchItem(
           toolName: name,
-          args:
-              name == TaskAgentToolNames.migrateChecklistItems &&
-                  args['targetTaskId'] == 'new-task'
-              ? {...args, 'targetTaskId': newTaskId}
-              : args,
+          args: migratesToNewTask ? {...args, 'targetTaskId': newTaskId} : args,
           summaryPrefix: summary,
-          groupId: name == TaskAgentToolNames.migrateChecklistItems
-              ? newTaskId
-              : null,
+          groupId: migratesToNewTask ? newTaskId : null,
         );
       } else {
         await builder.addItem(

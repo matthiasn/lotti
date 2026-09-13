@@ -464,6 +464,32 @@ void main() {
     },
   );
 
+  test(
+    'migration to an existing task stays independent of a new follow-up',
+    () async {
+      final result = await plan([
+        {
+          'name': 'create_follow_up_task',
+          'arguments': {'title': 'Separate repair'},
+          'summary': 'New repair',
+        },
+        {
+          'name': 'migrate_checklist_items',
+          'arguments': {
+            'targetTaskId': 'supplies',
+            'items': [
+              {'id': 'feeder', 'title': 'Inspect feeder'},
+            ],
+          },
+          'summary': 'Move to existing supplies task',
+        },
+      ]);
+      expect(result.items.last.args['targetTaskId'], 'supplies');
+      expect(result.items.first.groupId, isNotNull);
+      expect(result.items.last.groupId, isNull);
+    },
+  );
+
   for (final malformedJson in [true, false]) {
     test(
       'repairs once and discards the invalid attempt: JSON=$malformedJson',

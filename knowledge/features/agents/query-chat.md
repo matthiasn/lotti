@@ -370,6 +370,8 @@ text, task fields, labels, follow-up tasks, relationships and migrations.
 Checklist targets use the journal metadata ID; nullable or stale legacy IDs
 inside checklist data cannot overwrite it. Chat-specific guidance allows
 migration to a supplied existing task as well as a newly proposed follow-up.
+Only a migration targeting the new follow-up shares its group ID;
+a migration to an existing task does not inherit that grouping metadata.
 An explicit checked-state request supplies the reason required for a user-set
 item. Task language may only be initialized while unset; a configured language
 must be changed through task settings. Validation repeats that restriction
