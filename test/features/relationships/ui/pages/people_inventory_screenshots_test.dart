@@ -21,7 +21,9 @@
 ///   test/features/relationships/ui/pages/people_inventory_screenshots_test.dart`
 library;
 
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -54,6 +56,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
@@ -66,6 +69,7 @@ import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/avatar_crop_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
@@ -74,6 +78,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_ca
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -100,6 +105,7 @@ import '../../../agents/test_data/change_set_factories.dart';
 import '../../../agents/test_data/entity_factories.dart';
 import '../../../categories/test_utils.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
+import '../../helpers/check_in_speech_fakes.dart';
 
 const _subdir = 'people';
 
@@ -851,6 +857,7 @@ void main() {
     List<Override> overrides = const [],
     String? selectedId,
     bool desktopChat = false,
+    bool settle = true,
   }) async {
     selectedRelationshipId.value = selectedId;
     chatOpen.value = desktopChat;
@@ -872,7 +879,13 @@ void main() {
           platform: device.isPhone ? TargetPlatform.iOS : TargetPlatform.macOS,
         ),
       );
-      await tester.pumpAndSettle();
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        // A surface with a spinner on it never settles; pump it by hand.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      }
     });
     await mount();
 
@@ -1257,6 +1270,7 @@ void main() {
         device: proDevice,
         brightness: Brightness.dark,
         overrides: face.value(),
+        settle: face.key != 'running',
       );
 
       expect(
@@ -1364,20 +1378,21 @@ void main() {
         overrides: personOverrides(),
       );
       await openModal(tester);
-      expect(find.text('Write a check-in'), findsOne);
-      expect(find.text('Record an audio check-in'), findsOne);
-      await captureScreenshot(
-        tester,
-        'check_in_choice_${viewport}_dark',
-        subdir: _subdir,
-      );
-      await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
-      await tester.pumpAndSettle();
 
+      // One composer, opening on the narrative with Dictate inside it —
+      // no choice sheet first.
+      expect(find.byKey(const ValueKey('check-in-narrative')), findsOne);
+      expect(find.byKey(const ValueKey('check-in-dictate')), findsOne);
+      expect(find.text('with Pip · last spoke Sat 1 Aug'), findsOne);
       expect(
         find.byKey(const ValueKey('check-in-save')),
         findsOneWidget,
         reason: 'Save is pinned, not below the fold',
+      );
+      expect(
+        find.text('Add a few words to save'),
+        findsOneWidget,
+        reason: 'a held Save says why',
       );
       expect(
         find.byKey(const ValueKey('check-in-more')),
@@ -1389,10 +1404,6 @@ void main() {
         'check_in_capture_${viewport}_dark',
         subdir: _subdir,
       );
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('check-in-started')),
-      );
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('check-in-started')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Done'));
@@ -1402,6 +1413,145 @@ void main() {
         'check_in_time_${viewport}_dark',
         subdir: _subdir,
       );
+    });
+
+    // Every speech phase the composer renders in place of the text (design
+    // 2026-09-13, options 1b–1f / 2b): the recorder, the transcript wait,
+    // the words landed, and the two failure cards.
+    testWidgets('$viewport check-in dictation phases — dark', (tester) async {
+      final recorder = FakeAudioRecorderController();
+      final gate = Completer<String?>();
+      final transcription = StubCheckInTranscriptionService(gate: gate);
+      await pumpSurface(
+        tester,
+        home: _ModalHost(
+          open: (context) => showCheckInCaptureSheet(
+            context: context,
+            relationshipId: _pipId,
+          ),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: [
+          ...personOverrides(),
+          audioRecorderControllerProvider.overrideWith(() => recorder),
+          checkInTranscriptionServiceProvider.overrideWithValue(transcription),
+        ],
+      );
+      await openModal(tester);
+      // Under the fixed clock throughout, so the start chip keeps reading
+      // `Now · 14:05` in every phase.
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('check-in-inline-recorder')),
+          findsOne,
+          reason: 'the recorder replaces the text, not the sheet',
+        );
+        // A live level strip and a running clock, the way a real take looks.
+        for (var i = 0; i < CheckInInlineRecorder.amplitudeWindow; i++) {
+          recorder.tick(
+            progress: const Duration(seconds: 23),
+            dBFS: -48 + 30 * math.sin(i / 3).abs(),
+          );
+          await tester.pump();
+        }
+        expect(find.text('Recording'), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_recording_${viewport}_dark',
+          subdir: _subdir,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(
+          find.byKey(const ValueKey('check-in-transcript-skeleton')),
+          findsOne,
+        );
+        expect(find.text('Waiting for the transcript'), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_transcribing_${viewport}_dark',
+          subdir: _subdir,
+        );
+
+        gate.complete(
+          'Reviewed the penguin habitat launch with Pip. The window slips a '
+          'week; Pip is calm about it but wants the krill contract signed '
+          'before the freeze.',
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('check-in-transcript-added')),
+          findsOne,
+        );
+        expect(find.textContaining('26 words'), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_transcript_ready_${viewport}_dark',
+          subdir: _subdir,
+        );
+      });
+    });
+
+    testWidgets('$viewport check-in dictation failures — dark', (tester) async {
+      final recorder = FakeAudioRecorderController(
+        recordFailure: AudioRecordingFailure.permissionDenied,
+      );
+      final transcription = StubCheckInTranscriptionService();
+      await pumpSurface(
+        tester,
+        home: _ModalHost(
+          open: (context) => showCheckInCaptureSheet(
+            context: context,
+            relationshipId: _pipId,
+          ),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: [
+          ...personOverrides(),
+          audioRecorderControllerProvider.overrideWith(() => recorder),
+          checkInTranscriptionServiceProvider.overrideWithValue(transcription),
+        ],
+      );
+      await openModal(tester);
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+        await tester.pumpAndSettle();
+        expect(find.text("Lotti can't use the microphone"), findsOne);
+        expect(find.text('Microphone unavailable'), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_mic_denied_${viewport}_dark',
+          subdir: _subdir,
+        );
+
+        // The microphone allowed after all, and then the transcript never
+        // comes: the recording is kept, the retry asks for its words again.
+        await tester.tap(
+          find.byKey(const ValueKey('check-in-dismiss-failure')),
+        );
+        await tester.pumpAndSettle();
+        recorder.recordFailure = null;
+        await tester.tap(find.byKey(const ValueKey('check-in-dictate')));
+        await tester.pumpAndSettle();
+        recorder.tick(progress: const Duration(seconds: 23));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        await tester.pumpAndSettle();
+        expect(find.text("Couldn't reach the transcription server"), findsOne);
+        expect(find.text('Type or retry to save'), findsOne);
+        await captureScreenshot(
+          tester,
+          'check_in_transcript_missing_${viewport}_dark',
+          subdir: _subdir,
+        );
+      });
     });
 
     testWidgets('$viewport check-in edit sheet — dark', (tester) async {

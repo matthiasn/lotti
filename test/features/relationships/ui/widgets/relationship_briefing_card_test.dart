@@ -11,8 +11,10 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
@@ -28,6 +30,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -38,6 +41,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/ai_config_factories.dart';
+import '../../../agents/test_data/change_set_factories.dart';
 import '../../../agents/test_data/entity_factories.dart';
 
 class _FakeContactLauncher implements ContactLauncher {
@@ -289,7 +293,13 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      if (running) {
+        // The running face wears a spinner, so nothing ever "settles".
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      } else {
+        await tester.pumpAndSettle();
+      }
     });
     return launcher;
   }
@@ -433,21 +443,21 @@ void main() {
       expect(find.byType(AgentSummaryCardSurface), findsNothing);
       expect(find.byType(DesignSystemSectionCard), findsOneWidget);
       expect(find.text('Briefing'), findsOneWidget);
-      expect(find.text('no agent for this person'), findsOneWidget);
+      expect(statusText(tester), 'No agent for this person');
       expect(
-        tester
-            .widget<DsPill>(
-              find.byKey(const ValueKey('relationship-agent-pill-status')),
-            )
-            .label,
-        'Not enrolled',
+        find.byType(DsPill),
+        findsNothing,
+        reason: 'the header above the card already carries the pills',
       );
       expect(
         find.textContaining('Mark Pip as important to get a briefing'),
         findsOneWidget,
       );
-      expect(statusText(tester), 'Not enrolled');
       expect(find.text('Mark important'), findsOneWidget);
+      expect(
+        find.text('Only what you start yourself uses AI'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Mark important switches the person on through the '
@@ -579,7 +589,7 @@ void main() {
       );
       final context = tester.element(find.byType(RelationshipBriefingCard));
       expect(card.decoration, aiCardDecoration(context));
-      expect(find.text('agent watching · no run yet'), findsOneWidget);
+      expect(statusText(tester), 'Agent watching · next look Wed 19 Aug');
       expect(
         find.text(
           'No briefing yet. Brief now writes one from your 2 check-ins; it '
@@ -587,15 +597,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(
-        tester
-            .widget<DsPill>(
-              find.byKey(const ValueKey('relationship-agent-pill-cadence')),
-            )
-            .label,
-        'On track · Weekly',
-      );
-      expect(statusText(tester), 'Next look Wed 19 Aug');
+      expect(find.byType(DsPill), findsNothing);
       expect(find.text('Brief now'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('relationship-chat-button')),
@@ -611,7 +613,7 @@ void main() {
         find.textContaining('writes one once you have logged a check-in'),
         findsOneWidget,
       );
-      expect(statusText(tester), startsWith('Next look'));
+      expect(statusText(tester), startsWith('Agent watching · next look'));
     });
 
     testWidgets('Brief now on a LOCAL route requests without any dialog', (
@@ -827,14 +829,25 @@ void main() {
         state: agentState(lastWakeAt: DateTime(2026, 8, 13, 13, 41)),
       );
 
-      expect(find.text('writing the briefing…'), findsOneWidget);
-      expect(find.text('Reading 2 check-ins…'), findsOneWidget);
-      expect(statusText(tester), 'Running · started 13:41');
+      expect(statusText(tester), 'Writing the briefing…');
+      expect(
+        find.text('Reading 2 check-ins. Usually under a minute.'),
+        findsOneWidget,
+      );
       expect(briefMe, findsNothing);
       expect(find.byType(DesignSystemButton), findsNothing);
+      // With no action row, the footer still washes the whole card.
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('relationship-agent-footer')))
+            .width,
+        tester
+            .getSize(find.byKey(const ValueKey('relationship-briefing-card')))
+            .width,
+      );
     });
 
-    testWidgets('keeps the band and the briefing pills while a refresh runs', (
+    testWidgets('a refresh with a briefing on file still reads as writing', (
       tester,
     ) async {
       await pump(
@@ -844,8 +857,8 @@ void main() {
         running: true,
       );
 
-      expect(find.text('Thriving'), findsOneWidget);
-      expect(statusText(tester), 'Running');
+      expect(statusText(tester), 'Writing the briefing…');
+      expect(find.byType(AgentMarkdownView), findsNothing);
     });
   });
 
@@ -862,13 +875,13 @@ void main() {
         state: agentState(failures: 1, lastWakeAt: failedAt),
       );
 
-      expect(find.text('last run failed · 13:41'), findsOneWidget);
+      expect(statusText(tester), 'Last run failed · 13:41');
       expect(
         find.textContaining('No model is set up for briefings.'),
         findsOneWidget,
       );
-      expect(statusText(tester), 'Failed · 13:41');
       expect(find.text('Choose a model'), findsOneWidget);
+      expect(find.text('See activity'), findsOneWidget);
       expect(briefMe, findsNothing);
     });
 
@@ -900,12 +913,28 @@ void main() {
 
       expect(
         find.text(
-          'The last briefing run failed. Details are in the Activity tab.',
+          'The provider returned an error before the briefing was written. '
+          'Your check-ins are unchanged.',
         ),
-        findsWidgets,
+        findsOneWidget,
       );
-      expect(statusText(tester), 'Failed');
+      expect(statusText(tester), 'Last run failed');
       expect(find.text('Try again'), findsOneWidget);
+    });
+
+    testWidgets('See activity opens the internals panel', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        state: agentState(failures: 1, lastWakeAt: failedAt),
+      );
+
+      await tester.tap(
+        find.byKey(const ValueKey('relationship-agent-see-activity')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AgentInternalsPanel), findsOneWidget);
     });
 
     testWidgets('with a model, the action is Try again, which requests a '
@@ -918,7 +947,8 @@ void main() {
 
       expect(
         find.text(
-          'The last briefing run failed. Details are in the Activity tab.',
+          'The provider returned an error before the briefing was written. '
+          'Your check-ins are unchanged.',
         ),
         findsOneWidget,
       );
@@ -930,8 +960,9 @@ void main() {
   });
 
   group('current', () {
-    testWidgets('meta line says when and what it cost; the band is tinted; '
-        'Up to date sits beside Update now', (tester) async {
+    testWidgets('the status line says when and which band; the cost rides '
+        'the model row; the sources line closes the card; Log check-in '
+        'sits beside a quiet Update now', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -940,20 +971,17 @@ void main() {
         totalTokens: 38200,
       );
 
-      expect(find.text('as of 1 h ago · 38.2K tokens'), findsOneWidget);
-      final chip = tester.widget<DsPill>(
-        find.byKey(const ValueKey('relationship-health-chip')),
-      );
-      final tokens = tester
-          .element(find.byType(RelationshipBriefingCard))
-          .designTokens;
-      expect(chip.label, 'Thriving');
-      expect(chip.variant, DsPillVariant.tinted);
+      expect(statusText(tester), 'as of 1 h ago · Thriving');
+      expect(find.byType(DsPill), findsNothing);
+      expect(find.textContaining('· 38.2K tokens'), findsOneWidget);
       expect(
-        chip.color,
-        relationshipHealthBandColor(tokens, RelationshipHealthBand.thriving),
+        find.text('Sources: 2 check-ins · no contact channels'),
+        findsOneWidget,
       );
-      expect(statusText(tester), 'Up to date');
+      final quiet = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('relationship-agent-log-check-in')),
+      );
+      expect(quiet.variant, DesignSystemButtonVariant.tertiary);
       final update = tester.widget<DesignSystemButton>(briefMe);
       expect(update.label, 'Update now');
       expect(update.variant, DesignSystemButtonVariant.secondary);
@@ -998,20 +1026,21 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.text('as of just now'), findsOneWidget);
+        expect(statusText(tester), 'as of just now · Thriving');
 
         // Nobody rebuilds the card; the clock crosses the minute.
         current = now.add(const Duration(seconds: 5));
         await tester.pump(const Duration(seconds: 5));
 
-        expect(find.text('as of 1 min ago'), findsOneWidget);
+        expect(statusText(tester), 'as of 1 min ago · Thriving');
       });
     });
 
-    testWidgets('no cost pill without usage', (tester) async {
+    testWidgets('no cost on the model row without usage', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
 
-      expect(find.text('as of 1 h ago'), findsOneWidget);
+      expect(statusText(tester), 'as of 1 h ago · Thriving');
+      expect(find.textContaining('tokens'), findsNothing);
     });
 
     testWidgets('Update now requests a briefing', (tester) async {
@@ -1041,7 +1070,7 @@ void main() {
       expect(find.text('Show less'), findsOneWidget);
     });
 
-    testWidgets('every band reads as its own label on its own tint', (
+    testWidgets('every band reads as its own label on the status line', (
       tester,
     ) async {
       const bands = {
@@ -1055,25 +1084,17 @@ void main() {
           checkIns: onTrackCheckIns,
           current: report(band: entry.key),
         );
-        final chip = tester.widget<DsPill>(
-          find.byKey(const ValueKey('relationship-health-chip')),
-        );
         final context = tester.element(find.byType(RelationshipBriefingCard));
         expect(
-          chip.label,
-          relationshipHealthBandLabel(context, entry.value),
-          reason: entry.key,
-        );
-        expect(
-          chip.color,
-          relationshipHealthBandColor(context.designTokens, entry.value),
+          statusText(tester),
+          'as of 1 h ago · ${relationshipHealthBandLabel(context, entry.value)}',
           reason: entry.key,
         );
         await tester.pumpWidget(const SizedBox.shrink());
       }
     });
 
-    testWidgets('a report with no parseable band shows no chip', (
+    testWidgets('a report with no parseable band says only when', (
       tester,
     ) async {
       await pump(
@@ -1082,9 +1103,57 @@ void main() {
         current: report(band: null),
       );
 
+      expect(statusText(tester), 'as of 1 h ago');
+    });
+
+    testWidgets('open proposals are counted in the header', (tester) async {
+      final set = makeTestChangeSet(
+        agentId: agentId,
+        taskId: relationshipId,
+        items: const [
+          ChangeItem(
+            toolName: 'create_and_link_task',
+            args: {'title': 'Send the draft'},
+            humanSummary: 'Create task: Send the draft',
+          ),
+          ChangeItem(
+            toolName: 'create_and_link_task',
+            args: {'title': 'Book the walkthrough'},
+            humanSummary: 'Create task: Book the walkthrough',
+          ),
+        ],
+      );
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        additionalOverrides: [
+          relationshipSuggestionListProvider(relationshipId).overrideWith(
+            (ref) async => RelationshipProposalSnapshot(
+              suggestions: UnifiedSuggestionList(
+                open: [
+                  for (var i = 0; i < set.items.length; i++)
+                    PendingSuggestion(
+                      changeSet: set,
+                      itemIndex: i,
+                      item: set.items[i],
+                      fingerprint: ChangeItem.fingerprint(set.items[i]),
+                    ),
+                ],
+                activity: const [],
+              ),
+            ),
+          ),
+        ],
+      );
+
       expect(
-        find.byKey(const ValueKey('relationship-health-chip')),
-        findsNothing,
+        tester
+            .widget<DsPill>(
+              find.byKey(const ValueKey('relationship-briefing-proposals')),
+            )
+            .label,
+        '2 proposed',
       );
     });
 
@@ -1121,11 +1190,36 @@ void main() {
             )
             .style
             ?.color,
-        tokens.colors.alert.warning.defaultColor,
+        tokens.colors.alert.warning.ink,
       );
       final update = tester.widget<DesignSystemButton>(briefMe);
       expect(update.label, 'Update now');
       expect(update.variant, DesignSystemButtonVariant.primary);
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-age')),
+        findsNothing,
+        reason: 'an hour-old briefing is not old enough to count in days',
+      );
+    });
+
+    testWidgets('a briefing days old wears its age on the trailing rail', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(createdAt: now.subtract(const Duration(days: 6))),
+        state: agentState(staleAt: DateTime(2026, 8, 12, 19, 6)),
+      );
+
+      expect(
+        tester
+            .widget<DsPill>(
+              find.byKey(const ValueKey('relationship-briefing-age')),
+            )
+            .label,
+        '6 days old',
+      );
     });
   });
 
@@ -1151,10 +1245,6 @@ void main() {
         current: report(),
       );
 
-      final due = tester.widget<DsPill>(
-        find.byKey(const ValueKey('relationship-agent-pill-due')),
-      );
-      expect(due.label, 'Due since Sat · 5 days over');
       final quiet = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('relationship-agent-log-check-in')),
       );
@@ -1163,9 +1253,9 @@ void main() {
       expect(find.text('Call Pip'), findsOneWidget);
       expect(briefMe, findsNothing);
       expect(
-        find.byKey(const ValueKey('relationship-agent-status')),
-        findsNothing,
-        reason: 'the due footer is two actions, not a status and an action',
+        statusText(tester),
+        'as of 1 h ago · Thriving',
+        reason: 'the status stays in the header; the footer is two actions',
       );
 
       await tester.tap(find.byKey(const ValueKey('relationship-agent-call')));
@@ -1222,10 +1312,23 @@ void main() {
       });
     });
 
-    testWidgets('Log check-in opens the capture sheet for this person', (
+    testWidgets('Log check-in opens the composer for this person', (
       tester,
     ) async {
       setTestSurfaceSize(tester, const Size(1000, 1400));
+      // The composer's header reads the person through the detail
+      // controller, which listens to the update bus.
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => repository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => relationship(channels: const [mobile]));
+      when(
+        () => repository.getCheckInsForRelationship(relationshipId),
+      ).thenAnswer((_) async => lapsedCheckIns);
+      when(
+        () => repository.getLinkedTasks(relationshipId),
+      ).thenAnswer((_) async => []);
       await pump(
         tester,
         entry: relationship(channels: const [mobile]),
@@ -1238,11 +1341,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Record an audio check-in'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('When and how long'), findsOneWidget);
+      expect(find.text('Log check-in'), findsNWidgets(2));
+      expect(find.text('with Pip · last spoke Sat 1 Aug'), findsOneWidget);
+      expect(find.byKey(const ValueKey('check-in-narrative')), findsOneWidget);
     });
 
     testWidgets('without a launchable channel, Log check-in is the primary', (

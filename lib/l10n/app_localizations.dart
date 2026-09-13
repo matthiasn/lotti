@@ -5190,11 +5190,35 @@ abstract class AppLocalizations {
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
 
-  /// No description provided for @checkInAudioButton.
+  /// No description provided for @checkInAddMoreButton.
   ///
   /// In en, this message translates to:
-  /// **'Record an audio check-in'**
-  String get checkInAudioButton;
+  /// **'Add more'**
+  String get checkInAddMoreButton;
+
+  /// No description provided for @checkInAudioKeptNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio is kept in the journal even if you cancel this check-in'**
+  String get checkInAudioKeptNote;
+
+  /// No description provided for @checkInAudioSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{length} of audio saved'**
+  String checkInAudioSaved(String length);
+
+  /// No description provided for @checkInAudioSavedAsYouGo.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio saved to this device as you go'**
+  String get checkInAudioSavedAsYouGo;
+
+  /// No description provided for @checkInAudioSavedRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'{length} of audio saved · {route}'**
+  String checkInAudioSavedRoute(String length, String route);
 
   /// No description provided for @checkInAvoidLabel.
   ///
@@ -5202,17 +5226,23 @@ abstract class AppLocalizations {
   /// **'Better to avoid'**
   String get checkInAvoidLabel;
 
-  /// No description provided for @checkInCaptureChoiceTitle.
+  /// No description provided for @checkInComposerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'How would you like to check in?'**
-  String get checkInCaptureChoiceTitle;
+  /// **'with {name} · last spoke {day}'**
+  String checkInComposerSubtitle(String name, String day);
 
-  /// No description provided for @checkInDateLabel.
+  /// No description provided for @checkInComposerSubtitleNoContact.
   ///
   /// In en, this message translates to:
-  /// **'When?'**
-  String get checkInDateLabel;
+  /// **'with {name} · no check-in yet'**
+  String checkInComposerSubtitleNoContact(String name);
+
+  /// No description provided for @checkInContextSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{type} · {time} · {duration}'**
+  String checkInContextSummary(String type, String time, String duration);
 
   /// No description provided for @checkInDeleteConfirmMessage.
   ///
@@ -5220,11 +5250,35 @@ abstract class AppLocalizations {
   /// **'Delete this check-in? This cannot be undone.'**
   String get checkInDeleteConfirmMessage;
 
-  /// No description provided for @checkInDurationHint.
+  /// No description provided for @checkInDictateButton.
   ///
   /// In en, this message translates to:
-  /// **'Tap duration to open the wheel. A message usually has none.'**
-  String get checkInDurationHint;
+  /// **'Dictate'**
+  String get checkInDictateButton;
+
+  /// No description provided for @checkInDiscardRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get checkInDiscardRecording;
+
+  /// No description provided for @checkInDismissButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get checkInDismissButton;
+
+  /// No description provided for @checkInDurationChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get checkInDurationChip;
+
+  /// No description provided for @checkInDurationChipSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration: {duration}. Change'**
+  String checkInDurationChipSemantics(String duration);
 
   /// No description provided for @checkInDurationQuickPickHint.
   ///
@@ -5292,6 +5346,18 @@ abstract class AppLocalizations {
   /// **'Video call'**
   String get checkInInteractionVideoCall;
 
+  /// No description provided for @checkInMicrophoneDeniedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow microphone access for Lotti in system settings, then try again. Nothing was recorded.'**
+  String get checkInMicrophoneDeniedBody;
+
+  /// No description provided for @checkInMicrophoneDeniedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti can\'t use the microphone'**
+  String get checkInMicrophoneDeniedTitle;
+
   /// No description provided for @checkInMoreCaption.
   ///
   /// In en, this message translates to:
@@ -5307,20 +5373,26 @@ abstract class AppLocalizations {
   /// No description provided for @checkInNarrativeHint.
   ///
   /// In en, this message translates to:
-  /// **'One line is enough…'**
+  /// **'What did you talk about? One line is enough.'**
   String get checkInNarrativeHint;
-
-  /// No description provided for @checkInNarrativeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'What did you talk about?'**
-  String get checkInNarrativeLabel;
 
   /// No description provided for @checkInNoDuration.
   ///
   /// In en, this message translates to:
   /// **'No duration'**
   String get checkInNoDuration;
+
+  /// No description provided for @checkInOpenSettingsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get checkInOpenSettingsButton;
+
+  /// No description provided for @checkInOrTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Or type it here…'**
+  String get checkInOrTypeHint;
 
   /// No description provided for @checkInPayAttentionLabel.
   ///
@@ -5334,11 +5406,71 @@ abstract class AppLocalizations {
   /// **'Preparing audio…'**
   String get checkInPreparingLabel;
 
+  /// No description provided for @checkInRecordingFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The microphone could not be started. Try again, or type the check-in. Nothing was recorded.'**
+  String get checkInRecordingFailedBody;
+
+  /// No description provided for @checkInRecordingFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording didn\'t start'**
+  String get checkInRecordingFailedTitle;
+
+  /// No description provided for @checkInRecordingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak normally. Words appear here when you stop.'**
+  String get checkInRecordingHint;
+
+  /// No description provided for @checkInReRecordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-record'**
+  String get checkInReRecordButton;
+
+  /// No description provided for @checkInSaveBlockedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a few words to save'**
+  String get checkInSaveBlockedEmpty;
+
+  /// No description provided for @checkInSaveBlockedRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording to save'**
+  String get checkInSaveBlockedRecording;
+
+  /// No description provided for @checkInSaveBlockedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or retry to save'**
+  String get checkInSaveBlockedRetry;
+
+  /// No description provided for @checkInSaveBlockedTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the transcript'**
+  String get checkInSaveBlockedTranscribing;
+
   /// No description provided for @checkInSaveButton.
   ///
   /// In en, this message translates to:
   /// **'Save check-in'**
   String get checkInSaveButton;
+
+  /// No description provided for @checkInSaveShortButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get checkInSaveShortButton;
+
+  /// No description provided for @checkInSaveShortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{shortcut} to save'**
+  String checkInSaveShortcutHint(String shortcut);
 
   /// No description provided for @checkInSentimentDelightful.
   ///
@@ -5412,6 +5544,48 @@ abstract class AppLocalizations {
   /// **'Started'**
   String get checkInStartedLabel;
 
+  /// No description provided for @checkInStatusMicrophoneDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone unavailable'**
+  String get checkInStatusMicrophoneDenied;
+
+  /// No description provided for @checkInStatusPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get checkInStatusPaused;
+
+  /// No description provided for @checkInStatusRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording'**
+  String get checkInStatusRecording;
+
+  /// No description provided for @checkInStatusRecordingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording didn\'t start'**
+  String get checkInStatusRecordingFailed;
+
+  /// No description provided for @checkInStatusTranscriptionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No transcription model'**
+  String get checkInStatusTranscriptionUnavailable;
+
+  /// No description provided for @checkInStatusTranscriptMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript not received'**
+  String get checkInStatusTranscriptMissing;
+
+  /// No description provided for @checkInTimeChipSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Started: {time}. Change'**
+  String checkInTimeChipSemantics(String time);
+
   /// No description provided for @checkInTopicsHint.
   ///
   /// In en, this message translates to:
@@ -5430,17 +5604,29 @@ abstract class AppLocalizations {
   /// **'Transcribing…'**
   String get checkInTranscribingLabel;
 
-  /// Message shown when a spoken check-in produced no transcript and the user has to type the narrative.
+  /// No description provided for @checkInTranscriptAdded.
   ///
   /// In en, this message translates to:
-  /// **'No transcript came back. You can type it instead.'**
-  String get checkInTranscriptFailed;
+  /// **'Transcript added · read it once, edit anything'**
+  String get checkInTranscriptAdded;
 
-  /// No description provided for @checkInTranscriptReady.
+  /// No description provided for @checkInTranscriptionUnavailableTitle.
   ///
   /// In en, this message translates to:
-  /// **'Transcript ready. Review it before saving.'**
-  String get checkInTranscriptReady;
+  /// **'No transcription model set up'**
+  String get checkInTranscriptionUnavailableTitle;
+
+  /// No description provided for @checkInTranscriptMissingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your {length} recording is saved on this device. Try again when you\'re back online, or type the check-in now.'**
+  String checkInTranscriptMissingBody(String length);
+
+  /// No description provided for @checkInTranscriptMissingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the transcription server'**
+  String get checkInTranscriptMissingTitle;
 
   /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
   ///
@@ -5448,17 +5634,23 @@ abstract class AppLocalizations {
   /// **'Choose a default inference profile with a transcription model in AI settings, or write your check-in.'**
   String get checkInTranscriptUnavailable;
 
-  /// No description provided for @checkInWhenAndHowLong.
+  /// No description provided for @checkInTypeChipSemantics.
   ///
   /// In en, this message translates to:
-  /// **'When and how long'**
-  String get checkInWhenAndHowLong;
+  /// **'Interaction: {type}. Change'**
+  String checkInTypeChipSemantics(String type);
 
-  /// No description provided for @checkInWriteButton.
+  /// No description provided for @checkInTypeInstead.
   ///
   /// In en, this message translates to:
-  /// **'Write a check-in'**
-  String get checkInWriteButton;
+  /// **'Type instead'**
+  String get checkInTypeInstead;
+
+  /// No description provided for @checkInWordCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 word} other{{count} words}}'**
+  String checkInWordCount(int count);
 
   /// No description provided for @checklistAddItem.
   ///
@@ -19357,6 +19549,12 @@ abstract class AppLocalizations {
   /// **'or from contacts'**
   String get relationshipAddChannelFromContacts;
 
+  /// No description provided for @relationshipAgentAsOfBand.
+  ///
+  /// In en, this message translates to:
+  /// **'as of {age} · {band}'**
+  String relationshipAgentAsOfBand(String age, String band);
+
   /// No description provided for @relationshipAgentBriefNow.
   ///
   /// In en, this message translates to:
@@ -19369,16 +19567,10 @@ abstract class AppLocalizations {
   /// **'Call {name}'**
   String relationshipAgentCall(String name);
 
-  /// No description provided for @relationshipAgentFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed · {time}'**
-  String relationshipAgentFailed(String time);
-
   /// No description provided for @relationshipAgentFailedBody.
   ///
   /// In en, this message translates to:
-  /// **'The last briefing run failed. Details are in the Activity tab.'**
+  /// **'The provider returned an error before the briefing was written. Your check-ins are unchanged.'**
   String get relationshipAgentFailedBody;
 
   /// No description provided for @relationshipAgentFailedNoModel.
@@ -19390,13 +19582,13 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentFailedPlain.
   ///
   /// In en, this message translates to:
-  /// **'Failed'**
+  /// **'Last run failed'**
   String get relationshipAgentFailedPlain;
 
   /// No description provided for @relationshipAgentLastRunFailed.
   ///
   /// In en, this message translates to:
-  /// **'last run failed · {time}'**
+  /// **'Last run failed · {time}'**
   String relationshipAgentLastRunFailed(String time);
 
   /// No description provided for @relationshipAgentMarkImportant.
@@ -19414,7 +19606,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentNoAgent.
   ///
   /// In en, this message translates to:
-  /// **'no agent for this person'**
+  /// **'No agent for this person'**
   String get relationshipAgentNoAgent;
 
   /// No description provided for @relationshipAgentNoBriefingBody.
@@ -19429,6 +19621,12 @@ abstract class AppLocalizations {
   /// **'Mark {name} as important to get a briefing, nudges when it has been a while, and a chat. Until then nothing runs on its own; only what you start yourself, like a chat or a dictated check-in, uses AI.'**
   String relationshipAgentNotEnrolledBody(String name);
 
+  /// No description provided for @relationshipAgentOnlyYourStartsUseAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Only what you start yourself uses AI'**
+  String get relationshipAgentOnlyYourStartsUseAi;
+
   /// No description provided for @relationshipAgentOutOfDateNewCheckIn.
   ///
   /// In en, this message translates to:
@@ -19441,23 +19639,29 @@ abstract class AppLocalizations {
   /// **'Briefings pause while this person is dormant or archived.'**
   String get relationshipAgentPausedBody;
 
-  /// No description provided for @relationshipAgentReading.
+  /// No description provided for @relationshipAgentProposedCount.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Reading the person…} =1{Reading 1 check-in…} other{Reading {count} check-ins…}}'**
-  String relationshipAgentReading(int count);
+  /// **'{count, plural, =1{1 proposed} other{{count} proposed}}'**
+  String relationshipAgentProposedCount(int count);
 
-  /// No description provided for @relationshipAgentRunning.
+  /// No description provided for @relationshipAgentReadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Running'**
-  String get relationshipAgentRunning;
+  /// **'{count, plural, =0{Reading the person. Usually under a minute.} =1{Reading 1 check-in. Usually under a minute.} other{Reading {count} check-ins. Usually under a minute.}}'**
+  String relationshipAgentReadingBody(int count);
 
-  /// No description provided for @relationshipAgentRunningSince.
+  /// No description provided for @relationshipAgentSeeActivity.
   ///
   /// In en, this message translates to:
-  /// **'Running · started {time}'**
-  String relationshipAgentRunningSince(String time);
+  /// **'See activity'**
+  String get relationshipAgentSeeActivity;
+
+  /// No description provided for @relationshipAgentSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · no contact channels'**
+  String relationshipAgentSources(int count);
 
   /// No description provided for @relationshipAgentTryAgain.
   ///
@@ -19468,13 +19672,19 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentWatching.
   ///
   /// In en, this message translates to:
-  /// **'agent watching · no run yet'**
+  /// **'Agent watching'**
   String get relationshipAgentWatching;
+
+  /// No description provided for @relationshipAgentWatchingNextLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent watching · next look {day}'**
+  String relationshipAgentWatchingNextLook(String day);
 
   /// No description provided for @relationshipAgentWriting.
   ///
   /// In en, this message translates to:
-  /// **'writing the briefing…'**
+  /// **'Writing the briefing…'**
   String get relationshipAgentWriting;
 
   /// Accessibility label of one relationship nudge banner; personName is the person's name.
@@ -19482,6 +19692,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Relationship banner for {personName}'**
   String relationshipBannerSemanticLabel(String personName);
+
+  /// No description provided for @relationshipBriefingAge.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day old} other{{days} days old}}'**
+  String relationshipBriefingAge(int days);
 
   /// Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.
   ///

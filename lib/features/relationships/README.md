@@ -29,9 +29,12 @@ contact action.
 ## Briefings and suggestions
 
 The agent card has six states: not enrolled, no briefing, running, failed,
-current and out of date. It offers the appropriate action: mark important,
-brief now, choose a model, retry, or update. The card shows the briefing's
-age, health band, inference cost and model information. A first cloud
+current and out of date. One status line under the title says which, in
+that state's colour; the footer offers one quiet action (log a check-in, or
+see the activity after a failure) and one primary: mark important, brief
+now, choose a model, retry, update, or call. The header counts open task
+proposals and an out-of-date briefing's age; the model row carries the
+inference cost, and a current briefing names its sources. A first cloud
 briefing names the provider before sending relationship context.
 
 The agent can propose tasks from explicit commitments in check-ins. The
@@ -51,13 +54,17 @@ is closed. The deterministic cadence tier does not require an AI model.
 
 ## Capturing and linking
 
-Check-ins are user-authored. New check-ins offer Write or Record audio; the
-review form leads with the narrative and groups optional details under More.
-Voice capture records against the person,
-transcribes with their inference configuration and fills the narrative for
-review; it never saves automatically or overwrites existing typed text.
-A missing transcription model is explained before recording. Category
-speech dictionaries can improve recognition of names.
+Check-ins are user-authored. One composer opens on the narrative, with
+Dictate inside the field; how you connected, when and for how long are one
+row of chips, and optional details fold under More. Recording, the
+transcript wait, the finished transcript and both failure cards render in
+place of the text. Voice capture records against the person, transcribes
+with the system default profile and fills the narrative for review; it
+never saves automatically or overwrites existing typed text, and a missing
+transcript can be asked for again without recording again. A missing
+transcription model is explained before recording. Category speech
+dictionaries can improve recognition of names. Save waits for a few words
+and says so while it waits.
 
 On Android and iOS, contact import lets the user select contacts and set
 importance and cadence before creating people. Linking or refreshing a

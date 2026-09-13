@@ -489,6 +489,57 @@ void main() {
     }
   });
 
+  group('route', () {
+    late CheckInTranscriptionService service;
+
+    setUp(() {
+      service = CheckInTranscriptionService(
+        journalDb,
+        MockUpdateNotifications(),
+        resolver,
+        runner,
+      );
+    });
+
+    test(
+      'names the model and the provider the words would come from',
+      () async {
+        stubDefault(
+          ResolvedProfile(
+            thinkingModelId: 'thinking-model',
+            thinkingProvider: testInferenceProvider(),
+            transcriptionModelId: 'whisper',
+            transcriptionProvider: testInferenceProvider(),
+            transcriptionModel: testAiModel(),
+          ),
+        );
+        expect(await service.route(), (
+          model: 'Test Model',
+          provider: 'Gemini',
+        ));
+      },
+    );
+
+    for (final missing in ['profile', 'model', 'provider']) {
+      test('is nothing when the default $missing is missing', () async {
+        stubDefault(
+          missing == 'profile'
+              ? null
+              : profile(
+                  model: missing != 'model',
+                  provider: missing != 'provider',
+                ),
+        );
+        expect(await service.route(), isNull);
+      });
+    }
+
+    test('is nothing when the slot has an id but no resolved model', () async {
+      stubDefault(profile());
+      expect(await service.route(), isNull);
+    });
+  });
+
   group('cancellation', () {
     // A dismissed sheet must stop reading the database on every write for
     // the rest of the timeout.

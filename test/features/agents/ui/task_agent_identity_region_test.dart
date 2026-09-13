@@ -45,6 +45,7 @@ void main() {
     WidgetTester tester, {
     required TaskAgentModelIdentityViewData data,
     VoidCallback? onSetupTap,
+    String? trailingMeta,
     double? width,
   }) {
     if (width != null) {
@@ -61,6 +62,7 @@ void main() {
         TaskAgentIdentityRegion(
           data: data,
           onSetupTap: onSetupTap ?? () {},
+          trailingMeta: trailingMeta,
         ),
       ),
     );
@@ -74,6 +76,36 @@ void main() {
   /// Whether [finder]'s text was truncated rather than wrapped.
   bool isTruncated(WidgetTester tester, Finder finder) =>
       tester.renderObject<RenderParagraph>(finder).didExceedMaxLines;
+
+  testWidgets('trailing meta rides the setup row after the route, on every '
+      'wording tier', (tester) async {
+    await pumpRegion(
+      tester,
+      data: const TaskAgentModelIdentityViewData(
+        presentation: TaskAgentIdentityPresentation.combined,
+        currentRoute: route,
+        reportRoute: route,
+      ),
+      trailingMeta: '18.4K tokens',
+      width: 1000,
+    );
+    expect(find.text('$routeLabel · 18.4K tokens'), findsOneWidget);
+
+    // Narrow enough that the full wording cannot fit: the shorter tier is
+    // chosen, and the meta is still on it.
+    await pumpRegion(
+      tester,
+      data: const TaskAgentModelIdentityViewData(
+        presentation: TaskAgentIdentityPresentation.combined,
+        currentRoute: route,
+        reportRoute: route,
+      ),
+      trailingMeta: '18.4K tokens',
+      width: 330,
+    );
+    expect(find.text('$routeLabel · 18.4K tokens'), findsNothing);
+    expect(find.textContaining('· 18.4K tokens'), findsOneWidget);
+  });
 
   testWidgets('combined row is tappable, accessible, and at least step6 high', (
     tester,

@@ -62,9 +62,18 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  // The composer's header reads the person through the detail controller,
+  // which listens to the update bus.
+  setUp(() async {
+    await setUpTestGetIt();
     repository = MockRelationshipRepository();
+    when(
+      () => repository.getCheckInsForRelationship(any()),
+    ).thenAnswer((_) async => const []);
+    when(() => repository.getLinkedTasks(any())).thenAnswer((_) async => []);
   });
+
+  tearDown(tearDownTestGetIt);
 
   RelationshipEntry person({String title = 'Anna Schmidt'}) =>
       RelationshipEntry(
@@ -118,12 +127,6 @@ void main() {
       await tester.pumpAndSettle();
     });
     return store;
-  }
-
-  Future<void> chooseWrittenCheckIn(WidgetTester tester) async {
-    expect(find.text('Record an audio check-in'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
-    await tester.pumpAndSettle();
   }
 
   final offer = find.byKey(const ValueKey('person-post-call-offer'));
@@ -329,7 +332,6 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
-      await chooseWrittenCheckIn(tester);
       final selected = tester
           .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
           .where((chip) => chip.selected)
@@ -354,7 +356,6 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      await chooseWrittenCheckIn(tester);
       final form = tester.widget<CheckInCaptureForm>(
         find.byType(CheckInCaptureForm),
       );
@@ -394,7 +395,6 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      await chooseWrittenCheckIn(tester);
       final form = tester.widget<CheckInCaptureForm>(
         find.byType(CheckInCaptureForm),
       );
@@ -413,7 +413,6 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
-      await chooseWrittenCheckIn(tester);
       final selected = tester
           .widgetList<DesignSystemChip>(find.byType(DesignSystemChip))
           .firstWhere((chip) => chip.selected);
@@ -429,7 +428,6 @@ void main() {
       await tester.tap(find.text('Log check-in'));
       await tester.pumpAndSettle();
 
-      await chooseWrittenCheckIn(tester);
       await tester.ensureVisible(find.byKey(const ValueKey('check-in-more')));
       await tester.tap(find.byKey(const ValueKey('check-in-more')));
       await tester.pumpAndSettle();

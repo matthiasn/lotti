@@ -47,12 +47,24 @@ class TldrHeader extends StatelessWidget {
     required this.agentName,
     this.onAgentTap,
     this.title,
+    this.subtitle,
     this.trailing,
+    this.icon,
     super.key,
   });
 
   final String? agentName;
   final VoidCallback? onAgentTap;
+
+  /// A widget on the second line instead of the [agentName] caption — the
+  /// relationship briefing's status line, which carries a glyph and a
+  /// semantic colour the plain caption cannot. When set, [agentName] is
+  /// only what the semantics announce.
+  final Widget? subtitle;
+
+  /// The badge glyph; the sparkle by default. A card that is not an AI
+  /// surface — the unenrolled person's plain card — passes its own.
+  final IconData? icon;
 
   /// The card's own name, when it is not the task/goal agent's
   /// `aiCardTitle`. The relationship briefing is the same panel wearing a
@@ -124,7 +136,7 @@ class TldrHeader extends StatelessWidget {
                               ),
                             ),
                             child: Icon(
-                              LottiIcons.aiSpark,
+                              icon ?? LottiIcons.aiSpark,
                               size: tokens.spacing.step6,
                               color: ai.accent,
                             ),
@@ -148,7 +160,9 @@ class TldrHeader extends StatelessWidget {
                                       .subtitle1
                                       .copyWith(color: ai.titleText),
                                 ),
-                                if (hasName)
+                                if (subtitle case final subtitle?)
+                                  subtitle
+                                else if (hasName)
                                   Text(
                                     displayName,
                                     maxLines: 1,

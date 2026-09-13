@@ -3067,25 +3067,63 @@ class AppLocalizationsDa extends AppLocalizations {
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
 
   @override
-  String get checkInAudioButton => 'Optag en lydkontaktlog';
+  String get checkInAddMoreButton => 'Tilføj mere';
+
+  @override
+  String get checkInAudioKeptNote =>
+      'Lyden bliver i dagbogen, selv hvis du annullerer dette check-in';
+
+  @override
+  String checkInAudioSaved(String length) {
+    return '$length lyd gemt';
+  }
+
+  @override
+  String get checkInAudioSavedAsYouGo => 'Lyden gemmes løbende på denne enhed';
+
+  @override
+  String checkInAudioSavedRoute(String length, String route) {
+    return '$length lyd gemt · $route';
+  }
 
   @override
   String get checkInAvoidLabel => 'Bedst at undgå';
 
   @override
-  String get checkInCaptureChoiceTitle =>
-      'Hvordan vil du registrere kontakten?';
+  String checkInComposerSubtitle(String name, String day) {
+    return 'med $name · sidst $day';
+  }
 
   @override
-  String get checkInDateLabel => 'Hvornår?';
+  String checkInComposerSubtitleNoContact(String name) {
+    return 'med $name · intet check-in endnu';
+  }
+
+  @override
+  String checkInContextSummary(String type, String time, String duration) {
+    return '$type · $time · $duration';
+  }
 
   @override
   String get checkInDeleteConfirmMessage =>
       'Slet dette check-in? Det kan ikke fortrydes.';
 
   @override
-  String get checkInDurationHint =>
-      'Tryk på varigheden for at åbne hjulet. En besked har som regel ingen.';
+  String get checkInDictateButton => 'Dikter';
+
+  @override
+  String get checkInDiscardRecording => 'Kassér';
+
+  @override
+  String get checkInDismissButton => 'Luk';
+
+  @override
+  String get checkInDurationChip => 'Varighed';
+
+  @override
+  String checkInDurationChipSemantics(String duration) {
+    return 'Varighed: $duration. Skift';
+  }
 
   @override
   String get checkInDurationQuickPickHint =>
@@ -3126,19 +3164,29 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videoopkald';
 
   @override
+  String get checkInMicrophoneDeniedBody =>
+      'Giv Lotti adgang til mikrofonen i systemindstillingerne, og prøv igen. Intet blev optaget.';
+
+  @override
+  String get checkInMicrophoneDeniedTitle => 'Lotti kan ikke bruge mikrofonen';
+
+  @override
   String get checkInMoreCaption => 'Følelse · emner · næste gang';
 
   @override
   String get checkInMoreSection => 'Mere';
 
   @override
-  String get checkInNarrativeHint => 'Én linje er nok…';
-
-  @override
-  String get checkInNarrativeLabel => 'Hvad talte I om?';
+  String get checkInNarrativeHint => 'Hvad talte I om? Én linje er nok.';
 
   @override
   String get checkInNoDuration => 'Ingen varighed';
+
+  @override
+  String get checkInOpenSettingsButton => 'Åbn indstillinger';
+
+  @override
+  String get checkInOrTypeHint => 'Eller skriv det her…';
 
   @override
   String get checkInPayAttentionLabel => 'Næste gang: vær opmærksom på';
@@ -3147,7 +3195,41 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInPreparingLabel => 'Forbereder lyd…';
 
   @override
+  String get checkInRecordingFailedBody =>
+      'Mikrofonen kunne ikke startes. Prøv igen, eller skriv check-in’et. Intet blev optaget.';
+
+  @override
+  String get checkInRecordingFailedTitle => 'Optagelsen startede ikke';
+
+  @override
+  String get checkInRecordingHint =>
+      'Tal helt normalt. Ordene dukker op her, når du stopper.';
+
+  @override
+  String get checkInReRecordButton => 'Optag igen';
+
+  @override
+  String get checkInSaveBlockedEmpty => 'Et par ord er nok for at gemme';
+
+  @override
+  String get checkInSaveBlockedRecording => 'Stop optagelsen for at gemme';
+
+  @override
+  String get checkInSaveBlockedRetry => 'Skriv eller prøv igen for at gemme';
+
+  @override
+  String get checkInSaveBlockedTranscribing => 'Venter på transskriptionen';
+
+  @override
   String get checkInSaveButton => 'Gem check-in';
+
+  @override
+  String get checkInSaveShortButton => 'Gem';
+
+  @override
+  String checkInSaveShortcutHint(String shortcut) {
+    return '$shortcut for at gemme';
+  }
 
   @override
   String get checkInSentimentDelightful => 'Skønt';
@@ -3198,6 +3280,30 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInStartedLabel => 'Startet';
 
   @override
+  String get checkInStatusMicrophoneDenied => 'Mikrofon ikke tilgængelig';
+
+  @override
+  String get checkInStatusPaused => 'På pause';
+
+  @override
+  String get checkInStatusRecording => 'Optager';
+
+  @override
+  String get checkInStatusRecordingFailed => 'Optagelsen startede ikke';
+
+  @override
+  String get checkInStatusTranscriptionUnavailable =>
+      'Ingen transskriptionsmodel';
+
+  @override
+  String get checkInStatusTranscriptMissing => 'Ingen transskription modtaget';
+
+  @override
+  String checkInTimeChipSemantics(String time) {
+    return 'Start: $time. Skift';
+  }
+
+  @override
   String get checkInTopicsHint => 'Kommasepareret, f.eks. arbejde, rejser';
 
   @override
@@ -3207,22 +3313,44 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInTranscribingLabel => 'Transskriberer…';
 
   @override
-  String get checkInTranscriptFailed =>
-      'Der kom ingen udskrift. Du kan skrive den selv.';
+  String get checkInTranscriptAdded =>
+      'Transskription tilføjet · læs den igennem, alt kan redigeres';
 
   @override
-  String get checkInTranscriptReady =>
-      'Transskriptionen er klar. Gennemgå den, før du gemmer.';
+  String get checkInTranscriptionUnavailableTitle =>
+      'Ingen transskriptionsmodel sat op';
+
+  @override
+  String checkInTranscriptMissingBody(String length) {
+    return 'Din optagelse på $length er gemt på denne enhed. Prøv igen, når du er online igen, eller skriv check-in’et nu.';
+  }
+
+  @override
+  String get checkInTranscriptMissingTitle =>
+      'Kunne ikke nå transskriptionsserveren';
 
   @override
   String get checkInTranscriptUnavailable =>
       'Vælg en standardprofil til inferens med en transskriptionsmodel i AI-indstillinger, eller skriv din kontaktregistrering.';
 
   @override
-  String get checkInWhenAndHowLong => 'Hvornår og hvor længe';
+  String checkInTypeChipSemantics(String type) {
+    return 'Type: $type. Skift';
+  }
 
   @override
-  String get checkInWriteButton => 'Skriv en kontaktlog';
+  String get checkInTypeInstead => 'Skriv i stedet';
+
+  @override
+  String checkInWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ord',
+      one: '1 ord',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checklistAddItem => 'Tilføj en ny genstand';
@@ -11544,6 +11672,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipAddChannelFromContacts => 'eller fra kontakter';
 
   @override
+  String relationshipAgentAsOfBand(String age, String band) {
+    return 'pr. $age · $band';
+  }
+
+  @override
   String get relationshipAgentBriefNow => 'Brief nu';
 
   @override
@@ -11552,24 +11685,19 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentFailed(String time) {
-    return 'Mislykkedes · $time';
-  }
-
-  @override
   String get relationshipAgentFailedBody =>
-      'Den seneste briefing-kørsel mislykkedes. Detaljer findes under fanen Aktivitet.';
+      'Udbyderen svarede med en fejl, før briefingen blev skrevet. Dine check-ins er uændrede.';
 
   @override
   String get relationshipAgentFailedNoModel =>
       'Der er ikke sat en model op til briefinger. Vælg en under AI-indstillinger › Agenter. Detaljer findes under fanen Aktivitet.';
 
   @override
-  String get relationshipAgentFailedPlain => 'Mislykkedes';
+  String get relationshipAgentFailedPlain => 'Seneste kørsel mislykkedes';
 
   @override
   String relationshipAgentLastRunFailed(String time) {
-    return 'seneste kørsel mislykkedes · $time';
+    return 'Seneste kørsel mislykkedes · $time';
   }
 
   @override
@@ -11581,7 +11709,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'ingen agent for denne person';
+  String get relationshipAgentNoAgent => 'Ingen agent for denne person';
 
   @override
   String relationshipAgentNoBriefingBody(int count) {
@@ -11604,6 +11732,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get relationshipAgentOnlyYourStartsUseAi =>
+      'Kun det, du selv starter, bruger AI';
+
+  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Forældet · nyt check-in $day';
   }
@@ -11613,38 +11745,70 @@ class AppLocalizationsDa extends AppLocalizations {
       'Briefinger holder pause, mens denne person er i dvale eller arkiveret.';
 
   @override
-  String relationshipAgentReading(int count) {
+  String relationshipAgentProposedCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Læser $count check-ins…',
-      one: 'Læser 1 check-in…',
-      zero: 'Læser personen…',
+      other: '$count foreslået',
+      one: '1 foreslået',
     );
     return '$_temp0';
   }
 
   @override
-  String get relationshipAgentRunning => 'Kører';
+  String relationshipAgentReadingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Læser $count check-ins. Tager som regel under et minut.',
+      one: 'Læser 1 check-in. Tager som regel under et minut.',
+      zero: 'Læser personen. Tager som regel under et minut.',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String relationshipAgentRunningSince(String time) {
-    return 'Kører · startet $time';
+  String get relationshipAgentSeeActivity => 'Se aktivitet';
+
+  @override
+  String relationshipAgentSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count check-ins',
+      one: '1 check-in',
+    );
+    return 'Kilder: $_temp0 · ingen kontaktkanaler';
   }
 
   @override
   String get relationshipAgentTryAgain => 'Prøv igen';
 
   @override
-  String get relationshipAgentWatching =>
-      'agenten holder øje · ingen kørsel endnu';
+  String get relationshipAgentWatching => 'Agenten holder øje';
 
   @override
-  String get relationshipAgentWriting => 'skriver briefingen…';
+  String relationshipAgentWatchingNextLook(String day) {
+    return 'Agenten holder øje · næste kig $day';
+  }
+
+  @override
+  String get relationshipAgentWriting => 'Skriver briefingen…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Relationsbanner for $personName';
+  }
+
+  @override
+  String relationshipBriefingAge(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days dage gammel',
+      one: '1 dag gammel',
+    );
+    return '$_temp0';
   }
 
   @override

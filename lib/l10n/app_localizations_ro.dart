@@ -3119,25 +3119,64 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
 
   @override
-  String get checkInAudioButton => 'Înregistrați un contact audio';
+  String get checkInAddMoreButton => 'Adăugați';
+
+  @override
+  String get checkInAudioKeptNote =>
+      'Sunetul rămâne în jurnal chiar dacă anulați acest check-in';
+
+  @override
+  String checkInAudioSaved(String length) {
+    return '$length de sunet salvat';
+  }
+
+  @override
+  String get checkInAudioSavedAsYouGo =>
+      'Sunetul se salvează pe acest dispozitiv pe măsură ce înregistrați';
+
+  @override
+  String checkInAudioSavedRoute(String length, String route) {
+    return '$length de sunet salvat · $route';
+  }
 
   @override
   String get checkInAvoidLabel => 'De evitat';
 
   @override
-  String get checkInCaptureChoiceTitle =>
-      'Cum doriți să înregistrați contactul?';
+  String checkInComposerSubtitle(String name, String day) {
+    return 'cu $name · ultima discuție $day';
+  }
 
   @override
-  String get checkInDateLabel => 'Când?';
+  String checkInComposerSubtitleNoContact(String name) {
+    return 'cu $name · încă niciun check-in';
+  }
+
+  @override
+  String checkInContextSummary(String type, String time, String duration) {
+    return '$type · $time · $duration';
+  }
 
   @override
   String get checkInDeleteConfirmMessage =>
       'Ștergeți această înregistrare? Acțiunea nu poate fi anulată.';
 
   @override
-  String get checkInDurationHint =>
-      'Atingeți durata pentru a deschide rotița. Un mesaj de obicei nu are.';
+  String get checkInDictateButton => 'Dictați';
+
+  @override
+  String get checkInDiscardRecording => 'Renunțați';
+
+  @override
+  String get checkInDismissButton => 'Închideți';
+
+  @override
+  String get checkInDurationChip => 'Durată';
+
+  @override
+  String checkInDurationChipSemantics(String duration) {
+    return 'Durată: $duration. Schimbați';
+  }
 
   @override
   String get checkInDurationQuickPickHint =>
@@ -3178,19 +3217,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Apel video';
 
   @override
+  String get checkInMicrophoneDeniedBody =>
+      'Permiteți accesul la microfon pentru Lotti în setările sistemului, apoi încercați din nou. Nu s-a înregistrat nimic.';
+
+  @override
+  String get checkInMicrophoneDeniedTitle => 'Lotti nu poate folosi microfonul';
+
+  @override
   String get checkInMoreCaption => 'Stare · subiecte · data viitoare';
 
   @override
   String get checkInMoreSection => 'Mai mult';
 
   @override
-  String get checkInNarrativeHint => 'O linie este de ajuns…';
-
-  @override
-  String get checkInNarrativeLabel => 'Despre ce ați vorbit?';
+  String get checkInNarrativeHint =>
+      'Despre ce ați vorbit? O linie este de ajuns.';
 
   @override
   String get checkInNoDuration => 'Fără durată';
+
+  @override
+  String get checkInOpenSettingsButton => 'Deschideți setările';
+
+  @override
+  String get checkInOrTypeHint => 'Sau scrieți aici…';
 
   @override
   String get checkInPayAttentionLabel => 'Data viitoare, acordați atenție la';
@@ -3199,7 +3249,44 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInPreparingLabel => 'Se pregătește sunetul…';
 
   @override
+  String get checkInRecordingFailedBody =>
+      'Microfonul nu a putut fi pornit. Încercați din nou sau scrieți check-in-ul. Nu s-a înregistrat nimic.';
+
+  @override
+  String get checkInRecordingFailedTitle => 'Înregistrarea nu a pornit';
+
+  @override
+  String get checkInRecordingHint =>
+      'Vorbiți normal. Cuvintele apar aici când opriți.';
+
+  @override
+  String get checkInReRecordButton => 'Reînregistrați';
+
+  @override
+  String get checkInSaveBlockedEmpty =>
+      'Câteva cuvinte sunt de ajuns pentru salvare';
+
+  @override
+  String get checkInSaveBlockedRecording =>
+      'Opriți înregistrarea pentru a salva';
+
+  @override
+  String get checkInSaveBlockedRetry =>
+      'Scrieți sau reîncercați pentru a salva';
+
+  @override
+  String get checkInSaveBlockedTranscribing => 'Se așteaptă transcrierea';
+
+  @override
   String get checkInSaveButton => 'Salvați check-in-ul';
+
+  @override
+  String get checkInSaveShortButton => 'Salvați';
+
+  @override
+  String checkInSaveShortcutHint(String shortcut) {
+    return '$shortcut pentru salvare';
+  }
 
   @override
   String get checkInSentimentDelightful => 'Minunat';
@@ -3250,6 +3337,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInStartedLabel => 'Început';
 
   @override
+  String get checkInStatusMicrophoneDenied => 'Microfon indisponibil';
+
+  @override
+  String get checkInStatusPaused => 'În pauză';
+
+  @override
+  String get checkInStatusRecording => 'Se înregistrează';
+
+  @override
+  String get checkInStatusRecordingFailed => 'Înregistrarea nu a pornit';
+
+  @override
+  String get checkInStatusTranscriptionUnavailable =>
+      'Niciun model de transcriere';
+
+  @override
+  String get checkInStatusTranscriptMissing => 'Transcrierea nu a fost primită';
+
+  @override
+  String checkInTimeChipSemantics(String time) {
+    return 'Început: $time. Schimbați';
+  }
+
+  @override
   String get checkInTopicsHint =>
       'Separate prin virgulă, de ex. muncă, călătorii';
 
@@ -3260,22 +3371,45 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInTranscribingLabel => 'Se transcrie…';
 
   @override
-  String get checkInTranscriptFailed =>
-      'Nu a venit nicio transcriere. O puteți scrie dvs.';
+  String get checkInTranscriptAdded =>
+      'Transcriere adăugată · recitiți-o, totul se poate edita';
 
   @override
-  String get checkInTranscriptReady =>
-      'Transcrierea este gata. Verificați-o înainte de salvare.';
+  String get checkInTranscriptionUnavailableTitle =>
+      'Niciun model de transcriere configurat';
+
+  @override
+  String checkInTranscriptMissingBody(String length) {
+    return 'Înregistrarea dvs. de $length este salvată pe acest dispozitiv. Încercați din nou când sunteți iar online sau scrieți check-in-ul acum.';
+  }
+
+  @override
+  String get checkInTranscriptMissingTitle =>
+      'Serverul de transcriere nu poate fi contactat';
 
   @override
   String get checkInTranscriptUnavailable =>
       'Selectați un profil de inferență implicit cu un model de transcriere în setările AI sau scrieți înregistrarea de contact.';
 
   @override
-  String get checkInWhenAndHowLong => 'Când și cât timp';
+  String checkInTypeChipSemantics(String type) {
+    return 'Tip: $type. Schimbați';
+  }
 
   @override
-  String get checkInWriteButton => 'Scrieți o înregistrare de contact';
+  String get checkInTypeInstead => 'Scrieți în schimb';
+
+  @override
+  String checkInWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de cuvinte',
+      few: '$count cuvinte',
+      one: '1 cuvânt',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get checklistAddItem => 'Adăugați un element nou';
@@ -11771,6 +11905,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipAddChannelFromContacts => 'sau din contacte';
 
   @override
+  String relationshipAgentAsOfBand(String age, String band) {
+    return 'la $age · $band';
+  }
+
+  @override
   String get relationshipAgentBriefNow => 'Creați briefingul acum';
 
   @override
@@ -11779,24 +11918,19 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String relationshipAgentFailed(String time) {
-    return 'Eșuat · $time';
-  }
-
-  @override
   String get relationshipAgentFailedBody =>
-      'Ultima rulare a briefingului a eșuat. Detaliile sunt în fila Activitate.';
+      'Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.';
 
   @override
   String get relationshipAgentFailedNoModel =>
       'Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.';
 
   @override
-  String get relationshipAgentFailedPlain => 'Eșuat';
+  String get relationshipAgentFailedPlain => 'Ultima rulare a eșuat';
 
   @override
   String relationshipAgentLastRunFailed(String time) {
-    return 'ultima rulare a eșuat · $time';
+    return 'Ultima rulare a eșuat · $time';
   }
 
   @override
@@ -11808,7 +11942,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get relationshipAgentNoAgent => 'niciun agent pentru această persoană';
+  String get relationshipAgentNoAgent => 'Niciun agent pentru această persoană';
 
   @override
   String relationshipAgentNoBriefingBody(int count) {
@@ -11833,6 +11967,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipAgentOnlyYourStartsUseAi =>
+      'Doar ce porniți dvs. folosește IA';
+
+  @override
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Depășit · check-in nou $day';
   }
@@ -11842,39 +11980,74 @@ class AppLocalizationsRo extends AppLocalizations {
       'Briefingurile sunt în pauză cât timp această persoană este inactivă sau arhivată.';
 
   @override
-  String relationshipAgentReading(int count) {
+  String relationshipAgentProposedCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Citește $count de check-in-uri…',
-      few: 'Citește $count check-in-uri…',
-      one: 'Citește 1 check-in…',
-      zero: 'Citește persoana…',
+      other: '$count de propuse',
+      few: '$count propuse',
+      one: '1 propusă',
     );
     return '$_temp0';
   }
 
   @override
-  String get relationshipAgentRunning => 'În curs';
+  String relationshipAgentReadingBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se citesc $count de check-in-uri. De obicei sub un minut.',
+      few: 'Se citesc $count check-in-uri. De obicei sub un minut.',
+      one: 'Se citește 1 check-in. De obicei sub un minut.',
+      zero: 'Se citește persoana. De obicei sub un minut.',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String relationshipAgentRunningSince(String time) {
-    return 'În curs · pornit la $time';
+  String get relationshipAgentSeeActivity => 'Vedeți activitatea';
+
+  @override
+  String relationshipAgentSources(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de check-in-uri',
+      few: '$count check-in-uri',
+      one: '1 check-in',
+    );
+    return 'Surse: $_temp0 · fără canale de contact';
   }
 
   @override
   String get relationshipAgentTryAgain => 'Încercați din nou';
 
   @override
-  String get relationshipAgentWatching =>
-      'agentul urmărește · nicio rulare încă';
+  String get relationshipAgentWatching => 'Agentul urmărește';
 
   @override
-  String get relationshipAgentWriting => 'scrie briefingul…';
+  String relationshipAgentWatchingNextLook(String day) {
+    return 'Agentul urmărește · următoarea verificare $day';
+  }
+
+  @override
+  String get relationshipAgentWriting => 'Se scrie briefingul…';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Banner de relație pentru $personName';
+  }
+
+  @override
+  String relationshipBriefingAge(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'vechi de $days de zile',
+      few: 'vechi de $days zile',
+      one: 'vechi de 1 zi',
+    );
+    return '$_temp0';
   }
 
   @override
