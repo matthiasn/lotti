@@ -114,6 +114,18 @@ and never matches.
 - **Mock setup must not dwarf the test.** A hundred lines of setup for five lines
   of assertion means the test is testing the wrong thing or needs a shared helper.
 
+## Async lifecycle contracts
+
+A shutdown test must prove that pending work **completes** before its resources
+are disposed. Call counts and `verifyInOrder` only establish invocation order;
+they can pass when an `await` is removed. Hold each asynchronous stage open with
+a `Completer`, assert that shutdown and later stages remain pending, then release
+it and verify the next stage. Include asynchronous errors to prove cleanup still
+reaches the remaining resources. The queue coordinator's
+[`lifecycle.dart`](../../test/features/sync/queue/queue_pipeline_coordinator_cases/lifecycle.dart)
+scenarios exercise this contract and exact retry/timeout boundaries under fake
+time.
+
 ## The vacuous-pass traps
 
 A regression test that passes with the fix **reverted** is not a regression test.

@@ -22,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_utils/material_ui_finders.dart';
+import '../../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../../widget_test_utils.dart';
 
 JournalEntry _entry({
@@ -116,6 +117,9 @@ class _ThrowingEntryController extends EntryController {
 }
 
 void main() {
+  // Pin shipped text metrics instead of inheriting fonts from an earlier suite.
+  setUpAll(loadAppFonts);
+
   group('EntryDateTimeMultiPageModal', () {
     setUp(() async {
       final updateNotifications = MockUpdateNotifications();

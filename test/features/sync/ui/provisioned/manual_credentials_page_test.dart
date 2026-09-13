@@ -17,6 +17,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 
 /// Records what the form hands to the controller instead of signing in.
@@ -35,6 +36,8 @@ class _RecordingProvisioningController extends ProvisioningController {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // Keep the form's text metrics independent of earlier tests in the shard.
+  setUpAll(loadAppFonts);
 
   late MockMatrixService mockMatrixService;
   late ValueNotifier<int> pageIndexNotifier;
