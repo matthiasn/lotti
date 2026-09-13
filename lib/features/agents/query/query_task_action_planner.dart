@@ -33,6 +33,7 @@ class QueryTaskActionContext {
 /// Creates reviewable task-tool arguments. It has no mutation capability.
 /// The same registry schemas and batch explosion as task wakes are reused;
 /// only a separate, explicit human confirmation can dispatch these items.
+/// Invalid JSON or proposals get one bounded, isolated repair attempt.
 class QueryTaskActionPlanner {
   const QueryTaskActionPlanner({required this.inference});
 
@@ -59,7 +60,12 @@ class QueryTaskActionPlanner {
       'timestamps WITHOUT a timezone suffix. Only use supplied IDs. A '
       'create_follow_up_task may be followed by migrate_checklist_items with '
       'targetTaskId="new-task" to move items to the most recent new task. '
-      'Return JSON {"answer":"brief review invitation or clarification in '
+      'Migration also supports an existing supplied task ID without creating '
+      'a task. Task language can only be initialized when languageCode is null '
+      'or empty; if already set, explain that it must be changed in task '
+      'settings and return no language action, even if explicitly requested. '
+      'Return only one JSON object, with no markdown fences or prose outside it: '
+      '{"answer":"brief review invitation or clarification in '
       'the user language", "actions":[{"name":"tool name",'
       ' "arguments":{},"summary":"short description of the exact change"}]}. '
       'Use at most eight tool calls and twelve individual changes. An empty '
@@ -89,6 +95,17 @@ class QueryTaskActionPlanner {
                 'Propose the requested correction to a supplied completed time entry.',
               TaskAgentToolNames.setTaskTitle =>
                 'Propose the requested task title.',
+              TaskAgentToolNames.migrateChecklistItems =>
+                'Move supplied checklist items to a supplied existing task ID, '
+                    'or to "new-task" after create_follow_up_task in this response. '
+                    'Archives the source items and creates copies in the target. '
+                    'Do not create a new task when an existing target was requested.',
+              TaskAgentToolNames.updateChecklistItems =>
+                'Propose only the requested fields on supplied checklist items. '
+                    'When changing isChecked on an item whose checkedBy is user, '
+                    'include a reason of at least 20 characters identifying the '
+                    'current explicit chat request as the new instruction. '
+                    'Do not change the checked state for a rename or archive request.',
               TaskAgentToolNames.setTaskLanguage =>
                 'Only propose setting an unset task language when the current '
                     'user explicitly asks to set its language. Never infer this '
@@ -102,14 +119,37 @@ class QueryTaskActionPlanner {
       'conversation': conversation,
       'question': question,
     };
-    if (QueryTextInference.requestBytes(system, input) > maxInputBytes) {
-      throw const FormatException('Task action context exceeds input budget');
+    for (var attempt = 0; ; attempt++) {
+      cancellation.check();
+      if (QueryTextInference.requestBytes(system, input) > maxInputBytes) {
+        throw const FormatException('Task action context exceeds input budget');
+      }
+      try {
+        final result = await inference.complete(
+          system: system,
+          input: input,
+          cancellation: cancellation,
+        );
+        return await _parse(result, context, cancellation);
+      } on FormatException {
+        if (attempt == 1) rethrow;
+        // One fresh disposable attempt; never echo provider error text or
+        // partially built actions. Nothing is persisted or dispatched here.
+        input['repair'] =
+            'The previous response failed JSON or task-action validation. '
+            'Return only the specified JSON object, without prose or fences. '
+            'Check required arguments, supplied IDs, time ranges and task '
+            'language restrictions. If the request cannot be fulfilled, '
+            'explain why in answer and return an empty actions array.';
+      }
     }
-    final result = await inference.complete(
-      system: system,
-      input: input,
-      cancellation: cancellation,
-    );
+  }
+
+  Future<({String text, List<ChangeItem> items})> _parse(
+    Map<String, dynamic> result,
+    QueryTaskActionContext context,
+    QueryCancellation cancellation,
+  ) async {
     final text = result['answer'];
     final actions = result['actions'];
     if (text is! String ||
@@ -165,17 +205,14 @@ class QueryTaskActionPlanner {
           humanSummary: summary,
         );
       } else if (AgentToolRegistry.explodedBatchTools.containsKey(name)) {
+        final migratesToNewTask =
+            name == TaskAgentToolNames.migrateChecklistItems &&
+            args['targetTaskId'] == 'new-task';
         await builder.addBatchItem(
           toolName: name,
-          args:
-              name == TaskAgentToolNames.migrateChecklistItems &&
-                  args['targetTaskId'] == 'new-task'
-              ? {...args, 'targetTaskId': newTaskId}
-              : args,
+          args: migratesToNewTask ? {...args, 'targetTaskId': newTaskId} : args,
           summaryPrefix: summary,
-          groupId: name == TaskAgentToolNames.migrateChecklistItems
-              ? newTaskId
-              : null,
+          groupId: migratesToNewTask ? newTaskId : null,
         );
       } else {
         await builder.addItem(
@@ -204,6 +241,12 @@ class QueryTaskActionPlanner {
     if (tool == null ||
         (await Schema.fromMap(tool.parameters).validate(args)).isNotEmpty) {
       throw const FormatException('Invalid task tool arguments');
+    }
+    if (name == TaskAgentToolNames.setTaskLanguage) {
+      final language = (context.input['task'] as Map?)?['languageCode'];
+      if (language is String && language.isNotEmpty) {
+        throw const FormatException('Task language is already set');
+      }
     }
     if (name == TaskAgentToolNames.createTimeEntry ||
         name == TaskAgentToolNames.updateTimeEntry) {

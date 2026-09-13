@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T00:00:00Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T04:00:59Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -367,6 +367,15 @@ linked time entries, visible same-category task targets, eligible labels and
 the current timer when it belongs to the task. No neighbour raw entries are
 loaded. This supports checklist additions/updates, time recording and timer
 text, task fields, labels, follow-up tasks, relationships and migrations.
+Checklist targets use the journal metadata ID; nullable or stale legacy IDs
+inside checklist data cannot overwrite it. Chat-specific guidance allows
+migration to a supplied existing task as well as a newly proposed follow-up.
+Only a migration targeting the new follow-up shares its group ID;
+a migration to an existing task does not inherit that grouping metadata.
+An explicit checked-state request supplies the reason required for a user-set
+item. Task language may only be initialized while unset; a configured language
+must be changed through task settings. Validation repeats that restriction
+against live state before approval.
 Missing required details produce a clarification, with no proposed changes.
 
 The planner validates registry schemas, local timestamp syntax/ranges and ID
@@ -375,7 +384,22 @@ are checked against the unchanged endpoint from the live stored entry. Its outpu
 `QueryChatAnswer.proposedActions` list, with no evidence cards or durable
 conclusions. These inert arguments belong only to the chat until accepted;
 no task-agent change set exists merely because a model proposed an action.
+Invalid JSON or task-action validation gets one isolated repair completion.
+The repair carries content-free corrective guidance, not provider error text
+or partially built proposals, and remains within the input budget. A second
+failure uses normal question recovery. Transport errors and cancellation are
+not retried. Only the final valid attempt can become a proposal.
 Proposal owners must remain live, visible and in their saved categories.
+
+```mermaid
+flowchart LR
+  Request[Explicit chat request] --> Plan[Isolated action planning]
+  Plan --> Validate[JSON, schema and live target validation]
+  Validate -->|valid| Review[Pending proposal]
+  Validate -->|first failure| Repair[One isolated repair]
+  Repair --> Validate
+  Validate -->|second failure| Recovery[Question failure and Retry]
+```
 
 `QueryActionReview` renders the actual structured changes inside the answer,
 including dates, time ranges and follow-up options, with Accept and Dismiss.
@@ -420,10 +444,25 @@ stateDiagram-v2
 ```
 
 The opt-in `query_actions_eval_live_test.dart` uses the production builder and
-transport with the unmodified penguin corpus and a frozen report bundle. It
-records question-to-review time separately from each completion, and checks
-checklist/time/combined/status requests plus missing-detail, advice and quoted
-instruction controls. It never wires an approval service. Set
+transport with a frozen report bundle and a declared action-only overlay on
+the penguin database. The canonical ordinary-query corpus and expectations are
+unchanged. The overlay supplies fixed owned checklist items, completed time,
+an active timer, a label and same-category/foreign task targets, with a fixed
+local clock. Its hash and source hashes accompany every artifact.
+The cases and independent argument scorer live in
+[`query_action_eval.dart`](../../../test/features/ai/eval/support/query_action_eval.dart);
+[`query_action_eval_fixture.dart`](../../../test/features/ai/eval/support/query_action_eval_fixture.dart)
+owns the overlay. Positive cases cover every exposed task tool. Grading checks
+exact targets, requested fields, local time ranges, batch contents and
+follow-up dependency ordering, with negative controls for unsupported or
+underspecified requests, advice and quoted instructions. Passing proposal
+checks does not establish that a live mutation executed successfully.
+
+The harness records question-to-built-review time separately from each
+completion; publication and UI rendering are excluded. It never wires an
+approval service. `QUERY_ACTION_EVAL_CASES` optionally selects named cases for
+iteration; omit it for the full suite. Keep expectations fixed between matched
+runs. Set
 `LOTTI_QUERY_ACTION_EVAL_LIVE=1`, explicit `QUERY_EVAL_MODEL`, an external
 `QUERY_EVAL_OUTPUT`, `QUERY_EVAL_SUMMARY_REPORTS`, and Melious connection values
 in the environment, then run that single test through Dart MCP. Generated
