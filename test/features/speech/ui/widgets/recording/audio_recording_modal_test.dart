@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -714,6 +715,77 @@ void main() {
         await tester.pump();
         expect(ownership, [true]);
       });
+
+      for (final pendingStart in [false, true]) {
+        for (final duringExit in [false, true]) {
+          testWidgets(
+            'dismissal during ${pendingStart ? 'platform start' : 'permission'} aborts recording ${duringExit ? 'during exit' : 'after teardown'}',
+            (tester) async {
+              sizeViewport(tester);
+              final permission = Completer<bool>();
+              final start = Completer<AudioNote?>();
+              final note = AudioNote(
+                createdAt: DateTime(2024, 3, 15),
+                audioFile: 'aborted.m4a',
+                audioDirectory: '/audio/',
+                duration: Duration.zero,
+              );
+              when(
+                () => mockAudioRecorderRepository.hasPermission(),
+              ).thenAnswer(
+                (_) => pendingStart ? Future.value(true) : permission.future,
+              );
+              when(
+                () => mockAudioRecorderRepository.startRecording(),
+              ).thenAnswer((_) => start.future);
+              when(
+                () => mockAudioRecorderRepository.deleteRecording(note),
+              ).thenAnswer((_) async {});
+              final results = await pumpShowModalCapturingResult(
+                tester,
+                linkedId: 'person',
+              );
+              await tester.tap(find.text('Show Modal'));
+              await tester.pump();
+              await tester.pump(const Duration(milliseconds: 300));
+              final container = ProviderScope.containerOf(
+                tester.element(find.byType(AudioRecordingModalContent)),
+              );
+              await tester.tap(find.byKey(const ValueKey('record')));
+              await tester.pump();
+              // An outside tap dismisses the actual modal while startup is pending.
+              await tester.tapAt(const Offset(5, 5));
+              await tester.pump();
+              if (!duringExit) {
+                await tester.pump(const Duration(milliseconds: 300));
+              }
+              if (pendingStart) {
+                start.complete(note);
+              } else {
+                permission.complete(true);
+              }
+              await tester.pump();
+              await tester.pump(const Duration(milliseconds: 300));
+              expect(results, [null]);
+              expect(
+                container.read(audioRecorderControllerProvider).status,
+                AudioRecorderStatus.stopped,
+              );
+              if (pendingStart) {
+                verify(
+                  () => mockAudioRecorderRepository.stopRecording(),
+                ).called(1);
+                verify(
+                  () => mockAudioRecorderRepository.deleteRecording(note),
+                ).called(1);
+              } else {
+                verifyNever(() => mockAudioRecorderRepository.startRecording());
+              }
+              expect(tester.takeException(), isNull);
+            },
+          );
+        }
+      }
 
       testWidgets('failed save keeps the recording sheet open with an error', (
         tester,
@@ -2461,6 +2533,7 @@ class _CallbackTrackingController extends AudioRecorderController {
   Future<AudioRecordingFailure?> record({
     String? linkedId,
     bool transcriptionHandledByCaller = false,
+    bool Function()? shouldCancel,
   }) async {
     onRecordingOwnership?.call(transcriptionHandledByCaller);
     return onRecord?.call();

@@ -123,12 +123,15 @@ class _AudioRecordingModalContentState
       _starting = true;
       _failure = null;
     });
+    // A popped route remains mounted throughout its exit animation.
+    final route = ModalRoute.of(context);
     try {
       final failure = await ref
           .read(audioRecorderControllerProvider.notifier)
           .record(
             linkedId: widget.linkedId,
             transcriptionHandledByCaller: !widget.showTranscriptionOptions,
+            shouldCancel: () => !mounted || (route != null && !route.isCurrent),
           );
       if (!mounted) return;
       setState(

@@ -92,6 +92,7 @@ privacy inheritance; they are intentionally absent from the main journal list.
 |---|---|
 | Check-in selected models outside the system default | Check-ins now resolve only `ProfileResolver.resolveDefaultProfile()`. Service tests verify the exact resolved profile reaches the runner and missing configuration invokes no inference. Recorder tests verify automation stays suppressed after modal dismissal. |
 | Recording tap appears inert | Permission denial and failed start were logged but not shown. Corrected recorder returns a typed failure and recording UI displays localized recovery guidance. |
+| Dismissal during microphone startup | The modal passes a cancellation callback. Pending permission cannot start recording after dismissal; a late platform start is stopped and its file discarded. Both races have regression tests. |
 | Repeated taps overlap initialization | Reproduced while permission is pending. Start is now serialized so a second tap cannot replace the intended person. |
 | Unhandled transcript database error | Reproduced in `check_in_transcription_service_test.dart`. Read/notification failures now end the wait safely. |
 | Fast cloud failure missed | The error is keyed by the new audio entry, but the listener ignored its initial value. It now observes an error that arrived while the recorder modal was closing. |

@@ -441,6 +441,19 @@ void main() {
         },
       );
 
+      test('cancelled startup never requests microphone permission', () async {
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
+        );
+        expect(await controller.record(shouldCancel: () => true), isNull);
+        verifyNever(() => mockAudioRecorderRepository.hasPermission());
+        verifyNever(() => mockAudioRecorderRepository.startRecording());
+        expect(
+          container.read(audioRecorderControllerProvider).status,
+          AudioRecorderStatus.stopped,
+        );
+      });
+
       test('should log no permission event when permission denied', () async {
         // Arrange
         final controller = container.read(
