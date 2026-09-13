@@ -297,7 +297,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
     if (version is! GoalSpecVersionEntity) {
       return WakeResult(
         success: false,
-        error: 'goal spec head ${head.versionId} points at nothing',
+        error:
+            'goal spec head ${DomainLogger.sanitizeId(head.versionId)} '
+            'points at nothing',
       );
     }
 

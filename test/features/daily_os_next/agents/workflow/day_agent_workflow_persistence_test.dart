@@ -403,7 +403,7 @@ void main() {
       final result = await execute(workflow());
 
       expect(result.success, isFalse);
-      expect(result.error, contains('model failed'));
+      expect(result.error, 'Day agent workflow failed (_Exception)');
       final failureState = upsertedEntities.whereType<AgentStateEntity>().last;
       expect(failureState.consecutiveFailureCount, 3);
       expect(failureState.scheduledWakeAt, isNull);
@@ -436,7 +436,7 @@ void main() {
       final result = await execute(workflow());
 
       expect(result.success, isFalse);
-      expect(result.error, contains('model failed'));
+      expect(result.error, 'Day agent workflow failed (_Exception)');
       verify(
         () => domainLogger.error(
           any(),

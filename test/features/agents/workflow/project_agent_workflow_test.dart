@@ -319,7 +319,7 @@ void main() {
         });
 
         expect(result.success, isFalse);
-        expect(result.error, contains('No active project ID'));
+        expect(result.error, 'Project agent workflow failed (StateError)');
         final updatedState =
             verify(
                   () => mockSyncService.upsertEntity(captureAny()),
@@ -354,7 +354,7 @@ void main() {
         });
 
         expect(result.success, isFalse);
-        expect(result.error, contains('Project not found'));
+        expect(result.error, 'Project agent workflow failed (StateError)');
         final updatedState =
             verify(
                   () => mockSyncService.upsertEntity(captureAny()),
@@ -400,7 +400,7 @@ void main() {
         });
 
         expect(result.success, isFalse);
-        expect(result.error, contains('No inference provider'));
+        expect(result.error, 'Project agent workflow failed (StateError)');
         final updatedState =
             verify(
                   () => mockSyncService.upsertEntity(captureAny()),
@@ -450,7 +450,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('No inference provider'));
+        expect(result.error, 'Project agent workflow failed (StateError)');
       });
     });
 

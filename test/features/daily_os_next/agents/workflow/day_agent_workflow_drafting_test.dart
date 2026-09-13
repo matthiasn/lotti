@@ -36,7 +36,10 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('draft_day_plan'));
+          expect(
+            result.error,
+            'Day agent workflow failed (MissingDraftDayPlanException)',
+          );
           expect(conversationRepository.sendMessageCalls, hasLength(2));
           expect(
             conversationRepository.toolResponses.last,
@@ -685,7 +688,10 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('draft_day_plan'));
+          expect(
+            result.error,
+            'Day agent workflow failed (MissingDraftDayPlanException)',
+          );
           verify(
             () => planService.executeTool(
               agentId: agentId,
@@ -720,7 +726,10 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('draft_day_plan'));
+          expect(
+            result.error,
+            'Day agent workflow failed (MissingDraftDayPlanException)',
+          );
           expect(conversationRepository.sendMessageCalls, hasLength(2));
           expect(
             conversationRepository.sendMessageCalls[1].toolChoice,

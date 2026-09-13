@@ -40,17 +40,15 @@ void main() {
   });
 
   group('WakeResult.failed', () {
-    test("keeps a StateError message — the workflows' own abort signal", () {
+    test('reports a StateError by type only — its message may interpolate '
+        'model-emitted tool names', () {
       final result = WakeResult.failed(
-        kind: 'Project agent',
-        error: StateError('No active project ID'),
+        kind: 'Task agent',
+        error: StateError('tool "<whatever the model sent>" not allowed'),
       );
 
       expect(result.success, isFalse);
-      expect(
-        result.error,
-        'Project agent workflow failed: No active project ID',
-      );
+      expect(result.error, 'Task agent workflow failed (StateError)');
     });
 
     test('reports any other exception by type only', () {

@@ -33,18 +33,16 @@ class WakeResult {
 
   /// A failed wake whose workflow caught [error], with a bounded [WakeResult.error].
   ///
-  /// A [StateError] is the workflows' own abort signal (`No active project
-  /// ID`, `no visible reply`, drift's closed-transaction message) and its
-  /// message is kept; every other exception is reported by type only, since
-  /// provider and filesystem exceptions carry response bodies and paths that
-  /// must not reach the PII-safe error log. The catch site logs the raw
-  /// exception with its stack trace to the full log.
+  /// The exception is reported by type only — never its message. Provider and
+  /// filesystem exceptions carry response bodies and paths, and even the
+  /// workflows' own `StateError`s interpolate model-emitted tool names, none
+  /// of which may reach the PII-safe error log. The type alone still tells a
+  /// missing draft plan from an inference failure. The catch site logs the
+  /// raw exception with its stack trace to the full log.
   factory WakeResult.failed({required String kind, required Object error}) =>
       WakeResult(
         success: false,
-        error: error is StateError
-            ? '$kind workflow failed: ${error.message}'
-            : '$kind workflow failed (${error.runtimeType})',
+        error: '$kind workflow failed (${error.runtimeType})',
       );
 
   /// Whether the wake completed successfully.
