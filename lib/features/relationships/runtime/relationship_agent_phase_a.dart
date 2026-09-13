@@ -179,6 +179,9 @@ class RelationshipAgentPhaseA {
         derivation.lastCheckInAt != null &&
         (report == null || derivation.lastCheckInAt!.isAfter(report.createdAt));
 
+    // Whether this tick armed a NEW escalation record. Read after the
+    // transaction: the nudge below must not fire from inside it.
+    var armed = false;
     await _syncService.runInTransaction(() async {
       await _sweepNudges(agentId, derivation, now);
       await _upsertRegister(
@@ -195,25 +198,33 @@ class RelationshipAgentPhaseA {
         // (ADR 0039): one escalation — one briefing, at most one banner —
         // per due day. An ignored banner expires and the agent stays quiet
         // until a check-in moves the due day and mints a fresh episode.
-        final armed = await _armEscalation(
+        armed = await _armEscalation(
           relationshipEscalationWake(agentId, derivation, updatedAt: now),
         );
-        if (armed) _onEscalationArmed?.call();
       } else if (reportStale) {
         // A lapse escalation regenerates the briefing anyway, so the
         // refresh episode arms only when no lapse is arming this tick. Its
         // own episode key: consuming the lapse key early would let
         // per-episode idempotence suppress the real lapse escalation.
-        final armed = await _armEscalation(
+        armed = await _armEscalation(
           relationshipReportRefreshEscalationWake(
             agentId,
             derivation,
             updatedAt: now,
           ),
         );
-        if (armed) _onEscalationArmed?.call();
       }
     });
+
+    // Deliberately AFTER the transaction, not inside it. The nudge starts an
+    // un-awaited scan pass on the scheduled-wake manager, and a pass started
+    // inside this zone would have every one of its agent-database queries
+    // routed by drift to THIS transaction's executor — which is closed by the
+    // time the pass reaches them. That is the "transaction was used after
+    // being closed" StateError burst across every before-scan maintenance
+    // hook, not a database fault. The record is durable once the transaction
+    // has committed, so nudging afterwards is also the correct ordering.
+    if (armed) _onEscalationArmed?.call();
 
     // Deliberately AFTER the transaction, not inside it. The reminder row
     // lives in `notifications.sqlite` behind its own vector-clock scope and

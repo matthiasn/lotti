@@ -145,6 +145,16 @@ flowchart TD
 values and due `ScheduledWakeEntity` records — the Daily OS planner's day-scoped
 pre-warms (ADR 0022).
 
+Every pass — the hourly tick, the settle re-checks and a caller's
+`requestCheck()` — runs in the zone `start()` was called in. A pass is
+un-awaited and queries the agent database across many awaits, and drift routes
+each query to the transaction executor of the zone it is issued in; a pass
+started from inside a `runInTransaction` zone (a Phase A nudging right after a
+write it has not yet committed) would otherwise have its later queries land on
+that closed transaction and fail every before-scan hook at once. Callers should
+still nudge only after their transaction has committed — the zone is the
+backstop, not the contract.
+
 Restoration turns a persisted `nextWakeAt` back into an in-memory `WakeJob`:
 future deadlines re-arm the deferred drain timer, overdue deadlines enqueue
 immediately and clear the persisted marker. A completed subscription wake only

@@ -114,17 +114,31 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// generation belongs to a restarted manager, not to the pass in flight.
   int _rerunGeneration = 0;
 
+  /// The zone [start] was called in, which every pass runs in.
+  ///
+  /// A pass runs un-awaited and queries the agent database across many
+  /// awaits. Drift routes a query to the transaction executor of the zone it
+  /// is issued in, so a pass started from inside a `runInTransaction` zone
+  /// — a caller nudging after a write it has not yet committed — would have
+  /// its later queries land on a closed transaction and fail with drift's
+  /// "transaction was used after being closed" StateError, one per
+  /// maintenance hook. Running every pass in the zone the runtime started
+  /// the manager in keeps a caller's zone from poisoning the scan.
+  Zone? _homeZone;
+
   /// Runs one scan pass now (single-flighted with the periodic timer).
   ///
   /// For callers that just persisted an immediately-due record — e.g. a
   /// goal Phase A arming an escalation — and must not wait out the hourly
-  /// poll on the arming device.
+  /// poll on the arming device. Safe to call from inside a transaction zone
+  /// once the manager has been started; see [_homeZone].
   void requestCheck() {
-    unawaited(_checkAndEnqueue());
+    (_homeZone ?? Zone.current).run(() => unawaited(_checkAndEnqueue()));
   }
 
   /// Start periodic checking. Also immediately checks for missed wakes.
   void start() {
+    _homeZone = Zone.current;
     unawaited(_checkAndEnqueue());
 
     _timer?.cancel();

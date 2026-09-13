@@ -350,10 +350,15 @@ Future<String? Function()> _registerMatrixSyncStack({
             subDomain: 'vc.burn.reconcile',
           );
         }
+        // Diagnostic only (see `reservedCountersForHost`): plain reservations
+        // are never reconciled here, so the same counters surface on every
+        // launch. Logged at info, not error — as an error this one line was
+        // the most frequent "failure" in the system health report on a phone
+        // that starts the process many times a day, burying real ones.
         final reservedCounters = await syncSequenceLogService
             .reservedCountersForHost(hostId: hostId);
         if (reservedCounters.isNotEmpty) {
-          domainLogger.error(
+          domainLogger.log(
             LogDomain.sync,
             'vc.reserved.audit host=$hostId '
             'count=${reservedCounters.length} '
