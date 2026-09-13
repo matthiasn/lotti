@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/recording_style.dart';
 import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
@@ -21,7 +22,9 @@ class AudioRecordingModal {
   ///
   /// Before showing, it flips the controller's `modalVisible` flag (so the
   /// floating recording indicator hides while the sheet is up) and seeds the
-  /// optional [categoryId]; [linkedId] ties any recording to a parent entry.
+  /// [categoryId] (including clearing an earlier category when null);
+  /// [linkedId] ties any recording to a parent entry. [transcribeOnSave]
+  /// explicitly enables transcription and hides the automation checkboxes.
   /// `modalVisible` is always cleared again once the sheet is dismissed — by
   /// the stop button, back gesture, or tapping outside. [useRootNavigator]
   /// selects which navigator hosts the sheet.
@@ -36,14 +39,17 @@ class AudioRecordingModal {
     String? linkedId,
     String? categoryId,
     bool useRootNavigator = true,
+    bool transcribeOnSave = false,
   }) async {
     // Get the controller before showing the modal
     final container = ProviderScope.containerOf(context);
     final controller = container.read(audioRecorderControllerProvider.notifier)
       // Set modal visible before showing
-      ..setModalVisible(modalVisible: true);
-    if (categoryId != null) {
-      controller.setCategoryId(categoryId);
+      ..setModalVisible(modalVisible: true)
+      // An uncategorized person must not inherit an earlier category.
+      ..setCategoryId(categoryId);
+    if (transcribeOnSave) {
+      controller.setEnableSpeechRecognition(enable: true);
     }
 
     String? createdId;
@@ -60,6 +66,7 @@ class AudioRecordingModal {
           return AudioRecordingModalContent(
             linkedId: linkedId,
             categoryId: categoryId,
+            showTranscriptionOptions: !transcribeOnSave,
           );
         },
       );
@@ -89,6 +96,7 @@ class AudioRecordingModalContent extends ConsumerStatefulWidget {
     super.key,
     this.linkedId,
     this.categoryId,
+    this.showTranscriptionOptions = true,
   });
 
   /// Optional parent entry id to link any created audio entry to.
@@ -96,6 +104,9 @@ class AudioRecordingModalContent extends ConsumerStatefulWidget {
 
   /// Optional category id scoping the recording and prompt options.
   final String? categoryId;
+
+  /// Spoken check-ins have already requested a transcript at entry.
+  final bool showTranscriptionOptions;
 
   @override
   ConsumerState<AudioRecordingModalContent> createState() =>
@@ -105,6 +116,37 @@ class AudioRecordingModalContent extends ConsumerStatefulWidget {
 class _AudioRecordingModalContentState
     extends ConsumerState<AudioRecordingModalContent> {
   bool _terminalActionInProgress = false;
+  bool _starting = false;
+  String? _failure;
+
+  Future<void> _record() async {
+    if (_starting || _terminalActionInProgress) return;
+    setState(() {
+      _starting = true;
+      _failure = null;
+    });
+    try {
+      final failure = await ref
+          .read(audioRecorderControllerProvider.notifier)
+          .record(linkedId: widget.linkedId);
+      if (!mounted) return;
+      setState(
+        () => _failure = switch (failure) {
+          AudioRecordingFailure.permissionDenied =>
+            context.messages.chatInputRecordingNoMicPermission,
+          AudioRecordingFailure.startFailed =>
+            context.messages.chatInputRecordingFailed,
+          AudioRecordingFailure.busy || null => null,
+        },
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() => _failure = context.messages.chatInputRecordingFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
 
   @override
   void initState() {
@@ -145,6 +187,17 @@ class _AudioRecordingModalContentState
               ),
             ),
 
+            if (_failure != null)
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _failure!,
+                  style: context.designTokens.typography.styles.body.bodyMedium
+                      .copyWith(
+                        color: context.designTokens.colors.alert.error.ink,
+                      ),
+                ),
+              ),
             // Duration display
             Text(
               formatDuration(state.progress.toString()),
@@ -178,7 +231,8 @@ class _AudioRecordingModalContentState
 
             // Automatic prompt options (shown when category or linked task
             // may provide automatic prompts, including profile-driven skills).
-            if (widget.categoryId != null || widget.linkedId != null) ...[
+            if (widget.showTranscriptionOptions &&
+                (widget.categoryId != null || widget.linkedId != null)) ...[
               const SizedBox(height: 10),
               _buildAutomaticPromptOptions(context, controller, state, theme),
             ],
@@ -238,6 +292,14 @@ class _AudioRecordingModalContentState
     } catch (_) {}
 
     if (!mounted) return;
+
+    if (createdId == null) {
+      setState(() {
+        _terminalActionInProgress = false;
+        _failure = context.messages.chatInputRecordingFailed;
+      });
+      return;
+    }
 
     // Pop exactly once and return the created entry to [AudioRecordingModal].
     // The previous catch-all called pop a second time when the first pop or the
@@ -470,34 +532,13 @@ class _AudioRecordingModalContentState
     BuildContext context,
     AudioRecorderController controller,
     ThemeData theme,
-  ) {
-    return GestureDetector(
-      key: const ValueKey('record'),
-      onTap: () => controller.record(linkedId: widget.linkedId),
-      child: Container(
-        width: 120,
-        height: 48,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Center(
-          child: Text(
-            context.messages.audioRecordingRecord.toUpperCase(),
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  ) => DesignSystemButton(
+    key: const ValueKey('record'),
+    label: context.messages.audioRecordingRecord.toUpperCase(),
+    leadingIcon: LottiIcons.mic,
+    size: DesignSystemButtonSize.large,
+    onPressed: _starting || _terminalActionInProgress ? null : _record,
+  );
 
   Widget _buildAutomaticPromptOptions(
     BuildContext context,

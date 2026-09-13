@@ -49,6 +49,16 @@ class _Run {
     settle();
   }
 
+  void failNotifications() {
+    _updates.addError(StateError('notification stream failed'));
+    settle();
+  }
+
+  void closeNotifications() {
+    _updates.close().ignore();
+    settle();
+  }
+
   void settle([Duration by = Duration.zero]) {
     _async
       ..elapse(by)
@@ -150,6 +160,35 @@ void main() {
     ).thenAnswer((_) async {});
     stubAutomation();
     stubEntity(audioWith(null));
+  });
+
+  test('notification stream failure ends the transcript wait', () {
+    withRun((run) {
+      run.failNotifications();
+      expect(run.isDone, isTrue);
+      expect(run.result, isNull);
+      expect(run.hasListener, isFalse);
+    });
+  });
+
+  test('closed notification stream ends the transcript wait', () {
+    withRun((run) {
+      run.closeNotifications();
+      expect(run.isDone, isTrue);
+      expect(run.result, isNull);
+      expect(run.hasListener, isFalse);
+    });
+  });
+
+  test('database read failure ends the wait without an unhandled error', () {
+    when(() => journalDb.journalEntityById(audioEntryId)).thenAnswer(
+      (_) async => throw StateError('database closed'),
+    );
+    withRun((run) {
+      expect(run.isDone, isTrue);
+      expect(run.result, isNull);
+      expect(run.hasListener, isFalse);
+    });
   });
 
   group('transcript already present', () {

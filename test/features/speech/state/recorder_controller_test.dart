@@ -411,6 +411,36 @@ void main() {
 
   group('AudioRecorderController - Recording Control Methods', () {
     group('record', () {
+      test(
+        'repeated taps during permission request start only one recording',
+        () async {
+          when(() => mockAudioRecorderRepository.startRecording()).thenAnswer(
+            (_) async => AudioNote(
+              createdAt: DateTime(2026, 9, 13),
+              audioFile: 'test.m4a',
+              audioDirectory: '/audio/',
+              duration: Duration.zero,
+            ),
+          );
+          final permission = Completer<bool>();
+          when(
+            () => mockAudioRecorderRepository.hasPermission(),
+          ).thenAnswer((_) => permission.future);
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          final first = controller.record(linkedId: 'first-person');
+          final second = controller.record(linkedId: 'second-person');
+          permission.complete(true);
+          await Future.wait([first, second]);
+          verify(() => mockAudioRecorderRepository.startRecording()).called(1);
+          expect(
+            container.read(audioRecorderControllerProvider).linkedId,
+            'first-person',
+          );
+        },
+      );
+
       test('should log no permission event when permission denied', () async {
         // Arrange
         final controller = container.read(

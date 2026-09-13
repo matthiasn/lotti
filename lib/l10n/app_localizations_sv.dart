@@ -9,17 +9,6 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
-  String get speechSettingsChatAudioLabel => 'Chattljud';
-
-  @override
-  String get speechSettingsChatAudioDescription =>
-      'Förbered nya chattsvar på den här enheten så att uppspelningen börjar snabbare. Ljudet spelas bara upp när du trycker på spela upp.';
-
-  @override
-  String get speechSettingsAutoPrepareChatAudio =>
-      'Förbered chattljud automatiskt';
-
-  @override
   String get activeLabel => 'Aktiv';
 
   @override
@@ -3087,7 +3076,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
+  String get checkInAudioButton => 'Spela in en ljudkontaktlogg';
+
+  @override
   String get checkInAvoidLabel => 'Bäst att undvika';
+
+  @override
+  String get checkInCaptureChoiceTitle => 'Hur vill du registrera kontakten?';
 
   @override
   String get checkInDateLabel => 'När?';
@@ -3139,7 +3134,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videosamtal';
 
   @override
-  String get checkInMoreCaption => 'Ämnen · nästa gång · undvik';
+  String get checkInMoreCaption => 'Känsla · ämnen · nästa gång';
 
   @override
   String get checkInMoreSection => 'Mer';
@@ -3155,6 +3150,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Nästa gång: var uppmärksam på';
+
+  @override
+  String get checkInPreparingLabel => 'Förbereder ljud…';
 
   @override
   String get checkInSaveButton => 'Spara avstämning';
@@ -3220,11 +3218,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen transkription kom tillbaka. Du kan skriva den själv.';
 
   @override
+  String get checkInTranscriptReady =>
+      'Transkriptionen är klar. Läs igenom den innan du sparar.';
+
+  @override
   String get checkInTranscriptUnavailable =>
-      'Transkription är inte uppsatt för den här personen. Lägg till en ljudmodell och slå på automatisk inferens för deras kategori, eller skriv avstämningen.';
+      'Transkription är inte inställd för den här personen. Lägg till en transkriptionsmodell i AI-inställningarna eller skriv din kontaktlogg.';
 
   @override
   String get checkInWhenAndHowLong => 'När och hur länge';
+
+  @override
+  String get checkInWriteButton => 'Skriv en kontaktlogg';
 
   @override
   String get checklistAddItem => 'Lägg till ett nytt föremål';
@@ -13743,6 +13748,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Förbered chattljud automatiskt';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Förbered nya chattsvar på den här enheten så att uppspelningen börjar snabbare. Ljudet spelas bara upp när du trycker på spela upp.';
+
+  @override
+  String get speechSettingsChatAudioLabel => 'Chattljud';
 
   @override
   String get speechSettingsModelDescription => 'Talmodell på enheten';

@@ -195,23 +195,36 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
                         color: tokens.colors.background.level02,
                       );
                     }
-                    Widget surface(Size? imageSize) => GestureDetector(
+                    Widget surface(Size? imageSize) => RawGestureDetector(
                       key: const ValueKey('avatar-crop-viewport'),
                       behavior: HitTestBehavior.opaque,
-                      onScaleStart: (_) => _gestureScale = 1,
-                      onScaleUpdate: (details) {
-                        // One finger drags; two fingers only zoom. Two
-                        // fingers arrive as separate events, each shifting
-                        // the focal point, and panning on those would drift
-                        // the picture through every pinch.
-                        if (details.pointerCount == 1 &&
-                            details.focalPointDelta != Offset.zero) {
-                          _pan(details.focalPointDelta, side, imageSize);
-                        }
-                        if (details.scale != _gestureScale) {
-                          _zoom(details.scale / _gestureScale);
-                          _gestureScale = details.scale;
-                        }
+                      gestures: {
+                        _CropScaleGestureRecognizer:
+                            GestureRecognizerFactoryWithHandlers<
+                              _CropScaleGestureRecognizer
+                            >(
+                              _CropScaleGestureRecognizer.new,
+                              (recognizer) => recognizer
+                                ..onStart = (_) {
+                                  _gestureScale = 1;
+                                }
+                                ..onUpdate = (details) {
+                                  // A trackpad reports zero touch pointers. Both
+                                  // it and a one-finger drag translate the crop.
+                                  if (details.pointerCount <= 1 &&
+                                      details.focalPointDelta != Offset.zero) {
+                                    _pan(
+                                      details.focalPointDelta,
+                                      side,
+                                      imageSize,
+                                    );
+                                  }
+                                  if (details.scale != _gestureScale) {
+                                    _zoom(details.scale / _gestureScale);
+                                    _gestureScale = details.scale;
+                                  }
+                                },
+                            ),
                       },
                       child: ClipRect(
                         child: Stack(
@@ -303,4 +316,21 @@ class _CircleMaskPainter extends CustomPainter {
   @override
   bool shouldRepaint(_CircleMaskPainter oldDelegate) =>
       scrim != oldDelegate.scrim;
+}
+
+/// The photo owns gestures starting inside its viewport. Otherwise the
+/// sheet's vertical drag wins before the scale recognizer crosses its pan
+/// threshold, so pinching works while ordinary vertical panning does not.
+class _CropScaleGestureRecognizer extends ScaleGestureRecognizer {
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    super.addAllowedPointer(event);
+    resolve(GestureDisposition.accepted);
+  }
+
+  @override
+  void addAllowedPointerPanZoom(PointerPanZoomStartEvent event) {
+    super.addAllowedPointerPanZoom(event);
+    resolve(GestureDisposition.accepted);
+  }
 }

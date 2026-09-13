@@ -9,17 +9,6 @@ class AppLocalizationsCs extends AppLocalizations {
   AppLocalizationsCs([String locale = 'cs']) : super(locale);
 
   @override
-  String get speechSettingsChatAudioLabel => 'Zvuk chatu';
-
-  @override
-  String get speechSettingsChatAudioDescription =>
-      'Připrav nové odpovědi chatu v tomto zařízení, aby přehrávání začalo dříve. Zvuk se přehraje až po klepnutí na přehrát.';
-
-  @override
-  String get speechSettingsAutoPrepareChatAudio =>
-      'Automaticky připravovat zvuk chatu';
-
-  @override
   String get activeLabel => 'Aktivní';
 
   @override
@@ -3119,7 +3108,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
 
   @override
+  String get checkInAudioButton => 'Nahrát zvukový záznam kontaktu';
+
+  @override
   String get checkInAvoidLabel => 'Raději se vyhnout';
+
+  @override
+  String get checkInCaptureChoiceTitle => 'Jak chceš zaznamenat kontakt?';
 
   @override
   String get checkInDateLabel => 'Kdy?';
@@ -3171,7 +3166,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Videohovor';
 
   @override
-  String get checkInMoreCaption => 'Témata · příště · vyhnout se';
+  String get checkInMoreCaption => 'Pocit · témata · příště';
 
   @override
   String get checkInMoreSection => 'Více';
@@ -3187,6 +3182,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Příště se zaměřit na';
+
+  @override
+  String get checkInPreparingLabel => 'Příprava zvuku…';
 
   @override
   String get checkInSaveButton => 'Uložit check-in';
@@ -3253,11 +3251,18 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přepis nedorazil. Můžeš text napsat sám.';
 
   @override
+  String get checkInTranscriptReady =>
+      'Přepis je připravený. Před uložením ho zkontroluj.';
+
+  @override
   String get checkInTranscriptUnavailable =>
-      'Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.';
+      'Pro tuto osobu není nastaven přepis. Přidej model přepisu v nastavení AI nebo záznam kontaktu napiš.';
 
   @override
   String get checkInWhenAndHowLong => 'Kdy a jak dlouho';
+
+  @override
+  String get checkInWriteButton => 'Napsat záznam kontaktu';
 
   @override
   String get checklistAddItem => 'Přidat novou položku';
@@ -13911,6 +13916,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechNoAudioRecorded => 'Nebyl nahrán žádný zvuk. Zkus to znovu.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Automaticky připravovat zvuk chatu';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Připrav nové odpovědi chatu v tomto zařízení, aby přehrávání začalo dříve. Zvuk se přehraje až po klepnutí na přehrát.';
+
+  @override
+  String get speechSettingsChatAudioLabel => 'Zvuk chatu';
 
   @override
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';

@@ -674,6 +674,39 @@ void main() {
         expect(results, ['audio-entry-42']);
       });
 
+      testWidgets('failed save keeps the recording sheet open with an error', (
+        tester,
+      ) async {
+        sizeViewport(tester);
+        final results = await pumpShowModalCapturingResult(
+          tester,
+          linkedId: 'relationship-1',
+          extraOverrides: [
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: AudioRecorderState(
+                  status: AudioRecorderStatus.recording,
+                  progress: const Duration(seconds: 3),
+                  vu: 1,
+                  dBFS: -24,
+                  showIndicator: false,
+                  modalVisible: true,
+                ),
+              ),
+            ),
+          ],
+        );
+        await tester.tap(find.text('Show Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Stop'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(results, isEmpty);
+        expect(find.text('Recording failed. Please try again.'), findsOne);
+        expect(find.byType(AudioRecordingModalContent), findsOne);
+      });
+
       testWidgets('resolves to null when the sheet is dismissed', (
         tester,
       ) async {
@@ -1009,6 +1042,27 @@ void main() {
         verify(
           () => mockAudioRecorderRepository.startRecording(),
         ).called(1);
+      });
+
+      testWidgets('permission denial is visible and recording can be retried', (
+        tester,
+      ) async {
+        stubCategory();
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => false);
+        await pumpModalContent(tester);
+        await tester.tap(find.byKey(const ValueKey('record')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.textContaining("Lotti can't use the microphone"), findsOne);
+        verifyNever(() => mockAudioRecorderRepository.startRecording());
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => true);
+        await tester.tap(find.byKey(const ValueKey('record')));
+        await tester.pump();
+        verify(() => mockAudioRecorderRepository.startRecording()).called(1);
       });
 
       testWidgets('localizes the record action', (tester) async {
@@ -2252,7 +2306,7 @@ class _CallbackTrackingController extends AudioRecorderController {
   }
 
   @override
-  Future<void> record({String? linkedId}) async {}
+  Future<AudioRecordingFailure?> record({String? linkedId}) async => null;
 
   @override
   Future<String?> stop() async {

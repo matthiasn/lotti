@@ -171,7 +171,10 @@ class _GeneratedFallbackRankScenario {
 
   String modelIdAt(int index) => 'rank-model-$index';
 
-  String providerModelIdAt(int index) => 'synthetic-stt-model-$index';
+  String providerModelIdAt(int index) =>
+      providerTypes[index] == InferenceProviderType.sherpa
+      ? 'tiny'
+      : 'synthetic-stt-model-$index';
 
   @override
   String toString() {
@@ -421,6 +424,139 @@ void main() {
           createdAt: DateTime(2024, 3, 15),
         )
         as AiConfigModel;
+  }
+
+  for (final cloudAvailable in [true, false]) {
+    test('automatic fallback prefers cloud and bounds local size '
+        '(cloud=$cloudAvailable)', () async {
+      final cloud = makeProvider(
+        id: 'cloud',
+        type: InferenceProviderType.melious,
+        apiKey: 'test-key',
+      );
+      final local = makeProvider(
+        id: 'local',
+        type: InferenceProviderType.sherpa,
+      );
+      final models = [
+        makeModel(
+          id: 'large',
+          name: 'A large',
+          providerId: local.id,
+          providerModelId: 'large-v3',
+        ),
+        makeModel(
+          id: 'tiny',
+          name: 'Z tiny',
+          providerId: local.id,
+          providerModelId: 'tiny',
+        ),
+        if (cloudAvailable) makeModel(id: 'cloud-model', providerId: cloud.id),
+      ];
+      when(
+        () => mockResolver.resolveForSubject('task-1'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => models);
+      for (final provider in [cloud, local]) {
+        when(
+          () => mockAiConfig.getConfigById(provider.id),
+        ).thenAnswer((_) async => provider);
+      }
+      final subject = ProfileAutomationService(
+        resolver: mockResolver,
+        aiConfigRepository: mockAiConfig,
+        categoryAutomationLookup: (_) async => true,
+        isEmbeddedModelInstalled: (_) async => true,
+      );
+      final result = await subject.tryTranscribe(subjectId: 'task-1');
+      expect(
+        result.resolvedProfile?.transcriptionModel?.id,
+        cloudAvailable ? 'cloud-model' : 'tiny',
+      );
+    });
+  }
+
+  test(
+    'cloud fallback chooses Whisper before an alphabetically earlier audio model',
+    () async {
+      final provider = makeProvider(
+        id: 'cloud',
+        type: InferenceProviderType.melious,
+        apiKey: 'test-key',
+      );
+      when(
+        () => mockResolver.resolveForSubject('task-1'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockAiConfig.getConfigById(provider.id),
+      ).thenAnswer((_) async => provider);
+      when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
+        (_) async => [
+          makeModel(
+            id: 'chat',
+            name: 'A Voxtral',
+            providerId: provider.id,
+            providerModelId: 'voxtral-small',
+          ),
+          makeModel(
+            id: 'whisper',
+            name: 'Z Whisper',
+            providerId: provider.id,
+            providerModelId: 'whisper-large-v3',
+          ),
+        ],
+      );
+      final result = await service.tryTranscribe(subjectId: 'task-1');
+      expect(result.resolvedProfile?.transcriptionModel?.id, 'whisper');
+    },
+  );
+
+  for (final modelId in [
+    'tiny',
+    'base',
+    'small',
+    'medium',
+    'large-v3',
+    'unknown',
+  ]) {
+    test(
+      'native fallback bounds admission before readiness checks ($modelId)',
+      () async {
+        final provider = makeProvider(
+          id: 'embedded',
+          type: InferenceProviderType.sherpa,
+        );
+        when(
+          () => mockResolver.resolveForSubject('task-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigById(provider.id),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            makeModel(providerId: provider.id, providerModelId: modelId),
+          ],
+        );
+        var readinessChecks = 0;
+        final subject = ProfileAutomationService(
+          resolver: mockResolver,
+          aiConfigRepository: mockAiConfig,
+          categoryAutomationLookup: (_) async => true,
+          isEmbeddedModelInstalled: (_) async {
+            readinessChecks++;
+            return true;
+          },
+        );
+        final result = await subject.tryTranscribe(subjectId: 'task-1');
+        final allowed = modelId == 'tiny' || modelId == 'base';
+        expect(result.handled, allowed);
+        expect(readinessChecks, allowed ? 1 : 0);
+      },
+    );
   }
 
   for (final installed in [true, false, null]) {
@@ -2030,8 +2166,20 @@ void main() {
         final winnerProvider = result.resolvedProfile!.transcriptionProvider!;
         final winnerType = winnerProvider.inferenceProviderType;
 
-        if (scenario.providerTypes.contains(InferenceProviderType.sherpa)) {
-          expect(winnerType, InferenceProviderType.sherpa, reason: '$scenario');
+        if (scenario.providerTypes.contains(InferenceProviderType.melious)) {
+          expect(
+            winnerType,
+            InferenceProviderType.melious,
+            reason: '$scenario',
+          );
+        } else if (scenario.providerTypes.contains(
+          InferenceProviderType.whisper,
+        )) {
+          expect(
+            winnerType,
+            InferenceProviderType.whisper,
+            reason: '$scenario',
+          );
         } else if (scenario.providerTypes.contains(
           InferenceProviderType.mistral,
         )) {
@@ -2040,12 +2188,12 @@ void main() {
             InferenceProviderType.mistral,
             reason: '$scenario',
           );
-        } else if (scenario.providerTypes.contains(
-          InferenceProviderType.melious,
+        } else if (scenario.providerTypes.any(
+          (type) => type != InferenceProviderType.sherpa,
         )) {
           expect(
             winnerType,
-            InferenceProviderType.melious,
+            isNot(InferenceProviderType.sherpa),
             reason: '$scenario',
           );
         }

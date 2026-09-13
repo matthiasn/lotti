@@ -249,7 +249,10 @@ load-bearing:
   drag moves against, comes from the file's header (`FileImageSize` over
   `readImageFileSize`), never from decoding the photograph; and the wheel
   registers with the pointer-signal resolver, so a notch over the picture
-  zooms it without also scrolling the sheet.
+  zooms it without also scrolling the sheet. The viewport's scale recognizer
+  claims touch and trackpad gestures on pointer-down so the surrounding sheet
+  cannot win a vertical drag before the photo starts panning. One-finger and
+  trackpad translation use the existing clamped crop geometry.
 - **Removing clears the reference and keeps the entry**, the task cover-art
   precedent (`setCoverArt(null)`): taking a picture off a person is not
   deleting it from the journal.
@@ -950,17 +953,18 @@ tool does not create Daily OS blocks or OS reminders.
 ## The check-in capture sheet
 
 `showCheckInCaptureSheet` and `showCheckInEditSheet` ([check_in_capture_sheet.dart](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart))
-open one form (design 2026-09-06 §5) in the responsive modal — a bottom sheet
-on a phone, a dialog on desktop — in the order the design argued for: how it
-felt (the sentiment chips, optional) → what you talked about (the narrative)
-→ when and how long (the type chips, a
-*Started* tile and a *Duration* tile) → *More*, folded, for the topics and the
-two next-time fields; it opens unfolded when the check-in being edited already
-carries any of them. Save is pinned. The form has no actions of its own: after
+open one form in a responsive modal — a bottom sheet on a phone, a dialog
+on desktop. New check-ins first offer Write or Record audio; an explicit
+`startSpeaking` bypasses that choice for a direct doorway. The chooser closes
+before the form opens. Editing goes directly to the prefilled form.
+The order is narrative → when and how long (interaction type, Started and
+Duration) → More (optional sentiment, topics and next-time guidance). More
+opens unfolded when the edited check-in already contains sentiment, topics or
+guidance. Save is pinned. The form has no actions of its own: after
 each frame it publishes `save`, `delete` and `canSave` through a
 `CheckInFormHandle` (a `ChangeNotifier`), and `CheckInStickyActions` in the
-modal's sticky bar renders from it — Save held while a save or a transcript is
-in flight, Delete only while editing, bottom-left on the desktop dialog.
+modal's sticky bar renders from it — Save held while recording preparation,
+save or transcription is in flight, Delete only while editing, bottom-left on the desktop dialog.
 
 ```mermaid
 sequenceDiagram
@@ -1077,7 +1081,10 @@ need.
 The person page's microphone opens the capture sheet with `startSpeaking`,
 which launches the shared recorder after the first frame and hands the
 transcript back to the user to edit. The narrative has no duplicate microphone;
-a live-region caption announces transcription while Save remains disabled.
+live-region captions announce preparation, transcription and readiness while
+Save remains disabled until capture/processing ends. Failed preparation or
+transcription offers a retry. Preparation reads have a 15-second deadline and
+are caught by the same error boundary as recorder launch and transcript waits.
 Automated transcription used to be task-shaped; the shared pipeline now
 resolves the relationship as its subject.
 
@@ -1160,15 +1167,16 @@ bridges the gap by subscribing to `UpdateNotifications.updateStream` *before*
 its first read (a transcript landing between the two is not missed) and
 re-reading the audio entry on every notification carrying its id. An empty
 `entryText` reads as "not yet", because the audio entry's own creation
-notification arrives long before any run finishes. The wait ends four ways:
-the transcript arrives; the run resolves no model, which cancels the wait
-immediately; the run *fails*; or `checkInTranscriptTimeout` (5 minutes)
-expires. `CheckInTranscriptWait.cancel` is the manual exit, called from the
+notification arrives long before any run finishes. The wait ends when the
+transcript arrives, no model resolves, inference fails, database reads or the
+notification stream fail, the stream closes, or `checkInTranscriptTimeout`
+(5 minutes) expires. Database failures are caught inside each asynchronous
+read, including reads launched from a notification callback. `CheckInTranscriptWait.cancel` is the manual exit, called from the
 sheet's `dispose` so a dismissed sheet stops re-reading the database.
 
 **The failure exit needs two signals, because one run is not always ours.**
-`SkillInferenceRunner.runTranscription` wraps its whole body in
-`_withStatusTracking`, which catches every exception, logs it, publishes it
+`SkillInferenceRunner.runTranscription` wraps its inference body (after target
+resolution) in `_withStatusTracking`, which catches exceptions, logs them, publishes them
 on `inferenceStatusControllerProvider` / `inferenceErrorControllerProvider`
 and then **returns normally**. It does not throw, and a failed run writes no
 `entryText` — so to a waiting caller a provider outage is indistinguishable
@@ -1187,22 +1195,20 @@ followed by a generic "no transcript came back":
   `ref.listenManual`, cancelling the wait on the first non-empty detail. That
   controller is set by **whichever path ran**, so it covers both, and it
   carries the provider's verbatim reason (`HTTP 503 · Melious · …`) into the
-  toast rather than a generic refusal. `listenManual` does not fire for the
-  current value, which is what keeps a stale detail from an earlier recording
-  from aborting the run the user just started.
+  toast rather than a generic refusal. `fireImmediately: true` checks the
+  current value too: this controller is keyed by the newly created audio id,
+  and a fast automatic run may fail before the recorder finishes closing.
 
 Task and journal audio never had this problem: `entry_details_page` and
 `task_details_page` mount `AiRunningDecoderBars`, which already listens to the
 same error controller and raises a toast. The check-in sheet is the surface
 that waits on the transcript itself, so it is the surface that has to.
 
-The recording sheet's own **speech-recognition opt-out** is one more exit.
-`tryTranscribe` checks it before anything else, so unchecking it means no run
-at all — and `hasAutomatedSkillType`, the pre-flight probe, cannot see it. The
-sheet therefore re-reads `AudioRecorderState.enableSpeechRecognition` after
-the recorder closes (the controller keeps the choice past `stop`) and skips
-the wait outright, rather than holding "Transcribing…" for five minutes to
-reach the answer the user already gave.
+The spoken-check-in launcher uses `transcribeOnSave: true`. That explicitly
+enables speech recognition and hides the shared recorder's transcription
+checkboxes. A previous recording's opt-out cannot cancel this new, explicit
+request. Uncategorized recordings also clear the recorder's previous category.
+Ordinary audio recording still offers its existing per-recording choice.
 
 Two invariants hold regardless of what comes back:
 

@@ -552,10 +552,15 @@ class ProfileAutomationService {
       }
 
       if (providerConfig.inferenceProviderType ==
-              InferenceProviderType.sherpa &&
-          !(await isEmbeddedModelInstalled?.call(model.providerModelId) ??
-              false)) {
-        continue;
+          InferenceProviderType.sherpa) {
+        // Automatic discovery must never load a multi-gigabyte native model
+        // just because its display name sorts first. Larger models remain
+        // available through an explicitly selected inference profile.
+        if (!const {'tiny', 'base'}.contains(model.providerModelId) ||
+            !(await isEmbeddedModelInstalled?.call(model.providerModelId) ??
+                false)) {
+          continue;
+        }
       }
       candidates.add((model: model, provider: providerConfig));
     }
@@ -624,17 +629,36 @@ class ProfileAutomationService {
       left,
     ).compareTo(_fallbackCandidateRank(right));
     if (rankComparison != 0) return rankComparison;
-    return left.model.name.compareTo(right.model.name);
+    if (left.provider.inferenceProviderType == InferenceProviderType.melious &&
+        right.provider.inferenceProviderType == InferenceProviderType.melious) {
+      // Melious also exposes audio chat models. Prefer its dedicated Whisper
+      // route rather than selecting an arbitrary audio model by display name.
+      final leftWhisper = left.model.providerModelId.toLowerCase().contains(
+        'whisper',
+      );
+      final rightWhisper = right.model.providerModelId.toLowerCase().contains(
+        'whisper',
+      );
+      if (leftWhisper != rightWhisper) return leftWhisper ? -1 : 1;
+    }
+    final nameComparison = left.model.name.compareTo(right.model.name);
+    return nameComparison != 0
+        ? nameComparison
+        : left.model.id.compareTo(right.model.id);
   }
 
   int _fallbackCandidateRank(_TranscriptionFallbackCandidate candidate) {
     final type = candidate.provider.inferenceProviderType;
 
-    if (type == InferenceProviderType.sherpa) return 0;
+    // Prefer configured cloud speech services; native inference is a last
+    // resort when no server model is configured, never a retry on HTTP error.
+    if (type == InferenceProviderType.melious) return 0;
+    if (type == InferenceProviderType.whisper) return 1;
     if (type == InferenceProviderType.mistral) return 3;
-    if (type == InferenceProviderType.melious) return 4;
     if (type == InferenceProviderType.openAi) return 5;
-    if (type == InferenceProviderType.whisper) return 6;
+    if (type == InferenceProviderType.sherpa) {
+      return candidate.model.providerModelId == 'tiny' ? 20 : 21;
+    }
     if (type == InferenceProviderType.voxtral) return 7;
     return 10;
   }

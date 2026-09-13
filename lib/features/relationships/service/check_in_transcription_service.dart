@@ -184,13 +184,36 @@ class CheckInTranscriptionService {
     }
 
     Future<void> check() async {
-      final transcript = await _readTranscript(audioEntryId);
-      if (transcript != null) finish(transcript);
+      if (completer.isCompleted) return;
+      try {
+        final transcript = await _readTranscript(audioEntryId);
+        if (transcript != null) finish(transcript);
+      } catch (exception, stackTrace) {
+        developer.log(
+          'Could not read the check-in transcript',
+          name: _logTag,
+          error: exception,
+          stackTrace: stackTrace,
+        );
+        finish(null);
+      }
     }
 
-    subscription = _updateNotifications.updateStream.listen((affectedIds) {
-      if (affectedIds.contains(audioEntryId)) unawaited(check());
-    });
+    subscription = _updateNotifications.updateStream.listen(
+      (affectedIds) {
+        if (affectedIds.contains(audioEntryId)) unawaited(check());
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        developer.log(
+          'Check-in transcript notifications failed',
+          name: _logTag,
+          error: error,
+          stackTrace: stackTrace,
+        );
+        finish(null);
+      },
+      onDone: () => finish(null),
+    );
     deadline = Timer(timeout, () => finish(null));
 
     unawaited(check());

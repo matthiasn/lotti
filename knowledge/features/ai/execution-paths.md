@@ -164,6 +164,14 @@ synthesises a profile-shaped result from any configured speech-to-text model
 without consulting a profile at all, so leaving it ungated would have preserved
 exactly the behaviour the switch is meant to make explicit.
 
+Direct discovery prefers Melious, then a configured Whisper server, followed
+by other server providers. Within Melious, Whisper models precede audio chat
+models. Installed native Whisper tiny/base models are last;
+larger or unknown native ids are excluded before readiness checks. Tiny wins
+over base, then display name and config id make ties deterministic. Explicit
+profile assignments retain their selected model. This is configuration fallback,
+not failover: a cloud request error never silently retries on-device.
+
 Because the fallback needs no profile, the settings switch is offered whenever
 *either* the selected profile carries automated skills *or* the fallback could
 run (`categoryAutomationAvailableProvider`). This keeps recording automation

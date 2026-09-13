@@ -51,7 +51,9 @@ is closed. The deterministic cadence tier does not require an AI model.
 
 ## Capturing and linking
 
-Check-ins are user-authored. Voice capture records against the person,
+Check-ins are user-authored. New check-ins offer Write or Record audio; the
+review form leads with the narrative and groups optional details under More.
+Voice capture records against the person,
 transcribes with their inference configuration and fills the narrative for
 review; it never saves automatically or overwrites existing typed text.
 A missing transcription model is explained before recording. Category

@@ -102,6 +102,16 @@ stateDiagram-v2
 If paused it resumes; if already recording it stops and saves; otherwise it
 starts a new recording.
 
+Concurrent starts are rejected with `AudioRecordingFailure.busy` before changing
+the linked subject. Permission denial and failed starts return typed failures
+for localized UI feedback rather than silently swallowing the tap. The modal
+also disables Record while initialization is pending. A null stop/save result
+keeps the modal open with an error instead of dismissing as though it succeeded.
+`transcribeOnSave` lets a spoken check-in explicitly enable transcription and
+hide unrelated automation controls. Opening a new recording clears a previous
+category even when its new category is null.
+
+
 **Both `stop()` and `cancel()` land in `Stopped`, but only `stop()` persists.**
 `stop()` creates a `JournalAudio` and fires automatic prompts; `cancel()` stops
 the recorder, **deletes the partial file** and creates no entry — nothing is

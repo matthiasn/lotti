@@ -180,9 +180,11 @@ English default must not masquerade as multilingual automatic detection.
 
 # Selection and sync
 
-Installed sherpa models precede HTTP providers in automatic transcription
-selection; model names break ties. Uninstalled models are excluded from direct
-fallback and capture discovery. Explicit profile targets remain explicit: a
+Profile automation's direct transcription discovery prefers server providers
+and bounds its native fallback to small installed models; the ordering contract
+is in [AI execution paths](execution-paths.md). Independent batch audio capture
+still has its own selection policy in `AudioTranscriptionService`.
+Uninstalled models are excluded from both paths. Explicit profile targets remain explicit: a
 missing local model fails instead of sending the recording elsewhere.
 
 Sherpa counts as local for profile locality and remains available on mobile.

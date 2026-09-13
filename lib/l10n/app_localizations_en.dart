@@ -9,17 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get speechSettingsChatAudioLabel => 'Chat audio';
-
-  @override
-  String get speechSettingsChatAudioDescription =>
-      'Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.';
-
-  @override
-  String get speechSettingsAutoPrepareChatAudio =>
-      'Prepare chat audio automatically';
-
-  @override
   String get activeLabel => 'Active';
 
   @override
@@ -3063,7 +3052,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'The recording was captured, but transcribing it failed. Please try again.';
 
   @override
+  String get checkInAudioButton => 'Record an audio check-in';
+
+  @override
   String get checkInAvoidLabel => 'Better to avoid';
+
+  @override
+  String get checkInCaptureChoiceTitle => 'How would you like to check in?';
 
   @override
   String get checkInDateLabel => 'When?';
@@ -3115,7 +3110,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInInteractionVideoCall => 'Video call';
 
   @override
-  String get checkInMoreCaption => 'Topics · next time · avoid';
+  String get checkInMoreCaption => 'Feeling · topics · next time';
 
   @override
   String get checkInMoreSection => 'More';
@@ -3131,6 +3126,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Next time, pay attention to';
+
+  @override
+  String get checkInPreparingLabel => 'Preparing audio…';
 
   @override
   String get checkInSaveButton => 'Save check-in';
@@ -3197,11 +3195,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'No transcript came back. You can type it instead.';
 
   @override
+  String get checkInTranscriptReady =>
+      'Transcript ready. Review it before saving.';
+
+  @override
   String get checkInTranscriptUnavailable =>
-      'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.';
+      'Transcription is not set up for this person. Add a transcription model in AI settings, or write your check-in.';
 
   @override
   String get checkInWhenAndHowLong => 'When and how long';
+
+  @override
+  String get checkInWriteButton => 'Write a check-in';
 
   @override
   String get checklistAddItem => 'Add a new item';
@@ -13649,6 +13654,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechNoAudioRecorded => 'No audio was recorded. Try again.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Prepare chat audio automatically';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.';
+
+  @override
+  String get speechSettingsChatAudioLabel => 'Chat audio';
 
   @override
   String get speechSettingsModelDescription => 'On-device speech model';
