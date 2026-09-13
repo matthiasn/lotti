@@ -82,7 +82,9 @@ void main() {
   });
 
   group('showCheckInTypePicker', () {
-    Future<CheckInInteractionType?> open(
+    /// Opens the picker and hands back a reader for what it resolved to,
+    /// for the test to call once it has tapped or dismissed.
+    Future<CheckInInteractionType? Function()> open(
       WidgetTester tester, {
       required CheckInInteractionType current,
     }) async {
@@ -107,13 +109,16 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
       expect(resolved, isFalse);
-      return picked;
+      return () {
+        expect(resolved, isTrue, reason: 'the picker has resolved');
+        return picked;
+      };
     }
 
     testWidgets('lists every kind and resolves to the tapped one', (
       tester,
     ) async {
-      await open(tester, current: CheckInInteractionType.call);
+      final result = await open(tester, current: CheckInInteractionType.call);
       expect(find.text('How did you connect?'), findsOneWidget);
       for (final type in CheckInInteractionType.values) {
         expect(
@@ -124,13 +129,15 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('check-in-type-message')));
       await tester.pumpAndSettle();
       expect(find.text('How did you connect?'), findsNothing);
+      expect(result(), CheckInInteractionType.message);
     });
 
     testWidgets('dismissing resolves to nothing', (tester) async {
-      await open(tester, current: CheckInInteractionType.call);
+      final result = await open(tester, current: CheckInInteractionType.call);
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
       expect(find.text('How did you connect?'), findsNothing);
+      expect(result(), isNull);
     });
   });
 }

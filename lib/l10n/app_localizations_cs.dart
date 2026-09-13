@@ -3265,7 +3265,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInReRecordButton => 'Nahrát znovu';
 
   @override
-  String get checkInSaveBlockedEmpty => 'K uložení stačí pár slov';
+  String get checkInSaveBlockedEmpty => 'Napiš pár slov, aby šlo uložit';
 
   @override
   String get checkInSaveBlockedRecording => 'Pro uložení zastav nahrávání';
@@ -11849,7 +11849,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'stav $age · $band';
+    return 'aktualizováno $age · $band';
   }
 
   @override
@@ -11922,8 +11922,9 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count navrženo',
-      one: '1 navrženo',
+      other: '$count návrhů',
+      few: '$count návrhy',
+      one: '1 návrh',
     );
     return '$_temp0';
   }
@@ -11936,7 +11937,7 @@ class AppLocalizationsCs extends AppLocalizations {
       other: 'Čte $count check-inů. Obvykle do minuty.',
       few: 'Čte $count check-iny. Obvykle do minuty.',
       one: 'Čte 1 check-in. Obvykle do minuty.',
-      zero: 'Čte osobu. Obvykle do minuty.',
+      zero: 'Připravuje briefing. Obvykle do minuty.',
     );
     return '$_temp0';
   }

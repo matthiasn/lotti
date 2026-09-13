@@ -11848,7 +11848,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'de $age · $band';
+    return 'actualizado $age · $band';
   }
 
   @override
@@ -11932,7 +11932,7 @@ class AppLocalizationsEs extends AppLocalizations {
       locale: localeName,
       other: 'Leyendo $count check-ins. Suele tardar menos de un minuto.',
       one: 'Leyendo 1 check-in. Suele tardar menos de un minuto.',
-      zero: 'Leyendo a la persona. Suele tardar menos de un minuto.',
+      zero: 'Preparando el briefing. Suele tardar menos de un minuto.',
     );
     return '$_temp0';
   }

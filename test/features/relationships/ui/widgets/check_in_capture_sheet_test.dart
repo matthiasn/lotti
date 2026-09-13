@@ -1052,6 +1052,11 @@ void main() {
       expect(inlineRecorder, findsNothing);
       expect(find.text("Lotti can't use the microphone"), findsOneWidget);
       expect(saveReason(tester), 'Add a few words to save');
+      expect(
+        recorder.modalVisibleLog,
+        [true, false],
+        reason: 'the floating indicator is given back on a failed start',
+      );
 
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
       await tester.pump();

@@ -3223,7 +3223,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInReRecordButton => 'Optag igen';
 
   @override
-  String get checkInSaveBlockedEmpty => 'Et par ord er nok for at gemme';
+  String get checkInSaveBlockedEmpty => 'Tilføj et par ord for at gemme';
 
   @override
   String get checkInSaveBlockedRecording => 'Stop optagelsen for at gemme';
@@ -11681,7 +11681,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'pr. $age · $band';
+    return 'opdateret $age · $band';
   }
 
   @override
@@ -11752,8 +11752,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count foreslået',
-      one: '1 foreslået',
+      other: '$count forslag',
+      one: '1 forslag',
     );
     return '$_temp0';
   }
@@ -11765,7 +11765,7 @@ class AppLocalizationsDa extends AppLocalizations {
       locale: localeName,
       other: 'Læser $count check-ins. Tager som regel under et minut.',
       one: 'Læser 1 check-in. Tager som regel under et minut.',
-      zero: 'Læser personen. Tager som regel under et minut.',
+      zero: 'Forbereder briefingen. Tager som regel under et minut.',
     );
     return '$_temp0';
   }

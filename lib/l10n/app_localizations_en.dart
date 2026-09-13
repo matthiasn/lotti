@@ -11710,7 +11710,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: 'Reading $count check-ins. Usually under a minute.',
       one: 'Reading 1 check-in. Usually under a minute.',
-      zero: 'Reading the person. Usually under a minute.',
+      zero: 'Preparing the briefing. Usually under a minute.',
     );
     return '$_temp0';
   }

@@ -176,10 +176,24 @@ void main() {
     expect(find.text('Log check-in'), findsNothing);
   });
 
-  testWidgets('the height is the avatar between its paddings', (tester) async {
+  testWidgets('the height is the taller of the avatar and the two text '
+      "lines between its paddings, at the reader's text scale", (
+    tester,
+  ) async {
     await pump(tester);
-    final size = tester.getSize(find.byType(CheckInComposerHeader));
-    expect(size.height, 12 + 40 + 12);
-    expect(CheckInComposerHeader.height(dsTokensDark), 64);
+    const tokens = dsTokensDark;
+    final lines =
+        tokens.typography.lineHeight.heading3 +
+        tokens.typography.lineHeight.bodySmall;
+    final atRest = 12 + (lines > 40 ? lines : 40) + 12;
+    expect(tester.getSize(find.byType(CheckInComposerHeader)).height, atRest);
+    expect(CheckInComposerHeader.height(tokens, TextScaler.noScaling), atRest);
+
+    // Doubled text no longer fits beside the avatar: the header grows with
+    // the lines rather than clipping the status line.
+    expect(
+      CheckInComposerHeader.height(tokens, const TextScaler.linear(2)),
+      12 + lines * 2 + 12,
+    );
   });
 }

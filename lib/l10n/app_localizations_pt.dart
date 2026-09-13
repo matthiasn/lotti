@@ -3255,7 +3255,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInReRecordButton => 'Gravar de novo';
 
   @override
-  String get checkInSaveBlockedEmpty => 'Bastam algumas palavras para guardar';
+  String get checkInSaveBlockedEmpty =>
+      'Acrescenta algumas palavras para guardar';
 
   @override
   String get checkInSaveBlockedRecording => 'Para a gravação para guardar';
@@ -3389,6 +3390,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count palavras',
       one: '1 palavra',
+      zero: '0 palavras',
     );
     return '$_temp0';
   }
@@ -11790,7 +11792,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'de $age · $band';
+    return 'atualizado $age · $band';
   }
 
   @override
@@ -11863,6 +11865,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count propostas',
       one: '1 proposta',
+      zero: '0 propostas',
     );
     return '$_temp0';
   }
@@ -11874,7 +11877,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'A ler $count check-ins. Costuma demorar menos de um minuto.',
       one: 'A ler 1 check-in. Costuma demorar menos de um minuto.',
-      zero: 'A ler a pessoa. Costuma demorar menos de um minuto.',
+      zero: 'A preparar o briefing. Costuma demorar menos de um minuto.',
     );
     return '$_temp0';
   }
@@ -11889,6 +11892,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count check-ins',
       one: '1 check-in',
+      zero: '0 check-ins',
     );
     return 'Fontes: $_temp0 · sem canais de contacto';
   }
@@ -11919,6 +11923,7 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$days dias',
       one: '1 dia',
+      zero: 'de hoje',
     );
     return '$_temp0';
   }

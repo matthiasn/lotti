@@ -269,7 +269,10 @@ Future<CheckInEntry?> _showComposer({
       context: context,
       hasTopBarLayer: false,
       showCloseButton: false,
-      navBarHeight: CheckInComposerHeader.height(tokens),
+      navBarHeight: CheckInComposerHeader.height(
+        tokens,
+        MediaQuery.textScalerOf(context),
+      ),
       leadingNavBarWidget: CheckInComposerHeader(
         relationshipId: relationshipId,
         handle: handle,
@@ -900,6 +903,11 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   void _onRecordingFailed(CheckInSpeechFailureKind failure) {
     if (!mounted) return;
     _transcriptToReplace = null;
+    // The recorder hid the floating indicator on the way in; a start that
+    // never happened has nothing for it to point at, but a stop that could
+    // not save may leave the app-wide recorder as it was — either way the
+    // indicator is the user's again, now rather than when the sheet closes.
+    widget.handle.releaseRecorder();
     setState(() => _phase = CheckInSpeechFailed(CheckInSpeechFailure(failure)));
   }
 

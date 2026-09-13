@@ -3118,7 +3118,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String checkInComposerSubtitle(String name, String day) {
-    return 'mit $name · zuletzt $day';
+    return 'mit $name · zuletzt gesprochen $day';
   }
 
   @override
@@ -3232,7 +3232,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInRecordingFailedBody =>
-      'Das Mikrofon konnte nicht gestartet werden. Versuch es erneut oder tippe den Check-in. Es wurde nichts aufgenommen.';
+      'Das Mikrofon konnte nicht gestartet werden. Versuch es erneut oder tippe den Check-in ein. Es wurde nichts aufgenommen.';
 
   @override
   String get checkInRecordingFailedTitle => 'Aufnahme nicht gestartet';
@@ -3243,7 +3243,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInRecordingNotSavedBody =>
-      'Die Aufnahme konnte nicht gespeichert werden. Versuch es erneut oder tippe den Check-in.';
+      'Die Aufnahme konnte nicht gespeichert werden. Versuch es erneut oder tippe den Check-in ein.';
 
   @override
   String get checkInRecordingNotSavedTitle =>
@@ -3361,7 +3361,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Deine Aufnahme ($length) ist auf diesem Gerät gespeichert. Versuch es erneut, sobald du wieder online bist, oder tippe den Check-in jetzt.';
+    return 'Deine Aufnahme ($length) ist auf diesem Gerät gespeichert. Versuch es erneut, sobald du wieder online bist, oder tippe den Check-in jetzt ein.';
   }
 
   @override
@@ -11834,8 +11834,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count vorgeschlagen',
-      one: '1 vorgeschlagen',
+      other: '$count Vorschläge',
+      one: '1 Vorschlag',
     );
     return '$_temp0';
   }
@@ -11847,7 +11847,7 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: 'Liest $count Check-ins. Dauert meist unter einer Minute.',
       one: 'Liest 1 Check-in. Dauert meist unter einer Minute.',
-      zero: 'Liest die Person. Dauert meist unter einer Minute.',
+      zero: 'Bereitet das Briefing vor. Dauert meist unter einer Minute.',
     );
     return '$_temp0';
   }

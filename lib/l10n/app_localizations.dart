@@ -19672,7 +19672,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentReadingBody.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Reading the person. Usually under a minute.} =1{Reading 1 check-in. Usually under a minute.} other{Reading {count} check-ins. Usually under a minute.}}'**
+  /// **'{count, plural, =0{Preparing the briefing. Usually under a minute.} =1{Reading 1 check-in. Usually under a minute.} other{Reading {count} check-ins. Usually under a minute.}}'**
   String relationshipAgentReadingBody(int count);
 
   /// No description provided for @relationshipAgentSeeActivity.

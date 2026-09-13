@@ -3238,7 +3238,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedEmpty =>
-      'Een paar woorden zijn genoeg om op te slaan';
+      'Voeg een paar woorden toe om op te slaan';
 
   @override
   String get checkInSaveBlockedRecording => 'Stop de opname om op te slaan';
@@ -11708,7 +11708,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'per $age · $band';
+    return 'bijgewerkt $age · $band';
   }
 
   @override
@@ -11779,8 +11779,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count voorgesteld',
-      one: '1 voorgesteld',
+      other: '$count voorstellen',
+      one: '1 voorstel',
     );
     return '$_temp0';
   }
@@ -11792,7 +11792,7 @@ class AppLocalizationsNl extends AppLocalizations {
       locale: localeName,
       other: 'Leest $count check-ins. Meestal binnen een minuut.',
       one: 'Leest 1 check-in. Meestal binnen een minuut.',
-      zero: 'Leest de persoon. Meestal binnen een minuut.',
+      zero: 'Bereidt de briefing voor. Meestal binnen een minuut.',
     );
     return '$_temp0';
   }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -32,10 +34,20 @@ class CheckInComposerHeader extends ConsumerWidget {
   final CheckInFormHandle handle;
   final String title;
 
-  /// The toolbar height Wolt reserves: the avatar between the header's
-  /// paddings. Spelled out as its parts so it moves with the tokens.
-  static double height(DsTokens tokens) =>
-      tokens.spacing.step4 + tokens.spacing.step8 + tokens.spacing.step4;
+  /// The toolbar height Wolt reserves: between the header's paddings, the
+  /// avatar or the two text lines, whichever is taller at the reader's
+  /// text scale — a large-text setting must not clip the status line.
+  /// Spelled out as its parts so it moves with the tokens, and taken from
+  /// the same [scaler] by the sheet and the header so they never disagree.
+  static double height(DsTokens tokens, TextScaler scaler) {
+    final lines = scaler.scale(
+      tokens.typography.lineHeight.heading3 +
+          tokens.typography.lineHeight.bodySmall,
+    );
+    return tokens.spacing.step4 +
+        math.max(tokens.spacing.step8, lines) +
+        tokens.spacing.step4;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +62,7 @@ class CheckInComposerHeader extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      height: height(tokens),
+      height: height(tokens, MediaQuery.textScalerOf(context)),
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
       alignment: Alignment.center,
       child: Row(

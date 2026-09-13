@@ -3279,7 +3279,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInSaveBlockedEmpty =>
-      'Câteva cuvinte sunt de ajuns pentru salvare';
+      'Adăugați câteva cuvinte pentru a salva';
 
   @override
   String get checkInSaveBlockedRecording =>
@@ -11915,7 +11915,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'la $age · $band';
+    return 'actualizat $age · $band';
   }
 
   @override
@@ -11988,9 +11988,9 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de propuse',
-      few: '$count propuse',
-      one: '1 propusă',
+      other: '$count de propuneri',
+      few: '$count propuneri',
+      one: '1 propunere',
     );
     return '$_temp0';
   }
@@ -12003,7 +12003,7 @@ class AppLocalizationsRo extends AppLocalizations {
       other: 'Se citesc $count de check-in-uri. De obicei sub un minut.',
       few: 'Se citesc $count check-in-uri. De obicei sub un minut.',
       one: 'Se citește 1 check-in. De obicei sub un minut.',
-      zero: 'Se citește persoana. De obicei sub un minut.',
+      zero: 'Se pregătește briefingul. De obicei sub un minut.',
     );
     return '$_temp0';
   }

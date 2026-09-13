@@ -3271,8 +3271,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInReRecordButton => 'Réenregistrer';
 
   @override
-  String get checkInSaveBlockedEmpty =>
-      'Quelques mots suffisent pour enregistrer';
+  String get checkInSaveBlockedEmpty => 'Ajoute quelques mots pour enregistrer';
 
   @override
   String get checkInSaveBlockedRecording =>
@@ -3407,6 +3406,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count mots',
       one: '1 mot',
+      zero: '0 mot',
     );
     return '$_temp0';
   }
@@ -11890,7 +11890,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'au $age · $band';
+    return 'mis à jour $age · $band';
   }
 
   @override
@@ -11961,8 +11961,9 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count proposées',
-      one: '1 proposée',
+      other: '$count propositions',
+      one: '1 proposition',
+      zero: '0 proposition',
     );
     return '$_temp0';
   }
@@ -11974,7 +11975,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: 'Lecture de $count points. En général moins d’une minute.',
       one: 'Lecture d’un point. En général moins d’une minute.',
-      zero: 'Lecture de la personne. En général moins d’une minute.',
+      zero: 'Préparation du briefing. En général moins d’une minute.',
     );
     return '$_temp0';
   }
@@ -11989,6 +11990,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count points',
       one: '1 point',
+      zero: '0 point',
     );
     return 'Sources : $_temp0 · aucun canal de contact';
   }
@@ -12019,6 +12021,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$days jours',
       one: '1 jour',
+      zero: 'aujourd’hui',
     );
     return '$_temp0';
   }

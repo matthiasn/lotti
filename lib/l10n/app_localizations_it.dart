@@ -3263,7 +3263,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInReRecordButton => 'Registra di nuovo';
 
   @override
-  String get checkInSaveBlockedEmpty => 'Bastano poche parole per salvare';
+  String get checkInSaveBlockedEmpty => 'Aggiungi qualche parola per salvare';
 
   @override
   String get checkInSaveBlockedRecording =>
@@ -11830,7 +11830,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'al $age · $band';
+    return 'aggiornato $age · $band';
   }
 
   @override
@@ -11914,7 +11914,7 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other: 'Lettura di $count check-in. Di solito meno di un minuto.',
       one: 'Lettura di 1 check-in. Di solito meno di un minuto.',
-      zero: 'Lettura della persona. Di solito meno di un minuto.',
+      zero: 'Preparazione del briefing. Di solito meno di un minuto.',
     );
     return '$_temp0';
   }
@@ -11937,11 +11937,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipAgentTryAgain => 'Riprova';
 
   @override
-  String get relationshipAgentWatching => 'Agente in osservazione';
+  String get relationshipAgentWatching => 'Monitoraggio attivo';
 
   @override
   String relationshipAgentWatchingNextLook(String day) {
-    return 'Agente in osservazione · prossimo controllo $day';
+    return 'Monitoraggio attivo · prossimo controllo $day';
   }
 
   @override
