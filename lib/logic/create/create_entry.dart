@@ -410,13 +410,16 @@ Future<JournalEvent?> createEvent({String? linkedId, String? categoryId}) =>
       categoryId: categoryId,
     );
 
+/// Captures and persists a screenshot, optionally linking it to another entry.
+/// [capture] supplies the platform capture boundary.
 Future<JournalEntity?> createScreenshot({
   String? linkedId,
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
+  Future<ImageData> Function() capture = takeScreenshot,
 }) async {
   final persistenceLogic = getIt<PersistenceLogic>();
-  final imageData = await takeScreenshot();
+  final imageData = await capture();
   final entry = await JournalRepository.createImageEntry(
     imageData,
     linkedId: linkedId,

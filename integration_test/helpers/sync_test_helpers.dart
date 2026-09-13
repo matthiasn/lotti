@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -9,6 +10,8 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -19,9 +22,11 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
@@ -30,6 +35,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:uuid/uuid.dart';
@@ -132,33 +138,75 @@ JournalEntry createTestEntry({
   );
 }
 
-/// Create and send a test message
-Future<void> sendTestMessage({
-  required MatrixService matrixService,
-  required String deviceName,
+/// Persists a fixture and sends it through the real outbox, including the
+/// sequence binding peers need to request it after a network gap.
+Future<JournalEntry> sendTestMessage({
+  required SyncTestDevice device,
   required int index,
-  required String roomId,
   String? text,
 }) async {
   final entry = createTestEntry(
-    deviceName: deviceName,
-    index: index,
+    deviceName: device.hostId,
+    index: index + 1,
     timestamp: DateTime.utc(2024, 3, 15).add(Duration(seconds: index)),
     text: text,
   );
-
-  final jsonPath = relativeEntityPath(entry);
-  await saveJournalEntityJson(entry);
-
-  await matrixService.sendMatrixMsg(
+  await device.journalDb.updateJournalEntity(entry);
+  await device.outbox.enqueueMessageOrThrow(
     SyncMessage.journalEntity(
       id: entry.meta.id,
       status: SyncEntryStatus.initial,
-      vectorClock: entry.meta.vectorClock ?? const VectorClock({}),
-      jsonPath: jsonPath,
+      vectorClock: entry.meta.vectorClock,
+      jsonPath: relativeEntityPath(entry),
+      originatingHostId: device.hostId,
     ),
-    myRoomId: roomId,
   );
+  // Sending must finish before the test advances to its next network phase.
+  // This observer never nudges the runner or retries a failed row.
+  await waitUntilAsync(() async {
+    final pending = await device.syncDb.getOutboxItems(
+      limit: 100,
+      statuses: const [
+        OutboxStatus.pending,
+        OutboxStatus.sending,
+        OutboxStatus.error,
+      ],
+    );
+    if (pending.any((item) => item.status == OutboxStatus.error.index)) {
+      throw StateError('Outbox failed to send fixture ${entry.meta.id}');
+    }
+    return pending.isEmpty;
+  }, message: 'Outbox did not send fixture ${entry.meta.id}');
+  return entry;
+}
+
+/// A simulated device's real transport, outbox and automatic gap recovery.
+/// Database and Matrix-client lifetimes remain owned by the calling fixture.
+class SyncTestDevice {
+  SyncTestDevice({
+    required this.matrixService,
+    required this.outbox,
+    required this.backfill,
+    required this.journalDb,
+    required this.syncDb,
+    required this.hostId,
+  });
+
+  final MatrixService matrixService;
+  final MatrixOutboxService outbox;
+  final BackfillRequestService backfill;
+  final JournalDb journalDb;
+  final SyncDatabase syncDb;
+  final String hostId;
+
+  Future<void> dispose() async {
+    backfill.dispose();
+    try {
+      await outbox.dispose();
+    } finally {
+      await matrixService.dispose();
+    }
+  }
 }
 
 /// Setup Toxiproxy for testing
@@ -239,13 +287,15 @@ Future<bool> verifyTestEnvironment() async {
   }
 }
 
-/// Create a MatrixService instance for testing.
+/// Creates a device with the production queue, outbox and backfill services.
 ///
 /// The Phase-2 `InboundQueue` pipeline is wired up alongside the
 /// service — a dedicated SyncDatabase + SyncSequenceLogService +
 /// MatrixSessionManager + SyncRoomManager are built here and the
-/// coordinator is passed in as the only inbound path.
-Future<MatrixService> createMatrixService({
+/// coordinator is passed in as the only inbound path. The caller owns and
+/// closes the supplied databases after disposing the service. Both the loader
+/// and the ingestor resolve attachments in the supplied device directory.
+Future<SyncTestDevice> createSyncTestDevice({
   required MatrixConfig config,
   required MatrixSyncGateway gateway,
   required DomainLogger loggingService,
@@ -258,6 +308,8 @@ Future<MatrixService> createMatrixService({
   required UpdateNotifications updateNotifications,
   required AiConfigRepository aiConfigRepository,
   required SentEventRegistry sentEventRegistry,
+  required SyncDatabase syncDb,
+  required VectorClockService vectorClockService,
   bool collectSyncMetrics = true,
   AttachmentIndex? attachmentIndex,
 }) async {
@@ -269,16 +321,7 @@ Future<MatrixService> createMatrixService({
     journalDb: journalDb,
     documentsDirectory: documentsDirectory,
     sentEventRegistry: sentEventRegistry,
-  );
-  final eventProcessor = SyncEventProcessor(
-    loggingService: loggingService,
-    updateNotifications: updateNotifications,
-    aiConfigRepository: aiConfigRepository,
-    settingsDb: settingsDb,
-    savedTaskFiltersRepository: SavedTaskFiltersRepository(
-      SavedTaskFiltersPersistence(settingsDb),
-      updateNotifications,
-    ),
+    vectorClockService: vectorClockService,
   );
 
   // Share a single AttachmentIndex between MatrixService and the
@@ -297,16 +340,32 @@ Future<MatrixService> createMatrixService({
     verboseLogging: false,
   );
 
-  final syncDb = SyncDatabase(
-    overriddenFilename: 'sync_${uuid.v1()}.sqlite',
-    inMemoryDatabase: true,
-  );
-  final vectorClockService = VectorClockService();
   final sequenceLogService = SyncSequenceLogService(
     syncDatabase: syncDb,
     vectorClockService: vectorClockService,
     loggingService: loggingService,
   );
+  final eventProcessor = SyncEventProcessor(
+    loggingService: loggingService,
+    updateNotifications: updateNotifications,
+    aiConfigRepository: aiConfigRepository,
+    settingsDb: settingsDb,
+    journalEntityLoader: SmartJournalEntityLoader(
+      attachmentIndex: sharedAttachmentIndex,
+      loggingService: loggingService,
+      documentsDirectory: documentsDirectory,
+    ),
+    documentsDirectory: documentsDirectory,
+    attachmentIndex: sharedAttachmentIndex,
+    sequenceLogService: sequenceLogService,
+    journalDb: journalDb,
+    vectorClockService: vectorClockService,
+    savedTaskFiltersRepository: SavedTaskFiltersRepository(
+      SavedTaskFiltersPersistence(settingsDb),
+      updateNotifications,
+    ),
+  );
+
   final roomManager = SyncRoomManager(
     gateway: gateway,
     settingsDb: settingsDb,
@@ -335,7 +394,7 @@ Future<MatrixService> createMatrixService({
     attachmentIngestor: queueAttachmentIngestor,
   );
 
-  return MatrixService(
+  final matrixService = MatrixService(
     matrixConfig: config,
     gateway: gateway,
     loggingService: loggingService,
@@ -350,6 +409,59 @@ Future<MatrixService> createMatrixService({
     roomManager: roomManager,
     sessionManager: sessionManager,
     queueCoordinator: queueCoordinator,
+  );
+  await journalDb.upsertConfigFlag(
+    const ConfigFlag(
+      name: enableMatrixFlag,
+      description: 'Enable Matrix Sync',
+      status: true,
+    ),
+  );
+  final outbox = MatrixOutboxService(
+    syncDatabase: syncDb,
+    loggingService: loggingService,
+    vectorClockService: vectorClockService,
+    journalDb: journalDb,
+    documentsDirectory: documentsDirectory,
+    userActivityService: activityService,
+    matrixService: matrixService,
+    connectivityStream: const Stream<List<ConnectivityResult>>.empty(),
+    sequenceLogService: sequenceLogService,
+    domainLogger: loggingService,
+  );
+  final backfill = BackfillRequestService(
+    sequenceLogService: sequenceLogService,
+    syncDatabase: syncDb,
+    outboxService: outbox,
+    vectorClockService: vectorClockService,
+    loggingService: loggingService,
+    documentsDirectory: documentsDirectory,
+    queueCoordinator: queueCoordinator,
+    domainLogger: loggingService,
+  );
+  // Keep this wiring aligned with get_it_sync.dart: organic sequence gaps,
+  // bridge completion and queue drain must wake the same recovery services.
+  sequenceLogService.onMissingEntriesDetected = () {
+    backfill.nudge();
+    queueCoordinator.maybeStartGapRecovery();
+  };
+  queueCoordinator.onBridgeCompleted = backfill.nudge;
+  eventProcessor.backfillResponseHandler = BackfillResponseHandler(
+    journalDb: journalDb,
+    sequenceLogService: sequenceLogService,
+    outboxService: outbox,
+    loggingService: loggingService,
+    vectorClockService: vectorClockService,
+    domainLogger: loggingService,
+  );
+  backfill.start();
+  return SyncTestDevice(
+    matrixService: matrixService,
+    outbox: outbox,
+    backfill: backfill,
+    journalDb: journalDb,
+    syncDb: syncDb,
+    hostId: (await vectorClockService.getHost())!,
   );
 }
 

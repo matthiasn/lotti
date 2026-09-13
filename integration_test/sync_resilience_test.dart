@@ -1,18 +1,21 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -20,10 +23,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/file_utils.dart' hide uuid;
 import 'package:mocktail/mocktail.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test/mocks/mocks.dart';
+import '../test/widget_test_utils.dart';
 import 'helpers/sync_test_helpers.dart';
 import 'helpers/toxiproxy_controller.dart';
 import 'matrix_test_room.dart';
@@ -37,15 +42,31 @@ void main() {
     final secureStorageMock = MockSecureStorage();
 
     // Each test gets its own user pair to avoid device accumulation
-    // All env vars must be compile-time constants
-    const testUser1 = String.fromEnvironment('TEST_USER1');
-    const testUser2 = String.fromEnvironment('TEST_USER2');
-    const testUser3 = String.fromEnvironment('TEST_USER3');
-    const testUser4 = String.fromEnvironment('TEST_USER4');
-    const testUser5 = String.fromEnvironment('TEST_USER5');
-    const testUser6 = String.fromEnvironment('TEST_USER6');
-    const testUser7 = String.fromEnvironment('TEST_USER7');
-    const testUser8 = String.fromEnvironment('TEST_USER8');
+    // Scripts use Dart defines; MCP/IDE runners can supply process environment.
+    final testUser1 = const String.fromEnvironment('TEST_USER1').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER1')
+        : Platform.environment['TEST_USER1'] ?? '';
+    final testUser2 = const String.fromEnvironment('TEST_USER2').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER2')
+        : Platform.environment['TEST_USER2'] ?? '';
+    final testUser3 = const String.fromEnvironment('TEST_USER3').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER3')
+        : Platform.environment['TEST_USER3'] ?? '';
+    final testUser4 = const String.fromEnvironment('TEST_USER4').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER4')
+        : Platform.environment['TEST_USER4'] ?? '';
+    final testUser5 = const String.fromEnvironment('TEST_USER5').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER5')
+        : Platform.environment['TEST_USER5'] ?? '';
+    final testUser6 = const String.fromEnvironment('TEST_USER6').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER6')
+        : Platform.environment['TEST_USER6'] ?? '';
+    final testUser7 = const String.fromEnvironment('TEST_USER7').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER7')
+        : Platform.environment['TEST_USER7'] ?? '';
+    final testUser8 = const String.fromEnvironment('TEST_USER8').isNotEmpty
+        ? const String.fromEnvironment('TEST_USER8')
+        : Platform.environment['TEST_USER8'] ?? '';
 
     // create separate databases for each simulated device & suppress warning
     drift.driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -79,6 +100,9 @@ void main() {
 
     late JournalDb aliceDb;
     late JournalDb bobDb;
+    late Directory aliceDocumentsDirectory;
+    late Directory bobDocumentsDirectory;
+    final expectedEntries = <JournalEntry>[];
     late AiConfigDb aiConfigDb;
 
     // Alice uses direct homeserver, Bob uses proxy so we can control his network
@@ -86,42 +110,26 @@ void main() {
     const bobHomeServer = 'http://localhost:18008';
     const testPassword = '?Secret123@';
 
-    // Check if first user pair is present
+    final testUsers = [
+      testUser1,
+      testUser2,
+      testUser3,
+      testUser4,
+      testUser5,
+      testUser6,
+      testUser7,
+      testUser8,
+    ];
     final missingEnv = <String>[
-      if (!const bool.hasEnvironment('TEST_USER1')) 'TEST_USER1',
-      if (!const bool.hasEnvironment('TEST_USER2')) 'TEST_USER2',
+      for (var i = 0; i < testUsers.length; i++)
+        if (testUsers[i].isEmpty) 'TEST_USER${i + 1}',
     ];
     final skipReason = missingEnv.isEmpty
         ? null
         : 'Missing: ${missingEnv.join(', ')}. Run via run_resilience_tests.sh';
 
-    /// Get user credentials for a specific test index
-    (String alice, String bob) getUserPair(int testIndex) {
-      switch (testIndex) {
-        case 0:
-          return (
-            testUser1.isNotEmpty ? testUser1 : '@test_alice:localhost',
-            testUser2.isNotEmpty ? testUser2 : '@test_bob:localhost',
-          );
-        case 1:
-          return (
-            testUser3.isNotEmpty ? testUser3 : '@test_alice:localhost',
-            testUser4.isNotEmpty ? testUser4 : '@test_bob:localhost',
-          );
-        case 2:
-          return (
-            testUser5.isNotEmpty ? testUser5 : '@test_alice:localhost',
-            testUser6.isNotEmpty ? testUser6 : '@test_bob:localhost',
-          );
-        case 3:
-          return (
-            testUser7.isNotEmpty ? testUser7 : '@test_alice:localhost',
-            testUser8.isNotEmpty ? testUser8 : '@test_bob:localhost',
-          );
-        default:
-          throw ArgumentError('Invalid test index: $testIndex');
-      }
-    }
+    (String alice, String bob) getUserPair(int testIndex) =>
+        (testUsers[testIndex * 2], testUsers[testIndex * 2 + 1]);
 
     /// Get configs for a specific test index
     (MatrixConfig alice, MatrixConfig bob) getConfigs(int testIndex) {
@@ -143,16 +151,14 @@ void main() {
     const defaultDelay = 5;
 
     setUpAll(() async {
+      SharedPreferences.setMockInitialValues({});
       await vod.init();
-      final tmpDir = await getTemporaryDirectory();
-      final docDir = Directory('${tmpDir.path}/${uuid.v1()}')
-        ..createSync(recursive: true);
+      final docDir = await Directory.systemTemp.createTemp('lotti-resilience-');
       debugPrint('Created temporary docDir ${docDir.path}');
       sharedDocumentsDirectory = docDir;
 
       aiConfigDb = AiConfigDb(inMemoryDatabase: true);
       sharedAiConfigRepository = AiConfigRepository(aiConfigDb);
-      sharedLoggingService = LoggingService();
       sharedUserActivityService = UserActivityService();
 
       // Setup Toxiproxy
@@ -160,60 +166,115 @@ void main() {
       await toxiproxy.setup();
       debugPrint('Toxiproxy setup complete');
 
-      // Register essential dependencies
-      getIt
-        ..registerSingleton<Directory>(sharedDocumentsDirectory)
-        ..registerSingleton<LoggingService>(sharedLoggingService)
-        ..registerSingleton<DomainLogger>(
-          DomainLogger(loggingService: sharedLoggingService),
-        )
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<UserActivityService>(sharedUserActivityService)
-        ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-        ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
-        ..registerSingleton<SecureStorage>(secureStorageMock)
-        ..registerSingleton<AiConfigDb>(aiConfigDb)
-        ..registerSingleton<AiConfigRepository>(sharedAiConfigRepository);
-
-      // Give time for any async initializations to complete
-      await Future<void>.delayed(const Duration(seconds: 2));
+      final harness = await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<Directory>(sharedDocumentsDirectory)
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+            ..registerSingleton<UserActivityService>(sharedUserActivityService)
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+            ..unregister<SettingsDb>()
+            ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
+            ..registerSingleton<SecureStorage>(secureStorageMock)
+            ..registerSingleton<AiConfigDb>(aiConfigDb)
+            ..registerSingleton<AiConfigRepository>(sharedAiConfigRepository);
+        },
+      );
+      sharedLoggingService = harness.loggingService;
     });
 
-    setUp(() {
+    setUp(() async {
+      expectedEntries.clear();
+      aliceDocumentsDirectory = await Directory(
+        '${sharedDocumentsDirectory.path}/alice-${uuid.v1()}',
+      ).create();
+      bobDocumentsDirectory = await Directory(
+        '${sharedDocumentsDirectory.path}/bob-${uuid.v1()}',
+      ).create();
+      expect(aliceDocumentsDirectory.path, isNot(bobDocumentsDirectory.path));
       // Create fresh databases for each test
       aliceDb = JournalDb(
         overriddenFilename: 'alice_resilience_${uuid.v1()}.sqlite',
+        documentsDirectory: aliceDocumentsDirectory,
         inMemoryDatabase: true,
       );
       bobDb = JournalDb(
         overriddenFilename: 'bob_resilience_${uuid.v1()}.sqlite',
+        documentsDirectory: bobDocumentsDirectory,
         inMemoryDatabase: true,
       );
     });
 
     tearDownAll(() async {
-      try {
-        await aiConfigDb.close();
-        toxiproxy.close();
-      } catch (e) {
-        debugPrint('Error during cleanup: $e');
-      }
+      await getIt<JournalDb>().close();
+      await getIt<SettingsDb>().close();
+      await aiConfigDb.close();
+      await sharedUserActivityService.dispose();
+      await sharedLoggingService.flush();
+      await sharedLoggingService.dispose();
+      toxiproxy.close();
+      await tearDownTestGetIt();
+      await sharedDocumentsDirectory.delete(recursive: true);
     });
 
     tearDown(() async {
-      // Reset toxiproxy to clean state
       await toxiproxy.reset(ToxiproxyController.dendriteProxy);
-
-      try {
-        await aliceDb.close();
-        await bobDb.close();
-      } catch (e) {
-        debugPrint('Error during database cleanup: $e');
-      }
+      await aliceDb.close();
+      await bobDb.close();
     });
 
-    Future<({MatrixService alice, MatrixService bob, String roomId})>
-    setupAliceAndBob({required int testIndex}) async {
+    // Polls only database state. No manual retry or rescan can make this pass.
+    Future<void> expectAutomaticDelivery({
+      Duration deliveryTimeout = timeout,
+    }) async {
+      await waitUntilAsync(
+        () async => await bobDb.getJournalCount() >= expectedEntries.length,
+        timeout: deliveryTimeout,
+        message: 'Bob did not recover automatically',
+      );
+      expect(await bobDb.getJournalCount(), expectedEntries.length);
+      for (final expected in expectedEntries) {
+        expect(
+          await bobDb.journalEntityById(expected.meta.id),
+          expected,
+          reason:
+              'Receiver must preserve ID, text, timestamps and vector clock',
+        );
+        final relativePath = relativeEntityPath(expected);
+        final bobFile = resolveJsonCandidateFileInDirectory(
+          relativePath,
+          bobDocumentsDirectory,
+        );
+        final aliceFile = resolveJsonCandidateFileInDirectory(
+          relativePath,
+          aliceDocumentsDirectory,
+        );
+        expect(
+          await bobFile.readAsBytes(),
+          await aliceFile.readAsBytes(),
+          reason:
+              'Receiver must download the sender attachment into its own sandbox',
+        );
+        expect(
+          jsonDecode(await bobFile.readAsString()),
+          jsonDecode(jsonEncode(expected)),
+        );
+        expect(
+          resolveJsonCandidateFileInDirectory(
+            relativePath,
+            sharedDocumentsDirectory,
+          ).existsSync(),
+          isFalse,
+          reason: 'Neither simulated device may use the global documents root',
+        );
+      }
+    }
+
+    Future<({SyncTestDevice alice, SyncTestDevice bob})> setupAliceAndBob({
+      required int testIndex,
+    }) async {
       // Ensure proxy is enabled at the start
       await toxiproxy.reset(ToxiproxyController.dendriteProxy);
 
@@ -225,16 +286,26 @@ void main() {
       debugPrint('\n--- Setting up Alice (direct connection)');
       debugPrint('Alice user: ${userPair.$1}');
       final aliceClient = await createMatrixClient(
-        documentsDirectory: sharedDocumentsDirectory,
+        documentsDirectory: aliceDocumentsDirectory,
         dbName: 'AliceResilience_${uuid.v1()}',
       );
+      addTearDown(aliceClient.dispose);
       final aliceRegistry = SentEventRegistry();
       final aliceGateway = MatrixSdkGateway(
         client: aliceClient,
         sentEventRegistry: aliceRegistry,
       );
       final aliceSettingsDb = SettingsDb(inMemoryDatabase: true);
-      final alice = await createMatrixService(
+      addTearDown(aliceSettingsDb.close);
+      final aliceSyncDb = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(aliceSyncDb.close);
+      final aliceClock = MockVectorClockService();
+      when(() => aliceClock.initialized).thenAnswer((_) async {});
+      when(aliceClock.getHost).thenAnswer((_) async => 'alice-resilience');
+      when(
+        aliceClock.getHostHash,
+      ).thenAnswer((_) async => 'alice-resilience-hash');
+      final aliceDevice = await createSyncTestDevice(
         config: aliceConfig,
         gateway: aliceGateway,
         loggingService: getIt<DomainLogger>(),
@@ -243,12 +314,16 @@ void main() {
         secureStorage: secureStorageMock,
         deviceName: 'AliceResilience',
         activityService: sharedUserActivityService,
-        documentsDirectory: sharedDocumentsDirectory,
+        documentsDirectory: aliceDocumentsDirectory,
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
         sentEventRegistry: aliceRegistry,
+        syncDb: aliceSyncDb,
+        vectorClockService: aliceClock,
       );
 
+      addTearDown(aliceDevice.dispose);
+      final alice = aliceDevice.matrixService;
       await alice.init();
       await alice.login();
       debugPrint('Alice - deviceId: ${alice.client.deviceID}');
@@ -262,16 +337,24 @@ void main() {
       debugPrint('\n--- Setting up Bob (via proxy)');
       debugPrint('Bob user: ${userPair.$2}');
       final bobClient = await createMatrixClient(
-        documentsDirectory: sharedDocumentsDirectory,
+        documentsDirectory: bobDocumentsDirectory,
         dbName: 'BobResilience_${uuid.v1()}',
       );
+      addTearDown(bobClient.dispose);
       final bobRegistry = SentEventRegistry();
       final bobGateway = MatrixSdkGateway(
         client: bobClient,
         sentEventRegistry: bobRegistry,
       );
       final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
-      final bob = await createMatrixService(
+      addTearDown(bobSettingsDb.close);
+      final bobSyncDb = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(bobSyncDb.close);
+      final bobClock = MockVectorClockService();
+      when(() => bobClock.initialized).thenAnswer((_) async {});
+      when(bobClock.getHost).thenAnswer((_) async => 'bob-resilience');
+      when(bobClock.getHostHash).thenAnswer((_) async => 'bob-resilience-hash');
+      final bobDevice = await createSyncTestDevice(
         config: bobConfig,
         gateway: bobGateway,
         loggingService: getIt<DomainLogger>(),
@@ -280,12 +363,16 @@ void main() {
         secureStorage: secureStorageMock,
         deviceName: 'BobResilience',
         activityService: sharedUserActivityService,
-        documentsDirectory: sharedDocumentsDirectory,
+        documentsDirectory: bobDocumentsDirectory,
         updateNotifications: mockUpdateNotifications,
         aiConfigRepository: sharedAiConfigRepository,
         sentEventRegistry: bobRegistry,
+        syncDb: bobSyncDb,
+        vectorClockService: bobClock,
       );
 
+      addTearDown(bobDevice.dispose);
+      final bob = bobDevice.matrixService;
       await bob.init();
       await bob.login();
       debugPrint('Bob - deviceId: ${bob.client.deviceID}');
@@ -321,7 +408,7 @@ void main() {
       // If there are no unverified devices, we're good to go
       if (unverifiedAlice.isEmpty) {
         debugPrint('No unverified devices found, skipping verification');
-        return (alice: alice, bob: bob, roomId: roomId);
+        return (alice: aliceDevice, bob: bobDevice);
       }
 
       final outgoingKeyVerificationStream = alice.keyVerificationStream;
@@ -330,7 +417,8 @@ void main() {
 
       var emojisFromBob = '';
       var emojisFromAlice = '';
-      var verificationComplete = false;
+      var aliceAccepted = false;
+      var bobAccepted = false;
 
       final incomingSubscription = incomingKeyVerificationRunnerStream.listen(
         (runner) async {
@@ -338,7 +426,8 @@ void main() {
           if (runner.lastStep == 'm.key.verification.request') {
             await runner.acceptVerification();
           }
-          if (runner.lastStep == 'm.key.verification.key') {
+          if (runner.lastStep == 'm.key.verification.key' && !bobAccepted) {
+            bobAccepted = true;
             emojisFromAlice = extractEmojiString(runner.emojis);
             debugPrint('Bob received emojis: $emojisFromAlice');
 
@@ -351,19 +440,20 @@ void main() {
 
             await runner.acceptEmojiVerification();
           }
-          if (runner.lastStep == 'm.key.verification.done') {
-            verificationComplete = true;
-          }
         },
         onError: (Object error, StackTrace stackTrace) {
-          debugPrint('incomingKeyVerificationRunnerStream error: $error');
+          fail(
+            'incomingKeyVerificationRunnerStream error: $error\n$stackTrace',
+          );
         },
       );
 
+      addTearDown(incomingSubscription.cancel);
       final outgoingSubscription = outgoingKeyVerificationStream.listen(
         (runner) async {
           debugPrint('Alice - outgoing verification step: ${runner.lastStep}');
-          if (runner.lastStep == 'm.key.verification.key') {
+          if (runner.lastStep == 'm.key.verification.key' && !aliceAccepted) {
+            aliceAccepted = true;
             emojisFromBob = extractEmojiString(runner.emojis);
             debugPrint('Alice received emojis: $emojisFromBob');
 
@@ -377,9 +467,11 @@ void main() {
           }
         },
         onError: (Object error, StackTrace stackTrace) {
-          debugPrint('keyVerificationStream error: $error');
+          fail('keyVerificationStream error: $error\n$stackTrace');
         },
       );
+
+      addTearDown(outgoingSubscription.cancel);
 
       // Verify all unverified devices one by one
       for (final device in unverifiedAlice) {
@@ -388,20 +480,23 @@ void main() {
 
         emojisFromBob = '';
         emojisFromAlice = '';
-        verificationComplete = false;
+        aliceAccepted = false;
+        bobAccepted = false;
 
         await alice.verifyDevice(device);
 
-        try {
-          await waitUntil(() => emojisFromAlice.isNotEmpty, timeout: timeout);
-          await waitUntil(() => emojisFromBob.isNotEmpty, timeout: timeout);
-          expect(emojisFromAlice, emojisFromBob);
-          await waitUntil(() => verificationComplete, timeout: timeout);
-          debugPrint('Device $deviceId verified successfully');
-        } catch (e) {
-          debugPrint('Failed to verify device $deviceId: $e');
-          // Continue with other devices even if one fails
-        }
+        await waitUntil(() => emojisFromAlice.isNotEmpty, timeout: timeout);
+        await waitUntil(() => emojisFromBob.isNotEmpty, timeout: timeout);
+        expect(emojisFromAlice, emojisFromBob);
+        // The SDK can dispose the runner without emitting a final step.
+        // Device trust is the durable outcome of the SAS exchange.
+        await waitUntil(
+          () =>
+              alice.getUnverifiedDevices().isEmpty &&
+              bob.getUnverifiedDevices().isEmpty,
+          timeout: timeout,
+        );
+        debugPrint('Device $deviceId verified successfully');
 
         await waitSeconds(2);
       }
@@ -414,12 +509,13 @@ void main() {
 
       // Check if there are still unverified devices
       unverifiedAlice = alice.getUnverifiedDevices();
-      debugPrint('Remaining unverified devices: ${unverifiedAlice.length}');
+      expect(unverifiedAlice, isEmpty);
+      expect(bob.getUnverifiedDevices(), isEmpty);
 
       debugPrint('\n--- Setup complete, devices verified');
       await waitSeconds(defaultDelay);
 
-      return (alice: alice, bob: bob, roomId: roomId);
+      return (alice: aliceDevice, bob: bobDevice);
     }
 
     test(
@@ -427,17 +523,6 @@ void main() {
       () async {
         final setup = await setupAliceAndBob(testIndex: 0);
         final alice = setup.alice;
-        final bob = setup.bob;
-        final roomId = setup.roomId;
-
-        addTearDown(() async {
-          try {
-            await alice.dispose();
-          } catch (_) {}
-          try {
-            await bob.dispose();
-          } catch (_) {}
-        });
 
         const totalMessages = 20;
         const interruptAfter = 8;
@@ -447,11 +532,11 @@ void main() {
 
         // Send first batch
         for (var i = 0; i < interruptAfter; i++) {
-          await sendTestMessage(
-            matrixService: alice,
-            deviceName: 'aliceResilience',
-            index: i,
-            roomId: roomId,
+          expectedEntries.add(
+            await sendTestMessage(
+              device: alice,
+              index: i,
+            ),
           );
           debugPrint('Alice sent message $i');
         }
@@ -462,15 +547,21 @@ void main() {
         // Cut network to Bob
         debugPrint('\n--- Cutting network to Bob');
         await toxiproxy.disconnect(ToxiproxyController.dendriteProxy);
+        final proxies = await toxiproxy.getProxies();
+        expect(
+          (proxies[ToxiproxyController.dendriteProxy]
+              as Map<String, dynamic>)['enabled'],
+          isFalse,
+        );
 
         // Send remaining messages while Bob is offline
         for (var i = interruptAfter; i < totalMessages; i++) {
           // Use direct homeserver for Alice (not via proxy)
-          await sendTestMessage(
-            matrixService: alice,
-            deviceName: 'aliceResilience',
-            index: i,
-            roomId: roomId,
+          expectedEntries.add(
+            await sendTestMessage(
+              device: alice,
+              index: i,
+            ),
           );
           debugPrint('Alice sent message $i (Bob offline)');
         }
@@ -478,39 +569,32 @@ void main() {
         // Wait a bit with network cut
         await waitSeconds(5);
 
+        final offlineEntry = expectedEntries.last;
+        expect(
+          await bobDb.journalEntityById(offlineEntry.meta.id),
+          isNull,
+          reason: 'Bob must actually miss entries during the outage',
+        );
+        expect(
+          resolveJsonCandidateFileInDirectory(
+            relativeEntityPath(offlineEntry),
+            bobDocumentsDirectory,
+          ).existsSync(),
+          isFalse,
+        );
+
         // Restore network
         debugPrint('\n--- Restoring network to Bob');
         await toxiproxy.reconnect(ToxiproxyController.dendriteProxy);
 
-        // Force Bob to catch up
-        debugPrint('\n--- Forcing Bob to rescan');
-        await bob.forceRescan();
-
         // Wait for Bob to receive all messages
-        var lastBobCount = -1;
-        await waitUntilAsync(
-          () async {
-            final currentCount = await bobDb.getJournalCount();
-            if (currentCount != lastBobCount) {
-              debugPrint('Bob journal count: $currentCount');
-              lastBobCount = currentCount;
-            }
-            if (currentCount < totalMessages) {
-              await bob.forceRescan();
-              await bob.retryNow();
-              await Future<void>.delayed(const Duration(milliseconds: 500));
-            }
-            return currentCount >= totalMessages;
-          },
-          timeout: timeout,
+        expect(expectedEntries, hasLength(totalMessages));
+        await expectAutomaticDelivery(
+          deliveryTimeout: const Duration(minutes: 3),
         );
 
-        final bobEntriesCount = await bobDb.getJournalCount();
-        debugPrint('Bob final count: $bobEntriesCount');
-        expect(bobEntriesCount, totalMessages);
-
         // Check metrics
-        final metrics = await bob.getSyncMetrics();
+        final metrics = await setup.bob.matrixService.getSyncMetrics();
         debugPrint('Bob metrics: $metrics');
       },
       timeout: const Timeout(Duration(minutes: 5)),
@@ -522,17 +606,6 @@ void main() {
       () async {
         final setup = await setupAliceAndBob(testIndex: 1);
         final alice = setup.alice;
-        final bob = setup.bob;
-        final roomId = setup.roomId;
-
-        addTearDown(() async {
-          try {
-            await alice.dispose();
-          } catch (_) {}
-          try {
-            await bob.dispose();
-          } catch (_) {}
-        });
 
         // Add significant latency
         debugPrint('\n--- Adding 2000ms latency');
@@ -547,36 +620,20 @@ void main() {
           '\n--- Alice sends $totalMessages messages with high latency',
         );
         for (var i = 0; i < totalMessages; i++) {
-          await sendTestMessage(
-            matrixService: alice,
-            deviceName: 'aliceLatency',
-            index: i,
-            roomId: roomId,
+          expectedEntries.add(
+            await sendTestMessage(
+              device: alice,
+              index: i,
+            ),
           );
           debugPrint('Alice sent message $i');
         }
 
         // Wait for Bob to receive with longer timeout due to latency
-        var lastBobCount = -1;
-        await waitUntilAsync(
-          () async {
-            final currentCount = await bobDb.getJournalCount();
-            if (currentCount != lastBobCount) {
-              debugPrint('Bob journal count: $currentCount');
-              lastBobCount = currentCount;
-            }
-            if (currentCount < totalMessages) {
-              await bob.forceRescan();
-              await Future<void>.delayed(const Duration(milliseconds: 500));
-            }
-            return currentCount >= totalMessages;
-          },
-          timeout: const Duration(minutes: 3),
+        expect(expectedEntries, hasLength(totalMessages));
+        await expectAutomaticDelivery(
+          deliveryTimeout: const Duration(minutes: 3),
         );
-
-        final bobEntriesCount = await bobDb.getJournalCount();
-        debugPrint('Bob final count: $bobEntriesCount');
-        expect(bobEntriesCount, totalMessages);
       },
       timeout: const Timeout(Duration(minutes: 5)),
       skip: skipReason ?? false,
@@ -587,17 +644,6 @@ void main() {
       () async {
         final setup = await setupAliceAndBob(testIndex: 2);
         final alice = setup.alice;
-        final bob = setup.bob;
-        final roomId = setup.roomId;
-
-        addTearDown(() async {
-          try {
-            await alice.dispose();
-          } catch (_) {}
-          try {
-            await bob.dispose();
-          } catch (_) {}
-        });
 
         // Severely limit bandwidth
         debugPrint('\n--- Limiting bandwidth to 50 KB/s');
@@ -607,41 +653,35 @@ void main() {
         );
 
         const totalMessages = 15;
+        // Repeated text compresses almost to nothing. Seeded random bytes keep
+        // each JSON attachment large enough to exercise the bandwidth limit.
+        final random = Random(42);
+        final payload = base64Encode(
+          List<int>.generate(
+            96 * 1024,
+            (_) => random.nextInt(256),
+          ),
+        );
 
         debugPrint(
           '\n--- Alice sends $totalMessages messages with limited bandwidth',
         );
         for (var i = 0; i < totalMessages; i++) {
-          await sendTestMessage(
-            matrixService: alice,
-            deviceName: 'aliceBandwidth',
-            index: i,
-            roomId: roomId,
+          expectedEntries.add(
+            await sendTestMessage(
+              device: alice,
+              text: 'Bandwidth fixture #$i: $payload',
+              index: i,
+            ),
           );
           debugPrint('Alice sent message $i');
         }
 
         // Wait for Bob to receive
-        var lastBobCount = -1;
-        await waitUntilAsync(
-          () async {
-            final currentCount = await bobDb.getJournalCount();
-            if (currentCount != lastBobCount) {
-              debugPrint('Bob journal count: $currentCount');
-              lastBobCount = currentCount;
-            }
-            if (currentCount < totalMessages) {
-              await bob.forceRescan();
-              await Future<void>.delayed(const Duration(milliseconds: 500));
-            }
-            return currentCount >= totalMessages;
-          },
-          timeout: const Duration(minutes: 3),
+        expect(expectedEntries, hasLength(totalMessages));
+        await expectAutomaticDelivery(
+          deliveryTimeout: const Duration(minutes: 3),
         );
-
-        final bobEntriesCount = await bobDb.getJournalCount();
-        debugPrint('Bob final count: $bobEntriesCount');
-        expect(bobEntriesCount, totalMessages);
       },
       timeout: const Timeout(Duration(minutes: 5)),
       skip: skipReason ?? false,
@@ -652,17 +692,6 @@ void main() {
       () async {
         final setup = await setupAliceAndBob(testIndex: 3);
         final alice = setup.alice;
-        final bob = setup.bob;
-        final roomId = setup.roomId;
-
-        addTearDown(() async {
-          try {
-            await alice.dispose();
-          } catch (_) {}
-          try {
-            await bob.dispose();
-          } catch (_) {}
-        });
 
         const totalMessages = 30;
         const messagesPerBatch = 10;
@@ -676,11 +705,11 @@ void main() {
           debugPrint('\n--- Batch $batch: Sending messages $start-${end - 1}');
 
           for (var i = start; i < end; i++) {
-            await sendTestMessage(
-              matrixService: alice,
-              deviceName: 'aliceIntermittent',
-              index: i,
-              roomId: roomId,
+            expectedEntries.add(
+              await sendTestMessage(
+                device: alice,
+                index: i,
+              ),
             );
           }
 
@@ -693,39 +722,14 @@ void main() {
             await toxiproxy.reconnect(ToxiproxyController.dendriteProxy);
             // Give Bob time to sync after reconnection
             await waitSeconds(5);
-            debugPrint('--- Forcing rescan after reconnect');
-            await bob.forceRescan();
-            await waitSeconds(3);
           }
         }
 
-        // Force catch-up
-        debugPrint('\n--- Final catch-up');
-        await bob.forceRescan();
-
         // Wait for Bob to receive all messages - use longer timeout for this test
-        const extendedTimeout = Duration(minutes: 4);
-        var lastBobCount = -1;
-        await waitUntilAsync(
-          () async {
-            final currentCount = await bobDb.getJournalCount();
-            if (currentCount != lastBobCount) {
-              debugPrint('Bob journal count: $currentCount');
-              lastBobCount = currentCount;
-            }
-            if (currentCount < totalMessages) {
-              await bob.forceRescan();
-              await bob.retryNow();
-              await Future<void>.delayed(const Duration(seconds: 1));
-            }
-            return currentCount >= totalMessages;
-          },
-          timeout: extendedTimeout,
+        expect(expectedEntries, hasLength(totalMessages));
+        await expectAutomaticDelivery(
+          deliveryTimeout: const Duration(minutes: 3),
         );
-
-        final bobEntriesCount = await bobDb.getJournalCount();
-        debugPrint('Bob final count: $bobEntriesCount');
-        expect(bobEntriesCount, totalMessages);
       },
       timeout: const Timeout(Duration(minutes: 8)),
       skip: skipReason ?? false,

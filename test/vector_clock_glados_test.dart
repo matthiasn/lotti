@@ -20,34 +20,27 @@ extension AnyVectorClock on Any {
       return VectorClock({'a': v1, 'b': v2, 'c': v3});
     },
   );
-  Generator<VectorClock> get possiblyInvalidVc =>
-      any.combine2(any.int, any.int, (int v1, int v2) {
-        return VectorClock({'a': v1, 'b': v2});
-      });
+  Generator<VectorClock> get sparseVc => any
+      .listWithLengthInRange(0, 7, any.choose<int?>([null, 0, 1, 2, 100]))
+      .map(
+        (counters) => VectorClock({
+          for (var i = 0; i < counters.length; i++)
+            if (counters[i] case final int counter) 'node-$i': counter,
+        }),
+      );
 }
 
-bool aGtB(VectorClock a, VectorClock b) {
-  final nodeIds = <String>{}
-    ..addAll(a.vclock.keys)
-    ..addAll(b.vclock.keys);
-
-  for (final nodeId in nodeIds) {
-    if (b.get(nodeId) > a.get(nodeId)) {
-      return false;
-    }
-  }
-
-  if (b.vclock.values.reduce((acc, elem) => acc + elem) >=
-      a.vclock.values.reduce((acc, elem) => acc + elem)) {
-    return false;
-  }
-
-  return true;
+// Compare components directly: summing counters can overflow and an empty
+// clock has no values to reduce. This oracle does not call production helpers.
+bool _dominates(VectorClock a, VectorClock b) {
+  final nodes = {...a.vclock.keys, ...b.vclock.keys};
+  return nodes.every(
+        (node) => (a.vclock[node] ?? 0) >= (b.vclock[node] ?? 0),
+      ) &&
+      nodes.any((node) => (a.vclock[node] ?? 0) > (b.vclock[node] ?? 0));
 }
 
 void main() {
-  Any.setDefault<VectorClock>(any.vc);
-
   Glados<VectorClock>(any.vc3).test(
     'fromJson(toJson(vc)) round-trips to an equal clock',
     (vc) {
@@ -62,69 +55,66 @@ void main() {
     tags: 'glados',
   );
 
-  Glados2<VectorClock, VectorClock>().test('compare two vector clocks', (
-    vc1,
-    vc2,
-  ) {
-    if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
-      expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
-    } else if (aGtB(vc1, vc2)) {
-      expect(VectorClock.compare(vc1, vc2), VclockStatus.a_gt_b);
-    } else if (aGtB(vc2, vc1)) {
-      expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
-    } else {
-      expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
-    }
-  }, tags: 'glados');
+  for (final (a, b) in const [
+    (VectorClock({'a': 1, 'b': 2}), VectorClock({'a': 1, 'b': 2, 'c': 0})),
+    (VectorClock({}), VectorClock({'a': 0})),
+    (VectorClock({}), VectorClock({'a': 1})),
+    (VectorClock({'a': 1}), VectorClock({'b': 1})),
+  ]) {
+    test('comparison oracle handles sparse clocks $a and $b', () {
+      _expectComparison(a, b);
+      _expectComparison(b, a);
+    });
+  }
 
-  Glados2<VectorClock, VectorClock>(any.vc3, any.vc3).test(
-    'compare two vector clocks with three nodes',
-    (vc1, vc2) {
-      if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
-      } else if (aGtB(vc1, vc2)) {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.a_gt_b);
-      } else if (aGtB(vc2, vc1)) {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
-      } else {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
+  for (final (name, first, second) in [
+    ('two nodes', any.vc, any.vc),
+    ('three nodes', any.vc3, any.vc3),
+    ('different node sets', any.vc, any.vc3),
+    ('sparse node sets including empty clocks', any.sparseVc, any.sparseVc),
+  ]) {
+    Glados2<VectorClock, VectorClock>(first, second).test(
+      'compare clocks with $name',
+      _expectComparison,
+      tags: 'glados',
+    );
+  }
+
+  Glados2<VectorClock, int>(any.sparseVc, any.negativeInt).test(
+    'rejects a negative counter in either operand',
+    (valid, negative) {
+      final invalid = VectorClock({...valid.vclock, 'invalid': negative});
+      for (final (a, b) in [(invalid, valid), (valid, invalid)]) {
+        expect(
+          () => VectorClock.compare(a, b),
+          throwsA(isA<VclockException>()),
+          reason: '$a vs $b',
+        );
       }
     },
     tags: 'glados',
   );
 
-  Glados2<VectorClock, VectorClock>(any.vc, any.vc3).test(
-    'compare two vector clocks, one with three nodes',
-    (vc1, vc2) {
-      if (const DeepCollectionEquality().equals(vc1.vclock, vc2.vclock)) {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.equal);
-      } else if (aGtB(vc1, vc2)) {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.a_gt_b);
-      } else if (aGtB(vc2, vc1)) {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.b_gt_a);
-      } else {
-        expect(VectorClock.compare(vc1, vc2), VclockStatus.concurrent);
-      }
+  Glados<VectorClock>(any.sparseVc).test(
+    'adding explicit zero counters preserves causal equality',
+    (clock) {
+      final padded = VectorClock({...clock.vclock, 'unused-node': 0});
+      expect(VectorClock.compare(clock, padded), VclockStatus.equal);
+      expect(VectorClock.compare(padded, clock), VclockStatus.equal);
     },
     tags: 'glados',
   );
 
-  Glados2<VectorClock, VectorClock>(
-    any.possiblyInvalidVc,
-    any.possiblyInvalidVc,
-  ).test('compare two vector clocks, throw exception when invalid', (vc1, vc2) {
-    if (!vc1.isValid() || !vc2.isValid()) {
-      expect(
-        () => VectorClock.compare(vc1, vc2),
-        throwsA(
-          predicate(
-            (e) =>
-                e is VclockException &&
-                e.toString() == 'Invalid vector clock inputs',
-          ),
-        ),
-      );
-    }
+  Glados3<VectorClock, VectorClock, VectorClock>(
+    any.sparseVc,
+    any.sparseVc,
+    any.sparseVc,
+  ).test('merge is associative across sparse clocks', (a, b, c) {
+    expect(
+      VectorClock.merge(VectorClock.merge(a, b), c),
+      VectorClock.merge(a, VectorClock.merge(b, c)),
+      reason: '$a, $b, $c',
+    );
   }, tags: 'glados');
 
   group('VectorClock.merge — algebraic laws', () {
@@ -188,4 +178,23 @@ void main() {
       expect(result.contains(b), isTrue);
     });
   });
+}
+
+void _expectComparison(VectorClock a, VectorClock b) {
+  Map<String, int> nonZeroCounters(VectorClock clock) => {
+    for (final entry in clock.vclock.entries)
+      if (entry.value != 0) entry.key: entry.value,
+  };
+  final expected =
+      const DeepCollectionEquality().equals(
+        nonZeroCounters(a),
+        nonZeroCounters(b),
+      )
+      ? VclockStatus.equal
+      : _dominates(a, b)
+      ? VclockStatus.a_gt_b
+      : _dominates(b, a)
+      ? VclockStatus.b_gt_a
+      : VclockStatus.concurrent;
+  expect(VectorClock.compare(a, b), expected, reason: '$a vs $b');
 }

@@ -119,6 +119,18 @@ opens in-memory databases and seeds them — the full-shell recipe in
 `setUp` and dispose it in `tearDown`, both of which run on the real event
 loop, and keep only the pumping inside the test.
 
+## Screenshot capture tests
+
+Use `ScreenshotHost` to control OS commands, portal responses and window calls
+in `test/utils/screenshots_test.dart`. Registering a `WindowManager` in GetIt
+cannot intercept capture's global `windowManager`, and filesystem overrides do
+not replace `Process.start` or `Process.run`. Keep the output future open when
+testing process timeouts: an already-drained stream misses hangs before exit.
+Assert that both subscriptions are cancelled while pipes remain open, and that
+a subsequent capture completes; killing a parent need not close a child’s pipes.
+Entry-creation tests inject `createScreenshot(capture: ...)` and assert the saved
+image, link, category and geolocation request using the real journal database.
+
 ## Simulating a platform without a directory watch
 
 `FileWatcherMixin` polls where `FileSystemEntity.isWatchSupported` is false
