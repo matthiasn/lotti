@@ -100,8 +100,7 @@ class ChangeProposalFilter {
     if (result.rejected > 0) {
       final details = result.rejectedDetails.join('; ');
       parts.add(
-        'Rejected ${result.rejected} item(s) that reference entities which '
-        'do not exist (most likely invented ids): $details. '
+        'Rejected ${result.rejected} item(s): $details. '
         'Do not propose these again.',
       );
     }

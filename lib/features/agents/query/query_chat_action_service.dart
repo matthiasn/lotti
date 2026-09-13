@@ -28,7 +28,7 @@ class QueryChatActionService {
 
   final QueryChatStore store;
   final QueryActionContextReader readContext;
-  final AgentToolDispatch dispatch;
+  final ApprovedTaskToolDispatch dispatch;
   final LabelsRepository labels;
   final bool Function() enabled;
   final _running = <String>{};
@@ -91,7 +91,9 @@ class QueryChatActionService {
       final service = ChangeSetConfirmationService(
         syncService: store.sync,
         labelsRepository: labels,
-        toolDispatcher: (name, args, taskId) async {
+        toolDispatcher: (name, args, taskId) =>
+            dispatch(name, args, taskId, null),
+        approvedToolDispatcher: (name, args, taskId, approval) async {
           final current = await _authorize(agentId, chatId, questionId);
           if (taskId != current.taskId) throw const QueryScopeUnavailable();
           final context = await readContext(
@@ -105,7 +107,7 @@ class QueryChatActionService {
           // Re-check after asynchronous context reads and immediately before
           // the existing handler is allowed to mutate the task.
           await _authorize(agentId, chatId, questionId);
-          return dispatch(name, args, taskId);
+          return dispatch(name, args, taskId, approval);
         },
       );
       return await service.confirmAll(set);

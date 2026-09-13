@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -17,6 +18,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+import '../test_utils.dart' show makeTestChecklistApproval;
 
 enum _GeneratedDispatchGuardTool {
   setTaskTitle,
@@ -341,6 +344,105 @@ void main() {
       persistenceLogic: mockPersistenceLogic,
       timeService: mockTimeService,
     );
+  });
+
+  group('trusted chat checklist dispatch', () {
+    setUp(() async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb);
+        },
+      );
+    });
+    tearDown(tearDownTestGetIt);
+
+    for (final approved in [true, false]) {
+      test(
+        'passes approval outside tool JSON and reports protection: $approved',
+        () async {
+          final receipt = makeTestChecklistApproval();
+          final task = _makeTestTask(taskId);
+          final home = task.copyWith(
+            data: task.data.copyWith(checklistIds: ['checklist']),
+          );
+          final item = ChecklistItem(
+            meta: task.meta.copyWith(id: 'item'),
+            data: ChecklistItemData(
+              title: 'Inspect feeder',
+              isChecked: true,
+              linkedChecklists: ['checklist'],
+              checkedAt: receipt.approvedAt,
+              approvalHistory: [receipt],
+            ),
+          );
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => home);
+          when(
+            () => mockJournalDb.entriesForIds(['item']),
+          ).thenReturn(MockSelectable([toDbEntity(item)]));
+          when(
+            () => mockChecklistRepository.updateChecklistItem(
+              checklistItemId: 'item',
+              data: any(named: 'data'),
+              taskId: taskId,
+            ),
+          ).thenAnswer((_) async => true);
+          final next = receipt.copyWith(
+            decisionId: 'next',
+            isChecked: null,
+            approvedAt: receipt.approvedAt.add(const Duration(minutes: 1)),
+          );
+          final args = <String, dynamic>{
+            'id': 'item',
+            'isChecked': false,
+            'reason':
+                'There is no evidence that the feeder has been inspected.',
+            'approval': next.toJson(),
+          };
+          final result = approved
+              ? await dispatcher.dispatchApproved(
+                  'update_checklist_item',
+                  args,
+                  taskId,
+                  next,
+                )
+              : await dispatcher.dispatch(
+                  'update_checklist_item',
+                  args,
+                  taskId,
+                );
+          expect(result.success, approved);
+          expect(result.nonRetryable, !approved);
+          if (approved) {
+            final written =
+                verify(
+                      () => mockChecklistRepository.updateChecklistItem(
+                        checklistItemId: 'item',
+                        data: captureAny(named: 'data'),
+                        taskId: taskId,
+                      ),
+                    ).captured.single
+                    as ChecklistItemData;
+            expect(
+              written.checkedStateApproval,
+              next.copyWith(isChecked: false),
+            );
+            expect(written.approvalHistory.length, 2);
+          } else {
+            verifyNever(
+              () => mockChecklistRepository.updateChecklistItem(
+                checklistItemId: 'item',
+                data: any(named: 'data'),
+                taskId: taskId,
+              ),
+            );
+          }
+        },
+      );
+    }
   });
 
   group('TaskToolDispatcher', () {

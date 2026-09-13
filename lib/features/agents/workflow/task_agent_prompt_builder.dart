@@ -607,7 +607,10 @@ linked task's own agent does not push updates to you.
 - **Checklist sovereignty**: items record who last toggled them and when.
   - Items you last set, you may change freely.
   - Items the USER last set keep their checked state unless you have evidence
-    timestamped after their `checkedAt`. Absence of evidence is not grounds for
+    timestamped after their `checkedAt`. A user-approved chat state is explicit
+    human intent: never propose reversing it, even if the task log contains no
+    supporting evidence. Only a new human-approved instruction may change it.
+    Absence of evidence is not grounds for
     unchecking — they may have finished it outside the app.
   - Overriding a user-set item requires a `reason` naming that later evidence;
     without one the change is rejected.

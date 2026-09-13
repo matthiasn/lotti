@@ -30,6 +30,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_utils.dart' show makeTestChecklistApproval;
 import '../test_utils.dart';
 
 // Local fake (not a plain mock): computes real union durations so the
@@ -564,10 +565,12 @@ void main() {
             createdAt: creationDate,
             updatedAt: creationDate,
           ),
-          data: const ChecklistItemData(
+          data: ChecklistItemData(
             title: 'Test Checklist Item',
             isChecked: true,
             linkedChecklists: [checklistId],
+            checkedAt: makeTestChecklistApproval().approvedAt,
+            approvalHistory: [makeTestChecklistApproval()],
           ),
         );
 
@@ -627,6 +630,10 @@ void main() {
         expect(result.actionItems.length, 1);
         expect(result.actionItems[0].title, 'Test Checklist Item');
         expect(result.actionItems[0].completed, true);
+        expect(
+          result.actionItems[0].checkedStateApproval,
+          makeTestChecklistApproval(),
+        );
 
         // Check log entries
         expect(result.logEntries.length, 1);

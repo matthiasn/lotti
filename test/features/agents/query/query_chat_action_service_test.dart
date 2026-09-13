@@ -94,8 +94,12 @@ void main() {
         input: const {},
         dependencies: const [],
       ),
-      dispatch: (name, args, taskId) async {
+      dispatch: (name, args, taskId, approval) async {
         expect(taskId, 'task');
+        expect(approval?.originatingMessageId, question);
+        expect(approval?.conversationId, chat);
+        expect(approval?.approvedBy, 'user');
+        expect(approval?.approvalMode, ChecklistApprovalMode.confirmAll);
         calls.add(name);
         if (hold != null) await hold!.future;
         if (deleteAfterFirst) {
@@ -309,7 +313,7 @@ void main() {
           enabled: () => true,
           labels: MockLabelsRepository(),
           readContext: (taskId, ids) => loader.load(taskId, relatedIds: ids),
-          dispatch: (name, args, taskId) async {
+          dispatch: (name, args, taskId, approval) async {
             calls.add(name);
             if (name == 'create_follow_up_task') {
               // Model the journal mutation/ID returned by FollowUpTaskHandler.

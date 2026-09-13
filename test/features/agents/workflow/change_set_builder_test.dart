@@ -498,6 +498,81 @@ extension _AnyGeneratedBuildScenario on glados.Any {
 }
 
 void main() {
+  test(
+    'unavailable approval lookup rejects the proposal without aborting wake',
+    () async {
+      final builder = ChangeSetBuilder(
+        agentId: 'agent',
+        taskId: 'task',
+        threadId: 'wake',
+        runKey: 'run',
+        userApprovedChecklistStateResolver: (_) async =>
+            throw StateError('unavailable'),
+      );
+      expect(
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateChecklistItem,
+          args: {'id': 'item', 'isChecked': false},
+          humanSummary: 'Uncheck',
+        ),
+        contains('Cannot verify checklist approval state'),
+      );
+      expect(builder.items, isEmpty);
+    },
+  );
+
+  for (final checked in [true, false]) {
+    test(
+      'background suppresses six chat-approved reversals: $checked',
+      () async {
+        final protected = {for (var i = 0; i < 6; i++) 'item-$i': checked};
+        final builder = ChangeSetBuilder(
+          agentId: 'agent',
+          taskId: 'task',
+          threadId: 'wake',
+          runKey: 'run',
+          userApprovedChecklistStateResolver: (id) async => protected[id],
+        );
+        final result = await builder.addBatchItem(
+          toolName: TaskAgentToolNames.updateChecklistItems,
+          args: {
+            'items': [
+              for (final id in protected.keys)
+                {
+                  'id': id,
+                  'isChecked': !checked,
+                  'reason': 'No supporting evidence was found in the task log.',
+                },
+              {'id': 'unexplained', 'isChecked': !checked},
+            ],
+          },
+          summaryPrefix: 'Update',
+        );
+        expect(result.rejected, 6);
+        expect(result.added, 1);
+        expect(builder.items.single.args['id'], 'unexplained');
+        final detail = await builder.addItem(
+          toolName: TaskAgentToolNames.updateChecklistItem,
+          args: {'id': 'item-0', 'isChecked': !checked},
+          humanSummary: 'Reverse',
+        );
+        expect(detail, contains('User-approved chat state'));
+        expect(builder.items.length, 1);
+        // A later UI edit removes the active receipt; lookup must stay live.
+        protected.remove('item-0');
+        expect(
+          await builder.addItem(
+            toolName: TaskAgentToolNames.updateChecklistItem,
+            args: {'id': 'item-0', 'isChecked': !checked},
+            humanSummary: 'Reverse',
+          ),
+          isNull,
+        );
+        expect(builder.items.length, 2);
+      },
+    );
+  }
+
   late ChangeSetBuilder builder;
   late MockAgentSyncService mockSyncService;
   late MockAgentRepository mockRepository;

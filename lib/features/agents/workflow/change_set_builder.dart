@@ -67,8 +67,8 @@ class BatchAddResult {
   /// e.g. `'"Buy groceries" is already checked'`.
   final List<String> redundantDetails;
 
-  /// Number of items rejected because they reference an entity that does not
-  /// exist — a hallucinated id the model invented. Distinct from [redundant]
+  /// Number of items rejected for invalid IDs or protected user-approved state.
+  /// Distinct from [redundant]
   /// (a real but no-op change) and [skipped] (a malformed array element).
   final int rejected;
 
@@ -91,6 +91,7 @@ class ChangeSetBuilder {
     required this.threadId,
     required this.runKey,
     this.checklistItemStateResolver,
+    this.userApprovedChecklistStateResolver,
     this.existingChecklistTitlesResolver,
     this.labelNameResolver,
     this.existingLabelIdsResolver,
@@ -114,6 +115,31 @@ class ChangeSetBuilder {
   /// LLM references by ID only (without including the title in the tool args).
   /// Also used to detect and suppress redundant updates.
   final ChecklistItemStateResolver? checklistItemStateResolver;
+
+  /// Current checked state protected by a chat receipt; null means unprotected.
+  /// Only background builders wire this; chat proposals still require approval.
+  final Future<bool?> Function(String id)? userApprovedChecklistStateResolver;
+
+  Future<String?> _chatApprovalReversal(
+    String toolName,
+    Map<String, dynamic> args,
+  ) async {
+    if (toolName != TaskAgentToolNames.updateChecklistItem) return null;
+    final id = args['id'];
+    final requested = args['isChecked'];
+    if (id is! String || requested is! bool) return null;
+    try {
+      final protected = await userApprovedChecklistStateResolver?.call(
+        id.trim(),
+      );
+      return protected != null && protected != requested
+          ? 'User-approved chat state cannot be reversed. Do not retry this change.'
+          : null;
+    } catch (_) {
+      // Do not turn a failed lookup into permission to reverse user intent.
+      return 'Cannot verify checklist approval state. Do not retry this change.';
+    }
+  }
 
   /// Optional resolver for existing checklist item titles. When provided,
   /// `add_checklist_item` proposals are checked against existing titles
@@ -195,6 +221,8 @@ class ChangeSetBuilder {
     required Map<String, dynamic> args,
     required String humanSummary,
   }) async {
+    final protected = await _chatApprovalReversal(toolName, args);
+    if (protected != null) return protected;
     // Within-wake fingerprint dedup: skip if an identical item is already
     // queued in this builder (e.g. model calling update_task_priority twice).
     final fingerprint = ChangeItem.fingerprintFromParts(toolName, args);

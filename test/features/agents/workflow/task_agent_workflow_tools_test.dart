@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -1048,6 +1050,23 @@ void main() {
         );
 
         test('update_checklist_items is deferred', () async {
+          final date = makeTestChecklistApproval().approvedAt;
+          when(() => mockJournalDb.journalEntityById('item-1')).thenAnswer(
+            (_) async => ChecklistItem(
+              meta: Metadata(
+                id: 'item-1',
+                createdAt: date,
+                updatedAt: date,
+                dateFrom: date,
+                dateTo: date,
+              ),
+              data: const ChecklistItemData(
+                title: 'Inspect feeder',
+                isChecked: false,
+                linkedChecklists: [],
+              ),
+            ),
+          );
           final result = await executeWithToolCallOnRealTask(
             'update_checklist_items',
             '{"items":[{"id":"item-1","isChecked":true}]}',
@@ -1111,6 +1130,64 @@ void main() {
         });
 
         test(
+          'wake rejects six persisted chat approvals but reviews unexplained edits',
+          () async {
+            final approval = makeTestChecklistApproval();
+            for (var i = 0; i < 7; i++) {
+              final item = ChecklistItem(
+                meta: Metadata(
+                  id: 'item-$i',
+                  createdAt: approval.approvedAt,
+                  updatedAt: approval.approvedAt,
+                  dateFrom: approval.approvedAt,
+                  dateTo: approval.approvedAt,
+                ),
+                data: ChecklistItemData(
+                  title: 'Inspect feeder $i',
+                  isChecked: true,
+                  linkedChecklists: [],
+                  checkedAt: approval.approvedAt,
+                  approvalHistory: i < 6 ? [approval] : [],
+                ),
+              );
+              // Read through the actual journal JSON representation, independent
+              // of chat history and the AI input repository's cached prompt.
+              final persisted = JournalEntity.fromJson(
+                jsonDecode(jsonEncode(item)) as Map<String, dynamic>,
+              );
+              when(
+                () => mockJournalDb.journalEntityById(item.id),
+              ).thenAnswer((_) async => persisted);
+            }
+            final result = await executeWithToolCallOnRealTask(
+              'update_checklist_items',
+              jsonEncode({
+                'items': [
+                  for (var i = 0; i < 7; i++)
+                    {
+                      'id': 'item-$i',
+                      'isChecked': false,
+                      'reason':
+                          'No evidence of completion exists in the task log.',
+                    },
+                ],
+              }),
+            );
+            expect(result.success, isTrue);
+            final sets = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured.whereType<ChangeSetEntity>();
+            final proposals = sets.expand((set) => set.items).toList();
+            expect(proposals, isNotEmpty);
+            expect(proposals.every((p) => p.args['id'] == 'item-6'), isTrue);
+            expect(
+              proposals.every((p) => p.args['isChecked'] == false),
+              isTrue,
+            );
+          },
+        );
+
+        test(
           'update_checklist_items resolves title from DB for ID-only items',
           () async {
             // Stub journalEntityById to return a ChecklistItem for the
@@ -1144,7 +1221,7 @@ void main() {
             // Verify the resolver looked up the checklist item.
             verify(
               () => mockJournalDb.journalEntityById('cl-item-1'),
-            ).called(1);
+            ).called(2);
           },
         );
 
@@ -1231,7 +1308,7 @@ void main() {
                 'the duplicate visible proposal must not create or merge a '
                 'change set',
           );
-          verify(() => mockJournalDb.journalEntityById('cl-new')).called(1);
+          verify(() => mockJournalDb.journalEntityById('cl-new')).called(2);
         });
       });
 

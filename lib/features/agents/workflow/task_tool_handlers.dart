@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -273,8 +274,9 @@ extension TaskToolHandlers on TaskToolDispatcher {
     Task task,
     String toolName,
     Map<String, dynamic> args,
-    String taskId,
-  ) async {
+    String taskId, {
+    ChecklistItemProvenance? approval,
+  }) async {
     final items = args['items'];
     if (items is! List || items.isEmpty) {
       return ToolExecutionResult(
@@ -292,6 +294,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
     final handler = LottiBatchChecklistHandler(
       task: task,
+      approval: approval,
       autoChecklistService: autoChecklistService,
       checklistRepository: checklistRepository,
     );
@@ -334,8 +337,9 @@ extension TaskToolHandlers on TaskToolDispatcher {
     Task task,
     String toolName,
     Map<String, dynamic> args,
-    String taskId,
-  ) async {
+    String taskId, {
+    ChecklistItemProvenance? approval,
+  }) async {
     final items = args['items'];
     if (items is! List || items.isEmpty) {
       return ToolExecutionResult(
@@ -349,6 +353,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
     final handler = LottiChecklistUpdateHandler(
       task: task,
+      approval: approval,
       checklistRepository: checklistRepository,
     );
 
@@ -371,15 +376,19 @@ extension TaskToolHandlers on TaskToolDispatcher {
     }
 
     final count = await handler.executeUpdates(parseResult);
+    final protectedState = handler.skippedItems.any(
+      (s) => s.reason == LottiChecklistUpdateHandler.userApprovedStateReason,
+    );
     final hasRealFailures =
         count == 0 &&
         handler.skippedItems.any(
           (s) => s.reason != 'No changes detected',
         );
     return ToolExecutionResult(
-      // Return success=true as long as parsing succeeded — a count of 0
-      // just means all items were already in the requested state (no-op).
-      success: true,
+      // A protected state retracts a stale background proposal. Other
+      // zero-count updates retain the existing no-op result semantics.
+      success: !protectedState,
+      nonRetryable: protectedState,
       output: handler.createToolResponse(parseResult),
       mutatedEntityId: count > 0 ? taskId : null,
       // Surface real failures (not found, wrong task, DB error) so
@@ -406,10 +415,12 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
   Future<ToolExecutionResult> handleMigrateChecklistItem(
     Map<String, dynamic> args,
-    String sourceTaskId,
-  ) async {
+    String sourceTaskId, {
+    ChecklistItemProvenance? approval,
+  }) async {
     final handler = ChecklistMigrationHandler(
       checklistRepository: checklistRepository,
+      approval: approval,
       journalDb: journalDb,
       domainLogger: domainLogger,
     );

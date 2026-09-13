@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 
 part 'ai_input.freezed.dart';
 part 'ai_input.g.dart';
@@ -41,6 +42,7 @@ abstract class AiActionItem with _$AiActionItem {
     DateTime? completionDate,
     String? checkedBy,
     DateTime? checkedAt,
+    ChecklistItemProvenance? checkedStateApproval,
   }) = _AiActionItem;
 
   factory AiActionItem.fromJson(Map<String, dynamic> json) =>

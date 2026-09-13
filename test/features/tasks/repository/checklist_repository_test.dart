@@ -17,6 +17,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_utils.dart' show makeTestChecklistApproval;
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -168,14 +169,17 @@ void main() {
       final checklistItemMetadata = testTask.meta.copyWith(
         id: 'checklist-item-id',
       );
+      final approval = makeTestChecklistApproval();
       final items = [
         const ChecklistItemData(
           title: 'Item 1',
           isChecked: false,
           linkedChecklists: [],
         ),
-        const ChecklistItemData(
+        ChecklistItemData(
           title: 'Item 2',
+          checkedAt: approval.approvedAt,
+          approvalHistory: [approval],
           isChecked: true,
           linkedChecklists: [],
         ),
@@ -232,9 +236,24 @@ void main() {
       // Assert
       expect(result.checklist, isNotNull);
       expect(result.createdItems, hasLength(items.length));
-      verify(
-        () => mockPersistenceLogic.createDbEntity(any()),
-      ).called(greaterThan(1));
+      final written = verify(
+        () => mockPersistenceLogic.createDbEntity(captureAny()),
+      ).captured.whereType<ChecklistItem>().toList();
+      expect(written.length, 2);
+      expect(
+        written
+            .singleWhere((item) => item.data.title == 'Item 2')
+            .data
+            .checkedStateApproval,
+        approval,
+      );
+      expect(
+        written
+            .singleWhere((item) => item.data.title == 'Item 1')
+            .data
+            .approvalHistory,
+        isEmpty,
+      );
     });
 
     test('handles checklist items not being created', () async {
@@ -342,6 +361,32 @@ void main() {
   });
 
   group('createChecklistItem', () {
+    test('persists chat receipt together with the checklist item', () async {
+      final approval = makeTestChecklistApproval();
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => fallbackChecklistItem.meta);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
+      final item = await repository.createChecklistItem(
+        checklistId: 'checklist',
+        title: 'Inspect feeder',
+        isChecked: true,
+        categoryId: null,
+        checkedAt: approval.approvedAt,
+        approvalHistory: [approval],
+      );
+      final written =
+          verify(
+                () => mockPersistenceLogic.createDbEntity(captureAny()),
+              ).captured.single
+              as ChecklistItem;
+      expect(written.data.approvalHistory.single, approval);
+      expect(written.data.checkedStateApproval, approval);
+      expect(item, written);
+    });
+
     test('creates checklist item successfully', () async {
       // Arrange
       const checklistId = 'checklist-id';
@@ -822,18 +867,22 @@ void main() {
           () => mockPersistenceLogic.updateDbEntity(any()),
         ).thenAnswer((_) async => true);
 
+        final approval = makeTestChecklistApproval(isChecked: isChecked);
         // Act
         final result = await repository.addItemToChecklist(
           checklistId: checklistId,
           title: title,
           isChecked: isChecked,
           categoryId: categoryId,
+          checkedAt: approval.approvedAt,
+          approvalHistory: [approval],
         );
 
         // Assert
         expect(result, isNotNull);
         expect(result!.data.title, equals(title));
         expect(result.data.isChecked, equals(isChecked));
+        expect(result.data.checkedStateApproval, approval);
 
         // Verify that the checklist was updated with the new item
         final capturedChecklist =

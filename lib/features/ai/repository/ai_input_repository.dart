@@ -202,6 +202,7 @@ class AiInputRepository {
             id: item.id,
             checkedBy: item.checkedBy.name,
             checkedAt: item.checkedAt,
+            checkedStateApproval: item.checkedStateApproval,
           ),
         )
         .toList();

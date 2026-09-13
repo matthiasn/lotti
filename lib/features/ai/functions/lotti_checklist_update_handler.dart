@@ -21,7 +21,10 @@ import 'package:openai_dart/openai_dart.dart';
 ///
 /// Enforces user sovereignty: when a checklist item was last toggled by the
 /// user, the agent must provide a `reason` citing post-dated evidence to
-/// change its checked state. Title and archival updates are always allowed
+/// change its checked state. Chat-approved state additionally requires a new
+/// trusted human approval; model-provided reasons cannot reverse it. Approval
+/// receipts are persisted with each update, including reaffirmed checked state.
+/// Title and archival updates are always allowed
 /// (agent-proposed archivals pass the ChangeSet human gate before reaching
 /// this handler).
 class LottiChecklistUpdateHandler extends FunctionHandler {
@@ -29,6 +32,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
     required this.task,
     required this.checklistRepository,
     this.onTaskUpdated,
+    this.approval,
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
@@ -40,6 +44,9 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   /// checklistIds). The [onTaskUpdated] callback is invoked when refreshed.
   Task task;
   final ChecklistRepository checklistRepository;
+
+  /// Supplied only by the human confirmation path, never by the model.
+  final ChecklistItemProvenance? approval;
   final void Function(Task)? onTaskUpdated;
 
   /// Clock function for timestamps — injectable for testing.
@@ -50,6 +57,10 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
   /// a user-set checklist state. A substantive reason must cite specific
   /// evidence (e.g., "User said 'not done' in 22:30 recording").
   static const minReasonLength = 20;
+
+  /// Stable reason used to retract stale background proposals at dispatch.
+  static const userApprovedStateReason =
+      'User-approved chat state cannot be reversed by the agent.';
 
   final List<UpdatedItemDetail> _updatedItems = [];
   final List<SkippedItemDetail> _skippedItems = [];
@@ -360,8 +371,31 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final isArchivedChanged =
           newIsArchived != null && newIsArchived != currentIsArchived;
 
-      if (!isCheckedChanged && !titleChanged && !isArchivedChanged) {
+      final approvedCheck = approval != null && newIsChecked != null;
+      if (!isCheckedChanged &&
+          !titleChanged &&
+          !isArchivedChanged &&
+          approval == null) {
         _skip(id, 'No changes detected');
+        continue;
+      }
+
+      // A model-written reason cannot override a human-approved chat state.
+      if (isCheckedChanged &&
+          approval == null &&
+          entity.data.checkedStateApproval != null) {
+        _skip(id, userApprovedStateReason);
+        if (await _applyNonCheckedChanges(
+          id: id,
+          entity: entity,
+          newTitle: newTitle,
+          titleChanged: titleChanged,
+          newIsArchived: newIsArchived,
+          isArchivedChanged: isArchivedChanged,
+          currentIsChecked: currentIsChecked,
+        )) {
+          successCount++;
+        }
         continue;
       }
 
@@ -369,7 +403,9 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       // When the user last toggled isChecked, the agent needs a substantive
       // reason citing post-dated evidence to override it. We enforce a
       // minimum length to prevent trivial/hallucinated justifications.
-      if (isCheckedChanged && entity.data.checkedBy == ChangeSource.user) {
+      if (isCheckedChanged &&
+          approval == null &&
+          entity.data.checkedBy == ChangeSource.user) {
         final checkedAtStr =
             entity.data.checkedAt?.toIso8601String() ?? 'unknown';
         final trimmedReason = reason?.trim() ?? '';
@@ -416,10 +452,19 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         isChecked: newIsChecked ?? currentIsChecked,
         title: newTitle ?? currentTitle,
         isArchived: newIsArchived ?? currentIsArchived,
-        checkedBy: isCheckedChanged
-            ? ChangeSource.agent
+        checkedBy: (isCheckedChanged || approvedCheck)
+            ? (approval == null ? ChangeSource.agent : ChangeSource.user)
             : entity.data.checkedBy,
-        checkedAt: isCheckedChanged ? _clock() : entity.data.checkedAt,
+        checkedAt: (isCheckedChanged || approvedCheck)
+            ? (approval?.approvedAt ?? _clock())
+            : entity.data.checkedAt,
+        approvalHistory: [
+          ...entity.data.approvalHistory,
+          if (approval case final receipt?)
+            receipt.copyWith(
+              isChecked: newIsChecked,
+            ),
+        ],
       );
 
       final success = await checklistRepository.updateChecklistItem(

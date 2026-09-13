@@ -3,6 +3,8 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 
+import '../test_utils.dart' show makeTestChecklistApproval;
+
 AiInputTaskObject _task({
   String title = 'Test task',
   String status = 'IN PROGRESS',
@@ -46,6 +48,37 @@ extension _AnyActionItems on glados.Any {
 }
 
 void main() {
+  test('prompt distinguishes approved chat state from unexplained checks', () {
+    final approval = makeTestChecklistApproval();
+    final text = renderTaskStateMarkdown(
+      _task(
+        actionItems: [
+          AiActionItem(
+            title: 'Inspect feeder',
+            completed: true,
+            checkedStateApproval: approval,
+          ),
+          const AiActionItem(title: 'Unexplained check', completed: true),
+        ],
+      ),
+    );
+    final lines = text.split('\n');
+    expect(
+      lines.singleWhere((l) => l.contains('Inspect feeder')),
+      contains(
+        'user-approved chat state at ${approval.approvedAt.toIso8601String()}',
+      ),
+    );
+    expect(
+      lines.singleWhere((l) => l.contains('Inspect feeder')),
+      contains('do not reverse'),
+    );
+    expect(
+      lines.singleWhere((l) => l.contains('Unexplained check')),
+      isNot(contains('user-approved')),
+    );
+  });
+
   group('renderTaskStateMarkdown', () {
     // ── generative properties ────────────────────────────────────────────────
 

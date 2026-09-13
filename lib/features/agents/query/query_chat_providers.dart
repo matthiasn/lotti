@@ -73,7 +73,7 @@ final queryChatActionServiceProvider = Provider<QueryChatActionService>(
   (ref) => QueryChatActionService(
     store: ref.watch(queryChatStoreProvider),
     readContext: ref.watch(queryActionContextReaderProvider),
-    dispatch: taskToolDispatcher(ref).dispatch,
+    dispatch: taskToolDispatcher(ref).dispatchApproved,
     labels: ref.watch(labelsRepositoryProvider),
     enabled: () => ref.read(queryChatEnabledProvider),
   ),

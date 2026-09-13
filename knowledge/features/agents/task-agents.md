@@ -5,9 +5,21 @@ description: The primary agent workflow — inference setup resolution, the auto
 resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
 tags: [agents, task-agent, tools, proposals, inference]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T20:31:24Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T07:18:59Z }
 stale_after: 2026-10-12
 sources:
+  - id: checklist-provenance
+    resource: ../../../lib/classes/checklist_item_data.dart
+    title: Durable checklist approval receipts
+    last_modified: 2026-09-13
+  - id: checklist-update
+    resource: ../../../lib/features/ai/functions/lotti_checklist_update_handler.dart
+    title: Trusted approval stamping and execution guard
+    last_modified: 2026-09-13
+  - id: proposal-builder
+    resource: ../../../lib/features/agents/workflow/change_set_builder.dart
+    title: Live background proposal protection
+    last_modified: 2026-09-13
   - id: workflow
     resource: ../../../lib/features/agents/workflow/task_agent_workflow.dart
     title: TaskAgentWorkflow
@@ -569,6 +581,65 @@ write path for both auto-applied values and user-confirmed edits, so the
 not the mutation boundary where it would block legitimate edits.
 
 # Proposals and confirmation
+
+## Chat checklist approval provenance
+
+`ChangeSetConfirmationService` recognizes the persisted chat-owned set identity
+(`query-chat:<questionId>:actions`, with the corresponding `runKey` and chat
+`threadId`). Its trusted `ApprovedTaskToolDispatch` channel carries a typed
+`ChecklistItemProvenance` separately from model-generated tool arguments:
+
+- `approvedBy: user` is the human actor; `approvalHost` is their local sync host.
+  Lotti has no separate signed-in human account ID for this action.
+- `approvedAt` and `decisionId` come from the persisted human confirmation
+  decision; `changeSetId`, `conversationId` and `originatingMessageId` trace the
+  saved proposal back to the question event.
+- `approvalMode` records the gesture: `confirmItem` uses `individual`;
+  `confirmAll`, including chat's Accept-set action, uses `confirm_all` even when
+  only one item is in the set.
+- `source: chat_suggestion`, `appliedBy: task_agent` and `agentId` distinguish
+  human authorization from the executing agent. No model identity is invented.
+
+Creation, updates and migration append receipts to the checklist item's
+`approvalHistory` in the **same journal write as the change**, including sync
+serialization. Migration retains existing history on the copy and source.
+Checked-state receipts also record `isChecked`; title/archival-only approvals
+leave it null. An explicit approval of an already-matching check still stamps
+human intent. Failed writes leave no new receipt on the item. Rejection creates
+no checklist receipt. Chat deletion can remove the referenced chat event but
+neither removes the journal receipt nor requires retaining the user's words.
+Legacy and direct UI edits create no receipt; absent history decodes as empty.
+
+`checkedStateApproval` returns the latest checked-state receipt only while its
+value and timestamp still match `isChecked`/`checkedAt` and `checkedBy` is user.
+A later rename keeps protection; a later direct checkbox toggle supersedes it
+without erasing the audit history. The AI input repository exports only that
+current receipt for wake context, and compact markdown marks it as explicit
+user-approved chat state. The scaffold forbids reversing it for missing log
+evidence.
+
+This is also enforced without relying on model obedience: the wake wires a
+live journal resolver into `ChangeSetBuilder`, and both singular and exploded
+batch update paths reject opposing checked-state proposals. A handler-level
+check also blocks stale background proposals at execution, even if their
+`reason` sounds persuasive; the dispatcher reports a non-retryable failure so
+the confirmation service retracts them. A fresh human-approved chat instruction
+can change that state. Unprotected legacy/agent edits remain eligible for
+proposals and retain the existing user-sovereignty reason checks at execution.
+
+```mermaid
+flowchart TD
+    Question[User question] --> Proposal[Saved chat proposal]
+    Proposal --> Approval[Human confirms item or set]
+    Approval --> Decision[Persist human decision]
+    Decision --> Receipt[Typed receipt outside model arguments]
+    Receipt --> Write[Journal mutation and approval history]
+    Write --> Wake[Next wake reads live checklist]
+    Wake --> Protected{Current checked state has approval?}
+    Protected -->|yes| Reject[Reject opposing proposal]
+    Protected -->|no| Review[Existing anomaly review rules]
+```
+
 
 `ChangeSetBuilder` owns the deferred path. It explodes batch tools into
 individually reviewable items, deduplicates identical proposals within a wake,

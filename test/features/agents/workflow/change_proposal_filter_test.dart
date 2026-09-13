@@ -13,6 +13,25 @@ import 'change_proposal_filter_test_helpers.dart';
 
 void main() {
   group('ChangeProposalFilter.formatBatchResponse', () {
+    test(
+      'protected-state rejection does not claim that the item is missing',
+      () {
+        final response = ChangeProposalFilter.formatBatchResponse(
+          const BatchAddResult(
+            added: 0,
+            skipped: 0,
+            rejected: 1,
+            rejectedDetails: ['User-approved chat state cannot be reversed.'],
+          ),
+        );
+        expect(
+          response,
+          contains('User-approved chat state cannot be reversed'),
+        );
+        expect(response, contains('Do not propose these again'));
+        expect(response, isNot(contains('do not exist')));
+      },
+    );
     test('formats clean batch with only added items', () {
       const result = BatchAddResult(added: 3, skipped: 0);
       expect(

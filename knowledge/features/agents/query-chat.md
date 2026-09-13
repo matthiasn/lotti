@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-13T04:00:59Z }
+generated: { by: codex/gpt-6, at: 2026-09-13T07:18:59Z }
 stale_after: 2026-10-12
 sources:
   - id: controller
@@ -418,6 +418,9 @@ live targets before every dispatch through the shared task handlers and
 `ChangeSetConfirmationService`. Its in-flight guard prevents repeated local
 Accept taps; retries reuse item statuses and skip applied items. The existing
 confirmation service's persist-before-dispatch crash semantics still apply.
+Checklist mutations additionally persist their human approval receipt with the
+journal item. See [chat checklist approval provenance](task-agents.md#chat-checklist-approval-provenance)
+for the receipt fields, confirmation-mode mapping and background reversal guard.
 Failures show content-free app copy, never provider or handler error strings.
 
 Chat action sets and their decisions are excluded before limits from wake
