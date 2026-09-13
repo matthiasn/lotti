@@ -613,10 +613,12 @@ Legacy and direct UI edits create no receipt; absent history decodes as empty.
 `checkedStateApproval` returns the latest checked-state receipt only while its
 value and timestamp still match `isChecked`/`checkedAt` and `checkedBy` is user.
 A later rename keeps protection; a later direct checkbox toggle supersedes it
-without erasing the audit history. The AI input repository exports only that
-current receipt for wake context, and compact markdown marks it as explicit
-user-approved chat state. The scaffold forbids reversing it for missing log
-evidence.
+without erasing the audit history. The AI input repository maps the current
+receipt to `AiChecklistApproval`: only the checked value, approval timestamp
+and mode enter generic prompt JSON. The sync host and conversation, question,
+change-set, decision and agent identifiers stay in the journal receipt.
+Compact markdown marks this as explicit user-approved chat state. The scaffold
+forbids reversing it for missing log evidence.
 
 This is also enforced without relying on model obedience: the wake wires a
 live journal resolver into `ChangeSetBuilder`, and both singular and exploded

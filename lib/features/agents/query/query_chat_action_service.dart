@@ -1,3 +1,4 @@
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/query_chat_models.dart';
@@ -88,27 +89,35 @@ class QueryChatActionService {
         if (approved) throw const QueryScopeUnavailable();
         return const [];
       }
+      // Both dispatch channels re-check access; the receipt remains separate
+      // from model arguments and is present only for a persisted chat approval.
+      Future<ToolExecutionResult> authorizedDispatch(
+        String name,
+        Map<String, dynamic> args,
+        String taskId, [
+        ChecklistItemProvenance? approval,
+      ]) async {
+        final current = await _authorize(agentId, chatId, questionId);
+        if (taskId != current.taskId) throw const QueryScopeUnavailable();
+        final context = await readContext(
+          taskId,
+          current.answer.dependencies.map((s) => s.id),
+        );
+        await QueryTaskActionPlanner.validateItem(
+          ChangeItem(toolName: name, args: args, humanSummary: ''),
+          context,
+        );
+        // Re-check after asynchronous context reads and immediately before
+        // the existing handler is allowed to mutate the task.
+        await _authorize(agentId, chatId, questionId);
+        return dispatch(name, args, taskId, approval);
+      }
+
       final service = ChangeSetConfirmationService(
         syncService: store.sync,
         labelsRepository: labels,
-        toolDispatcher: (name, args, taskId) =>
-            dispatch(name, args, taskId, null),
-        approvedToolDispatcher: (name, args, taskId, approval) async {
-          final current = await _authorize(agentId, chatId, questionId);
-          if (taskId != current.taskId) throw const QueryScopeUnavailable();
-          final context = await readContext(
-            taskId,
-            current.answer.dependencies.map((s) => s.id),
-          );
-          await QueryTaskActionPlanner.validateItem(
-            ChangeItem(toolName: name, args: args, humanSummary: ''),
-            context,
-          );
-          // Re-check after asynchronous context reads and immediately before
-          // the existing handler is allowed to mutate the task.
-          await _authorize(agentId, chatId, questionId);
-          return dispatch(name, args, taskId, approval);
-        },
+        toolDispatcher: authorizedDispatch,
+        approvedToolDispatcher: authorizedDispatch,
       );
       return await service.confirmAll(set);
     } finally {

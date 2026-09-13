@@ -38,7 +38,7 @@ _AiActionItem _$AiActionItemFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['checkedAt'] as String),
       checkedStateApproval: json['checkedStateApproval'] == null
           ? null
-          : ChecklistItemProvenance.fromJson(
+          : AiChecklistApproval.fromJson(
               json['checkedStateApproval'] as Map<String, dynamic>,
             ),
     );
@@ -55,6 +55,29 @@ Map<String, dynamic> _$AiActionItemToJson(_AiActionItem instance) =>
       'checkedAt': instance.checkedAt?.toIso8601String(),
       'checkedStateApproval': instance.checkedStateApproval,
     };
+
+_AiChecklistApproval _$AiChecklistApprovalFromJson(Map<String, dynamic> json) =>
+    _AiChecklistApproval(
+      isChecked: json['isChecked'] as bool,
+      approvedAt: DateTime.parse(json['approvedAt'] as String),
+      approvalMode: $enumDecode(
+        _$ChecklistApprovalModeEnumMap,
+        json['approvalMode'],
+      ),
+    );
+
+Map<String, dynamic> _$AiChecklistApprovalToJson(
+  _AiChecklistApproval instance,
+) => <String, dynamic>{
+  'isChecked': instance.isChecked,
+  'approvedAt': instance.approvedAt.toIso8601String(),
+  'approvalMode': _$ChecklistApprovalModeEnumMap[instance.approvalMode]!,
+};
+
+const _$ChecklistApprovalModeEnumMap = {
+  ChecklistApprovalMode.individual: 'individual',
+  ChecklistApprovalMode.confirmAll: 'confirm_all',
+};
 
 Map<String, dynamic> _$AiInputLogEntryObjectToJson(
   _AiInputLogEntryObject instance,

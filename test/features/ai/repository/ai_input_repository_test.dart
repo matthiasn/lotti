@@ -632,8 +632,21 @@ void main() {
         expect(result.actionItems[0].completed, true);
         expect(
           result.actionItems[0].checkedStateApproval,
-          makeTestChecklistApproval(),
+          AiChecklistApproval(
+            isChecked: true,
+            approvedAt: makeTestChecklistApproval().approvedAt,
+            approvalMode: ChecklistApprovalMode.individual,
+          ),
         );
+
+        // Generic task prompts must carry intent, never the audit identifiers.
+        final prompt = jsonDecode(jsonEncode(result)) as Map<String, dynamic>;
+        expect(prompt['actionItems'][0]['checkedStateApproval'], {
+          'isChecked': true,
+          'approvedAt': makeTestChecklistApproval().approvedAt
+              .toIso8601String(),
+          'approvalMode': 'individual',
+        });
 
         // Check log entries
         expect(result.logEntries.length, 1);

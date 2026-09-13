@@ -994,6 +994,55 @@ void main() {
         ).thenAnswer((_) async => true);
       }
 
+      test(
+        'blocked chat reversal still applies title and archival edits',
+        () async {
+          final receipt = makeTestChecklistApproval();
+          final original = ChecklistTestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Inspect feeder',
+            isChecked: true,
+            checkedAt: receipt.approvedAt,
+          );
+          final item = original.copyWith(
+            data: original.data.copyWith(approvalHistory: [receipt]),
+          );
+          stubSingleItem(item);
+          final count = await handler.executeUpdates(
+            makeUpdateResult([
+              {
+                'id': item.id,
+                'isChecked': false,
+                'title': 'Inspect penguin feeder',
+                'isArchived': true,
+                'reason': 'There is no evidence of completion in the task log.',
+              },
+            ]),
+          );
+          expect(count, 1);
+          expect(
+            handler.skippedItems.single.reason,
+            LottiChecklistUpdateHandler.userApprovedStateReason,
+          );
+          final written =
+              verify(
+                    () => mockChecklistRepository.updateChecklistItem(
+                      checklistItemId: item.id,
+                      data: captureAny(named: 'data'),
+                      taskId: testTask.id,
+                    ),
+                  ).captured.single
+                  as ChecklistItemData;
+          expect(written.title, 'Inspect penguin feeder');
+          expect(written.isArchived, isTrue);
+          expect(written.isChecked, isTrue);
+          expect(written.checkedAt, receipt.approvedAt);
+          expect(written.checkedBy, ChangeSource.user);
+          expect(written.approvalHistory, [receipt]);
+          expect(written.checkedStateApproval, receipt);
+        },
+      );
+
       for (final approved in [false, true]) {
         test(
           'chat receipt blocks reversal unless freshly approved: $approved',

@@ -56,7 +56,11 @@ void main() {
           AiActionItem(
             title: 'Inspect feeder',
             completed: true,
-            checkedStateApproval: approval,
+            checkedStateApproval: AiChecklistApproval(
+              isChecked: true,
+              approvedAt: approval.approvedAt,
+              approvalMode: approval.approvalMode,
+            ),
           ),
           const AiActionItem(title: 'Unexplained check', completed: true),
         ],
