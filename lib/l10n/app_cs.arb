@@ -420,6 +420,7 @@
   "agentSuggestionTimeEntryUpdateUnavailable": "Původní záznam není k dispozici",
   "agentSummaryAddItem": "Přidat: „{title}“",
   "agentSummaryArchiveItem": "Archivovat: „{title}“",
+  "agentSummaryAssignLabel": "Přiřadit štítek: „{label}“",
   "agentSummaryCheckItem": "Odškrtnout: „{title}“",
   "agentSummaryCreateFollowUp": "Vytvořit navazující úkol: „{title}“",
   "agentSummaryCreateFollowUpRelated": "Vytvořit navazující úkol: „{title}“ — {relation}",

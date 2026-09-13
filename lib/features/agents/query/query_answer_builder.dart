@@ -143,7 +143,12 @@ class QueryAnswerBuilder {
                   ? text
                   : jsonEncode({
                       'proposedActions': proposedActions
-                          .map((item) => item.toJson())
+                          .map(
+                            (item) => {
+                              'toolName': item.toolName,
+                              'args': item.args,
+                            },
+                          )
                           .toList(),
                       'executionStatus':
                           'Not established by a proposal. Check current task state.',

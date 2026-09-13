@@ -437,6 +437,7 @@
   },
   "agentSummaryAddItem": "Toevoegen: \"{title}\"",
   "agentSummaryArchiveItem": "Archiveren: \"{title}\"",
+  "agentSummaryAssignLabel": "Label toewijzen: ‘{label}’",
   "agentSummaryCheckItem": "Afvinken: \"{title}\"",
   "agentSummaryCreateFollowUp": "Vervolgtaak maken: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Vervolgtaak maken: \"{title}\" — {relation}",

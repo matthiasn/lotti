@@ -156,6 +156,10 @@ void main() {
               expect(jsonEncode(conversation), contains('proposedActions'));
               expect(
                 jsonEncode(conversation),
+                isNot(contains('Private stale label name')),
+              );
+              expect(
+                jsonEncode(conversation),
                 isNot(contains('I already modified everything')),
               );
               return Stream.value(
@@ -214,7 +218,7 @@ void main() {
                     ChangeItem(
                       toolName: 'add_checklist_item',
                       args: {'title': 'Earlier review item'},
-                      humanSummary: 'Earlier review item',
+                      humanSummary: 'Private stale label name',
                     ),
                   ],
                 ),

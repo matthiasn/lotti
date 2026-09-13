@@ -92,6 +92,7 @@ void main() {
         ])
           source: sha256.convert(File(source).readAsBytesSync()).toString(),
       };
+      artifact.parent.createSync(recursive: true);
       final rows = <Map<String, Object?>>[];
       final cases = <({String id, String question, List<String> tools})>[
         (

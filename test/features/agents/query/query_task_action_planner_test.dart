@@ -14,6 +14,13 @@ void main() {
       'checklistItems': [
         {'id': 'feeder', 'title': 'Inspect feeder', 'isChecked': false},
       ],
+      'timeEntries': [
+        {
+          'id': 'session',
+          'startTime': '2026-09-13T10:00:00',
+          'endTime': '2026-09-13T11:00:00',
+        },
+      ],
       'labels': [
         {'id': 'ops', 'name': 'Operations'},
       ],
@@ -331,6 +338,61 @@ void main() {
       );
     });
   }
+
+  test(
+    'partial time edits fail closed when the stored range is unavailable',
+    () async {
+      await expectLater(
+        QueryTaskActionPlanner.validate(
+          'update_time_entry',
+          {'entryId': 'session', 'startTime': '2026-09-13T10:30:00'},
+          const QueryTaskActionContext(
+            taskId: 'habitat',
+            input: {},
+            dependencies: [],
+            timeEntryIds: {'session'},
+          ),
+        ),
+        throwsFormatException,
+      );
+    },
+  );
+
+  test(
+    'partial time edits validate against the unchanged stored endpoint',
+    () async {
+      for (final edit in [
+        {'startTime': '2026-09-13T12:00:00'},
+        {'endTime': '2026-09-13T09:00:00'},
+        {'startTime': '2026-09-13T11:00:00'},
+      ]) {
+        await expectLater(
+          plan([
+            {
+              'name': 'update_time_entry',
+              'arguments': {'entryId': 'session', ...edit},
+              'summary': 'Correct session time',
+            },
+          ]),
+          throwsFormatException,
+        );
+      }
+      for (final edit in [
+        {'startTime': '2026-09-13T09:30:00'},
+        {'endTime': '2026-09-13T11:30:00'},
+        {'summary': 'Corrected session description'},
+      ]) {
+        final result = await plan([
+          {
+            'name': 'update_time_entry',
+            'arguments': {'entryId': 'session', ...edit},
+            'summary': 'Correct session',
+          },
+        ]);
+        expect(result.items.single.args, {'entryId': 'session', ...edit});
+      }
+    },
+  );
 
   test(
     'keeps advice or missing-details clarification free of proposals',

@@ -881,6 +881,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Tildel etiket: \"$label\"';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Markér: \"$title\"';
   }
@@ -10953,6 +10958,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get queryActionsReview => 'Foreslåede ændringer';
 
   @override
+  String queryActionsTarget(String target) {
+    return 'For: $target';
+  }
+
+  @override
   String get queryAllSources => 'Alle';
 
   @override
@@ -15597,9 +15607,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String queryActionsTarget(String target) {
-    return 'For: $target';
-  }
 }

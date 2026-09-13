@@ -1627,6 +1627,12 @@ abstract class AppLocalizations {
   /// **'Archive: \"{title}\"'**
   String agentSummaryArchiveItem(Object title);
 
+  /// Review sentence for assigning a visible label to a task.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign label: \"{label}\"'**
+  String agentSummaryAssignLabel(String label);
+
   /// No description provided for @agentSummaryCheckItem.
   ///
   /// In en, this message translates to:
@@ -18469,6 +18475,12 @@ abstract class AppLocalizations {
   /// **'Proposed changes'**
   String get queryActionsReview;
 
+  /// Identifies the existing target of an inline chat action.
+  ///
+  /// In en, this message translates to:
+  /// **'For: {target}'**
+  String queryActionsTarget(String target);
+
   /// No description provided for @queryAllSources.
   ///
   /// In en, this message translates to:
@@ -26020,12 +26032,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Identifies the existing target of an inline chat action.
-  ///
-  /// In en, this message translates to:
-  /// **'For: {target}'**
-  String queryActionsTarget(String target);
 }
 
 class _AppLocalizationsDelegate

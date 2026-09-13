@@ -876,6 +876,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Assign label: \"$label\"';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Check: \"$title\"';
   }
@@ -10901,6 +10906,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get queryActionsReview => 'Proposed changes';
 
   @override
+  String queryActionsTarget(String target) {
+    return 'For: $target';
+  }
+
+  @override
   String get queryAllSources => 'All';
 
   @override
@@ -15506,11 +15516,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String queryActionsTarget(String target) {
-    return 'For: $target';
-  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

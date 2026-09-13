@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/query/query_action_review.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -99,6 +102,8 @@ void main() {
     QueryChatAnswer response = answer,
     QueryAccessSnapshot? access,
     bool canApply = true,
+    Locale? locale,
+    bool privateLabel = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -110,7 +115,13 @@ void main() {
           access: access,
           canApply: canApply,
         ),
+        locale: locale,
         overrides: [
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream.value([
+              testLabelDefinition1.copyWith(private: privateLabel),
+            ]),
+          ),
           queryChatActionServiceProvider.overrideWithValue(service),
           queryActionChangeSetProvider((
             agentId: 'agent',
@@ -121,6 +132,49 @@ void main() {
     );
     await tester.pump();
   }
+
+  testWidgets('label preview uses the live name and reader locale', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      locale: const Locale('de'),
+      response: answer.copyWith(
+        proposedActions: [
+          ChangeItem(
+            toolName: 'assign_task_label',
+            args: {'id': testLabelDefinition1.id},
+            humanSummary: 'Assign label: stale secret name',
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Label „Urgent“ zuweisen'), findsOneWidget);
+    expect(find.textContaining('stale secret name'), findsNothing);
+    expect(find.textContaining('Assign label:'), findsNothing);
+  });
+
+  testWidgets('a stale private label cannot be shown after privacy closes', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      privateLabel: true,
+      locale: const Locale('de'),
+      response: answer.copyWith(
+        proposedActions: [
+          ChangeItem(
+            toolName: 'assign_task_label',
+            args: {'id': testLabelDefinition1.id},
+            humanSummary: 'Assign label: Urgent',
+          ),
+        ],
+      ),
+    );
+    expect(find.textContaining('Urgent'), findsNothing);
+    expect(find.text('Label „label-1“ zuweisen'), findsOneWidget);
+  });
 
   testWidgets('previews actual arguments and applies only on inline Accept', (
     tester,
@@ -172,6 +226,14 @@ void main() {
     expect(find.text('Dismissed'), findsOneWidget);
     expect(find.text('Accept'), findsNothing);
     expect(find.textContaining('Inspect feeder'), findsOneWidget);
+    verify(
+      () => service.resolve(
+        agentId: 'agent',
+        chatId: 'chat',
+        questionId: 'question',
+        approved: false,
+      ),
+    ).called(1);
     verifyNever(
       () => service.resolve(
         agentId: 'agent',
@@ -317,6 +379,80 @@ void main() {
       );
       expect(proposal.data!.split('\n'), hasLength(3));
       expect(find.text('Omitted details'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'restoring and migrating items show current names and all edits',
+    (tester) async {
+      final checklist = ChecklistItem(
+        meta: testTask.meta.copyWith(id: 'item'),
+        data: const ChecklistItemData(
+          title: 'Inspect feeder',
+          isChecked: true,
+          linkedChecklists: [],
+        ),
+      );
+      final target = testTask.copyWith(
+        data: testTask.data.copyWith(title: 'Feeder repair'),
+      );
+      await pump(
+        tester,
+        access: QueryAccessSnapshot(
+          showPrivate: false,
+          entries: {'item': checklist, 'target': target},
+          categories: {},
+        ),
+        response: answer.copyWith(
+          proposedActions: const [
+            ChangeItem(
+              toolName: 'update_checklist_item',
+              args: {'id': 'item', 'isChecked': false, 'isArchived': false},
+              humanSummary: 'Wrong text',
+            ),
+            ChangeItem(
+              toolName: 'migrate_checklist_item',
+              args: {
+                'id': 'item',
+                'title': 'Inspect feeder',
+                'targetTaskId': 'target',
+              },
+              humanSummary: 'Wrong target',
+            ),
+          ],
+        ),
+      );
+      final texts = tester
+          .widgetList<SelectableText>(find.byType(SelectableText))
+          .map((w) => w.data!)
+          .toList();
+      expect(texts.first, contains('Uncheck'));
+      expect(texts.first, contains('Restore'));
+      expect(texts.first, contains('Inspect feeder'));
+      expect(texts.last, contains('Feeder repair'));
+      expect(find.textContaining('Wrong'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'retracted items show rejection and unknown shapes retain their fallback',
+    (tester) async {
+      applied();
+      saved = saved!.copyWith(
+        items: [
+          const ChangeItem(
+            toolName: 'unknown_older_tool',
+            args: {},
+            humanSummary: 'Original proposed change',
+            status: ChangeItemStatus.rejected,
+          ),
+        ],
+      );
+      await pump(tester, approved: true);
+      expect(find.text('Original proposed change'), findsOneWidget);
+      expect(find.text('Change rejected'), findsOneWidget);
+      expect(find.byType(DesignSystemButton), findsNothing);
+      verifyZeroInteractions(service);
     },
   );
 

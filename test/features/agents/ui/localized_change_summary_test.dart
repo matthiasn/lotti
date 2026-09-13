@@ -37,6 +37,27 @@ void main() {
     AppLocalizations? messages,
   }) => localizedChangeSummary(messages ?? en, toolName, args);
 
+  test('label assignment is localized when a current name is supplied', () {
+    expect(
+      summary(TaskAgentToolNames.assignTaskLabel, {
+        'id': 'ops',
+        'labelName': 'Operations',
+      }),
+      'Assign label: "Operations"',
+    );
+    expect(
+      summary(TaskAgentToolNames.assignTaskLabel, {
+        'id': 'ops',
+        'labelName': 'Operations',
+      }, messages: de),
+      'Label „Operations“ zuweisen',
+    );
+    expect(
+      summary(TaskAgentToolNames.assignTaskLabel, {'id': 'ops'}, messages: de),
+      isNull,
+    );
+  });
+
   group('metadata setters', () {
     test('each setter names its own field and value', () {
       expect(

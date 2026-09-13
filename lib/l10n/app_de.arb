@@ -413,6 +413,7 @@
   "agentSuggestionTimeEntryUpdateUnavailable": "Ursprünglicher Eintrag nicht verfügbar",
   "agentSummaryAddItem": "Hinzufügen: „{title}“",
   "agentSummaryArchiveItem": "Archivieren: „{title}“",
+  "agentSummaryAssignLabel": "Label „{label}“ zuweisen",
   "agentSummaryCheckItem": "Abhaken: „{title}“",
   "agentSummaryCreateFollowUp": "Folgeaufgabe erstellen: „{title}“",
   "agentSummaryCreateFollowUpRelated": "Folgeaufgabe erstellen: „{title}“ — {relation}",

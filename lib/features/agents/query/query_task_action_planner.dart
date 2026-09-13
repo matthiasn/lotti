@@ -213,11 +213,25 @@ class QueryTaskActionPlanner {
           throw const FormatException('Invalid local time');
         }
       }
-      if (args['startTime'] case final String start) {
-        if (args['endTime'] case final String end) {
-          if (!parseTimeEntryLocalDateTime(
-            end,
-          )!.isAfter(parseTimeEntryLocalDateTime(start)!)) {
+      // A partial correction retains the other endpoint from live task state.
+      // Validate the resulting range before presenting immutable review args.
+      final stored = name == TaskAgentToolNames.updateTimeEntry
+          ? (context.input['timeEntries'] as List?)
+                ?.whereType<Map<String, dynamic>>()
+                .where((entry) => entry['id'] == args['entryId'])
+                .firstOrNull
+          : null;
+      if (args.containsKey('startTime') || args.containsKey('endTime')) {
+        final start = args['startTime'] ?? stored?['startTime'];
+        final end = args['endTime'] ?? stored?['endTime'];
+        if (name == TaskAgentToolNames.updateTimeEntry &&
+            (start is! String || end is! String)) {
+          throw const FormatException('Stored time range unavailable');
+        }
+        if (start is String && end is String) {
+          final from = parseTimeEntryLocalDateTime(start);
+          final to = parseTimeEntryLocalDateTime(end);
+          if (from == null || to == null || !to.isAfter(from)) {
             throw const FormatException('End time must follow start time');
           }
         }

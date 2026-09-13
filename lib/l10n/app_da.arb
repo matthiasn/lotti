@@ -438,6 +438,7 @@
   },
   "agentSummaryAddItem": "Tilføj: \"{title}\"",
   "agentSummaryArchiveItem": "Arkivér: \"{title}\"",
+  "agentSummaryAssignLabel": "Tildel etiket: \"{label}\"",
   "agentSummaryCheckItem": "Markér: \"{title}\"",
   "agentSummaryCreateFollowUp": "Opret opfølgningsopgave: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Opret opfølgningsopgave: \"{title}\" — {relation}",

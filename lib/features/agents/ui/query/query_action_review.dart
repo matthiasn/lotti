@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -85,8 +86,24 @@ class _QueryActionReviewState extends ConsumerState<QueryActionReview> {
     final args = item.args;
     final target = widget.access?.entries[args['targetTaskId']];
     final checklist = widget.access?.entries[args['id']];
+    final labelName = item.toolName == TaskAgentToolNames.assignTaskLabel
+        ? ref
+              .watch(labelsStreamProvider)
+              .value
+              ?.where(
+                (label) =>
+                    label.id == args['id'] &&
+                    label.deletedAt == null &&
+                    (label.private != true ||
+                        widget.access?.showPrivate == true),
+              )
+              .firstOrNull
+              ?.name
+        : null;
     final display = <String, dynamic>{
       ...args,
+      if (item.toolName == TaskAgentToolNames.assignTaskLabel)
+        'labelName': labelName ?? args['id'],
       if (target is Task) 'targetTitle': target.data.title,
       if (checklist is ChecklistItem && !args.containsKey('title'))
         'title': checklist.data.title,

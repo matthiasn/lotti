@@ -413,6 +413,7 @@
   "agentSuggestionTimeEntryUpdateUnavailable": "Înregistrarea originală nu este disponibilă",
   "agentSummaryAddItem": "Adăugați: „{title}”",
   "agentSummaryArchiveItem": "Arhivați: „{title}”",
+  "agentSummaryAssignLabel": "Atribuiți eticheta „{label}”",
   "agentSummaryCheckItem": "Bifați: „{title}”",
   "agentSummaryCreateFollowUp": "Creați sarcină ulterioară: „{title}”",
   "agentSummaryCreateFollowUpRelated": "Creați sarcină ulterioară: „{title}” — {relation}",

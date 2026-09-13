@@ -884,6 +884,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Label toewijzen: ‘$label’';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Afvinken: \"$title\"';
   }
@@ -10972,6 +10977,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get queryActionsReview => 'Voorgestelde wijzigingen';
 
   @override
+  String queryActionsTarget(String target) {
+    return 'Voor: $target';
+  }
+
+  @override
   String get queryAllSources => 'Alles';
 
   @override
@@ -15640,9 +15650,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String queryActionsTarget(String target) {
-    return 'Voor: $target';
-  }
 }

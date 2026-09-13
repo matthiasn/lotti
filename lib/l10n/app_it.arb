@@ -438,6 +438,7 @@
   },
   "agentSummaryAddItem": "Aggiungi: \"{title}\"",
   "agentSummaryArchiveItem": "Archivia: \"{title}\"",
+  "agentSummaryAssignLabel": "Assegna etichetta: «{label}»",
   "agentSummaryCheckItem": "Segna: \"{title}\"",
   "agentSummaryCreateFollowUp": "Crea attività di follow-up: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Crea attività di follow-up: \"{title}\" — {relation}",

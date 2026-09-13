@@ -370,7 +370,8 @@ text, task fields, labels, follow-up tasks, relationships and migrations.
 Missing required details produce a clarification, with no proposed changes.
 
 The planner validates registry schemas, local timestamp syntax/ranges and ID
-allowlists, then uses `ChangeSetBuilder` to explode batches. Its output is a
+allowlists, then uses `ChangeSetBuilder` to explode batches. Partial time edits
+are checked against the unchanged endpoint from the live stored entry. Its output is a
 `QueryChatAnswer.proposedActions` list, with no evidence cards or durable
 conclusions. These inert arguments belong only to the chat until accepted;
 no task-agent change set exists merely because a model proposed an action.
@@ -378,10 +379,13 @@ Proposal owners must remain live, visible and in their saved categories.
 
 `QueryActionReview` renders the actual structured changes inside the answer,
 including dates, time ranges and follow-up options, with Accept and Dismiss.
+Label assignments use the current privacy-filtered label name and localized
+copy; an unavailable name falls back to the label ID rather than stale text.
 There is no modal. The proposal's message heading is app-generated; a model's
 premature execution claim cannot appear as a completed action. Prior proposals
-enter later model context as structured proposals with execution unknown, not
-as that model's announcement of success. `QueryChatStore.decideActions` records
+enter later model context as tool names and arguments with execution unknown,
+without saved human summaries (which may contain stale label names) or that
+model's announcement of success. `QueryChatStore.decideActions` records
 the verdict once.
 Dismissal never dispatches anything. Acceptance creates the stable
 `query-chat:<questionId>:actions` set from the persisted proposal, not from

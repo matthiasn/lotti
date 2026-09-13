@@ -464,6 +464,15 @@
       "title": {}
     }
   },
+  "agentSummaryAssignLabel": "Assign label: \"{label}\"",
+  "@agentSummaryAssignLabel": {
+    "description": "Review sentence for assigning a visible label to a task.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "agentSummaryCheckItem": "Check: \"{title}\"",
   "@agentSummaryCheckItem": {
     "placeholders": {

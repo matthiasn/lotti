@@ -437,6 +437,7 @@
   },
   "agentSummaryAddItem": "Adicionar: \"{title}\"",
   "agentSummaryArchiveItem": "Arquivar: \"{title}\"",
+  "agentSummaryAssignLabel": "Atribuir etiqueta: «{label}»",
   "agentSummaryCheckItem": "Marcar: \"{title}\"",
   "agentSummaryCreateFollowUp": "Criar tarefa de acompanhamento: \"{title}\"",
   "agentSummaryCreateFollowUpRelated": "Criar tarefa de acompanhamento: \"{title}\" — {relation}",

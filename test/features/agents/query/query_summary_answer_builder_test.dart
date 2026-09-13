@@ -120,6 +120,25 @@ void main() {
       );
 
   test(
+    'a task without reports can decline action routing and inspect entries',
+    () async {
+      reports.clear();
+      plan = {
+        'taskIds': <String>[],
+        'useProject': false,
+        'needsHomeEvidence': false,
+        'actionRequest': false,
+      };
+      final result = await build(
+        onActionRequest: (_) async => throw StateError('Not an action'),
+      );
+      expect(result, isNull);
+      expect(prompts, hasLength(1));
+      expect(prompts.single.toString(), isNot(contains('FULL')));
+    },
+  );
+
+  test(
     'explicit task action routes to isolated planner without summary synthesis',
     () async {
       plan = {

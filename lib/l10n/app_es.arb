@@ -413,6 +413,7 @@
   "agentSuggestionTimeEntryUpdateUnavailable": "Entrada original no disponible",
   "agentSummaryAddItem": "Añadir: «{title}»",
   "agentSummaryArchiveItem": "Archivar: «{title}»",
+  "agentSummaryAssignLabel": "Asignar etiqueta: «{label}»",
   "agentSummaryCheckItem": "Marcar: «{title}»",
   "agentSummaryCreateFollowUp": "Crear tarea de seguimiento: «{title}»",
   "agentSummaryCreateFollowUpRelated": "Crear tarea de seguimiento: «{title}» — {relation}",

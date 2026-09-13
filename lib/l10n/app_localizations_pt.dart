@@ -890,6 +890,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String agentSummaryAssignLabel(String label) {
+    return 'Atribuir etiqueta: «$label»';
+  }
+
+  @override
   String agentSummaryCheckItem(Object title) {
     return 'Marcar: \"$title\"';
   }
@@ -11056,6 +11061,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get queryActionsReview => 'Alterações propostas';
 
   @override
+  String queryActionsTarget(String target) {
+    return 'Para: $target';
+  }
+
+  @override
   String get queryAllSources => 'Todos';
 
   @override
@@ -15735,9 +15745,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
-
-  @override
-  String queryActionsTarget(String target) {
-    return 'Para: $target';
-  }
 }

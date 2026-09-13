@@ -190,6 +190,8 @@ void main() {
         'sourceHashes': {
           for (final file in [
             'lib/features/agents/query/query_answer_builder.dart',
+            'lib/features/agents/query/query_task_action_context.dart',
+            'lib/features/agents/query/query_task_action_planner.dart',
             'lib/features/agents/query/query_summary_answer_builder.dart',
             'lib/features/agents/query/query_summary_reader.dart',
             'lib/features/agents/query/query_journal_crawler.dart',
