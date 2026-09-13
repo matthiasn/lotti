@@ -558,6 +558,72 @@ void main() {
       );
     }
 
+    AiConfigModel stubLocalSetup() {
+      when(
+        () => agentRepository.getLinksFrom(
+          agentId,
+          type: AgentLinkTypes.agentRelationship,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentLink.agentRelationship(
+            id: 'link',
+            fromId: agentId,
+            toId: relationshipId,
+            createdAt: DateTime(2026, 8),
+            updatedAt: DateTime(2026, 8),
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => person());
+      final selectedModel = model('model-local', 'ollama-provider');
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [selectedModel]);
+      when(
+        () => aiConfigRepository.getConfigById(profileId),
+      ).thenAnswer((_) async => profile(selectedModel.id));
+      when(
+        () => aiConfigRepository.getConfigById('ollama-provider'),
+      ).thenAnswer((_) async => ollamaProvider);
+      when(
+        () => aiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) async => [ollamaProvider]);
+      return selectedModel;
+    }
+
+    ProviderContainer setupContainer({
+      AgentIdentityEntity? Function()? loadIdentity,
+      List<Override> overrides = const [],
+    }) {
+      final c = ProviderContainer(
+        overrides: [
+          templateForAgentProvider.overrideWith((ref, id) async => null),
+          aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
+          agentRepositoryProvider.overrideWithValue(agentRepository),
+          agentIdentityProvider(
+            agentId,
+          ).overrideWith(
+            (ref) async => loadIdentity == null ? identity() : loadIdentity(),
+          ),
+          relationshipRepositoryProvider.overrideWithValue(
+            relationshipRepository,
+          ),
+          journalDbProvider.overrideWithValue(journalDb),
+          ...overrides,
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
     test(
       'setup and disclosure recover when Settings selects a valid default',
       () async {
@@ -570,59 +636,9 @@ void main() {
         ) async {
           defaultId = call.positionalArguments.single as String?;
         });
-        when(
-          () => agentRepository.getLinksFrom(
-            agentId,
-            type: AgentLinkTypes.agentRelationship,
-          ),
-        ).thenAnswer(
-          (_) async => [
-            AgentLink.agentRelationship(
-              id: 'link',
-              fromId: agentId,
-              toId: relationshipId,
-              createdAt: DateTime(2026, 8),
-              updatedAt: DateTime(2026, 8),
-              vectorClock: null,
-            ),
-          ],
-        );
-        when(
-          () => relationshipRepository.getRelationshipByIdUnfiltered(
-            relationshipId,
-          ),
-        ).thenAnswer((_) async => person());
-        final selectedModel = model('model-local', 'ollama-provider');
-        when(
-          () => aiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [selectedModel]);
-        when(
-          () => aiConfigRepository.getConfigById(profileId),
-        ).thenAnswer((_) async => profile(selectedModel.id));
-        when(
-          () => aiConfigRepository.getConfigById('ollama-provider'),
-        ).thenAnswer((_) async => ollamaProvider);
-        when(
-          () => aiConfigRepository.getConfigsByType(
-            AiConfigType.inferenceProvider,
-          ),
-        ).thenAnswer((_) async => [ollamaProvider]);
-        final c = ProviderContainer(
-          overrides: [
-            templateForAgentProvider.overrideWith((ref, id) async => null),
-            aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
-            agentRepositoryProvider.overrideWithValue(agentRepository),
-            agentIdentityProvider(
-              agentId,
-            ).overrideWith((ref) async => identity()),
-            relationshipRepositoryProvider.overrideWithValue(
-              relationshipRepository,
-            ),
-            journalDbProvider.overrideWithValue(journalDb),
-          ],
-        );
-        addTearDown(c.dispose);
-        c.listen(taskAgentResolvedSetupProvider(agentId), (_, _) {});
+        final selectedModel = stubLocalSetup();
+        final c = setupContainer()
+          ..listen(taskAgentResolvedSetupProvider(agentId), (_, _) {});
         await c.read(defaultInferenceProfileControllerProvider.future);
         expect(
           (await c.read(
@@ -632,7 +648,13 @@ void main() {
         );
         await expectLater(
           c.read(relationshipBriefingDisclosureProvider(relationshipId).future),
-          throwsA(isA<RelationshipInferenceSetupUnavailable>()),
+          throwsA(
+            isA<RelationshipInferenceSetupUnavailable>().having(
+              (error) => error.toString(),
+              'diagnostic',
+              contains('No inference provider resolves'),
+            ),
+          ),
         );
         await c
             .read(defaultInferenceProfileControllerProvider.notifier)
@@ -650,6 +672,113 @@ void main() {
           isNull,
           reason:
               'the newly selected local default can generate without cloud disclosure',
+        );
+      },
+    );
+
+    for (final token in [relationshipNotification, categoriesNotification]) {
+      test('setup follows synced route changes from $token', () async {
+        final selectedModel = stubLocalSetup();
+        final updates = StreamController<Set<String>>.broadcast(sync: true);
+        addTearDown(updates.close);
+        final notifications = MockUpdateNotifications();
+        when(
+          () => notifications.updateStream,
+        ).thenAnswer((_) => updates.stream);
+        final c = setupContainer(
+          overrides: [
+            maybeUpdateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        final target = relationshipAgentResolvedSetupProvider(agentId);
+        c.listen(target, (_, _) {});
+        await c.read(defaultInferenceProfileControllerProvider.future);
+        expect(
+          (await c.read(target.future))?.status,
+          AgentSetupResolutionStatus.broken,
+        );
+
+        if (token == relationshipNotification) {
+          when(
+            () => relationshipRepository.getRelationshipByIdUnfiltered(
+              relationshipId,
+            ),
+          ).thenAnswer((_) async => person(withProfileId: profileId));
+        } else {
+          when(
+            () => relationshipRepository.getRelationshipByIdUnfiltered(
+              relationshipId,
+            ),
+          ).thenAnswer((_) async => person(categoryId: 'category'));
+          when(() => journalDb.getCategoryById('category')).thenAnswer(
+            (_) async => CategoryTestUtils.createTestCategory(
+              id: 'category',
+              name: 'Family',
+              defaultProfileId: profileId,
+            ),
+          );
+        }
+        updates.add({'unrelated-entry'});
+        await c.pump();
+        expect(
+          (await c.read(target.future))?.status,
+          AgentSetupResolutionStatus.broken,
+        );
+        updates.add({token});
+        final setup = await c.read(target.future);
+        expect(setup?.status, AgentSetupResolutionStatus.resolved);
+        expect(setup?.profile?.thinkingModelId, selectedModel.providerModelId);
+        expect(setup?.profile?.thinkingProvider.id, ollamaProvider.id);
+        c.dispose();
+        expect(
+          updates.hasListener,
+          isFalse,
+          reason: 'disposed setup must stop listening for route edits',
+        );
+      });
+    }
+
+    test(
+      'disabled AI does not silently use the valid default profile',
+      () async {
+        stubLocalSetup();
+        when(
+          aiConfigRepository.getDefaultProfileId,
+        ).thenAnswer((_) async => profileId);
+        final c = setupContainer(
+          loadIdentity: () => identity(
+            config: const AgentConfig(
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.disabled,
+                origin: AgentInferenceSetupOrigin.user,
+              ),
+            ),
+          ),
+        )..listen(relationshipAgentResolvedSetupProvider(agentId), (_, _) {});
+        final setup = await c.read(
+          relationshipAgentResolvedSetupProvider(agentId).future,
+        );
+        expect(setup?.status, AgentSetupResolutionStatus.disabled);
+        expect(setup?.profile, isNull);
+      },
+    );
+
+    test(
+      'a deleted identity has no setup or default inference route',
+      () async {
+        stubLocalSetup();
+        final c = setupContainer(
+          loadIdentity: () => null,
+        );
+        expect(
+          await c.read(relationshipAgentResolvedSetupProvider(agentId).future),
+          isNull,
+        );
+        verifyNever(
+          () => agentRepository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentRelationship,
+          ),
         );
       },
     );

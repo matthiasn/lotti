@@ -289,8 +289,11 @@ class _RelationshipBriefingCardState
         description: messages.relationshipAgentFailedNoModel,
         action: ToastAction(
           label: messages.inferenceProfileChooseModelTitle,
-          onPressed: () =>
-              AgentModelSheet.show(context: context, agentId: _agentId),
+          onPressed: () => AgentModelSheet.show(
+            context: context,
+            agentId: _agentId,
+            entityId: widget.relationship.meta.id,
+          ),
         ),
       );
     } catch (error, stackTrace) {

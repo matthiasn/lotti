@@ -209,6 +209,11 @@ void main() {
     int totalTokens = 0,
     String? disclosureProviderName,
     bool setupUnavailable = false,
+    TaskAgentSetupOptions setupOptions = const TaskAgentSetupOptions(
+      profiles: [],
+      models: [],
+      providers: [],
+    ),
     Set<ContactAction> launchable = const {ContactAction.call},
   }) async {
     final launcher = _FakeContactLauncher(launchable: launchable);
@@ -249,11 +254,7 @@ void main() {
               ],
             ),
             taskAgentSetupOptionsProvider.overrideWith(
-              (ref) async => const TaskAgentSetupOptions(
-                profiles: [],
-                models: [],
-                providers: [],
-              ),
+              (ref) async => setupOptions,
             ),
             relationshipAgentServiceProvider.overrideWithValue(agentService),
             relationshipBriefingDisclosureProvider(
@@ -635,7 +636,17 @@ void main() {
     testWidgets('unavailable setup explains recovery and opens configuration', (
       tester,
     ) async {
-      await pump(tester, checkIns: onTrackCheckIns, setupUnavailable: true);
+      final model = testAiModel();
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        setupUnavailable: true,
+        setupOptions: TaskAgentSetupOptions(
+          profiles: const [],
+          models: [model],
+          providers: [testInferenceProvider()],
+        ),
+      );
       await tester.tap(briefMe);
       await tester.pumpAndSettle();
       verifyNever(() => agentService.requestBriefing(any()));
@@ -644,6 +655,10 @@ void main() {
       await tester.tap(find.text('Choose a model'));
       await tester.pumpAndSettle();
       expect(find.text('Agent setup'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('agent-choose-model')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey('agent-model-${model.id}')), findsOneWidget);
+      expect(find.text(model.name), findsWidgets);
     });
 
     testWidgets('a failed request surfaces the error toast', (tester) async {
