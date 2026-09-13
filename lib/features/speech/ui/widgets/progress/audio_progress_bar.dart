@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -256,7 +257,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
         void handleDragEnd() {
           if (_pendingSeek != null) {
             widget.onSeek(_pendingSeek!);
-            _lastSeekInvocation = DateTime.now();
+            _lastSeekInvocation = clock.now();
             _pendingSeek = null;
           }
           _throttleTimer?.cancel();
@@ -310,11 +311,11 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
 
   void _emitSeek(Duration target) {
     widget.onSeek(target);
-    _lastSeekInvocation = DateTime.now();
+    _lastSeekInvocation = clock.now();
   }
 
   void _scheduleSeek(Duration target) {
-    final now = DateTime.now();
+    final now = clock.now();
     final last = _lastSeekInvocation;
     if (last == null || now.difference(last) >= _seekThrottleDelay) {
       _emitSeek(target);

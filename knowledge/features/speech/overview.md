@@ -223,7 +223,12 @@ Waveforms are extracted by `AudioWaveformService` and exposed through
 `audioWaveformProvider`, which caches them so scrubbing does not re-analyse the
 file. The player, speed control, timeline, and waveform expose localized
 semantics; timeline and waveform scrubbing use slider semantics with five-second
-increment and decrement actions. Disk-cache writes queue their prune passes per service instance, so two
+increment and decrement actions. The progress bar throttles drag seeks at
+60 milliseconds, flushes the pending target on drag end or cancellation, and
+cancels its timer on disposal. Its elapsed-time checks use `clock.now()` so
+the timer and deadline advance together in fake-time widget tests.
+
+Disk-cache writes queue their prune passes per service instance, so two
 concurrent extractions cannot recursively list and delete the cache tree at the
 same time. Pruning retains the 1,000 newest files by modification time. A file
 that disappears after listing but before its metadata is read is treated as
