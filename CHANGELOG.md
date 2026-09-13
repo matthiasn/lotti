@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.12]
+
+### Added
+
+- **Task chat can propose changes for review.** Ask it to add checklist items,
+  record time, or propose other task changes. Accept or dismiss the changes
+  directly in chat before anything is applied.
+
+### Changed
+
+- **Project and category chats keep their details in place.** Chat opens beside
+  the detail on wide screens or in an expandable sheet on smaller screens.
+  Category edits stay intact, and the project list returns after closing chat.
+
+### Fixed
+
+- **Chat now receives the current local date and time.** Questions about today,
+  yesterday or tomorrow get a fresh device timestamp with its UTC offset,
+  rather than leaving the model to infer today from old reports or messages.
+- **Relationship briefings now show the AI setup they actually use.** The
+  status and configuration sheet recognize the default profile from Settings.
+  Unavailable setups explain how to choose a working model, and new briefings
+  identify the model and provider that wrote them.
+- **Check-in time selection now matches the journal editor.** It follows your
+  12/24-hour preference. Audio check-ins use the person page's recorder;
+  the duplicate microphone beside the text field has been removed.
+
 ## [1.1.11]
 
 ### Added
