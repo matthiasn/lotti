@@ -3154,12 +3154,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInDictateButton => 'Dictar';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      '¿Descartar este check-in? La grabación se queda en el diario.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       '¿Descartar este check-in? No se ha guardado nada.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      '¿Descartar este check-in y la grabación? No se ha guardado nada.';
+      '¿Descartar este check-in y la grabación? La grabación se eliminará.';
 
   @override
   String get checkInDiscardRecording => 'Descartar';
@@ -11959,7 +11963,7 @@ class AppLocalizationsEs extends AppLocalizations {
       other: '$count check-ins',
       one: '1 check-in',
     );
-    return 'Fuentes: $_temp0 · los datos de contacto nunca se envían';
+    return 'Fuentes: $_temp0 · los canales de contacto nunca se envían';
   }
 
   @override

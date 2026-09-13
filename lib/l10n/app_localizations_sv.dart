@@ -3123,12 +3123,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInDictateButton => 'Diktera';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Släng den här avstämningen? Inspelningen finns kvar i journalen.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       'Släng den här avstämningen? Inget har sparats.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      'Släng den här avstämningen och inspelningen? Inget har sparats.';
+      'Släng den här avstämningen och inspelningen? Inspelningen tas bort.';
 
   @override
   String get checkInDiscardRecording => 'Släng';
@@ -11802,7 +11806,7 @@ class AppLocalizationsSv extends AppLocalizations {
       other: '$count avstämningar',
       one: '1 avstämning',
     );
-    return 'Källor: $_temp0 · kontaktuppgifter skickas aldrig';
+    return 'Källor: $_temp0 · kontaktkanaler skickas aldrig';
   }
 
   @override

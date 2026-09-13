@@ -1550,8 +1550,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Slet dette check-in? Det kan ikke fortrydes.",
   "checkInDictateButton": "Dikter",
+  "checkInDiscardDraftAudioKeptMessage": "Kassér dette check-in? Optagelsen bliver i journalen.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Kassér dette check-in? Intet er gemt.",
-  "checkInDiscardDraftRecordingMessage": "Kassér dette check-in og optagelsen? Intet er gemt.",
+  "checkInDiscardDraftRecordingMessage": "Kassér dette check-in og optagelsen? Optagelsen bliver slettet.",
   "checkInDiscardRecording": "Kassér",
   "checkInDismissButton": "Luk",
   "checkInDurationChip": "Varighed",
@@ -4994,7 +4998,7 @@
   "relationshipAgentProposedCount": "{count, plural, =1{1 forslag} other{{count} forslag}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Forbereder briefingen. Tager som regel under et minut.} =1{Læser 1 check-in. Tager som regel under et minut.} other{Læser {count} check-ins. Tager som regel under et minut.}}",
   "relationshipAgentSeeActivity": "Se aktivitet",
-  "relationshipAgentSources": "Kilder: {count, plural, =1{1 check-in} other{{count} check-ins}} · kontaktoplysninger sendes aldrig",
+  "relationshipAgentSources": "Kilder: {count, plural, =1{1 check-in} other{{count} check-ins}} · kontaktkanaler sendes aldrig",
   "relationshipAgentTryAgain": "Prøv igen",
   "relationshipAgentWatching": "Agenten holder øje",
   "relationshipAgentWatchingNextLook": "Agenten holder øje · næste kig {day}",

@@ -1080,10 +1080,11 @@ close and the back gesture all go through the form's `_dismiss`: when the
 draft is clean — the narrative, the type · started · duration chips and
 every detail match what the composer opened with, and no take is in flight
 — it simply pops; when it is dirty it
-asks first, with a wording that names a running recording — and confirming
-cancels the take through the handle's recorder, because a button labelled
-Discard must discard rather than leave a recorder running behind a closed
-sheet. The back gesture is caught by a `PopScope` whose `canPop` is the same
+asks first, with a wording that says what happens to the audio: a running
+take is deleted with the draft — confirming cancels it through the handle's
+recorder, because a button labelled Discard must discard rather than leave
+a recorder running behind a closed sheet — and a recording already in the
+journal stays there. The back gesture is caught by a `PopScope` whose `canPop` is the same
 `_isDirty` rule, read at build time — which is why the detail fields under
 *More* rebuild the form as they change — so no path around the question
 exists. (A take can still

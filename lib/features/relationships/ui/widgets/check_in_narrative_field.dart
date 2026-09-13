@@ -169,11 +169,14 @@ class CheckInNarrativeField extends StatelessWidget {
       if (shortcutHint case final hint?) messages.checkInSaveShortcutHint(hint),
     ].join(' · ');
     // The actions sit in one corner across every phase: beside the caption
-    // when both fit a line, else on their own line at the trailing edge.
+    // when both fit a line, else on their own line at the trailing edge —
+    // always at large text, where even a lone button can crowd the caption.
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
     final stacked =
-        ready &&
-        (MediaQuery.sizeOf(context).width < WoltModalConfig.pageBreakpoint ||
-            MediaQuery.textScalerOf(context).scale(1) > TextScales.large);
+        largeText ||
+        (ready &&
+            MediaQuery.sizeOf(context).width < WoltModalConfig.pageBreakpoint);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -209,11 +209,12 @@ void main() {
     );
   });
 
-  testWidgets('on a narrow header the status keeps the name, not the date', (
-    tester,
-  ) async {
+  testWidgets('on a narrow header the status keeps the name, not the date — '
+      'and the bare name is the last rung', (tester) async {
     await pump(tester, width: 240);
     expect(status(tester), 'with Anna');
+    await pump(tester, width: 150);
+    expect(status(tester), 'Anna');
   });
 
   testWidgets('the close control asks the form to dismiss, so a draft is '

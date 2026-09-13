@@ -990,7 +990,7 @@ void main() {
         await tester.pumpAndSettle();
       });
       expect(
-        find.text('Sources: 2 check-ins · contact details never sent'),
+        find.text('Sources: 2 check-ins · contact channels never sent'),
         findsOneWidget,
       );
       final quiet = tester.widget<DesignSystemButton>(
@@ -1063,7 +1063,7 @@ void main() {
         findsNothing,
       );
       expect(
-        find.text('Sources: 2 check-ins · contact details never sent'),
+        find.text('Sources: 2 check-ins · contact channels never sent'),
         findsOneWidget,
       );
     });

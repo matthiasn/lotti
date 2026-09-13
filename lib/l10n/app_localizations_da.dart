@@ -3113,12 +3113,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInDictateButton => 'Dikter';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Kassér dette check-in? Optagelsen bliver i journalen.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       'Kassér dette check-in? Intet er gemt.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      'Kassér dette check-in og optagelsen? Intet er gemt.';
+      'Kassér dette check-in og optagelsen? Optagelsen bliver slettet.';
 
   @override
   String get checkInDiscardRecording => 'Kassér';
@@ -11792,7 +11796,7 @@ class AppLocalizationsDa extends AppLocalizations {
       other: '$count check-ins',
       one: '1 check-in',
     );
-    return 'Kilder: $_temp0 · kontaktoplysninger sendes aldrig';
+    return 'Kilder: $_temp0 · kontaktkanaler sendes aldrig';
   }
 
   @override

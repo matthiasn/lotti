@@ -1372,8 +1372,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Diesen Check-in löschen? Das lässt sich nicht rückgängig machen.",
   "checkInDictateButton": "Diktieren",
+  "checkInDiscardDraftAudioKeptMessage": "Diesen Check-in verwerfen? Die Aufnahme bleibt im Journal.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Diesen Check-in verwerfen? Es wurde nichts gespeichert.",
-  "checkInDiscardDraftRecordingMessage": "Diesen Check-in und die Aufnahme verwerfen? Es wurde nichts gespeichert.",
+  "checkInDiscardDraftRecordingMessage": "Diesen Check-in und die Aufnahme verwerfen? Die Aufnahme wird gelöscht.",
   "checkInDiscardRecording": "Verwerfen",
   "checkInDismissButton": "Schließen",
   "checkInDurationChip": "Dauer",
@@ -4491,7 +4495,7 @@
   "relationshipAgentProposedCount": "{count, plural, =1{1 Vorschlag} other{{count} Vorschläge}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Bereitet das Briefing vor. Dauert meist unter einer Minute.} =1{Liest 1 Check-in. Dauert meist unter einer Minute.} other{Liest {count} Check-ins. Dauert meist unter einer Minute.}}",
   "relationshipAgentSeeActivity": "Aktivität ansehen",
-  "relationshipAgentSources": "Quellen: {count, plural, =1{1 Check-in} other{{count} Check-ins}} · Kontaktdaten werden nie gesendet",
+  "relationshipAgentSources": "Quellen: {count, plural, =1{1 Check-in} other{{count} Check-ins}} · Kontaktkanäle werden nie gesendet",
   "relationshipAgentTryAgain": "Erneut versuchen",
   "relationshipAgentWatching": "Agent beobachtet",
   "relationshipAgentWatchingNextLook": "Agent beobachtet · nächster Blick {day}",

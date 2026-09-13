@@ -1372,8 +1372,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Supprimer cet échange ? Cette action est irréversible.",
   "checkInDictateButton": "Dicter",
+  "checkInDiscardDraftAudioKeptMessage": "Abandonner ce point ? L’enregistrement reste dans le journal.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Abandonner ce point ? Rien n’a été enregistré.",
-  "checkInDiscardDraftRecordingMessage": "Abandonner ce point et l’enregistrement ? Rien n’a été sauvegardé.",
+  "checkInDiscardDraftRecordingMessage": "Abandonner ce point et l’enregistrement ? L’enregistrement sera supprimé.",
   "checkInDiscardRecording": "Abandonner",
   "checkInDismissButton": "Fermer",
   "checkInDurationChip": "Durée",
@@ -4491,7 +4495,7 @@
   "relationshipAgentProposedCount": "{count, plural, =0{0 propositions} =1{1 proposition} other{{count} propositions}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Préparation du briefing. En général moins d’une minute.} =1{Lecture d’un point. En général moins d’une minute.} other{Lecture de {count} points. En général moins d’une minute.}}",
   "relationshipAgentSeeActivity": "Voir l’activité",
-  "relationshipAgentSources": "Sources : {count, plural, =0{0 points} =1{1 point} other{{count} points}} · coordonnées jamais envoyées",
+  "relationshipAgentSources": "Sources : {count, plural, =0{0 points} =1{1 point} other{{count} points}} · canaux de contact jamais envoyés",
   "relationshipAgentTryAgain": "Réessayer",
   "relationshipAgentWatching": "Agent en veille",
   "relationshipAgentWatchingNextLook": "Agent en veille · prochain passage {day}",

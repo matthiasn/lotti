@@ -1549,8 +1549,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Excluir este registro? Isso não pode ser desfeito.",
   "checkInDictateButton": "Ditar",
+  "checkInDiscardDraftAudioKeptMessage": "Descartar este check-in? A gravação fica no diário.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Descartar este check-in? Nada foi guardado.",
-  "checkInDiscardDraftRecordingMessage": "Descartar este check-in e a gravação? Nada foi guardado.",
+  "checkInDiscardDraftRecordingMessage": "Descartar este check-in e a gravação? A gravação será eliminada.",
   "checkInDiscardRecording": "Descartar",
   "checkInDismissButton": "Fechar",
   "checkInDurationChip": "Duração",
@@ -4993,7 +4997,7 @@
   "relationshipAgentProposedCount": "{count, plural, =0{0 propostas} =1{1 proposta} other{{count} propostas}}",
   "relationshipAgentReadingBody": "{count, plural, =0{A preparar o briefing. Costuma demorar menos de um minuto.} =1{A ler 1 check-in. Costuma demorar menos de um minuto.} other{A ler {count} check-ins. Costuma demorar menos de um minuto.}}",
   "relationshipAgentSeeActivity": "Ver atividade",
-  "relationshipAgentSources": "Fontes: {count, plural, =0{0 check-ins} =1{1 check-in} other{{count} check-ins}} · os contactos nunca são enviados",
+  "relationshipAgentSources": "Fontes: {count, plural, =0{0 check-ins} =1{1 check-in} other{{count} check-ins}} · os canais de contacto nunca são enviados",
   "relationshipAgentTryAgain": "Tentar de novo",
   "relationshipAgentWatching": "Agente atento",
   "relationshipAgentWatchingNextLook": "Agente atento · próxima verificação {day}",

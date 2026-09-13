@@ -231,6 +231,7 @@ class _StatusLine extends StatelessWidget {
               relationshipDayLabelOf(context, at),
             ),
             messages.checkInComposerWithName(name),
+            name,
           ],
         },
         quiet,

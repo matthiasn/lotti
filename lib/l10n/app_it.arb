@@ -1550,8 +1550,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Eliminare questo contatto? L'azione non si può annullare.",
   "checkInDictateButton": "Detta",
+  "checkInDiscardDraftAudioKeptMessage": "Scartare questo check-in? La registrazione resta nel diario.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Scartare questo check-in? Non è stato salvato nulla.",
-  "checkInDiscardDraftRecordingMessage": "Scartare questo check-in e la registrazione? Non è stato salvato nulla.",
+  "checkInDiscardDraftRecordingMessage": "Scartare questo check-in e la registrazione? La registrazione verrà eliminata.",
   "checkInDiscardRecording": "Scarta",
   "checkInDismissButton": "Chiudi",
   "checkInDurationChip": "Durata",
@@ -4994,7 +4998,7 @@
   "relationshipAgentProposedCount": "{count, plural, =1{1 proposta} other{{count} proposte}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Preparazione del briefing. Di solito meno di un minuto.} =1{Lettura di 1 check-in. Di solito meno di un minuto.} other{Lettura di {count} check-in. Di solito meno di un minuto.}}",
   "relationshipAgentSeeActivity": "Vedi attività",
-  "relationshipAgentSources": "Fonti: {count, plural, =1{1 check-in} other{{count} check-in}} · i contatti non vengono mai inviati",
+  "relationshipAgentSources": "Fonti: {count, plural, =1{1 check-in} other{{count} check-in}} · i recapiti non vengono mai inviati",
   "relationshipAgentTryAgain": "Riprova",
   "relationshipAgentWatching": "Monitoraggio attivo",
   "relationshipAgentWatchingNextLook": "Monitoraggio attivo · prossimo controllo {day}",

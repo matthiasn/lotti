@@ -1943,8 +1943,12 @@
   },
   "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
   "checkInDictateButton": "Dictate",
+  "checkInDiscardDraftAudioKeptMessage": "Discard this check-in? The recording stays in the journal.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Discard this check-in? Nothing has been saved.",
-  "checkInDiscardDraftRecordingMessage": "Discard this check-in and the recording? Nothing has been saved.",
+  "checkInDiscardDraftRecordingMessage": "Discard this check-in and the recording? The recording will be deleted.",
   "checkInDiscardRecording": "Discard",
   "checkInDismissButton": "Dismiss",
   "checkInDurationChip": "Duration",
@@ -6868,7 +6872,7 @@
     }
   },
   "relationshipAgentSeeActivity": "See activity",
-  "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact details never sent",
+  "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact channels never sent",
   "@relationshipAgentSources": {
     "placeholders": {
       "count": {

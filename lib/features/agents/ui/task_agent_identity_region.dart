@@ -282,6 +282,12 @@ class _ReportIdentityRow extends StatelessWidget {
                   tiers: tiers,
                   style: caption.copyWith(color: ai.metaText),
                 ),
+                // On its own line the route has the whole column: it wraps
+                // rather than sheds, so large text loses no attribution.
+                stackedRoute: Text(
+                  tiers.first,
+                  style: caption.copyWith(color: ai.metaText),
+                ),
               ),
             ),
           ),
@@ -301,12 +307,16 @@ class _AttributionRow extends StatelessWidget {
     required this.label,
     required this.separator,
     required this.route,
+    required this.stackedRoute,
   });
 
   final Widget icon;
   final Widget label;
   final Widget separator;
   final Widget route;
+
+  /// The route as rendered under the label at large text.
+  final Widget stackedRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -334,7 +344,7 @@ class _AttributionRow extends StatelessWidget {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  children: [label, route],
+                  children: [label, stackedRoute],
                 )
               : Row(
                   mainAxisSize: MainAxisSize.min,

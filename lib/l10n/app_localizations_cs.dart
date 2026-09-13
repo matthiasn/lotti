@@ -3155,12 +3155,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInDictateButton => 'Diktovat';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Zahodit tento check-in? Nahrávka zůstane v deníku.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       'Zahodit tento check-in? Nic se neuložilo.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      'Zahodit tento check-in i nahrávku? Nic se neuložilo.';
+      'Zahodit tento check-in i nahrávku? Nahrávka se smaže.';
 
   @override
   String get checkInDiscardRecording => 'Zahodit';
@@ -11966,7 +11970,7 @@ class AppLocalizationsCs extends AppLocalizations {
       few: '$count check-iny',
       one: '1 check-in',
     );
-    return 'Zdroje: $_temp0 · kontaktní údaje se nikdy neposílají';
+    return 'Zdroje: $_temp0 · kontaktní kanály se nikdy neposílají';
   }
 
   @override

@@ -85,7 +85,8 @@ void main() {
       textScaler: const TextScaler.linear(1.6),
     );
     final label = tester.getRect(find.text('This report'));
-    final routeText = tester.getRect(find.textContaining('GLM 5.2'));
+    // On its own line the route is whole, never a shorter tier.
+    final routeText = tester.getRect(find.text(priorRouteLabel));
     expect(routeText.top, greaterThanOrEqualTo(label.bottom));
     expect(routeText.left, closeTo(label.left, 1));
     expect(tester.takeException(), isNull);

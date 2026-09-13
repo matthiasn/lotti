@@ -3124,12 +3124,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInDictateButton => 'Dicteren';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Deze check-in weggooien? De opname blijft in het journaal.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       'Deze check-in weggooien? Er is niets opgeslagen.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      'Deze check-in en de opname weggooien? Er is niets opgeslagen.';
+      'Deze check-in en de opname weggooien? De opname wordt verwijderd.';
 
   @override
   String get checkInDiscardRecording => 'Weggooien';
@@ -11819,7 +11823,7 @@ class AppLocalizationsNl extends AppLocalizations {
       other: '$count check-ins',
       one: '1 check-in',
     );
-    return 'Bronnen: $_temp0 · contactgegevens worden nooit verstuurd';
+    return 'Bronnen: $_temp0 · contactkanalen worden nooit verstuurd';
   }
 
   @override

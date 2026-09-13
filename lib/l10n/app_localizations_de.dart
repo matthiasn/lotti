@@ -3140,12 +3140,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInDictateButton => 'Diktieren';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Diesen Check-in verwerfen? Die Aufnahme bleibt im Journal.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       'Diesen Check-in verwerfen? Es wurde nichts gespeichert.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      'Diesen Check-in und die Aufnahme verwerfen? Es wurde nichts gespeichert.';
+      'Diesen Check-in und die Aufnahme verwerfen? Die Aufnahme wird gelöscht.';
 
   @override
   String get checkInDiscardRecording => 'Verwerfen';
@@ -11874,7 +11878,7 @@ class AppLocalizationsDe extends AppLocalizations {
       other: '$count Check-ins',
       one: '1 Check-in',
     );
-    return 'Quellen: $_temp0 · Kontaktdaten werden nie gesendet';
+    return 'Quellen: $_temp0 · Kontaktkanäle werden nie gesendet';
   }
 
   @override

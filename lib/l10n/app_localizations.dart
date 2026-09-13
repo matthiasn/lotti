@@ -5256,6 +5256,12 @@ abstract class AppLocalizations {
   /// **'Dictate'**
   String get checkInDictateButton;
 
+  /// The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this check-in? The recording stays in the journal.'**
+  String get checkInDiscardDraftAudioKeptMessage;
+
   /// No description provided for @checkInDiscardDraftMessage.
   ///
   /// In en, this message translates to:
@@ -5265,7 +5271,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkInDiscardDraftRecordingMessage.
   ///
   /// In en, this message translates to:
-  /// **'Discard this check-in and the recording? Nothing has been saved.'**
+  /// **'Discard this check-in and the recording? The recording will be deleted.'**
   String get checkInDiscardDraftRecordingMessage;
 
   /// No description provided for @checkInDiscardRecording.
@@ -19702,7 +19708,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipAgentSources.
   ///
   /// In en, this message translates to:
-  /// **'Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact details never sent'**
+  /// **'Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact channels never sent'**
   String relationshipAgentSources(int count);
 
   /// No description provided for @relationshipAgentTryAgain.

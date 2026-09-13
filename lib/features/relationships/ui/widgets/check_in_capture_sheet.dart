@@ -774,11 +774,19 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       return;
     }
     final messages = context.messages;
+    // The question says what discarding does to the audio: a live take is
+    // deleted with the draft; a recording already in the journal stays.
     final confirmed = await showConfirmationModal(
       context: context,
-      message: _phase is CheckInSpeechRecording
-          ? messages.checkInDiscardDraftRecordingMessage
-          : messages.checkInDiscardDraftMessage,
+      message: switch (_phase) {
+        CheckInSpeechRecording() =>
+          messages.checkInDiscardDraftRecordingMessage,
+        CheckInSpeechTranscribing() ||
+        CheckInSpeechReady() => messages.checkInDiscardDraftAudioKeptMessage,
+        CheckInSpeechFailed(:final failure) when failure.hasRecording =>
+          messages.checkInDiscardDraftAudioKeptMessage,
+        _ => messages.checkInDiscardDraftMessage,
+      },
       confirmLabel: messages.audioRecordingDiscardDialogConfirm,
     );
     if (!confirmed || !mounted) return;

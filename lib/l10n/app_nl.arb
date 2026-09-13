@@ -1549,8 +1549,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Deze check-in verwijderen? Dit kan niet ongedaan worden gemaakt.",
   "checkInDictateButton": "Dicteren",
+  "checkInDiscardDraftAudioKeptMessage": "Deze check-in weggooien? De opname blijft in het journaal.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Deze check-in weggooien? Er is niets opgeslagen.",
-  "checkInDiscardDraftRecordingMessage": "Deze check-in en de opname weggooien? Er is niets opgeslagen.",
+  "checkInDiscardDraftRecordingMessage": "Deze check-in en de opname weggooien? De opname wordt verwijderd.",
   "checkInDiscardRecording": "Weggooien",
   "checkInDismissButton": "Sluiten",
   "checkInDurationChip": "Duur",
@@ -4993,7 +4997,7 @@
   "relationshipAgentProposedCount": "{count, plural, =1{1 voorstel} other{{count} voorstellen}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Bereidt de briefing voor. Meestal binnen een minuut.} =1{Leest 1 check-in. Meestal binnen een minuut.} other{Leest {count} check-ins. Meestal binnen een minuut.}}",
   "relationshipAgentSeeActivity": "Activiteit bekijken",
-  "relationshipAgentSources": "Bronnen: {count, plural, =1{1 check-in} other{{count} check-ins}} · contactgegevens worden nooit verstuurd",
+  "relationshipAgentSources": "Bronnen: {count, plural, =1{1 check-in} other{{count} check-ins}} · contactkanalen worden nooit verstuurd",
   "relationshipAgentTryAgain": "Opnieuw proberen",
   "relationshipAgentWatching": "Agent houdt het in de gaten",
   "relationshipAgentWatchingNextLook": "Agent houdt het in de gaten · volgende blik {day}",

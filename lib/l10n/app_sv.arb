@@ -1550,8 +1550,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Ta bort den här avstämningen? Det går inte att ångra.",
   "checkInDictateButton": "Diktera",
+  "checkInDiscardDraftAudioKeptMessage": "Släng den här avstämningen? Inspelningen finns kvar i journalen.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Släng den här avstämningen? Inget har sparats.",
-  "checkInDiscardDraftRecordingMessage": "Släng den här avstämningen och inspelningen? Inget har sparats.",
+  "checkInDiscardDraftRecordingMessage": "Släng den här avstämningen och inspelningen? Inspelningen tas bort.",
   "checkInDiscardRecording": "Släng",
   "checkInDismissButton": "Stäng",
   "checkInDurationChip": "Längd",
@@ -4994,7 +4998,7 @@
   "relationshipAgentProposedCount": "{count, plural, =1{1 förslag} other{{count} förslag}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Förbereder briefingen. Tar oftast under en minut.} =1{Läser 1 avstämning. Tar oftast under en minut.} other{Läser {count} avstämningar. Tar oftast under en minut.}}",
   "relationshipAgentSeeActivity": "Visa aktivitet",
-  "relationshipAgentSources": "Källor: {count, plural, =1{1 avstämning} other{{count} avstämningar}} · kontaktuppgifter skickas aldrig",
+  "relationshipAgentSources": "Källor: {count, plural, =1{1 avstämning} other{{count} avstämningar}} · kontaktkanaler skickas aldrig",
   "relationshipAgentTryAgain": "Försök igen",
   "relationshipAgentWatching": "Agenten håller koll",
   "relationshipAgentWatchingNextLook": "Agenten håller koll · nästa titt {day}",

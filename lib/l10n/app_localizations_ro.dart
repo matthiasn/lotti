@@ -3166,12 +3166,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInDictateButton => 'Dictați';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Renunțați la acest check-in? Înregistrarea rămâne în jurnal.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       'Renunțați la acest check-in? Nu s-a salvat nimic.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      'Renunțați la acest check-in și la înregistrare? Nu s-a salvat nimic.';
+      'Renunțați la acest check-in și la înregistrare? Înregistrarea va fi ștearsă.';
 
   @override
   String get checkInDiscardRecording => 'Renunțați';
@@ -12031,7 +12035,7 @@ class AppLocalizationsRo extends AppLocalizations {
       few: '$count check-in-uri',
       one: '1 check-in',
     );
-    return 'Surse: $_temp0 · datele de contact nu sunt trimise niciodată';
+    return 'Surse: $_temp0 · canalele de contact nu sunt trimise niciodată';
   }
 
   @override

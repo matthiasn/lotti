@@ -1379,8 +1379,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Smazat tento záznam? Tohle nelze vrátit zpět.",
   "checkInDictateButton": "Diktovat",
+  "checkInDiscardDraftAudioKeptMessage": "Zahodit tento check-in? Nahrávka zůstane v deníku.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Zahodit tento check-in? Nic se neuložilo.",
-  "checkInDiscardDraftRecordingMessage": "Zahodit tento check-in i nahrávku? Nic se neuložilo.",
+  "checkInDiscardDraftRecordingMessage": "Zahodit tento check-in i nahrávku? Nahrávka se smaže.",
   "checkInDiscardRecording": "Zahodit",
   "checkInDismissButton": "Zavřít",
   "checkInDurationChip": "Délka",
@@ -4498,7 +4502,7 @@
   "relationshipAgentProposedCount": "{count, plural, =1{1 návrh} few{{count} návrhy} other{{count} návrhů}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Připravuje briefing. Obvykle do minuty.} =1{Čte 1 check-in. Obvykle do minuty.} few{Čte {count} check-iny. Obvykle do minuty.} other{Čte {count} check-inů. Obvykle do minuty.}}",
   "relationshipAgentSeeActivity": "Zobrazit aktivitu",
-  "relationshipAgentSources": "Zdroje: {count, plural, =1{1 check-in} few{{count} check-iny} other{{count} check-inů}} · kontaktní údaje se nikdy neposílají",
+  "relationshipAgentSources": "Zdroje: {count, plural, =1{1 check-in} few{{count} check-iny} other{{count} check-inů}} · kontaktní kanály se nikdy neposílají",
   "relationshipAgentTryAgain": "Zkusit znovu",
   "relationshipAgentWatching": "Agent sleduje",
   "relationshipAgentWatchingNextLook": "Agent sleduje · příště {day}",

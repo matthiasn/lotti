@@ -1372,8 +1372,12 @@
   "checkInContextSummary": "{type} · {time} · {duration}",
   "checkInDeleteConfirmMessage": "Ștergeți această înregistrare? Acțiunea nu poate fi anulată.",
   "checkInDictateButton": "Dictați",
+  "checkInDiscardDraftAudioKeptMessage": "Renunțați la acest check-in? Înregistrarea rămâne în jurnal.",
+  "@checkInDiscardDraftAudioKeptMessage": {
+    "description": "The discard confirmation while a saved recording exists: the check-in goes, the audio stays in the journal."
+  },
   "checkInDiscardDraftMessage": "Renunțați la acest check-in? Nu s-a salvat nimic.",
-  "checkInDiscardDraftRecordingMessage": "Renunțați la acest check-in și la înregistrare? Nu s-a salvat nimic.",
+  "checkInDiscardDraftRecordingMessage": "Renunțați la acest check-in și la înregistrare? Înregistrarea va fi ștearsă.",
   "checkInDiscardRecording": "Renunțați",
   "checkInDismissButton": "Închideți",
   "checkInDurationChip": "Durată",
@@ -4491,7 +4495,7 @@
   "relationshipAgentProposedCount": "{count, plural, =1{1 propunere} few{{count} propuneri} other{{count} de propuneri}}",
   "relationshipAgentReadingBody": "{count, plural, =0{Se pregătește briefingul. De obicei sub un minut.} =1{Se citește 1 check-in. De obicei sub un minut.} few{Se citesc {count} check-in-uri. De obicei sub un minut.} other{Se citesc {count} de check-in-uri. De obicei sub un minut.}}",
   "relationshipAgentSeeActivity": "Vedeți activitatea",
-  "relationshipAgentSources": "Surse: {count, plural, =1{1 check-in} few{{count} check-in-uri} other{{count} de check-in-uri}} · datele de contact nu sunt trimise niciodată",
+  "relationshipAgentSources": "Surse: {count, plural, =1{1 check-in} few{{count} check-in-uri} other{{count} de check-in-uri}} · canalele de contact nu sunt trimise niciodată",
   "relationshipAgentTryAgain": "Încercați din nou",
   "relationshipAgentWatching": "Agentul urmărește",
   "relationshipAgentWatchingNextLook": "Agentul urmărește · următoarea verificare {day}",

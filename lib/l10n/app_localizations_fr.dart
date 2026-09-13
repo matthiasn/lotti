@@ -3158,12 +3158,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInDictateButton => 'Dicter';
 
   @override
+  String get checkInDiscardDraftAudioKeptMessage =>
+      'Abandonner ce point ? L’enregistrement reste dans le journal.';
+
+  @override
   String get checkInDiscardDraftMessage =>
       'Abandonner ce point ? Rien n’a été enregistré.';
 
   @override
   String get checkInDiscardDraftRecordingMessage =>
-      'Abandonner ce point et l’enregistrement ? Rien n’a été sauvegardé.';
+      'Abandonner ce point et l’enregistrement ? L’enregistrement sera supprimé.';
 
   @override
   String get checkInDiscardRecording => 'Abandonner';
@@ -12004,7 +12008,7 @@ class AppLocalizationsFr extends AppLocalizations {
       one: '1 point',
       zero: '0 points',
     );
-    return 'Sources : $_temp0 · coordonnées jamais envoyées';
+    return 'Sources : $_temp0 · canaux de contact jamais envoyés';
   }
 
   @override

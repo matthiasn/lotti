@@ -1622,7 +1622,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text(
-          'Discard this check-in and the recording? Nothing has been saved.',
+          'Discard this check-in and the recording? The recording will be '
+          'deleted.',
         ),
         findsOneWidget,
       );
@@ -1633,6 +1634,30 @@ void main() {
       // Discard discards: the take is cancelled, never stopped and saved.
       expect(recorder.cancelCalls, 1);
       expect(recorder.stopCalls, 0);
+      verifyNoSave();
+    });
+
+    testWidgets('with a recording already in the journal, the question says '
+        'it stays', (tester) async {
+      // No transcript comes back, so the take is saved and waiting.
+      stubTranscription = StubCheckInTranscriptionService();
+      await openSheet(tester);
+      await startDictation(tester);
+      recorder.tick(progress: const Duration(seconds: 23));
+      await tester.pump();
+      await stopRecording(tester);
+      expect(find.text('Transcript not received'), findsNWidgets(2));
+
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Discard this check-in? The recording stays in the journal.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Discard').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      expect(recorder.cancelCalls, 0, reason: 'nothing left to cancel');
       verifyNoSave();
     });
 
