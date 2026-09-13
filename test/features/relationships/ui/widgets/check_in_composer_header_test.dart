@@ -7,16 +7,23 @@ import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_composer_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 
 void main() {
-  setUpAll(registerAllFallbackValues);
+  // The status line picks its wording by measuring it; the wide test font
+  // would shed every tier, so pin the bundled fonts.
+  setUpAll(() async {
+    registerAllFallbackValues();
+    await loadAppFonts();
+  });
 
   late MockRelationshipRepository repository;
   late CheckInFormHandle handle;
@@ -56,21 +63,32 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    TextScaler textScaler = TextScaler.noScaling,
+    double width = 390,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         Navigator(
           onGenerateRoute: (_) => MaterialPageRoute<void>(
             builder: (context) => Column(
               children: [
-                CheckInComposerHeader(
-                  relationshipId: testRelationship.meta.id,
-                  handle: handle,
-                  title: 'Log check-in',
+                SizedBox(
+                  width: width,
+                  child: CheckInComposerHeader(
+                    relationshipId: testRelationship.meta.id,
+                    handle: handle,
+                    title: 'Log check-in',
+                  ),
                 ),
               ],
             ),
           ),
+        ),
+        mediaQueryData: MediaQueryData(
+          size: Size(width, 844),
+          textScaler: textScaler,
         ),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(repository),
@@ -83,6 +101,7 @@ void main() {
   void publish(CheckInComposerStatus status) => handle.publish(
     save: null,
     delete: null,
+    dismiss: null,
     unfocus: null,
     block: CheckInSaveBlock.emptyNarrative,
     status: status,
@@ -125,11 +144,16 @@ void main() {
     publish(CheckInComposerStatus.recording);
     await tester.pump();
     expect(status(tester), 'Recording');
-    expect(statusColor(tester), tokens.colors.alert.error.ink);
+    // The red dot says live; the word stays in the quiet ink, so error red
+    // on this surface means only a failure.
+    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
     publish(CheckInComposerStatus.paused);
     await tester.pump();
     expect(status(tester), 'Paused');
+    // A glyph as well as the word: the state reads without its colour.
+    expect(find.byIcon(LottiIcons.pause), findsOneWidget);
+    expect(statusColor(tester), tokens.colors.text.mediumEmphasis);
 
     publish(CheckInComposerStatus.transcribing);
     await tester.pump();
@@ -168,12 +192,47 @@ void main() {
     expect(status(tester), 'with Anna · last spoke Sat 1 Aug');
   });
 
-  testWidgets('the close control pops the route', (tester) async {
-    await pump(tester);
+  testWidgets('at large text the avatar gives its width to the title', (
+    tester,
+  ) async {
+    await pump(tester, textScaler: const TextScaler.linear(1.6));
+    expect(find.byType(PersonaAvatar), findsNothing);
     expect(find.text('Log check-in'), findsOneWidget);
+    // The line sheds the date before it sheds the person — and assistive
+    // technology still hears the whole of it.
+    expect(status(tester), 'with Anna');
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('check-in-composer-status')))
+          .semanticsLabel,
+      'with Anna · last spoke Sat 1 Aug',
+    );
+  });
+
+  testWidgets('on a narrow header the status keeps the name, not the date', (
+    tester,
+  ) async {
+    await pump(tester, width: 240);
+    expect(status(tester), 'with Anna');
+  });
+
+  testWidgets('the close control asks the form to dismiss, so a draft is '
+      'guarded the same way as Cancel', (tester) async {
+    await pump(tester);
+    var dismissed = 0;
+    handle.publish(
+      save: null,
+      delete: null,
+      dismiss: () async => dismissed++,
+      unfocus: null,
+      block: CheckInSaveBlock.emptyNarrative,
+      status: CheckInComposerStatus.idle,
+      summary: '',
+    );
     await tester.tap(find.byKey(const ValueKey('check-in-close')));
-    await tester.pumpAndSettle();
-    expect(find.text('Log check-in'), findsNothing);
+    await tester.pump();
+    expect(dismissed, 1);
+    expect(find.text('Log check-in'), findsOneWidget);
   });
 
   testWidgets('the height is the taller of the avatar and the two text '
@@ -182,19 +241,48 @@ void main() {
   ) async {
     await pump(tester);
     const tokens = dsTokensDark;
-    final lines =
-        tokens.typography.lineHeight.heading3 +
-        tokens.typography.lineHeight.bodySmall;
+    double line(TextStyle style, double scale) =>
+        (style.fontSize! * (style.height ?? 1) * scale).ceilToDouble();
+    final title = tokens.typography.styles.heading.heading3;
+    final status = tokens.typography.styles.body.bodySmall;
+    final lines = line(title, 1) + line(status, 1);
     // step6 above (clear of the sheet's drag handle), step4 below.
     final atRest = 24 + (lines > 40 ? lines : 40) + 12;
     expect(tester.getSize(find.byType(CheckInComposerHeader)).height, atRest);
     expect(CheckInComposerHeader.height(tokens, TextScaler.noScaling), atRest);
 
     // Doubled text no longer fits beside the avatar: the header grows with
-    // the lines rather than clipping the status line.
+    // the lines — two for a title the sheet measured as wrapping — rather
+    // than clipping the status line.
     expect(
-      CheckInComposerHeader.height(tokens, const TextScaler.linear(2)),
-      24 + lines * 2 + 12,
+      CheckInComposerHeader.height(
+        tokens,
+        const TextScaler.linear(2),
+        titleLines: 2,
+      ),
+      24 + line(title, 2) * 2 + line(status, 2) + 12,
     );
+  });
+
+  testWidgets('the title is measured against the width it will get: one '
+      'line at ordinary scale, and at large text only as many as it wraps '
+      'to, capped at two', (tester) async {
+    await pump(tester);
+    final context = tester.element(find.byType(CheckInComposerHeader));
+    const tokens = dsTokensDark;
+    final style = ModalUtils.modalTitleStyle(context);
+    int lines(String title, double scale, double width) =>
+        CheckInComposerHeader.titleLinesFor(
+          title: title,
+          style: style,
+          scaler: TextScaler.linear(scale),
+          tokens: tokens,
+          width: width,
+          direction: TextDirection.ltr,
+        );
+    expect(lines('A very long title that would wrap', 1, 200), 1);
+    expect(lines('Log check-in', 1.6, 402), 1);
+    expect(lines('A very long title that would wrap', 1.6, 402), 2);
+    expect(lines('A title that wraps onto three or four lines', 2, 200), 2);
   });
 }

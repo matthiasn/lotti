@@ -360,6 +360,52 @@ void main() {
     }
   }
 
+  group('CheckInStickyActions.height', () {
+    const tokens = dsTokensDark;
+    double line(TextStyle style, double scale) =>
+        (style.fontSize! * (style.height ?? 1) * scale).ceilToDouble();
+    double button(double scale) =>
+        line(tokens.typography.styles.subtitle.subtitle1, scale) +
+        tokens.spacing.step4 * 2;
+    double reason(double scale) =>
+        line(tokens.typography.styles.others.caption, scale) +
+        tokens.spacing.step3;
+    final inset = tokens.spacing.step5 * 2;
+
+    test('the dialog reserves its one row; the phone adds the reason line', () {
+      expect(
+        CheckInStickyActions.height(
+          tokens,
+          TextScaler.noScaling,
+          dialog: true,
+        ),
+        inset + button(1),
+      );
+      expect(
+        CheckInStickyActions.height(
+          tokens,
+          TextScaler.noScaling,
+          dialog: false,
+        ),
+        inset + button(1) + reason(1),
+      );
+    });
+
+    test('above the large-text bar both layouts stack the two actions and '
+        'carry the reason on its own line', () {
+      const scaler = TextScaler.linear(1.6);
+      final stacked = button(1.6) * 2 + tokens.spacing.step3 + reason(1.6);
+      expect(
+        CheckInStickyActions.height(tokens, scaler, dialog: true),
+        inset + stacked,
+      );
+      expect(
+        CheckInStickyActions.height(tokens, scaler, dialog: false),
+        inset + stacked,
+      );
+    });
+  });
+
   group('the composer at rest', () {
     testWidgets('the narrative leads, the chips follow, More starts folded, '
         'and Save waits for words and says so', (tester) async {
@@ -375,11 +421,14 @@ void main() {
       expect(find.text('Delightful'), findsNothing);
       expect(saveEnabled(tester), isFalse);
       expect(saveReason(tester), 'Add a few words to save');
-      expect(find.text('0 words · Ctrl+Enter to save'), findsOneWidget);
+      expect(find.text('Ctrl+Enter to save'), findsOneWidget);
+      final barBefore = tester.getRect(save);
 
       await type(tester, 'One line.');
       expect(saveEnabled(tester), isTrue);
-      expect(saveReason(tester), isNull);
+      // The reason slot stays laid out, empty: Save does not jump.
+      expect(saveReason(tester), '');
+      expect(tester.getRect(save), barBefore);
       expect(find.text('2 words · Ctrl+Enter to save'), findsOneWidget);
 
       await openMore(tester);
@@ -537,15 +586,32 @@ void main() {
       expect(saveEnabled(tester), isTrue);
     });
 
-    testWidgets('Cancel closes without saving anything', (tester) async {
+    testWidgets('Cancel with words in the field asks first, and Discard '
+        'leaves without saving', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
       await type(tester, 'Typed but discarded');
-      await tester.ensureVisible(find.text('Cancel'));
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
+      expect(
+        find.text('Discard this check-in? Nothing has been saved.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Discard'));
+      await tester.pumpAndSettle();
 
+      verifyNoSave();
+    });
+
+    testWidgets('Cancel on an untouched composer leaves without a question', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Discard this check-in?'), findsNothing);
       verifyNoSave();
     });
 
@@ -1013,9 +1079,12 @@ void main() {
       );
       expect(recorder.recordCalls, hasLength(3));
 
-      // An edit in front of the last take keeps it: nothing is stripped.
+      // Once the text is edited, Re-record is no longer offered: taking the
+      // last take back out would take the edit with it. Add more still
+      // appends, and nothing is stripped.
       await type(tester, 'Edited. Typed.\n\nSpoken.\n\nSpoken.');
-      await tester.tap(find.byKey(const ValueKey('check-in-re-record')));
+      expect(find.byKey(const ValueKey('check-in-re-record')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('check-in-add-more')));
       await tester.pumpAndSettle();
       await stopRecording(tester);
       expect(
@@ -1043,7 +1112,9 @@ void main() {
     });
 
     testWidgets('a denied microphone: the card in the field, Open settings '
-        'through the seam, and Dismiss hands the field back', (tester) async {
+        'through the seam, and typing a word hands the field back', (
+      tester,
+    ) async {
       recorder.recordFailure = AudioRecordingFailure.permissionDenied;
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
@@ -1061,11 +1132,21 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('check-in-open-settings')));
       await tester.pump();
       expect(openedSettings, hasLength(1));
+      // The card's Try again is the one recorder door; the field's Dictate
+      // steps aside rather than sit there dead.
+      expect(dictate, findsNothing);
+      expect(
+        find.byKey(const ValueKey('check-in-retry-audio')),
+        findsOneWidget,
+      );
 
-      await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
+      // Typing is choosing to type instead: the card goes on its own, and
+      // the field's Dictate comes back with it.
+      await tester.enterText(narrative, 'Typed it instead');
       await tester.pumpAndSettle();
       expect(find.text("Lotti can't use the microphone"), findsNothing);
       expect(dictate, findsOneWidget);
+      expect(saveEnabled(tester), isTrue);
     });
 
     testWidgets('a stop that saves nothing is a recording not saved', (
@@ -1081,9 +1162,10 @@ void main() {
       expect(stubTranscription.transcribeCalls, isEmpty);
     });
 
-    // A sheet dismissed mid-take leaves the recording running; reopening
-    // and pressing Dictate must attach to it — `record()` would toggle it
-    // off, saving the take wordless and never starting a new one.
+    // A take can outlive its sheet — a route change can pop the composer
+    // around the discard guard — so reopening and pressing Dictate must
+    // attach to it: `record()` would toggle it off, saving the take
+    // wordless and never starting a new one.
     testWidgets("this person's recording still running is adopted, not "
         'toggled off', (tester) async {
       recorder = FakeAudioRecorderController(runningFor: 'rel-001');
@@ -1172,16 +1254,12 @@ void main() {
       await tester.pump();
       await stopRecording(tester);
 
+      expect(find.text('Transcript not received'), findsOneWidget);
       expect(
-        find.text("Couldn't reach the transcription server"),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('Your 0:23 recording is saved'),
+        find.textContaining('Your 0:23 recording is saved in the journal'),
         findsOneWidget,
       );
       expect(saveReason(tester), 'Type or retry to save');
-      expect(find.byKey(const ValueKey('check-in-audio-kept')), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('check-in-retry-transcript')),
@@ -1196,7 +1274,41 @@ void main() {
 
       await type(tester, 'Typed after all.');
       expect(saveEnabled(tester), isTrue);
-      expect(saveReason(tester), isNull);
+      expect(saveReason(tester), '');
+    });
+
+    testWidgets('Type instead on a missing transcript folds the card away, '
+        'focuses the field, and keeps the retry', (tester) async {
+      stubTranscription = StubCheckInTranscriptionService();
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await startDictation(tester);
+      recorder.tick(progress: const Duration(seconds: 23));
+      await tester.pump();
+      await stopRecording(tester);
+      final card = find.byKey(const ValueKey('check-in-speech-failure'));
+      expect(card, findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-dismiss-failure')));
+      await tester.pumpAndSettle();
+      expect(card, findsNothing);
+      expect(
+        tester.widget<TextField>(narrative).focusNode!.hasFocus,
+        isTrue,
+      );
+      expect(find.textContaining('0:23 of audio saved'), findsOneWidget);
+      // The field has focus, so the phone bar has slimmed: Save is still
+      // held, its reason spoken by the header.
+      expect(saveEnabled(tester), isFalse);
+
+      // The take was not forgotten: the caption row's Try again asks for
+      // the same recording's words.
+      await tester.tap(
+        find.byKey(const ValueKey('check-in-retry-transcript')),
+      );
+      await tester.pumpAndSettle();
+      expect(stubTranscription.transcribeCalls, ['audio-1', 'audio-1']);
+      expect(recorder.recordCalls, hasLength(1));
     });
 
     // The HTTP 503 case. A failed run writes no transcript, so the wait
@@ -1416,7 +1528,9 @@ void main() {
       await openSheet(tester);
       expect(find.byType(CheckInComposerHeader), findsOneWidget);
       expect(find.text('Log check-in'), findsOneWidget);
-      expect(find.text('with Anna · no check-in yet'), findsOneWidget);
+      // The status tiers its wording by width; the wide test font keeps
+      // only the name.
+      expect(find.textContaining('Anna'), findsOneWidget);
       expect(narrative, findsOneWidget);
       expect(dictate, findsOneWidget);
     });
@@ -1454,9 +1568,8 @@ void main() {
       expect(find.text('Paused'), findsOneWidget);
     });
 
-    testWidgets("Cancel, and the header's close, dismiss without saving", (
-      tester,
-    ) async {
+    testWidgets("Cancel, and the header's close, dismiss an untouched "
+        'composer without saving or asking', (tester) async {
       await openSheet(tester);
       await tester.tap(find.byKey(const ValueKey('check-in-cancel')));
       await tester.pumpAndSettle();
@@ -1468,6 +1581,57 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CheckInCaptureForm), findsNothing);
       verifyNoSave();
+    });
+
+    testWidgets('a draft guards every way out: the close asks, keeping the '
+        'draft on Keep and leaving on Discard; a recording names itself', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await type(tester, 'Half a thought');
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Discard this check-in? Nothing has been saved.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckInCaptureForm), findsOneWidget);
+      expect(narrativeText(tester), 'Half a thought');
+
+      await startDictation(tester);
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Discard this check-in and the recording? Nothing has been saved.',
+        ),
+        findsOneWidget,
+      );
+      // The dialog's confirm, not the recorder's own Discard beneath it.
+      await tester.tap(find.text('Discard').last);
+      await tester.pumpAndSettle();
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      // Discard discards: the take is cancelled, never stopped and saved.
+      expect(recorder.cancelCalls, 1);
+      expect(recorder.stopCalls, 0);
+      verifyNoSave();
+    });
+
+    testWidgets('the back gesture is guarded the same way', (tester) async {
+      await openSheet(tester);
+      await type(tester, 'Half a thought');
+      final navigator = tester.state<NavigatorState>(
+        find.byType(Navigator).first,
+      );
+      await navigator.maybePop();
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Discard this check-in? Nothing has been saved.'),
+        findsOneWidget,
+      );
+      expect(find.byType(CheckInCaptureForm), findsOneWidget);
     });
 
     // The shape that caused it: the form adding a second scroll view inside
@@ -1484,18 +1648,21 @@ void main() {
       );
     });
 
-    testWidgets('dismissed mid-recording, the sheet leaves the recording '
-        'running and brings the floating indicator back', (tester) async {
+    testWidgets('discarded mid-recording, the sheet cancels the take and '
+        'gives the floating indicator back', (tester) async {
       await openSheet(tester);
       await startDictation(tester);
       expect(recorder.modalVisibleLog, [true]);
 
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
       await tester.pumpAndSettle();
+      // A recording is a draft: the guard asks first.
+      await tester.tap(find.text('Discard').last);
+      await tester.pumpAndSettle();
 
       expect(recorder.modalVisibleLog, [true, false]);
       expect(recorder.stopCalls, 0);
-      expect(recorder.cancelCalls, 0);
+      expect(recorder.cancelCalls, 1);
     });
 
     // The sheet removes the keyboard inset from what the pinned bar can

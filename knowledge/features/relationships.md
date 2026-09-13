@@ -773,7 +773,10 @@ rather than from any relationship-specific code:
 
 * The briefing renders as **Markdown** (`AgentMarkdownView` → `GptMarkdown`).
   Phase B writes headings, bold and lists; before the panel was shared, the
-  card printed them as literal `##` and `**`.
+  card printed them as literal `##` and `**`. The card passes `TldrBody` its
+  own body tier (`bodyMedium`), so the reading faces sit at the same size as
+  the waiting faces' prose; the task and goal cards keep the compact
+  default.
 * *Read more* / *Show less* and *Open agent internals* are the same control,
   in the same place, with the same behaviour as on a task. `TldrBody` takes a
   `disclosureKey` so a failing expectation still names the surface it fired
@@ -796,12 +799,19 @@ until a new briefing is generated; changing the current setup cannot identify
 which model authored historical text.
 
 The health band no longer has a pill on the card (design 2026-09-13): it is
-a word on the header's status line — `as of 3 h ago · Thriving` — and the
+the first word on the header's status line — `Thriving · as of 3 h ago`,
+the judgement before its timestamp — and the
 person header directly above the card already carries the tinted band pill
 and the cadence pill, so the card repeats neither. The header's trailing
-rail holds only a short count or age (`2 proposed`, `6 days old`), which is
-what that rail — capped at half the header width, ellipsizing — can carry
-without truncating a judgement.
+rail holds only an out-of-date briefing's age (`6 days old`, a neutral
+filled tag, so the status line's warning ink is the one orange thing on the
+face), which is what that rail — capped at half the header width,
+ellipsizing — can carry without truncating a judgement. The status line is
+a `DsTieredText` in a live region: it sheds its date or time before it
+wraps (`Out of date · new check-in Thursday` → `Out of date · new check-in`
+→ `Out of date`; `Last run failed · 14:05` → `Last run failed`), and only
+the narrowest wording may take a second line, glyph top-aligned, so the
+state's non-colour carrier never clips.
 
 Three small seams made the reuse possible rather than a fork:
 
@@ -845,17 +855,19 @@ so the decision is a table rather than a widget tree:
 | Face | When | Status line · body · footer |
 |---|---|---|
 | Not enrolled | not `important`, or dormant/archived | plain section card, people glyph · `No agent for this person` (or the status word while paused) · what *important* turns on · **Mark important** · meta `Only what you start yourself uses AI` |
-| No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · **Brief now** |
-| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · `Reading N check-ins. Usually under a minute.` · no action |
+| No briefing | enrolled, no current report | `Agent watching · next look {day}` · how many check-ins *Brief now* would read, and that it never sees a channel · *Log check-in* · **Brief now** |
+| Running | `agentIsRunningProvider` | spinner · `Writing the briefing…` · `Reading N check-ins. Usually under a minute.` · *See activity* · no primary |
 | Failed | `consecutiveFailureCount > 0` and the last wake is newer than the report | `Last run failed · HH:mm` in error ink · the provider returned an error, your check-ins are unchanged (or that no model is set up) · *See activity* · **Choose a model** when no route resolves, **Try again** otherwise |
-| Current | report, not stale | `as of {ago} · {band}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line |
+| Current | report, not stale | `{band} · as of {ago}` · TL;DR + Read more · *Log check-in* · **Update now** (secondary) · sources line once *Read more* is open |
 | Out of date | `AgentStateEntity.isReportStale` | `Out of date · new check-in {day}` in warning ink, `{n} days old` pill once a day old · body · *Log check-in* · **Update now** (primary) — no sources line, since the count would include the check-in it missed |
 | Due | the current face while the cadence is lapsed | same status · body · *Log check-in* · **Call {name}** (the first channel the platform can open, resolved like the action bar's), or **Log check-in** as the primary without one |
 
-Open task proposals count in the header's pill (`2 proposed`) on the two
-briefing faces, ahead of the age pill: they are the thing to act on. The
-card reads `relationshipSuggestionListProvider` for the count, the same
-provider the band below renders from, so the two cannot disagree.
+Open task proposals are counted once, by the proposals band beneath the
+body (`2 pending`), never again in the header: a state said twice is a
+state said badly, and the band is where the proposals are acted on. The
+sources line (`Sources: 6 check-ins · contact details never sent`) is part
+of the expanded reading — it appears with the full briefing behind *Read
+more* — so the folded card stays status · TL;DR · one next step.
 
 ```mermaid
 stateDiagram-v2
@@ -1002,13 +1014,41 @@ The composer's parts, top to bottom:
   status line — `with Pip · last spoke Sat 1 Aug` at rest, read through
   `relationshipDetailControllerProvider`, and while speech is in flight what
   the field is doing (`● Recording`, `Paused`, `Transcribing…`, `Transcript
-  not received`, `Microphone unavailable`) in that phase's colour.
+  not received`, `Microphone unavailable`) in that phase's colour — except
+  that *Recording* keeps the quiet ink beside its red dot, so error red on
+  this surface means only a failure, and *Paused* wears a pause glyph. The
+  status line is **tiered**, not truncated: a `DsTieredText` shows the
+  widest of its wordings that fits (`with Pip · last spoke Sat 1 Aug` →
+  `with Pip`), so a narrow phone or a large text scale sheds the date before
+  the person — a check-in is *with* someone — and assistive technology hears
+  the full first wording whatever the screen shows. Above
+  `TextScales.large` (1.3×) the avatar steps aside for the text, and the
+  toolbar's height is computed from the styles' own line
+  heights plus the number of lines the title actually needs at the modal's
+  real width (`titleLinesFor`, a `TextPainter` measurement, capped at two)
+  — Wolt reserves the slot up front, so the sheet and the header must agree
+  on the number rather than guess it.
 * [`CheckInNarrativeField`](../../lib/features/relationships/ui/widgets/check_in_narrative_field.dart):
-  the text with the word count and *Dictate* in its footer. Every speech
+  the text with one caption row (`Transcript added · 26 words`, and on
+  desktop the save shortcut) and *Dictate* in its footer. Every speech
   phase renders **in place of the text** — the recorder, the transcript
   skeleton with the saved-audio line and *Type instead*, the landed
-  transcript with its provenance line and *Re-record* · *Add more*, and
-  the failure cards above a field that still says *Or type it here…*.
+  transcript with *Re-record* · *Add more*, and the failure cards above a
+  field that starts short and says *Or type it here…*. A card offers its
+  own way back to the microphone (*Try again* — also on the refused
+  microphone, whose body says exactly that), so the field's *Dictate* steps
+  aside rather than sit beside it dead; and typing a word under a card
+  that has no recording to retry is choosing to type instead, so the card
+  goes on its own (the form's `_onNarrativeChanged`). *Type instead* on a
+  **missing transcript** does not forget the take: the phase becomes
+  `CheckInSpeechFailed(cardDismissed: true)`, the card folds into one
+  caption row — `0:23 of audio saved · Try again` — and the retry survives
+  until Save or dismiss. *Re-record* is offered only while the field still
+  holds exactly what landed (`_canReRecord`, checked against
+  `mergeCheckInNarrative`): once the transcript is edited, taking it back
+  out would take the edits with it. The caption and its actions share one
+  corner across phases: beside each other when they fit a line, else the
+  actions on their own line at the trailing edge (`_CaptionAndActions`).
 * [`CheckInContextChips`](../../lib/features/relationships/ui/widgets/check_in_context_chips.dart):
   type · started · duration as one wrapping chip row, each chip opening its
   picker (the type through a `DsActionModal`), quiet while the recorder or
@@ -1018,18 +1058,36 @@ The composer's parts, top to bottom:
   the edited check-in already carries any of them.
 * [`CheckInStickyActions`](../../lib/features/relationships/ui/widgets/check_in_capture_sheet.dart)
   in the modal's sticky bar: *Save check-in* always visible, and when it is
-  held, why. On a phone the reason sits under the bar; on the desktop dialog
-  it takes the leading edge with Cancel and Save together on the trailing
-  edge. With the field focused on a phone — the keyboard up; the sheet
+  held, why. Cancel is the button's `quiet` variant on both viewports, so
+  the one bright shape in the bar is Save's even while Save is held. On a
+  phone the reason sits under the bar; on the desktop dialog it takes the
+  leading edge with Cancel and Save together on the trailing edge. The form
+  reserves exactly the bar's height for its layout
+  (`CheckInStickyActions.height`, the actions row — stacked above
+  `TextScales.large` — plus, on the phone, the reason line), so the dialog
+  carries no blank band above its footer. With the field focused on a phone — the keyboard up; the sheet
   removes the keyboard inset from what the bar can see, so focus is the
   signal — the bar slims to the context summary chip (`Call · Now · no
   duration`, tapping it drops the keyboard) and a short *Save*. On desktop
   ⌘↩ / Ctrl+↩ saves, and the field's footer says so.
 
+**Leaving asks only when it would lose something.** Cancel, the header's
+close and the back gesture all go through the form's `_dismiss`: when the
+draft is clean — the narrative and every detail match what the composer
+opened with, and no take is in flight — it simply pops; when it is dirty it
+asks first, with a wording that names a running recording — and confirming
+cancels the take through the handle's recorder, because a button labelled
+Discard must discard rather than leave a recorder running behind a closed
+sheet. The back gesture is caught by a `PopScope` whose `canPop` is the same
+`_isDirty` rule, so no path around the question exists. (A take can still
+outlive its sheet when a route change pops the composer around the guard,
+which is why *Dictate* adopts a running take for this person rather than
+toggling it off.)
+
 The form has no actions of its own: after each frame it publishes the save
-and delete intents, the save block, the header status, the summary and the
-field's focus through a `CheckInFormHandle` (a `ChangeNotifier`), and the
-header and the bar render from it. The handle also carries the recorder a
+and delete intents, the dismiss intent, the save block, the header status,
+the summary and the field's focus through a `CheckInFormHandle` (a
+`ChangeNotifier`), and the header and the bar render from it. The handle also carries the recorder a
 recording was started on, so the sheet can put the floating indicator back
 once it has closed — and only then, and only if a recording was ever
 started.
@@ -1040,10 +1098,10 @@ sequenceDiagram
   participant H as CheckInFormHandle
   participant Hd as CheckInComposerHeader
   participant B as CheckInStickyActions
-  F->>H: publish(save, delete, block, status, summary, fieldFocused) — post-frame
+  F->>H: publish(save, delete, dismiss, block, status, summary, fieldFocused) — post-frame
   H-->>Hd: notifyListeners → status line
   H-->>B: notifyListeners → Save, its reason, the keyboard bar
-  B->>H: save() / delete() / unfocus() on tap
+  B->>H: save() / delete() / dismiss() / unfocus() on tap
   H->>F: the published callback runs
 ```
 

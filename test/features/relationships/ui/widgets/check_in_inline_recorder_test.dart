@@ -109,7 +109,7 @@ void main() {
     await pump(tester);
     recorder.tick(progress: const Duration(seconds: 23), dBFS: -20);
     await tester.pump();
-    expect(find.text('0:00:23'), findsOneWidget);
+    expect(find.text('0:23'), findsOneWidget);
 
     await tester.tap(key('check-in-recorder-stop'));
     await tester.pump();
@@ -197,6 +197,8 @@ void main() {
     await tester.pump();
     expect(recorder.pauseCalls, 1);
     expect(find.text('Resume'), findsOneWidget);
+    // The live region says so too, as it says "recording" while live.
+    expect(find.bySemanticsLabel('Paused'), findsOneWidget);
     await tester.tap(key('check-in-recorder-pause'));
     await tester.pump();
     expect(recorder.resumeCalls, 1);
@@ -213,7 +215,7 @@ void main() {
 
     recorder.tick(progress: const Duration(minutes: 59, seconds: 59));
     await tester.pump();
-    expect(find.text('0:59:59'), findsOneWidget);
+    expect(find.text('59:59'), findsOneWidget);
     expect(tester.getRect(key('check-in-recorder-stop')), stopBefore);
     expect(tester.getRect(key('check-in-recorder-clock')), clockBefore);
   });

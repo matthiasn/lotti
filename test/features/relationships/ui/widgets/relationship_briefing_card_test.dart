@@ -821,7 +821,7 @@ void main() {
 
   group('running', () {
     testWidgets('says the agent is writing, what it is reading, and since '
-        'when — with nothing to press', (tester) async {
+        'when — with only the activity log to open', (tester) async {
       await pump(
         tester,
         checkIns: onTrackCheckIns,
@@ -835,8 +835,13 @@ void main() {
         findsOneWidget,
       );
       expect(briefMe, findsNothing);
-      expect(find.byType(DesignSystemButton), findsNothing);
-      // With no action row, the footer still washes the whole card.
+      // The quiet door stays open while the agent writes; nothing primary.
+      expect(find.byType(DesignSystemButton), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('relationship-agent-see-activity')),
+        findsOneWidget,
+      );
+      // With no primary, the footer still washes the whole card.
       expect(
         tester
             .getSize(find.byKey(const ValueKey('relationship-agent-footer')))
@@ -971,11 +976,21 @@ void main() {
         totalTokens: 38200,
       );
 
-      expect(statusText(tester), 'as of 1 h ago · Thriving');
+      expect(statusText(tester), 'Thriving · as of 1 h ago');
       expect(find.byType(DsPill), findsNothing);
       expect(find.textContaining('· 38.2K tokens'), findsOneWidget);
+      // Provenance waits behind Read more: collapsed, the summary outweighs
+      // its sources. Under the fixed clock: a rebuild on the real one would
+      // find the fixture overdue and swap the footer to Call.
+      expect(find.textContaining('Sources:'), findsNothing);
+      await withClock(Clock.fixed(now), () async {
+        await tester.tap(
+          find.byKey(const ValueKey('relationship-briefing-expand')),
+        );
+        await tester.pumpAndSettle();
+      });
       expect(
-        find.text('Sources: 2 check-ins · no contact channels'),
+        find.text('Sources: 2 check-ins · contact details never sent'),
         findsOneWidget,
       );
       final quiet = tester.widget<DesignSystemButton>(
@@ -1026,20 +1041,20 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(statusText(tester), 'as of just now · Thriving');
+        expect(statusText(tester), 'Thriving · as of just now');
 
         // Nobody rebuilds the card; the clock crosses the minute.
         current = now.add(const Duration(seconds: 5));
         await tester.pump(const Duration(seconds: 5));
 
-        expect(statusText(tester), 'as of 1 min ago · Thriving');
+        expect(statusText(tester), 'Thriving · as of 1 min ago');
       });
     });
 
     testWidgets('no cost on the model row without usage', (tester) async {
       await pump(tester, checkIns: onTrackCheckIns, current: report());
 
-      expect(statusText(tester), 'as of 1 h ago · Thriving');
+      expect(statusText(tester), 'Thriving · as of 1 h ago');
       expect(find.textContaining('tokens'), findsNothing);
     });
 
@@ -1087,7 +1102,7 @@ void main() {
         final context = tester.element(find.byType(RelationshipBriefingCard));
         expect(
           statusText(tester),
-          'as of 1 h ago · ${relationshipHealthBandLabel(context, entry.value)}',
+          '${relationshipHealthBandLabel(context, entry.value)} · as of 1 h ago',
           reason: entry.key,
         );
         await tester.pumpWidget(const SizedBox.shrink());
@@ -1106,7 +1121,8 @@ void main() {
       expect(statusText(tester), 'as of 1 h ago');
     });
 
-    testWidgets('open proposals are counted in the header', (tester) async {
+    testWidgets('open proposals are counted once — by the band, not the '
+        'header too', (tester) async {
       final set = makeTestChangeSet(
         agentId: agentId,
         taskId: relationshipId,
@@ -1148,13 +1164,10 @@ void main() {
       );
 
       expect(
-        tester
-            .widget<DsPill>(
-              find.byKey(const ValueKey('relationship-briefing-proposals')),
-            )
-            .label,
-        '2 proposed',
+        find.byKey(const ValueKey('relationship-briefing-proposals')),
+        findsNothing,
       );
+      expect(find.text('2 pending'), findsOneWidget);
     });
 
     testWidgets('tapping the identity opens the internals panel', (
@@ -1259,7 +1272,7 @@ void main() {
       expect(briefMe, findsNothing);
       expect(
         statusText(tester),
-        'as of 1 h ago · Thriving',
+        'Thriving · as of 1 h ago',
         reason: 'the status stays in the header; the footer is two actions',
       );
 
@@ -1347,7 +1360,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Log check-in'), findsNWidgets(2));
-      expect(find.text('with Pip · last spoke Sat 1 Aug'), findsOneWidget);
+      // The status line tiers its wording by width; whatever the test font
+      // leaves room for, the person is the tier that never goes.
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('check-in-composer-status')),
+            )
+            .data,
+        startsWith('with '),
+      );
       expect(find.byKey(const ValueKey('check-in-narrative')), findsOneWidget);
     });
 

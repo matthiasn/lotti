@@ -17,13 +17,13 @@ void main() {
     bool enabled = true,
     bool hasDuration = false,
   }) async {
+    // [hasDuration] only picks the label a real form would pass.
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         CheckInContextChips(
           type: type,
           startedLabel: 'Now · 14:55',
           durationLabel: hasDuration ? '11 min' : 'Duration',
-          hasDuration: hasDuration,
           enabled: enabled,
           onPickType: () => calls.add('type'),
           onPickStart: () => calls.add('start'),
@@ -43,7 +43,8 @@ void main() {
 
     expect(chip(tester, 'check-in-type').label, 'Call');
     expect(chip(tester, 'check-in-type').leadingIcon, LottiIcons.call);
-    expect(chip(tester, 'check-in-type').selected, isTrue);
+    // No chip is "selected": each holds a value, and the glyph says which.
+    expect(chip(tester, 'check-in-type').selected, isFalse);
     expect(chip(tester, 'check-in-started').label, 'Now · 14:55');
     expect(chip(tester, 'check-in-duration').label, 'Duration');
 

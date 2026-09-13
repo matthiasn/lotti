@@ -115,6 +115,22 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('reduced motion holds the spinner still', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: DesignSystemSpinner(semanticsLabel: 'Loading'),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+      // A repeating controller schedules a frame forever; a stopped one
+      // lets the tree settle.
+      await tester.pumpAndSettle();
+      expect(tester.binding.hasScheduledFrame, isFalse);
+    });
+
     testWidgets('disposes animation controller without error', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -159,6 +175,20 @@ void main() {
       final size = tester.getSize(find.byKey(skeletonKey));
       expect(size.height, 40);
       expect(size.width, 200);
+    });
+
+    testWidgets('reduced motion holds the wave still', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: DesignSystemSkeleton(width: 120),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.binding.hasScheduledFrame, isFalse);
     });
 
     testWidgets('renders with custom height', (tester) async {

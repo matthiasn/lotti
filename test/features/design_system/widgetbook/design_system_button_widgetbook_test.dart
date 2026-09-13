@@ -41,6 +41,7 @@ const _expectedComponentNames = [
   'Task list item',
   'Text input',
   'Textarea',
+  'Tiered text',
   'Time picker',
   'Toast',
   'Toggle',

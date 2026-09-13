@@ -272,6 +272,7 @@ class TldrBody extends StatelessWidget {
     required this.onToggle,
     required this.disclosureKey,
     this.onOpenInternals,
+    this.bodyStyle,
     super.key,
   });
 
@@ -280,6 +281,11 @@ class TldrBody extends StatelessWidget {
   final String? additionalReport;
   final VoidCallback onToggle;
   final VoidCallback? onOpenInternals;
+
+  /// The prose tier, when a host's other faces set it: the relationship
+  /// card reads at bodyMedium on every face, so its briefing must too.
+  /// Null keeps the compact summary size the task and goal cards use.
+  final TextStyle? bodyStyle;
 
   /// Key on the Read more / Show less control. Required rather than
   /// defaulted: a default would hand a fourth surface the task card's key
@@ -307,9 +313,10 @@ class TldrBody extends StatelessWidget {
     final messages = context.messages;
     // Match entry-editor prose and compact card summaries; the header and
     // card treatment provide the hierarchy without enlarging report text.
-    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: ai.bodyText,
-    );
+    final bodyStyle =
+        (this.bodyStyle ?? tokens.typography.styles.body.bodySmall).copyWith(
+          color: ai.bodyText,
+        );
     final hasMore = additionalReport?.trim().isNotEmpty ?? false;
     final hasDisclosure = hasMore || expanded;
 

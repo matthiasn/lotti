@@ -176,7 +176,11 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
       children: [
         Semantics(
           liveRegion: true,
-          label: live ? messages.audioRecordingLive : '',
+          label: live
+              ? messages.audioRecordingLive
+              : paused
+              ? messages.checkInStatusPaused
+              : '',
           child: ExcludeSemantics(
             child: LayoutBuilder(
               builder: (context, constraints) => LiveWaveform(
@@ -192,10 +196,10 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
           ),
         ),
         SizedBox(height: tokens.spacing.step4),
-        // Tabular mono figures on a fixed `h:mm:ss` shape, so the tick never
-        // moves the controls beneath it.
+        // Tabular mono figures, so the tick never moves the controls beneath
+        // it; the same `m:ss` shape the saved-audio line and the chip use.
         Text(
-          checkInClockLabel(state.progress, alwaysHours: true),
+          checkInClockLabel(state.progress),
           key: const ValueKey('check-in-recorder-clock'),
           textAlign: TextAlign.center,
           style: monoMetaStyle(
@@ -218,7 +222,7 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
             Flexible(
               child: Text(
                 messages.checkInAudioSavedAsYouGo,
-                style: tokens.typography.styles.others.caption.copyWith(
+                style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
@@ -232,10 +236,12 @@ class _CheckInInlineRecorderState extends ConsumerState<CheckInInlineRecorder> {
           spacing: tokens.spacing.step4,
           runSpacing: tokens.spacing.step3,
           children: [
+            // Destructive ink, like the edit sheet's delete: the accent is
+            // for the way forward, never for throwing a take away.
             DesignSystemButton(
               key: const ValueKey('check-in-recorder-discard'),
               label: messages.checkInDiscardRecording,
-              variant: DesignSystemButtonVariant.tertiary,
+              variant: DesignSystemButtonVariant.dangerTertiary,
               size: DesignSystemButtonSize.large,
               onPressed: _busy ? null : _discard,
             ),

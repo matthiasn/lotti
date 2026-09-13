@@ -75,7 +75,7 @@ Figma variable to import:
 | Set | File | Contents |
 |-----|------|----------|
 | **motion** | `motion_tokens.dart` | `Duration` and `Curve` are not lerp-able — see [agent UI surfaces](../agents/ui-surfaces.md) |
-| **sizing** | `sizing_tokens.dart` | `ControlSizes` for visible controls and container tiles, `TapTargets` for interaction shells, `IconSizes` for glyph dimensions, `BorderWidths` for strokes |
+| **sizing** | `sizing_tokens.dart` | `ControlSizes` for visible controls and container tiles, `TapTargets` for interaction shells, `IconSizes` for glyph dimensions, `BorderWidths` for strokes, `TextScales.large` (1.3) as the one text-scale bar above which a component re-flows — an avatar steps aside, an action bar stacks, a meta row takes two lines |
 | **opacity** | `alpha_tokens.dart` | `SurfaceAlphas` — fades applied to a surface or accent colour that must stay the same hue while receding |
 | **photo chrome** | `photo_chrome_tokens.dart` | `PhotoScrim` (`scrim.photoTop`) and `PhotoNeutralGlass` (`glass.photoNeutral`) — chrome over a *photograph*, which is the same picture in both themes, so black-at-strength and white glyphs rather than a themed surface. Named by the 2026-09-08 People design; used only by the person hero's banner |
 

@@ -76,7 +76,7 @@ class DesignSystemModalActionBar extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
     // Large-text layouts always stack: at that scale a horizontal bar is
     // reachable-but-cramped even on the rare width where it still fits.
-    final content = textScale > 1.3
+    final content = textScale > TextScales.large
         ? _StackedActionLayout(primary: primary, secondary: secondary)
         : _MeasuredActionLayout(
             primary: primary,

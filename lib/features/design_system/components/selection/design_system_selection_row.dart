@@ -125,7 +125,8 @@ class DesignSystemSelectionRow extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: TapTargets.minimum),
         child: DesignSystemListItem(
           title: title,
-          titleMaxLines: MediaQuery.textScalerOf(context).scale(1) > 1.3
+          titleMaxLines:
+              MediaQuery.textScalerOf(context).scale(1) > TextScales.large
               ? null
               : titleMaxLines,
           subtitle: subtitle,

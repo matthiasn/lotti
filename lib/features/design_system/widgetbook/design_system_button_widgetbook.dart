@@ -35,6 +35,7 @@ import 'package:lotti/features/design_system/widgetbook/design_system_toast_widg
 import 'package:lotti/features/design_system/widgetbook/design_system_toggle_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_tooltip_icon_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_typography_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/ds_tiered_text_widgetbook.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -57,6 +58,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         buildDesignSystemBadgeWidgetbookComponent(),
         buildDesignSystemChipWidgetbookComponent(),
         buildDesignSystemCaptionWidgetbookComponent(),
+        buildDsTieredTextWidgetbookComponent(),
         buildDesignSystemBreadcrumbsWidgetbookComponent(),
         buildDesignSystemHeaderWidgetbookComponent(),
         buildDesignSystemSearchWidgetbookComponent(),
@@ -246,6 +248,7 @@ String _labelForVariant(DesignSystemButtonVariant variant) {
     DesignSystemButtonVariant.primary => 'Primary',
     DesignSystemButtonVariant.secondary => 'Secondary',
     DesignSystemButtonVariant.tertiary => 'Tertiary',
+    DesignSystemButtonVariant.quiet => 'Quiet',
     DesignSystemButtonVariant.outlined => 'Outlined',
     DesignSystemButtonVariant.constructiveOutlined => 'Constructive outlined',
     DesignSystemButtonVariant.danger => 'Danger',

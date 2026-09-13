@@ -17,8 +17,7 @@
   when, out of date — now reads on the line under the title, in that state's
   colour, instead of being spread across pills and the footer. The footer
   keeps one quiet action on the left (Log check-in, or See activity after a
-  failure) and one primary on the right. Open task proposals are counted in
-  the header, an out-of-date briefing shows its age, and a current briefing
-  says what it was written from: your check-ins, never a phone number or an
-  email. The cadence and health pills already shown in the page header are
-  no longer repeated on the card.
+  failure) and one primary on the right. An out-of-date briefing shows its
+  age, and an expanded briefing says what it was written from: your
+  check-ins, never a phone number or an email. The cadence and health pills
+  already shown in the page header are no longer repeated on the card.

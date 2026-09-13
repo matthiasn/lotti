@@ -183,7 +183,8 @@ Future<void> showDesignSystemFilterModal({
       final isBottomSheet = ModalUtils.shouldUseRootNavigatorForBottomSheet(
         modalContext,
       );
-      final hasLargeText = MediaQuery.textScalerOf(modalContext).scale(1) > 1.3;
+      final hasLargeText =
+          MediaQuery.textScalerOf(modalContext).scale(1) > TextScales.large;
       final overviewFooterClearance = isBottomSheet
           ? hasLargeText
                 ? spacing.step13 + spacing.step12

@@ -3114,10 +3114,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInAddMoreButton => 'Ajouter';
 
   @override
-  String get checkInAudioKeptNote =>
-      'L’audio reste dans le journal même si tu annules ce point';
-
-  @override
   String checkInAudioSaved(String length) {
     return '$length d’audio enregistré';
   }
@@ -3145,6 +3141,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String checkInComposerWithName(String name) {
+    return 'avec $name';
+  }
+
+  @override
   String checkInContextSummary(String type, String time, String duration) {
     return '$type · $time · $duration';
   }
@@ -3155,6 +3156,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get checkInDictateButton => 'Dicter';
+
+  @override
+  String get checkInDiscardDraftMessage =>
+      'Abandonner ce point ? Rien n’a été enregistré.';
+
+  @override
+  String get checkInDiscardDraftRecordingMessage =>
+      'Abandonner ce point et l’enregistrement ? Rien n’a été sauvegardé.';
 
   @override
   String get checkInDiscardRecording => 'Abandonner';
@@ -3371,8 +3380,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInTranscribingLabel => 'Transcription en cours…';
 
   @override
-  String get checkInTranscriptAdded =>
-      'Transcription ajoutée · relis-la, tout est modifiable';
+  String get checkInTranscriptAdded => 'Transcription ajoutée';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -3380,12 +3388,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String checkInTranscriptMissingBody(String length) {
-    return 'Ton enregistrement de $length est conservé sur cet appareil. Réessaie quand tu seras de nouveau en ligne, ou écris le point maintenant.';
+    return 'Ton enregistrement de $length reste conservé dans le journal, même si tu abandonnes ce point. Réessaie dans un instant.';
   }
-
-  @override
-  String get checkInTranscriptMissingTitle =>
-      'Serveur de transcription injoignable';
 
   @override
   String get checkInTranscriptUnavailable =>
@@ -6078,6 +6082,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemTextareaWithHelperLabel => 'Avec texte d\'aide';
+
+  @override
+  String get designSystemTieredTextTitle =>
+      'Texte à paliers sur trois largeurs';
 
   @override
   String get designSystemTimePickerFormatsTitle => 'Formats d\'heure';
@@ -11890,7 +11898,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
-    return 'mis à jour $age · $band';
+    return '$band · mis à jour $age';
   }
 
   @override
@@ -11940,7 +11948,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String relationshipAgentNotEnrolledBody(String name) {
-    return 'Marque $name comme important·e pour recevoir un briefing, des rappels quand ça fait un moment, et un chat. D\'ici là, rien ne tourne tout seul ; seul ce que tu lances toi-même, comme un chat ou un check-in dicté, utilise l\'IA.';
+    return 'Marque $name comme important·e pour recevoir un briefing, des rappels quand ça fait un moment, et un chat.';
   }
 
   @override
@@ -11951,6 +11959,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String relationshipAgentOutOfDateNewCheckIn(String day) {
     return 'Obsolète · nouveau check-in $day';
   }
+
+  @override
+  String get relationshipAgentOutOfDateNewCheckInShort =>
+      'Obsolète · nouveau check-in';
 
   @override
   String get relationshipAgentPausedBody =>
@@ -11992,7 +12004,7 @@ class AppLocalizationsFr extends AppLocalizations {
       one: '1 point',
       zero: '0 points',
     );
-    return 'Sources : $_temp0 · aucun canal de contact';
+    return 'Sources : $_temp0 · coordonnées jamais envoyées';
   }
 
   @override

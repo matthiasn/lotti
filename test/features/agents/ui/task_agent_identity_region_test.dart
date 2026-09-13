@@ -74,8 +74,13 @@ void main() {
   );
 
   /// Whether [finder]'s text was truncated rather than wrapped.
-  bool isTruncated(WidgetTester tester, Finder finder) =>
-      tester.renderObject<RenderParagraph>(finder).didExceedMaxLines;
+  // A tiered Text carries a semantics label, so its paragraph sits one
+  // level down.
+  bool isTruncated(WidgetTester tester, Finder finder) => tester
+      .renderObject<RenderParagraph>(
+        find.descendant(of: finder, matching: find.byType(RichText)),
+      )
+      .didExceedMaxLines;
 
   testWidgets('trailing meta rides the setup row after the route, on every '
       'wording tier', (tester) async {

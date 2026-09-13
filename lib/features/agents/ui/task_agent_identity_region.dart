@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -181,12 +182,12 @@ class _SetupIdentityRow extends StatelessWidget {
                     children: [
                       Icon(
                         isError ? LottiIcons.error : LottiIcons.reasoning,
-                        size: tokens.spacing.step5,
+                        size: IconSizes.s,
                         color: glyphColor,
                       ),
                       SizedBox(width: tokens.spacing.step2),
                       Flexible(
-                        child: _TieredIdentityText(
+                        child: DsTieredText(
                           tiers: tiers,
                           style: tokens.typography.styles.others.caption
                               .copyWith(color: color),
@@ -195,7 +196,7 @@ class _SetupIdentityRow extends StatelessWidget {
                       SizedBox(width: tokens.spacing.step2),
                       Icon(
                         LottiIcons.chevronRight,
-                        size: tokens.spacing.step5,
+                        size: IconSizes.s,
                         color: glyphColor,
                       ),
                     ],
@@ -239,9 +240,11 @@ class _ReportIdentityRow extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
       child: ConstrainedBox(
         constraints: BoxConstraints(minHeight: tokens.spacing.step6),
-        // The full attribution lives in the tooltip; on screen it truncates
-        // rather than wrapping, so a long route cannot spill a stray fragment
-        // onto a second line under the row it belongs to.
+        // The full attribution lives in the tooltip; on screen the route
+        // sheds segments rather than wrapping, so a long route cannot spill
+        // a stray fragment onto a second line under the row it belongs to —
+        // except at large text, where the route takes the line under its
+        // label whole rather than shed the one fact the row exists for.
         //
         // One announcement, carrying the *untruncated* route. The visible text
         // sheds whole segments as space runs out, so leaving the children
@@ -254,33 +257,31 @@ class _ReportIdentityRow extends StatelessWidget {
             message: '$label ${tiers.first}',
             excludeFromSemantics: true,
             child: ExcludeSemantics(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    LottiIcons.description,
-                    size: tokens.spacing.step5,
-                    color: ai.metaText,
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  // Not flexible: the label is short fixed vocabulary, and
-                  // "This rep…" tells the reader strictly less than nothing. It
-                  // costs a bounded ~60px, so only the route below can be squeezed.
-                  Text(
-                    label,
-                    maxLines: 1,
-                    style: caption.copyWith(color: ai.faintMeta),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  // The route sheds whole segments rather than characters; the
-                  // label above it never gives ground.
-                  Flexible(
-                    child: _TieredIdentityText(
-                      tiers: tiers,
-                      style: caption.copyWith(color: ai.metaText),
-                    ),
-                  ),
-                ],
+              child: _AttributionRow(
+                icon: Icon(
+                  LottiIcons.description,
+                  size: IconSizes.s,
+                  color: ai.metaText,
+                ),
+                // Not flexible: the label is short fixed vocabulary, and
+                // "This rep…" tells the reader strictly less than nothing.
+                // It costs a bounded ~60px, so only the route can be
+                // squeezed.
+                label: Text(
+                  label,
+                  maxLines: 1,
+                  style: caption.copyWith(color: ai.metaText),
+                ),
+                separator: Text(
+                  ' · ',
+                  style: caption.copyWith(color: ai.metaText),
+                ),
+                // The route sheds whole segments rather than characters; the
+                // label above it never gives ground.
+                route: DsTieredText(
+                  tiers: tiers,
+                  style: caption.copyWith(color: ai.metaText),
+                ),
               ),
             ),
           ),
@@ -290,45 +291,61 @@ class _ReportIdentityRow extends StatelessWidget {
   }
 }
 
-/// Renders the widest wording from [tiers] that fits the space it is given.
-///
-/// The strings are structured (model · publisher · via provider), so dropping
-/// a whole segment keeps every remaining fact legible, where an ellipsis would
-/// chop the serving provider mid-word and leave the connective "via" behind.
-class _TieredIdentityText extends StatelessWidget {
-  const _TieredIdentityText({required this.tiers, required this.style});
+/// The attribution row's cells: the glyph, then the fixed label and the
+/// tiered route side by side — or, above the large-text bar where even the
+/// bare route rarely fits beside the label, the route on its own line
+/// beneath the label, still on the text column the glyph opens.
+class _AttributionRow extends StatelessWidget {
+  const _AttributionRow({
+    required this.icon,
+    required this.label,
+    required this.separator,
+    required this.route,
+  });
 
-  final List<String> tiers;
-  final TextStyle style;
+  final Widget icon;
+  final Widget label;
+  final Widget separator;
+  final Widget route;
 
   @override
   Widget build(BuildContext context) {
-    final direction = Directionality.of(context);
-    final scaler = MediaQuery.textScalerOf(context);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        var chosen = tiers.last;
-        for (final tier in tiers) {
-          final painter = TextPainter(
-            text: TextSpan(text: tier, style: style),
-            textDirection: direction,
-            textScaler: scaler,
-            maxLines: 1,
-          )..layout();
-          if (painter.width <= constraints.maxWidth) {
-            chosen = tier;
-            break;
-          }
-        }
-        return Text(
-          chosen,
-          maxLines: 1,
-          // The last tier is the bare model name; if even that will not fit,
-          // an ellipsis is the honest end of the ladder.
-          overflow: TextOverflow.ellipsis,
-          style: style,
-        );
-      },
+    final tokens = context.designTokens;
+    final largeText =
+        MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
+    // Centred on the one-line row so the row's ink height stays the
+    // caption's; only the stacked form top-aligns the glyph to its label.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: largeText
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
+      children: [
+        if (largeText)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.step1),
+            child: icon,
+          )
+        else
+          icon,
+        SizedBox(width: tokens.spacing.step2),
+        Flexible(
+          child: largeText
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [label, route],
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    label,
+                    separator,
+                    Flexible(child: route),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 }

@@ -47,7 +47,19 @@ class _DesignSystemSpinnerState extends State<DesignSystemSpinner>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
-    )..repeat();
+    );
+  }
+
+  // Reduced motion is a system setting, read from the tree: a spinner that
+  // keeps turning under it is a spinner the setting was asked to stop.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -176,7 +188,19 @@ class _DesignSystemSkeletonState extends State<DesignSystemSkeleton>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
-    )..repeat();
+    );
+  }
+
+  // Reduced motion is a system setting, read from the tree: a spinner that
+  // keeps turning under it is a spinner the setting was asked to stop.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
