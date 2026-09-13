@@ -126,6 +126,8 @@ in `test/utils/screenshots_test.dart`. Registering a `WindowManager` in GetIt
 cannot intercept capture's global `windowManager`, and filesystem overrides do
 not replace `Process.start` or `Process.run`. Keep the output future open when
 testing process timeouts: an already-drained stream misses hangs before exit.
+Assert that both subscriptions are cancelled while pipes remain open, and that
+a subsequent capture completes; killing a parent need not close a child’s pipes.
 Entry-creation tests inject `createScreenshot(capture: ...)` and assert the saved
 image, link, category and geolocation request using the real journal database.
 

@@ -609,8 +609,10 @@ inside the documents directory.
 
 `takeScreenshot` uses `ScreenshotHost` for commands, portal access and window
 operations, with `clock.now()` supplying the capture date. The command timeout
-covers output draining and process exit together; timeout kills the process,
-and a `finally` block restores the window. A restoration error is logged without
+covers output draining and process exit together; timeout kills the process
+and cancels both pipe subscriptions. Output is forwarded per chunk without
+binding the global sinks, so a child holding a pipe open cannot block a retry.
+A `finally` block restores the window. A restoration error is logged without
 replacing the capture result or original error. `createScreenshot` accepts an
 optional capture callback and persists the returned metadata through
 `JournalRepository.createImageEntry` before requesting geolocation.

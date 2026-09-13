@@ -250,6 +250,7 @@ FutureOr<AgentStateEntity?> _fallbackAgentStateUpdate(
 /// `registerFallbackValue()` calls across test files. Safe to call multiple
 /// times — mocktail deduplicates internally.
 void registerAllFallbackValues() {
+  registerFallbackValue(Future<void>.value());
   registerFallbackValue(http.Request('GET', Uri.parse('https://example.test')));
   // Sealed union / abstract class fallbacks (need real instances)
   registerFallbackValue(fallbackJournalEntity);

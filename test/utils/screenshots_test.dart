@@ -59,50 +59,85 @@ void main() {
         workingDirectory: any(named: 'workingDirectory'),
       ),
     ).thenAnswer((_) async => process);
-    when(() => host.forwardOutput(process)).thenAnswer((_) async {});
+    when(
+      () => host.forwardOutput(process, cancelled: any(named: 'cancelled')),
+    ).thenAnswer((_) async {});
     when(() => process.exitCode).thenAnswer((_) async => 0);
     when(() => process.kill()).thenReturn(true);
   });
   tearDown(tearDownTestGetIt);
 
-  test('default host drains stdout and stderr concurrently', () {
+  test('default host forwards both pipes and waits for both to close', () {
     fakeAsync((async) {
       final outputSink = MockStdout();
       final errorSink = MockStdout();
-      final outputClosed = Completer<void>();
-      final errorClosed = Completer<void>();
-      final outputStream = Stream<List<int>>.value([1, 2]);
-      final errorStream = Stream<List<int>>.value([3, 4]);
-      when(() => process.stdout).thenAnswer((_) => outputStream);
-      when(() => process.stderr).thenAnswer((_) => errorStream);
-      when(
-        () => outputSink.addStream(outputStream),
-      ).thenAnswer((_) => outputClosed.future);
-      when(
-        () => errorSink.addStream(errorStream),
-      ).thenAnswer((_) => errorClosed.future);
+      final output = StreamController<List<int>>(onCancel: () async {});
+      final errors = StreamController<List<int>>(onCancel: () async {});
+      final cancelled = Completer<void>();
+      when(() => process.stdout).thenAnswer((_) => output.stream);
+      when(() => process.stderr).thenAnswer((_) => errors.stream);
       var completed = false;
       IOOverrides.runZoned(
         () => unawaited(
-          const ScreenshotHost().forwardOutput(process).then((_) {
-            completed = true;
-          }),
+          const ScreenshotHost()
+              .forwardOutput(
+                process,
+                cancelled: cancelled.future,
+              )
+              .then((_) => completed = true),
         ),
         stdout: () => outputSink,
         stderr: () => errorSink,
       );
+      output.add([1, 2]);
+      errors.add([3, 4]);
       async.flushMicrotasks();
-      verify(() => outputSink.addStream(outputStream)).called(1);
-      verify(() => errorSink.addStream(errorStream)).called(1);
+      verify(() => outputSink.add([1, 2])).called(1);
+      verify(() => errorSink.add([3, 4])).called(1);
       expect(completed, isFalse);
-      outputClosed.complete();
+      unawaited(output.close());
       async.flushMicrotasks();
       expect(completed, isFalse, reason: 'stderr has not finished');
-      errorClosed.complete();
+      unawaited(errors.close());
       async.flushMicrotasks();
       expect(completed, isTrue);
+      cancelled.complete();
+      async.flushMicrotasks();
     });
   });
+
+  for (final sinkFails in [false, true]) {
+    test(
+      'default host propagates ${sinkFails ? 'sink' : 'pipe'} errors',
+      () async {
+        final outputSink = MockStdout();
+        final errorSink = MockStdout();
+        final error = StateError('output failed');
+        final cancelled = Completer<void>();
+        when(() => process.stdout).thenAnswer(
+          (_) => sinkFails
+              ? Stream<List<int>>.value([1])
+              : Stream<List<int>>.error(error),
+        );
+        when(() => process.stderr).thenAnswer((_) => const Stream.empty());
+        if (sinkFails) {
+          when(() => outputSink.add(any())).thenThrow(error);
+        }
+        await IOOverrides.runZoned(
+          () => expectLater(
+            const ScreenshotHost().forwardOutput(
+              process,
+              cancelled: cancelled.future,
+            ),
+            throwsA(same(error)),
+          ),
+          stdout: () => outputSink,
+          stderr: () => errorSink,
+        );
+        cancelled.complete();
+      },
+    );
+  }
 
   group('command discovery', () {
     for (final exitCode in [0, 1, 127]) {
@@ -173,7 +208,9 @@ void main() {
             workingDirectory: '/documents/images',
           ),
         ).called(1);
-        verify(() => host.forwardOutput(process)).called(1);
+        verify(
+          () => host.forwardOutput(process, cancelled: any(named: 'cancelled')),
+        ).called(1);
         verifyNever(() => process.kill());
       });
     }
@@ -292,7 +329,7 @@ void main() {
                 : ['-tjpg', result.imageFile],
             workingDirectory: '/documents/images/2026-08-15',
           ),
-          () => host.forwardOutput(process),
+          () => host.forwardOutput(process, cancelled: any(named: 'cancelled')),
           host.showWindow,
         ]);
       });
@@ -301,11 +338,19 @@ void main() {
         tester,
       ) async {
         when(() => host.operatingSystem).thenReturn(os);
-        final output = Completer<void>();
+        final output = StreamController<List<int>>(onCancel: () async {});
+        final errors = StreamController<List<int>>(onCancel: () async {});
         final exitCode = Completer<int>();
+        when(() => process.stdout).thenAnswer((_) => output.stream);
+        when(() => process.stderr).thenAnswer((_) => errors.stream);
         when(
-          () => host.forwardOutput(process),
-        ).thenAnswer((_) => output.future);
+          () => host.forwardOutput(process, cancelled: any(named: 'cancelled')),
+        ).thenAnswer(
+          (invocation) => const ScreenshotHost().forwardOutput(
+            process,
+            cancelled: invocation.namedArguments[#cancelled] as Future<void>,
+          ),
+        );
         when(() => process.exitCode).thenAnswer((_) => exitCode.future);
         Object? failure;
         final future = capture().then<ImageData?>(
@@ -320,11 +365,26 @@ void main() {
         expect(failure, isNull);
         verifyNever(() => process.kill());
         await tester.pump(const Duration(seconds: 1));
-        // Drain controlled effects even when the regression assertion fails.
-        output.complete();
+        // The child keeps both pipes open even after its parent exits.
         exitCode.complete(-1);
         await tester.pump();
+        final outputStillAttached = output.hasListener;
+        final errorsStillAttached = errors.hasListener;
+        // Always clean fixtures, including when cancellation regresses.
+        unawaited(output.close());
+        unawaited(errors.close());
+        await tester.pump();
         await future;
+        expect(outputStillAttached, isFalse);
+        expect(errorsStillAttached, isFalse);
+        when(
+          () => process.stdout,
+        ).thenAnswer((_) => Stream<List<int>>.value([]));
+        when(() => process.stderr).thenAnswer((_) => const Stream.empty());
+        when(() => process.exitCode).thenAnswer((_) async => 0);
+        final retry = capture();
+        await advanceCapture(tester);
+        expect((await retry).imageFile, endsWith('.screenshot.jpg'));
         expect(
           failure,
           isException.having(
@@ -334,7 +394,7 @@ void main() {
           ),
         );
         verify(() => process.kill()).called(1);
-        verify(host.showWindow).called(1);
+        verify(host.showWindow).called(2);
       });
 
       testWidgets('$os restores the window after capture fails', (

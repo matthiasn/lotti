@@ -49,10 +49,14 @@ class ScreenshotHost {
     required String workingDirectory,
   }) => Process.start(command, arguments, workingDirectory: workingDirectory);
 
-  Future<void> forwardOutput(Process process) async {
+  /// Forwards both pipes until EOF or cancellation without binding global sinks.
+  Future<void> forwardOutput(
+    Process process, {
+    required Future<void> cancelled,
+  }) async {
     await Future.wait<void>([
-      stdout.addStream(process.stdout),
-      stderr.addStream(process.stderr),
+      _forwardPipe(process.stdout, stdout, cancelled),
+      _forwardPipe(process.stderr, stderr, cancelled),
     ]);
   }
 }
@@ -236,15 +240,52 @@ Future<int> _waitForCaptureProcess(
   String timeoutMessage,
 ) async {
   final exitCode = process.exitCode;
-  await Future.wait<Object?>([
-    host.forwardOutput(process),
-    exitCode,
-  ]).timeout(
-    const Duration(seconds: screenshotProcessTimeoutSeconds),
-    onTimeout: () {
-      process.kill();
-      throw Exception(timeoutMessage);
+  final cancelled = Completer<void>();
+  final output = host.forwardOutput(process, cancelled: cancelled.future);
+  try {
+    await Future.wait<Object?>([output, exitCode]).timeout(
+      const Duration(seconds: screenshotProcessTimeoutSeconds),
+      onTimeout: () {
+        process.kill();
+        throw Exception(timeoutMessage);
+      },
+    );
+    return await exitCode;
+  } finally {
+    cancelled.complete();
+    // Observe cleanup without replacing the capture's original failure.
+    await output.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+  }
+}
+
+Future<void> _forwardPipe(
+  Stream<List<int>> pipe,
+  IOSink sink,
+  Future<void> cancelled,
+) async {
+  final done = Completer<void>();
+  var closed = false;
+  void fail(Object error, StackTrace stackTrace) {
+    if (!done.isCompleted) done.completeError(error, stackTrace);
+  }
+
+  final subscription = pipe.listen(
+    (bytes) {
+      try {
+        sink.add(bytes);
+      } catch (error, stackTrace) {
+        fail(error, stackTrace);
+      }
+    },
+    onError: fail,
+    onDone: () {
+      closed = true;
+      if (!done.isCompleted) done.complete();
     },
   );
-  return exitCode;
+  try {
+    await Future.any([done.future, cancelled]);
+  } finally {
+    if (!closed) await subscription.cancel();
+  }
 }
