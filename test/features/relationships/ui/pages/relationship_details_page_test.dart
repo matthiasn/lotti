@@ -874,6 +874,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Create mode, titled for logging rather than editing.
+    expect(find.text('Record an audio check-in'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
+    await tester.pumpAndSettle();
+
     expect(find.text('When and how long'), findsOneWidget);
     expect(find.text('Edit check-in'), findsNothing);
 

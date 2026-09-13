@@ -1238,6 +1238,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.text('Record an audio check-in'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('check-in-write-choice')));
+      await tester.pumpAndSettle();
+
       expect(find.text('When and how long'), findsOneWidget);
     });
 

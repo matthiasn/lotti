@@ -24,7 +24,8 @@ class AudioRecordingModal {
   /// floating recording indicator hides while the sheet is up) and seeds the
   /// [categoryId] (including clearing an earlier category when null);
   /// [linkedId] ties any recording to a parent entry. [transcribeOnSave]
-  /// explicitly enables transcription and hides the automation checkboxes.
+  /// explicitly enables transcription and hides the automation checkboxes for
+  /// this sheet, restoring the previous preference after dismissal.
   /// `modalVisible` is always cleared again once the sheet is dismissed — by
   /// the stop button, back gesture, or tapping outside. [useRootNavigator]
   /// selects which navigator hosts the sheet.
@@ -43,6 +44,9 @@ class AudioRecordingModal {
   }) async {
     // Get the controller before showing the modal
     final container = ProviderScope.containerOf(context);
+    final previousSpeechRecognition = container
+        .read(audioRecorderControllerProvider)
+        .enableSpeechRecognition;
     final controller = container.read(audioRecorderControllerProvider.notifier)
       // Set modal visible before showing
       ..setModalVisible(modalVisible: true)
@@ -74,6 +78,13 @@ class AudioRecordingModal {
       // Modal has been dismissed (either by stop button, back gesture, or tapping outside)
       // Always set modal visibility to false after dismissal
       controller.setModalVisible(modalVisible: false);
+      if (transcribeOnSave) {
+        // stop() hands the completed recording's state to automation before
+        // returning its id. Restoring here cannot change that captured state.
+        controller.setEnableSpeechRecognition(
+          enable: previousSpeechRecognition,
+        );
+      }
     }
 
     // Navigate only after Wolt has completed the modal route. Starting a page

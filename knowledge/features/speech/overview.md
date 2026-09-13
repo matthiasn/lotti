@@ -108,8 +108,10 @@ for localized UI feedback rather than silently swallowing the tap. The modal
 also disables Record while initialization is pending. A null stop/save result
 keeps the modal open with an error instead of dismissing as though it succeeded.
 `transcribeOnSave` lets a spoken check-in explicitly enable transcription and
-hide unrelated automation controls. Opening a new recording clears a previous
-category even when its new category is null.
+hide unrelated automation controls for that sheet. Dismissal restores the prior
+preference; a completed stop hands its recording state to automation before
+restoration. Opening a new recording clears a previous category even when its
+new category is null.
 
 
 **Both `stop()` and `cancel()` land in `Stopped`, but only `stop()` persists.**

@@ -984,40 +984,42 @@ void main() {
         },
       );
 
-      test(
-        'sorts same-rank direct transcription fallbacks by model name',
-        () async {
-          final provider = makeProvider();
-          final betaModel = makeModel(
-            id: 'model-beta',
-            name: 'Beta Whisper model',
-            providerModelId: 'whisper-small',
-          );
-          final alphaModel = makeModel(
-            id: 'model-alpha',
-            name: 'Alpha Whisper model',
-            providerModelId: 'whisper-large',
-          );
+      for (final sameName in [false, true]) {
+        test(
+          'sorts same-rank fallbacks by name, then id (sameName=$sameName)',
+          () async {
+            final provider = makeProvider();
+            final betaModel = makeModel(
+              id: 'model-beta',
+              name: sameName ? 'Whisper model' : 'Beta Whisper model',
+              providerModelId: 'whisper-small',
+            );
+            final alphaModel = makeModel(
+              id: 'model-alpha',
+              name: sameName ? 'Whisper model' : 'Alpha Whisper model',
+              providerModelId: 'whisper-large',
+            );
 
-          when(
-            () => mockResolver.resolveForSubject('task-1'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [betaModel, alphaModel]);
-          when(
-            () => mockAiConfig.getConfigById(provider.id),
-          ).thenAnswer((_) async => provider);
+            when(
+              () => mockResolver.resolveForSubject('task-1'),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockAiConfig.getConfigsByType(AiConfigType.model),
+            ).thenAnswer((_) async => [betaModel, alphaModel]);
+            when(
+              () => mockAiConfig.getConfigById(provider.id),
+            ).thenAnswer((_) async => provider);
 
-          final result = await service.tryTranscribe(subjectId: 'task-1');
+            final result = await service.tryTranscribe(subjectId: 'task-1');
 
-          expect(result.handled, isTrue);
-          expect(
-            result.resolvedProfile!.transcriptionModelId,
-            'whisper-large',
-          );
-        },
-      );
+            expect(result.handled, isTrue);
+            expect(
+              result.resolvedProfile!.transcriptionModelId,
+              'whisper-large',
+            );
+          },
+        );
+      }
 
       test('returns not-handled when no matching skill type', () async {
         const assignment = SkillAssignment(

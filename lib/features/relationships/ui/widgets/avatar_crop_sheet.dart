@@ -122,6 +122,7 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
   /// The scale the current pinch started from, so each update is applied
   /// as a ratio rather than compounding.
   double _gestureScale = 1;
+  bool _isTrackpadGesture = false;
 
   AvatarCrop get _crop => widget.handle.value;
   set _crop(AvatarCrop value) => widget.handle.value = value;
@@ -205,13 +206,17 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
                             >(
                               _CropScaleGestureRecognizer.new,
                               (recognizer) => recognizer
-                                ..onStart = (_) {
+                                ..onStart = (details) {
                                   _gestureScale = 1;
+                                  _isTrackpadGesture =
+                                      details.kind ==
+                                      PointerDeviceKind.trackpad;
                                 }
                                 ..onUpdate = (details) {
-                                  // A trackpad reports zero touch pointers. Both
-                                  // it and a one-finger drag translate the crop.
-                                  if (details.pointerCount <= 1 &&
+                                  // Flutter counts a trackpad as two pointers;
+                                  // distinguish it from a touch pinch to pan.
+                                  if ((_isTrackpadGesture ||
+                                          details.pointerCount == 1) &&
                                       details.focalPointDelta != Offset.zero) {
                                     _pan(
                                       details.focalPointDelta,
