@@ -13,6 +13,20 @@ void main() {
     });
   });
 
+  test('chat preparation is opt-in and survives unrelated preferences', () {
+    const defaults = TtsSettings();
+    expect(defaults.autoPrepareChatAudio, isFalse);
+    final enabled = defaults.copyWith(autoPrepareChatAudio: true);
+    expect(enabled, isNot(defaults));
+    expect(enabled.copyWith(voiceId: 'M2').autoPrepareChatAudio, isTrue);
+    expect(enabled.copyWith(autoPrepareChatAudio: false), defaults);
+    expect(enabled, const TtsSettings(autoPrepareChatAudio: true));
+    expect(
+      enabled.hashCode,
+      const TtsSettings(autoPrepareChatAudio: true).hashCode,
+    );
+  });
+
   group('clampSpeed', () {
     test('clamps below, within, and above the range', () {
       expect(TtsSettings.clampSpeed(0.1), kMinTtsSpeed);

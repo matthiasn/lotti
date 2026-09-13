@@ -9,6 +9,17 @@ class AppLocalizationsSv extends AppLocalizations {
   AppLocalizationsSv([String locale = 'sv']) : super(locale);
 
   @override
+  String get speechSettingsChatAudioLabel => 'Chattljud';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Förbered nya chattsvar på den här enheten så att uppspelningen börjar snabbare. Ljudet spelas bara upp när du trycker på spela upp.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Förbered chattljud automatiskt';
+
+  @override
   String get activeLabel => 'Aktiv';
 
   @override

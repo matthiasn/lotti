@@ -9,6 +9,17 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String get speechSettingsChatAudioLabel => 'Audio pentru chat';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Pregătiți noile răspunsuri din chat pe acest dispozitiv pentru ca redarea să înceapă mai repede. Sunetul este redat doar când apăsați pe redare.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Pregătiți automat sunetul pentru chat';
+
+  @override
   String get activeLabel => 'Activ';
 
   @override

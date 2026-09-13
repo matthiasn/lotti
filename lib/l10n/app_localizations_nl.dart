@@ -9,6 +9,17 @@ class AppLocalizationsNl extends AppLocalizations {
   AppLocalizationsNl([String locale = 'nl']) : super(locale);
 
   @override
+  String get speechSettingsChatAudioLabel => 'Chataudio';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Bereid nieuwe chatantwoorden op dit apparaat voor, zodat het afspelen sneller begint. Audio speelt pas af als je op afspelen tikt.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Chataudio automatisch voorbereiden';
+
+  @override
   String get activeLabel => 'Actief';
 
   @override

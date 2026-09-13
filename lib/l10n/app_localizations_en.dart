@@ -9,6 +9,17 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get speechSettingsChatAudioLabel => 'Chat audio';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Prepare chat audio automatically';
+
+  @override
   String get activeLabel => 'Active';
 
   @override

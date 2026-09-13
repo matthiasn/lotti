@@ -9,6 +9,17 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
+  String get speechSettingsChatAudioLabel => 'Áudio do chat';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Prepara as novas respostas do chat neste dispositivo para que a reprodução comece mais cedo. O áudio só é reproduzido quando tocas em reproduzir.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio =>
+      'Preparar o áudio do chat automaticamente';
+
+  @override
   String get activeLabel => 'Ativo';
 
   @override

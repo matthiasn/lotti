@@ -117,6 +117,24 @@ abstract class AppLocalizations {
     Locale('sv'),
   ];
 
+  /// No description provided for @speechSettingsChatAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat audio'**
+  String get speechSettingsChatAudioLabel;
+
+  /// No description provided for @speechSettingsChatAudioDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.'**
+  String get speechSettingsChatAudioDescription;
+
+  /// No description provided for @speechSettingsAutoPrepareChatAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare chat audio automatically'**
+  String get speechSettingsAutoPrepareChatAudio;
+
   /// No description provided for @activeLabel.
   ///
   /// In en, this message translates to:

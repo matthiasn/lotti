@@ -9,6 +9,16 @@ class AppLocalizationsDa extends AppLocalizations {
   AppLocalizationsDa([String locale = 'da']) : super(locale);
 
   @override
+  String get speechSettingsChatAudioLabel => 'Chatlyd';
+
+  @override
+  String get speechSettingsChatAudioDescription =>
+      'Klargør nye chatsvar på denne enhed, så afspilningen starter hurtigere. Lyden afspilles først, når du trykker på afspil.';
+
+  @override
+  String get speechSettingsAutoPrepareChatAudio => 'Klargør chatlyd automatisk';
+
+  @override
   String get activeLabel => 'Aktiv';
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_model_selector.dart';
@@ -12,7 +13,7 @@ import 'package:material_ui/material_ui.dart';
 /// Headerless body for the Speech settings, shared by the mobile page and the
 /// desktop Settings-v2 detail panel (mirrors how ThemingBody / category bodies
 /// are reused). Reuses the entity-definition `SettingsFormSection` design
-/// language: Voice, Model, and Reading-speed sections, each wired to the
+/// language: Chat audio, Voice, Model, and Reading-speed sections, each wired to the
 /// persisted [TtsSettingsController].
 class SpeechSettingsBody extends ConsumerWidget {
   const SpeechSettingsBody({super.key});
@@ -34,6 +35,22 @@ class SpeechSettingsBody extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            SettingsFormSection(
+              title: messages.speechSettingsChatAudioLabel,
+              description: messages.speechSettingsChatAudioDescription,
+              children: [
+                DesignSystemSelectionRow(
+                  title: messages.speechSettingsAutoPrepareChatAudio,
+                  titleMaxLines: 2,
+                  type: DesignSystemSelectionRowType.multiSelect,
+                  selected: settings.autoPrepareChatAudio,
+                  showSelectedBackground: false,
+                  onTap: () => controller.setAutoPrepareChatAudio(
+                    enabled: !settings.autoPrepareChatAudio,
+                  ),
+                ),
+              ],
+            ),
             SettingsFormSection(
               title: messages.speechSettingsVoiceLabel,
               description: messages.speechSettingsVoiceDescription,

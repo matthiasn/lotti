@@ -6,7 +6,7 @@ import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/get_it.dart';
 
 /// Holds the user's TTS preferences — selected voice, model, and playback
-/// speed — persisted locally via [SettingsDb].
+/// speed and automatic chat audio preparation — persisted locally via [SettingsDb].
 ///
 /// These are device-local preferences (which voice sounds best on this
 /// device, how fast to read), so unlike theming they are intentionally not
@@ -35,11 +35,13 @@ class TtsSettingsController extends Notifier<TtsSettings> {
         ttsVoiceIdKey,
         ttsModelIdKey,
         ttsSpeedKey,
+        ttsAutoPrepareChatAudioKey,
       });
       if (_userChanged) return;
       const defaults = TtsSettings();
       final storedSpeed = double.tryParse(stored[ttsSpeedKey] ?? '');
       state = TtsSettings(
+        autoPrepareChatAudio: stored[ttsAutoPrepareChatAudioKey] == 'true',
         voiceId: stored[ttsVoiceIdKey] ?? defaults.voiceId,
         modelId: stored[ttsModelIdKey] ?? defaults.modelId,
         speed: storedSpeed == null
@@ -50,6 +52,18 @@ class TtsSettingsController extends Notifier<TtsSettings> {
       // Settings storage unavailable — keep the default preferences rather
       // than failing the card that reads them.
     }
+  }
+
+  /// Enables device-local preparation without enabling automatic playback.
+  void setAutoPrepareChatAudio({required bool enabled}) {
+    _userChanged = true;
+    state = state.copyWith(autoPrepareChatAudio: enabled);
+    unawaited(
+      getIt<SettingsDb>().saveSettingsItem(
+        ttsAutoPrepareChatAudioKey,
+        enabled.toString(),
+      ),
+    );
   }
 
   /// Selects [voiceId] and persists it.
