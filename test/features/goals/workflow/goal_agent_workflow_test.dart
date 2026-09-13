@@ -800,7 +800,7 @@ void main() {
     );
 
     expect(result.success, isFalse);
-    expect(result.error, contains('no visible reply'));
+    expect(result.error, 'Goal Phase B workflow failed (StateError)');
     expect(conversationRepository.sendMessageDelegateCallCount, 2);
   });
 
@@ -884,7 +884,7 @@ void main() {
     expect(result.success, isFalse);
     expect(
       result.error,
-      contains('rejected tools unresolved: snooze_goal_ad'),
+      'Goal Phase B workflow failed (StateError)',
     );
     expect(
       upserts.whereType<AgentMessageEntity>(),
@@ -3093,7 +3093,7 @@ void main() {
           };
       final result = await run();
       expect(result.success, isFalse);
-      expect(result.error, contains('provider melted'));
+      expect(result.error, 'Goal Phase B workflow failed (StateError)');
     },
   );
 
@@ -5132,7 +5132,7 @@ void main() {
         };
     final result = await run();
     expect(result.success, isFalse);
-    expect(result.error, contains('provider melted'));
+    expect(result.error, 'Goal Phase B workflow failed (StateError)');
   });
 
   test('persistOutputs: an ineligible status suppresses ads, an atRisk '

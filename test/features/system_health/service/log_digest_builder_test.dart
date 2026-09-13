@@ -217,6 +217,160 @@ void main() {
       expect(bucket.maxMs, 500);
     });
 
+    test('the same statement on two databases makes two buckets', () {
+      // A BEGIN on the agent database and one on the sync database queue
+      // behind different writer locks; merged, neither can be diagnosed.
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            for (var i = 0; i < 3; i++)
+              slowQuery(
+                timestamp: t0,
+                elapsedMs: 1000,
+                statement: 'BEGIN',
+                operation: 'transaction.open',
+                databaseName: 'agent.sqlite',
+              ),
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 15,
+              statement: 'BEGIN',
+              operation: 'transaction.open',
+              databaseName: 'sync.sqlite',
+            ),
+          ],
+        ),
+      );
+
+      expect(digest.slowQueries, hasLength(2));
+      final agent = digest.slowQueries.first;
+      expect(agent.databaseName, 'agent.sqlite');
+      expect(agent.count, 3);
+      expect(agent.p50Ms, 1000);
+      final sync = digest.slowQueries.last;
+      expect(sync.databaseName, 'sync.sqlite');
+      expect(sync.count, 1);
+      expect(sync.maxMs, 15);
+    });
+
+    test('the caller frame is the first below the transaction wrappers', () {
+      const wrapper =
+          '#8 AgentRepoCore.runInTransaction '
+          '(package:lotti/features/agents/database/agent_repo_core.dart:110:5)';
+      const scope =
+          '#9 VectorClockService.withVcScope '
+          '(package:lotti/services/vector_clock_service.dart:309:5)';
+      const caller =
+          '#10 DayAgentPlanWriter.persist '
+          '(package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart:44:7)';
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 300,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              stackFrames: const [wrapper, scope, caller],
+            ),
+            // A capture holding nothing but wrappers still names something.
+            slowQuery(
+              timestamp: t0.add(const Duration(minutes: 1)),
+              elapsedMs: 300,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              stackFrames: const [wrapper],
+            ),
+          ],
+        ),
+      );
+
+      expect(digest.slowQueries.single.topFrames, [caller, wrapper]);
+    });
+
+    test('concurrency at start is summarised when the entries carry it', () {
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 1000,
+              statement: 'BEGIN',
+              inFlightAtStart: 60,
+              openTransactionsAtStart: 3,
+            ),
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 900,
+              statement: 'BEGIN',
+              inFlightAtStart: 5,
+              openTransactionsAtStart: 1,
+            ),
+            // Timing without a TRANSACTION row: nothing was open, and an
+            // in-flight count of one is the statement itself.
+            slowQuery(
+              timestamp: t0,
+              elapsedMs: 15,
+              statement: 'BEGIN',
+              inFlightAtStart: 1,
+            ),
+            slowQuery(timestamp: t0, elapsedMs: 15, statement: 'SELECT 1'),
+          ],
+        ),
+      );
+
+      final begin = digest.slowQueries.first;
+      expect(begin.statement, 'BEGIN');
+      final stats = begin.concurrency!;
+      expect(stats.othersInFlightP50, 4);
+      expect(stats.othersInFlightMax, 59);
+      expect(stats.openTransactionsP50, 1);
+      expect(stats.openTransactionsMax, 3);
+      // No entry with timing bookkeeping: nothing to summarise.
+      expect(digest.slowQueries.last.concurrency, isNull);
+    });
+
+    test('the super-slow copy of an entry does not double its sample', () {
+      // Both files carry the same TIMING rows for one query; counting both
+      // would pull the percentiles toward the slowest entries, which are
+      // exactly the ones that reach the super-slow file.
+      final digest = builder.build(
+        input(
+          slowQueries: [
+            for (final (ms, inFlight) in [(15.0, 1), (20.0, 5), (300.0, 60)])
+              slowQuery(
+                timestamp: t0.add(Duration(milliseconds: ms.toInt())),
+                elapsedMs: ms,
+                statement: 'BEGIN',
+                inFlightAtStart: inFlight,
+              ),
+            slowQuery(
+              timestamp: t0.add(const Duration(milliseconds: 300)),
+              elapsedMs: 300,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              inFlightAtStart: 60,
+            ),
+            // A super-slow entry whose slow-file twin is gone still counts.
+            slowQuery(
+              timestamp: t0.add(const Duration(days: 1)),
+              elapsedMs: 400,
+              statement: 'BEGIN',
+              isSuperSlow: true,
+              inFlightAtStart: 2,
+              openTransactionsAtStart: 1,
+            ),
+          ],
+        ),
+      );
+
+      final stats = digest.slowQueries.single.concurrency!;
+      // Samples: others = [0, 4, 59, 1] → sorted [0, 1, 4, 59].
+      expect(stats.othersInFlightP50, 4);
+      expect(stats.othersInFlightMax, 59);
+      expect(stats.openTransactionsMax, 1);
+    });
+
     test('buckets are ordered by total time', () {
       final digest = builder.build(
         input(

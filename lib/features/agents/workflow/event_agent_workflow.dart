@@ -549,7 +549,7 @@ class EventAgentWorkflow with AgentErrorLogging {
         );
       }
 
-      return WakeResult(success: false, error: e.toString());
+      return WakeResult.failed(kind: 'Event agent', error: e);
     } finally {
       conversationRepository.deleteConversation(conversationId);
     }

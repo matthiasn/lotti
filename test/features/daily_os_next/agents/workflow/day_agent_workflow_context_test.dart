@@ -499,7 +499,10 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.error, contains('parse_capture_to_items'));
+          expect(
+            result.error,
+            'Day agent workflow failed (MissingCaptureParseException)',
+          );
           expect(conversationRepository.sendMessageCalls, hasLength(2));
           expect(
             conversationRepository.sendMessageCalls[1].toolChoice,

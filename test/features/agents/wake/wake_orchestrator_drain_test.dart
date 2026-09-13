@@ -1,4 +1,5 @@
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 
 import 'wake_orchestrator_test_harness.dart';
 
@@ -1305,6 +1306,60 @@ void main() {
           });
         },
       );
+
+      test('a workflow-reported failure logs its kind and reason', () {
+        // The PII-safe error log keeps only the message and the error type,
+        // so the reason must ride in the message or the report shows a bare
+        // `errorType=…` for every failed wake.
+        fakeAsync((async) {
+          final logger = MockDomainLogger();
+          when(
+            () => logger.log(
+              any(),
+              any(),
+              subDomain: any(named: 'subDomain'),
+              level: any(named: 'level'),
+            ),
+          ).thenReturn(null);
+          when(
+            () => logger.error(
+              any(),
+              any(),
+              message: any(named: 'message'),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).thenReturn(null);
+
+          WakeOrchestrator(
+            repository: mockRepository,
+            queue: WakeQueue()..enqueue(makeJob()),
+            runner: WakeRunner(),
+            domainLogger: logger,
+            wakeExecutor: (_, _, _, _) async => throw const WakeFailedException(
+              kind: 'task',
+              reason: 'No template assigned to agent',
+            ),
+          ).processNext();
+          async.flushMicrotasks();
+
+          verify(
+            () => logger.error(
+              LogDomain.agentRuntime,
+              any(that: isA<WakeFailedException>()),
+              message: any(
+                named: 'message',
+                that: allOf(
+                  startsWith('wake failed in '),
+                  contains('kind=task reason=No template assigned to agent'),
+                ),
+              ),
+              subDomain: any(named: 'subDomain'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
 
       test('continues drain when an unexpected execution error escapes', () {
         fakeAsync((async) {

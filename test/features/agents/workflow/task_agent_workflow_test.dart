@@ -1478,7 +1478,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('Network error'));
+        expect(result.error, 'Task agent workflow failed (_Exception)');
 
         // Verify state was updated with incremented failure count.
         final captured = verify(
@@ -1760,7 +1760,7 @@ void main() {
 
         // Should still return a failure result, not rethrow.
         expect(result.success, isFalse);
-        expect(result.error, contains('Network failure'));
+        expect(result.error, 'Task agent workflow failed (_Exception)');
       });
     });
 
@@ -1854,7 +1854,7 @@ void main() {
           // Should return error result (not throw), having logged via
           // developer.log fallback.
           expect(result.success, isFalse);
-          expect(result.error, contains('LLM unavailable'));
+          expect(result.error, 'Task agent workflow failed (_Exception)');
         },
       );
     });

@@ -68,6 +68,16 @@ const String slowQueriesFixture = '''
 2026-09-12T19:11:51.000 [db.sqlite] select 250.000ms args=0 SELECT * FROM journal WHERE deleted = 0 ORDER BY date_from DESC
 ''';
 
+/// A `BEGIN` that queued behind open transactions, with the timing and
+/// transaction rows the interceptor writes for it, followed by an entry
+/// written without timing bookkeeping.
+const String transactionSlowQueriesFixture = '''
+2026-09-12T19:11:52.000 [agent.sqlite] transaction.open 1064.000ms args=0 BEGIN
+  TIMING: scope=executorAwait started=2026-09-12T19:11:50.936 completed=2026-09-12T19:11:52.000 inFlightAtStart=12
+  TRANSACTION: id=7 parent=null activeAtStart=[3, 5]
+2026-09-12T19:11:53.000 [agent.sqlite] transaction.open 20.000ms args=0 BEGIN
+''';
+
 const String superSlowQueriesFixture = '''
 2026-09-12T19:11:48.592 [db.sqlite] select 388.759ms args=0 SELECT * FROM journal WHERE deleted = 0 ORDER BY date_from DESC
   PLAN: 4|0|SEARCH journal USING INDEX idx_journal_browse (deleted=?)
@@ -100,16 +110,22 @@ SlowQueryRecord slowQuery({
   required DateTime timestamp,
   double elapsedMs = 20,
   String statement = 'SELECT * FROM journal WHERE id = ?',
+  String databaseName = 'db.sqlite',
+  String operation = 'select',
   bool isSuperSlow = false,
   List<String> planRows = const [],
   List<String> stackFrames = const [],
+  int? inFlightAtStart,
+  int? openTransactionsAtStart,
 }) => SlowQueryRecord(
   timestamp: timestamp,
-  databaseName: 'db.sqlite',
-  operation: 'select',
+  databaseName: databaseName,
+  operation: operation,
   elapsedMs: elapsedMs,
   statement: statement,
   isSuperSlow: isSuperSlow,
   planRows: planRows,
   stackFrames: stackFrames,
+  inFlightAtStart: inFlightAtStart,
+  openTransactionsAtStart: openTransactionsAtStart,
 );

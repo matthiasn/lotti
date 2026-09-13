@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -34,6 +36,48 @@ void main() {
       expect(result.mutatedEntries, isEmpty);
       expect(result.reportUpdated, isTrue);
       expect(result.error, isNull);
+    });
+  });
+
+  group('WakeResult.failed', () {
+    test('reports a StateError by type only — its message may interpolate '
+        'model-emitted tool names', () {
+      final result = WakeResult.failed(
+        kind: 'Task agent',
+        error: StateError('tool "<whatever the model sent>" not allowed'),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, 'Task agent workflow failed (StateError)');
+    });
+
+    test('reports any other exception by type only', () {
+      // A provider or filesystem exception carries response bodies and
+      // paths; the reason reaches the PII-safe error log, so only the type
+      // may travel.
+      final result = WakeResult.failed(
+        kind: 'Task agent',
+        error: const FileSystemException('read failed', '/home/me/secret.txt'),
+      );
+
+      expect(result.error, 'Task agent workflow failed (FileSystemException)');
+      expect(result.error, isNot(contains('secret')));
+    });
+  });
+
+  group('WakeFailedException', () {
+    test('names the kind and the workflow reason', () {
+      const exception = WakeFailedException(
+        kind: 'task',
+        reason: 'No template assigned to agent',
+      );
+
+      expect(exception.kind, 'task');
+      expect(exception.reason, 'No template assigned to agent');
+      expect(
+        exception.toString(),
+        'WakeFailedException(task): No template assigned to agent',
+      );
     });
   });
 }

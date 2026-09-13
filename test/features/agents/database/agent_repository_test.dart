@@ -2439,7 +2439,8 @@ void main() {
       expect(identities, isEmpty);
     });
 
-    test('filters agent identities by lifecycle in SQL', () async {
+    test('filters agent identities by lifecycle from the cached list, and a '
+        'lifecycle change is visible on the next call', () async {
       final active = makeAgent(id: 'agent-active', agentId: 'a-001').copyWith(
         createdAt: DateTime(2026, 2, 22),
       );
@@ -2486,6 +2487,32 @@ void main() {
       expect(
         identities.map((identity) => identity.id),
         ['agent-active', 'agent-active-older'],
+      );
+      expect(
+        (await repo.getAgentIdentitiesByLifecycle(
+          AgentLifecycle.dormant,
+        )).map((identity) => identity.id),
+        ['agent-dormant'],
+      );
+
+      // The filter is served from the identity cache; an identity write
+      // invalidates it, so a lifecycle flip must not be answered from the
+      // stale list.
+      await repo.upsertEntity(
+        active.copyWith(lifecycle: AgentLifecycle.dormant),
+      );
+
+      expect(
+        (await repo.getAgentIdentitiesByLifecycle(
+          AgentLifecycle.active,
+        )).map((identity) => identity.id),
+        ['agent-active-older'],
+      );
+      expect(
+        (await repo.getAgentIdentitiesByLifecycle(
+          AgentLifecycle.dormant,
+        )).map((identity) => identity.id),
+        ['agent-active', 'agent-dormant'],
       );
     });
   });

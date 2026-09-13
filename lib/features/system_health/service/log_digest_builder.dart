@@ -42,6 +42,15 @@ class LogDigestBuilder {
   static final RegExp _placeholderList = RegExp(r'\(\s*\?(?:\s*,\s*\?)+\s*\)');
   static final RegExp _appFrame = RegExp('package:lotti/');
 
+  /// Frames that wrap a statement without being its reason: the agent
+  /// repository's and sync service's `runInTransaction`, the vector-clock
+  /// scope, and the transaction-marking zone helper. The first frame of every
+  /// `BEGIN` is one of these, which attributes every transaction to the
+  /// wrapper and none to the code that opened it.
+  static final RegExp _wrapperFrame = RegExp(
+    r'\b(runInTransaction|withVcScope|_markInTransaction)\b',
+  );
+
   static const int _signatureLength = 200;
 
   LogDigest build(LogReadResult input) {
@@ -140,13 +149,14 @@ class LogDigestBuilder {
       final signature = statementSignature(statement);
       buckets
           .putIfAbsent(
-            signature,
+            '${query.databaseName}|$signature',
             () => _SlowQueryAccumulator(
+              databaseName: query.databaseName,
               statement: signature,
               operation: query.operation,
             ),
           )
-          .add(query, redactor);
+          .add(query, redactor, _wrapperFrame);
     }
     final result =
         buckets.values
@@ -256,8 +266,13 @@ class _IssueAccumulator {
 }
 
 class _SlowQueryAccumulator {
-  _SlowQueryAccumulator({required this.statement, required this.operation});
+  _SlowQueryAccumulator({
+    required this.databaseName,
+    required this.statement,
+    required this.operation,
+  });
 
+  final String databaseName;
   final String statement;
   final String operation;
 
@@ -270,10 +285,17 @@ class _SlowQueryAccumulator {
   final List<(String key, double elapsedMs)> superEntries = [];
   final Set<String> planShapes = {};
   final Set<String> topFrames = {};
+
+  /// Concurrency samples, keyed like the elapsed series so the super-slow
+  /// copy of an entry — which carries the same TIMING rows — is not counted
+  /// twice: slow-file samples by key, super-slow samples kept aside and used
+  /// only when their twin is missing.
+  final Map<String, (int inFlight, int open)> slowSamples = {};
+  final List<(String key, int inFlight, int open)> superSamples = [];
   DateTime? firstSeen;
   DateTime? lastSeen;
 
-  void add(SlowQueryRecord query, LogRedactor redactor) {
+  void add(SlowQueryRecord query, LogRedactor redactor, RegExp wrapperFrame) {
     // Both files write the same timestamp, elapsed and statement for one
     // query, which is identity enough to spot the duplicate.
     final key =
@@ -289,7 +311,23 @@ class _SlowQueryAccumulator {
       planShapes.add(query.planRows.join(' | '));
     }
     if (query.stackFrames.isNotEmpty) {
-      topFrames.add(redactor.redact(query.stackFrames.first));
+      // The first frame that is not a wrapper; the wrapper itself when the
+      // capture holds nothing else.
+      final frame = query.stackFrames.firstWhere(
+        (f) => !wrapperFrame.hasMatch(f),
+        orElse: () => query.stackFrames.first,
+      );
+      topFrames.add(redactor.redact(frame));
+    }
+    final inFlightAtStart = query.inFlightAtStart;
+    if (inFlightAtStart != null) {
+      // Entries without a TRANSACTION row had nothing open.
+      final sample = (inFlightAtStart, query.openTransactionsAtStart ?? 0);
+      if (query.isSuperSlow) {
+        superSamples.add((key, sample.$1, sample.$2));
+      } else {
+        slowSamples[key] = sample;
+      }
     }
     final first = firstSeen;
     if (first == null || query.timestamp.isBefore(first)) {
@@ -311,6 +349,7 @@ class _SlowQueryAccumulator {
         if (!slowKeys.contains(key)) elapsed,
     ]..sort();
     return SlowQueryBucket(
+      databaseName: databaseName,
       statement: statement,
       operation: operation,
       count: series.length,
@@ -323,10 +362,35 @@ class _SlowQueryAccumulator {
       lastSeen: lastSeen!,
       planShapes: planShapes.take(maxPlanShapes).toList(growable: false),
       topFrames: topFrames.take(maxTopFrames).toList(growable: false),
+      concurrency: _concurrency(),
+    );
+  }
+
+  ConcurrencyStats? _concurrency() {
+    final samples = [
+      ...slowSamples.values,
+      for (final (key, inFlight, open) in superSamples)
+        if (!slowSamples.containsKey(key)) (inFlight, open),
+    ];
+    if (samples.isEmpty) return null;
+    // `inFlightAtStart` counts the statement itself.
+    final others = [for (final (inFlight, _) in samples) inFlight - 1]..sort();
+    final open = [for (final (_, open) in samples) open]..sort();
+    return ConcurrencyStats(
+      othersInFlightP50: _percentileInt(others, 0.5),
+      othersInFlightMax: others.last,
+      openTransactionsP50: _percentileInt(open, 0.5),
+      openTransactionsMax: open.last,
     );
   }
 
   static double _percentile(List<double> sorted, double fraction) {
+    if (sorted.length == 1) return sorted.first;
+    final index = (fraction * (sorted.length - 1)).round();
+    return sorted[index.clamp(0, sorted.length - 1)];
+  }
+
+  static int _percentileInt(List<int> sorted, double fraction) {
     if (sorted.length == 1) return sorted.first;
     final index = (fraction * (sorted.length - 1)).round();
     return sorted[index.clamp(0, sorted.length - 1)];

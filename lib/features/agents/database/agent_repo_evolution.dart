@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
@@ -90,42 +89,22 @@ class AgentRepoEvolution {
     });
   }
 
-  /// Fetch agent identities filtered by lifecycle in SQL.
+  /// Fetch agent identities filtered by [lifecycle], newest first.
   ///
-  /// Startup restore paths ask for active agents repeatedly. Keeping that
-  /// predicate in SQLite avoids decoding dormant/destroyed identity rows in
-  /// every service that calls `AgentService.listAgents(lifecycle: active)`.
+  /// Served from the cached identity list ([getAllAgentIdentities]) and
+  /// filtered in Dart. Every before-scan maintenance hook and several
+  /// providers ask for the active agents on every wake pass; as a SQL
+  /// predicate this was the second most expensive statement in the slow-query
+  /// log by call count while the cache already held the same rows. Lifecycle
+  /// is part of the identity entity, so an identity write invalidates the
+  /// cache and a lifecycle change is visible on the next call.
   Future<List<AgentIdentityEntity>> getAgentIdentitiesByLifecycle(
     AgentLifecycle lifecycle,
   ) async {
-    final rows = await _db
-        .customSelect(
-          r'''
-            SELECT *
-            FROM agent_entities INDEXED BY idx_agent_entities_active_type_created
-            WHERE type = ?
-              AND deleted_at IS NULL
-              AND json_extract(serialized, '$.lifecycle') = ?
-            ORDER BY created_at DESC
-          ''',
-          variables: [
-            Variable.withString('agent'),
-            Variable.withString(lifecycle.name),
-          ],
-          readsFrom: {_db.agentEntities},
-        )
-        .get();
-
-    final identities = <AgentIdentityEntity>[];
-    for (final row in rows) {
-      final entity = AgentDbConversions.fromEntityRow(
-        await _db.agentEntities.mapFromRow(row),
-      );
-      if (entity case final AgentIdentityEntity identity) {
-        identities.add(identity);
-      }
-    }
-    return identities;
+    final identities = await getAllAgentIdentities();
+    return identities
+        .where((identity) => identity.lifecycle == lifecycle)
+        .toList(growable: false);
   }
 
   /// Fetch agent entities (including soft-deleted) whose serialized

@@ -1,5 +1,27 @@
 import 'package:lotti/features/sync/vector_clock.dart';
 
+/// A wake whose workflow reported failure through [WakeResult.error].
+///
+/// Thrown by the wake executor wiring so the drain engine's failure log can
+/// name the agent kind and the workflow's reason. Before this the wiring
+/// rethrew a bare `StateError`, which the PII-safe error log reduced to
+/// `errorType=StateError` — indistinguishable from a genuine `StateError`
+/// (a closed database transaction, say) and silent about which of the
+/// workflows' reasons it was. [reason] is a workflow-authored string, never
+/// user content — see the contract on [WakeResult.error].
+class WakeFailedException implements Exception {
+  const WakeFailedException({required this.kind, required this.reason});
+
+  /// The agent kind whose workflow failed, e.g. `task` or `goal`.
+  final String kind;
+
+  /// The workflow's [WakeResult.error], or a kind-specific default.
+  final String reason;
+
+  @override
+  String toString() => 'WakeFailedException($kind): $reason';
+}
+
 /// Result of a wake cycle execution.
 class WakeResult {
   const WakeResult({
@@ -8,6 +30,20 @@ class WakeResult {
     this.reportUpdated = false,
     this.error,
   });
+
+  /// A failed wake whose workflow caught [error], with a bounded [WakeResult.error].
+  ///
+  /// The exception is reported by type only — never its message. Provider and
+  /// filesystem exceptions carry response bodies and paths, and even the
+  /// workflows' own `StateError`s interpolate model-emitted tool names, none
+  /// of which may reach the PII-safe error log. The type alone still tells a
+  /// missing draft plan from an inference failure. The catch site logs the
+  /// raw exception with its stack trace to the full log.
+  factory WakeResult.failed({required String kind, required Object error}) =>
+      WakeResult(
+        success: false,
+        error: '$kind workflow failed (${error.runtimeType})',
+      );
 
   /// Whether the wake completed successfully.
   final bool success;
@@ -25,5 +61,12 @@ class WakeResult {
   final bool reportUpdated;
 
   /// Error description when [success] is false.
+  ///
+  /// Workflow-authored telemetry, never exception text or user content: the
+  /// wake wiring rethrows it as [WakeFailedException.reason] and the drain
+  /// engine writes that into its failure *message*, which the PII-safe error
+  /// log keeps verbatim. A caught exception is reported by type —
+  /// `'Task agent workflow failed (MeliousInferenceException)'` — and logged
+  /// in full, with its stack trace, at the catch site.
   final String? error;
 }

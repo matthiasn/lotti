@@ -33,6 +33,7 @@ import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
+import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
@@ -911,9 +912,9 @@ void main() {
             'thread-fail',
           ),
           throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
+            isA<WakeFailedException>().having(
+              (e) => e.reason,
+              'reason',
               'workflow failed',
             ),
           ),
@@ -1419,9 +1420,9 @@ void main() {
             'thread-day-fail',
           ),
           throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
+            isA<WakeFailedException>().having(
+              (e) => e.reason,
+              'reason',
               'day workflow failed',
             ),
           ),
@@ -1471,9 +1472,9 @@ void main() {
             'thread-project-fail',
           ),
           throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
+            isA<WakeFailedException>().having(
+              (e) => e.reason,
+              'reason',
               'project failed',
             ),
           ),
@@ -1642,9 +1643,9 @@ void main() {
             'thread-fail',
           ),
           throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
+            isA<WakeFailedException>().having(
+              (e) => e.reason,
+              'reason',
               'improver failed',
             ),
           ),

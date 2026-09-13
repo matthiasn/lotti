@@ -30,22 +30,25 @@ void main() {
         sampleFrames: const ['#0 Foo.bar (package:lotti/foo.dart:1:1)'],
       );
 
-  SlowQueryBucket query(int index) => SlowQueryBucket(
-    statement: 'SELECT $index FROM journal',
-    operation: 'select',
-    count: 3,
-    superSlowCount: 1,
-    p50Ms: 12.4,
-    p95Ms: 200,
-    maxMs: 388.759,
-    totalMs: 600,
-    firstSeen: t0,
-    lastSeen: t0,
-    planShapes: const ['84|0|USE TEMP B-TREE FOR ORDER BY'],
-    topFrames: const [
-      '#10 JournalDb.get (package:lotti/database/database.dart:1:1)',
-    ],
-  );
+  SlowQueryBucket query(int index, {ConcurrencyStats? concurrency}) =>
+      SlowQueryBucket(
+        databaseName: 'db.sqlite',
+        concurrency: concurrency,
+        statement: 'SELECT $index FROM journal',
+        operation: 'select',
+        count: 3,
+        superSlowCount: 1,
+        p50Ms: 12.4,
+        p95Ms: 200,
+        maxMs: 388.759,
+        totalMs: 600,
+        firstSeen: t0,
+        lastSeen: t0,
+        planShapes: const ['84|0|USE TEMP B-TREE FOR ORDER BY'],
+        topFrames: const [
+          '#10 JournalDb.get (package:lotti/database/database.dart:1:1)',
+        ],
+      );
 
   LogDigest digest({
     List<LogIssueBucket> issues = const [],
@@ -184,6 +187,38 @@ void main() {
   });
 
   group('renderDigest', () {
+    test(
+      'a statement with concurrency stats renders them on their own row',
+      () {
+        final text = builder.renderDigest(
+          digest(
+            slowQueries: [
+              query(
+                1,
+                concurrency: const ConcurrencyStats(
+                  othersInFlightP50: 3,
+                  othersInFlightMax: 61,
+                  openTransactionsP50: 1,
+                  openTransactionsMax: 4,
+                ),
+              ),
+              query(2),
+            ],
+          ),
+        );
+
+        expect(
+          text,
+          contains(
+            '   - at start: other statements in flight p50 3 · max 61 · '
+            'open transactions p50 1 · max 4',
+          ),
+        );
+        // Only the bucket that carries stats gets the row.
+        expect('at start:'.allMatches(text), hasLength(1));
+      },
+    );
+
     test('renders counts, bursts, issues and slow queries', () {
       final text = builder.renderDigest(
         digest(
@@ -224,7 +259,8 @@ void main() {
       expect(
         text,
         contains(
-          '1. **select** ×3 · p50 12ms · p95 200ms · max 389ms · total 600ms · '
+          '1. **select** on db.sqlite ×3 · p50 12ms · p95 200ms · '
+          'max 389ms · total 600ms · '
           'super slow ×1 (2026-09-12 00:05 → 2026-09-12 00:05)',
         ),
       );

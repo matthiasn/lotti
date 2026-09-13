@@ -221,7 +221,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
       );
     }
 
-    return WakeResult(success: false, error: error.toString());
+    return WakeResult.failed(kind: 'Project agent', error: error);
   }
 
   Future<void> _skipDormantScheduledWake({

@@ -288,41 +288,97 @@ class LogFileReader {
     required SystemHealthRange range,
     required List<SlowQueryRecord> into,
   }) {
-    List<String>? planRows;
-    List<String>? stackFrames;
+    _PendingSlowQuery? pending;
+    void flush() {
+      final done = pending;
+      if (done != null) into.add(done.toRecord(isSuperSlow: isSuperSlow));
+      pending = null;
+    }
+
     for (final line in lines) {
       final match = _slowQueryLine.firstMatch(line);
       if (match == null) {
-        final trimmed = line.trimLeft();
-        if (trimmed.startsWith('PLAN: ')) {
-          planRows?.add(trimmed.substring('PLAN: '.length));
-        } else if (trimmed.startsWith('STACK: ')) {
-          stackFrames?.add(trimmed.substring('STACK: '.length));
-        }
+        pending?.addContinuation(line.trimLeft());
         continue;
       }
-      planRows = null;
-      stackFrames = null;
+      flush();
       final timestamp = DateTime.tryParse(match.group(1)!);
       if (timestamp == null || !range.contains(timestamp)) continue;
       final elapsed = double.tryParse(match.group(4)!);
       if (elapsed == null) continue;
-      planRows = <String>[];
-      stackFrames = <String>[];
-      into.add(
-        SlowQueryRecord(
-          timestamp: timestamp,
-          databaseName: match.group(2)!,
-          operation: match.group(3)!,
-          elapsedMs: elapsed,
-          statement: match.group(5)!,
-          isSuperSlow: isSuperSlow,
-          planRows: planRows,
-          stackFrames: stackFrames,
-        ),
+      pending = _PendingSlowQuery(
+        timestamp: timestamp,
+        databaseName: match.group(2)!,
+        operation: match.group(3)!,
+        elapsedMs: elapsed,
+        statement: match.group(5)!,
       );
     }
+    flush();
   }
+}
+
+/// A slow-query entry whose continuation rows are still being collected.
+///
+/// `PLAN:` and `STACK:` rows accumulate; `TIMING:` and `TRANSACTION:` rows
+/// carry the queue-depth counters the interceptor wrote for the entry (see
+/// `SlowQueryInterceptor.fileReporter`).
+class _PendingSlowQuery {
+  _PendingSlowQuery({
+    required this.timestamp,
+    required this.databaseName,
+    required this.operation,
+    required this.elapsedMs,
+    required this.statement,
+  });
+
+  static final RegExp _inFlight = RegExp(r'\binFlightAtStart=(\d+)');
+  static final RegExp _activeAtStart = RegExp(r'\bactiveAtStart=\[([^\]]*)\]');
+
+  final DateTime timestamp;
+  final String databaseName;
+  final String operation;
+  final double elapsedMs;
+  final String statement;
+  final List<String> planRows = [];
+  final List<String> stackFrames = [];
+  int? inFlightAtStart;
+  int? openTransactionsAtStart;
+
+  void addContinuation(String trimmed) {
+    if (trimmed.startsWith('PLAN: ')) {
+      planRows.add(trimmed.substring('PLAN: '.length));
+    } else if (trimmed.startsWith('STACK: ')) {
+      stackFrames.add(trimmed.substring('STACK: '.length));
+    } else if (trimmed.startsWith('TIMING: ')) {
+      final inFlight = _inFlight.firstMatch(trimmed)?.group(1);
+      inFlightAtStart = inFlight == null ? null : int.tryParse(inFlight);
+      // The TRANSACTION row is written only when there is something to say,
+      // so once timing is known "no row" means no open transaction.
+      openTransactionsAtStart ??= 0;
+    } else if (trimmed.startsWith('TRANSACTION: ')) {
+      final list = _activeAtStart.firstMatch(trimmed)?.group(1);
+      if (list != null) {
+        openTransactionsAtStart = list
+            .split(',')
+            .where((id) => id.trim().isNotEmpty)
+            .length;
+      }
+    }
+  }
+
+  SlowQueryRecord toRecord({required bool isSuperSlow}) => SlowQueryRecord(
+    timestamp: timestamp,
+    databaseName: databaseName,
+    operation: operation,
+    elapsedMs: elapsedMs,
+    statement: statement,
+    isSuperSlow: isSuperSlow,
+    planRows: planRows,
+    stackFrames: stackFrames,
+    inFlightAtStart: inFlightAtStart,
+    openTransactionsAtStart: openTransactionsAtStart,
+  );
 }
 
 /// An error entry from a per-domain file, kept for its stack frames only.

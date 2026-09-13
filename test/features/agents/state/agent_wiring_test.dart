@@ -176,8 +176,8 @@ void main() {
     );
 
     test(
-      'throws a StateError carrying the workflow error when the event wake '
-      'fails',
+      'throws a WakeFailedException naming the kind and the workflow error '
+      'when the event wake fails',
       () async {
         stubEventAgent();
         when(
@@ -199,11 +199,9 @@ void main() {
         await expectLater(
           () => executor('event-agent-1', 'run-key-1', const {}, 'thread-1'),
           throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              'No active event ID',
-            ),
+            isA<WakeFailedException>()
+                .having((e) => e.kind, 'kind', 'event')
+                .having((e) => e.reason, 'reason', 'No active event ID'),
           ),
         );
 

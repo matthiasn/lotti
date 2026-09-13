@@ -39,6 +39,8 @@ class SlowQueryRecord {
     required this.isSuperSlow,
     this.planRows = const [],
     this.stackFrames = const [],
+    this.inFlightAtStart,
+    this.openTransactionsAtStart,
   });
 
   final DateTime timestamp;
@@ -52,4 +54,21 @@ class SlowQueryRecord {
   final bool isSuperSlow;
   final List<String> planRows;
   final List<String> stackFrames;
+
+  /// Statements already awaiting the interceptor when this one started, from
+  /// the `TIMING:` row. Null for entries written without timing bookkeeping.
+  ///
+  /// Elapsed time is measured from the moment drift accepts a request, so a
+  /// statement that waited in a queue reports the wait as its own cost; this
+  /// is the queue's depth at that moment.
+  final int? inFlightAtStart;
+
+  /// Transactions already open on the database when this statement started,
+  /// from the `TRANSACTION:` row's `activeAtStart` list. Zero when the row was
+  /// omitted (the interceptor writes it only when there was something to
+  /// say), null when there was no timing bookkeeping at all.
+  ///
+  /// For a `BEGIN` this is what the transaction waited behind: drift holds the
+  /// writer lock for a transaction's whole lifetime, so the next one waits.
+  final int? openTransactionsAtStart;
 }

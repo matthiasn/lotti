@@ -31,9 +31,39 @@ class LogIssueBucket {
   final List<String> sampleFrames;
 }
 
+/// What else the database was doing when the statements in a bucket started.
+///
+/// Elapsed time in the slow-query log is measured from the moment drift
+/// accepts a request, so a statement that waited reports the wait as its own
+/// cost. Whether these counters *are* that wait depends on the statement: a
+/// `BEGIN` takes the writer lock and holds it for the transaction's lifetime,
+/// so for `transaction.open` the open transactions are what it queued
+/// behind; a read served by the pool overlaps a transaction without waiting
+/// for it, so for a select they only describe concurrency.
+class ConcurrencyStats {
+  const ConcurrencyStats({
+    required this.othersInFlightP50,
+    required this.othersInFlightMax,
+    required this.openTransactionsP50,
+    required this.openTransactionsMax,
+  });
+
+  /// Other statements already awaiting the interceptor (the interceptor's
+  /// `inFlightAtStart` counts the statement itself; that one is subtracted).
+  final int othersInFlightP50;
+  final int othersInFlightMax;
+
+  /// Transactions open on the database, the statement's own included when
+  /// it ran inside one. For a `BEGIN` the list is taken before the
+  /// transaction opens, so it never counts itself.
+  final int openTransactionsP50;
+  final int openTransactionsMax;
+}
+
 /// Repeated slow queries collapsed to one normalised statement.
 class SlowQueryBucket {
   const SlowQueryBucket({
+    required this.databaseName,
     required this.statement,
     required this.operation,
     required this.count,
@@ -46,8 +76,13 @@ class SlowQueryBucket {
     required this.lastSeen,
     this.planShapes = const [],
     this.topFrames = const [],
+    this.concurrency,
   });
 
+  /// The database file the statement ran against. Part of the grouping key:
+  /// a `BEGIN` on the agent database and one on the sync database queue
+  /// behind different writer locks and must not share a row.
+  final String databaseName;
   final String statement;
   final String operation;
   final int count;
@@ -62,8 +97,13 @@ class SlowQueryBucket {
   /// Distinct `EXPLAIN QUERY PLAN` shapes seen for the statement.
   final List<String> planShapes;
 
-  /// Distinct top application frames that issued the statement.
+  /// Distinct application frames that issued the statement — the first frame
+  /// below the transaction and vector-clock wrappers, so a `BEGIN` names the
+  /// code that opened the transaction rather than `runInTransaction`.
   final List<String> topFrames;
+
+  /// Null when no entry in the bucket carried timing bookkeeping.
+  final ConcurrencyStats? concurrency;
 }
 
 /// Per-domain line counts by level.

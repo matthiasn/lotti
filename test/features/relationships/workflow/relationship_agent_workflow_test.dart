@@ -769,7 +769,7 @@ void main() {
     );
 
     expect(result.success, isFalse);
-    expect(result.error, contains('outbox flush failed'));
+    expect(result.error, 'Relationship Phase B workflow failed (StateError)');
     expect(
       conversationRepository.deletedConversationIds,
       contains('test-conv-id'),
@@ -1385,7 +1385,7 @@ void main() {
 
     final result = await run(pendingUserMessage: 'How is Anna?');
     expect(result.success, isFalse);
-    expect(result.error, contains('no visible reply'));
+    expect(result.error, 'Relationship Phase B workflow failed (StateError)');
   });
 
   test('a deferred outbox-flush failure AFTER the interactive reply '

@@ -849,9 +849,13 @@ extension WakeDrainEngine on WakeOrchestrator {
       } catch (e) {
         _suppression.clearPreRegistered(job.agentId);
         final elapsed = clock.now().difference(startTime);
+        // The reason rides in the message: the PII-safe error log keeps
+        // only message and error type, and a bare type says nothing about
+        // which workflow reason it was.
         logError(
           'wake failed in ${elapsed.inMilliseconds}ms '
-          'for ${DomainLogger.sanitizeId(job.runKey)}',
+          'for ${DomainLogger.sanitizeId(job.runKey)}'
+          '${e is WakeFailedException ? ' kind=${e.kind} reason=${e.reason}' : ''}',
           error: e,
         );
         await _safeUpdateStatus(
