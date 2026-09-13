@@ -1238,6 +1238,7 @@ flowchart TD
   A[RelationshipAgentPhaseA] --> E{eligible?}
   E -->|"no — unimportant, dormant,<br/>archived, deleted, unresolvable"| C["clearFor(relationshipId)<br/>retract every open reminder"]
   E -->|yes| TX["agent transaction:<br/>sweep · register · escalation"]
+  TX --> NUDGE["ScheduledWakeManager.requestCheck<br/>AFTER the commit"]
   TX --> ARM["arm(relationship, derivation)<br/>AFTER the commit"]
   ARM --> ID["id = uuid5(relationshipId, dueDayKey)"]
   ID --> EX{"row for this episode<br/>already exists?"}
@@ -1248,6 +1249,16 @@ flowchart TD
   ROW --> OS["NotificationScheduler → zonedSchedule"]
   ROW --> RET["retract superseded episodes<br/>(the old due day means nothing now)"]
 ```
+
+**The wake-manager nudge also waits for the commit.** `requestCheck` starts a
+scan pass that runs un-awaited across many agent-database queries. Drift routes
+a query to the transaction executor of the zone it is issued in, so a nudge
+fired from inside the transaction closure hands the pass a transaction that has
+closed by the time its later queries run — every before-scan maintenance hook
+then fails with drift's "used after being closed" `StateError` in one burst.
+Phase A therefore records whether an escalation was armed and nudges after
+`runInTransaction` returns; the manager additionally runs every pass in the
+zone it was started in (see [agents overview](agents/overview.md)).
 
 **A due day already behind us earns no alarm.** `NotificationScheduler.schedule`
 routes a past `scheduledFor` to `showNotificationNow`, so arming a lapsed

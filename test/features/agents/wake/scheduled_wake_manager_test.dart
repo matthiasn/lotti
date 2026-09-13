@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -311,6 +312,65 @@ void main() {
 
       manager.requestCheck();
       await untilCalled(() => repository.getDueScheduledWakeRecords(any()));
+      verify(() => repository.getDueScheduledWakeRecords(any())).called(1);
+    });
+
+    test('requestCheck from inside an agent-database transaction zone runs '
+        'the pass in the zone the manager was started in — drift would '
+        "otherwise route the pass's later queries to the caller's "
+        'transaction, closed by then', () async {
+      // A real drift database: the failure mode is drift's zone-based query
+      // routing, which no mock reproduces. Each repository read below issues
+      // a genuine select so the pass has queries for drift to route.
+      final db = AgentDatabase(inMemoryDatabase: true, background: false);
+      addTearDown(db.close);
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(named: 'message'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) {});
+      when(() => repository.getDueScheduledAgentStates(any())).thenAnswer((
+        invocation,
+      ) async {
+        final now = invocation.positionalArguments.single as DateTime;
+        await db.getDueScheduledAgentStates(now.toIso8601String()).get();
+        return [];
+      });
+      when(() => repository.getDueScheduledWakeRecords(any())).thenAnswer((
+        invocation,
+      ) async {
+        final now = invocation.positionalArguments.single as DateTime;
+        await db.getDueScheduledWakeRecords(now.toIso8601String()).get();
+        return [];
+      });
+      final manager = createAndStart(domainLogger: logger);
+      addTearDown(manager.stop);
+      // Let the start-up pass drain so the nudge below is a fresh pass, not
+      // a coalesced re-run of one already in flight.
+      await pumpEventQueue();
+      clearInteractions(repository);
+
+      // The relationship Phase A shape: a write, then the nudge, still inside
+      // the transaction closure. The transaction commits as soon as the
+      // closure returns, while the pass is mid-flight.
+      await db.transaction(() async {
+        manager.requestCheck();
+      });
+      await pumpEventQueue();
+
+      verifyNever(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: 'error checking scheduled wakes',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      );
+      verify(() => repository.getDueScheduledAgentStates(any())).called(1);
       verify(() => repository.getDueScheduledWakeRecords(any())).called(1);
     });
 

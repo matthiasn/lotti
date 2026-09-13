@@ -472,6 +472,20 @@ behavior belongs in exactly one of these six suites; direct coverage for
 `WakeQueue`, `WakeRunner`, `WakeThrottleCoordinator`, `WakeSuppressionTracker`,
 and `ScheduledWakeManager` remains in each collaborator's mirrored test file.
 
+## Drift routes a query by the zone it is issued in
+
+`db.transaction(() async { ... })` runs its body in a zone, and drift sends any
+query issued from that zone — or from a Timer, stream callback or un-awaited
+future created inside it — to that transaction's executor. Once the closure
+returns and the transaction commits, such a query fails with `Bad state: This
+database or transaction runner has already been closed`. No mock reproduces
+this, so a regression test for it needs a real in-memory database: open
+`AgentDatabase(inMemoryDatabase: true, background: false)`, have the mocked
+repository methods issue genuine selects against it, and trigger the code under
+test from inside `db.transaction(...)`. The pattern is
+`test/features/agents/wake/scheduled_wake_manager_test.dart` ("requestCheck
+from inside an agent-database transaction zone").
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**

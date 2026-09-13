@@ -117,7 +117,10 @@ void main() {
       repository: repository,
       syncService: syncService,
       relationshipRepository: relationshipRepository,
-      onEscalationArmed: () => escalationCallbacks++,
+      onEscalationArmed: () {
+        escalationCallbacks++;
+        events.add('escalation:armed');
+      },
       reminders: reminders,
     );
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
@@ -468,6 +471,28 @@ void main() {
         ]),
       );
       expect(escalationCallbacks, 1);
+    });
+
+    test('the escalation nudge fires AFTER the transaction has committed — '
+        "the manager's scan pass runs un-awaited across many queries, and "
+        'one started inside the transaction zone would have them routed to '
+        'the closed transaction (the 01:29 StateError burst)', () async {
+      await withClock(Clock.fixed(now), run);
+
+      expect(events, contains('escalation:armed'));
+      expect(
+        events.indexOf('escalation:armed'),
+        greaterThan(events.lastIndexOf('tx:commit')),
+        reason: 'nudge before commit — the pass would run in the tx zone',
+      );
+      // The escalation record itself is still part of the atomic write (the
+      // cadence tick re-armed before the transaction is also a wake record,
+      // hence the LAST one).
+      final wake = events.lastIndexWhere(
+        (e) => e.startsWith('upsert:') && e.contains('ScheduledWake'),
+      );
+      expect(wake, greaterThan(events.lastIndexOf('tx:begin')));
+      expect(wake, lessThan(events.lastIndexOf('tx:commit')));
     });
 
     test('with no previous register the escalation carries no baseline '
