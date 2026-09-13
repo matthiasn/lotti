@@ -327,19 +327,23 @@ relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
             (value) => value.value,
           ),
         );
-        final relationship = await ref
-            .watch(relationshipRepositoryProvider)
+        final relationshipRepository = ref.watch(
+          relationshipRepositoryProvider,
+        );
+        final agentRepository = ref.watch(agentRepositoryProvider);
+        final categoryProfileLookup = ref.watch(
+          relationshipCategoryProfileLookupProvider,
+        );
+        final relationship = await relationshipRepository
             .getRelationshipByIdUnfiltered(relationshipId);
-        final identity = await ref
-            .watch(agentRepositoryProvider)
-            .getEntity(relationshipAgentIdFor(relationshipId));
+        final identity = await agentRepository.getEntity(
+          relationshipAgentIdFor(relationshipId),
+        );
         final resolved = await resolveRelationshipAgentModel(
           relationship: relationship,
           agentIdentity: identity is AgentIdentityEntity ? identity : null,
           aiConfigRepository: aiConfigRepository,
-          categoryProfileLookup: ref.watch(
-            relationshipCategoryProfileLookupProvider,
-          ),
+          categoryProfileLookup: categoryProfileLookup,
         );
         if (resolved == null) {
           throw const RelationshipInferenceSetupUnavailable();

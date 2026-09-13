@@ -232,19 +232,32 @@ class _RelationshipBriefingCardState
     );
   }
 
+  /// Refreshes disclosure while retaining it across asynchronous reads and
+  /// default-profile changes. Release the subscription on success or failure;
+  /// WidgetRef also releases it if this card is disposed during the request.
+  Future<String?> _resolveBriefingDisclosure(String relationshipId) async {
+    final provider = relationshipBriefingDisclosureProvider(relationshipId);
+    ref.invalidate(provider);
+    final subscription = ref.listenManual(provider, (_, _) {});
+    try {
+      return await ref.read(provider.future);
+    } finally {
+      subscription.close();
+    }
+  }
+
   /// Asks for a briefing: the first one, an update, or a retry after a
   /// failure — one path, one trigger token.
   Future<void> _briefMe() async {
     if (_requesting) return;
+    final relationship = widget.relationship;
     final messages = context.messages;
     setState(() => _requesting = true);
     try {
       // Name the provider BEFORE any cloud-bound trigger (ADR 0037): the
       // locality check fails closed, so an unresolvable profile discloses.
-      final providerName = await ref.refresh(
-        relationshipBriefingDisclosureProvider(
-          widget.relationship.meta.id,
-        ).future,
+      final providerName = await _resolveBriefingDisclosure(
+        relationship.meta.id,
       );
       if (!mounted) return;
       if (providerName != null) {
@@ -275,7 +288,7 @@ class _RelationshipBriefingCardState
       }
       await ref
           .read(relationshipAgentServiceProvider)
-          .requestBriefing(widget.relationship);
+          .requestBriefing(relationship);
       if (!mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.success,
@@ -291,8 +304,8 @@ class _RelationshipBriefingCardState
           label: messages.inferenceProfileChooseModelTitle,
           onPressed: () => AgentModelSheet.show(
             context: context,
-            agentId: _agentId,
-            entityId: widget.relationship.meta.id,
+            agentId: relationshipAgentIdFor(relationship.meta.id),
+            entityId: relationship.meta.id,
           ),
         ),
       );

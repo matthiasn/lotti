@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/check_in_data.dart';
@@ -8,12 +12,13 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -201,6 +206,7 @@ void main() {
   Future<_FakeContactLauncher> pump(
     WidgetTester tester, {
     RelationshipEntry? entry,
+    ValueNotifier<RelationshipEntry>? entryNotifier,
     List<CheckInEntry> checkIns = const [],
     AgentReportEntity? current,
     AgentStateEntity? state,
@@ -209,6 +215,8 @@ void main() {
     int totalTokens = 0,
     String? disclosureProviderName,
     bool setupUnavailable = false,
+    bool realDisclosure = false,
+    List<Override> additionalOverrides = const [],
     TaskAgentSetupOptions setupOptions = const TaskAgentSetupOptions(
       profiles: [],
       models: [],
@@ -220,32 +228,40 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          RelationshipBriefingCard(
-            relationship: entry ?? relationship(),
-            checkIns: checkIns,
-          ),
+          entryNotifier == null
+              ? RelationshipBriefingCard(
+                  relationship: entry ?? relationship(),
+                  checkIns: checkIns,
+                )
+              : ValueListenableBuilder<RelationshipEntry>(
+                  valueListenable: entryNotifier,
+                  builder: (context, value, child) => RelationshipBriefingCard(
+                    relationship: value,
+                    checkIns: checkIns,
+                  ),
+                ),
           overrides: [
-            agentReportProvider(agentId).overrideWith((ref) async => current),
-            agentStateProvider(agentId).overrideWith((ref) async => state),
-            agentIsRunningProvider(
-              agentId,
-            ).overrideWith((ref) => Stream.value(running)),
-            agentIdentityProvider(agentId).overrideWith(
-              (ref) async => makeTestIdentity(
-                agentId: agentId,
+            agentReportProvider.overrideWith((ref, id) async => current),
+            agentStateProvider.overrideWith((ref, id) async => state),
+            agentIsRunningProvider.overrideWith(
+              (ref, id) => Stream.value(running),
+            ),
+            agentIdentityProvider.overrideWith(
+              (ref, id) async => makeTestIdentity(
+                agentId: id,
                 kind: AgentKinds.relationshipAgent,
                 displayName: 'Commander Pip Frostbeak',
               ),
             ),
-            taskAgentResolvedSetupProvider(agentId).overrideWith(
-              (ref) async => modelResolved
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, id) async => modelResolved
                   ? resolvedSetup()
                   : const ResolvedAgentSetup(
                       status: AgentSetupResolutionStatus.disabled,
                     ),
             ),
-            agentTokenUsageSummariesProvider(agentId).overrideWith(
-              (ref) async => [
+            agentTokenUsageSummariesProvider.overrideWith(
+              (ref, id) async => [
                 if (totalTokens > 0)
                   AgentTokenUsageSummary(
                     modelId: 'model-1',
@@ -257,17 +273,19 @@ void main() {
               (ref) async => setupOptions,
             ),
             relationshipAgentServiceProvider.overrideWithValue(agentService),
-            relationshipBriefingDisclosureProvider(
-              relationshipId,
-            ).overrideWith((ref) async {
-              if (setupUnavailable) {
-                throw const RelationshipInferenceSetupUnavailable();
-              }
-              return disclosureProviderName;
-            }),
+            if (!realDisclosure)
+              relationshipBriefingDisclosureProvider(
+                relationshipId,
+              ).overrideWith((ref) async {
+                if (setupUnavailable) {
+                  throw const RelationshipInferenceSetupUnavailable();
+                }
+                return disclosureProviderName;
+              }),
             relationshipRepositoryProvider.overrideWithValue(repository),
             contactLauncherProvider.overrideWithValue(launcher),
             pendingInteractionStoreProvider.overrideWithValue(store),
+            ...additionalOverrides,
           ],
         ),
       );
@@ -631,6 +649,131 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       verify(() => agentService.requestBriefing(any())).called(1);
+    });
+
+    for (final route in ['cloud', 'local', 'unavailable']) {
+      testWidgets(
+        'a delayed default-profile preflight survives frames: $route',
+        (tester) async {
+          final readGate = Completer<RelationshipEntry?>();
+          final aiRepository = MockAiConfigRepository();
+          final agentRepository = MockAgentRepository();
+          final provider = route == 'local'
+              ? testLocalInferenceProvider()
+              : testInferenceProvider();
+          final model = testAiModel(inferenceProviderId: provider.id);
+          final profile = testInferenceProfile(thinkingModelId: model.id);
+          when(
+            () => repository.getRelationshipByIdUnfiltered(relationshipId),
+          ).thenAnswer((_) => readGate.future);
+          when(
+            () => agentRepository.getEntity(agentId),
+          ).thenAnswer((_) async => null);
+          when(
+            aiRepository.getDefaultProfileId,
+          ).thenAnswer((_) async => profile.id);
+          when(
+            () => aiRepository.getConfigById(profile.id),
+          ).thenAnswer((_) async => route == 'unavailable' ? null : profile);
+          when(
+            () => aiRepository.getConfigById(provider.id),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => aiRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [model]);
+          when(
+            () => aiRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
+          await pump(
+            tester,
+            checkIns: onTrackCheckIns,
+            realDisclosure: true,
+            additionalOverrides: [
+              aiConfigRepositoryProvider.overrideWithValue(aiRepository),
+              agentRepositoryProvider.overrideWithValue(agentRepository),
+            ],
+          );
+          await tester.tap(briefMe);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          verifyNever(() => agentService.requestBriefing(any()));
+          expect(find.text('Could not request the briefing.'), findsNothing);
+
+          readGate.complete(relationship());
+          await tester.pumpAndSettle();
+          final context = tester.element(find.byType(RelationshipBriefingCard));
+          final container = ProviderScope.containerOf(context, listen: false);
+          expect(
+            container.exists(
+              relationshipBriefingDisclosureProvider(relationshipId),
+            ),
+            isFalse,
+            reason:
+                'the preflight subscription must be released after completion',
+          );
+          if (route == 'unavailable') {
+            expect(
+              find.text(context.messages.taskAgentSetupBroken),
+              findsOneWidget,
+            );
+            verifyNever(() => agentService.requestBriefing(any()));
+          } else {
+            if (route == 'cloud') {
+              expect(
+                find.text(
+                  context.messages.relationshipBriefingDisclosureTitle(
+                    provider.name,
+                  ),
+                ),
+                findsOneWidget,
+              );
+              verifyNever(() => agentService.requestBriefing(any()));
+              await tester.tap(find.text('Continue'));
+              await tester.pumpAndSettle();
+            }
+            verify(() => agentService.requestBriefing(any())).called(1);
+          }
+          expect(find.text('Could not request the briefing.'), findsNothing);
+        },
+      );
+    }
+
+    testWidgets('a card replacement during disclosure cannot retarget '
+        'the briefing request', (tester) async {
+      final original = relationship();
+      final replacement = original.copyWith(
+        meta: original.meta.copyWith(id: 'person-2'),
+        data: original.data.copyWith(title: 'Another person'),
+      );
+      final entry = ValueNotifier(original);
+      addTearDown(entry.dispose);
+      final disclosure = Completer<String?>();
+      final disclosedIds = <String>[];
+      await pump(
+        tester,
+        entryNotifier: entry,
+        checkIns: onTrackCheckIns,
+        realDisclosure: true,
+        additionalOverrides: [
+          relationshipBriefingDisclosureProvider.overrideWith((ref, id) async {
+            disclosedIds.add(id);
+            return disclosure.future;
+          }),
+        ],
+      );
+      await tester.tap(briefMe);
+      await tester.pump();
+      entry.value = replacement;
+      await tester.pump();
+      disclosure.complete('Original provider');
+      await tester.pumpAndSettle();
+      expect(disclosedIds, [original.meta.id]);
+      expect(find.text('Send to Original provider?'), findsOneWidget);
+      verifyNever(() => agentService.requestBriefing(any()));
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      verify(() => agentService.requestBriefing(original)).called(1);
+      verifyNever(() => agentService.requestBriefing(replacement));
     });
 
     testWidgets('unavailable setup explains recovery and opens configuration', (
